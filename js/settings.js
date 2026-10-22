@@ -265,10 +265,19 @@
     /* The list of groups beside them only where there are three or more
        to move between (2026-10-14, ux-audit SET-5). */
     var desk = !phone() && list.length >= 3;
+    /* On a phone the groups are the view strip, sticky under the head,
+       scrolling sideways; a press scrolls to the group as the desk's list
+       does (the user, 2026-10-22, SET2-17: "approve"; never a drill-down,
+       refused 2026-10-11). */
+    var strip = phone() && list.length >= 3;
     var cls = 'stg ' + (desk ? 'is-desk' : phone() ? 'is-phone' : 'is-single');
     var html = (desk ? '<nav class="stg-nav" aria-label="Settings">' + list.map(function (x) {
       return '<button class="stg-go" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '">' + esc(x.name) + '</button>';
-    }).join('') + '</nav>' : '') + '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
+    }).join('') + '</nav>' : '') +
+      (strip ? '<div class="actstrip stg-strip"><span class="cmdbar-views actviews" id="stgStrip" role="group" aria-label="Settings">' + list.map(function (x) {
+        return '<button class="acttab btn-sm stg-tab" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '" aria-pressed="false">' + esc(x.name) + '</button>';
+      }).join('') + '</span></div>' : '') +
+      '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
     if (html !== drawn || box.className !== cls || !box.firstChild) {
       var had = document.activeElement && box.contains(document.activeElement) ? document.activeElement.getAttribute('data-a') : '';
       drawn = html;
@@ -276,6 +285,7 @@
       box.innerHTML = html;
       var back = had && box.querySelector('[data-a="' + had + '"]');
       if (back) back.focus({ preventScroll: true });
+      if ($('stgStrip') && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('stgStrip'));
       if (window.ADspaceGuide && window.ADspaceGuide.relay) window.ADspaceGuide.relay();
     }
     mark();
@@ -288,7 +298,7 @@
     var secs = box.querySelectorAll('.stg-sec');
     if (!key) {
       key = secs[0] ? secs[0].getAttribute('data-sec') : '';
-      var edge = (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) + 24;
+      var edge = topOf() + 24;
       Array.prototype.forEach.call(secs, function (x) { if (x.getBoundingClientRect().top <= edge) key = x.getAttribute('data-sec'); });
       if (secs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
         var last = secs[secs.length - 1];
@@ -299,6 +309,20 @@
     Array.prototype.forEach.call(box.querySelectorAll('.stg-go'), function (b) {
       if (b.getAttribute('data-g') === key) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
     });
+    /* The strip's chosen tab follows the scroll, its thumb sliding to it. */
+    Array.prototype.forEach.call(box.querySelectorAll('.stg-tab'), function (b) {
+      var on = b.getAttribute('data-g') === key;
+      if (b.classList.contains('is-on') === on) return;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  /* The page's top for a group: under the head, and under the strip where
+     it stands. */
+  function topOf() {
+    var h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64;
+    var st = document.querySelector('#setList .stg-strip');
+    return h + (st ? st.offsetHeight : 0);
   }
 
   /* A group pressed holds the fill until the person scrolls the page
@@ -306,7 +330,7 @@
   var pinned = '';
   ['wheel', 'touchmove', 'keydown'].forEach(function (ev) {
     window.addEventListener(ev, function (e) {
-      if (ev === 'keydown' && e.target && e.target.closest && e.target.closest('#setList .stg-go')) return;
+      if (ev === 'keydown' && e.target && e.target.closest && e.target.closest('#setList .stg-go, #setList .stg-tab')) return;
       pinned = '';
     }, { passive: true, capture: true });
   });
@@ -326,8 +350,7 @@
   function reveal(key, smooth) {
     var el = $('stg-' + key);
     if (!el) return;
-    var top = el.getBoundingClientRect().top + window.scrollY -
-      (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64) - 12;
+    var top = el.getBoundingClientRect().top + window.scrollY - topOf() - 12;
     window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
   }
   function go(key) {

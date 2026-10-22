@@ -5847,6 +5847,43 @@ removes nothing.
   screen (DESIGN.md). Not built (the user's to decide): QT-6, SVC2-M1,
   QT-M1, SL-M2.
 
+### 2026-10-22 — The rate card's changes reviewed before Publish, and the Services pane's blue follows the deal
+- The user, on the audit's majors: "SVC2-M1 review changes before Publish:
+  approve; QT-M1 Issue Letter of Offer on the row: approve; SL-M2 the blue
+  follows the deal: approve".
+- Built: SVC2-M1 "n changes not published" becomes Review n changes, a
+  tonal toggle beside Publish showing only the changed lines (each from and
+  to), the lines removed and the wording changed, the search set aside;
+  Publish's question lists them, five, then and n more (the question's
+  words now keep their line breaks). QT-M1 Issue Letter of Offer and Use
+  billing details on the quotation's row, out of its ⋯. Measured at 1280
+  the three buttons on the row's first line left the reference
+  "ADP/QT2610-" over "L01" in a 591px pane, so at a desk a row holding them
+  sets them under the figure and state, ending at the ⋯; a row with
+  Download alone keeps it on the first line (QT-5). SL-M2 `paintDeal`
+  picks the pane's one blue (Build quote, the row's Issue Letter of Offer,
+  Issue letter, or none), Issue letter waits for a To quote or Confirmed
+  line, and the empty lists carry Build quote and Add service (completing
+  SL-10, held back in the release before as an act offered twice; the
+  user approved the mockup holding both).
+- Suites: pdfcases read the quotation's remarks in the words #616 replaced
+  ("incl. SST is inclusive"); it now reads #616's ("includes SST at 8%."),
+  found by Release 2's run.
+- Skipped: none of the three. Not built: QT-6 (declined).
+
+### 2026-10-22 — Settings' groups as a strip on a phone
+- The user, on the audit's majors: "SET2-17 phone group strip: approve".
+- Built: at 640 and under Settings' groups are the view strip
+  (`#stgStrip`), sticky under the head on the page's ground, scrolling
+  sideways with faded edges; a press calls the page's own `go(key)` and
+  `mark()` keeps the chosen tab in step with the scroll; the scroll to a
+  group, the group in view and an address's landing all reckon from under
+  the strip (`topOf`). 1280 is unchanged; no drill-down (refused
+  2026-10-11). The guide's first step rings the strip on a phone. uxaudit
+  meets the strip at 390 alone (`STRIP_PHONE`), a desk listing the groups
+  down the left.
+- Not built: SET2-18, SET2-19 (not approved).
+
 ### 2026-10-22 — Clients, Content Review, Video Scripts: release 1 of the second audit (P2 first)
 - The user, on the audit of 2026-10-22: "Fix all".
 - Built: CLI-1 a written next action opened the Activity record (a dead

@@ -4340,6 +4340,7 @@
           state.servicesGone = all.filter(function (l) { return l.archived_at; });
           state.servicesQuoted = {};
           paintServices();
+          paintDeal();
           paintSummary();
           quotedLines();
           loadQuotes();
@@ -4358,6 +4359,27 @@
     });
     return live;
   }
+  /* The Services pane's one blue follows the deal (2026-10-22, SL-M2):
+     nothing quoted and no To quote line, Build quote; a quotation that can
+     be offered, its row's Issue Letter of Offer (tonal where two could be);
+     To quote lines no live letter holds, Issue letter; else none. Issue
+     letter is drawn once a To quote or Confirmed line exists. */
+  function paintDeal() {
+    var cover = $('crmCover');
+    if (!cover || !state.client) return;
+    var lines = state.services || [], live = liveMap();
+    var letterable = lines.some(function (l) { return l.state === 'quoted' || l.state === 'confirmed'; });
+    var toQuote = lines.filter(function (l) { return l.state === 'quoted'; });
+    var quotes = (state.quotes || []).filter(function (q) { return !q.removed_at; });
+    cover.hidden = !letterable;
+    var build = $('qtBuild');
+    var offers = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="offer"]'));
+    var blue = null;
+    if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
+    else if (offers.length === 1) blue = offers[0];
+    else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
+    [build, cover].concat(offers).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+  }
   function quoteCtx() {
     return { client: state.client, db: db, may: mayPart, msg: msg, services: state.services || [], live: liveMap(),
       undo: undoBar,
@@ -4367,6 +4389,7 @@
         return m ? ((m.salutation ? m.salutation + ' ' : '') + (m.name || '')).trim() : '';
       })(),
       reload: function (done) { loadQuotes(done); },
+      painted: paintDeal,
       offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); },
       /* A website quotation's billing (2026-10-14) fills the Billing sheet
          where the record holds nothing yet; Save keeps it as any edit. */
@@ -4442,7 +4465,10 @@
       // The enquiry as typed at intake stands in until a line is added.
       /* Named as the list is (2026-10-22, SL-10); its way out is the head's
          Add service, offered once on the screen. */
-      box.innerHTML = '<div class="empty">' + (c.deal_note ? esc(c.deal_note) : 'No service lines.') + '</div>';
+      box.innerHTML = '<div class="empty has-go"><span>' + (c.deal_note ? esc(c.deal_note) : 'No service lines.') + '</span>' +
+        (mayPart('clients.services', 'work') ? '<button class="btn btn-sm" data-a="add" type="button">' + PLUS_ICON + 'Add service</button>' : '') + '</div>';
+      var ae = box.querySelector('[data-a="add"]');
+      if (ae) ae.addEventListener('click', function () { openService(null); });
     } else {
       var table = document.createElement('div');
       table.className = 'crm-table';
@@ -5009,6 +5035,7 @@
       DOCS.mapOf(rows.map(function (d) { return d.id; }), function (by) {
         state.docMap = by || {};
         repaintQuotes();
+        paintDeal();
         box.innerHTML = '';
         var empty = document.createElement('div');
         empty.className = 'empty';
@@ -5507,6 +5534,9 @@
      would proceed proper updates to the site and export"). */
   var SVC_TABS = [['card', 'Rate card'], ['words', 'Wording'], ['versions', 'Versions']];
   var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, words: {}, n: 0 };
+  /* Review n changes (2026-10-22, SVC2-M1): the card shows only what the
+     draft holds that the live version does not. */
+  var svcReview = false;
   function loadLive(then) {
     if (liveRead) { then(live); return; }
     db.rpc('rate_card_current').then(function (r) {
@@ -5529,17 +5559,18 @@
   /* What the draft holds that the live version does not: each line New or
      Changed, a line gone, each block of words changed. */
   function svcDiff() {
-    var out = { lines: {}, gone: 0, words: {}, n: 0 };
+    var out = { lines: {}, was: {}, gone: 0, goneNames: [], words: {}, n: 0 };
     if (!live) return out;
     var was = {};
     (live.snapshot.services || []).forEach(function (x) { was[x.slug] = x; });
     (catalog || []).forEach(function (s) {
       var w = was[s.slug];
       if (!w) { out.lines[s.slug] = 'New'; out.n++; return; }
-      if (SVC_CMP.some(function (k) { return canon(s[k]) !== canon(w[k]); })) { out.lines[s.slug] = 'Changed'; out.n++; }
+      if (SVC_CMP.some(function (k) { return canon(s[k]) !== canon(w[k]); })) { out.lines[s.slug] = 'Changed'; out.was[s.slug] = w; out.n++; }
       delete was[s.slug];
     });
     out.gone = Object.keys(was).length; out.n += out.gone;
+    out.goneNames = Object.keys(was).map(function (k) { return was[k].name || k; });
     var said = live.snapshot.text || {};
     (svcText || []).forEach(function (b) {
       if (canon(b.value) !== canon(said[b.key])) { out.words[b.key] = 'Changed'; out.n++; }
@@ -5562,12 +5593,15 @@
     $('svcList').hidden = svcTab !== 'card';
     $('svcWords').hidden = svcTab !== 'words';
     $('svcVersions').hidden = svcTab !== 'versions';
+    diffNow = svcDiff();
+    if (!live || !diffNow.n) svcReview = false;
+    /* While the changes are reviewed the card is not searched: what shows
+       is what changed (SVC2-M1). */
     var find = $('svcFind') && $('svcFind').closest('.cmdbar-find');
-    if (find) find.hidden = svcTab !== 'card';
-    $('svcCount').hidden = svcTab !== 'card';
+    if (find) find.hidden = svcTab !== 'card' || svcReview;
+    $('svcCount').hidden = svcTab !== 'card' || svcReview;
     /* A service is added on the card itself, never from its wording or versions. */
     $('svcAdd').hidden = !maySvc() || svcTab !== 'card';
-    diffNow = svcDiff();
     paintLiveLine();
     if (svcTab === 'card') paintCatalog();
     if (svcTab === 'words') paintWords();
@@ -5578,6 +5612,7 @@
       var b = e.target.closest && e.target.closest('.tab');
       if (!b || b.getAttribute('data-tab') === svcTab) return;
       svcTab = b.getAttribute('data-tab');
+      svcReview = false;
       msg('svcListMsg', '');
       paintServicesPage();
       setUrl();
@@ -5602,12 +5637,17 @@
           (live.valid_until ? ' · valid until ' + esc(niceDate(live.valid_until)) : '')
         : '<span class="chip-state is-off">Not published</span>') + '</span>' +
       '<span class="svc-live-acts">' +
-        (live && d.n ? '<span class="svc-live-n">' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published</span>' : '') +
+        /* Review n changes (2026-10-22, SVC2-M1): a toggle beside Publish
+           showing only what changed, each line from and to. */
+        (live && d.n ? '<button class="btn btn-sm svc-live-n" id="svcReview" type="button" aria-pressed="' + svcReview + '">Review ' +
+          d.n + ' change' + (d.n === 1 ? '' : 's') + '</button>' : '') +
         (maySvc() && (d.n || !live)
           ? '<button class="btn btn-sm btn-primary" id="svcPublish" type="button" data-need="services:manage">' + PLANE + 'Publish</button>' : '') +
       '</span>';
     var pb = $('svcPublish');
     if (pb) pb.addEventListener('click', function () { publishCard(pb, d); });
+    var rv = $('svcReview');
+    if (rv) rv.addEventListener('click', function () { reviewCard(!svcReview); });
     $('svcCardPdf').hidden = !live;
   }
   /* The rate card as the team issues it, drawn from the live version and
@@ -5644,6 +5684,41 @@
     'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
     'no-change': 'Nothing has changed since the live version.', 'too-long': 'The note is too long.',
     denied: 'Publishing needs Services at Full Access.' };
+  /* What a line's change moved, from and to, in the record's own words
+     ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
+  var SVC_LIST = 5;
+  function svcMoved(was, now) {
+    var view = function (x) {
+      return { name: x.name, category: x.category, rate: x.rate == null ? 'On quote' : MON.money2(x.rate, 'MY'),
+        unit: x.unit, min_months: x.min_months, active: x.active === false ? 'Inactive' : 'Active', detail: x.detail, note: x.note };
+    };
+    var said = window.ADspaceRecords.changes(view(was), view(now), [['name', 'Name'], ['category', 'Category'], ['rate', 'Rate'],
+      ['unit', 'Unit'], ['min_months', 'Minimum months'], ['active', 'State'], ['detail', 'Inclusions'], ['note', 'Note']]);
+    var more = [];
+    if (canon(was.spec) !== canon(now.spec)) more.push('In quotes changed');
+    if (canon(was.position) !== canon(now.position)) more.push('Order changed');
+    return [said].concat(more).filter(Boolean).join('; ');
+  }
+  function changeList(d) {
+    var out = [];
+    (catalog || []).forEach(function (s) {
+      if (d.lines[s.slug] === 'New') out.push(s.name + ': new line');
+      else if (d.lines[s.slug]) out.push(s.name + ': ' + (svcMoved(d.was[s.slug] || {}, s) || 'changed'));
+    });
+    (d.goneNames || []).forEach(function (n) { out.push(n + ': removed'); });
+    (svcText || []).forEach(function (b) {
+      if (d.words[b.key]) out.push(String(b.label || b.key).replace(/\s*\([^)]*\|[^)]*\)\s*$/, '') + ': wording changed');
+    });
+    return out;
+  }
+  function reviewCard(on) {
+    svcReview = on;
+    if (on && svcTab !== 'card') { svcTab = 'card'; setUrl(); }
+    msg('svcListMsg', '');
+    paintServicesPage();
+    var rv = $('svcReview');
+    if (rv) rv.focus();
+  }
   function publishCard(btn, d) {
     var parts = [];
     var lines = Object.keys(d.lines).length, words = Object.keys(d.words).length;
@@ -5652,9 +5727,12 @@
     if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
     if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording changed');
     var said = parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
+    /* The same changes Review shows, five, then how many more (SVC2-M1). */
+    var list = changeList(d), more = list.length - SVC_LIST;
     window.ADspaceConfirm.ask({
       title: 'Publish the rate card',
-      body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '. ' : '') +
+      body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '.\n' : '') +
+        (list.length ? list.slice(0, SVC_LIST).join('\n') + (more > 0 ? '\nand ' + more + ' more' : '') + '\n\n' : '') +
         'Quotes, client service lines and the export use this version from now on.',
       go: 'Publish', wait: true,
       fields: [
@@ -5674,6 +5752,25 @@
     });
   }
 
+  /* A block of the card's words as a row: its name, Changed where the draft
+     moved it, the first line, its pen. */
+  function wordRow(b, d) {
+    var row = document.createElement('div');
+    row.className = 'svc-row cat-row rcw-row';
+    /* The label's column list and the row's pipes are how the card
+       stores a table; the row reads them as words (ux-audit SVC-6). */
+    var first = String(b.value || '').split('\n')[0].split(/\s*\|\s*/).join(' · ');
+    var named = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
+    row.innerHTML = '<span class="svc-name"><b>' + esc(named) + (d.words[b.key] ? ' <span class="chip">' + d.words[b.key] + '</span>' : '') + '</b>' +
+      '<small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
+      /* Edit is the row's one act, its pen on the row, never a ⋯ of
+         one item (2026-10-20, SVC-1). */
+      '<span class="team-act">' + (maySvc()
+        ? '<button class="kmenu-btn rcw-edit" data-a="edit" type="button" aria-label="Edit ' + esc(named) + '">' + PEN + '</button>'
+        : '') + '</span>';
+    if (maySvc()) row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
+    return row;
+  }
   /* The card's own words, a block a key, grouped by the page they print on. */
   function paintWords() {
     var box = $('svcWords');
@@ -5693,23 +5790,7 @@
           /* Words have no price: the row is the block and its pen, the
              Changed tag after its name (2026-10-22, SVC2-8). */
           var table = GRP.table('svc-row cat-row rcw-row', ['Wording', '']);
-          blocks.forEach(function (b) {
-            var row = document.createElement('div');
-            row.className = 'svc-row cat-row rcw-row';
-            /* The label's column list and the row's pipes are how the card
-               stores a table; the row reads them as words (ux-audit SVC-6). */
-            var first = String(b.value || '').split('\n')[0].split(/\s*\|\s*/).join(' · ');
-            var named = String(b.label || '').replace(/\s*\([^)]*\|[^)]*\)\s*$/, '');
-            row.innerHTML = '<span class="svc-name"><b>' + esc(named) + (d.words[b.key] ? ' <span class="chip">' + d.words[b.key] + '</span>' : '') + '</b>' +
-              '<small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
-              /* Edit is the row's one act, its pen on the row, never a ⋯ of
-                 one item (2026-10-20, SVC-1). */
-              '<span class="team-act">' + (maySvc()
-                ? '<button class="kmenu-btn rcw-edit" data-a="edit" type="button" aria-label="Edit ' + esc(named) + '">' + PEN + '</button>'
-                : '') + '</span>';
-            if (maySvc()) row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
-            table.appendChild(row);
-          });
+          blocks.forEach(function (b) { table.appendChild(wordRow(b, d)); });
           return table;
         }
       }));
@@ -6042,6 +6123,7 @@
     var box = $('svcList');
     box.innerHTML = '';
     var all = catalog || [];
+    if (svcReview) { paintReview(box, all); return; }
     var rows = all.filter(svcMatch);
     var count = $('svcCount');
     if (count) {
@@ -6100,6 +6182,59 @@
         }));
       });
     });
+  }
+
+  /* Review n changes (2026-10-22, SVC2-M1): only the lines the draft
+     changed, each naming what moved from and to, then the lines removed and
+     the blocks of wording changed, under one line with the way back. */
+  function paintReview(box, all) {
+    var d = diffNow, GRP = window.ADspaceGroup;
+    var note = document.createElement('p');
+    note.className = 'msg svc-review-note';
+    note.innerHTML = 'Showing the ' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published. ' +
+      '<button class="linkbtn" type="button" data-a="whole">Show the whole card</button>';
+    box.appendChild(note);
+    note.querySelector('[data-a="whole"]').addEventListener('click', function () { reviewCard(false); });
+    var seen = {};
+    svcTiers(all).forEach(function (t) {
+      t[1].forEach(function (k) {
+        if (seen[k]) return;
+        seen[k] = true;
+        var lines = all.filter(function (s) { return s.category === k && d.lines[s.slug]; });
+        if (!lines.length) return;
+        box.appendChild(GRP.section({
+          route: 'services', key: 'review-' + String(k).toLowerCase().replace(/[^a-z0-9]+/g, '-'), name: k, count: lines.length, shut: false,
+          table: function () {
+            var table = GRP.table('svc-row cat-row', ['Service', { text: 'Price', cls: 'svc-rate' }, { text: '', cls: 'svc-unit' }, '']);
+            lines.forEach(function (s) {
+              var row = catalogRow(s);
+              var moved = d.lines[s.slug] === 'Changed' ? svcMoved(d.was[s.slug] || {}, s) : '';
+              if (moved) row.querySelector('.svc-name').insertAdjacentHTML('beforeend', '<small class="svc-moved">' + esc(moved) + '</small>');
+              table.appendChild(row);
+            });
+            return table;
+          }
+        }));
+      });
+    });
+    if (d.gone) {
+      var gone = document.createElement('div');
+      gone.className = 'softpanel';
+      gone.innerHTML = '<div class="emptyline"><b>' + d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed</b>' +
+        '<span class="muted">' + esc(d.goneNames.join(', ')) + '</span></div>';
+      box.appendChild(gone);
+    }
+    var blocks = (svcText || []).filter(function (b) { return d.words[b.key]; });
+    if (blocks.length) {
+      box.appendChild(GRP.section({
+        route: 'services', key: 'review-words', name: 'Wording', count: blocks.length, shut: false,
+        table: function () {
+          var table = GRP.table('svc-row cat-row rcw-row', ['Wording', '']);
+          blocks.forEach(function (b) { table.appendChild(wordRow(b, d)); });
+          return table;
+        }
+      }));
+    }
   }
 
   function clearSvcFilters() {

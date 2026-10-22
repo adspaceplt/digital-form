@@ -533,7 +533,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   at a desk the groups also run down the left, the one in view marked, a
   press scrolling to its card and naming it in the address (`tab=`, the
   first left out; replaced, never pushed), so a refresh lands on it; it
-  never stands between the person and a row. Each row drawn only for its
+  never stands between the person and a row. At 640 and under (the phone line)
+  the groups are the view strip (`#stgStrip`, `.actstrip.stg-strip`),
+  sticky under the head on the page's ground, scrolling sideways with
+  faded edges; a press scrolls as at a desk and the chosen tab follows the
+  scroll (the user, 2026-10-22, SET2-17: "approve"); never a drill-down. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
   opening the one sheet that already edits it; a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value
@@ -4952,11 +4956,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   export are priced from the live version, never the draft; with none
   published, the card as it stands. The page: one command bar holding the
   search (Rate card alone), the version line (Live v.{n} · valid until,
-  `n changes not published`, Publish) and the acts (Download, Tax and terms,
+  Review n changes, Publish) and the acts (Download, Tax and terms,
   Add service on Rate card alone; on a phone the line under the marks where
   a search stands, else beside the ⋯; the user, 2026-10-14), then Rate card,
   Wording, Versions (`tab=`); a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
+  Review n changes (`#svcReview`, a tonal toggle, `aria-pressed`; equal
+  halves with Publish on a phone; the user, 2026-10-22: "approve") shows
+  only what the draft holds that the live version does not: the lines
+  changed, each naming what moved from and to (`ADspaceRecords.changes`),
+  the lines removed, the blocks of wording changed, under Showing the n
+  changes not published. with Show the whole card, the search set aside;
+  Publish's question lists the same, five, then and n more (SVC2-M1).
 - A block of wording is edited as the card prints it (`#rcwBox`; the user,
   2026-10-13: one box of lines read "ugly and untidy unstructured"): a list
   as numbered points (a field each, Add point, Move up, Remove), a table a
@@ -5027,8 +5038,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#crmQuotes`; the Overview opens on them while any stand): the state
   worked out on read (Valid until, Expired, Letter of Offer requested, Not
   proceeding, Letter of Offer issued once a live letter holds its lines),
-  Download on the row, the ⋯ Issue Letter of Offer, Make a copy, Not proceeding / Restore,
-  Remove with Undo (Restore after). Build quote (`#qbBox`, as the approved
+  Download on the row, and on a row that can be offered (Valid, Letter of
+  Offer requested) Issue Letter of Offer beside it, with Use billing
+  details while the letter is asked for (at a desk under the figure, the
+  reference kept whole; equal halves under the meta on a phone); the ⋯
+  Make a copy, Send on WhatsApp, Not proceeding / Restore, Remove with Undo
+  (Restore after) (the user, 2026-10-22, QT-M1: "approve"). The pane's one
+  blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
+  quote line, Build quote; one quotation that can be offered, its Issue
+  Letter of Offer (none blue where two can); To quote lines no live letter
+  holds, Issue letter, drawn only once a To quote or Confirmed line
+  exists; else none. An empty Quotations or Service lines list carries
+  Build quote or Add service on its line. Build quote (`#qbBox`, as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
