@@ -211,6 +211,10 @@
       try { pop.focus({ preventScroll: true }); } catch (e) { pop.focus(); }
       return;
     }
+    /* A bar whose count steps away on a phone (My Work's Months) says it
+       in the sheet's head, beside Filters. */
+    var quiet = rec.bar.querySelector('.cmdbar-count');
+    head.textContent = quiet && quiet.offsetParent === null ? quiet.textContent : '';
     sheet.hidden = false;
     /* The card takes focus, never a field: a select focused for the reader
        wears the blue ring, and iOS will not open a select that already has

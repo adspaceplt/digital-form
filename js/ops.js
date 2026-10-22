@@ -2277,19 +2277,42 @@
      the new view had nothing to start from. Two presses inside that frame
      draw once, the view last chosen. */
   var viewDraw = 0;
-  /* On Months at a desk the section's ⋯ stands in the Months bar beside
-     Add task, as on every other view, never alone at the end of the view
-     strip (2026-10-20, WRK-1); a phone keeps it beside the views, where its
-     bar's own ⋯ holds New month. */
-  var moreHome = null;
+  /* On Months the view has one bar (2026-10-22, WRK-M1): the view strip and
+     the section's ⋯ move into the Months bar, and the list's own bar steps
+     away, so the strip, the client and the acts read as every other view's
+     bar; on a phone the ⋯ also holds New month, one ⋯ a screen. Leaving
+     Months, or a repaint of the Months bar, puts both home first. */
+  var moreHome = null, viewsHome = null;
   function placeMore(intoMonths) {
-    var w = $('workMoreWrap');
-    if (!w) return;
-    if (!moreHome) moreHome = { p: w.parentNode, n: w.nextSibling };
-    var phone = window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
-    var acts = intoMonths && !phone && document.querySelector('.cwbar .cmdbar-acts');
-    if (acts) acts.insertBefore(w, acts.firstChild);
-    else if (w.parentNode !== moreHome.p) moreHome.p.insertBefore(w, moreHome.n && moreHome.n.parentNode === moreHome.p ? moreHome.n : null);
+    var w = $('workMoreWrap'), v = $('workViews');
+    var bar = intoMonths && document.querySelector('.cwbar');
+    var acts = bar && bar.querySelector('.cmdbar-acts');
+    if (w) {
+      if (!moreHome) moreHome = { p: w.parentNode, n: w.nextSibling };
+      if (acts) acts.insertBefore(w, acts.firstChild);
+      else if (w.parentNode !== moreHome.p) moreHome.p.insertBefore(w, moreHome.n && moreHome.n.parentNode === moreHome.p ? moreHome.n : null);
+    }
+    if (v) {
+      if (!viewsHome) viewsHome = { p: v.parentNode, n: v.nextSibling };
+      if (bar) bar.insertBefore(v, bar.firstChild);
+      else if (v.parentNode !== viewsHome.p) viewsHome.p.insertBefore(v, viewsHome.n && viewsHome.n.parentNode === viewsHome.p ? viewsHome.n : null);
+      if (viewsHome.p) viewsHome.p.hidden = !!bar;
+    }
+    syncNewMonth();
+  }
+  /* New month in the section's ⋯: a phone's, where the Months bar has room
+     for one ⋯ and the add alone; a desk keeps its button. */
+  function syncNewMonth() {
+    var it = $('workMore') && $('workMore').querySelector('[data-a="newmonth"]');
+    var eb = $('cwEng'), w = $('workMoreWrap');
+    var inBar = !!(w && w.closest('.cwbar'));
+    if (it) it.hidden = !(inBar && eb && !eb.hidden && isPhone());
+    if (w) w.hidden = !(state.moreAny || (it && !it.hidden));
+  }
+  function isPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 640px)').matches); }
+  if (window.matchMedia) {
+    var phoneLine = window.matchMedia('(max-width: 640px)');
+    if (phoneLine.addEventListener) phoneLine.addEventListener('change', syncNewMonth);
   }
   function setView(v) {
     applyView(v);
@@ -6705,27 +6728,63 @@
     var pick = list.filter(function (c) { return c.slug === want || c.id === want; })[0] || list[0] || null;
     state.wcWant = null;
     if (!pick) { UI.emptyLine(box, 'No active clients.'); return; }
-    if (!force && box.__for === pick.id && $('workClientPane')) return;
+    if (!force && box.__for === pick.id && $('workClientPane')) { placeMore(true); return; }
     state.wclient = pick;
     box.__for = pick.id;
     try { localStorage.setItem('adspace-work-client', pick.id); } catch (e) {}
+    /* One bar, as every view has (2026-10-22, WRK-M1): the views, the
+       client (a view of the page, so never a filter: it stays in the bar on
+       a phone too), the search, Filters, the count, the section's ⋯, New
+       month and Add task. No label and no heading: the tab names the view
+       and the select names the client. */
+    var canWork = may('ops', 'work');
     box.innerHTML =
-      '<div class="row wclient-row"><div class="field">' +
-        '<label class="field-label" for="workClient">Client</label>' +
-        '<select class="select" id="workClient">' + list.map(function (c) {
-          return '<option value="' + esc(c.id) + '"' + (c.id === pick.id ? ' selected' : '') + '>' + esc(clientName(c)) +
-            (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
-        }).join('') + '</select></div></div>' +
+      '<div class="cmdbar cwbar">' +
+        '<span class="cw-client"><select class="select select-sm" id="workClient" aria-label="Client" data-nofilter>' +
+          list.map(function (c) {
+            return '<option value="' + esc(c.id) + '"' + (c.id === pick.id ? ' selected' : '') + '>' + esc(clientName(c)) +
+              (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
+          }).join('') + '</select></span>' +
+        '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
+          '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
+        '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
+          '<option value="open">Open</option><option value="active">In progress</option>' +
+          '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
+          '<option value="late">Late</option><option value="done">Completed</option><option value="">All tasks</option>' +
+        '</select>' +
+        '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">All months</option></select>' +
+        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">All people</option></select>' +
+        '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
+          '<span class="cmdbar-acts">' +
+          (canWork
+            ? '<span class="cw-eng"><button class="btn btn-sm" id="cwEng" type="button" hidden>New month</button></span>' +
+              '<button class="btn btn-sm btn-primary" id="cwNew" type="button">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add task</button>'
+            : '') +
+          '</span></span>' +
+      '</div>' +
+      '<div class="msg" id="cwMsg"></div>' +
       '<div id="workClientPane"></div>';
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.wire();
+    placeMore(true);
     $('workClient').addEventListener('change', function () {
       state.wcWant = this.value;
       paintClients(true);
     });
+    $('cwFind').addEventListener('input', function () {
+      var v = String(this.value || '').trim().toLowerCase();
+      if (v === cw.find) return;
+      cw.find = v; paintClientList();
+    });
+    $('cwStatus').addEventListener('change', function () { cw.status = this.value; paintClientList(); });
+    $('cwPeriod').addEventListener('change', function () { cw.period = this.value; paintClientList(); });
+    $('cwWho').addEventListener('change', function () { cw.who = this.value; paintClientList(); });
+    if ($('cwNew')) $('cwNew').addEventListener('click', function () { openNew({ client: cw.client }); });
+    if ($('cwEng')) $('cwEng').addEventListener('click', function () { openEng(null, cw.client); });
     clientWork($('workClientPane'), pick);
     if (bridge.setUrl) bridge.setUrl();
   }
   function clientWork(box, client) {
-    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     if (!box || !client) return;
     cw.box = box; cw.client = client;
     cw.find = ''; cw.status = 'open'; cw.period = ''; cw.who = '';
@@ -6734,7 +6793,6 @@
     if (!state.workflows.length) loadCatalogue(ready); else ready();
   }
   function readClientWork() {
-    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     var box = cw.box, c = cw.client;
     Promise.all([
       db.from('ops_tasks').select('*, clients(name, slug)').eq('client_id', c.id).is('archived_at', null)
@@ -6792,7 +6850,6 @@
     return true;
   }
   function paintClientWork() {
-    placeMore(false);   // home first: a repaint here would take the ⋯ with it
     var box = cw.box, c = cw.client;
     if (!box) return;
     var canWork = may('ops', 'work');
@@ -6809,57 +6866,23 @@
       return { id: id, name: owners[id], staff_code: m && m.staff_code };
     }).sort(F.byStaff);
 
-    /* The client's months take the console's own command bar, the shape
-       every list has (the user, 2026-09-26: the old row of full-width
-       search and selects read as the pre-revamp bar): a search mark, Filters,
-       the count and the actions, with New month behind the ⋯ on a phone. */
-    box.innerHTML =
-      '<div class="viewhead"><span class="headmark"><h2>Months</h2></span></div>' +
-      '<div class="cmdbar cwbar">' +
-        '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
-          '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
-        '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
-          '<option value="open">Open</option><option value="active">In progress</option>' +
-          '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
-          '<option value="late">Late</option><option value="done">Completed</option><option value="">All tasks</option>' +
-        '</select>' +
-        '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">All months</option>' +
-          months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('') +
-        '</select>' +
-        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">All people</option>' +
-          ownerList.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>'; }).join('') +
-        '</select>' +
-        '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
-          '<span class="cmdbar-acts">' +
-          (canWork
-            ? '<button class="btn btn-sm" id="cwEng" type="button">New month</button>' +
-              '<button class="btn btn-sm btn-primary" id="cwNew" type="button">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add task</button>'
-            : '') +
-          '</span></span>' +
-      '</div>' +
-      '<div class="msg" id="cwMsg"></div>' +
-      '<div id="cwList" data-narrow="860"></div>';
-    if (UI.fit) UI.fit('#cwList');
-    if (window.ADspaceCmdbar) window.ADspaceCmdbar.wire();
-    placeMore(true);
-    $('cwFind').value = cw.find; $('cwStatus').value = cw.status;
-    $('cwPeriod').value = cw.period; $('cwWho').value = cw.who;
-    $('cwFind').addEventListener('input', function () {
-      var v = String(this.value || '').trim().toLowerCase();
-      if (v === cw.find) return;
-      cw.find = v; paintClientList();
-    });
-    $('cwStatus').addEventListener('change', function () { cw.status = this.value; paintClientList(); });
-    $('cwPeriod').addEventListener('change', function () { cw.period = this.value; paintClientList(); });
-    $('cwWho').addEventListener('change', function () { cw.who = this.value; paintClientList(); });
-    var nb = $('cwNew');
-    if (nb) nb.addEventListener('click', function () { openNew({ client: c }); });
+    /* The bar is drawn once a client (paintClients); what it offers is
+       filled here from the client's months and owners. */
+    var per = $('cwPeriod'), who = $('cwWho');
+    if (per) per.innerHTML = '<option value="">All months</option>' +
+      months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('');
+    if (who) who.innerHTML = '<option value="">All people</option>' +
+      ownerList.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>'; }).join('');
+    if ($('cwFind')) $('cwFind').value = cw.find;
+    if ($('cwStatus')) $('cwStatus').value = cw.status;
+    if (per) per.value = cw.period;
+    if (who) who.value = cw.who;
     var eb = $('cwEng');
-    if (eb) {
-      eb.hidden = !freeMonths(c.id).length;
-      eb.addEventListener('click', function () { openEng(null, c); });
-    }
+    if (eb) eb.hidden = !canWork || !freeMonths(c.id).length;
+    syncNewMonth();
+    box.innerHTML = '<div id="cwList" data-narrow="860"></div>';
+    if (UI.fit) UI.fit('#cwList');
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
     paintClientList();
   }
   function paintClientList() {
@@ -7509,6 +7532,7 @@
         if (a === 'template') openTpl();
         if (a === 'select') setSelecting(!state.selecting);
         if (a === 'numbering') openNumbering();
+        if (a === 'newmonth' && cw.client) openEng(null, cw.client);
         /* When a month's report is due, and how far a client's request for
            changes moves a task's due date: an admin's settings (2026-10-05,
            2026-10-06). */
@@ -8000,7 +8024,8 @@
        (Manage) and, for an admin, the next number. It is drawn only where
        one of them is offered, never as an empty menu. */
     var more = $('workMoreWrap');
-    if (more) more.hidden = !(may('ops.workflows', 'work') || may('ops', 'manage') || may('ops.numbering', 'work') || may('team.settings', 'work'));
+    state.moreAny = may('ops.workflows', 'work') || may('ops', 'manage') || may('ops.numbering', 'work') || may('team.settings', 'work');
+    if (more) more.hidden = !state.moreAny;
     var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
     if (num) num.hidden = !may('ops.numbering', 'work');
     var due = $('workMore') && $('workMore').querySelector('[data-a="reportdue"]');

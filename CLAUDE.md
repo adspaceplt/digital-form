@@ -3195,7 +3195,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   month left out; each measured on the period before it the same days long,
   Last quarter on the quarter before, This year on last year), with the
   span and the time read beside it; both pages read the one period.
-  - Summary: the glance (`#ovwGlance`: the on-time ring, `ADspaceChart`
+  - Summary, in this order (2026-10-22, OVW-M1; the user's "Fix all"
+    reopening the order approved on 2026-10-12): the glance (`#ovwGlance`,
+    the rings alone: the on-time ring, `ADspaceChart`
     `meter` from `ops_report.on_time` for the period: met over the tasks
     that reached client review plus `late_open`, the open work late by the
     late rule, counted in the period its deadline fell in and in one that
@@ -3205,30 +3207,31 @@ Each line is a rule that broke once. Its reason is in the archive.
     fell in the period and has passed, or which went live, how much went
     live by its post date, as the review's On-time posting reads it
     (`2026-10-19-posted-on-time.sql`; the user, 2026-10-19: on-time
-    delivery stays the team's own measure); then Needs attention today,
-    a signal a line: Late tasks, Reports owed for last month, Leads going
-    cold, Sets waiting on clients, Unanswered client requests, Active
-    clients, each its count and the dot and its word, Open list scrolling
-    to the list); Sales (New leads, Won, Churned, Committed monthly value)
-    and Operations (Open tasks, Late, Delivered, Reports published for last
-    month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
-    period before (`on Sept`, `on last quarter`) and its trend
-    (`ADspaceChart.spark`) where it has a history; every tile keeps the
-    trend's room and the two groups share their rows, so the eight stand
-    one height); the two trends, On time by month (delivered and posted,
-    two lines) and Active
-    clients by month (each figure over its column, this month lighter);
-    then Needs attention (`#ovwAttention`): one list of every source (late
+    delivery stays the team's own measure)); then Needs attention
+    (`#ovwAttention`): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
-    letters, last month's reviews), What · Section (a grey tag naming the
+    letters, last month's reviews), its head a strip of the sources
+    holding rows (`#ovwSrcs`, the view strip at the card's width: All, then
+    each source's short word and count, red where it holds late work; a
+    tab narrows the list to it; one source draws no strip and the head
+    counts it), What · Section (a grey tag naming the
     rail's section, never a record's kind; 2026-10-20, OVW-3) · Who ·
     Since, late first by the days late, then what waits, the longest first,
     then what has not started; five rows, then Show N more, a tonal toggle
     with its chevron that reads Show fewer once open and folds the list
     back to five (the user, 2026-10-12: "5 show only"); a row writes the
-    record's address and opens it as search does.
+    record's address and opens it as search does; then Sales (New leads,
+    Won, Churned, Committed monthly value)
+    and Operations (Open tasks, Oldest late, Delivered, Reports published for last
+    month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
+    period before (`on Sept`, `on last quarter`) and its trend
+    (`ADspaceChart.spark`) where it has a history; every tile keeps the
+    trend's room and the two groups share their rows, so the eight stand
+    one height); then the two trends, On time by month (delivered and posted,
+    two lines) and Active
+    clients by month (each figure over its column, this month lighter).
   - Detail, under its labels: Sales (Leads to clients, one-line bars, each
     step's share of the one before; Pipeline now, a ring with the whole in
     its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
@@ -3406,10 +3409,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   with no code its name; never the whole description (the user,
   2026-10-09). Then `+N more`. On a phone it lists only the days holding
   work, so a month with none reads "No tasks this month." (`.cal-none`).
-- Months view (`view=months&wc=`, the tab named Months; at a desk the
-  section's ⋯ stands in its bar beside Add task, 2026-10-20, WRK-1): a client select,
-  then that client's months, meetings and tasks (`clientWork()`), remembered
-  per browser. A month's ⋯ is Add tasks (the New sheet on that client and
+- Months view (`view=months&wc=`, the tab named Months) is one bar, as every
+  view (2026-10-22, WRK-M1): the view strip, the client (`#workClient`,
+  `data-nofilter`, kept in the bar on a phone), the search, Filters, the
+  count, the section's ⋯, New month and Add task, no label or heading; the
+  list's own bar steps away (`placeMore`); on a phone the strip takes its
+  own row, New month goes into the section's ⋯ and the count into the
+  Filters sheet's head. Then that client's months, meetings and tasks
+  (`clientWork()`), the client remembered per browser. A month's ⋯ is Add tasks (the New sheet on that client and
   month), Edit, Cancel month, Delete. A month whose tasks the filter hides
   says No matches (Show all), never No tasks this month.
 - The phase 1 model:

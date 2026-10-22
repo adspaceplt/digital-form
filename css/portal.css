@@ -7433,11 +7433,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 64px 110px 20px; cursor: pointer; }
 .rh-row.is-picked { background: var(--line-soft); }
 .is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd"; }
-/* My Work, Clients: one client's content months, meetings and tasks, picked
-   from the select above them. The select is as wide as a client's name reads
-   and no wider; on a phone it takes the row. The step to the months under
-   it is the block step. */
-.wclient-row { margin: 0 0 12px; }
 /* =========================================================================
    THE PHONE'S OWN EDGES (2026-09-26)
    =========================================================================
@@ -8139,10 +8134,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cm-ring { width: 100%; height: 100%; }
 .cm-mid b { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
 .cm-mid small { font-size: 12px; color: var(--ink-mute); }
-.ovw-sig:first-child { border-top: 0; padding-top: 0; }
-.ovw-sig-name { min-width: 0; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
-.ovw-sig-word { min-width: 0; }
-.is-tight .ovw-sig { grid-template-columns: minmax(0, 1fr) auto 92px; gap: 12px; }
 .ovw-groups.is-one, .is-narrow .ovw-groups { grid-template-columns: minmax(0, 1fr); }
 .ovw-group { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .ovw-group-h { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-mute); }
@@ -8152,7 +8143,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-kpi-fig.is-money { font-size: 21px; }
 .ovw-kpi-fig.is-err { color: var(--err); }
 .ovw-kpi-fig .skel { display: block; width: 56px; height: 22px; margin: 4px 0 2px; padding: 0; border-radius: var(--radius-sm); background: var(--line-soft); }
-.ovw-sig-n .skel { display: inline-block; width: 18px; height: 12px; padding: 0; border-radius: 4px; background: var(--line-soft); }
 .ovw-kpi-again.btn { min-width: 0; margin: -6px 0 -6px -8px; }
 .chart-spark { display: block; width: 100%; height: 32px; overflow: visible; }
 .ovw-kpi-bar i { display: block; height: 100%; border-radius: 3px; background: var(--ink-soft); }
