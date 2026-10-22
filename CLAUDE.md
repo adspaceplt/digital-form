@@ -2684,7 +2684,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     with a file held asks first.
   - A video's thumbnail in a console row is its cover frame (`poster`),
     else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
-    a bare `<video>` is blank on iPhone Safari until it plays.
+    a bare `<video>` is blank on iPhone Safari until it plays. One whose
+    file fails, after the media pass's retry, is a shaded tile with its
+    kind's glyph (`.thumb-miss`), never the broken picture.
   - Sets are folded, one open at a time. Opening a set clears the last
     one's strip, covers line, progress and posts (`clearPostView`), and a
     read answered for a set already left is thrown away
@@ -5275,8 +5277,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Copy link, Preview), the key read once a client and made at Work the first
   time; under it the month (`month=` in the address; the user, 2026-10-10:
   thirty to fifty scripts a client a year) is a card of its scripts
-  (`#vsMonthList`: Scripts with Add script in its head, a row a script, VS01
-  and its title over its type, the shoot, the state, in number order), a
+  (`#vsMonthList`: Scripts with Add script in its head, a row a script, its
+  whole code (2611VS01, as its head reads) and title over its type, the shoot, the state, in number order), a
   row opening its script on a page of its own (`script=`): Previous, `n of
   N` and Next over it (`#vsNav`, a sideways swipe on a phone), Back
   returning to the month and the month's Back to the list; the script's
