@@ -1455,7 +1455,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Creator Campaigns as a tab a state (`#campStages`: Draft, Open for
     selection, In production, Completed, each counted, opening on the first
     that holds any), a card a month made (MYT) under it, newest open; a row
-    reads Updated where the state would repeat its tab;
+    reads Updated where the state would repeat its tab, and Booked n of N
+    (creators booked of its slots, never the slots alone; 2026-10-22, CMP-8);
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;
@@ -2859,19 +2860,30 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A booking card has one Save: its notes and link, then each placement
   whose results moved (2026-10-20, CMP-5); from Scheduled on it offers no
   hand-in guide or link to paste (CMP-4), and Release to client says
-  Released to the client. on the card (CMP-6).
+  Released to the client. on the card (CMP-6). Its actions stand at the
+  card's foot, after Results, reading Revert, Request changes, Save, then
+  the step forward at the right edge (its own row on a phone); an empty
+  note is a quiet Add note growing into the box, a result figure reads
+  with its separators, and every step taken on a card is answered on that
+  card (`cardSay`), never in the head (2026-10-22, CMP-7, CMP-10, CMP-16,
+  CMP-M2). Bookings and the Schedule list booked creators alone, a
+  shortlisted one staying on Selection (CMP-13). The record says post,
+  never publish, of a booking's date: Post date, Next post date, Posted on
+  (CMP-11); a time reads 2:00pm (CMP-12). On a phone a move that is not the
+  blue Publish (Unpublish, Reopen selection, Resume campaign) is the head
+  ⋯'s lifecycle item (`#campLifeItem`), never a row above the tabs (CMP-M1).
 - A booking's plan (date, a time picker, location, contact, phone, or the
-  tracking no.; draft due; publish date) is written only on the Schedule,
+  tracking no.; draft due; post date) is written only on the Schedule,
   saved on change and filed with what changed. The card reads it
   (`planFacts`, Edit in Schedule) and keeps only the notes. The creator's
   page shows location and contact. The Schedule is the Creators tab's
   register (`.bookreg.sched-reg`): Upcoming then Past, a folded row a booking
-  (name, shoot date and time, publish date; Not set where none; where the
+  (name, shoot date and time, post date; Not set where none; where the
   head is hidden each date leads with its head's word, Shoot or Delivery,
-  Publish), the plan's
+  Post date), the plan's
   fields opening under the row on the name's x; a booking stays open through
   a save, and a lone booking opens by itself. On a phone Draft due and
-  Publish share a line.
+  Post date share a line.
 - The client's selection closes by trigger the moment the bookings fill the
   slots (`campaigns.selection_closed_at`); only Reopen selection clears it,
   offered only while closed with a free slot, whether the campaign is Open
