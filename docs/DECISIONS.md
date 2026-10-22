@@ -6393,3 +6393,17 @@ never red. A Team group in use offers Edit on its row; one that can go
 keeps a ⋯ of Edit and Delete. Left for the next release: Team's colleague
 ⋯ (MENU-5: Edit is the pens, Hand over work the Work pane's), tax codes
 (MENU-13), and the full CONVERTED list.
+
+### 2026-10-22 — Menus: a colleague's ⋯, tax codes, and the suite over every converted menu (release 6 of the menu review)
+A colleague's record ⋯ reads Open namecard | Send invitation | Set
+inactive | Delete (MENU-5): Edit left it, every value being changed where
+it is read on Overview, and Hand over work left it for the Work pane's
+button, now named Hand over work. The member sheet edits nobody now; it
+adds a colleague. The tax codes sheet keeps its list's acts in the list's
+bar (Read from Bukku, Add code, Select, and Delete only while codes are
+ticked), its foot the sheet's commit: Close, or Keep codes and Cancel
+while choosing from Bukku (MENU-13). `tests/menus.js` opens each button's
+own menu, seeds a signed letter, a request, a content set and a quotation,
+and holds sixteen converted menus met at 1280 and 390. `tests/team.js`,
+`tests/teamrec.js` and `tests/card.js` change a colleague through the
+record's pens and selects.

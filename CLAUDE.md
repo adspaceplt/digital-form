@@ -5531,7 +5531,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`tests/teamrec.js`).
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
-- Add member, Set access expiry, a member's Edit and Set inactive, and a
+- Add member, Set access expiry, a member's values and Set inactive, and a
   group's ⋯ are Team Full Access (`team_admin`); Send invitation is
   `team.invite` (`invite-member`), which makes a team login only for an
   address an active colleague holds (`not_team_member`) and claims every
@@ -5584,7 +5584,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     record and one line under the colleague: Work handed over: 2 open
     tasks → Aisyah; …). Work left with a removed colleague is named in
     Delete's line (1 client and 1 open task stay with …), and an inactive
-    or removed colleague's ⋯ offers Hand over work, the same pickers.
+    or removed colleague's Work pane offers Hand over work, the same pickers.
   - Delete then asks Their data, Keep / Delete, and the name typed back
     (the question opens on it); `team_member_remove_check` answers the
     removal's own refusals before any work moves
