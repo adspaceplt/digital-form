@@ -1028,7 +1028,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `#regSort`): never counted by the badge, never reset by Clear.
   - A second action goes behind `.cmd-more` beside a primary; a bar of plain
     actions keeps its first and puts the rest there once it has three (the
-    Performance Months bar); each item carries its button's
+    Performance Months bar); a button marked `data-rare` (with its `data-g`)
+    is behind the ⋯ at every width, the ⋯ drawn at a desk for it alone and
+    taking the focus back from what the item opens (Document types, Compare
+    groups, Bulk import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
   - The Filters sheet focuses its card, never a select (a focused select wears
@@ -2317,7 +2320,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     sign and needs a signatory; unticked, the name and designation follow
     ADSPACE PLT with no space and the foot reads No signature required.
   - The sheet runs in the letter's own order.
-  - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
+  - Preview (`#docPreview`, a `.btn-sm` under the letter's fields, never in
+    the foot; DOC-6, 2026-10-22) draws the letter from the sheet
     on the same pen without issuing it: no row, no number spent, the
     reference reading PREVIEW (a reissue keeps its own), every page under
     DRAFT (INTERNAL USE ONLY) (the report's watermark, one copy:
@@ -2329,7 +2333,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit: Document types
-    in the bar (behind the ⋯ on a phone), `register.types`
+    behind the bar's ⋯ (`data-rare`), `register.types`
     (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
     My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
     Name (unique), an HR letter's Reference code (required, its own among
@@ -2404,7 +2408,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   heads Emails (2026-10-20, the user: six items read as too many). A new payee, bank or account
   on an Active supplier, by link or by hand, puts it back to Pending until
   approved again (`repending`), and an approval names who approved, never
-  a system account.
+  a system account. The record is its head card over a strip (`#supTabs`,
+  `tab=` pushed, Overview left out; SUP-4, 2026-10-22): Overview (a form
+  waiting to be taken in first, then Client, Billing details, Person in
+  charge), Payment (Payment details, the Details update form, Bukku),
+  Documents, Emails; a pane with nothing in it is not drawn.
 - Approve (`supplier_set_status`, a name, the details and the bank account
   whole, `incomplete`) makes it Active; Set inactive / Set active in the
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
@@ -4029,8 +4037,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the month.
 - Self-rating (`2026-10-07-performance-self-rating.sql`, `perf_self_ratings`,
   RLS on, no policy, no grant): a colleague on the review list rates
-  themselves on the six scorecard categories in My records, Reviews (Rate
-  yourself, {Month}), for each month from June 2026 to last month while its
+  themselves on the six scorecard categories in My records, Reviews (one
+  Rate yourself card, a row a month newest first, the newest still to rate
+  tagged Due and its button the one blue, a rated month its total and Edit;
+  MINE-1, 2026-10-22), for each month from June 2026 to last month while its
   review is not shared (`perf_self_open`: `bad-month`, `shared`,
   `not-reviewed`; `perf_self_mine`); `perf_self_save` refuses a missing
   score (`incomplete`) or one outside its category's maximum or off a step
@@ -4345,7 +4355,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     active brand straight under its client, `{client} › {brand} · White
     label`, value `b:{brand id}`; one pick, no For field; the user,
     2026-10-15; `sm_report_create_for`), the head ⋯'s White label (any
-    report not published; `sm_report_brand`, `exists`, `bad-brand`, filed
+    report not published, drawn only where the client is white label and
+    holds a brand; 2026-10-22, RPT-2; `sm_report_brand`, `exists`, `bad-brand`, filed
     from and to), accounts carried from the same brand's last report and
     the AI quota counted by brand (`ai_drafts.brand_id`, filled by
     trigger). A brand's report sets `label_client` to its own client and
@@ -4425,7 +4436,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the latest period), with Undo over the list putting back each report's
   own day. Download saves each file under its own name.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
-  submit.
+  submit. Every step's foot reads Next: {step}, Save beside it where the
+  step saves, and the editor's way out is Back (2026-10-22, RPT-7); the
+  Commentary step is done, its tick drawn, only once every block is
+  written (RPT-8).
   - The head is the record head: the name, then the state, Preview PDF and
     the ⋯ at the right edge; the meta under them (type · period alone),
     then the facts each under its label (`.rp-facts`: Version, Client
@@ -4821,7 +4835,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the time since the step before, and the total (so far); the rows sit in
     the card's own `.ovsec`, never on its bare edge.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
-    result first, then those with no result by spend, most first.
+    result first, then those with no result by spend, most first. An ad's
+    name opens its Edit; its ⋯ reads Open in Ads Manager, then Edit and
+    Make a copy, then Mark or Clear ad error, then Remove (`data-g`); on a
+    narrow pane a table with no picture gives up the picture's track and
+    the dates wrap between their parts (2026-10-22, RPT-4, RPT-5).
   - Ad error (`sm_report_ads.ad_error`, `2026-10-16-ad-error.sql`; the
     user, 2026-10-16: a Meta delivery fault read as the cheapest ad): an
     ad's ⋯ Mark ad error asks a reason (200 at most) on a draft at Work, the
@@ -5254,7 +5272,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The client's parameters are carried over, minus `q`.
   - `go.adspace.me` is never retired: printed QR codes encode it.
   - The host is `ADSPACE_CONFIG.linkHost`.
-- Bulk import is a sheet (`#importBox`, `links:work`, as the QR sheet's
+- A live link's row offers Copy, Open (its short address, a new tab), QR
+  codes and the ⋯ (LNK-2, 2026-10-22). The Worker keeps which kind an `/s/`
+  key is a day at its edge (`caches.default`, a kind the database named
+  alone), so a person's visit is sent on without a read (LNK-3).
+- Bulk import is behind the bar's ⋯ (`data-rare`) and is a sheet (`#importBox`, `links:work`, as the QR sheet's
   Create, Revoke and Restore): every line taken shuts it; a skipped line stays
   in the box.
 - Pause and Resume live in the ⋯ (`links:work`).
@@ -5477,7 +5499,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the same as client"), a row one button (the initials' disc, the name,
   the email, the exception, the chevron), no ⋯ on the list; it opens in
   place of the list and the Team strip, Back returns; the head is the
-  mark, the name, Employee ID, group and post, the state and the one ⋯
+  mark, the name, Employee ID and post (the group and department are
+  Overview's; TEAM-1, 2026-10-22), the state and the one ⋯
   of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
   (Sign-in and access, Employment, Namecard, each value changed where it
   is read at Team Full Access: a word or a date its pen, a choice a
@@ -5762,10 +5785,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
 - Messages (the landing view, `wa_messages(p_month)`, client scope): one
-  card of the month's messages (Malaysia time) newest first, a row who it
+  table of the chosen month's messages (Malaysia time, read from
+  `ADspaceClock`, `9 Oct, 2:05pm`), never a card naming the month again,
+  newest first (2026-10-22, WA-2, WA-3), a row who it
   went to (name; client, Creator or Colleague; the number as
   `ADspaceCard.phone` writes it), what it was (Report, Feedback request,
-  Booking, Reminder, Message over the template and its category), who sent
+  Booking, Reminder, Message over the template, which gives way, and its
+  category, read whole; on a phone the meta line leads with what was sent,
+  the number leaving first; WA-4), who sent
   it (Automatic for the queue) and the status over when: Queued, Sending,
   Sent, Delivered, Read, Not confirmed (check the chat before sending again), or Failed with the reason in the team's words
   (`REASON`, by Meta's code). Above it the month's templates sent by
@@ -5790,8 +5817,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceWhatsApp.manage`), never a second copy.
 - The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
   record shares: To (`wa_recipients`: client contacts named with their
-  client, active creators; never a colleague), the number as it will be
-  sent, else why not (a username alone cannot be messaged); Template
+  client, active creators; never a colleague; one with no number listed
+  last as · No number), the number as it will be
+  sent, else why not (a username alone cannot be messaged), with Open
+  contacts on the client's Account where Clients: Contacts is readable
+  (2026-10-22, WA-5); Template
   (Meta's approved ones the portal can fill: a Document header, a text
   header with one variable, body variables positional or named, one link
   button variable); each variable prefilled from the record (the greeting

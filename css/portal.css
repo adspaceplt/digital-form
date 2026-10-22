@@ -5461,7 +5461,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    the slug now and the row fades, exactly as an inactive service does. */
 .link-row, .crm-head.link-row {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(110px, 200px) minmax(0, 1.6fr) minmax(0, 1fr) 124px;
+  grid-template-columns: minmax(110px, 200px) minmax(0, 1.6fr) minmax(0, 1fr) calc(var(--ctl-h) * 4 + 12px);
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
 .link-row.is-off > :not(.link-act) { opacity: .55; }
@@ -6676,6 +6676,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    Above 640 nothing here draws and the bar is what it was.
    ========================================================================= */
 .cmdbar-search, .cmdbar-filters, .cmd-more { display: none; }
+/* A declared rare act (`data-rare`) is behind the bar's ⋯ at every width
+   (SHELL-5, 2026-10-22): its ⋯ draws at a desk too, and the button itself
+   never does; the items a phone alone moves there stay out at a desk. */
+.cmdbar-acts .cmd-more.has-rare { display: inline-block; position: relative; }
+.cmdbar-acts .cmd-rare { display: none; }
+@media (min-width: 641px) { .cmd-more-menu .cmd-phone-only { display: none; } }
+.cmdbar-acts .cmd-more.has-rare .cmd-more-btn {
+  display: inline-grid; place-items: center; position: relative; padding: 0;
+  width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
+  border: 1px solid transparent; border-radius: var(--radius-ctl-sm);
+  background: var(--tonal); color: var(--ink);
+}
+.cmdbar-acts .cmd-more.has-rare .cmd-more-btn[aria-expanded="true"] { background: var(--tonal-press); }
 .cmdbar-badge {
   position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
   border-radius: 8px; background: var(--action); color: var(--on-action);

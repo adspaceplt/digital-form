@@ -577,7 +577,7 @@
     else if (want) st.step = want;
     if (same && fromAddress) { paintEditor(); return; }
     var host = st.host;
-    host.innerHTML = '<button class="backlink" type="button" data-a="back">' + ICON.back + 'Reports</button><div class="rp-editbox"></div>';
+    host.innerHTML = '<button class="backlink" type="button" data-a="back">' + ICON.back + 'Back</button><div class="rp-editbox"></div>';
     host.querySelector('[data-a="back"]').addEventListener('click', function () { st.open = null; goReport(''); });
     UI.skeleton(host.querySelector('.rp-editbox'), 4);
     Promise.all([
@@ -596,7 +596,7 @@
       sortPosts();
       st.openVersions = got[3].data || [];
       st.ads = [];
-      var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
+      var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs, white_label').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
       return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
@@ -605,7 +605,13 @@
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
         st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
         if (x[1]) { st.ads = x[1].data || []; sortAds(); }
-        paintEditor();
+        /* White label is offered only where it can be chosen: a white-label
+           client holding a brand (2026-10-22, RPT-2). */
+        st.wlBrands = 0;
+        if (!(st.client.white_label && st.open.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work'))) { paintEditor(); return; }
+        return db.rpc('client_brands_list', { p_client: st.open.client_id }).then(function (b) {
+          st.wlBrands = ((b && b.data && b.data.brands) || []).filter(function (q) { return q.active || q.id === st.open.brand_id; }).length;
+        }).catch(function () { st.wlBrands = 0; }).then(function () { paintEditor(); });
       });
     }).catch(function (e) {
       /* A dropped connection is said, never an endless skeleton
@@ -714,7 +720,9 @@
     if (k === 'posts') return st.posts.length > 0;
     if (k === 'ads') return st.ads.length > 0;
     if (k === 'figures') return t.reach != null;
-    if (k === 'text') return commentaryCount() > 0;
+    /* Done once every block is written; part written reads n of N with
+       the empty mark, never the done tick (2026-10-22, RPT-8). */
+    if (k === 'text') { var cs = commentaryState(); return cs.n > 0 && cs.n >= cs.of; }
     return r.status && r.status !== 'draft';
   }
   function stepNote(k) {
@@ -848,6 +856,9 @@
      hidden, so a bare figure keeps its meaning (2026-10-20, RPT-3). */
   function unit(w) { return w ? '<span class="rp-unit"> ' + esc(w) + '</span>' : ''; }
 
+  /* The step forward's words, as every step's foot reads them: Next: and
+     the step it saves into (2026-10-22, RPT-7). */
+  function nextWord() { var n = nextOf(st.step); return n ? 'Next: ' + n[1] : 'Save and continue'; }
   /* One step at a time. Each ends on the move to the next, named for it. */
   function paintStep() {
     var box = st.host.querySelector('.rp-stepbox');
@@ -1989,7 +2000,7 @@
     /* White-label work for a partner (2026-10-07): a client ticked White
        label lends its wide logo, and the report names the brand it covers,
        while it stays under the client who pays. */
-    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work')) items.push(M.item('whitelabel', 'White label'));
+    if (r.status !== 'published' && bridge.may && bridge.may('reports.whitelabel', 'work') && st.client && st.client.white_label && st.wlBrands > 0) items.push(M.item('whitelabel', 'White label'));
     /* The sent day is set from the head's Sent fact (Mark as sent, else the
        day and its pen); the ⋯ holds only its way back (the user, 2026-10-09:
        the menu repeated the pen). */
@@ -2454,8 +2465,12 @@
 
   function rowMenu(items) {
     return '<span class="team-act kmenu-wrap"><button class="kmenu-btn" type="button" aria-label="More" aria-haspopup="true" aria-expanded="false">' + ICON.more + '</button>' +
-      '<div class="kmenu" hidden>' + items.map(function (w) {
-        return window.ADspaceMenu.item(w, w, '', 'data-act', 'data-soft');
+      '<div class="kmenu" hidden>' + items.map(function (x) {
+        /* An item may name its menu group ([words, group]), else its group
+           is the standard's word table's (js/menu.js), so the menu's order,
+           separators and red follow the standard (tidy). */
+        var w = Array.isArray(x) ? x[0] : x, g = (Array.isArray(x) ? x[1] : 0) || window.ADspaceMenu.groupOf(w) || 2;
+        return '<button class="kmenu-item" data-soft type="button" role="menuitem" data-act="' + esc(w) + '" data-g="' + g + '">' + esc(w) + '</button>';
       }).join('') + '</div></span>';
   }
   function wireRows(box, fn) {
@@ -3362,7 +3377,7 @@
          a report with none of it shows no fold. */
       (more.some(function (x) { return has(valOf(x[0])); }) ? '<details class="fmore rp-across"><summary>Across all platforms <span class="fmore-sum"></span></summary>' +
         more.map(function (x) { return area('rpT_' + x[0], x[1], 'One point a line', 3).replace('<textarea ', '<textarea data-none="Optional" data-some="Written" '); }).join('') + '</details>' : '') +
-      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
+      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">' + esc(nextWord()) + '</button>' +
         '<button class="btn" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
     fields.concat(more).forEach(function (x) { var el = $('rpT_' + x[0]); if (el) el.value = valOf(x[0]) || ''; });
     groups.forEach(function (g) {
@@ -3833,7 +3848,7 @@
             '<div><span class="field-label" id="rpGS_' + o[0] + 'L">Amount spent</span><div class="readfield" id="rpGS_' + o[0] + '" aria-labelledby="rpGS_' + o[0] + 'L">' + esc(money2(sm.spent)) + '</div></div></div>';
         }).join('') + '</details>' : '') +
       '<datalist id="rpResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
-      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
+      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">' + esc(nextWord()) + '</button>' +
         '<button class="btn" type="button" data-a="savetotals">Save</button><div class="msg" data-m="totals"></div></div></section>';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
     $('rpFirst').checked = !!r.first_month;
@@ -3939,16 +3954,22 @@
         ads.map(function (a) {
           /* No result word on the row (the user, 2026-10-02): the objective
              heads the table, as in the PDF. */
-          var sub = [a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
+          /* Each date holds its own spaces, so a narrow row wraps between
+             the parts, never inside a date (2026-10-22, RPT-5). */
+          var nb = function (d) { return dayWord(d).replace(/ /g, '\u00a0'); };
+          var sub = [a.audience ? a.audience + ' audience' : '', a.starts_on ? nb(a.starts_on) + (a.ends_on ? ' to ' + nb(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb' + (a.thumb_data ? '' : ' is-empty') + '">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><span class="rp-line"><b>' + esc(adName(a.name)) + '</b>' + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
+            '<span class="rp-name"><span class="rp-line">' + (ed && !pick
+              ? '<button class="rp-adname" type="button" data-a="editad" data-id="' + esc(a.id) + '">' + esc(adName(a.name)) + '</button>'
+              : '<b>' + esc(adName(a.name)) + '</b>') + (adErr(a) ? '<span class="chip rp-aderr">Ad error</span>' : '') + '</span><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + unit(Number(a.results) === 1 ? 'result' : 'results') + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + (c == null ? '' : adPer1000(a) ? ' / 1,000' : unit('/ result')) + '</span>' +
-            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate', adErr(a) ? 'Clear ad error' : 'Mark ad error'] : []).concat((a.ad_ids || []).length && adPlat(a) === 'meta' ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
+            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu(((a.ad_ids || []).length && adPlat(a) === 'meta' ? [['Open in Ads Manager', 1]] : [])
+              .concat(ed ? [['Edit', 2], ['Make a copy', 2], [adErr(a) ? 'Clear ad error' : 'Mark ad error', 4], ['Remove', 6]] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join(''); }).join('');
     if (pick) { wirePick(box); return; }
@@ -3959,12 +3980,20 @@
         idsOpen(c, st.ads.filter(function (x) { return x.id === c.getAttribute('data-id'); })[0]);
       });
     });
+    /* The commonest act on a row is on the row: its name opens Edit
+       (2026-10-22, RPT-4). */
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="editad"]'), function (n) {
+      n.addEventListener('click', function () {
+        var a = st.ads.filter(function (x) { return x.id === n.getAttribute('data-id'); })[0];
+        if (a) adSheet(a, n);
+      });
+    });
     wireRows(box, function (id, act, btn) {
       var a = st.ads.filter(function (x) { return x.id === id; })[0];
       if (act === 'Open in Ads Manager') { window.open(adsManagerUrl(a), '_blank', 'noopener'); return; }
       if (!ed) return;
       if (act === 'Edit') adSheet(a, btn);
-      if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
+      if (act === 'Make a copy') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
       if (act === 'Remove') removeAd(a);
       if (act === 'Mark ad error') markAdError(a);
       if (act === 'Clear ad error') setAdError(a, null);

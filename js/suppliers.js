@@ -73,9 +73,13 @@
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
 
-  var state = { tab: 'documents', rows: null, find: '', open: null, rec: null, form: null, wired: false };
+  var state = { pane: 'overview', rows: null, find: '', open: null, rec: null, form: null, wired: false };
 
-  function urlState() { return { supplier: state.open || '' }; }
+  /* The record's pane rides in the address (`tab=`, Overview left out) and
+     pushes history, as a colleague's record does (SUP-4, 2026-10-22). */
+  var PANES = [['overview', 'Overview'], ['payment', 'Payment'], ['documents', 'Documents'], ['emails', 'Emails']];
+  function paneOk(k) { return PANES.some(function (x) { return x[0] === k; }); }
+  function urlState() { return { supplier: state.open || '', tab: state.open && state.pane !== 'overview' ? state.pane : '' }; }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }
   /* What a supplier is called: its name, else its Supplier ID until its own
      form names it. */
@@ -101,7 +105,9 @@
   /* The record open is read from the address. */
   function enter() {
     wire();
-    state.open = new URLSearchParams(location.search).get('supplier') || null;
+    var q = new URLSearchParams(location.search);
+    state.open = q.get('supplier') || null;
+    state.pane = state.open && paneOk(q.get('tab')) ? q.get('tab') : 'overview';
     $('supNew').hidden = !may('suppliers', 'work');
     load();
   }
@@ -164,7 +170,7 @@
       '<span class="sup-term' + (s.payment_term ? '' : ' is-none') + '">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-state">' + chip(s) + '</span>' +
       '<span class="sup-go">' + CHEV + '</span>';
-    b.addEventListener('click', function () { state.open = s.id; setUrl(); openRec(s.id); });
+    b.addEventListener('click', function () { state.open = s.id; state.pane = 'overview'; setUrl(); openRec(s.id); });
     return b;
   }
 
@@ -373,44 +379,75 @@
         (s.status === 'active' ? '<button class="kmenu-item" data-g="5" type="button" data-s="off" role="menuitem">Set inactive</button>' : '') +
         (s.status === 'inactive' ? '<button class="kmenu-item" data-g="5" type="button" data-s="on" role="menuitem">Set active</button>' : '') : '') +
       (may('suppliers', 'manage') ? '<button class="kmenu-item is-danger" data-g="6" type="button" data-s="del" role="menuitem">Delete</button>' : '');
+    var noDetails = !GROUPS.some(function (g) { return g[1].some(function (it) { return it[0] !== 'currency' && valueOf(s, it[0]); }); });
+    var group = function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; };
+    /* The record in panes (SUP-4, 2026-10-22; nine sections stood 2,180px
+       tall on a phone): the head its own card, then the strip. Overview the
+       supplier's facts, a form come back first; Payment how it is paid and
+       its Details update form and Bukku; Documents; Emails. */
+    var panes = {
+      overview: (fb && !quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
+        (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
+        /* A supplier holding no details yet reads one line, never three
+           groups of Not set (2026-10-20, SUP-3). */
+        (noDetails ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
+          : group(GROUPS[0]) + group(GROUPS[1])),
+      payment: (noDetails ? '' : group(GROUPS[2])) +
+        (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
+        (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : ''),
+      documents: '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
+          /* Each act stands in the section it fills (2026-10-20): Issue
+             document beside Add existing document; Send email in Emails.
+             Only an Active supplier is issued a document (DOC-3). A ⋯ of one
+             item is a button (the menu standard, rule 8; SUP-3). */
+          (work ? '<span class="sup-head-acts">' + (s.status === 'active' ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') +
+            '<button class="btn btn-sm" type="button" data-s="add">Add existing document</button></span>' : '') + '</div>' +
+          '<div id="supLetterList"><p class="muted">Loading.</p></div></section>',
+      emails: '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
+          (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
+          '<div id="supEmailList"><p class="muted">Loading.</p></div></section>'
+    };
+    var shown = PANES.filter(function (x) { return panes[x[0]]; });
+    if (!shown.some(function (x) { return x[0] === state.pane; })) state.pane = 'overview';
     rec.innerHTML =
       '<div class="sup-back"><button class="btn btn-quiet btn-sm" type="button" data-s="back">' + BACK + 'Suppliers</button></div>' +
-      '<div class="panel sup-rec">' +
+      '<div class="panel sup-rec sup-headcard">' +
         '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
           (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</span></div>' +
           '<div class="sup-ctl">' + chip(s, got && s.status === 'pending') +
             (s.status === 'pending' && work && complete ? '<button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button>' : '') +
             (menu ? '<span class="team-act"><button class="kmenu-btn" type="button" data-s="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" data-s-menu="rec" hidden>' + menu + '</div></span>' : '') +
-          '</div></div>' +
-        '<div class="msg" id="supRecMsg"></div>' +
-        '<div class="readgroups">' +
-        (fb && !quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
-        (clientBlock() ? '<section class="readgroup" id="supClient">' + clientBlock() + '</section>' : '') +
-        /* A supplier holding no details yet reads one line, never three
-           groups of Not set (2026-10-20, SUP-3). */
-        (!GROUPS.some(function (g) { return g[1].some(function (it) { return it[0] !== 'currency' && valueOf(s, it[0]); }); }) ? '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Details</h4></div><p class="muted">No details yet.</p></section>'
-          : GROUPS.map(function (g) { return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(g[0]) + '</h4></div>' + factsOf(s, g[1]) + '</section>'; }).join('')) +
-        (fb && quiet ? '<section class="readgroup sup-form">' + fb + '</section>' : '') +
-        (s.status === 'active' ? '<section class="readgroup bk-group" id="supBukku" hidden></section>' : '') +
-        '<section class="readgroup" id="supLetters"><div class="readgroup-head"><h4 class="fsec-h">Documents</h4>' +
-          /* Each act stands in the section it fills (2026-10-20, the user: six
-             items in the record's ⋯): Issue document, the ⋯ beside it Add
-             existing document; Send email in Emails. */
-          /* Only an Active supplier is issued a document (2026-10-20, DOC-3). */
-          (work ? '<span class="sup-head-acts">' + (s.status === 'active' ? '<button class="btn btn-sm" type="button" data-s="issue">Issue document</button>' : '') +
-            formMenu('<button class="kmenu-item" data-g="2" type="button" data-s="add" role="menuitem">Add existing document</button>') + '</span>' : '') + '</div>' +
-          '<div id="supLetterList"><p class="muted">Loading.</p></div></section>' +
-        '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
-          (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
-          '<div id="supEmailList"><p class="muted">Loading.</p></div></section>' +
-      '</div></div>';
+          '</div></div></div>' +
+      '<nav class="rectabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
+        var on = x[0] === state.pane;
+        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
+      }).join('') + '</nav>' +
+      '<div class="msg" id="supRecMsg"></div>' +
+      '<div class="panel sup-rec sup-body" data-swipe="supTabs">' + shown.map(function (x) {
+        return '<div class="readgroups sup-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
+      }).join('') + '</div>';
+    Array.prototype.forEach.call(rec.querySelectorAll('#supTabs .tab'), function (t) {
+      t.addEventListener('click', function () { showPane(t.getAttribute('data-pane'), true); });
+    });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     /* Bukku (2026-10-18): an approved supplier sent as a Bukku contact; one
        linked to a client is that client's contact, typed Supplier too. */
     if (window.ADspaceBukku && $('supBukku')) window.ADspaceBukku.group($('supBukku'), 'supplier', s.id,
       { note: s.client_id ? 'Sent as the linked client\'s contact in Bukku.' : '' });
     wireRec();
+  }
+  /* One pane on show; the others stay drawn (their reads land in them),
+     hidden. */
+  function showPane(k, push) {
+    if (!paneOk(k) || k === state.pane) return;
+    state.pane = k;
+    Array.prototype.forEach.call(document.querySelectorAll('#supTabs .tab'), function (t) {
+      var on = t.getAttribute('data-pane') === k;
+      t.classList.toggle('is-on', on); t.setAttribute('aria-selected', String(on));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#supRec .sup-pane'), function (p) { p.hidden = p.getAttribute('data-pane') !== k; });
+    if (push && bridge.pushUrl) bridge.pushUrl(); else setUrl();
   }
   function wireRec() {
     var rec = $('supRec'), s = state.rec;
@@ -423,7 +460,7 @@
         if (open) window.ADspaceMenu.place(b, m);
       });
     });
-    on('back', function () { state.open = null; state.rec = null; setUrl(); paint(); });
+    on('back', function () { state.open = null; state.rec = null; state.pane = 'overview'; setUrl(); paint(); });
     on('edit', function () { openEdit(null); });
     on('use', function () { openEdit(state.form); });
     on('link', function (b) { link(false, b); });

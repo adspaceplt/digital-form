@@ -145,6 +145,32 @@ async function sharePreview(env, kind, key) {
   return d && typeof d === 'object' ? d : {};
 }
 
+/* Which kind an /s/ key is, kept a day at this edge (LNK-3, 2026-10-22):
+   every visit, a person's as much as a previewer's, waited on the read
+   before its 302. Only a kind the database named is kept; the two kinds'
+   keys never overlap, and a key reset since reads as nothing on its page. */
+const WHICH_TTL = 86400;
+async function whichOf(env, key) {
+  const store = typeof caches !== 'undefined' && caches.default ? caches.default : null;
+  const slot = 'https://links.cache/which/' + encodeURIComponent(key);
+  if (store) {
+    try {
+      const hit = await store.match(slot);
+      if (hit) return (await hit.text()) || '';
+    } catch (e) { console.error('which cache read failed: ' + e.message); }
+  }
+  let w = {};
+  try { w = await sharePreview(env, 'which', key); }
+  catch (e) { console.error('share_link_preview which failed: ' + e.message); return ''; }
+  const kind = w.kind === 'script' || w.kind === 'campaign' ? w.kind : '';
+  if (store && kind) {
+    try {
+      await store.put(slot, new Response(kind, { headers: { 'cache-control': 'max-age=' + WHICH_TTL } }));
+    } catch (e) { console.error('which cache write failed: ' + e.message); }
+  }
+  return kind;
+}
+
 /* "{Campaign} {Brand} - Creator Selection by ADspace", each part only where
    it is known. */
 async function share(request, env, letter, key) {
@@ -153,10 +179,7 @@ async function share(request, env, letter, key) {
     /* A selection key, else a Video Scripts link sent before 2026-10-15. A
        failed read sends it to the selection page, which says so if it is
        not one. */
-    let w = {};
-    try { w = await sharePreview(env, 'which', key); }
-    catch (e) { console.error('share_link_preview which failed: ' + e.message); }
-    kind = w.kind === 'script' ? 'script' : 'campaign';
+    kind = (await whichOf(env, key)) === 'script' ? 'script' : 'campaign';
   }
   const k = SHARE_KIND[kind];
   const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');

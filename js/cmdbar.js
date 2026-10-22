@@ -248,12 +248,18 @@
     if (!acts) return;
     var buttons = Array.prototype.filter.call(acts.children, function (el) { return el.tagName === 'BUTTON'; });
     if (!buttons.length) return;
-    var primary = buttons.filter(function (b) { return b.classList.contains('btn-primary'); })[0];
+    /* A rare or administrative act the page declares (`data-rare`:
+       Document types, Compare groups, Bulk import) is behind the bar's ⋯ at
+       every width, never a button beside the primary (the menu standard,
+       rule 1; SHELL-5, 2026-10-22). */
+    var rare = buttons.filter(function (b) { return b.hasAttribute('data-rare'); });
+    var plain = buttons.filter(function (b) { return !b.hasAttribute('data-rare'); });
+    var primary = plain.filter(function (b) { return b.classList.contains('btn-primary'); })[0];
     /* A bar of plain actions keeps its first on a phone and puts the rest
        behind the ⋯ once there are three (Performance's Months bar: three
        words do not fit 390px; 2026-10-05). Two still fit side by side. */
-    var lead = primary || (buttons.length > 2 ? buttons[0] : null);
-    if (!lead) return;
+    var lead = primary || (plain.length > 2 ? plain[0] : null);
+    if (!lead && !rare.length) return;
     if (primary) {
     /* The word stays for a screen reader; on a phone only the glyph draws. */
     var word = '';
@@ -274,7 +280,7 @@
     if (word && !primary.getAttribute('aria-label')) primary.setAttribute('aria-label', word);
     primary.classList.add('cmd-primary');
     }
-    var rest = buttons.filter(function (b) { return b !== lead; });
+    var rest = (lead ? plain.filter(function (b) { return b !== lead; }) : []).concat(rare);
     if (!rest.length) return;
     /* A second action goes behind a ⋯ on a phone, the way a rare action does
        on every row; each item presses the real button, so the page's own
@@ -299,22 +305,27 @@
        after the page had hidden the button (audit, 2026-10-03). */
     var pairs = [];
     rest.forEach(function (b) {
-      b.classList.add('cmd-secondary');
+      var isRare = b.hasAttribute('data-rare');
+      b.classList.add(isRare ? 'cmd-rare' : 'cmd-secondary');
       var item = document.createElement('button');
       item.type = 'button';
-      item.className = 'kmenu-item';
+      item.className = 'kmenu-item' + (isRare ? '' : ' cmd-phone-only');
       item.setAttribute('role', 'menuitem');
       item.textContent = (b.textContent || '').trim();
       // Its group, from the standard's one table (js/menu.js).
       var g = window.ADspaceMenu && window.ADspaceMenu.groupOf ? window.ADspaceMenu.groupOf(item.textContent) : 0;
       if (g) item.setAttribute('data-g', String(g));
       if (b.getAttribute('data-need')) item.setAttribute('data-need', b.getAttribute('data-need'));
-      item.addEventListener('click', function () { shutMore(); b.click(); });
+      if (b.getAttribute('data-g')) item.setAttribute('data-g', b.getAttribute('data-g'));
+      /* Focus is the ⋯'s first, so a sheet the item opens hands it back
+         there, never to a button that is not drawn. */
+      item.addEventListener('click', function () { shutMore(); btn.focus(); b.click(); });
       menu.appendChild(item);
       pairs.push([b, item]);
     });
+    if (rare.length) wrap.classList.add('has-rare');
     wrap.appendChild(btn); wrap.appendChild(menu);
-    acts.insertBefore(wrap, lead);
+    acts.insertBefore(wrap, lead || null);
     function syncMore() {
       var any = false;
       pairs.forEach(function (pr) {
@@ -337,6 +348,7 @@
       var on = menu.hidden;
       menu.hidden = !on;
       btn.setAttribute('aria-expanded', String(on));
+      if (on && window.ADspaceMenu && window.ADspaceMenu.tidy) window.ADspaceMenu.tidy(menu);
       if (on && window.ADspaceMenu) window.ADspaceMenu.place(btn, menu);
     });
     document.addEventListener('click', function (e) { if (!wrap.contains(e.target)) shutMore(); });
