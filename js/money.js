@@ -294,7 +294,37 @@
     };
   }
 
+  /* A quotation's totals as rows, one copy for Build quote, the
+     quotation's PDF and the quotation website (2026-10-22, QT-4): each row
+     [key, figure, is the total], the words each page's own. Where a monthly
+     line runs months of its own the month's figures are the first month's,
+     holding the one-off items too (2026-10-18); `on` says whether SST
+     applies, so the excl. SST row is left out where it does not. Keys:
+     monthSub, term, onceSub, firstExcl, monthExcl, sst, first, monthly,
+     oneOff. */
+  function quoteRows(t, lines, on) {
+    t = t || {};
+    var add = function (a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; };
+    var own = Boolean(t.month) && (lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
+    var r = [], o = t.once || {};
+    if (t.month) {
+      r.push(['monthSub', t.month.subtotal]);
+      if (Number(t.term_pct)) r.push(['term', t.month.term]);
+      if (own) {
+        if (t.once) r.push(['onceSub', o.subtotal]);
+        if (on) r.push(['firstExcl', add(t.month.excl, o.subtotal)]);
+        r.push(['sst', add(t.month.sst, o.sst)], ['first', add(t.month.incl, o.incl), 1]);
+      } else {
+        if (on) r.push(['monthExcl', t.month.excl]);
+        r.push(['sst', t.month.sst], ['monthly', t.month.incl, 1]);
+      }
+    }
+    if (t.once && !own) r.push(['onceSub', t.once.subtotal], ['sst', t.once.sst], ['oneOff', t.once.incl, 1]);
+    return r;
+  }
+
   window.ADspaceMoney = {
+    quoteRows: quoteRows,
     money: money,
     money2: money2,
     taxOf: taxOf,

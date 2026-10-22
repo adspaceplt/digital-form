@@ -173,30 +173,13 @@
     /* The first month holds the one-off items too (the user, 2026-10-18),
        so its rows add the one-off subtotal before SST and end at one figure. */
     var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
-    var tot = [], sum = function (a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; };
-    /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
-    /* Each line at its own tax code's rate where it carries one (2026-10-22). */
+    /* SST said as the Letter of Offer says it, each line at its own tax
+       code's rate; the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
     var sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
-    var sstRow = taxed.word;
-    var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', amt(v)]); };
-    if (t.month) {
-      tot.push(['Monthly subtotal', amt(t.month.subtotal)]);
-      if (Number(t.term_pct)) {
-        tot.push([t.term + '-Month ' + (t.term_pct < 0 ? 'Commitment (' + Math.abs(t.term_pct) + '%)' : 'Term (' + t.term_pct + '%)'), amt(t.month.term)]);
-      }
-      if (own) {
-        var o = t.once || {};
-        if (t.once) tot.push(['One-off subtotal', amt(o.subtotal)]);
-        excl('First month', sum(t.month.excl, o.subtotal));
-        tot.push([sstRow, amt(sum(t.month.sst, o.sst))], ['First month' + incl, amt(sum(t.month.incl, o.incl)), 1]);
-      } else {
-        excl('Monthly', t.month.excl);
-        tot.push([sstRow, amt(t.month.sst)], ['Monthly' + incl, amt(t.month.incl), 1]);
-      }
-    }
-    if (t.once && !(t.month && own)) {
-      tot.push(['One-off subtotal', amt(t.once.subtotal)], [sstRow, amt(t.once.sst)], [sstOn ? 'One-off incl. SST' : 'One-off total', amt(t.once.incl), 1]);
-    }
+    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
+      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
+      term: t.term + '-Month ' + (t.term_pct < 0 ? 'Commitment (' + Math.abs(t.term_pct) + '%)' : 'Term (' + t.term_pct + '%)') };
+    var tot = window.ADspaceMoney.quoteRows(t, q.lines, sstOn).map(function (x) { return [WORD[x[0]], amt(x[1]), x[2]]; });
     var tw1 = 176, tw2 = 88, tx = R - tw1 - tw2, th = 24;
     room(tot.length * th + 8);
     tot.forEach(function (r) {

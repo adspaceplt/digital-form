@@ -5811,3 +5811,38 @@ removes nothing.
   console.css; SET2-15 the suite opens every Edit row; SET2-16 CLAUDE.md
   lists Task reminders.
 - Skipped: none.
+
+### 2026-10-22 — Services, quotations and a client's service lines: the minor fixes of the second audit
+- The user, on the audit of 2026-10-22: "minor improvements you could just
+  proceed without changing the original structure."
+- Built: SVC2-1 a new rate card line whose name is already on the card was
+  refused as "That SKU is already on another line." with the SKU focused
+  (the slug, made from the name, is the key): now named as the name, the
+  name focused, Save resting while it is out; SVC2-2 the row's ⋯ shuts
+  under the line's sheet; SVC2-3 every write on the card names a lost
+  connection; SVC2-4 Rate (RM); SVC2-5 Advertising as a segment; SVC2-6
+  Publish's question in words ("1 line changed."); SVC2-7 Set inactive,
+  Save and Delete repaint from the row as written, never the whole page;
+  SVC2-8 a wording row is its name, Changed and its pen, no empty price
+  tracks; SVC2-9 tests. QT-1 a letter of one quotation's lines reads the
+  quotation's figure and term, never the whole term's total (the row read
+  RM 7,161.48 a month and the sheet RM 85,937.76); QT-2 the quotation just
+  made is marked and its Download focused; QT-3 the letter sheet opens
+  through js/sheet.js (its own scrim and Escape threw away a typed
+  reference), and Issue Letter of Offer rests while its lines are made;
+  QT-4 the totals' rows are `ADspaceMoney.quoteRows`, one copy for Build
+  quote, the PDF and `/quote/`, each page keeping its words; QT-5 Download
+  on the first line at a desk; QT-7 Build quote's state is let go however
+  the sheet shuts; QT-8 tests. SL-1 a client billed in S$ took the card's
+  RM as S$ on a line typed by hand: now turned at `fx_sgd`, left empty with
+  the reason while no rate is set; SL-2 one line for two presses, an
+  empty answer named; SL-3 a line's term percentage is the live version's,
+  as a quotation's; SL-4 a line saved reads the lines and the Details
+  again, never the whole record; SL-5 a service is chosen, never
+  preselected; SL-6 To quote past enquiring; SL-7 no term on a line not by
+  the month; SL-8 Qty, Rate and Months three across on a phone; SL-9 New
+  service line / Edit service line; SL-10 No service lines.; SL-11 tests.
+- Skipped in part: SL-10's second Add service and Build quote in the empty
+  lists: each head already holds its own, and an act is offered once on a
+  screen (DESIGN.md). Not built (the user's to decide): QT-6, SVC2-M1,
+  QT-M1, SL-M2.

@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261022e">
-<link rel="stylesheet" href="/css/console.css?v=20261022e">
+<link rel="stylesheet" href="/css/console.css?v=20261022f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -85,7 +85,7 @@
 <script src="/js/notice.js?v=20261022e"></script>
 <script src="/js/whatsapp.js?v=20261022b"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261022d"></script>
+<script src="/js/money.js?v=20261022f"></script>
 <script src="/js/media.js?v=20261018pl"></script>
 <script src="/js/mockups.js?v=20261017"></script>
 </head>
@@ -1050,7 +1050,7 @@
               <div class="sheet" id="crmServiceBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmServiceTitle">
           <div class="sheet-head">
-            <h3 id="crmServiceTitle">New service</h3>
+            <h3 id="crmServiceTitle">New service line</h3>
             <button class="iconbtn" id="crmServiceClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
@@ -1084,7 +1084,7 @@
           </section>
           <section class="fsec">
             <h4 class="fsec-h">Price and term</h4>
-            <div class="row fgrid-3">
+            <div class="row fgrid-3 fgrid-figs">
               <div><label class="field-label" for="svQty">Qty</label>
                 <input inputmode="numeric" class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
               <div><label class="field-label" for="svRate">Rate</label>
@@ -4690,7 +4690,7 @@
         <section class="fsec">
           <h4 class="fsec-h">Price</h4>
           <div class="row fgrid-3">
-            <div><label class="field-label" for="svcRate">Rate</label>
+            <div><label class="field-label" for="svcRate">Rate (RM)</label>
               <input inputmode="decimal" class="input" id="svcRate" type="number" min="0" step="10" placeholder="0"></div>
             <div><label class="field-label" for="svcUnit">Unit</label>
               <input class="input" id="svcUnit" placeholder="Per post"></div>
@@ -4758,7 +4758,7 @@
           </div>
           <div class="row fgrid-3" data-role="plan">
             <div><label class="field-label" for="svcAds">Advertising</label>
-              <select class="select" id="svcAds"><option value="no">Without ads</option><option value="yes">With ads</option></select></div>
+              <select class="select" id="svcAds" data-seg><option value="no">Without ads</option><option value="yes">With ads</option></select></div>
             <div class="span-2" id="svcPlanBudgetWrap"><label class="field-label" for="svcPlanBudget">Ad budget covered (RM)</label>
               <input inputmode="numeric" class="input" id="svcPlanBudget" type="number" min="1" step="100" placeholder="2000"></div>
           </div>
@@ -5723,10 +5723,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/suppliers.js?v=20261021"></script>
 <script src="/js/bukku.js?v=20261022e"></script>
 <script src="/js/engage.js?v=20261017"></script>
-<script src="/js/quotes.js?v=20261022d"></script>
-<script src="/js/quotepdf.js?v=20261022d"></script>
+<script src="/js/quotes.js?v=20261022f"></script>
+<script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261020b"></script>
-<script src="/js/crm.js?v=20261022e"></script>
+<script src="/js/crm.js?v=20261022f"></script>
 <script src="/js/sales.js?v=20261022d"></script>
 <script src="/js/team.js?v=20261022b"></script>
 <script src="/js/namecard.js?v=20261015a"></script>

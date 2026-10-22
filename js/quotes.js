@@ -200,6 +200,7 @@
     });
   }
 
+  var offering = {};
   function act(a, q, ctx, host, btn) {
     if (a === 'pdf') {
       if (!window.ADspaceQuotePdf) return;
@@ -231,11 +232,18 @@
       return;
     }
     if (a === 'offer') {
+      /* One press, one letter sheet: a second press while the lines are
+         being made is let go, and the row's ⋯ turns its ring meanwhile
+         (2026-10-22, QT-3, QT-8). */
+      if (offering[q.id]) return;
+      offering[q.id] = true;
+      if (btn) btn.disabled = true;
+      var done = function () { delete offering[q.id]; if (btn) btn.disabled = false; };
       ctx.db.rpc('quotation_offer', { p_id: q.id }).then(function (r) {
         var d = r.data || {};
-        if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
-        ctx.offer(d.ids || []);
-      }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+        if (r.error || d.error) { done(); ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+        ctx.offer(d.ids || [], done);
+      }).catch(function (e) { done(); ctx.msg('qtMsg', said(e), 'err'); });
       return;
     }
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
@@ -356,7 +364,7 @@
       }).join('');
       $('qbOnceMore').open = Boolean((sel.once || []).length);
       sync();
-      window.ADspaceSheet.show($('qbBox'), { opener: opener || null });
+      window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
       preview();
     });
   }
@@ -567,23 +575,13 @@
             '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
-    var tot = [], own = t.month && ownMonths(rows, t), o = t.once || {};
-    /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies). */
-    var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '', sstRow = taxed.word;
-    var excl = function (label, v) { if (sstOn) tot.push([label + ' excl. SST', acct(v)]); };
-    if (t.month) {
-      tot.push(['Monthly subtotal', acct(t.month.subtotal)]);
-      if (Number(t.term_pct)) tot.push([t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)'), acct(t.month.term)]);
-      if (own) {
-        if (t.once) tot.push(['One-off subtotal', acct(o.subtotal)]);
-        excl('First month', sum2(t.month.excl, o.subtotal));
-        tot.push([sstRow, acct(sum2(t.month.sst, o.sst))], ['First month' + incl, CUR + ' ' + acct(firstIncl(t)), 1]);
-      } else {
-        excl('Monthly', t.month.excl);
-        tot.push([sstRow, acct(t.month.sst)], ['Monthly' + incl, CUR + ' ' + acct(t.month.incl), 1]);
-      }
-    }
-    if (t.once && !own) tot.push(['One-off subtotal', acct(t.once.subtotal)], [sstRow, acct(t.once.sst)], [sstOn ? 'One-off incl. SST' : 'One-off total', CUR + ' ' + acct(t.once.incl), 1]);
+    /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
+       the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
+    var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
+    var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
+      sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
+      term: t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)') };
+    var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
@@ -594,6 +592,20 @@
     return out;
   }
 
+  /* The quotation just made is marked where it lands and its Download
+     takes focus, the mark leaving after the Undo bar's time (2026-10-22,
+     QT-2). */
+  var NEW_MS = 8000;
+  function markNew(ref) {
+    var row = Array.prototype.filter.call(document.querySelectorAll('.qt-row[data-id]'), function (x) {
+      var r = x.querySelector('.qt-ref'); return r && r.textContent === ref;
+    })[0];
+    if (!row) return;
+    row.classList.add('is-new');
+    var dl = row.querySelector('.qt-dl [data-a="pdf"]');
+    if (dl) dl.focus({ preventScroll: false });
+    setTimeout(function () { row.classList.remove('is-new'); }, NEW_MS);
+  }
   function wire() {
     if (!$('qbBox') || wire.done) return;
     wire.done = true;
@@ -676,11 +688,11 @@
         var ctx = B.ctx;
         window.ADspaceSheet.close();
         B = null;
-        ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' made.', 'ok'); });
+        ctx.reload(function () { ctx.msg('qtMsg', d.ref + ' made.', 'ok'); markNew(d.ref); });
       }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf };
+  window.ADspaceQuotes = { load: load, paint: paint, overview: overview, build: build, stateOf: stateOf, headline: headline };
 })();

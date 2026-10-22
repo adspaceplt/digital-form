@@ -662,6 +662,10 @@ button.appver {
 /* On quote is not an amount, so it does not pretend to be one. */
 .cat-row > .svc-rate .muted { font-variant-numeric: normal; }
 .cat-row.rcv-row > .team-act { justify-self: end; }
+/* A block of wording has no price: its name and its pen, no empty tracks
+   (2026-10-22, SVC2-8). */
+.cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
+.is-narrow .cat-row.rcw-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act"; }
 .rcv-k { display: none; }
 .cat-row > .svc-rate > .svc-rate-edit { font-size: inherit; margin-left: 0; margin-right: -8px; justify-content: flex-end; }
 .cat-row > .svc-rate > .askfield::-webkit-inner-spin-button, .cat-row > .svc-rate > .askfield::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -3134,6 +3138,13 @@ button.vs-row { cursor: pointer; }
 .is-narrow .qt-row > .qt-amt { grid-area: amt; text-align: right; }
 .is-narrow .qt-row > .qt-state { grid-area: state; align-items: flex-end; }
 .is-narrow .qt-row > .team-act { grid-area: act; }
+/* At a desk Download keeps the first line beside the figure (2026-10-22,
+   QT-5); on a phone it takes the line under. */
+.is-narrow:not(.is-tight) .qt-row { grid-template-columns: minmax(0, 1fr) auto auto var(--ctl-h); grid-template-areas: "name amt dl act" "name state dl act"; column-gap: 12px; }
+.is-narrow:not(.is-tight) .qt-row > .qt-dl { justify-self: end; margin-top: 0; }
+/* The quotation just made, marked where it landed for the Undo bar's time
+   (QT-2). */
+.qt-row.is-new { background: var(--sunk); transition: background var(--t-slow) var(--ease-out); }
 .qt-ovrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); align-items: start; }
 .qt-ovrow .qt-name { display: flex; flex-direction: column; min-width: 0; }
 .qt-ovrow .qt-name small { font-size: 12.5px; color: var(--ink-mute); }
@@ -3519,3 +3530,10 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .rp-afold > summary::after { content: ""; width: 7px; height: 7px; border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
   transform: rotate(45deg) translateY(-2px); transition: transform var(--t) var(--ease); }
 .rp-afold[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+
+/* Three short figures (a service line's Qty, Rate and Months) keep one line
+   on a phone (2026-10-22, SL-8). */
+.is-tight .row.fgrid-3.fgrid-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) {
+  .row.fgrid-3.fgrid-figs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
