@@ -3299,8 +3299,8 @@ button.vs-row { cursor: pointer; }
    2026-10-22): a narrow pane takes them on a line of their own, equal
    halves, never past the screen's edge. */
 #supLetters .readgroup-head { flex-wrap: wrap; }
-.is-narrow #supLetters .sup-head-acts { flex: 1 1 100%; }
-.is-narrow #supLetters .sup-head-acts .btn { flex: 1 1 50%; min-width: 0; }
+.is-narrow #supLetters .sup-head-acts { flex: 1 1 100%; flex-wrap: wrap; }
+.is-narrow #supLetters .sup-head-acts .btn { flex: 1 1 auto; white-space: nowrap; }
 
 /* A draft month's acts at the review sheet's foot (TEAM-1, 2026-10-14): the
    scores end at the foot, so the acts do too. Drawn as a sheet's foot reads

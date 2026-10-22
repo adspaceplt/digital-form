@@ -6149,3 +6149,23 @@ The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
   escapes inside `or()`'s quotes.
 - Left for the next release (the gate's 22:00Z deadline): SHELL-5, DOC-6,
   TEAM-1 to TEAM-3, LNK-1 to LNK-3, MINE-1, MINE-2, PERF-1, SUP-3, SUP-4.
+
+## 2026-10-22: internal review, release 2 (the bar's ⋯, Team, Short Links, My records)
+The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/internal/report.txt).
+- SHELL-5 a rare act declared `data-rare` goes behind the bar's ⋯ at every
+  width (js/cmdbar.js alone, as the brief asked); DOC-6, TEAM-2 and LNK-1
+  use it for Document types, Compare groups and Bulk import. The menus
+  suite measured the bar's ⋯ mid-arrival (318 of 320); it now finishes
+  the animation before measuring. DOC-6's Preview moves under the letter.
+- TEAM-1 the record head said the group and the department twice; TEAM-3
+  an act on a record answered on the list's line, out of sight, and a
+  "Nothing is assigned" read as a success. The record repaints after the
+  read its act starts, so what it said is kept for that paint.
+- LNK-2 Open on a live link's row; LNK-3 the Worker keeps an /s/ key's
+  kind a day (deployed by the user with wrangler).
+- MINE-2 the lock said a code is sent before anything was; PERF-1 a draft
+  month's card restated the chip.
+- SUP-3 Documents' ⋯ of one item became a button. Found while testing: at
+  390 the two buttons ran past the screen's edge (Approve's question then
+  sat half off the screen); a narrow pane wraps them, each on its line.
+
