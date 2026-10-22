@@ -67,7 +67,7 @@
     return SAID[k] || k || 'The request failed.';
   }
   function rpc(fn, args) {
-    return db.rpc(fn, args).then(function (r) { return r; }, function (e) { return { error: e }; });
+    return db.rpc(fn, args).then(function (r) { return r; }).catch(function (e) { return { error: e }; });
   }
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
@@ -202,6 +202,9 @@
     $('supList').hidden = true; $('supBar').hidden = true; rec.hidden = false;
     if (!state.rec || state.rec.id !== id) UI.skeleton(rec, 4);
     return rpc('supplier_get', { p_id: id }).then(function (r) {
+      /* An answer for a record already left never paints over the one open
+         now (SUP-1, 2026-10-22; as tests/crswitch.js holds for sets). */
+      if (state.open !== id) return;
       var d = r.data || {};
       if (r.error || d.error) {
         if (d.error === 'not-found') { state.open = null; setUrl(); msg('supMsg', 'That supplier is no longer there.', 'err'); paint(); return; }
@@ -337,8 +340,10 @@
   }
   function linkClient() {
     var s = state.rec, c = state.client;
-    db.from('clients').select('id, client_code, name').then(function (r) {
-      if (r.error) { msg('supRecMsg', 'Could not load the clients. ' + (r.error.message || ''), 'err'); return; }
+    /* Every client, a thousand at a time; a refusal in the team's words
+       (SUP-2, 2026-10-22). */
+    window.ADspaceAPI.readPages(function () { return db.from('clients').select('id, client_code, name').order('id'); }).then(function (r) {
+      if (r.error) { msg('supRecMsg', 'Could not load the clients. ' + said(r), 'err'); return; }
       var rows = (r.data || []).slice().sort(window.ADspaceForm.byClient);
       var pick = c && c.id ? c.id : (state.match[0] || {}).id || '';
       if (pick && !rows.some(function (x) { return x.id === pick; })) pick = '';
@@ -515,7 +520,7 @@
     if (!box) return;
     db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, file_url, created_at')
       .eq('supplier_id', id).order('created_at', { ascending: false }).then(function (r) {
-        if (!$('supLetterList')) return;
+        if (!$('supLetterList') || state.open !== id) return;
         if (r.error) { UI.failLine(box, 'the documents', r.error.message || '', function () { letters(id); }); return; }
         var rows = r.data || [];
         if (!rows.length) { box.innerHTML = '<p class="muted">No documents.</p>'; return; }
@@ -534,7 +539,7 @@
             if (window.ADspaceLetters) window.ADspaceLetters.download(d, function (warn) { if (warn) msg('supRecMsg', warn, 'err'); });
           });
         });
-      }, function (e) { UI.failLine(box, 'the documents', String(e && e.message || e), function () { letters(id); }); });
+      }).catch(function (e) { if (state.open === id) UI.failLine(box, 'the documents', String(e && e.message || e), function () { letters(id); }); });
   }
 
   /* Emails sent to the supplier (supplier_emails_of), newest first, with

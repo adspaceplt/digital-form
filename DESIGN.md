@@ -31,7 +31,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Fields, buttons, the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
-| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress. Never a button, never the Undo bar |
+| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button, never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
 | `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
 | `--action-hover` / `--action-pressed` | `#0068d1` / `#005bb8` | the same | Its steps, each darker so the label keeps AA (Apple's lighter hover is 4.32:1). `#007AFF` (4.02:1) is refused |
@@ -226,8 +226,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
 | A section's figures at a glance (the Dashboard) | `.ovw-kpi` tiles in `.ovw-kpis`, two by two under a group's label with a hairline (`.ovw-group-h`): the label 12/600 mute, the figure 24/600 (21 for money; late in red), its change in the soft ink (never green), its trend (`ADspaceChart.spark`) or a progress track; every tile keeps the trend's room so a row stands one height, and groups side by side share their rows (subgrid) |
 | What needs acting on today (the Dashboard) | `#ovwGlance`: the `meter` ring (one share, its figure in the middle, the arc `--ok-solid`) beside `.ovw-sig` lines (the words, the count, the dot and its word), Open list at the head's right edge; one column in a narrow pane |
-| Everything waiting across sections (the Dashboard) | `#ovwAttention`: What (name over meta) · Section (a grey `.chip`) · Who · Since (late in red words, else the dot and its word), eight rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
-| What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile, the title over its meta, the decision where it is taken in the row (tonal Decline, blue Approve), the age at the right edge (red when late); on a narrow pane the acts take a second line as equal halves |
+| Everything waiting across sections (the Dashboard) | `#ovwAttention`: What (name over meta) · Section (a grey `.chip`) · Who · Since (late in red words, else the dot and its word), five rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
+| What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile, the title over its meta, the decision where it is taken in the row (tonal Decline and Approve), the age at the right edge (red when late); on a narrow pane the acts take a second line as equal halves |
 | A client's work by month (the record's Engagements) | `ADspaceGroup.section` card a content month of `.cmonth-row`s: the section's glyph on a tonal tile, the name (a fact as a grey chip after it) over its facts wrapping between parts, the state in a `--state-w` track, the chevron last (a finished report's `.btn-sm` Download in its place, `.has-file`); on a narrow pane two columns, the state at the right of the first line, the Download under it |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
@@ -658,7 +658,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   reports (Letter of Offer, Service Agreement, HR Letter, Onboarding Checklist,
   Social Media Accounts Report).
   - Articles and short prepositions stay lower; acronyms keep their capitals;
-    Pre-advertising Checklist.
+    Pre-Advertising Checklist.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
 - One word per act, everywhere (the user, 2026-10-09: "why do you use
