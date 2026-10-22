@@ -4460,6 +4460,12 @@ body > .shell { width: 100%; }
    head in this portal has refused for months. */
 .is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
 .is-narrow .ct-row .crm-reach .plink:only-child { flex: 0 0 auto; justify-content: center; }
+/* Two chips or more share equal tracks (DESIGN §4: equal widths on a phone
+   unless alone): the phone and WhatsApp as halves, an address on a row of
+   its own, so no chip is left a width of its own beside the rest (CP-14). */
+.is-narrow .ct-row .crm-reach:has(> .plink + .plink) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.is-narrow .ct-row .crm-reach:has(> .plink + .plink) > [href^="mailto:"],
+.is-narrow .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; }
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: transparent; background: var(--sunk); margin: 12px 0 0; }
@@ -8260,6 +8266,15 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    than Approve (2026-10-20, RVP-2). */
 .approve-row > .namebox, .approve-row > .btn-approve, .approve-row > .btn-changes { flex: 1 1 50%; min-width: 0; }
 .approve-row.is-asking > .namebox { flex: 1 1 100%; }
+/* The draft waiting on the client (#needBox) at a desk: the pair at its
+   own width at the card's right edge, Approve last, as an action row
+   reads; Open the draft at its own width on every screen (CP-17). */
+.cx-needs .client-draft-preview > a.btn { justify-self: start; }
+@media (min-width: 641px) {
+  .cx-needs .approve-row { flex-direction: row-reverse; justify-content: flex-start; }
+  .cx-needs .approve-row > .namebox, .cx-needs .approve-row > .btn-approve, .cx-needs .approve-row > .btn-changes { flex: 0 0 220px; }
+  .cx-needs .approve-row.is-asking > .namebox { flex: 0 1 460px; }
+}
 .changebox-actions > .btn { flex: 1 1 0; min-width: 0; }
 /* While a request is open the decision pair steps away, so Cancel and Send
    request are the card's only acts, and the request starts the block. */

@@ -879,7 +879,7 @@
           .filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel, true]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
+          '<span class="svc-name"><b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
           /* The months on a line of their own: "1 × RM 2,830.00 × 6 months"
              ran past its column at a desk (CP-12). */
           '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l))) +
@@ -933,7 +933,7 @@
           .filter(Boolean).join(' · ');
         var items = (!gone && r.state === 'requested') ? [['withdraw', w.withdraw, true]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc((w[r.kind] || r.kind) + (r.service_label ? ' · ' + r.service_label : '')) + '</b>' +
+          '<span class="svc-name"><b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
             (r.reply ? '<small>' + esc(w.reply + ': ' + r.reply) + '</small>' : '') + '</span>' +
           /* No fee is a mute dash at a desk under its head, nothing on a
