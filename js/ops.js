@@ -458,9 +458,10 @@
        late rule reads it. */
     var dueEnd = t.current_final_due_at ? CK.start(CK.addDays(dateValue(t.current_final_due_at), 1)) : null;
     var span = Math.abs(ms), n = Math.floor(span / 36e5);
-    /* Days past a day, as the Dashboard counts them (2026-10-22, WRK-6). */
+    /* A deadline over by more than a day reads in days, as the Dashboard
+       counts them; a countdown keeps its hours (2026-10-22, WRK-6). */
     var dd = Math.floor(n / 24);
-    var amount = dd >= 1 ? dd + (dd === 1 ? ' day' : ' days') : n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
+    var amount = ms < 0 && dd >= 1 ? dd + (dd === 1 ? ' day' : ' days') : n >= 1 ? n + 'h' : Math.max(1, Math.ceil(span / 6e4)) + 'm';
     return { key: key, word: PRIORITY_WORD[Number(t.priority_level)], hours: hours, set: made, by: by, over: ms < 0,
              first: !dueEnd || by.getTime() < dueEnd.getTime(),
              words: PRIORITY_WORD[Number(t.priority_level)] + ' · ' + amount + (ms < 0 ? ' over' : ' left') };
@@ -1573,21 +1574,41 @@
       field: { label: 'Assign to', choices: [['', 'Choose a person']].concat(pickable().map(function (m) { return [m.id, person(m)]; })),
                need: 'Choose a person.' }
     }, function (who) {
-      var done = 0, bad = null, i = 0;
+      var done = 0, bad = null, i = 0, moved = [];
       var next = function () {
         if (i >= ids.length) {
           if (bad) msg('workMsg', done + ' of ' + ids.length + ' assigned. ' + bad, 'err');
-          else msg('workMsg', (done === 1 ? '1 task' : done + ' tasks') + ' assigned to ' + nameOf(who) + '.', 'ok');
+          else msg('workMsg', '');
           state.picked = {};
           load();
+          /* The way back, where it happened: each task to whoever had it
+             (2026-10-22, WRK-15). */
+          if (moved.length) undoBar((moved.length === 1 ? '1 task' : moved.length + ' tasks') + ' reassigned to ' + nameOf(who) + '.', function () {
+            var j = 0, fails = 0;
+            var back = function () {
+              if (j >= moved.length) {
+                if (fails) msg('workMsg', fails + ' of ' + moved.length + ' could not be put back.', 'err');
+                load();
+                return;
+              }
+              var m = moved[j++];
+              var cur = (state.tasks || []).filter(function (x) { return x.id === m.id; })[0];
+              db.rpc('ops_assign_task', { p_task: m.id, p_owner: m.was, p_version: cur ? cur.version : null }).then(function (r) {
+                if (r.error || (r.data && r.data.error)) fails++;
+                back();
+              }).catch(function () { fails++; back(); });
+            };
+            back();
+          }, $('workMsg'));
           return;
         }
         var id = ids[i++];
         var t = (state.tasks || []).filter(function (x) { return x.id === id; })[0];
+        var was = state.ownerIds[id] || null;
         db.rpc('ops_assign_task', { p_task: id, p_owner: who, p_version: t ? t.version : null }).then(function (r) {
           var d = r.data;
           if (r.error || (d && d.error)) { bad = bad || (r.error ? r.error.message : said(d.error, t)); }
-          else done++;
+          else { done++; if (was && was !== who) moved.push({ id: id, was: was }); }
           next();
         }).catch(function (e) { bad = bad || ((e && e.message) || String(e)); next(); });
       };
@@ -2343,7 +2364,9 @@
     var work = may('ops', 'work');
     var every = isEveryday(t);
     var p = plainOf(t);
-    var ctx = engName(t) || whoseWord(t);
+    /* Under one client's Months the client is the page's, so a row leaves
+       it out (2026-10-22, WRK-13). */
+    var ctx = elsewhere ? (t.engagement_id && t.code_period ? monthWord(t.code_period) + ' content' : '') : (engName(t) || whoseWord(t));
     var mine = state.session && state.session.task_id === t.id;
     var check = picking
       ? '<input type="checkbox" class="trow-pick" data-a="pick"' + (picked ? ' checked' : '') + ' aria-label="Select ' + esc(t.title || serialOf(t)) + '">'

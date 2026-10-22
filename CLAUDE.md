@@ -3458,7 +3458,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     runs the row and a board card carry a strip down their left edge in the
     level's colour (red once over); while it comes before the due date its
     words stand in the Due column as a filled tag ("High · 31h left", red
-    "High · 5h over"), and the task card says Set to High … · deliver within
+    "High · 5h over", "Urgent · 19 days over" once over by a day; WRK-6), and the task card says Set to High … · deliver within
     48 hours, by … under the next step.
   - Complexity: Light, Standard, Complex (the key `simple` reads as Light).
   - The post date is required on a new content piece (below). It seeds

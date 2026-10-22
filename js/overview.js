@@ -389,12 +389,14 @@
       });
     } },
     { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
-      var STALE = window.ADspaceCRM.staleH;
+      /* The Clients list's own rule, so the two agree at the boundary
+         (2026-10-22, OVW-7). */
+      var CRM = window.ADspaceCRM;
       return R.clients().then(function (list) {
         var now = Date.now();
         return list.filter(function (c) { return c.stage === 'lead' || c.stage === 'proposal'; }).map(function (c) {
-          return { c: c, h: (now - new Date(c.stage_since || c.created_at).getTime()) / 3600000 };
-        }).filter(function (x) { return x.h > STALE(x.c)[x.c.stage]; }).map(function (x) {
+          return { c: Object.assign({}, c, { stage_since: c.stage_since || c.created_at }), h: (now - new Date(c.stage_since || c.created_at).getTime()) / 3600000 };
+        }).filter(function (x) { return CRM.isStale(x.c); }).map(function (x) {
           var c = x.c, d = Math.floor(x.h / 24);
           return { name: c.name, meta: [(W.stage || {})[c.stage] || c.stage, 'Overdue'].join(' · '), tag: 'Lead', who: c.owner || '', client: c.id,
                    late: true, days: d, since: daysWord(d), url: clientUrl(c), section: 'clients' };
@@ -623,10 +625,12 @@
         return { fig: String(n), sub: people.length === 1 ? 'With 1 person' : 'Across ' + people.length + ' people' };
       });
     } },
-    { key: 'late', title: 'Late', can: canFigures, load: function () {
+    /* The count is the Late tasks signal's; the tile states how late the
+       oldest is, so nothing on the page is said twice (2026-10-22, OVW-5). */
+    { key: 'late', title: 'Oldest late', can: canFigures, load: function () {
       return R.report().then(function (d) {
         var l = d.late || [], top = l.reduce(function (a, t) { return Math.max(a, Number(t.days_over) || 0); }, 0);
-        return { fig: String(l.length), tone: l.length ? 'err' : '', sub: l.length ? 'Oldest ' + daysWord(top) + ' late' : 'None late' };
+        return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '', sub: '' };
       });
     } },
     { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, can: canFigures, load: function () {
