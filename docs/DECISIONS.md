@@ -6361,3 +6361,18 @@ is said in the Filters sheet's head (`js/cmdbar.js`, any bar whose count
 steps away). The empty `.msg` under the hidden bar gives back its margin so
 the Months bar stands where the List bar does. `tests/work.js` and
 `tests/phone.js` measure the one line and the one ⋯.
+### 2026-10-22 — The Dashboard opens on what needs acting on (release 6 of the work review)
+The user, 2026-10-22: "Fix all", which reopens the Summary order approved
+on 2026-10-12 ("the mockup's order stays"). OVW-M1: at 390 Needs attention,
+the one list with acts, began on the fourth screen (about 2,200px down),
+and the glance's six signals restated the list's own sources. Built: the
+glance is the two rings alone; Needs attention follows them, before the
+tiles and the trends; its head is a view strip of the sources holding rows
+(All, then Late, Reports owed, Cold leads, Requests … each its count, red
+where it holds late work), a tab narrowing the list to that source, so
+each signal's count stands where its rows are; Active clients, which no
+list holds, left with the signals (the Detail page's pipeline and the
+Active clients tile keep it). One source draws no strip and the head
+counts it. The 1280 layout keeps the rings full width (the review's second
+option). `tests/overview.js` measures the order and the strip;
+`tests/uxaudit.js` holds the strip to the card's width.

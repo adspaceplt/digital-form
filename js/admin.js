@@ -1548,8 +1548,8 @@
   var GUIDES = {
     overview: { name: 'Dashboard', steps: [
       { at: '#ovwPeriod', text: 'Every figure reads the period chosen here.' },
-      { at: '#ovwGlance', text: 'What needs acting on today, beside the share of work that reached the client on time.' },
-      { at: '#ovwAttention .ovw-att-row', text: 'Everything waiting, late first. Press a row to open it where it is kept.' }] },
+      { at: '#ovwGlance', text: 'The share of work that reached the client on time, and of posts that went live on their day.' },
+      { at: '#ovwAttention .ovw-att-row', text: 'Everything waiting, late first; a tab above shows one kind. Press a row to open it where it is kept.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
       { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },

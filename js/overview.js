@@ -340,7 +340,7 @@
   }
   function reportLateDays(x) { return Math.max(1, Math.floor((Date.now() - new Date(x.due).getTime()) / 86400000)); }
   var SOURCES = [
-    { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
+    { key: 'late', word: 'Late', title: 'Late tasks', can: canFigures, load: function () {
       return R.report().then(function (d) {
         return (d.late || []).map(function (t) {
           return { name: taskName(t), meta: t.client || 'Internal', tag: 'Task', who: t.owner || 'Unassigned', client: t.client_id, clientName: t.client,
@@ -350,7 +350,7 @@
       });
     } },
     /* A client paused or ended still owes its revisions and reviews. */
-    { key: 'urgent', title: 'Open work for paused and past clients', can: function () { return may('ops', 'manage') && may('ops.all'); }, load: function () {
+    { key: 'urgent', word: 'Urgent delivery', title: 'Open work for paused and past clients', can: function () { return may('ops', 'manage') && may('ops.all'); }, load: function () {
       return R.openTasks().then(function (list) {
         return list.filter(function (t) { var st = t.clients && t.clients.stage; return st === 'paused' || st === 'past'; }).map(function (t) {
           var n = t.current_final_due_at ? CK.between(CK.day(t.current_final_due_at), CK.today()) : null;
@@ -360,7 +360,7 @@
         });
       });
     } },
-    { key: 'owed', title: function () { return 'Reports for ' + lastMonth().word; }, can: canReports, load: function () {
+    { key: 'owed', word: 'Reports owed', title: function () { return 'Reports for ' + lastMonth().word; }, can: canReports, load: function () {
       var SM = window.ADspaceSmReport;
       return R.owed().then(function (items) {
         return items.filter(function (x) { return x.status !== 'published' && x.status !== 'review'; }).map(function (x) {
@@ -377,7 +377,7 @@
         });
       });
     } },
-    { key: 'confirm', title: 'Reports waiting for confirmation', can: canReports, load: function () {
+    { key: 'confirm', word: 'To confirm', title: 'Reports waiting for confirmation', can: canReports, load: function () {
       var SM = window.ADspaceSmReport;
       return R.inReview().then(function (list) {
         return list.map(function (r) {
@@ -388,7 +388,7 @@
         });
       });
     } },
-    { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
+    { key: 'cold', word: 'Cold leads', title: 'Leads going cold', can: canLeads, load: function () {
       /* The Clients list's own rule, so the two agree at the boundary
          (2026-10-22, OVW-7). */
       var CRM = window.ADspaceCRM;
@@ -403,7 +403,7 @@
         });
       });
     } },
-    { key: 'restricted', title: 'Restricted accounts', can: canClients, load: function () {
+    { key: 'restricted', word: 'Restricted', title: 'Restricted accounts', can: canClients, load: function () {
       return R.clients().then(function (list) {
         return list.filter(function (c) { return c.restricted_since; }).map(function (c) {
           return { name: c.name, meta: [RESTRICT_WORD[c.restricted_platform] || 'Account', 'Restricted', c.restricted_note].filter(Boolean).join(' · '),
@@ -412,7 +412,7 @@
         });
       });
     } },
-    { key: 'requests', title: 'Unanswered requests', can: canRequests, load: function () {
+    { key: 'requests', word: 'Requests', title: 'Unanswered requests', can: canRequests, load: function () {
       return R.requests().then(function (list) {
         return list.map(function (q) {
           var c = q.clients || {};
@@ -422,7 +422,7 @@
         });
       });
     } },
-    { key: 'sets', title: 'Sets waiting on the client', can: canSets, load: function () {
+    { key: 'sets', word: 'Sets waiting', title: 'Sets waiting on the client', can: canSets, load: function () {
       return R.sets().then(function (list) {
         return list.map(function (x) {
           var c = x.s.clients || {};
@@ -433,7 +433,7 @@
         });
       });
     } },
-    { key: 'noset', title: 'No set this month', can: canSets, load: function () {
+    { key: 'noset', word: 'No set', title: 'No set this month', can: canSets, load: function () {
       return R.noSet().then(function (list) {
         return list.map(function (x) {
           return { name: x.c.name, meta: 'No set this month' + (x.last ? ' · Last set ' + dateWord(x.last) : ''), tag: 'Content Review',
@@ -442,7 +442,7 @@
         });
       });
     } },
-    { key: 'bookings', title: 'Bookings past their date', can: canCamps, load: function () {
+    { key: 'bookings', word: 'Bookings', title: 'Bookings past their date', can: canCamps, load: function () {
       var t0 = isoDay(today());
       return R.bookings().then(function (list) {
         return list.filter(function (o) { return o.state === 'pending_visit' || o.state === 'pending_draft' || o.state === 'changes'; }).map(function (o) {
@@ -456,7 +456,7 @@
         });
       });
     } },
-    { key: 'qc', title: 'Waiting for the quality check', can: canCamps, load: function () {
+    { key: 'qc', word: 'Quality check', title: 'Waiting for the quality check', can: canCamps, load: function () {
       return R.bookings().then(function (list) {
         return list.filter(function (o) { return o.state === 'submitted'; }).map(function (o) {
           var cp = o.campaigns || {};
@@ -466,7 +466,7 @@
         });
       });
     } },
-    { key: 'checklists', title: 'Client checklists not signed off', can: function () { return may('clients.checklists', 'manage'); }, load: function () {
+    { key: 'checklists', word: 'Checklists', title: 'Client checklists not signed off', can: function () { return may('clients.checklists', 'manage'); }, load: function () {
       return db.rpc('client_checklists_due').then(rows).then(function (list) {
         return (list || []).map(function (c) {
           var what = c.kind === 'pre_ads' ? 'Pre-Advertising Checklist' : 'New Client Onboarding Checklist';
@@ -477,7 +477,7 @@
         });
       });
     } },
-    { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); }, load: function () {
+    { key: 'unsigned', word: 'Unsigned letters', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); }, load: function () {
       return R.letters().then(function (list) {
         return list.map(function (d) {
           var c = d.clients || {};
@@ -486,7 +486,7 @@
         });
       });
     } },
-    { key: 'reviews', title: function () { return 'Reviews for ' + lastMonth().word; }, can: function () { return may('team.performance'); }, load: function () {
+    { key: 'reviews', word: 'Reviews', title: function () { return 'Reviews for ' + lastMonth().word; }, can: function () { return may('team.performance'); }, load: function () {
       var P = window.ADspacePerf, words = (P && P.status) || {};
       return R.reviews().then(function (list) {
         return list.filter(function (r) { return r.status !== 'final'; }).map(function (r) {
@@ -514,7 +514,11 @@
       });
     })).then(function (all) {
       var out = [], failed = [];
-      all.forEach(function (a) { if (a.failed) failed.push(a); else out = out.concat(a.rows); });
+      all.forEach(function (a, i) {
+        if (a.failed) { failed.push(a); return; }
+        a.rows.forEach(function (r) { r.src = r.src || live[i].key; });
+        out = out.concat(a.rows);
+      });
       /* One row a piece of work (2026-10-22, OVW-3): a late report task is
          the owed report's row, and a late task of a paused or past client
          keeps its late row, which names Urgent delivery. */
@@ -534,40 +538,6 @@
     });
   }
 
-  /* ---- Today at a glance --------------------------------------------------------
-     A signal a line: its words, its count, its state. Each asks its source's
-     permission and reads through the shared reads. */
-  var SIGNALS = [
-    { key: 'late', title: 'Late tasks', can: canFigures, load: function () {
-      return R.report().then(function (d) { var n = (d.late || []).length; return { n: n, word: n ? 'Late' : 'None', tone: n ? 'danger' : 'off' }; });
-    } },
-    { key: 'owed', title: function () { return 'Reports owed for ' + LONG[lastMonth().mo]; }, can: canReports, load: function () {
-      return R.owed().then(function (items) {
-        /* Owed is not yet published, as the tile and the Reports chart
-           count it (2026-10-22, OVW-4). */
-        var open = items.filter(function (x) { return x.status !== 'published'; });
-        var late = open.filter(function (x) { return x.late; }).length;
-        return { n: open.length, word: late ? late + ' late' : open.length ? 'Waiting' : 'None', tone: late ? 'danger' : open.length ? 'warn' : 'off' };
-      });
-    } },
-    { key: 'cold', title: 'Leads going cold', can: canLeads, load: function () {
-      return SOURCES.filter(function (s) { return s.key === 'cold'; })[0].load().then(function (l) {
-        return { n: l.length, word: l.length ? 'Overdue' : 'None', tone: l.length ? 'danger' : 'off' };
-      });
-    } },
-    { key: 'sets', title: 'Sets waiting on clients', can: canSets, load: function () {
-      return R.sets().then(function (l) { return { n: l.length, word: l.length ? 'Waiting' : 'None', tone: l.length ? 'warn' : 'off' }; });
-    } },
-    { key: 'requests', title: 'Unanswered client requests', can: canRequests, load: function () {
-      return R.requests().then(function (l) { return { n: l.length, word: l.length ? 'Waiting' : 'None', tone: l.length ? 'warn' : 'off' }; });
-    } },
-    { key: 'active', title: 'Active clients', can: canClients, load: function () {
-      return R.clients().then(function (l) {
-        var n = l.filter(function (c) { return c.stage === 'active'; }).length;
-        return { n: n, word: n ? 'Active' : 'None', tone: n ? 'ok' : 'off' };
-      });
-    } }
-  ];
   function titleOf(x) { return typeof x.title === 'function' ? x.title() : x.title; }
   /* A tile's label, with its narrow word where it has one. */
   function label(el, t) {
@@ -882,7 +852,7 @@
   /* Whether anything is allowed: the console offers the Dashboard only then
      (admin.js `sectionAllowed`), so a group with nothing to oversee here
      starts on its first route instead of an empty page. */
-  var ALL = [].concat(SOURCES, SIGNALS, SALES, OPS, [].concat.apply([], CHARTS));
+  var ALL = [].concat(SOURCES, SALES, OPS, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
 
   // ---- Drawing ----------------------------------------------------------------------
@@ -890,15 +860,14 @@
     UI.failLine(body, title || 'This card', (e && e.message) || 'The read failed.', again);
   }
   function glance(box) {
-    var meter = canFigures(), sigs = SIGNALS.filter(function (s) { return s.can(); });
-    if (!meter && !sigs.length) return;
+    /* The rings alone (2026-10-22, OVW-M1): what needs acting on today is
+       the list under them, its sources counted in its own strip. */
+    var meter = canFigures();
+    if (!meter) return;
     var card = document.createElement('section');
-    card.className = 'chartcard ovw-glance' + (meter ? '' : ' is-plain');
+    card.className = 'chartcard ovw-glance is-plain';
     card.id = 'ovwGlance';
-    card.innerHTML = (meter ? '<div class="ovw-meters"><div class="ovw-meter" id="ovwMeter"></div><div class="ovw-meter" id="ovwPosted"></div></div>' : '') +
-      (sigs.length ? '<div class="ovw-sigs"><div class="ovw-cardhead"><h3>Needs attention today</h3>' +
-        '<button class="btn btn-quiet btn-sm ovgo" type="button" data-a="list"><span class="ovgo-word">Open list</span>' + CHEV + '</button></div>' +
-        '<div class="ovw-sig-rows"></div></div>' : '');
+    card.innerHTML = '<div class="ovw-meters"><div class="ovw-meter" id="ovwMeter"></div><div class="ovw-meter" id="ovwPosted"></div></div>';
     box.appendChild(card);
     if (meter) {
       var mbox = card.querySelector('#ovwMeter'), pbox = card.querySelector('#ovwPosted');
@@ -913,9 +882,6 @@
           var p = d.posted || {}, pn = Number(p.due || 0), pm = Number(p.met || 0);
           mbox.innerHTML = '';
           pbox.innerHTML = '';
-          /* Empty rings follow the signals in a narrow pane, so the first
-             screen of a phone opens on what needs acting on (ux-audit OVW-7). */
-          card.classList.toggle('is-ringless', !n && !pn);
           /* The rings stand whatever the period holds (the user, 2026-10-12):
              with nothing due they are empty and read a dash. */
           CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
@@ -926,27 +892,6 @@
       };
       runM();
     }
-    var list = card.querySelector('[data-a="list"]');
-    if (list) list.addEventListener('click', function () {
-      var a = $('ovwAttention');
-      if (a) { a.scrollIntoView({ block: 'start', behavior: 'smooth' }); var first = a.querySelector('.ovw-att-row'); if (first) first.focus({ preventScroll: true }); }
-    });
-    var host = card.querySelector('.ovw-sig-rows');
-    sigs.forEach(function (s) {
-      var row = document.createElement('div');
-      row.className = 'ovw-sig';
-      row.setAttribute('data-sig', s.key);
-      row.innerHTML = '<span class="ovw-sig-name"></span><b class="ovw-sig-n"><span class="skel skel-w"></span></b><span class="ovw-sig-word"></span>';
-      row.firstChild.textContent = titleOf(s);
-      host.appendChild(row);
-      s.load().then(function (o) {
-        row.querySelector('.ovw-sig-n').textContent = String(o.n);
-        row.querySelector('.ovw-sig-word').innerHTML = '<span class="chip-state tone is-' + o.tone + '">' + esc(o.word) + '</span>';
-      }).catch(function () {
-        row.querySelector('.ovw-sig-n').textContent = '—';
-        row.querySelector('.ovw-sig-word').innerHTML = '<span class="ovw-sig-fail">Could not load.</span>';
-      });
-    });
   }
   function tile(grid, t) {
     var el = document.createElement('article');
@@ -1145,72 +1090,129 @@
   }
 
   var SHOWN = 5;
+  /* Needs attention, straight under the rings (2026-10-22, OVW-M1; the
+     user's "Fix all" reopening the order approved on 2026-10-12): its head
+     counts each source as the view strip, All first, a source's tab
+     narrowing the list to it, red where it holds late work; five rows, then
+     Show N more. */
   function list(box) {
     if (!SOURCES.some(function (s) { return s.can(); })) return;
     var card = document.createElement('section');
     card.className = 'chartcard ovw-card ovw-att';
     card.id = 'ovwAttention';
-    card.innerHTML = '<div class="ovw-cardhead"><h3>Needs attention</h3><span class="ovw-count" hidden></span></div><div class="ovw-body"></div>';
+    card.innerHTML = '<div class="ovw-cardhead"><h3>Needs attention</h3><span class="ovw-count" hidden></span></div><div class="ovw-srcs-host"></div><div class="ovw-body"></div>';
     box.appendChild(card);
-    var body = card.querySelector('.ovw-body');
+    var body = card.querySelector('.ovw-body'), host = card.querySelector('.ovw-srcs-host');
+    var pick = '';
+    var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',
+      Document: 'Clients', Campaign: 'Creator Campaigns', Performance: 'Team' };
+    var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    var wordOf = {};
+    SOURCES.forEach(function (s) { wordOf[s.key] = s.word || titleOf(s); });
+    function strip(a) {
+      var counts = {}, late = {}, order = [];
+      a.rows.forEach(function (r) {
+        if (!counts[r.src]) { counts[r.src] = 0; order.push(r.src); }
+        counts[r.src]++;
+        if (r.late) late[r.src] = 1;
+      });
+      if (pick && !counts[pick]) pick = '';
+      host.innerHTML = '';
+      /* One source needs no strip: the head counts it, as the strip's All
+         would (a count said once). */
+      var count = card.querySelector('.ovw-count');
+      count.hidden = order.length > 1 || !a.rows.length;
+      count.textContent = String(a.rows.length);
+      count.className = 'ovw-count tone' + (a.rows.some(function (r) { return r.late; }) ? ' is-danger' : '');
+      if (order.length < 2) return;
+      order.sort(function (x, y) { return SOURCES.map(function (s) { return s.key; }).indexOf(x) - SOURCES.map(function (s) { return s.key; }).indexOf(y); });
+      var anyLate = a.rows.some(function (r) { return r.late; });
+      var tab = function (k, word, n, red) {
+        var on = k === pick;
+        return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-src="' + k + '" aria-selected="' + on + '"' + (on ? '' : ' tabindex="-1"') + '>' +
+          '<span>' + esc(word) + '</span><span class="tab-n' + (red ? ' is-err' : '') + '">' + n + '</span></button>';
+      };
+      host.innerHTML = '<nav class="tabrow ovw-srcs" id="ovwSrcs" role="tablist" aria-label="Needs attention by source">' +
+        tab('', 'All', a.rows.length, anyLate) +
+        order.map(function (k) { return tab(k, wordOf[k] || k, counts[k], late[k]); }).join('') + '</nav>';
+      var nav = host.firstChild;
+      if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(nav);
+      nav.addEventListener('click', function (e) {
+        var t = e.target.closest && e.target.closest('.tab');
+        if (!t) return;
+        pick = t.getAttribute('data-src');
+        Array.prototype.forEach.call(nav.querySelectorAll('.tab'), function (b) {
+          var on = b === t;
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-selected', String(on));
+          if (on) b.removeAttribute('tabindex'); else b.setAttribute('tabindex', '-1');
+        });
+        if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(nav);
+        rows(a);
+      });
+      nav.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        var tabs = Array.prototype.slice.call(nav.querySelectorAll('.tab'));
+        var i = tabs.indexOf(nav.querySelector('.tab.is-on'));
+        var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        e.preventDefault();
+        next.click(); next.focus();
+      });
+    }
+    function rows(a) {
+      body.innerHTML = '';
+      a.failed.forEach(function (f) {
+        var h = document.createElement('div');
+        body.appendChild(h);
+        UI.failLine(h, f.failed, f.why, run);
+      });
+      if (!a.rows.length) {
+        if (!a.failed.length) UI.emptyLine(body, 'Nothing waiting.');
+        return;
+      }
+      var list = pick ? a.rows.filter(function (r) { return r.src === pick; }) : a.rows;
+      /* The Section column names the rail's section, never a record's
+         kind (2026-10-20, OVW-3). */
+      var head = '<div class="ovw-att-head" aria-hidden="true"><span>What</span><span>Section</span><span>Who</span><span>Since</span></div>';
+      var html = list.map(function (r, i) {
+        var since = r.late ? '<b class="is-err">' + esc(r.since) + '</b>'
+          : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
+        return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
+          '<span class="ovw-att-what"><b>' + esc(r.name) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
+          '<span class="ovw-att-sec"><span class="chip">' + esc(SEC_OF[r.tag] || r.tag) + '</span></span>' +
+          '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
+          '<span class="ovw-att-since">' + since + '</span></button>';
+      }).join('');
+      var more = list.length - SHOWN;
+      var holder = document.createElement('div');
+      holder.className = 'ovw-att-rows';
+      holder.innerHTML = head + html;
+      body.appendChild(holder);
+      /* Five rows, then the rest a press away; pressed again, the list
+         folds back to five (the user, 2026-10-12: "so it is not
+         inadvertently long"; "5 show only"). */
+      if (more > 0) body.insertAdjacentHTML('beforeend', '<button class="btn btn-sm ovw-more" type="button" aria-expanded="false" aria-controls="ovwAttention">' +
+        '<span>Show ' + more + ' more</span>' + DOWN + '</button>');
+      Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row'), function (b) {
+        var r = list[Number(b.getAttribute('data-i'))];
+        b.addEventListener('click', function () { go(r.url, r.section); });
+      });
+      var mb = body.querySelector('.ovw-more');
+      if (mb) mb.addEventListener('click', function () {
+        var open = mb.getAttribute('aria-expanded') !== 'true';
+        var rs = Array.prototype.slice.call(holder.querySelectorAll('.ovw-att-row')).slice(SHOWN);
+        rs.forEach(function (b) { b.hidden = !open; });
+        mb.setAttribute('aria-expanded', String(open));
+        mb.firstChild.textContent = open ? 'Show fewer' : 'Show ' + more + ' more';
+        if (open && rs[0]) rs[0].focus();
+        if (!open) { card.scrollIntoView({ block: 'nearest' }); mb.focus({ preventScroll: true }); }
+      });
+    }
     var run = function () {
+      host.innerHTML = '';
       UI.skeleton(body, 4);
-      attention().then(function (a) {
-        var count = card.querySelector('.ovw-count');
-        var late = a.rows.some(function (r) { return r.late; });
-        count.hidden = !a.rows.length;
-        count.textContent = String(a.rows.length);
-        count.className = 'ovw-count tone' + (late ? ' is-danger' : '');
-        body.innerHTML = '';
-        a.failed.forEach(function (f) {
-          var host = document.createElement('div');
-          body.appendChild(host);
-          UI.failLine(host, f.failed, f.why, run);
-        });
-        if (!a.rows.length) {
-          if (!a.failed.length) UI.emptyLine(body, 'Nothing waiting.');
-          return;
-        }
-        /* The Section column names the rail's section, never a record's
-           kind (2026-10-20, OVW-3). */
-        var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',
-          Document: 'Clients', Campaign: 'Creator Campaigns', Performance: 'Team' };
-        var head = '<div class="ovw-att-head" aria-hidden="true"><span>What</span><span>Section</span><span>Who</span><span>Since</span></div>';
-        var html = a.rows.map(function (r, i) {
-          var since = r.late ? '<b class="is-err">' + esc(r.since) + '</b>'
-            : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
-          return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
-            '<span class="ovw-att-what"><b>' + esc(r.name) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
-            '<span class="ovw-att-sec"><span class="chip">' + esc(SEC_OF[r.tag] || r.tag) + '</span></span>' +
-            '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
-            '<span class="ovw-att-since">' + since + '</span></button>';
-        }).join('');
-        var more = a.rows.length - SHOWN;
-        var holder = document.createElement('div');
-        holder.className = 'ovw-att-rows';
-        holder.innerHTML = head + html;
-        body.appendChild(holder);
-        /* Five rows, then the rest a press away; pressed again, the list
-           folds back to five (the user, 2026-10-12: "so it is not
-           inadvertently long"; "5 show only"). */
-        var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
-        if (more > 0) body.insertAdjacentHTML('beforeend', '<button class="btn btn-sm ovw-more" type="button" aria-expanded="false" aria-controls="ovwAttention">' +
-          '<span>Show ' + more + ' more</span>' + DOWN + '</button>');
-        Array.prototype.forEach.call(holder.querySelectorAll('.ovw-att-row'), function (b) {
-          var r = a.rows[Number(b.getAttribute('data-i'))];
-          b.addEventListener('click', function () { go(r.url, r.section); });
-        });
-        var mb = body.querySelector('.ovw-more');
-        if (mb) mb.addEventListener('click', function () {
-          var open = mb.getAttribute('aria-expanded') !== 'true';
-          var rows = Array.prototype.slice.call(holder.querySelectorAll('.ovw-att-row')).slice(SHOWN);
-          rows.forEach(function (b) { b.hidden = !open; });
-          mb.setAttribute('aria-expanded', String(open));
-          mb.firstChild.textContent = open ? 'Show fewer' : 'Show ' + more + ' more';
-          if (open && rows[0]) rows[0].focus();
-          if (!open) { card.scrollIntoView({ block: 'nearest' }); mb.focus({ preventScroll: true }); }
-        });
-      }).catch(function (e) { fail(body, 'Needs attention', e, run); });
+      attention().then(function (a) { strip(a); rows(a); })
+        .catch(function (e) { fail(body, 'Needs attention', e, run); });
     };
     run();
   }
@@ -1268,9 +1270,9 @@
       detail(box);
     } else {
       glance(box);
+      list(box);
       tiles(box);
       charts(box, PAGE1);
-      list(box);
     }
     foot(box);
     if (keep) window.scrollTo(0, y);
