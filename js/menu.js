@@ -59,6 +59,8 @@
      somewhere"); at a desk it hangs from its control with a caret pointing
      at it. */
   var phone = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
+  // Open, Change, Send, Mark, Lifecycle, Remove and destroy.
+  var GROUPS = 6;
 
   window.ADspaceMenu = {
     /* Placed on the viewport rather than in the row, so the table's own
@@ -67,6 +69,15 @@
        nowhere a phone can reach. Call it with the menu already visible; the
        height cannot be measured otherwise. */
     place: function (btn, menu, align) {
+      tidy(menu);
+      /* A record head's ⋯ on a phone docks at the foot of the screen inside
+         the gutters, as the account menu does, so it never covers the
+         record's name (DESIGN.md §5 Menus, 11); a row's keeps hanging from
+         its row. */
+      var dock = !!(phone && phone.matches && menu.classList.contains('kmenu') &&
+        (menu.hasAttribute('data-dock') || (btn.closest && btn.closest('.rec-ctl'))));
+      menu.classList.toggle('is-footdock', dock);
+      menu.style.width = dock ? (window.innerWidth - 32) + 'px' : '';
       var r = btn.getBoundingClientRect(), h = menu.offsetHeight;
       menu.style.position = 'fixed';
       menu.style.right = 'auto';
@@ -90,6 +101,10 @@
       menu.style.top = (r.bottom + 4 + h <= floor || r.top - 4 - h < 8)
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
+      if (dock) {
+        menu.style.left = '16px';
+        menu.style.top = Math.max(8, floor - menu.offsetHeight) + 'px';
+      }
       /* `position: fixed` is measured from the viewport only while no
          ancestor is transformed, and on an iPhone not always then: a sheet
          on a phone is (`will-change: transform`, so it lifts in one piece),
@@ -142,6 +157,83 @@
       card.style.setProperty('--caret', Math.max(18, Math.min(c.width - 18, x)) + 'px');
     },
     // How this page shuts its own menus, for a scroll that has really moved.
-    onScroll: function (shut) { closers.push(shut); }
+    onScroll: function (shut) { closers.push(shut); },
+    /* One way to write a ⋯ menu's items (DESIGN.md §5 Menus and action
+       groups; the user, 2026-10-22: "MENU standard: approve"). `groups` is
+       the six groups in their fixed order, Open, Change, Send, Mark,
+       Lifecycle, Remove and destroy; each an array of items, a falsy item
+       left out (an item that cannot apply in the record's state is not
+       drawn). An item is { a, label, need, attrs, id, hidden }: `a` its
+       `data-a` (or `key` names another attribute, `data-i` for My Work),
+       `attrs` any further attributes as written. The group's number rides
+       each item (`data-g`), so `tidy` lays the separators and the red for
+       whatever the page shows or hides afterwards. */
+    items: function (groups, key) {
+      var out = '', k = key || 'data-a';
+      for (var g = 0; g < groups.length && g < GROUPS; g++) {
+        var list = groups[g] || [];
+        for (var i = 0; i < list.length; i++) {
+          var it = list[i];
+          if (!it) continue;
+          out += '<button class="kmenu-item' + (g === GROUPS - 1 ? ' is-danger' : '') + '" type="button" role="menuitem" data-g="' + (g + 1) + '"' +
+            (it.a ? ' ' + k + '="' + attr(it.a) + '"' : '') +
+            (it.id ? ' id="' + attr(it.id) + '"' : '') +
+            (it.need ? ' data-need="' + attr(it.need) + '"' : '') +
+            (it.attrs ? ' ' + it.attrs : '') +
+            (it.hidden ? ' hidden' : '') + '>' + text(it.label) + '</button>';
+        }
+      }
+      return out;
+    },
+    /* A menu's items in order, as the page shows them now: roles, the red
+       of group 6 and nothing else, and a separator before group 6 when
+       anything precedes it, and between every other change of group once
+       four items or more show. Run by itself whenever a menu is shown. */
+    tidy: tidy,
+    GROUPS: GROUPS
   };
+
+  function attr(v) {
+    return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function text(v) {
+    return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function shown(el) {
+    return !el.hidden && el.style.display !== 'none' && !el.closest('[hidden]:not(.kmenu)');
+  }
+  function tidy(menu) {
+    if (!menu || !menu.querySelector || !menu.querySelector('[data-g]')) return;
+    if (menu.getAttribute('role') !== 'menu') menu.setAttribute('role', 'menu');
+    var old = menu.querySelectorAll('hr.kmenu-sep[data-auto]');
+    for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);
+    var items = Array.prototype.filter.call(menu.querySelectorAll('.kmenu-item[data-g]'), function (e) {
+      if (e.getAttribute('role') !== 'menuitem') e.setAttribute('role', 'menuitem');
+      e.classList.toggle('is-danger', e.getAttribute('data-g') === String(GROUPS));
+      return shown(e);
+    });
+    var many = items.length >= 4;
+    for (var j = 1; j < items.length; j++) {
+      var a = items[j - 1].getAttribute('data-g'), b = items[j].getAttribute('data-g');
+      if (a === b) continue;
+      if (b !== String(GROUPS) && !many) continue;
+      var hr = document.createElement('hr');
+      hr.className = 'kmenu-sep';
+      hr.setAttribute('role', 'separator');
+      hr.setAttribute('data-auto', '');
+      items[j].parentNode.insertBefore(hr, items[j]);
+    }
+  }
+  /* Every menu is tidied the moment it is shown, and again while it is
+     open if an item shows or hides: the pages keep their own wiring. */
+  if (window.MutationObserver) {
+    new MutationObserver(function (list) {
+      var seen = [];
+      for (var i = 0; i < list.length; i++) {
+        var t = list[i].target;
+        var m = t.classList && t.classList.contains('kmenu') ? t : (t.closest ? t.closest('.kmenu') : null);
+        if (m && seen.indexOf(m) < 0) { seen.push(m); if (!m.hidden) tidy(m); }
+      }
+    }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+  }
 })();

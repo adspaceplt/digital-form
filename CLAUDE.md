@@ -214,6 +214,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
+| Any ⋯ menu, a bulk bar, `ADspaceMenu.items` | menus, deletes, then `ui` |
 | `handbook.js` | handbook |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
@@ -716,8 +717,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps its own); a failed read is not kept, so the next `load()` asks
     again. A figure is read at the day it applies to, as the database reads
     it (a report's deadline at its period's end).
-- `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
-  a popover card opens.
+- `js/menu.js` (`place`, `pop`, `onScroll`, `items`, `tidy`) is the only copy
+  of where a ⋯ or a popover card opens, and of what a ⋯ holds and in what
+  order (DESIGN.md §5 Menus and action groups): every item carries its
+  group (`data-g` 1 to 6), and `tidy` lays roles, separators and the red
+  each time a menu shows; a record head's ⋯ (in `.rec-ctl`, or
+  `data-dock`) docks at the foot under 640.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
     `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
     a desk it hangs from its control with a caret (`--caret`, `is-up`); under

@@ -2319,7 +2319,6 @@ body.is-plain .topbar { background: var(--chrome); }
   gap: 10px; text-align: left; min-height: var(--ctl-h); padding: 4px 10px;
 }
 /* The label and its second line read as one row, not as two stacked items. */
-.acct-menu .kmenu-item b { font-weight: 600; }
 .acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
 .acct-who-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
 .acct-who-text b {
@@ -2333,7 +2332,9 @@ body.is-plain .topbar { background: var(--chrome); }
 /* Four groups (you, the workspace, this device, the way out), each set off
    by a hairline. The workspace's rows are each drawn only where they may be
    used, and its hairline leaves with the last of them. */
-.acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
+/* A menu's groups are set off by one hairline (DESIGN.md §5 Menus, 4),
+   laid by `ADspaceMenu.tidy`; the account menu's are the same rule. */
+.kmenu-sep, .acct-sep { flex: 0 0 auto; border: 0; height: 1px; margin: 4px 6px; background: var(--line-soft); }
 .acct-theme-word { flex: 1 1 auto; min-width: 0; cursor: default; }
 .acct-theme .seg { flex: 0 0 auto; margin-left: auto; }
 /* On the menu's raised ground the chosen option takes the menu's own edge,
@@ -3280,7 +3281,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   text-align: left; min-height: var(--ctl-h);
   padding: 9px 11px; border: 0; border-radius: var(--radius-sm); background: none;
 }
-.kmenu-item b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.kmenu-item { font-size: 13.5px; font-weight: 400; color: var(--ink); }
+/* One look for every item (DESIGN.md §5 Menus, 10; MENU-4, 2026-10-22): a
+   bold label in some menus and a plain one in others read as two kinds. */
+.kmenu-item b { font: inherit; color: inherit; }
 .kmenu-item span { font-size: 12px; line-height: 1.45; color: var(--ink-mute); }
 .kmenu-item:hover { background: var(--line-soft); }
 /* A destructive item is red whether or not it carries a <b>. The colour hung
@@ -3667,6 +3671,9 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* A ⋯ menu is as wide as its words on a phone too (2026-10-11): drawn
      the screen's width, the task card's covered the card's whole head. */
   .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
+  /* A record head's ⋯ docks at the foot inside the gutters, as the account
+     menu does, and never covers the record's name (MENU-16, 2026-10-22). */
+  .kmenu.is-footdock { max-width: none; transform-origin: bottom center; }
   .kactions { gap: 8px; }
 
   /* Full label on a phone too: the client has to know which profile they are
@@ -4677,7 +4684,7 @@ body > .shell { width: 100%; }
 .group-name small { font-size: 12px; color: var(--ink-mute); }
 /* The ⋯ menu hangs from its own cell, not from the table. */
 .team-act { position: relative; display: flex; justify-content: flex-end; }
-.team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; width: 200px; }
+.team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; }
 .group-name .input { width: 100%; }
 .input-sm { min-height: var(--ctl-h-sm); font-size: 13px; }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
