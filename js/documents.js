@@ -967,7 +967,8 @@
 
       var SIGH = 91;          // 32mm of signing room, not a ruled line
       var FIELDH = 29;        // 10mm for each of the three fields
-      var acceptH = 18 + LH   // heading
+      var acceptH = 30        // the divider
+        + 18 + LH             // heading
         + LH * 2 + 10         // the sentence
         + 8 + sumRows.length * 15 + 10    // the summary
         + 26                  // the page count line
@@ -976,6 +977,10 @@
         + 3 * (FIELDH + 26);  // name, designation, date
       need(acceptH);
 
+      /* A rule in ink across the column parts the letter from the client's
+         own act, so the sign-off above and the acceptance under it never read
+         as one run of lines (the user, 2026-10-23: "so its not so crumpled"). */
+      y -= 6; rule(y, M, R, true); y -= 24;
       text('Acceptance of offer', M, y, BODY, bold); y -= LH + 8;
 
       /* Plain prose, and a plain date: an ordinal reads as a letterhead
