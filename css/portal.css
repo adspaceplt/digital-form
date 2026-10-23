@@ -3205,11 +3205,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      name takes the larger share and never less than 140px (2026-10-14, audit
      CAMP-7: at .9fr it was 102px and cut "Ah Beng Reviews" while the summary
      had room); the summary gives way first, ending in an ellipsis. */
-  grid-template-columns: 44px minmax(140px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
+  grid-template-columns: 44px minmax(140px, 1fr) minmax(0, 176px) var(--state-w) 82px;
 }
 /* In a narrow pane the number's track gives back 12px to the name. */
 .is-narrow .bookreg-head, .is-narrow .bookreg .kcard-head {
-  grid-template-columns: 32px minmax(120px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
+  grid-template-columns: 32px minmax(120px, 1fr) minmax(0, 176px) var(--state-w) 82px;
 }
 .bookreg .kcard {
   border: 0; border-radius: 0; margin: 0;
