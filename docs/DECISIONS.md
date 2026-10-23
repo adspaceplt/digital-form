@@ -6460,3 +6460,26 @@ Issue Letter of Offer carried its letter mark on the record head
 (`js/quotes.js`). The act table (`js/acts.js`) now holds it, `letter`,
 and the head's own copy is taken out, so every screen takes it from one
 place. On a phone the label no longer fits beside Download, so where the two do not share one line the primary takes the row under it.
+
+### 2026-10-23 — Departments are a list kept in Settings
+The user, with the Team sheet's Department segment (Not set, Creative,
+Marketing): "can add more departments?", then "Editable list in Settings";
+on the department prize, "creative and marketing for now. in the future
+could add more like sales etc. so do necessary changes and prep for
+this". A department was fixed in three places: a check on
+`team_members`, `perf_people` and `perf_dept_scores`, the words
+(`W.dept`), and the prize, whose functions named the two and whose page
+held each one's five criteria (`DEPT_CRIT`). Now `departments` holds them
+(a key made once from the name, so a rename never moves a colleague or a
+score), each column references it, and Settings' Portal group keeps the
+list. A department enters the prize by a tick and its five criteria, so a
+Sales department can be added now and put in the prize later without a
+build; Creative and Marketing are seeded in it with the criteria the page
+named. The prize, its Confirm and the score sheet read the departments in
+it; each quarter carries its criteria names, kept in a confirmed snapshot.
+The checks are taken away in the SQL Editor (the connector holds a
+statement naming a removal), as is `department_delete`. The Team sheet's
+segment grows to four choices and is the select past that (DESIGN.md §4:
+five or more stays a select), through `ADspaceForm.segFit`. Measured by
+`depts` (1280, 390), `perf` §34, `sql`, `settings`, `perfui`, `team`,
+`teamrec`.

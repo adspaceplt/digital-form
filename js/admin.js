@@ -714,6 +714,27 @@
     }, function () {});
   }
   function vicOf(id) { return (id && VIC[id]) || null; }
+  /* DEPARTMENTS (2026-10-23, the user: "can add more departments?"): the list
+     kept in Settings, read once beside me() (`departments_list()`), so the
+     Team sheet, a colleague's record and Performance name a department from
+     this one read. A read that fails, or a database without the function,
+     leaves the two the words hold. */
+  var DEPTS = null;
+  function loadDepts() {
+    return db.rpc('departments_list').then(function (r) {
+      if (r && !r.error && Array.isArray(r.data)) DEPTS = r.data;
+    }, function () {});
+  }
+  function depts() {
+    if (DEPTS) return DEPTS;
+    var W = window.ADspaceWords.dept || {};
+    return Object.keys(W).map(function (k) { return { key: k, name: W[k], active: true, in_prize: true, criteria: [], members: 0 }; });
+  }
+  function deptName(key) {
+    if (!key) return '';
+    var d = depts().filter(function (x) { return x.key === key; })[0];
+    return d ? d.name : (window.ADspaceWords.dept || {})[key] || key;
+  }
   /* A client named alone (My Work's late list names its client), by name. */
   function vicByName(name) {
     var n = String(name || '').trim().toLowerCase();
@@ -803,7 +824,7 @@
       SYSTEM = { ids: {}, names: {} };
       (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; });
     }, function () {});
-    var go = function () { Promise.all([rates.then(null, function () {}), sys, loadVic()]).then(then, then); };
+    var go = function () { Promise.all([rates.then(null, function () {}), sys, loadVic(), loadDepts()]).then(then, then); };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
       if (!r.error) return r;
@@ -5675,6 +5696,9 @@
     vicFirst: vicFirst,
     vicByName: vicByName,
     vicReload: loadVic,
+    depts: depts,
+    deptName: deptName,
+    deptsReload: loadDepts,
     vicMark: function (el, id) { if (el) el.classList.toggle('is-vic', Boolean(vicOf(id))); },
     hold: hold,
     iconBtn: iconBtn,
