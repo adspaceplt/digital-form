@@ -5903,6 +5903,14 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 .sched-reg .kcard-head { cursor: pointer; }
 .sched-lab { display: none; }
 .is-tight .sched-reg .sched-lab { display: inline; color: var(--ink-mute); }
+/* On a phone each date of a schedule row takes its own line under the
+   name, its word before it: beside the post date the shoot's date and time
+   had 130px and was cut (2026-10-23, the day's gate). */
+.is-tight .sched-reg .kcard-head {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "lead name" "lead sum" "lead tags";
+}
+.is-tight .sched-reg .kcard-sum { text-align: left; }
 .sched-reg .sched-pubday {
   font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }

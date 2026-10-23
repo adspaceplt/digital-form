@@ -6407,3 +6407,17 @@ own menu, seeds a signed letter, a request, a content set and a quotation,
 and holds sixteen converted menus met at 1280 and 390. `tests/team.js`,
 `tests/teamrec.js` and `tests/card.js` change a colleague through the
 record's pens and selects.
+
+### 2026-10-23 — A booking's date is never cut (the day's gate, campaigns)
+The full gate on main c10a156 found a booking's date cut on every campaign
+screen: `.kcard-sum` read "20 Sept 2026, 2:00pm" and `.sched-sum` "Shoot
+20 Sept 2026, 2:00pm", clipped at 1280 on the cards, results, quality check,
+add creators and key in creator, and at 390 on the Schedule. CMP-12 had
+made a time read 2:00pm, longer than 14:00, and the register's summary
+track was a share of what the name left (`minmax(0, 1fr)` beside the
+name's 1.3fr), 127px at the 591px pane. The summary track is now
+`minmax(0, 176px)`, filled before the name's `1fr` takes the rest, the
+name still never under 140px (120 in a narrow pane), every row on the same
+tracks; on a narrow pane a Schedule row's dates each take their own line
+under the name, where beside the post date the shoot had 130px. Measured
+by a walk of the campaign screens at 1280 and 390 in both themes.
