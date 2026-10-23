@@ -1775,7 +1775,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 }
 .rp-idspop:focus { outline: none; }
 .rp-idspop-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.popcard.is-dock.rp-idspop .rp-idspop-acts .btn { min-height: var(--ctl-h); flex: 1 1 100%; }
+.popcard.is-dock.rp-idspop .rp-idspop-acts { --ctl-h-sm: var(--ctl-h); }
+.popcard.is-dock.rp-idspop .rp-idspop-acts .btn { flex: 1 1 100%; }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .rp-go { color: var(--ink-mute); display: flex; justify-content: flex-end; }
 .rp-thumbfield { display: flex; align-items: center; gap: 12px; }
@@ -3067,7 +3068,8 @@ button.vs-row { cursor: pointer; }
 /* The switch then the pen, as at a desk (ux-audit WA-7, 2026-10-14); the
    pen alone, a square of the control's height, its name kept for a screen
    reader by the button's own label. */
-.is-narrow .wat-row > .wat-act .btn { min-width: 0; width: var(--ctl-h); height: var(--ctl-h); min-height: var(--ctl-h); padding: 0; justify-content: center; }
+.is-narrow .wat-row > .wat-act { --ctl-h-sm: var(--ctl-h); }
+.is-narrow .wat-row > .wat-act .btn { min-width: 0; width: var(--ctl-h); padding: 0; justify-content: center; }
 .is-narrow .wat-row > .wat-act .wat-word { display: none; }
 .is-narrow .wat-row > .wat-name { grid-area: name; }
 .is-narrow .wat-row > .wat-on { grid-area: on; justify-content: flex-end; }

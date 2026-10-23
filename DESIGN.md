@@ -89,6 +89,10 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--head-h` | 64px (56 phone) | The top bar on every page; never wraps; the kicker hides below 640 before anything clips |
 | `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes (the user, 2026-10-23); under a finger a `.btn` still takes a 44px press (its `::after`) |
 | `--ctl-h-sm` | 30px (32 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
+| `--tap` | 44px | The press a finger needs: a `.btn`'s invisible press area and an icon button's box under a coarse pointer |
+| `--box-h` / `--box-h-sm` | 84 / 72px | A box of lines' floor; a short note's the smaller |
+
+A height is a token, never a figure in a rule: a section that wants a small control drawn at full height sets `--ctl-h-sm: var(--ctl-h)` on itself (a docked card's acts), and a short note sets `--box-h: var(--box-h-sm)`; it never sets the control's height (`cssguard`).
 | `--state-w` | 124px | Status select or chip column (My Work's stage track 170px) |
 | `--ctl-text` / `--field-text` | 13 / 14px (14 / 15 coarse) | Control label / field text |
 | Button min width | 116px | |
