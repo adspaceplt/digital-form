@@ -216,7 +216,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter, hrshare, savename, lettersql, pdflibhash |
-| `team.js` | team, perms, clientparts, levels, card, scope, perfui, viewonly, lettersql |
+| `team.js` | team, perms, clientparts, levels, card, scope, perfui, viewonly, lettersql, depts |
+| Departments (`departments`, `ADspaceAdmin.depts`, the DEPARTMENTS sections) | depts, perf, perfui, team, teamrec, settings, sql, then `ui` |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
@@ -527,7 +528,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, or Suppliers or WhatsApp at Full Access (2026-10-22,
   SET2-11); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays, Health data kept), Clients (Follow-up limits, Details forms: a
+  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Health data kept), Clients (Follow-up limits, Details forms: a
   client's and a supplier's link alike), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -3997,9 +3998,28 @@ Each line is a rule that broke once. Its reason is in the archive.
   off unless added). The month lists the people on it plus anyone whose
   review of that month has begun; the Review list sheet ticks colleagues code
   first, A to Z (`perf_profile_set`, Work).
-- Department (Creative, Marketing) and role standard (`role_family`) live on
-  `team_members`. Performance reads them; `perf_profile_set` sets only its two
-  ticks.
+- Department and role standard (`role_family`) live on `team_members`.
+  Performance reads them; `perf_profile_set` sets only its two ticks.
+- Departments (`2026-10-23-departments.sql`, its SQL Editor part
+  `2026-10-23-departments-editor.sql`; the user, 2026-10-23: "can add more
+  departments?"): `departments` (key made once from the name and never
+  moved, name, active, in_prize, five `criteria`; RLS on, no policy, no
+  grant), seeded with Creative and Marketing in the prize. A colleague's,
+  a review profile's and a prize score's department reference it
+  (`*_department_fkey`). `departments_list()` (the team) is read once
+  beside `me()` (`ADspaceAdmin.depts`, `deptName`; a failed read leaves
+  the two of `W.dept`). Settings, Portal: Departments (`team.settings`):
+  Add department, Edit (Name, In the department prize, its five criteria,
+  each 2 to 60; `department_save`: `bad-name`, `taken`, `criteria-needed`,
+  `bad-criteria`), the ⋯ Set inactive / Set active (never asks; offered to
+  nobody, out of the prize, its colleagues keep it) and Delete where
+  nobody is in it (`department_delete`, asked, `in-use`); each filed
+  `team.changed` under Departments, from and to. The department prize
+  (`perf_quarter_calc`, `perf_quarter_confirm`, `perf_dept_save`) takes
+  every active department in the prize in the list's order, each with its
+  criteria names (`names`, kept in a confirmed snapshot); Confirm waits
+  for each one's scores; with none, `no-departments`. The maxima stay 25,
+  25, 20, 15, 15.
 - Months start from June 2026. The padlock sits at the right end of the tab
   row, outside the strip (`.tabline`), never inside it as a third tab.
 - The print is drawn in the browser on the letterhead and never stored. It
@@ -5556,7 +5576,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-18-sign-in-email-through-an-admin.sql`).
 - A member row carries:
   - Employee ID (`staff_code`, `^[A-Z0-9]{3,8}$`);
-  - department (a segment);
+  - department, from the Departments list (below; a segment while four
+    choices or fewer, else the select, `ADspaceForm.segFit`);
   - Position (`designation`);
   - role standard;
   - `capacity_minutes_week` (entered as hours);

@@ -70,7 +70,7 @@
 <script src="/js/confirm.js?v=20261022e"></script>
 <script src="/js/sheet.js?v=20261023g"></script>
 <script src="/js/refresh.js?v=20261010zi"></script>
-<script src="/js/form.js?v=20261019"></script>
+<script src="/js/form.js?v=20261023i"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261023e"></script>
@@ -3536,7 +3536,7 @@
                    cut on a phone (2026-10-20, TEAM-9). -->
               <div class="row fgrid">
                 <div class="span-all"><label class="field-label" for="tmDept">Department</label>
-                  <!-- The options are ADspaceWords.dept, filled by js/team.js. -->
+                  <!-- The options are the departments kept in Settings, filled by js/team.js. -->
                   <select class="select" id="tmDept" data-seg>
                     <option value="">Not set</option>
                   </select></div>
@@ -5324,6 +5324,26 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<div class="sheet" id="depSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="depHead">
+    <div class="sheet-head">
+      <h3 id="depHead">Departments</h3>
+      <button class="iconbtn" id="depClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="depMsg" role="status"></p>
+      <!-- The list's own bar holds Add; the foot is the sheet's commit (MENU-14). -->
+      <div class="tax-bar"><span class="tax-count" id="depCount"></span>
+        <span class="tax-acts"><button class="btn btn-sm" id="depAdd" type="button">Add department</button></span></div>
+      <div id="depList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="depCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="taxSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taxHead">
     <div class="sheet-head">
@@ -5722,7 +5742,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261023e"></script>
-<script src="/js/admin.js?v=20261023d"></script>
+<script src="/js/admin.js?v=20261023i"></script>
 <script src="/js/documents.js?v=20261022v"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261022s"></script>
@@ -5736,7 +5756,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261022p"></script>
 <script src="/js/crm.js?v=20261023e"></script>
 <script src="/js/sales.js?v=20261022t"></script>
-<script src="/js/team.js?v=20261023f"></script>
+<script src="/js/team.js?v=20261023i"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
 <script src="/js/handbook.js?v=20261023e"></script>
 <script src="/js/scripts.js?v=20261022zs"></script>
@@ -5744,10 +5764,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261022zs"></script>
 <script src="/js/ops.js?v=20261023e"></script>
-<script src="/js/perf.js?v=20261023e"></script>
+<script src="/js/perf.js?v=20261023i"></script>
 <script src="/js/health.js?v=20261018zz8"></script>
 <script src="/js/search.js?v=20261022v"></script>
 <script src="/js/overview.js?v=20261023d"></script>
-<script src="/js/settings.js?v=20261023f"></script>
+<script src="/js/settings.js?v=20261023i"></script>
 </body>
 </html>

@@ -82,6 +82,16 @@
     m.textContent = text;
   }
   var READ = {
+    /* What the Departments row holds, from the list (2026-10-23). */
+    depts: function () {
+      return db.rpc('departments_list').then(function (r) {
+        if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+        var on = (r.data || []).filter(function (d) { return d.active; });
+        var inp = on.filter(function (d) { return d.in_prize; }).length;
+        return parts([on.length <= 3 ? on.map(function (d) { return d.name; }).join(', ') : plural(on.length, 'department', 'departments'),
+          plural(inp, 'in the prize', 'in the prize')]);
+      });
+    },
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
     taxcodes: function () {
       var M = window.ADspaceMoney;
@@ -154,6 +164,7 @@
       may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce') },
       may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice') },
       biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() },
+      biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts') },
       biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
         meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
           'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]);
@@ -415,6 +426,7 @@
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
+    if (a === 'depts') { openDepts(btn); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
@@ -522,6 +534,147 @@
         }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
       });
   }
+  /* ---- Departments (2026-10-23) ------------------------------------------
+     The team's departments (the user: "can add more departments?"): a
+     colleague's department on Team, and the departments the quarter's
+     department prize is worked out across. A department in the prize names
+     its five criteria; one nobody is in can be deleted, one somebody is in
+     set inactive (offered to nobody, out of the prize). */
+  var dep = { rows: null, err: null };
+  var DEP_SAID = {
+    denied: 'Business settings access is required.', 'bad-name': 'Enter a name of 2 to 40 characters.',
+    taken: 'A department with this name already exists.', 'criteria-needed': 'Name its five criteria to put it in the department prize.',
+    'bad-criteria': 'Each criterion is 2 to 60 characters, and all five are named.', 'not-found': 'This department was removed in the meantime.'
+  };
+  function depSaid(r) {
+    var d = r && r.data, e = r && (r.error || (d && d.error));
+    if (!e) return '';
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
+    if (e === 'in-use') return d.members ? plural(d.members, 'colleague is', 'colleagues are') + ' in this department. Move them first, or set it inactive.'
+      : 'Performance records name this department. Set it inactive instead.';
+    return DEP_SAID[e] || 'Not saved.';
+  }
+  function depMsg(text, tone) { var m = $('depMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function readDeps(done) {
+    db.rpc('departments_list').then(function (r) {
+      if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+      dep.rows = r.data || []; dep.err = null;
+    }).catch(function (e) { dep.rows = null; dep.err = e; }).then(function () { if (done) done(); });
+  }
+  /* After a change the list is read again here, by the console's own copy
+     (Team, Performance) and on the Settings row. */
+  function depChanged(text) {
+    return new Promise(function (ok) {
+      readDeps(function () {
+        paintDeps(); readLine('depts'); depMsg(text, 'ok');
+        var A = window.ADspaceAdmin;
+        if (A && A.deptsReload) A.deptsReload();
+        ok('');
+      });
+    });
+  }
+  function paintDeps() {
+    var box = $('depList');
+    if (!box) return;
+    if (dep.err) {
+      window.ADspaceState.failLine(box, 'Departments', (dep.err && dep.err.message) || '', function () { readDeps(paintDeps); });
+      return;
+    }
+    if (!dep.rows) { window.ADspaceState.skeleton(box, 3); return; }
+    $('depCount').textContent = plural(dep.rows.length, 'department', 'departments');
+    if (!dep.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No departments.'); return; }
+    box.innerHTML = dep.rows.map(function (d) {
+      var meta = [plural(d.members || 0, 'colleague', 'colleagues'), d.in_prize ? 'In the department prize' : ''].filter(Boolean).join(' · ');
+      return '<div class="dtrow dep-row' + (d.active ? '' : ' is-off') + '" data-key="' + esc(d.key) + '">' +
+        '<span class="dtrow-name"><b>' + esc(d.name) + (d.active ? '' : ' <span class="chip">Inactive</span>') + '</b><small>' + esc(meta) + '</small></span>' +
+        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-d="edit">' + PEN + 'Edit</button>' +
+        '<span class="team-act"><button class="kmenu-btn" type="button" data-d="menu" aria-label="More actions for ' + esc(d.name) + '" aria-expanded="false">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+        '<div class="kmenu" data-menu hidden role="menu">' +
+          '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-d="active">' + (d.active ? 'Set inactive' : 'Set active') + '</button>' +
+          (d.members ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-d="delete">Delete</button>') +
+        '</div></span></span></div>';
+    }).join('');
+  }
+  function depShut() { shutMenus('#depList', 'd'); }
+  var CRIT_MAX = [25, 25, 20, 15, 15];
+  function depAsk(d) {
+    var crit = (d && d.criteria) || [];
+    var fields = [{ name: 'name', label: 'Name', value: d ? d.name : '', placeholder: 'Sales', required: true },
+      { name: 'prize', label: 'In the department prize', tick: true, value: d && d.in_prize ? 'on' : '' }];
+    CRIT_MAX.forEach(function (mx, i) {
+      fields.push({ name: 'c' + i, label: 'Criterion ' + (i + 1) + ', out of ' + mx, value: crit[i] || '', required: false,
+        head: i === 0 ? 'Department prize criteria' : undefined,
+        note: i === 0 ? 'Needed to put the department in the prize.' : undefined });
+    });
+    window.ADspaceConfirm.ask({
+      title: d ? 'Edit department' : 'Add department', go: 'Save', wait: true, fields: fields,
+      check: function (v) {
+        var named = CRIT_MAX.filter(function (x, i) { return String(v['c' + i] || '').trim(); }).length;
+        if (v.prize === 'on' && named < 5) return DEP_SAID['criteria-needed'];
+        if (named && named < 5) return 'Name all five criteria, or leave them all empty.';
+        return '';
+      }
+    }, function (v) {
+      var cr = CRIT_MAX.map(function (x, i) { return String(v['c' + i] || '').trim(); });
+      return db.rpc('department_save', { p_key: d ? d.key : null, p_name: v.name, p_in_prize: v.prize === 'on',
+        p_criteria: cr.every(function (c) { return !c; }) ? null : cr }).then(function (r) {
+        return depSaid(r) || depChanged('Saved.');
+      }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+    });
+  }
+  function depActive(d) {
+    db.rpc('department_set_active', { p_key: d.key, p_on: !d.active }).then(function (r) {
+      var said = depSaid(r);
+      if (said) { depMsg(said); return; }
+      depChanged(d.active ? 'Set inactive.' : 'Set active.');
+    }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
+  }
+  function depDelete(d) {
+    window.ADspaceConfirm.ask({ title: 'Delete this department?', body: d.name + ' is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
+      function () {
+        return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
+          return depSaid(r) || depChanged('Deleted.');
+        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+      });
+  }
+  function openDepts(opener) {
+    if (!biz()) return;
+    depMsg('');
+    paintDeps();
+    window.ADspaceSheet.show($('depSheet'), { opener: opener });
+    readDeps(paintDeps);
+  }
+  var depWired = false;
+  function wireDeps() {
+    if (depWired || !$('depSheet')) return;
+    depWired = true;
+    $('depCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('depClose').addEventListener('click', function () { $('depCancel').click(); });
+    $('depAdd').addEventListener('click', function () { depMsg(''); depAsk(null); });
+    $('depList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-d]');
+      if (!b) return;
+      var row = b.closest('.dep-row'), key = row && row.getAttribute('data-key');
+      var d = (dep.rows || []).filter(function (x) { return x.key === key; })[0];
+      if (!d) return;
+      var k = b.getAttribute('data-d');
+      if (k === 'menu') {
+        e.stopPropagation();
+        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
+        depShut();
+        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(b, mn);
+        return;
+      }
+      depShut(); depMsg('');
+      if (k === 'edit') depAsk(d);
+      if (k === 'active') depActive(d);
+      if (k === 'delete') depDelete(d);
+    });
+    document.addEventListener('click', function (e) { if (!e.target.closest('#depList .team-act')) depShut(); });
+  }
+
   /* ---- Tax codes (2026-10-22) --------------------------------------------
      The codes a service line or a quotation line may carry: read from
      Bukku, so the letter and the Bukku invoice name the same code, or added
@@ -768,6 +921,7 @@
     });
   }
   wireHol();
+  wireDeps();
   /* A press outside a list's ⋯ shuts it: one listener for both lists. */
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#holList .team-act')) holShut();

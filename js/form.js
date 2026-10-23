@@ -124,6 +124,7 @@
     sel.parentNode.insertBefore(seg, sel.nextSibling);
     /* The label pointed at the select; pressing it now lands on the choice. */
     if (l) l.addEventListener('click', function (e) {
+      if (sel.__seg !== seg) return;
       e.preventDefault();
       var on = seg.querySelector('.is-on') || seg.firstElementChild;
       if (on) on.focus();
@@ -157,6 +158,24 @@
         requestAnimationFrame(function () { fit(seg); });
       }).observe(seg);
     }
+  }
+
+  /* A select whose options a page fills grows past four (the departments,
+     2026-10-23): it stands as the select again, the segment taken away. */
+  function unsegment(sel) {
+    var seg = sel && sel.__seg;
+    if (!seg) return;
+    if (seg.parentNode) seg.parentNode.removeChild(seg);
+    sel.__seg = null;
+    sel.classList.remove('seg-src');
+    sel.removeAttribute('aria-hidden');
+    sel.removeAttribute('tabindex');
+  }
+  /* A filled select is a segment while it holds two to four options, else
+     the select (DESIGN.md §4). */
+  function segFit(sel) {
+    if (!sel) return;
+    if (sel.options.length <= 4) upgrade(sel); else unsegment(sel);
   }
 
   /* ---- 1b. The chosen option slides ------------------------------------ */
@@ -1039,6 +1058,7 @@
     byClient: sequence('client_code'),
     reveal: reveal,
     segment: upgrade,
+    segFit: segFit,
     paint: paint,
     fold: fold,
     refresh: function (det) { if (det && det.__paint) det.__paint(); },

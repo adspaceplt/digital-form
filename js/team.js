@@ -20,13 +20,38 @@
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
-  /* Department and role standard are said once, in js/words.js; the sheet's
-     two selects are filled from there before the segment is drawn. */
-  var DEPT = window.ADspaceWords.dept, ROLE_STD = window.ADspaceWords.roleStd;
-  [['tmDept', DEPT], ['tmRoleStd', ROLE_STD]].forEach(function (f) {
-    var sel = document.getElementById(f[0]);
-    if (sel) Object.keys(f[1]).forEach(function (k) { sel.add(new Option(f[1][k], k)); });
-  });
+  /* The role standard is said once, in js/words.js; the sheet's select is
+     filled from there before the segment is drawn. The departments are the
+     list kept in Settings (2026-10-23), read once beside me(). */
+  var ROLE_STD = window.ADspaceWords.roleStd;
+  (function () {
+    var sel = document.getElementById('tmRoleStd');
+    if (sel) Object.keys(ROLE_STD).forEach(function (k) { sel.add(new Option(ROLE_STD[k], k)); });
+  })();
+  function deptName(k) {
+    var A = window.ADspaceAdmin;
+    return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
+  }
+  /* The departments offered: the active ones, and the one a colleague is
+     in though it stopped being offered. */
+  function deptChoices(current) {
+    var A = window.ADspaceAdmin, list = A && A.depts ? A.depts() : [];
+    return list.filter(function (d) { return d.active || d.key === current; }).map(function (d) { return [d.key, d.name]; });
+  }
+  /* The sheet's Department: Not set and the departments, a segment while it
+     holds four choices or fewer, else the select. */
+  function fillDept(current) {
+    var sel = document.getElementById('tmDept');
+    if (!sel) return;
+    var want = [['', 'Not set']].concat(deptChoices(current));
+    var have = Array.prototype.map.call(sel.options, function (o) { return o.value + '|' + o.text; }).join('\n');
+    if (have !== want.map(function (o) { return o[0] + '|' + o[1]; }).join('\n')) {
+      sel.innerHTML = '';
+      want.forEach(function (o) { sel.add(new Option(o[1], o[0])); });
+    }
+    if (window.ADspaceForm && window.ADspaceForm.segFit) window.ADspaceForm.segFit(sel);
+    sel.value = current || '';
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
@@ -510,7 +535,7 @@
     return !time || String(time).slice(0, 5) > nowMyTime();
   }
   function whoLine(m) {
-    var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
+    var post = [deptName(m.department), m.designation].filter(Boolean).join(', ');
     /* The day access ends, where one is set (TEAM ACCESS EXPIRY). */
     var until = m.active && m.access_until ? 'Until ' + untilWord(m.access_until, m.access_until_time) : '';
     return [post, until].filter(Boolean).join(' · ');
@@ -1701,7 +1726,7 @@
     $('tmEmail').readOnly = !!(m && !amAdmin());
     $('tmStaff').value = m ? (m.staff_code || '') : '';
     $('tmDesig').value = m ? (m.designation || '') : '';
-    $('tmDept').value = m ? (m.department || '') : '';
+    fillDept(m ? (m.department || '') : '');
     $('tmRoleStd').value = m ? (m.role_family || '') : '';
     $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
     /* Nobody sets their own access date; another admin does. */
@@ -1844,7 +1869,7 @@
           var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
           var moved = window.ADspaceRecords.changes(m, filed, [
             ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
-            ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
+            ['designation', 'Position'], ['department', 'Department', deptName],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
             ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
@@ -2064,7 +2089,7 @@
   var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var MEMBER_LOG = [
     ['name', 'Name'], ['email', 'Email'], ['role', 'User group', function (v) { return roleName(v); }], ['staff_code', 'Employee ID'],
-    ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
+    ['designation', 'Position'], ['department', 'Department', deptName],
     ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
     ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
     ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
@@ -2153,7 +2178,7 @@
         word('access_until', 'Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
       group('Employment', '<dl class="ovfacts">' +
         word('staff_code', 'Employee ID', m.staff_code) +
-        pick('department', 'Department', map(DEPT), m.department || '', DEPT[m.department]) +
+        pick('department', 'Department', [['', 'Not set']].concat(deptChoices(m.department)), m.department || '', deptName(m.department)) +
         word('designation', 'Position', m.designation) +
         pick('role_family', 'Role standard', map(ROLE_STD), m.role_family || '', ROLE_STD[m.role_family]) +
         word('capacity_minutes_week', 'Weekly capacity', hoursWord(m.capacity_minutes_week)) + '</dl>') +

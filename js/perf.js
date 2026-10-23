@@ -61,7 +61,11 @@
     planner: 'Campaign direction, content angles, brief clarity. Identifies weak accounts and proposes improvement.',
     account: 'Client servicing, posting accuracy, budget pacing, escalation. Proactively manages every account.'
   };
-  var DEPT_WORD = window.ADspaceWords.dept;
+  /* A department's name, from the list kept in Settings (2026-10-23). */
+  function deptWord(k) {
+    var A = window.ADspaceAdmin;
+    return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
+  }
   var BREACH_CAT = { client: 'Client and account', delivery: 'Delivery and execution',
                      compliance: 'Compliance and platform', asset: 'Assets and finance' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
@@ -482,7 +486,7 @@
     var el = document.createElement('div');
     el.className = 'crm-row perf-row';
     el.setAttribute('data-member', p.team_member_id);
-    var meta = [DEPT_WORD[p.department], ROLE_WORD[p.role_family]].filter(Boolean);
+    var meta = [deptWord(p.department), ROLE_WORD[p.role_family]].filter(Boolean);
     if (p.breaches) meta.push(p.breaches + (p.breaches === 1 ? ' issue' : ' issues'));
     var sum = res && res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '';
     el.innerHTML =
@@ -611,7 +615,7 @@
     $('ppTitle').textContent = p.name;
     /* Department and role standard are set on the Members tab and only read
        here; Edit on Members opens that person's own sheet there. */
-    $('ppFacts').innerHTML = [['Department', DEPT_WORD[p.department]], ['Role standard', ROLE_WORD[p.role_family]]]
+    $('ppFacts').innerHTML = [['Department', deptWord(p.department)], ['Role standard', ROLE_WORD[p.role_family]]]
       .map(function (f) {
         return '<div><dt>' + f[0] + '</dt><dd' + (f[1] ? '' : ' class="is-empty"') + '>' + esc(f[1] || 'Not set') + '</dd></div>';
       }).join('');
@@ -748,7 +752,7 @@
     var m = r.member || {};
     $('pvTitle').textContent = manage() ? (m.name || '') : r.month;
     var ctx = manage()
-      ? [r.month, DEPT_WORD[m.department], ROLE_WORD[m.role_family]].filter(Boolean).join(' · ')
+      ? [r.month, deptWord(m.department), ROLE_WORD[m.role_family]].filter(Boolean).join(' · ')
       : (r.reviewer ? 'Reviewed by ' + r.reviewer : '');
     $('pvCtx').textContent = ctx;
     $('pvCtx').hidden = !ctx;
@@ -1904,7 +1908,7 @@
     table([{ w: lw }, { w: vw }, { w: lw }, { w: vw }], null, [
       [lab('Team member'), m.name || none, lab('Review month'), r.month],
       [lab('Employee ID'), m.staff_code || none, lab('Date of evaluation'), r.evaluated_on ? dateWord(r.evaluated_on) : none],
-      [lab('Department'), DEPT_WORD[m.department] || none, lab('Queries until'), r.dispute_until ? timeWord(r.dispute_until) : none],
+      [lab('Department'), deptWord(m.department) || none, lab('Queries until'), r.dispute_until ? timeWord(r.dispute_until) : none],
       [lab('Role'), ROLE_WORD[m.role_family] || m.designation || none, lab('Reviewed by'), r.reviewer || none]
     ]);
 
@@ -2036,6 +2040,20 @@
   var MONEY = window.ADspaceMoney;
   function rm(n) { return MONEY ? MONEY.money2(n, 'MY') : 'RM ' + Number(n || 0).toFixed(2); }
   var FIRST_QUARTER = '2026-07-01';
+  /* A department's five criteria, each with its maximum: the names the
+     quarter carries (`names`, kept in a confirmed snapshot), else the list
+     kept in Settings, else the two the framework began with. */
+  var CRIT_MAX = [25, 25, 20, 15, 15];
+  function critOf(dep) {
+    var q = ((st && st.quarter && st.quarter.departments) || []).filter(function (x) { return x.department === dep; })[0];
+    var names = q && q.names && q.names.length === 5 ? q.names : null;
+    if (!names) {
+      var A = window.ADspaceAdmin, d = A && A.depts ? A.depts().filter(function (x) { return x.key === dep; })[0] : null;
+      if (d && d.criteria && d.criteria.length === 5) names = d.criteria;
+    }
+    if (!names) return DEPT_CRIT[dep] || [];
+    return names.map(function (n, i) { return [n, CRIT_MAX[i]]; });
+  }
   var DEPT_CRIT = {
     creative: [['On-time creative delivery', 25], ['Creative quality and revision', 25], ['Client performance support', 20],
                ['Asset organisation', 15], ['Cross-functional responsiveness', 15]],
@@ -2047,7 +2065,7 @@
   var WHY = { 'no-month': 'No month shared', 'no-final-month': 'No final month', 'below-c': 'Average under {min_average}', 'e-month': 'An E month',
     'critical-breach': 'Level 4 issue', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
     'few-b-months': 'Under {months_b} months at B' };
-  var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
+  var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'no-departments': 'No department in the prize', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
     'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
     'no-pool': 'No pool set', 'no-budget': 'No budget set' };
   var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', 'is-off'], pending: ['Pending', 'is-warn'] };
@@ -2069,7 +2087,7 @@
     'before-first': 'Quarters begin with Q3 2026.',
     'quarter-open': 'The quarter has not ended.',
     'period-open': 'The period has not ended.',
-    'dept-scores-needed': 'Enter both departments’ scores first.',
+    'dept-scores-needed': 'Enter every department’s scores first.',
     'confirmed': 'Confirmed. Reopen it to change it.',
     'not-confirmed': 'Not confirmed.',
     'admin-only': 'This needs Team: Performance admin.',
@@ -2179,7 +2197,7 @@
   function eventWord(e) {
     var d = e.detail || {}, w = RW_EVENT[e.kind] || e.kind;
     if (e.kind === 'dept_scored') {
-      var crit = DEPT_CRIT[d.department] || [];
+      var crit = critOf(d.department);
       /* A critical issue is named only when it changes: ticked, or cleared
          after it was ticked. */
       var parts = (d.changed || []).filter(function (c) { return c.key !== 'critical' || !!c.to !== !!c.from; }).map(function (c) {
@@ -2188,7 +2206,7 @@
         return moved((crit[i] || [c.key])[0], c.from, c.to, num);
       });
       var first = (d.changed || []).every(function (c) { return c.key === 'critical' || c.from == null; });
-      return (DEPT_WORD[d.department] || 'Department') + ' scores ' + (first ? 'entered' : 'changed') + (parts.length ? ': ' + parts.join(', ') : '');
+      return (deptWord(d.department) || 'Department') + ' scores ' + (first ? 'entered' : 'changed') + (parts.length ? ': ' + parts.join(', ') : '');
     }
     if (e.kind === 'company_set') {
       var NAME = { revenue: 'Revenue', profit: 'Profit', pool: 'Bonus pool', trip_budget: 'Trip budget' };
@@ -2364,7 +2382,7 @@
           var finals = p.finals == null ? months : Number(p.finals);
           /* The months sit under the average they make, and only when the
              quarter is not whole for them; the name keeps its department. */
-          var sub = DEPT_WORD[p.department] || '';
+          var sub = deptWord(p.department) || '';
           var short = p.average != null ? [months < 3 ? months + ' of 3' : '', finals < months ? (finals ? finals + ' final' : 'Not final') : '']
             .filter(Boolean).join(' · ') : '';
           return row('rwq-row', [
@@ -2383,7 +2401,7 @@
     }));
     var dwon = (d.departments || []).filter(function (x) { return x.won; });
     var dmark = dwon.length
-      ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' won · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
+      ? dwon.map(function (x) { return x.name || deptWord(x.department); }).join(' and ') + ' won · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
       : 'No payout · ' + ruled(NOPAY[dp.reason], d.rules);
     /* Department scores are an admin's (2026-10-18, review item 6). */
     var edit = may('team.performance', 'work') && may('team.perfadmin', 'work') && !d.confirmed;
@@ -2395,8 +2413,8 @@
         (d.departments || []).forEach(function (x) {
           var sub = x.entered ? (x.won ? 'Won' : '') : 'Not entered';
           var name = edit
-            ? '<button class="rw-who rw-open" type="button" data-dept="' + x.department + '"><b>' + esc(DEPT_WORD[x.department]) + '</b><small>' + esc(sub) + '</small></button>'
-            : whoCell({ name: DEPT_WORD[x.department] }, sub);
+            ? '<button class="rw-who rw-open" type="button" data-dept="' + x.department + '"><b>' + esc(x.name || deptWord(x.department)) + '</b><small>' + esc(sub) + '</small></button>'
+            : whoCell({ name: x.name || deptWord(x.department) }, sub);
           var el = row('rwd-row', [
             name,
             cell(x.entered ? esc(num(x.total)) : dash()),
@@ -2445,7 +2463,7 @@
 
   // The department sheet -----------------------------------------------------------------
   function deptFields(dep, vals) {
-    $('rwDFields').innerHTML = '<div class="row fgrid">' + DEPT_CRIT[dep].map(function (c, i) {
+    $('rwDFields').innerHTML = '<div class="row fgrid">' + critOf(dep).map(function (c, i) {
       var v = vals ? vals[i] : null;
       return '<div' + (i === 4 ? ' class="span-all"' : '') + '><label class="field-label is-req" for="rwDC' + i + '">' + esc(c[0]) + ', out of ' + c[1] + '</label>' +
         '<input class="input rw-crit" id="rwDC' + i + '" type="number" inputmode="decimal" min="0" max="' + c[1] + '" step="0.1" aria-required="true" value="' + (v == null ? '' : esc(v)) + '"></div>';
@@ -2454,7 +2472,7 @@
   }
   function deptTotal() {
     var dep = $('rwDDept').value, sum = 0, all = true;
-    DEPT_CRIT[dep].forEach(function (c, i) { var v = $('rwDC' + i).value; if (v === '') all = false; else sum += Number(v); });
+    critOf(dep).forEach(function (c, i) { var v = $('rwDC' + i).value; if (v === '') all = false; else sum += Number(v); });
     sum = Math.round(sum * 10) / 10;
     /* Graded by the quarter's own bands (`rules.grades`, 2026-10-05). */
     var b = (st.quarter && st.quarter.rules && st.quarter.rules.grades) || null;
@@ -2463,8 +2481,16 @@
   }
   function deptOf(dep) { return ((st.quarter && st.quarter.departments) || []).filter(function (x) { return x.department === dep; })[0] || {}; }
   function openDept(dep, opener) {
-    var x = deptOf(dep);
-    $('rwDDept').value = dep;
+    var x = deptOf(dep), sel = $('rwDDept');
+    /* The departments in this quarter's prize, a segment while four or fewer. */
+    var opts = ((st.quarter && st.quarter.departments) || []).map(function (k) { return [k.department, k.name || deptWord(k.department)]; });
+    var want = opts.map(function (o) { return o[0] + '|' + o[1]; }).join('\n');
+    if (Array.prototype.map.call(sel.options, function (o) { return o.value + '|' + o.text; }).join('\n') !== want) {
+      sel.innerHTML = '';
+      opts.forEach(function (o) { sel.add(new Option(o[1], o[0])); });
+    }
+    if (window.ADspaceForm && window.ADspaceForm.segFit) window.ADspaceForm.segFit(sel);
+    sel.value = dep;
     if (window.ADspaceForm && window.ADspaceForm.thumb) $('rwDDept').dispatchEvent(new Event('change'));
     deptFields(dep, x.criteria);
     $('rwDCrit').checked = Boolean(x.critical);
@@ -2482,7 +2508,7 @@
   $('rwDCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('rwDSave').addEventListener('click', function () {
     var dep = $('rwDDept').value, vals = [], bad = null;
-    DEPT_CRIT[dep].forEach(function (c, i) {
+    critOf(dep).forEach(function (c, i) {
       var el = $('rwDC' + i), v = el.value;
       if (v === '' || isNaN(Number(v)) || Number(v) < 0 || Number(v) > c[1]) { bad = bad || el; return; }
       vals.push(Number(v));
@@ -3052,7 +3078,7 @@
       var ind = Number(me.prize) > 0 ? rm(me.prize) : me.eligible ? 'Not the highest' : ruled(WHY[(me.reasons || [])[0]], x.rules) || 'Not eligible';
       /* The department prize is the department's; its team leader shares it. */
       var dshare = dp ? (dp.share != null ? dp.share : dp.each) : null;
-      var dep = dp ? (dp.won ? (DEPT_WORD[dp.department] || '') + ' won' + (Number(dshare) > 0 ? ' · ' + rm(dshare) : '') : (DEPT_WORD[dp.department] || '') + ' did not win') : '—';
+      var dep = dp ? (dp.won ? (deptWord(dp.department) || '') + ' won' + (Number(dshare) > 0 ? ' · ' + rm(dshare) : '') : (deptWord(dp.department) || '') + ' did not win') : '—';
       return row('rwmq-row', [
         whoCell({ name: x.word }, me.months ? me.months + (me.months === 1 ? ' final month' : ' final months') : ''),
         cell(me.average == null ? dash() : esc(num(me.average))),
