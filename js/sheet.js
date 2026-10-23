@@ -62,7 +62,14 @@
     o.box.removeEventListener('input', onEdit);
     o.box.removeEventListener('change', onEdit);
     o.box.removeEventListener('mousedown', onScrim);
-    if (o.opener && document.body.contains(o.opener)) o.opener.focus();
+    /* Focus goes home to a control that is drawn: a button a command bar
+       keeps behind its ⋯ (`data-rare`, Document types) is the named opener
+       but never on show, so focus goes back to what held it at the open,
+       the ⋯ itself (2026-10-23, the keyboard pass). */
+    var home = [o.opener, o.from].filter(function (el) {
+      return el && el.focus && document.body.contains(el) && el.getClientRects().length;
+    })[0];
+    if (home) home.focus();
     if (o.onClose) o.onClose();
   }
 
@@ -81,9 +88,10 @@
        record by hand for that reason; moving every sheet to the page once, on
        first open, is the same fix made once instead of per form. Listeners and
        typed values survive a move, and a second open costs nothing. */
+    var from = document.activeElement;
     if (box.parentNode !== document.body) document.body.appendChild(box);
     box.hidden = false;
-    open = { box: box, opener: o.opener || null, dirty: false, onClose: o.onClose || null };
+    open = { box: box, opener: o.opener || null, from: from && from !== document.body ? from : null, dirty: false, onClose: o.onClose || null };
     document.addEventListener('keydown', onKey, true);
     box.addEventListener('input', onEdit);
     box.addEventListener('change', onEdit);
