@@ -146,7 +146,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   - Config holds file paths, never font names.
 - Letter tables: Description, Rate, Amount only. Quantity rides in the rate
   cell. The term sits mute under the Amount. Inclusions go under the name, then
-  one mute line of basis, period and note. TERMS holds at most three sentences.
+  one mute line of basis, period and note. TERMS holds the term and the validity, then the letter's own points as typed.
 
 ### Spacing
 The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.

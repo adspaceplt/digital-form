@@ -6507,3 +6507,15 @@ where `.btn::after` keeps a 44px press above and below the drawn button; the
 small corner 8 everywhere. Icon buttons and the ⋯ keep their 44px boxes under
 a finger (drawn only on hover). uxaudit `target` and `geom` floors follow, and
 uxaudit fails a coarse `.btn` under 44px with no press box.
+
+### 2026-10-23 · Letter of Offer: SST under the amount, and terms of its own
+The user: "Not subject to SST … now it looks like an item description", and
+"(0% SST) / (+8% SST)"; then "i need to add sentences like the Inclusions
+under Terms". Where a letter's lines are on more than one rate, each amount
+(and a quotation PDF's subtotal) says its own rate under it; one rate says
+nothing on the lines. The Issue Letter of Offer sheet gains Terms, one point a
+line, kept in the letter's snapshot (`bill_to.terms`, so every redraw and the
+client portal print them) and drawn under TERMS after the worked-out term and
+validity. `issue_letter` reads them from `p_deal` (no new argument, so no
+overload to drop), ten at most and 400 characters each. Measured by
+`pdfcases` taxterms and `letter`.

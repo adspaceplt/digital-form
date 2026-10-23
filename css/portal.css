@@ -2755,7 +2755,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 /* And the same fact on the card, where the button that will not move is. */
 .qc-hold { margin: 0 0 10px; }
 
-.lpickref .input { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.lpickref .input { width: 100%; }
+.lpickref input.input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 640px) {
   .lpickrow input { grid-area: tick; }
   /* Equal halves, not proportional ones. At `auto` the basis is each label's
