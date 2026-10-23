@@ -3198,7 +3198,8 @@ button.vs-row { cursor: pointer; }
 .is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl act"; }
 .is-narrow:not(.is-tight) .qt-row.has-acts > .qt-dl { grid-area: dl; justify-self: end; margin-top: 8px; }
 .is-tight .qt-row.has-acts > .qt-dl { justify-self: stretch; justify-content: stretch; }
-.is-tight .qt-row.has-acts > .qt-dl > .btn { flex: 1 1 calc(50% - 4px); min-width: 0; }
+/* A label never breaks inside its half: where the two do not fit one line, the second takes the row under it (2026-10-23). */
+.is-tight .qt-row.has-acts > .qt-dl > .btn { flex: 1 1 calc(50% - 4px); min-width: max-content; }
 /* An empty list carries its way out on its line (2026-10-22, SL-M2). */
 .empty.has-go { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .qb-nb { white-space: nowrap; }

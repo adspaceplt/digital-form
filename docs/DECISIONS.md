@@ -3290,7 +3290,7 @@ instead, pantone pastel would look good?". `--pub` / `--pub-bg` are a pastel
 blue of the Pantone 2717 C family: light `#2a5793` on `#e6effb` (6.3:1),
 dark `#a7c6ed` on `#1d2735` (8.6:1). It is greyer and softer than the action
 blue (`#0071e3`), so a post date never reads as a button, and it keeps its
-one place.
+one place. On a phone the label no longer fits beside Download, so where the two do not share one line the primary takes the row under it.
 
 ### 2026-10-15 · Tax and terms fits a phone (ux-audit SET-10)
 The re-audit after SET-1 to SET-9 found the sectioned Tax and terms sheet
@@ -6417,4 +6417,4 @@ Issue Letter of Offer carried its letter mark on the record head
 (`#crmCover`, drawn in the markup) and none on a quotation's row
 (`js/quotes.js`). The act table (`js/acts.js`) now holds it, `letter`,
 and the head's own copy is taken out, so every screen takes it from one
-place.
+place. On a phone the label no longer fits beside Download, so where the two do not share one line the primary takes the row under it.
