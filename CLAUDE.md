@@ -2898,7 +2898,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   register (`.bookreg.sched-reg`): Upcoming then Past, a folded row a booking
   (name, shoot date and time, post date; Not set where none; where the
   head is hidden each date leads with its head's word, Shoot or Delivery,
-  Post date), the plan's
+  Post date; on a narrow pane each date its own line under the name), the plan's
   fields opening under the row on the name's x; a booking stays open through
   a save, and a lone booking opens by itself. On a phone Draft due and
   Post date share a line.
