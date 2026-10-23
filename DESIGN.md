@@ -464,7 +464,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   after a way to another console page. A form's own commit (Save, Cancel, a
   submit, a sheet's foot, a confirm) is words. The act table is
   `js/acts.js` (Publish the plane, Unpublish the struck eye, Edit the pen,
-  Download the file, Copy, Preview after the words, Add and New the plus):
+  Download the file, Copy, Preview after the words, Add and New the plus, Issue Letter of Offer the letter):
   a button drawn as words alone takes its act's mark, so a new screen
   follows it untold. `uxaudit` `glyph` fails a label drawn both ways.
 - A press is answered on the button (Doherty): while its write is out the

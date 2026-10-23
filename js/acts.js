@@ -18,6 +18,7 @@
       '<path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
     file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/>',
     copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
+    letter: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
     out: '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>'
   };
   /* [the words, the mark, after the words] */
@@ -27,7 +28,8 @@
     [/^Download$/, 'file'],
     [/^Copy( link| text| title)?$/, 'copy'],
     [/^(Preview|Preview PDF)$/, 'out', true],
-    [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus']
+    [/^(Add|New) \S/, 'plus'], [/^Issue document$/, 'plus'],
+    [/^Issue Letter of Offer$/, 'letter']
   ];
   var COMMIT = 'form, .sheet-foot, .askcard, .qform-acts, .changebox-actions, .zone-actions, .filearm-acts, .namebox, .undobar, .cover, .approve-row';
   function svg(name) {
