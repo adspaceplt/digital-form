@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261023g">
+<link rel="stylesheet" href="/css/portal.css?v=20261023j">
 <link rel="stylesheet" href="/css/console.css?v=20261023h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -79,7 +79,7 @@
 <script src="/js/records.js?v=20261012a"></script>
 <script src="/js/chart.js?v=20261022t"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261022zr"></script>
+<script src="/js/api.js?v=20261023j"></script>
 <script src="/js/maintenance.js?v=20261022s"></script>
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261023e"></script>
@@ -608,10 +608,14 @@
             <div class="row fgrid">
               <div><label class="field-label" for="crmOwnerPick">Person in charge</label>
                 <select class="select" id="crmOwnerPick"></select></div>
+              <!-- Who brought the client in (2026-10-23): kept when Person in
+                   charge moves on, so Own clients only still holds it. -->
+              <div data-nosum><label class="field-label" for="crmSalesBy">Sales by</label>
+                <select class="select" id="crmSalesBy"></select></div>
               <!-- The Client ID staff own, which a letter's serial is built
                    from: uppercase letters and digits, blank on a lead and
                    asked for at the door of the first letter. -->
-              <div><label class="field-label" for="crmClientCode">Client ID</label>
+              <div class="span-all"><label class="field-label" for="crmClientCode">Client ID</label>
                 <input class="input" id="crmClientCode" maxlength="12" autocapitalize="characters"
                        spellcheck="false" placeholder="AC001" data-none="No Client ID" data-some="Client ID set"></div>
               <div class="span-all"><label class="field-label" for="crmMarket">Market</label>
@@ -5754,7 +5758,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261023e"></script>
 <script src="/js/quotepdf.js?v=20261022f"></script>
 <script src="/js/checklists.js?v=20261022p"></script>
-<script src="/js/crm.js?v=20261023e"></script>
+<script src="/js/crm.js?v=20261023j"></script>
 <script src="/js/sales.js?v=20261022t"></script>
 <script src="/js/team.js?v=20261023i"></script>
 <script src="/js/namecard.js?v=20261022s"></script>

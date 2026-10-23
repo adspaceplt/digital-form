@@ -204,6 +204,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | File | Suites |
 |---|---|
 | `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly, leave, sales, waiting, engage, seenpage, ratecard, vic |
+| Sales by (`clients.sales_by`, `client_row_seen_by`, the SALES BY section) | levels, scope, crm, vic, viewonly, clientparts, sql, then `ui` |
 | VIC clients (`client_vic_set`, `vic_clients`, `ADspaceAdmin.vicTag`) | vic, crm, perms, search, overview, sql, then `ui` |
 | `engage.js` (the record's Engagements) | engage, crm, reports, viewonly, then `ui` |
 | `sales.js` | sales, crm, then `ui` |
@@ -1357,8 +1358,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Client scope (`2026-10-03-client-scope.sql`): `clients.leads` (Lead,
   Contacted, Proposal sent) and `clients.past` (Past) narrow Clients and never
   widen it (`PART_LEVELS` View and Manage); a group's `client_scope` is `all`
-  or `own` (Person in charge, plus any lead nobody holds, to see and take).
-  One rule, `client_row_seen(stage, owner, level)`, held by a restrictive
+  or `own` (Person in charge, plus any lead nobody holds, to see and take,
+  plus every client whose Sales by is the colleague: `clients.sales_by`,
+  `2026-10-23-sales-by.sql`; the user, 2026-10-23: a sales executive keeps
+  sight of a client handed to operations, at their group's own level).
+  One rule, `client_row_seen_by(stage, owner, sales_by, level)` (over
+  `client_row_seen`), held by a restrictive
   `client_scope` read policy and a `client_scope_guard` trigger (writes at
   Manage, `client-scope`) on the client and every table under it, by
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
@@ -1622,7 +1627,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
-  fixed: the colleague keying a lead holds it. A contact refused after the
+  fixed: the colleague keying a lead holds it. Sales by (`crmSalesBy`, More
+  details) is the colleague keying a new lead, changed only at Clients Full
+  Access (trigger `clients_sales_by_guard`, `sales-by`), filed from and to,
+  and read under Details. A contact refused after the
   client is made is said, and what was typed waits in the contact sheet on
   the new record (2026-10-19).
 - The Clients list, and every read of all clients (`bridge.active`,

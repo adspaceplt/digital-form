@@ -1460,6 +1460,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .fmore > summary {
   display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h); padding: 10px 0 0;
   list-style: none; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ink);
+  white-space: nowrap;
 }
 .fmore > summary::-webkit-details-marker { display: none; }
 .fmore > summary::after {
