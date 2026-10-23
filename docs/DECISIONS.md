@@ -6555,3 +6555,11 @@ foot) spanning three rows of a label cell and a value cell. The four AcroForm
 fields keep their names; the signing field is about 23mm tall, still over
 twice a field. `tests/pdfreal.js` now holds the signing cell beside the fields
 and over 60pt, in place of the 32mm rule.
+
+### 2026-10-23 The page count said once, in the foot
+The user: "do you think the letter comprises of 2 pages still necessary? since
+page alr shows Page x of x". The acceptance carried "This letter comprises N
+pages." so a swapped first sheet would be contradicted. The signed sheet's foot
+already reads Page n of n, which contradicts the same swap, so the sentence
+repeated it and is gone; `tests/pdfreal.js` holds the foot's count and no
+sentence.
