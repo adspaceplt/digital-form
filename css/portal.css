@@ -149,17 +149,17 @@
   --sp-40: 40px;
   --sp-64: 64px;
   /* One height for every control, so a button, a select and an input standing
-     next to each other line up instead of stepping. Touch devices get the
-     44px target Apple asks for, and 16px text so iOS stops zooming the page
-     the moment a field is focused. */
+     next to each other line up instead of stepping, at Apple's sizes (34
+     and 30 at a desk, 36 and 32 under a finger, where a button still takes
+     a 44px press; 2026-10-23). */
   /* The chrome bar has a height of its own. It used to have none: 14px of
      padding above and below whatever was tallest inside it, so /admin (a 26px
      wordmark) came out 55px and /client (a 38px button) 67px, both changed
      again at the 640 breakpoint, and the client bar wrapped to two rows at
      390. A bar measured by its contents is a different bar on every page. */
   --head-h:     64px;
-  --ctl-h:      38px;
-  --ctl-h-sm:   32px;
+  --ctl-h:      34px;
+  --ctl-h-sm:   30px;
   --state-w:    124px;   /* every status select, every table */
   --ctl-text:   13px;
   --field-text: 14px;
@@ -295,7 +295,12 @@
 :root[data-theme="dark"] img.brand-logo { filter: invert(1) brightness(1.08); }
 
 @media (pointer: coarse) {
-  :root { --ctl-h: 44px; --ctl-h-sm: 38px; --ctl-text: 14px; --field-text: 15px; --radius-ctl-sm: 10px; }
+  :root { --ctl-h: 36px; --ctl-h-sm: 32px; --ctl-text: 14px; --field-text: 15px; --radius-ctl-sm: 8px; }
+  /* A control draws at Apple's size (36 and 32 under a finger; the user,
+     2026-10-23: "the buttons seem wrong") and still answers a 44px finger:
+     an invisible box above and below it takes the press. */
+  .btn { position: relative; }
+  .btn::after { content: ''; position: absolute; left: 0; right: 0; top: min(0px, calc(50% - 22px)); bottom: min(0px, calc(50% - 22px)); }
 }
 
 /* The one brand face on screen. Slate is already in the repo for the letter,
@@ -1708,7 +1713,7 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 .saved.is-picking { cursor: pointer; }
 /* A round, quiet mark that only takes colour when you reach for it. */
 .iconbtn {
-  width: 38px; height: 38px; flex: 0 0 auto; padding: 0;
+  width: var(--ctl-h); height: var(--ctl-h); flex: 0 0 auto; padding: 0;
   display: inline-grid; place-items: center;
   border: 0; background: none; border-radius: 9px;
   color: var(--ink-mute); transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
@@ -3347,7 +3352,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    state, and one line of what matters. The header is the target; the
    buttons in it keep their own jobs. */
 .kfold {
-  flex: 0 0 auto; width: 38px; height: 38px; margin-left: -10px;
+  flex: 0 0 auto; width: var(--ctl-h); height: var(--ctl-h); margin-left: -10px;
   display: grid; place-items: center; border: 0; border-radius: var(--radius-sm);
   background: none; color: var(--ink-mute);
 }

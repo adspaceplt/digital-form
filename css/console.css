@@ -122,6 +122,7 @@ button.appver {
   min-height: var(--ctl-h); border: 0; border-radius: var(--radius-sm);
   background: none; font-family: inherit; font-weight: 400; text-align: left; cursor: pointer;
 }
+@media (pointer: coarse) { button.appver { min-height: 44px; } }
 /* Two chunks of four rather than one run of eight, so the rail is scanned by
    group before it is read by name. The step between them is the block step;
    inside one, the 2px the items already had. */
