@@ -6407,3 +6407,14 @@ own menu, seeds a signed letter, a request, a content set and a quotation,
 and holds sixteen converted menus met at 1280 and 390. `tests/team.js`,
 `tests/teamrec.js` and `tests/card.js` change a colleague through the
 record's pens and selects.
+
+### 2026-10-23 — The day's gate: a menu read by its old markup, a letter's act drawn two ways
+The full gate on c10a156 found two. `keyin` read a booking's ⋯ through
+`.kmenu-item b`: since #727 every item is written by `ADspaceMenu.item`,
+which draws the words alone, so the suite read nothing; `keyin` and `prod`
+now read the items' own words, the assertion unchanged. uxaudit `glyph`:
+Issue Letter of Offer carried its letter mark on the record head
+(`#crmCover`, drawn in the markup) and none on a quotation's row
+(`js/quotes.js`). The act table (`js/acts.js`) now holds it, `letter`,
+and the head's own copy is taken out, so every screen takes it from one
+place.

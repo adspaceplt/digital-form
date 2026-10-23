@@ -901,7 +901,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   pending state (the user, 2026-10-10): every console `.btn` whose words are
   an act carries its mark (Publish the plane, Unpublish the struck eye,
   Edit the pen, Download the file, Copy the copy mark, Preview and Preview
-  PDF the leaving mark after the words, Add and New the plus), given as the
+  PDF the leaving mark after the words, Add and New the plus, Issue Letter of Offer the letter), given as the
   button is drawn where a screen wrote words alone; a form's own commit
   stays words. A press whose write disables its button shows, after 150ms,
   a turning ring in the button's ink at the button's width until it is let
