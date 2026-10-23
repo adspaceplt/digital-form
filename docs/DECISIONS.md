@@ -6497,3 +6497,13 @@ colleague keying it; a change after is Clients Full Access alone
 (`clients_sales_by_guard`). Clients handed over before carry none until set.
 Measured by `levels` §19b, `scope`, `sql`.
 
+
+### 2026-10-23 · Controls at Apple's sizes
+The user, comparing the Apple Store's filter sheet: "the buttons seem wrong".
+Every control stood at 38px at a desk and 44px under a finger, taller than
+Apple draws them (a 44pt target is Apple's press area, not its drawn button).
+Chosen: `--ctl-h` 34 and `--ctl-h-sm` 30 at a desk, 36 and 32 under a finger,
+where `.btn::after` keeps a 44px press above and below the drawn button; the
+small corner 8 everywhere. Icon buttons and the ⋯ keep their 44px boxes under
+a finger (drawn only on hover). uxaudit `target` and `geom` floors follow, and
+uxaudit fails a coarse `.btn` under 44px with no press box.

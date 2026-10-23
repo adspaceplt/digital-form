@@ -85,14 +85,14 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Value | Use |
 |---|---|---|
-| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 38 or 44px control / a 32px control (10 under a finger, where it is 38) / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2) |
+| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 34 or 36px control / a 30 or 32px control / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2) |
 | `--head-h` | 64px (56 phone) | The top bar on every page; never wraps; the kicker hides below 640 before anything clips |
-| `--ctl-h` | 38px (44 coarse) | Every button, field, select, icon button, menu row |
-| `--ctl-h-sm` | 32px (38 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
+| `--ctl-h` | 34px (36 coarse) | Every button, field, select, icon button, menu row, at Apple's sizes (the user, 2026-10-23); under a finger a `.btn` still takes a 44px press (its `::after`) |
+| `--ctl-h-sm` | 30px (32 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
 | `--state-w` | 124px | Status select or chip column (My Work's stage track 170px) |
 | `--ctl-text` / `--field-text` | 13 / 14px (14 / 15 coarse) | Control label / field text |
 | Button min width | 116px | |
-| Icon | 15px glyph, stroke 1.8; icon box 38 (44 coarse) | Same glyph for the same action; never mix outline and filled |
+| Icon | 15px glyph, stroke 1.8; icon box `--ctl-h` (44 coarse, drawn only on hover) | Same glyph for the same action; never mix outline and filled |
 | Ring | 18px, stroke 2.6 | `.ring`; complete is `.ring-done`, a filled green disc with a white tick |
 | `--t-fast` / `--t` / `--t-slow` | .12s / .2s / .34s | Colour or press / state change / size, position, surface |
 | `--ease` / `--ease-out` | `cubic-bezier(.32,.72,0,1)` / `(.22,.61,.36,1)` | A move / an arrival |
@@ -589,7 +589,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   - 640 is the phone line (`.crm-head` hides; facts go two across);
   - 560 and 760 adjust some cards and sheets;
   - 1100 splits the record rail.
-- `pointer: coarse` raises controls to 44px.
+- `pointer: coarse` raises controls to 36px (32 small); a button's press stays 44px.
 - Test at 1280 and 390; the matrix adds 320 to 1440 and 200% zoom.
 - No horizontal overflow. A 16px side gutter. Never a sideways table (a
   board's columns are not a table).
@@ -781,7 +781,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   `.team-act`. A modal that filters keeps one height.
 
 ## 8. Theories applied on every change (at 1280 and 390)
-- **Fitts**: 38px desk and 44px touch targets; the primary nearest the hand.
+- **Fitts**: 34px desk controls, 36px under a finger with a 44px press; the primary nearest the hand.
 - **Hick**: one primary action per view; rare acts in the ⋯; a select for more
   than four choices.
 - **Miller**: groups of three to five; six or more fold or become a table.

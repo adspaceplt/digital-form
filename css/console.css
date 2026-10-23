@@ -122,6 +122,7 @@ button.appver {
   min-height: var(--ctl-h); border: 0; border-radius: var(--radius-sm);
   background: none; font-family: inherit; font-weight: 400; text-align: left; cursor: pointer;
 }
+@media (pointer: coarse) { button.appver { min-height: 44px; } }
 /* Two chunks of four rather than one run of eight, so the rail is scanned by
    group before it is read by name. The step between them is the block step;
    inside one, the 2px the items already had. */
@@ -150,7 +151,7 @@ button.appver {
    wrapper let a button shrink to its words, its hover a short slab. */
 /* The theme this device reads the console in: a row, never a press, its
    choice a small segment at the right edge. */
-.acct-menu .kmenu-item.acct-theme { cursor: default; padding-block: 3px; padding-right: 3px; }
+.acct-menu .kmenu-item.acct-theme { cursor: default; padding-block: 2px; padding-right: 3px; }
 .acct-theme .seg.is-sm > .seg-opt { padding-inline: 10px; }
 @media (hover: hover) {
   .acct-menu .kmenu-item.acct-theme:hover { background: none; }
@@ -216,6 +217,8 @@ button.appver {
   .qcfoot:has(#qcSecond:not([hidden])) > #qcSecond { order: 1; flex: 1 1 calc(50% - 6px); }
   .qcfoot:has(#qcSecond:not([hidden])) > #qcCancel { order: 2; flex: 1 1 calc(50% - 6px); }
   .qcfoot:has(#qcSecond:not([hidden])) > #qcGo { order: 3; flex: 1 0 100%; }
+  /* Ask a second reviewer takes two lines in its half; Cancel stands as tall. */
+  .qcfoot { align-items: stretch; }
 }
 .qc-file.is-image img { object-fit: cover; }
 .qc-files .qc-file-row { flex: 1 1 100%; }
