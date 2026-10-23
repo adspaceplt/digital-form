@@ -160,6 +160,13 @@
   --head-h:     64px;
   --ctl-h:      34px;
   --ctl-h-sm:   30px;
+  /* The press a finger needs, whatever a control draws at, and a box of
+     lines' floor (a short note's the smaller): one place each, so a change
+     of size is one edit here (the user, 2026-10-23). A section that wants a
+     small control drawn at full height sets the token, never the height. */
+  --tap:        44px;
+  --box-h:      84px;
+  --box-h-sm:   72px;
   --state-w:    124px;   /* every status select, every table */
   --ctl-text:   13px;
   --field-text: 14px;
@@ -300,7 +307,7 @@
      2026-10-23: "the buttons seem wrong") and still answers a 44px finger:
      an invisible box above and below it takes the press. */
   .btn { position: relative; }
-  .btn::after { content: ''; position: absolute; left: 0; right: 0; top: min(0px, calc(50% - 22px)); bottom: min(0px, calc(50% - 22px)); }
+  .btn::after { content: ''; position: absolute; left: 0; right: 0; top: min(0px, calc(50% - var(--tap) / 2)); bottom: min(0px, calc(50% - var(--tap) / 2)); }
 }
 
 /* The one brand face on screen. Slate is already in the repo for the letter,
@@ -543,7 +550,7 @@ a { color: inherit; }
   font-size: 13px; color: var(--ink-mute); cursor: pointer;
 }
 .input[type="file"]::file-selector-button {
-  flex: 0 0 auto; height: 28px; margin: 0; padding: 0 14px;
+  flex: 0 0 auto; height: calc(var(--ctl-h-sm) - 2px); margin: 0; padding: 0 14px;
   font: inherit; font-size: 13px; font-weight: 500;
   /* `--line-soft` and not `--sunk`: at 1.03:1 on the field's white ground a
      sunk fill is invisible, and a control nothing distinguishes is not a
@@ -556,8 +563,7 @@ a { color: inherit; }
 @media (hover: hover) {
   .input[type="file"]::file-selector-button:hover { background: var(--line); color: var(--ink); }
 }
-@media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
-.textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
+.textarea { width: 100%; resize: vertical; min-height: var(--box-h); padding-block: 10px; }
 /* A typed box grows downwards only: a sideways drag widened the card past
    the screen (the report's Notes for the draft, 2026-10-05). In a field row
    it runs the row's width, as every other field does. */
@@ -877,7 +883,8 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
-.changebox .textarea { min-height: 74px; font-size: 13px; resize: vertical; overflow-y: auto; }
+.changebox { --box-h: var(--box-h-sm); }
+.changebox .textarea { font-size: 13px; resize: vertical; overflow-y: auto; }
 /* The note being edited is the request; the standing one steps away until
    it is sent or the request is left. */
 .approve.is-requesting .approve-note { display: none; }
@@ -1624,7 +1631,8 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 }
 .draft-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .draft-top .select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
-.draft-body .textarea { min-height: 72px; font-size: 13.5px; }
+.draft-body { --box-h: var(--box-h-sm); }
+.draft-body .textarea { font-size: 13.5px; }
 .draft-body .linkbtn { align-self: flex-start; }
 
 /* Status, everywhere it appears. A dot and a word, sized like the text around
@@ -1720,7 +1728,7 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 }
 .iconbtn svg { width: 16px; height: 16px; stroke-width: 1.7; }
 /* A thumb needs the whole 44px even where the mark stays this size. */
-@media (pointer: coarse) { .iconbtn { width: 44px; height: 44px; } }
+@media (pointer: coarse) { .iconbtn { width: var(--tap); height: var(--tap); } }
 /* Inside the hover media like every other hover here: a tap leaves :hover
    on, and a phone bar with two icon controls showed one of them filled. */
 @media (hover: hover) {
@@ -1848,7 +1856,8 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
    the pair sat small at the left and the file ran past the captions). */
 .saved.is-editing .saved-body { gap: 10px; align-items: stretch; }
 .saved.is-editing .saved-body > .changebox-actions { margin-top: 2px; }
-.saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
+.saved.is-editing { --box-h: var(--box-h-sm); }
+.saved.is-editing .textarea { font-size: 13px; }
 .capwrite > .btn { flex: 0 0 auto; }
 .msg.capmsg { margin-top: 0; }
 .msg.capmsg:empty { display: none; }
@@ -3284,7 +3293,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   padding: 5px; display: flex; flex-direction: column;
 }
 /* A menu row is a control, so it clears the control floor like every other
-   one: 38px on a desktop, 44px under a finger. Padding alone left it at 43px
+   one: a control's height on a desktop, `--tap` under a finger. Padding alone left it at 43px
    on a phone, which nothing caught until the ⋯ was opened during the walk. */
 .kmenu-item {
   display: flex; flex-direction: column; gap: 1px; justify-content: center;
@@ -3358,7 +3367,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   background: none; color: var(--ink-mute);
 }
 .kfold svg { width: 16px; height: 16px; transition: transform var(--t) var(--ease); }
-@media (pointer: coarse) { .kfold { width: 44px; height: 44px; margin-left: -12px; } }
+@media (pointer: coarse) { .kfold { width: var(--tap); height: var(--tap); margin-left: -12px; } }
 .kfold[aria-expanded="true"] svg { transform: rotate(90deg); }
 .kfold:hover { background: var(--line-soft); color: var(--ink); }
 .kcard-sum {
@@ -3701,7 +3710,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
 /* A tap target is never smaller than a finger, whatever the width. */
 @media (pointer: coarse) {
-  .kmenu-btn { width: 44px; height: 44px; }
+  .kmenu-btn { width: var(--tap); height: var(--tap); }
   .kmenu-item { padding: 11px 12px; }
   }
 
@@ -4918,7 +4927,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 @media (max-width: 640px) {
   .team-row > .team-act, .group-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
   .team-act { display: flex; gap: 8px; margin-top: 4px; }
-  .team-act .btn { flex: 1 1 0; min-height: var(--ctl-h); }
+  .team-act { --ctl-h-sm: var(--ctl-h); }
+  .team-act .btn { flex: 1 1 0; }
 }
 
 /* =========================================================================
@@ -7863,7 +7873,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The close mark gives its padding back so the title keeps the card's top. */
 .popcard-x { margin: calc((20px - var(--ctl-h)) / 2) calc((16px - var(--ctl-h)) / 2) calc((20px - var(--ctl-h)) / 2) 0; }
 .kmenu.pushpop { gap: 8px; padding: 16px; }
-.popcard.is-dock .pushpop-acts .btn { min-height: var(--ctl-h); }
+.popcard.is-dock .pushpop-acts { --ctl-h-sm: var(--ctl-h); }
 .aboutpop.popcard { padding: 14px 16px 16px; }
 .aboutpop.is-dock { padding: 18px 20px 20px; }
 /* The name at the body's weight beside its mark (the user, 2026-10-09: the
@@ -7912,7 +7922,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .guide-acts .btn { min-width: 0; }
 .guidecard.is-dock { padding: 18px 20px 20px; }
 .guidecard.is-dock .guide-text { font-size: 14px; }
-.guidecard.is-dock .guide-acts .btn { flex: 1 1 0; min-height: var(--ctl-h); }
+.guidecard.is-dock .guide-acts { --ctl-h-sm: var(--ctl-h); }
+.guidecard.is-dock .guide-acts .btn { flex: 1 1 0; }
 .guide-on { outline: 2px solid var(--action-ring); outline-offset: 3px; }
 /* A row runs its table's width, and the table clips what falls outside it:
    a row's ring is drawn inside the row. */
