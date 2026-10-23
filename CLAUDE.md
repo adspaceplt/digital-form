@@ -83,6 +83,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - The stand-in's permission map is rebuilt on every page load, so re-read by
     navigating inside the console or through `window.__rpc`.
   - The stand-in seeds no campaigns.
+  - A suite that writes `window.__DB` by hand stamps what the database's
+    triggers stamp (`updated_at`, as `clients_touch` does): a page knows a
+    row moved by its stamp (2026-10-23, `datefloor`).
   - A suite that answers the CDN itself answers a video address with a
     playable video (`revise`'s WebM), never a picture: a reel fed a PNG
     fails to decode and draws the missing tile (2026-10-22).
@@ -763,7 +766,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `.draftline` Draft restored · Discard, and so its scrim closes it even
     when touched. Pressing the action ends the draft. Files, passwords and
     `data-nodraft` fields are never kept. A desk keeps no drafts.
-  - Focus is trapped, and handed back on close.
+  - Focus is trapped, and handed back on close: to its opener where drawn,
+    else to what held focus at the open (a `data-rare` button's ⋯; 2026-10-23).
   - `sheet(id, on, swap)` swaps two sheets in one frame (`.is-swap`).
   - Cmd/Ctrl + Enter presses, in order: the caret's small form, then the top
     form sheet's foot primary, then the pane form's primary.
