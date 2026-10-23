@@ -86,6 +86,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A suite that writes `window.__DB` by hand stamps what the database's
     triggers stamp (`updated_at`, as `clients_touch` does): a page knows a
     row moved by its stamp (2026-10-23, `datefloor`).
+  - A change to a size token (`--ctl-h`, `--ctl-h-sm`) greps the suites
+    for the old figure in the same push: twelve suites still asked 38 or 44
+    of controls #740 made 34 and 36 (2026-10-23).
   - A suite that answers the CDN itself answers a video address with a
     playable video (`revise`'s WebM), never a picture: a reel fed a PNG
     fails to decode and draws the missing tile (2026-10-22).

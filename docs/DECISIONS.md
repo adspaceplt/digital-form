@@ -6563,3 +6563,5 @@ pages." so a swapped first sheet would be contradicted. The signed sheet's foot
 already reads Page n of n, which contradicts the same swap, so the sentence
 repeated it and is gone; `tests/pdfreal.js` holds the foot's count and no
 sentence.
+
+- 2026-10-23 · Gate after the control sizes. The full gate on e254e05 (tests 957c51d) read PROBLEM (13): twelve suites still asked 38 or 44px of controls that #740 set at 34 (desk) and 36 (under a finger), 30/32 small; one (swipe) put its finger on the client record's tab strip, which the rail's blocks above the tabs had pushed to the foot of an 800px phone, and a strip scrolls rather than swipes. No product fault. The suites now measure the token sizes, swipe brings the pane up first (tests d502cc5), and a size token's change greps the suites for the old figure in the same push.
