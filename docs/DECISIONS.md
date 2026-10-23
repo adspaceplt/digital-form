@@ -6538,3 +6538,9 @@ client's act read as one block. A 1pt rule in ink across the column now opens
 the acceptance, 6pt under the closing's gap and 24pt above its heading; the
 room is part of the block's reservation, so the rule never stands alone at a
 page's foot. pdfcases holds the block on one page and inside the margins.
+
+### 2026-10-23 The acceptance divider is a hairline
+The user: "why so solid dark black line. u see others line also not so dark
+black". The divider drawn above Acceptance of offer was the 1pt ink rule; every
+other rule on the letter is the 0.6pt grey hairline. It now takes the same
+hairline, so the letter keeps one weight of line.

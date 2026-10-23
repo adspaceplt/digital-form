@@ -977,10 +977,10 @@
         + 3 * (FIELDH + 26);  // name, designation, date
       need(acceptH);
 
-      /* A rule in ink across the column parts the letter from the client's
-         own act, so the sign-off above and the acceptance under it never read
+      /* A hairline across the column, the letter's own grey rule, parts the
+         letter from the client's own act, so the sign-off above and the acceptance under it never read
          as one run of lines (the user, 2026-10-23: "so its not so crumpled"). */
-      y -= 6; rule(y, M, R, true); y -= 24;
+      y -= 6; rule(y); y -= 24;
       text('Acceptance of offer', M, y, BODY, bold); y -= LH + 8;
 
       /* Plain prose, and a plain date: an ordinal reads as a letterhead
