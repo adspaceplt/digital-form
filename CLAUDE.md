@@ -2248,8 +2248,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Doe; the Billing pane and its contact select, and a client letter's Attn,
     read it the same way.
 - Letter layout:
-  - The closing is reserved on its own. The acceptance opens under a rule
-    in ink across the column with room either side, and carries the
+  - The closing is reserved on its own. The acceptance opens under the
+    letter's grey hairline across the column with room either side (never
+    ink: it read as a heavy black bar), and carries the
     sentence naming the reference, date, page count and figure.
   - Four transparent AcroForm fields in Helvetica.
   - The reference and initials on every page but the signed one; the monogram
