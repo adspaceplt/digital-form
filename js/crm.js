@@ -5428,7 +5428,7 @@
          after the term and the validity (the user, 2026-10-23). */
       '<div class="lpickref">' +
         '<label class="field-label" for="pickTerms">Terms</label>' +
-        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line"></textarea>' +
+        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */

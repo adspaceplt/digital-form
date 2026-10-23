@@ -6519,3 +6519,13 @@ client portal print them) and drawn under TERMS after the worked-out term and
 validity. `issue_letter` reads them from `p_deal` (no new argument, so no
 overload to drop), ten at most and 400 characters each. Measured by
 `pdfcases` taxterms and `letter`.
+
+### 2026-10-23 · A letter's validity is its first term, from the setting
+The user: "dont hard coded inside, you should auto fill in the terms part as
+first sentence". The letter printed "valid until" 30 days from its date, a
+figure typed into documents.js beside the terms typed on it. The Issue Letter
+of Offer sheet's Terms now opens on the validity, worked from
+`quote_valid_days` (Tax and terms), editable like any point; the letter
+carries `bill_to.terms_own` and prints its terms as typed. Letters issued
+before keep their 30 days on a redraw, as issued. One validity setting serves
+quotations and letters; a separate one for letters is a later choice.

@@ -30,6 +30,9 @@
   var actor = bridge.actorName || bridge.actor || function () { return ''; };
 
   var KIND = {
+    /* `validDays` is what a letter issued before 23 Oct 2026 printed, kept
+       so it redraws as issued; a letter since carries its validity in its
+       own terms, from Tax and terms (`validLine`). */
     offer: { prefix: 'AQT/INT/', title: 'Letter of Offer', word: 'Reference', per: 'month', validDays: 30 }
   };
   KIND.intent = KIND.cover = KIND.offer;   // rows issued before the rename
@@ -293,7 +296,7 @@
       p_idem: opts.idem || idemKey(),
       p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
       p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [] },
+                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true },
       p_replaces: opts.replaces || null,
       p_renewal: Boolean(opts.renewal),
       p_serial: serial || null
@@ -907,7 +910,9 @@
                    MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
                    (price.planOnce ? ', with the one-off items' : '') + '.');
       }
-      terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
+      /* A letter whose terms carry its validity (`terms_own`) prints them
+         as typed; one issued before prints the validity it was issued with. */
+      if (!b.terms_own) terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       /* The letter's own terms, typed one point a line when it was issued
          (2026-10-23), after the ones it works out. */
       (Array.isArray(b.terms) ? b.terms : []).forEach(function (t) { if (String(t).trim()) terms.push(String(t).trim()); });
@@ -1271,7 +1276,16 @@
     }).catch(function () {});
   }
 
+  /* The validity a new letter's terms open on: today in Malaysia plus the
+     days set in Tax and terms (`quote_valid_days`), never a figure here. */
+  function validLine() {
+    var today = ADspaceClock.today();
+    var days = Number(MON.setting('quote_valid_days', today)) || 0;
+    return days > 0 ? 'This offer is valid until ' + letterDate(plusDays(today, days)) + '.' : '';
+  }
+
   window.ADspaceDocs = {
+    validLine: validLine,
     save: save, tabFor: tabFor, previewTab: previewTab, installed: installed, shut: shut, ios: IOS, forgetFiles: forgetFiles,
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,

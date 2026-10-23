@@ -2184,9 +2184,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Only To quote lines.
   - Terms of its own (`#pickTerms`, one point a line, ten at most, 400
     characters each; `bad-terms`): sent in `p_deal.terms`, kept in the
-    snapshot as `bill_to.terms` and printed under TERMS after the term and
-    the validity (the user, 2026-10-23,
-    `2026-10-23-letter-terms.sql`).
+    snapshot as `bill_to.terms` and printed under TERMS after the term
+    (`2026-10-23-letter-terms.sql`). The box opens on the validity, today
+    plus `quote_valid_days` (Tax and terms; `ADspaceDocs.validLine`),
+    editable, never a figure in the page; such a letter carries
+    `bill_to.terms_own` and prints no validity of its own, one issued
+    before redraws its 30 days (the user, 2026-10-23,
+    `2026-10-23-letter-validity-in-terms.sql`).
   - Priced by the month when every line of more than a month shares a term
     (the amount reading per month; the summary ending Monthly incl. SST in
     bold, as a quotation's does); a one-month line beside them is a one-off
