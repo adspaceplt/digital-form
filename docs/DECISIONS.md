@@ -6544,3 +6544,14 @@ The user: "why so solid dark black line. u see others line also not so dark
 black". The divider drawn above Acceptance of offer was the 1pt ink rule; every
 other rule on the letter is the 0.6pt grey hairline. It now takes the same
 hairline, so the letter keeps one weight of line.
+
+### 2026-10-23 The acceptance's signing block as one small table
+The user: "can the signature be smaller for clients? and modern tabular
+format?". The execution block was a 32mm signing area across the column, then
+Name, Designation and Date each a full-width rule with 26pt between: about
+85mm of a page. It is now one table in the letter's grey hairline, 84pt tall:
+the signing and stamp cell at the left (48% of the column, its label at its
+foot) spanning three rows of a label cell and a value cell. The four AcroForm
+fields keep their names; the signing field is about 23mm tall, still over
+twice a field. `tests/pdfreal.js` now holds the signing cell beside the fields
+and over 60pt, in place of the 32mm rule.
