@@ -2252,6 +2252,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     letter's grey hairline across the column with room either side (never
     ink: it read as a heavy black bar), and carries the
     sentence naming the reference, date, page count and figure.
+  - The execution block is one table in the grey hairline (the user,
+    2026-10-23: smaller, tabular): the signing and stamp cell at the left
+    spanning Name, Designation and Date, a label cell beside each value.
   - Four transparent AcroForm fields in Helvetica.
   - The reference and initials on every page but the signed one; the monogram
     only top right on page one.

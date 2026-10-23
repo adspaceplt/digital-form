@@ -965,16 +965,19 @@
              ['Total for the term' + incl, MON.money2(price.total, doc.market)]]
           : [['Total' + incl, MON.money2(price.eachTotal, doc.market)]];
 
-      var SIGH = 91;          // 32mm of signing room, not a ruled line
-      var FIELDH = 29;        // 10mm for each of the three fields
+      /* The execution block is one small table (the user, 2026-10-23: "can
+         the signature be smaller … modern tabular format"): the signing and
+         stamp cell at the left spans three rows, each row a label and its
+         value at the right. */
+      var ROWH = 28;          // 10mm a row: a name or a date written by hand
+      var TABH = ROWH * 3;    // the signing cell spans the three rows
       var acceptH = 30        // the divider
         + 18 + LH             // heading
         + LH * 2 + 10         // the sentence
         + 8 + sumRows.length * 15 + 10    // the summary
         + 26                  // the page count line
         + LH + 14             // the execution heading
-        + SIGH + 30           // the signing area and its label
-        + 3 * (FIELDH + 26);  // name, designation, date
+        + TABH + 8;           // the signing table
       need(acceptH);
 
       /* A hairline across the column, the letter's own grey rule, parts the
@@ -1016,31 +1019,35 @@
       y -= 14;
 
       /* ---- The execution block -------------------------------------------
-         A signature is a hand moving across a page, so the room for it is an
-         area and not a ruled line: 32mm, the width of the text column. The
-         three fields under it are the same width, far enough apart to write
-         between, and each carries its own baseline.
+         One table in the letter's own grey hairline: the signing and stamp
+         cell at the left, its label at its foot, and Name, Designation and
+         Date at the right, a label cell beside each value cell.
 
-         Every one of them is also a real AcroForm field, so the letter can be
-         filled in a PDF reader and returned without printing. The drawn rules
+         Every value is also a real AcroForm field, so the letter can be
+         filled in a PDF reader and returned without printing. The drawn grid
          and labels stay underneath, because a printed copy is still the
          fallback and a field is invisible on paper. */
       var fieldBoxes = [];
-      var signTop = y;
-      rule(y - SIGH, M, R);
-      text('Authorised signatory and company stamp', M, y - SIGH - 11, 8.5, font, mute);
-      fieldBoxes.push(['acceptance_authorised_signatory', M, y - SIGH, R - M, SIGH, true]);
-      y -= SIGH + 44;
-
+      var tTop = y, tBot = y - TABH;
+      var SIGW = Math.round((R - M) * 0.48), LABW = 74;
+      var xSig = M + SIGW, xLab = xSig + LABW;
+      var grid = function (x1, y1, x2, y2) {
+        page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: 0.6, color: pn.line });
+      };
+      grid(M, tTop, R, tTop); grid(M, tBot, R, tBot);
+      grid(M, tTop, M, tBot); grid(R, tTop, R, tBot);
+      grid(xSig, tTop, xSig, tBot); grid(xLab, tTop, xLab, tBot);
+      grid(xSig, tTop - ROWH, R, tTop - ROWH); grid(xSig, tTop - 2 * ROWH, R, tTop - 2 * ROWH);
+      text('Authorised signatory and company stamp', M + 8, tBot + 7, 8, font, mute);
+      fieldBoxes.push(['acceptance_authorised_signatory', M, tBot + 18, SIGW, TABH - 18, true]);
       [['Name', 'acceptance_name'],
        ['Designation', 'acceptance_designation'],
-       ['Date', 'acceptance_date']].forEach(function (f) {
-        rule(y, M, R);
-        text(f[0], M, y - 11, 8.5, font, mute);
-        fieldBoxes.push([f[1], M, y, R - M, FIELDH, false]);
-        y -= FIELDH + 26;
+       ['Date', 'acceptance_date']].forEach(function (f, i) {
+        var top = tTop - i * ROWH;
+        text(f[0], xSig + 8, top - ROWH / 2 - 3, 8.5, font, mute);
+        fieldBoxes.push([f[1], xLab, top - ROWH, R - xLab, ROWH, false]);
       });
-      y -= 4;
+      y = tBot - 8;
 
       var signPage = page;
       pages.forEach(function (pg, i) { page = pg; pn.page = pg; foot(i, pages.length); });
