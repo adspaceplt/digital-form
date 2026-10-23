@@ -6407,3 +6407,15 @@ own menu, seeds a signed letter, a request, a content set and a quotation,
 and holds sixteen converted menus met at 1280 and 390. `tests/team.js`,
 `tests/teamrec.js` and `tests/card.js` change a colleague through the
 record's pens and selects.
+
+### 2026-10-23 · A sheet opened from a ⋯ hands focus back to the ⋯
+
+The day's full gate (main c10a156) failed matrix's keyboard pass on
+Document types: Escape shut the sheet and focus fell to the page. SHELL-5
+had put Document types behind the command bar's ⋯ (`data-rare`), so the
+opener `js/register.js` named, `#regTypes`, is never drawn, and
+`js/sheet.js` focused it all the same. `sheet.js` now hands focus to the
+named opener only where it is drawn, else to what held focus when the
+sheet opened (the ⋯), which covers Compare groups and Bulk import too.
+The same gate found the supplier record's strip (`#supTabs`, SUP-4)
+missing from uxaudit's strip list; it joins it.

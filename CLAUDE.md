@@ -763,7 +763,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `.draftline` Draft restored · Discard, and so its scrim closes it even
     when touched. Pressing the action ends the draft. Files, passwords and
     `data-nodraft` fields are never kept. A desk keeps no drafts.
-  - Focus is trapped, and handed back on close.
+  - Focus is trapped, and handed back on close: to its opener where drawn,
+    else to what held focus at the open (a `data-rare` button's ⋯; 2026-10-23).
   - `sheet(id, on, swap)` swaps two sheets in one frame (`.is-swap`).
   - Cmd/Ctrl + Enter presses, in order: the caret's small form, then the top
     form sheet's foot primary, then the pane form's primary.
