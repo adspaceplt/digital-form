@@ -975,7 +975,6 @@
         + 18 + LH             // heading
         + LH * 2 + 10         // the sentence
         + 8 + sumRows.length * 15 + 10    // the summary
-        + 26                  // the page count line
         + LH + 14             // the execution heading
         + TABH + 8;           // the signing table
       need(acceptH);
@@ -1002,14 +1001,10 @@
         right(r[1], sumR, y, 10, bold);
         y -= 15;
       });
-      y -= 4; rule(y); y -= 12;
-
-      /* The page count stays: a letter signed on its last sheet is a letter
-         whose first sheet can be swapped, and the count is one of the three
-         marks that contradicts a substitution. The reference and the date are
-         in the sentence above, so this line carries what is left. */
-      text('This letter comprises ' + pages.length + ' pages.', M, y, 9, font, mute);
-      y -= 26;
+      /* The count of pages is the foot's Page n of n on this signed sheet,
+         which a swapped first sheet contradicts as well; a sentence saying it
+         again was cut (the user, 2026-10-23). */
+      y -= 4; rule(y); y -= 24;
 
       /* A registered name can be longer than the column, and this line carries
          one. Unwrapped it ran past the right margin and the tail simply was

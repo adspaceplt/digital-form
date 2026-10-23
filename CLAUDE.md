@@ -2251,7 +2251,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The closing is reserved on its own. The acceptance opens under the
     letter's grey hairline across the column with room either side (never
     ink: it read as a heavy black bar), and carries the
-    sentence naming the reference, date, page count and figure.
+    sentence naming the reference and date, then the figures; the page
+    count is the signed sheet's foot (Page n of n), never a sentence again.
   - The execution block is one table in the grey hairline (the user,
     2026-10-23: smaller, tabular): the signing and stamp cell at the left
     spanning Name, Designation and Date, a label cell beside each value.
