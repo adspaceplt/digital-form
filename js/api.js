@@ -115,7 +115,7 @@
   const CLIENT_COLS = 'id, name, logo_url, access_token, passcode, active, created_at, drive_folder, ' +
     'handle_ig, handle_fb, handle_tiktok, handle_xhs, stage, industry, owner, market, sst_applies, ' +
     'website, source, brand_notes, updated_at, phone, social_ig, social_fb, social_tiktok, social_xhs, ' +
-    'review_hidden, deal_value, deal_note, commence, slug, stage_since, stage_log, client_code, bill_sgd';
+    'review_hidden, deal_value, deal_note, commence, slug, stage_since, stage_log, client_code, bill_sgd, sales_by';
   const BILL_COLS = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'bill_contact_id',
     'bill_contact', 'bill_contact_email', 'bill_contact_phone', 'finance_email', 'billing_address'];
   /* Billing by client id: { id: row }. A row carries `missing`, the

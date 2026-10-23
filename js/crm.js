@@ -397,6 +397,23 @@
     el.value = keep || '';
   }
 
+  /* Sales by (2026-10-23): a colleague by id, Not set first; one who has
+     left stays the chosen option, named as the team list last held them. */
+  function salesBySelect(el, team, current) {
+    if (!el) return;
+    var list = team.slice().sort(F.byStaff);
+    var opts = '<option value="">Not set</option>' + list.map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
+    }).join('');
+    if (current && !list.some(function (m) { return m.id === current; })) opts += '<option value="' + esc(current) + '">Former colleague</option>';
+    el.innerHTML = opts;
+    el.value = current || '';
+  }
+  function salesByName(id) {
+    if (!id) return '';
+    var m = (state.team || []).filter(function (x) { return x.id === id; })[0];
+    return m ? m.name : 'Former colleague';
+  }
   function fillSelect(el, rows, all) {
     if (!el) return;
     var keep = el.value;
@@ -883,6 +900,10 @@
       if (!c) $('crmOwnerPick').value = self.name || '';
       $('crmOwnerPick').disabled = true;
     }
+    /* Sales by: whoever keys a lead in brought it, and only Clients Full
+       Access names anyone else or changes it (`clients_sales_by_guard`). */
+    salesBySelect($('crmSalesBy'), state.team, c ? (c.sales_by || '') : ((self && self.id) || ''));
+    $('crmSalesBy').disabled = !mayPart('clients', 'manage');
     if (!c) $('crmSource').value = 'referral';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
@@ -964,6 +985,10 @@
        never touches what it never held. */
     if (!patch.client_code && !(state.editing && state.editing.client_code)) delete patch.client_code;
     patch.deal_note = val('crmEnquiry') || null;
+    /* Sent only where it moved, so a colleague below Full Access saving a
+       record never touches it. */
+    var sb = $('crmSalesBy') ? $('crmSalesBy').value || null : null;
+    if (!state.editing || sb !== (state.editing.sales_by || null)) patch.sales_by = sb;
     if (!state.editing) patch.stage = 'lead';
 
     if (state.editing) {
@@ -973,7 +998,7 @@
         if (!(r.data || []).length) { msg('crmMsg', 'Not saved. The database refused the request.', 'err'); return; }
         var moved = changed(state.editing, patch, [
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
-          ['owner', 'Person in charge'], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
+          ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
           ['deal_note', 'Enquiry']]);
         if (moved) log('client.edited', name, moved);
         shutForm();
@@ -1053,6 +1078,7 @@
          (a stored Industry reading <span… once drew as markup). */
       ['Client ID', c.client_code || null],
       ['Source',   c.source ? sourceWord(c.source) : null],
+      ['Sales by', c.sales_by ? salesByName(c.sales_by) : null],
       ['Industry', c.industry || null],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, MON.curOf(c)) : null],

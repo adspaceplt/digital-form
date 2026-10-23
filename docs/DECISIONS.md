@@ -6483,3 +6483,17 @@ segment grows to four choices and is the select past that (DESIGN.md §4:
 five or more stays a select), through `ADspaceForm.segFit`. Measured by
 `depts` (1280, 390), `perf` §34, `sql`, `settings`, `perfui`, `team`,
 `teamrec`.
+
+### 2026-10-23 · Sales by: a sales executive keeps sight of the clients they won
+The user added a group for sales executives (business development) on Own
+clients only, and saw that a client handed to an operations colleague as
+Person in charge left the executive's sight. Chosen (the user): a Sales by
+field on the client, at the same level their group allows. `clients.sales_by`
+(a colleague) joins the own-scope rule as a third way in
+(`client_row_seen_by`), restated through every function that read the rule
+(`client_seen`, `client_scope_guard`, `client_scope_removal`, the report
+gate, owed, months and audit reads, `vic_clients`). A new lead takes the
+colleague keying it; a change after is Clients Full Access alone
+(`clients_sales_by_guard`). Clients handed over before carry none until set.
+Measured by `levels` §19b, `scope`, `sql`.
+
