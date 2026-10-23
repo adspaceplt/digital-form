@@ -6529,3 +6529,12 @@ of Offer sheet's Terms now opens on the validity, worked from
 carries `bill_to.terms_own` and prints its terms as typed. Letters issued
 before keep their 30 days on a redraw, as issued. One validity setting serves
 quotations and letters; a separate one for letters is a later choice.
+
+### 2026-10-23 The acceptance set apart from the sign-off
+The user: "can the acceptance have a divider or what so its not so crumpled
+together". The closing (Yours sincerely, the company, the issuer) ran 16pt
+above Acceptance of offer in the same weight, so the letter's end and the
+client's act read as one block. A 1pt rule in ink across the column now opens
+the acceptance, 6pt under the closing's gap and 24pt above its heading; the
+room is part of the block's reservation, so the rule never stands alone at a
+page's foot. pdfcases holds the block on one page and inside the margins.
