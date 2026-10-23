@@ -148,9 +148,10 @@
       if (l.basis === 'once') rows.push({ s: 'One-off', c: mute });
       /* A line quoted for months of its own says so (2026-10-15). */
       if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) rows.push({ s: l.months + (Number(l.months) === 1 ? ' month' : ' months'), c: mute });
-      /* A line on another tax rate says so (2026-10-22). */
-      if (taxed.note(l)) rows.push({ s: taxed.note(l), c: mute });
-      var h = rows.length * 12.4 + 12;
+      /* Where the lines are on more than one rate, each subtotal says its
+         own under it, (+8% SST) or (0% SST) (2026-10-23). */
+      var tag = taxed.tag(l);
+      var h = Math.max(rows.length, tag ? 2 : 1) * 12.4 + 12;
       if (room(h)) headRow();
       for (var i = 0; i < 4; i++) rect(cx[i], y - h, cw[i], h, null);
       rows.forEach(function (r, k) {
@@ -162,6 +163,7 @@
       right(String(l.qty), cx[1] + cw[1] - 6, y0, BODY, book, dark);
       right(amt(l.rate), cx[2] + cw[2] - 6, y0, BODY, book, dark);
       right(amt(l.amount), cx[3] + cw[3] - 6, y0, BODY, book, dark);
+      if (tag) right(tag, cx[3] + cw[3] - 6, y0 - 12.4, BODY, book, mute);
       y -= h;
     });
     y -= 12;

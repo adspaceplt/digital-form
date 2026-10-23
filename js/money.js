@@ -276,7 +276,7 @@
      carries one (a quotation line's `sst`, a letter line's `tax_pct`), else
      `dflt` (2026-10-22): whether any is charged, the row's words (one rate
      names it, two say SST), and what a line on another rate says under
-     its name where the rates differ (Not subject to SST, SST 6%). */
+     its amount where the rates differ: (+8% SST), (0% SST) (2026-10-23). */
   function sstOf(lines, dflt) {
     var rateOf = function (l) {
       var v = l.sst != null && l.sst !== '' ? l.sst : l.tax_pct;
@@ -288,10 +288,10 @@
     return {
       on: on.length > 0,
       word: !on.length ? SST_NONE : on.length === 1 ? word(on[0]) : 'SST',
-      note: function (l) {
+      tag: function (l) {
         if (all.length < 2) return '';
-        var v = rateOf(l);
-        return v === Number(dflt || 0) ? '' : v > 0 ? word(v) : 'Not subject to SST';
+        var v = Math.round(rateOf(l) * 100) / 100;
+        return v > 0 ? '(+' + v + '% SST)' : '(0% SST)';
       }
     };
   }

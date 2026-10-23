@@ -2182,6 +2182,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The file name swaps `/` for `-`.
 - Letter content:
   - Only To quote lines.
+  - Terms of its own (`#pickTerms`, one point a line, ten at most, 400
+    characters each; `bad-terms`): sent in `p_deal.terms`, kept in the
+    snapshot as `bill_to.terms` and printed under TERMS after the term and
+    the validity (the user, 2026-10-23,
+    `2026-10-23-letter-terms.sql`).
   - Priced by the month when every line of more than a month shares a term
     (the amount reading per month; the summary ending Monthly incl. SST in
     bold, as a quotation's does); a one-month line beside them is a one-off
@@ -2518,8 +2523,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   keeps `tax_code` and `tax_pct` on each snapshot line and refuses a code
   no longer offered (`bad-tax`); `verify_letter` refuses a line whose code
   moved since (`changed-terms`). A letter and a quotation PDF name SST by
-  its rate (`ADspaceMoney.sstOf`) and mark a line on another rate under it
-  (SST 6%, Not subject to SST). The quotation website keeps the client's
+  its rate (`ADspaceMoney.sstOf`) and, where the lines are on more than one
+  rate, each amount says its own under it, (+8% SST) or (0% SST), never
+  under the description (the user, 2026-10-23: it read as the item's). The quotation website keeps the client's
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
 

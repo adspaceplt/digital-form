@@ -293,7 +293,7 @@
       p_idem: opts.idem || idemKey(),
       p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
       p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-                stage: deal.stage || '', enquiry: deal.enquiry || '' },
+                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [] },
       p_replaces: opts.replaces || null,
       p_renewal: Boolean(opts.renewal),
       p_serial: serial || null
@@ -328,6 +328,7 @@
     'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',
     'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
     'already-quoted': 'One of those services is already on a letter that is still live. Void that letter, or use Replace.',
+    'bad-terms': 'Terms hold ten points at most, each up to 400 characters.',
     'no-replaces': 'The letter being replaced could not be found.',
     'replaces-verified': 'A verified letter cannot be replaced.',
     'not-found': 'That letter could not be found.',
@@ -787,7 +788,7 @@
         var qd = price.quote;
         var shownRate = qd ? Number(l.rate || 0) : rateOf(l);
         var shownAmt = qd ? q * shownRate * (isMonthly(l, price.term) ? 1 : n) : lineAmount(l, price.term);
-        var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), taxed.note(l), l.note].filter(Boolean).join('  ·  ');
+        var metaWord = [l.unit, qd ? '' : MON.termNote(l.tenure, l.term_adjust, l.term_pct), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
@@ -804,12 +805,19 @@
               cols.rate, y, 10);
         right(MON.money2(shownAmt, doc.market), cols.amt, y, 10);
         var amtNote = isMonthly(l, price.term) ? 'per month' : price.term ? 'one-off' : (n > 1 ? n + ' months' : '');
-        if (amtNote) right(amtNote, cols.amt, y - LROW, 8.5, font, mute);
+        /* Where the lines are on more than one rate, each amount says its
+           own under it, (+8% SST) or (0% SST) (the user, 2026-10-23: under
+           the description it read as part of the item). */
+        var amtNotes = [amtNote, taxed.tag(l)].filter(Boolean);
+        amtNotes.forEach(function (w, i) { right(w, cols.amt, y - LROW - i * LSUB, 8.5, font, mute); });
+        var top = y;
         y -= LROW;
         names.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10, bold); y -= LROW; });
         incl.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= LSUB; });
         y -= split;
         meta.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= LSUB; });
+        /* The amount's notes never run into the next line. */
+        y = Math.min(y, top - LROW - amtNotes.length * LSUB);
         y -= LGAP;
       });
       rule(y); y -= 14;
@@ -900,10 +908,15 @@
                    (price.planOnce ? ', with the one-off items' : '') + '.');
       }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
-      need(24 + terms.length * 26);
+      /* The letter's own terms, typed one point a line when it was issued
+         (2026-10-23), after the ones it works out. */
+      (Array.isArray(b.terms) ? b.terms : []).forEach(function (t) { if (String(t).trim()) terms.push(String(t).trim()); });
+      need(24 + 26 * Math.min(terms.length, 3));
       text('TERMS', M, y, 9, bold, mute); y -= 15;
+      /* Ten typed points can run past the page, so each line asks for its
+         room. */
       terms.forEach(function (s2) {
-        wrap(s2, R - M, 9.5).forEach(function (ln) { text(ln, M, y, 9.5); y -= 13; });
+        wrap(s2, R - M, 9.5).forEach(function (ln) { need(13); text(ln, M, y, 9.5); y -= 13; });
       });
       y -= 14;
 

@@ -5423,6 +5423,12 @@
         '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false"' +
           (noCode ? ' aria-required="true" aria-describedby="pickRefNote" placeholder="AQL/AC001/261001"' : ' placeholder="Numbered automatically"') + '>' +
         (noCode ? '<p class="msg warn" id="pickRefNote">This client has no Client ID, so the reference cannot be numbered automatically. Type one, or set the ID on the record.</p>' : '') +
+      '</div>' +
+      /* Terms of this letter's own, one point a line, printed under TERMS
+         after the term and the validity (the user, 2026-10-23). */
+      '<div class="lpickref">' +
+        '<label class="field-label" for="pickTerms">Terms</label>' +
+        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line"></textarea>' +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
@@ -5450,12 +5456,14 @@
 
   function pickAgain(ids, said) {
     var ref = $('pickRef') ? $('pickRef').value : '';
+    var terms = $('pickTerms') ? $('pickTerms').value : '';
     var id = state.client && state.client.id;
     loadServices(function () {
       var reopen = function () {
         if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
         openPick(ids);
         if ($('pickRef')) $('pickRef').value = ref;
+        if ($('pickTerms')) $('pickTerms').value = terms;
         msg('pickMsg', said, 'warn');
       };
       if (window.ADspaceQuotes && mayPart('clients.quotes', 'view')) loadQuotes(reopen, true); else reopen();
@@ -5527,6 +5535,13 @@
       $('pickRef').focus();
       return;
     }
+    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
+      .map(function (t) { return t.trim(); }).filter(Boolean);
+    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
+      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
+      $('pickTerms').focus();
+      return;
+    }
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
     /* One key per press of this button, held while the request is in flight,
@@ -5538,7 +5553,7 @@
     go.textContent = 'Issuing…';
     var deal = {
       owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || ''
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms
     };
     DOCS.issue('offer', c, rows, deal,
       { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: state.quotes,
