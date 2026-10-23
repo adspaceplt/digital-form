@@ -6435,6 +6435,7 @@ named opener only where it is drawn, else to what held focus when the
 sheet opened (the ⋯), which covers Compare groups and Bulk import too.
 The same gate found the supplier record's strip (`#supTabs`, SUP-4)
 missing from uxaudit's strip list; it joins it.
+
 ### 2026-10-23 — A booking's date is never cut (the day's gate, campaigns)
 The full gate on main c10a156 found a booking's date cut on every campaign
 screen: `.kcard-sum` read "20 Sept 2026, 2:00pm" and `.sched-sum` "Shoot
