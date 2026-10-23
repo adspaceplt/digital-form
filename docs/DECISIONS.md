@@ -6287,6 +6287,22 @@ file, and seeds Picture gone to assert the missing tile, never a broken
 image. The assertion is unchanged. Rule: a suite that answers the CDN
 answers a video with a video (CLAUDE.md §1, harness facts).
 
+### 2026-10-23 · Three suites read what 22 Oct shipped
+The full gate on main c10a156 (tests 0d590aa) failed three suites; each
+page was right and each suite read the behaviour before a release.
+`seenpage` "before the migration the review page decides through the older
+call" expected `submit_review` after `submit_review_seen` was missing, the
+fallback BE-13 (#722) removed on purpose; it now asserts nothing is filed,
+`submit_review` is never asked and the card says it was not saved.
+`datefloor` "the client record reads the row again on open" changed a
+logo in `__DB` without `updated_at`, which `clients_touch` always stamps,
+and CLI-9 (#712) repaints only on a moved stamp; the suite now stamps it.
+`analysis` read "1 earlier version" with every fold open, a line CLI-11
+(#712) hides on an open fold; it now reads the summary from its own
+element and the versions from the open fold. No assertion was weakened.
+Rule: a suite writing `__DB` by hand stamps what the triggers stamp
+(CLAUDE.md §1, harness facts). Neither release ran the suites over what it
+moved, as the grep rule asks (CLAUDE.md §1, Also required).
 
 ### 2026-10-22 — The backend review's remaining findings (release 3 of 3)
 The user, 2026-10-22: "Fix all" (tests/audits/2026-10-22/backend/report.txt).
