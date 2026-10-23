@@ -3205,11 +3205,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      name takes the larger share and never less than 140px (2026-10-14, audit
      CAMP-7: at .9fr it was 102px and cut "Ah Beng Reviews" while the summary
      had room); the summary gives way first, ending in an ellipsis. */
-  grid-template-columns: 44px minmax(140px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
+  grid-template-columns: 44px minmax(140px, 1fr) minmax(0, 176px) var(--state-w) 82px;
 }
 /* In a narrow pane the number's track gives back 12px to the name. */
 .is-narrow .bookreg-head, .is-narrow .bookreg .kcard-head {
-  grid-template-columns: 32px minmax(120px, 1.3fr) minmax(0, 1fr) var(--state-w) 82px;
+  grid-template-columns: 32px minmax(120px, 1fr) minmax(0, 176px) var(--state-w) 82px;
 }
 .bookreg .kcard {
   border: 0; border-radius: 0; margin: 0;
@@ -5903,6 +5903,14 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
 .sched-reg .kcard-head { cursor: pointer; }
 .sched-lab { display: none; }
 .is-tight .sched-reg .sched-lab { display: inline; color: var(--ink-mute); }
+/* On a phone each date of a schedule row takes its own line under the
+   name, its word before it: beside the post date the shoot's date and time
+   had 130px and was cut (2026-10-23, the day's gate). */
+.is-tight .sched-reg .kcard-head {
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "lead name" "lead sum" "lead tags";
+}
+.is-tight .sched-reg .kcard-sum { text-align: left; }
 .sched-reg .sched-pubday {
   font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
