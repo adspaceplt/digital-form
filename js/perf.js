@@ -619,7 +619,7 @@
       .map(function (f) {
         return '<div><dt>' + f[0] + '</dt><dd' + (f[1] ? '' : ' class="is-empty"') + '>' + esc(f[1] || 'Not set') + '</dd></div>';
       }).join('');
-    $('ppEditTeam').hidden = !(may('team', 'manage') && window.ADspaceTeam && window.ADspaceTeam.edit);
+    $('ppEditTeam').hidden = !(may('team', 'manage') && window.ADspaceTeam && window.ADspaceTeam.open);
     $('ppAds').checked = Boolean(p.runs_ads);
     $('ppReviewed').checked = Boolean(p.reviewed);
     msg('ppMsg', '');
@@ -631,10 +631,11 @@
     if (!profileFor) return;
     var id = profileFor.team_member_id;
     window.ADspaceSheet.close();
+    /* The colleague's record, where every value is changed where it is
+       read (TEAM2-6, 2026-10-24). */
     st.tab = 'members';
     enterTeam();
-    if (bridge.setUrl) bridge.setUrl();
-    window.ADspaceTeam.edit(id);
+    window.ADspaceTeam.open(id);
   });
   $('ppSave').addEventListener('click', function () {
     if (!profileFor) return;
