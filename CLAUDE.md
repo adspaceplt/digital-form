@@ -1434,8 +1434,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Start from Admin / Manager / Staff / View only; a panel matching none
     reads `Custom: n changes from {nearest}` (`#grPresetNote`, a quiet
     fold) over the changes (`#grChanges`, shut until it is pressed),
-    worked out and never stored.
-    Admin in Start from is the only way to make a group admin.
+    worked out and never stored; a preset chosen over a Custom panel asks
+    first (`Start from Staff?` · n changes will be replaced., S7).
+    Admin in Start from is the only way to make a group admin, offered to
+    an admin alone, as an admin group in any select is (S6, 2026-10-24).
+  - Each group row reads its access as phrases held whole (`team-part`), Edit
+    on every row the colleague may change (none on the Admin group, nor on
+    an admin group for anyone but an admin), a ⋯ holding Delete beside it
+    on an empty group alone (TEAM2-11, TEAM2-14). Services offers No Access,
+    View and Full Access; Leads and Past clients offer no level above
+    Clients; a client part that follows Clients is greyed while Clients is
+    No Access (N2, N3). The panel reads the sections and the Activity
+    record's parts in the rail's order (N1).
   - The Dashboard's row first (`#grDash`, On / No Access, no heading; a
     preset leaves it On), filed `Dashboard: On → No Access`, read in the
     group's line, the sentence, the Custom changes and Compare groups.
@@ -5600,13 +5610,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A colleague and a group are written only over the row as read (`.eq('updated_at', …)`,
   `team_roles_touch`, `2026-10-18-stale-team-save-refused.sql`): one changed
   meanwhile reads "Not saved. This changed since it was opened, and has been
-  read again.", the member sheet opening again on the row as saved now; the
-  group sheet stays open until its write answers, a refusal said in it with
+  read again."; the group sheet stays open until its write answers, a refusal said in it with
   every change kept (2026-10-20, TEAM-2).
 - Changing a member's email asks first, and is an admin's alone: the page
   offers it to an admin, and trigger `team_email_guard` refuses anybody else
   (`admin-only`; deleting a colleague's details empties it as before;
   `2026-10-18-sign-in-email-through-an-admin.sql`).
+- The member sheet adds a colleague and nothing else; a colleague is changed
+  on their record's Overview, Performance's Edit on Members opening it
+  (TEAM2-6, 2026-10-24). Overview's User group asks first ("{name} moves
+  from Marketing to Sales and takes that group's access."), Undo where it
+  happened; on one's own record it is a fact (TEAM2-1). A refused read of
+  the team says so on both lists with Try again (TEAM2-2).
 - A member row carries:
   - Employee ID (`staff_code`, `^[A-Z0-9]{3,8}$`);
   - department, from the Departments list (below; a segment while four
@@ -5696,12 +5711,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     `assigned`), else is left with no owner and open to take, the active
     managers told (`tasks.unassigned`), each move filed on the task
     (`team_expiry_hand_back`, `2026-10-18-expired-access-hands-tasks-back.sql`);
-  - the row reads Access expired and its ⋯ Extend access; moving the date to
+  - the row reads Access expired and Access until reads Ended {day} with its
+    pen, the ⋯ holding no Extend access (TEAM2-8); moving the date to
     today or later brings them back at once (`team_access_guard`), and Set
     active on a passed date is refused (`expired-date`);
-  - Extend access and the bar's ⋯ Set access expiry (`team_set_expiry_at`,
-    Team at Manage) ask for a date and an optional time; the bar's sets them
-    for every active colleague but the caller, refusing a moment passed;
+  - the bar's ⋯ Set access expiry (`team_set_expiry_at`, Team at Manage)
+    asks for a date and an optional time, refusing a moment passed in the
+    question (TEAM2-7), and sets them for every active colleague but the
+    caller and a system account;
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
   - the moment passes before the run comes: `is_team()`, `allowed()`,

@@ -76,6 +76,24 @@
     }, 8000);
   }
 
+  /* The way back, drawn where the act lands: one line and Undo, eight
+     seconds, under `host`, as the console's own undo line. */
+  var undoTimer = null;
+  function undoHere(text, undo, host) {
+    if (!host || !host.parentNode) return;
+    var bar = host.parentNode.querySelector(':scope > .undobar-here');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'undobar undobar-here';
+      host.parentNode.insertBefore(bar, host.nextSibling);
+    }
+    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(shut, 8000);
+  }
+
   /* ACCESS IS A LEVEL PER SECTION.
      It used to be eight booleans, six of them all-or-nothing section access
      and one — `can_remove` — a single hard-delete authority shared by
@@ -120,9 +138,6 @@
        parts under it are the exception to the rule below. */
     ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
     ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
-    /* WhatsApp (2026-10-10): View reads the messages sent, Manage sends,
-       Full Access chooses the templates. */
-    ['whatsapp',  'WhatsApp',          ['none', 'view', 'work', 'manage']],
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     /* A shoot's video scripts, approved by the client and ticked on the day
        (2026-10-09). */
@@ -133,6 +148,10 @@
        without reading client records; Clients View still reads a client's
        finished reports on the record. */
     ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
+    /* WhatsApp (2026-10-10): View reads the messages sent, Manage sends,
+       Full Access chooses the templates; the last of the Work chunk, as the
+       rail and the panel's chunks read (N1, 2026-10-24). */
+    ['whatsapp',  'WhatsApp',          ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -142,7 +161,9 @@
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
     ['suppliers', 'Suppliers',         ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
-    ['services',  'Services',          ['none', 'view', 'work', 'manage']],
+    /* Services: the rate card is read at View and changed at Full Access
+       alone; no function asks Manage (N3, 2026-10-24). */
+    ['services',  'Services',          ['none', 'view', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
   ];
@@ -190,9 +211,9 @@
        every letter with it. Each tab is a part, and the database decides
        which rows arrive: `activity_section()` maps a tag to the section the
        console files it under, and the read policy asks the part. */
-    activity:  [['ops', 'My Work'], ['clients', 'Clients'], ['whatsapp', 'WhatsApp'],
+    activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['register', 'Documents'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -222,10 +243,7 @@
                 ['settings', 'Business settings'], ['upgrade', 'Upgrade mode'],
                 ['invite', 'Send invitation'], ['handbook', 'Handbook files'], ['announce', 'Announcements'],
                 /* A notice to all colleagues or to those chosen (2026-10-09). */
-                ['notice', 'Notices'],
-                /* Every colleague's health check-ins by name (2026-10-07):
-                   an admin's by itself, any other group's once set. */
-                ['health', 'Health check-ins']],
+                ['notice', 'Notices']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
@@ -241,7 +259,7 @@
   var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.health': 1, 'team.notice': 1, 'reports.meta': 1,
+    'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
     'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
@@ -272,7 +290,7 @@
     'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage'], 'reports.whitelabel': ['work'],
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
-    'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'], 'team.health': ['work'],
+    'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
     'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'suppliers.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
@@ -320,6 +338,16 @@
     return adds(key, held, same) ? held : '';
   }
 
+  /* A section's stored level as the levels it offers: Services stored at
+     Manage reads View, which is all Manage opens there (N3). */
+  function secLevel(k, v) {
+    var sec = SECTIONS.filter(function (x) { return x[0] === k; })[0];
+    v = v || 'none';
+    if (!sec || sec[2].indexOf(v) > -1) return v;
+    var best = 'none';
+    sec[2].forEach(function (l) { if (RANK[l] <= RANK[v]) best = l; });
+    return best;
+  }
   function accessOf(r) {
     var a = r && r.access;
     if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = null; } }
@@ -364,60 +392,61 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
-  var pendingEdit = null;
-  function openPending() {
-    var id = pendingEdit; pendingEdit = null;
-    var m = id && (state.rows || []).filter(function (x) { return x.id === id; })[0];
-    if (m) openMemberBox(m, null);
+  /* A refused read says so on both lists with Try again, never a skeleton
+     left standing or the database's words (TEAM2-2, 2026-10-24). */
+  function loadFailed() {
+    state.loading = false;
+    state.failed = true;
+    var again = function () { load(); };
+    UI().failLine($('groupList'), 'The groups', '', again);
+    UI().failLine($('teamList'), 'The team', '', again);
+    var c = $('teamCount'); if (c) c.textContent = '';
+    var g = $('groupCount'); if (g) g.textContent = '';
+    paintRec();
   }
   function load(then) {
     state.loading = true;
+    state.failed = false;
     $('teamList').innerHTML = '<div class="softpanel"><div class="skel">' +
       '<div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>' +
       '<div class="skel-row"></div></div></div>';
     db.from('team_roles').select('*').order('position').order('name').then(function (r) {
-      if (r.error) {
-        state.loading = false;
-        $('groupList').innerHTML = '<div class="softpanel"><div class="errline">' +
-          '<b>Could not load the groups.</b><span>' + esc(r.error.message) + '</span></div></div>';
-        return;
-      }
+      if (r.error) { loadFailed(); return; }
       state.roles = r.data || [];
       paintGroups();
       fillRolePick();
       /* Every column of every colleague is Team's alone (2026-10-18):
          `team_rows()` answers Team at View, the table the rest. */
-      db.rpc('team_rows').then(function (q) {
-          if (q.error) {
-            state.loading = false;
-            $('teamList').innerHTML = '<div class="softpanel"><div class="errline">' +
-              '<b>Could not load the team.</b><span>' + esc(q.error.message) + '</span></div></div>';
-            return;
-          }
-          state.rows = q.data || [];
-          state.read = true;
-          state.loading = false;
-          paintMembers();
-          paintGroups();   // member counts and Delete depend on the rows
-          paintRec();
-          if (pendingEdit) openPending();
-          if (typeof then === 'function') then();
-        });
-    });
+      return db.rpc('team_rows').then(function (q) {
+        if (q.error) { loadFailed(); return; }
+        state.rows = q.data || [];
+        state.read = true;
+        state.loading = false;
+        paintMembers();
+        paintGroups();   // member counts and Delete depend on the rows
+        paintRec();
+        if (typeof then === 'function') then();
+      });
+    }).catch(loadFailed);
   }
 
   function roleName(slug) {
     var r = state.roles.filter(function (x) { return x.slug === slug; })[0];
     return r ? r.name : slug;
   }
+  /* An admin group is offered to an admin alone (S6, 2026-10-24); the
+     group a colleague is in stays listed. */
+  function adminGroup(r) { return Boolean(r && (r.is_admin || r.slug === 'admin')); }
   function roleOptions(current) {
-    return state.roles.map(function (r) {
+    return state.roles.filter(function (r) { return amAdmin() || !adminGroup(r) || r.slug === current; }).map(function (r) {
       return '<option value="' + esc(r.slug) + '"' + (r.slug === current ? ' selected' : '') + '>' + esc(r.name) + '</option>';
     }).join('');
   }
   function fillRolePick() {
     var keep = $('tmRole').value;
-    $('tmRole').innerHTML = roleOptions(keep || 'account');
+    $('tmRole').innerHTML = roleOptions('');
+    if (keep) $('tmRole').value = keep;
+    if (!$('tmRole').value) $('tmRole').value = 'account';
   }
 
   // ---- Members ------------------------------------------------------------
@@ -449,7 +478,7 @@
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No members.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first member</button></div></div>';
-      box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(null, this); });
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(this); });
       return;
     }
     if (!rows.length) {
@@ -512,8 +541,8 @@
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
     return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : '';
   }
-  function todayMy() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
-  function nowMyTime() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(11, 16); }
+  function todayMy() { return window.ADspaceClock.today(); }
+  function nowMyTime() { return window.ADspaceClock.time(Date.now()); }
   /* 18:00 reads 6pm, 18:30 6.30pm, as the campaign schedule writes it. */
   function timeWord(t) {
     var m = /^(\d{2}):(\d{2})/.exec(String(t || ''));
@@ -532,6 +561,12 @@
     if (!day || day > today) return true;
     if (day < today) return false;
     return !time || String(time).slice(0, 5) > nowMyTime();
+  }
+  /* Why a last moment of access cannot be set, in the sheet's words; '' when
+     it is ahead or empty. */
+  function pastSaid(day, time) {
+    if (!day || aheadMy(day, time || null)) return '';
+    return day < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.';
   }
   function whoLine(m) {
     var post = [deptName(m.department), m.designation].filter(Boolean).join(', ');
@@ -625,7 +660,9 @@
        over work: it is the Work pane's button (MENU-5, 2026-10-22). */
     return (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
-              (self || !manage || m.removed_at ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))) +
+              /* Access that ended on its date comes back from the Access until
+                 pen, so the ⋯ offers no Extend access beside it (TEAM2-8). */
+              (self || !manage || m.removed_at || (!m.active && m.expired_at) ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
                  their data kept or their personal details deleted. */
               (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
@@ -642,23 +679,6 @@
       shutMenus();
       /* Setting somebody active again asks nothing: it is the way back from
          this, and the way back never asks. */
-      /* Access that ended on its date comes back with a later date (the
-         database brings them back as the date moves). */
-      if (!m.active && m.expired_at) {
-        window.ADspaceConfirm.ask({
-          title: 'Extend access',
-          body: m.name + '\'s access ended ' + (m.access_until_time ? 'at ' : 'after ') + untilWord(m.access_until, m.access_until_time) +
-                '. Choose the new last day and, if it ends sooner, the time. Leave the day empty for no end.',
-          go: 'Extend access',
-          fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
-                   { name: 'time', label: 'Time', type: 'time', required: false }]
-        }, function (v) {
-          var day = v.day || null, time = day ? (v.time || null) : null;
-          if (day && !aheadMy(day, time)) { msg('teamMsg', 'Choose a later time.', 'err'); return; }
-          saveMember(m, { access_until: day, access_until_time: time });
-        });
-        return;
-      }
       if (!m.active) { saveMember(m, { active: true }); return; }
       if (window.ADspaceGroup) window.ADspaceGroup.keep('team', 'off', false);   // the row moves into Inactive: keep it in sight
       /* Somebody who is stood down may still be the person in charge of
@@ -724,7 +744,7 @@
       msg('teamMsg', 'Saved.', 'ok');
       load();
       if (then) then();
-    });
+    }).catch(function () { msg('teamMsg', 'Not saved. Please try again.', 'err'); });
   }
 
   /* ---- Hand-over and Delete (2026-10-14) -------------------------------------
@@ -938,51 +958,55 @@
       return name(k) + ': ' + word(k, before[k]) + ' → ' + word(k, after[k]);
     }).join('; ');
   }
-  function grantWord(r) {
-    if (r.is_admin) return 'Everything';
+  /* What the group opens, as markup: each phrase ("Full Access:", a
+     section, "Billing: No Access") held whole, so a phone wraps between
+     them and never inside one (TEAM2-11, 2026-10-24). */
+  function grantHtml(r) {
+    var part = function (t) { return '<span class="team-part">' + esc(t) + '</span>'; };
+    if (r.is_admin) return part('Everything');
     var acc = accessOf(r), parts = [];
     /* A section's exceptions read in brackets after its name
        (`Clients (Billing: No access)`), so the sentence still says what the
        group opens and then what it does not. */
-    var word = function (s) {
+    var word = function (s, only) {
       var ex = (PARTS[s[0]] || []).map(function (p) {
         var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
-        return v ? p[1] + ': ' + (LEVEL_WORD[v] || 'No Access') : '';
+        if (!v || (only && v === 'none')) return '';
+        return part(p[1] + ': ' + (LEVEL_WORD[v] || 'No Access'));
       }).filter(Boolean);
-      return s[1] + (ex.length ? ' (' + ex.join(', ') + ')' : '');
+      if (only && !ex.length) return '';
+      return part(s[1]) + (ex.length ? ' (' + ex.join(', ') + ')' : '');
     };
     ['manage', 'work', 'view'].forEach(function (lv) {
-      var named = SECTIONS.filter(function (s) { return acc[s[0]] === lv; }).map(word);
-      if (named.length) parts.push(LEVEL_WORD[lv] + ': ' + named.join(', '));
+      var named = SECTIONS.filter(function (s) { return secLevel(s[0], acc[s[0]]) === lv; }).map(function (s) { return word(s); });
+      if (named.length) parts.push(part(LEVEL_WORD[lv] + ':') + ' ' + named.join(', '));
     });
     /* A part opened above a section that is shut is an exception too. */
-    var only = SECTIONS.filter(function (s) { return (acc[s[0]] || 'none') === 'none'; }).map(function (s) {
-      var ex = (PARTS[s[0]] || []).map(function (p) {
-        var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
-        return v && v !== 'none' ? p[1] + ': ' + LEVEL_WORD[v] : '';
-      }).filter(Boolean);
-      return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
-    }).filter(Boolean);
-    if (only.length) parts.push('Only: ' + only.join(', '));
-    if (r.client_scope === 'own') parts.push('Own clients only');
-    if (acc[DASH] === 'none') parts.push('Dashboard: No Access');
-    return parts.length ? parts.join(' · ') : 'No Access';
+    var only = SECTIONS.filter(function (s) { return secLevel(s[0], acc[s[0]]) === 'none'; })
+      .map(function (s) { return word(s, true); }).filter(Boolean);
+    if (only.length) parts.push(part('Only:') + ' ' + only.join(', '));
+    if (r.client_scope === 'own') parts.push(part('Own clients only'));
+    if (acc[DASH] === 'none') parts.push(part('Dashboard: No Access'));
+    return parts.length ? parts.join(' · ') : part('No Access');
   }
 
   function groupRow(r) {
-    var locked = r.slug === 'admin';
+    /* The Admin group is nobody's to change, and an admin group is an
+       admin's alone (`team_roles_admin_guard`). */
+    var locked = r.slug === 'admin' || (r.is_admin && !amAdmin());
     var used = state.rows.some(function (m) { return m.role === r.slug; });
     var el = document.createElement('div');
     el.className = 'group-row';
     var members = state.rows.filter(function (m) { return m.role === r.slug; }).length;
     el.innerHTML =
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
-      '<span class="group-grants">' + esc(grantWord(r)) + '</span>' +
+      '<span class="group-grants">' + grantHtml(r) + '</span>' +
       (locked || !may('team', 'manage') ? '<span class="team-act"></span>'
-        /* A group in use has one act, Edit, on its row; a ⋯ only where
-           Delete joins it (MENU standard 8, 2026-10-22). */
-        : used ? '<span class="team-act"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button></span>'
-        : menuBtn(menuItem('rename', 'Edit') + menuItem('del', 'Delete', 'is-danger')));
+        /* Every group it may change shows Edit on its row; an empty group's
+           ⋯ holds Delete beside it (TEAM2-14, 2026-10-24). */
+        : '<span class="team-act group-acts"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button>' +
+          (used ? '' : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" data-menu hidden>' + menuItem('del', 'Delete', 'is-danger') + '</div>') + '</span>');
 
     wireMenu(el);
     var ren = el.querySelector('[data-a="rename"]');
@@ -1009,7 +1033,7 @@
           log('team.group_removed', r.name, '');
           msg('groupMsg', r.name + ' deleted.', 'ok');
           load();
-        });
+        }).catch(function () { msg('groupMsg', 'Not deleted. Please try again.', 'err'); });
       });
     });
     return el;
@@ -1081,8 +1105,7 @@
                work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, return, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
-    services: { none: 'Services is hidden.', view: 'Read the rate card.',
-                work: 'Read the rate card. Changes need Full Access.', manage: 'Add, edit and delete rate card lines, and publish the rate card.' },
+    services: { none: 'Services is hidden.', view: 'Read the rate card.', manage: 'Add, edit and delete rate card lines, and publish the rate card.' },
     team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Invitations need Send invitation.' },
     activity: { none: 'The activity record is hidden.', view: 'Read the activity record, tab by tab.' }
   };
@@ -1095,7 +1118,8 @@
     manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', suppliers: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
-               'register.hr': 'none' },
+               /* On for Managers from 2026-10-07, as the live group holds it (N5). */
+               'reports.whitelabel': 'work', 'register.hr': 'none' },
     staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', suppliers: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
     viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', suppliers: 'view', reports: 'view',
@@ -1127,9 +1151,8 @@
     ['Documents', ['register.types']],
     ['Team', ['team.invite', 'team.handbook', 'team.perfadmin']]
   ];
-  /* The three My Work views follow My Work and are not offered here, nor
-     is Team: Health, an admin's alone (2026-10-18, Team audit 11). */
-  var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1, 'team.health': 1 };
+  /* The three My Work views follow My Work and are not offered here. */
+  var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
   var TOOL = {};
   ADMIN_TOOLS.forEach(function (g) { g[1].forEach(function (k) { TOOL[k] = 1; }); });
   function secOf(key) { return SECTIONS.filter(function (s) { return s[0] === key; })[0]; }
@@ -1303,7 +1326,7 @@
   function canonMap(acc) {
     var out = {};
     if (acc && acc[DASH] === 'none') out[DASH] = 'none';
-    SECTIONS.forEach(function (s) { out[s[0]] = (acc && acc[s[0]]) || 'none'; });
+    SECTIONS.forEach(function (s) { out[s[0]] = secLevel(s[0], acc && acc[s[0]]); });
     Object.keys(PARTS).forEach(function (sec) {
       PARTS[sec].forEach(function (p) {
         var k = sec + '.' + p[0], v = offered(k, exceptionOf(acc, k));
@@ -1368,7 +1391,8 @@
   }
   /* The group in one sentence, read from the panel as it stands, in the
      panel's own words (Team audit, 2026-10-03). */
-  function sumText(acc, admin, tuned, scope, tools) {
+  var lastChanges = 0;
+  function sumText(acc, admin, scope, tools) {
     if (admin) return 'This group can do everything, in every section.';
     var by = { manage: [], work: [], view: [] };
     SECTIONS.forEach(function (s) { var v = acc[s[0]] || 'none'; if (by[v]) by[v].push(s[1]); });
@@ -1389,7 +1413,6 @@
     var access = readAccess();
     var adm = adminBox();
     var admin = Boolean(adm && adm.checked), locked = Boolean(state.editing && state.editing.slug === 'admin');
-    var tuned = 0;
     /* On shows nothing without a section at Full Access (2026-10-20, TEAM-7). */
     $('grDesc-' + DASH).textContent = admin ? 'Every level, as an admin.' : access[DASH] === 'none' ? DASH_DESC.none
       : SECTIONS.some(function (s) { return access[s[0]] === 'manage'; }) ? DASH_DESC.on : DASH_DESC.empty;
@@ -1405,7 +1428,6 @@
       var diff = (PARTS[s[0]] || []).filter(function (p) { var k = s[0] + '.' + p[0]; return !TOOL[k] && (k in access); })
         .map(function (p) { var k = s[0] + '.' + p[0]; return p[1] + ': ' + valueWord(k, access[k]); });
       if (s[0] === 'clients' && readScope() === 'own') diff.push('Own clients only');
-      tuned += diff.length;
       var n = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
       if (n) n.textContent = diff.length ? '(' + diff.length + ')' : '';
       /* Shut, a section names only what differs; open, its parts say it. */
@@ -1417,13 +1439,29 @@
     });
     var on = toolSwitches().filter(function (sw) { return sw.getAttribute('aria-checked') === 'true'; });
     var tn = $('grFlags').querySelector('[data-n="tools"]');
-    tn.textContent = admin ? '' : '(' + on.length + ' on)';
+    tn.textContent = admin || !on.length ? '' : '(' + on.length + ')';
     var tl = $('grDiff-tools');
     tl.textContent = admin ? '' : on.map(function (sw) { return partName(sw.getAttribute('data-tool')); }).join(' · ');
     tl.hidden = admin || !on.length || !$('grParts-tools').hidden;
     /* An admin opens everything, so the levels under it decide nothing and
        are not offered for change while it is chosen. */
-    levelPicks().concat(partPicks()).forEach(function (sel) { sel.disabled = locked || admin; });
+    levelPicks().forEach(function (sel) { sel.disabled = locked || admin; });
+    partPicks().forEach(function (sel) {
+      var k = sel.getAttribute('data-part'), sec = k.split('.')[0], lv = access[sec] || 'none';
+      /* A client part inherited from Clients says nothing while Clients is
+         No Access, so it is greyed there; a granted part stands alone
+         (N2, 2026-10-24). */
+      sel.disabled = locked || admin || (sec === 'clients' && !isGranted(k) && lv === 'none');
+      /* Leads and Past clients narrow Clients and never widen it, so they
+         offer no level above it (N3). */
+      if (k === 'clients.leads' || k === 'clients.past') {
+        Array.prototype.forEach.call(sel.options, function (o) {
+          var over = RANK[o.value] > RANK[lv];
+          o.hidden = over; o.disabled = over;
+        });
+        if (RANK[sel.value] > RANK[lv]) sel.value = '';
+      }
+    });
     toolSwitches().forEach(function (sw) {
       sw.disabled = locked || admin;
     });
@@ -1439,7 +1477,8 @@
     if (!n2) $('grPresetNote').setAttribute('aria-expanded', 'false');
     $('grChanges').hidden = !n2 || $('grPresetNote').getAttribute('aria-expanded') !== 'true';
     $('grChanges').textContent = n2 ? shape.changes.join(' · ') : '';
-    $('grSum').textContent = sumText(access, admin, tuned, readScope(), on.length);
+    lastChanges = n2;
+    $('grSum').textContent = sumText(access, admin, readScope(), on.length);
   }
   function setTools(acc) {
     toolSwitches().forEach(function (sw) {
@@ -1470,8 +1509,18 @@
     this.setAttribute('aria-expanded', open ? 'true' : 'false');
     $('grChanges').hidden = !open;
   });
+  /* A Custom group asks before a preset replaces its changes (S7,
+     2026-10-24): the select goes back until the answer. */
   $('grPreset').addEventListener('change', function () {
-    if (this.value && this.value !== 'custom') applyPreset(this.value);
+    var want = this.value;
+    if (!want || want === 'custom') return;
+    var n = lastChanges;
+    if (!n || $('grPresetNote').hidden) { applyPreset(want); return; }
+    paintPanel();
+    window.ADspaceConfirm.ask({
+      title: 'Start from ' + PRESET_WORD[want] + '?', tone: 'warn', go: 'Replace',
+      body: n + (n === 1 ? ' change' : ' changes') + ' will be replaced.'
+    }, function () { applyPreset(want); });
   });
   $('grFlags').addEventListener('change', paintPanel);
 
@@ -1479,7 +1528,7 @@
      opens what is checked at a glance before a colleague is placed in one. */
   function cmpCell(r, sec) {
     if (r.is_admin) return { word: LEVEL_WORD[secOf(sec)[2][secOf(sec)[2].length - 1]], n: 0 };
-    var acc = accessOf(r), lv = acc[sec] || 'none';
+    var acc = accessOf(r), lv = secLevel(sec, acc[sec]);
     var n = ownParts(sec).filter(function (p) { return Boolean(offered(sec + '.' + p[0], exceptionOf(acc, sec + '.' + p[0]))); }).length +
       (sec === 'clients' && r.client_scope === 'own' ? 1 : 0);
     return { word: LEVEL_WORD[lv] || 'No Access', n: n, off: lv === 'none' };
@@ -1539,13 +1588,17 @@
     $('grSave').textContent = r ? 'Save' : 'Add';
     $('grName').value = r ? r.name : '';
     $('grPresetNote').setAttribute('aria-expanded', 'false');
+    /* Only an admin makes a group admin (`team_roles_admin_guard`), so
+       Start from offers Admin to an admin alone (S6, 2026-10-24). */
+    var adOpt = $('grPreset').querySelector('option[value="admin"]');
+    if (adOpt) adOpt.hidden = !amAdmin();
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
     var acc = r ? accessOf(r) : null;
     $('grDash').value = acc && acc[DASH] === 'none' ? 'none' : 'on';
     levelPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-sec');
-      sel.value = acc ? (acc[k] || 'none') : (k === 'clients' ? 'work' : 'none');
+      sel.value = acc ? secLevel(k, acc[k]) : (k === 'clients' ? 'work' : 'none');
       if (!sel.value) sel.value = 'none';
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
@@ -1618,11 +1671,10 @@
       shutGroupBox();
       msg('groupMsg', name + ' added.', 'ok');
       load();
-    });
+    }).catch(function () { msg('grMsg', 'Not saved. Please try again.', 'err'); });
   });
 
   // ---- Add or edit a person -----------------------------------------------
-  var editingMember = null;
   /* The form is a sheet over the list, the shape a creator is edited in: on
      a phone it comes up from the floor over the row somebody pressed, rather
      than unfolding a screen above it where pressing Edit looked like nothing
@@ -1631,45 +1683,35 @@
   var memberOpener = null;
   function shutMemberBox() {
     window.ADspaceSheet.close();
-    editingMember = null;
     memberOpener = null;
   }
   function amAdmin() { return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin()); }
-  function openMemberBox(m, opener) {
+  /* The sheet adds a colleague, nothing else: a colleague is changed on
+     their record's Overview, where each value is read (TEAM2-6,
+     2026-10-24). */
+  function openMemberBox(opener) {
     shutMenus();
-    editingMember = m || null;
     memberOpener = opener || null;
-    $('tmTitle').textContent = m ? 'Edit member' : 'New team member';
-    $('tmSave').textContent = m ? 'Save' : 'Add';
-    $('tmName').value = m ? (m.name || '') : '';
-    $('tmEmail').value = m ? (m.email || '') : '';
-    /* A colleague's sign-in email is changed by an admin alone (2026-10-18). */
-    $('tmEmail').readOnly = !!(m && !amAdmin());
-    $('tmStaff').value = m ? (m.staff_code || '') : '';
-    $('tmDesig').value = m ? (m.designation || '') : '';
-    fillDept(m ? (m.department || '') : '');
-    $('tmRoleStd').value = m ? (m.role_family || '') : '';
-    $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
-    /* Nobody sets their own access date; another admin does. */
-    var mine = !!(m && me() && me().id === m.id);
-    $('tmUntilRow').hidden = mine;
-    $('tmUntil').value = m && m.access_until ? m.access_until : '';
-    $('tmUntilTime').value = m && m.access_until && m.access_until_time ? String(m.access_until_time).slice(0, 5) : '';
+    $('tmTitle').textContent = 'New team member';
+    $('tmSave').textContent = 'Add';
+    ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmCap', 'tmUntil', 'tmUntilTime', 'tmMobile', 'tmCardSlug'].forEach(function (id) { $(id).value = ''; });
+    $('tmEmail').readOnly = false;
+    fillDept('');
+    $('tmRoleStd').value = '';
+    $('tmUntilRow').hidden = false;
     $('tmUntil').min = todayMy();
-    $('tmUntilTimeBox').hidden = !$('tmUntil').value;
-    $('tmMobile').value = m ? (m.mobile || '') : '';
-    $('tmCardOn').value = m && m.card_on === false ? 'off' : 'on';
-    $('tmCardMobile').value = m && m.card_mobile === false ? 'hide' : 'show';
-    $('tmCardSlug').value = m ? (m.card_slug || '') : '';
+    $('tmUntilTimeBox').hidden = true;
+    $('tmCardOn').value = 'on';
+    $('tmCardMobile').value = 'show';
     $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
-    fillRolePick(); $('tmRole').value = m ? m.role : 'account';
+    fillRolePick(); $('tmRole').value = 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
       opener: memberOpener,
-      onClose: function () { editingMember = null; memberOpener = null; }
+      onClose: function () { memberOpener = null; }
     });
   }
-  $('teamAdd').addEventListener('click', function () { openMemberBox(null, this); });
+  $('teamAdd').addEventListener('click', function () { openMemberBox(this); });
   ['input', 'change'].forEach(function (ev) {
     $('tmUntil').addEventListener(ev, function () {
       $('tmUntilTimeBox').hidden = !this.value;
@@ -1697,23 +1739,25 @@
       var it = e.target.closest('.kmenu-item');
       if (!it) return;
       shut();
-      var others = state.rows.filter(function (x) { return x.active && !(me() && me().id === x.id); }).length;
+      var others = state.rows.filter(function (x) { return x.active && !x.system && !(me() && me().id === x.id); }).length;
       window.ADspaceConfirm.ask({
         title: 'Set access expiry',
         /* Two plain sentences (TEAM-9, 2026-10-14). */
         body: 'Applies to ' + others + (others === 1 ? ' active colleague' : ' active colleagues') + ', not including you. Leave the date empty for no end.',
         go: 'Set for all',
         fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
-                 { name: 'time', label: 'Time', type: 'time', required: false }]
+                 { name: 'time', label: 'Time', type: 'time', required: false }],
+        /* A moment passed is refused in the question, what was typed kept
+           (TEAM2-7, 2026-10-24). */
+        check: function (v) { return pastSaid(v.day, v.time); }
       }, function (v) {
         var day = v.day || null, time = day ? (v.time || null) : null;
-        if (day && !aheadMy(day, time)) { msg('teamMsg', 'Choose a later time.', 'err'); return; }
         db.rpc('team_set_expiry_at', { p_until: day, p_time: time }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'Not allowed.' : d.error), 'err'); return; }
           msg('teamMsg', 'Saved.', 'ok');
           load();
-        });
+        }).catch(function () { msg('teamMsg', 'Not saved. Please try again.', 'err'); });
       });
     });
   })();
@@ -1744,73 +1788,17 @@
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
                    mobile: mobile || null, card_on: $('tmCardOn').value !== 'off',
                    card_mobile: $('tmCardMobile').value !== 'hide' };
-    /* Empty makes it again from the name; unchanged is not sent. */
-    if (!editingMember || cardSlug !== (editingMember.card_slug || '')) fields.card_slug = cardSlug || null;
-    /* An email not changed is not sent: only an admin moves one. */
-    if (editingMember && email === String(editingMember.email || '').toLowerCase()) delete fields.email;
+    /* Empty makes it from the name. */
+    fields.card_slug = cardSlug || null;
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
       var untilTime = until ? ($('tmUntilTime').value || null) : null;
-      var same = editingMember && until === editingMember.access_until &&
-                 (untilTime || null) === (editingMember.access_until_time ? String(editingMember.access_until_time).slice(0, 5) : null);
-      if (until && !same && !aheadMy(until, untilTime)) {
+      if (until && !aheadMy(until, untilTime)) {
         msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
         $(until < todayMy() ? 'tmUntil' : 'tmUntilTime').focus(); return;
       }
       fields.access_until = until;
       fields.access_until_time = untilTime;
-    }
-    if (editingMember) {
-      var m = editingMember;
-      /* The row's email is the address the console signs in with, so moving it
-         moves the door. The login itself stays where it was until somebody is
-         invited at the new address. */
-      function write() {
-        shutMemberBox();
-        asRead(db.from('team_members').update(fields).eq('id', m.id), m).select('id').then(function (r) {
-          if (!r.error && !(r.data || []).length) {
-            /* Changed meanwhile: the sheet opens again on the colleague as
-               saved now, saying so; a refusal is said where it was. */
-            noRow('team_members', 'id', m, function (t) {
-              if (t !== STALE) { msg('teamMsg', t, 'err'); return; }
-              load(function () {
-                var fresh = (state.rows || []).filter(function (x) { return x.id === m.id; })[0];
-                if (fresh) { openMemberBox(fresh, memberOpener); msg('tmMsg', t, 'err'); } else msg('teamMsg', t, 'err');
-              });
-            });
-            return;
-          }
-          if (r.error) {
-            msg('teamMsg', clashSaid(r.error), 'err');
-            return;
-          }
-          /* A save that changed nothing files nothing. */
-          /* An emptied short link is made again from the name by the database,
-             so it is not filed as "not set"; the next read shows the new one. */
-          var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
-          var moved = window.ADspaceRecords.changes(m, filed, [
-            ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
-            ['designation', 'Position'], ['department', 'Department', deptName],
-            ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
-            ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
-            ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
-            ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
-            ['card_on', 'Namecard', function (v) { return off(v) ? 'Off' : 'On'; }],
-            ['card_slug', 'Short link']]);
-          if (moved) log('team.edited', name, moved);
-          msg('teamMsg', 'Saved.', 'ok');
-          load();
-        });
-      }
-      if (email === String(m.email || '').toLowerCase()) { write(); return; }
-      window.ADspaceConfirm.ask({
-        title: 'Change the sign-in address',
-        body: m.name + ' signs in with ' + email + ' from now on. The login itself '
-            + 'stays at the old address until they are invited at the new one.',
-        go: 'Change address',
-        tone: 'warn'
-      }, write);
-      return;
     }
     db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
@@ -1866,7 +1854,7 @@
           log('team.invited', m.name, m.email);
           msg('teamMsg', d.already ? m.name + ' already has a login.'
                                    : 'Invitation sent to ' + m.email + '.', 'ok');
-        });
+        }).catch(function () { msg('teamMsg', 'Could not send. Please try again.', 'err'); });
     });
   }
 
@@ -1922,6 +1910,12 @@
   function paintRec() {
     var box = $('teamRec'), sec = $('sectionTeam');
     if (!box) return;
+    if (rec.id && state.failed) {
+      if (sec) sec.classList.add('is-member');
+      box.hidden = false;
+      UI().failLine(box, 'This colleague', '', function () { load(); });
+      return;
+    }
     var m = rec.id && (state.rows || []).filter(function (x) { return x.id === rec.id; })[0];
     var showing = Boolean(rec.id) && (Boolean(m) || state.loading);
     if (sec) sec.classList.toggle('is-member', showing);
@@ -2004,9 +1998,9 @@
     ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
     ['card_on', 'Namecard', function (v) { return off(v) ? 'Off' : 'On'; }],
     ['card_slug', 'Short link']];
-  function patchMember(m, fields, back) {
+  function patchMember(m, fields, back, after) {
     var write = function () {
-      asRead(db.from('team_members').update(fields).eq('id', m.id), m).select('id').then(function (r) {
+      asRead(db.from('team_members').update(fields).eq('id', m.id), m).select('id, updated_at').then(function (r) {
         if (!r.error && !(r.data || []).length) {
           noRow('team_members', 'id', m, function (t) {
             back(false);
@@ -2026,7 +2020,19 @@
         if (moved) log('team.edited', name, moved);
         back(true);
         /* Said after the repaint, which empties the line (2026-10-20, TEAM-3). */
-        load(function () { msg('mrecMsg', 'Saved.', 'ok'); });
+        var done = function () {
+          var fresh = (state.rows || []).filter(function (x) { return x.id === m.id; })[0] || m;
+          if (after) after(fresh); else msg('mrecMsg', 'Saved.', 'ok');
+        };
+        /* The record repaints from the row as written; only what a trigger
+           makes of it (a short link made again, a group's access, access
+           brought back by its date) is read again (TEAM2-13). */
+        if ('card_slug' in fields || 'role' in fields || 'access_until' in fields || 'access_until_time' in fields) { load(done); return; }
+        var row = (state.rows || []).filter(function (x) { return x.id === m.id; })[0];
+        if (row) Object.assign(row, fields, { updated_at: (r.data[0] && r.data[0].updated_at) || row.updated_at });
+        paintMembers();
+        paintRec();
+        done();
       }).catch(function () { msg('mrecMsg', 'Not saved. Please try again.', 'err'); back(false); });
     };
     if (fields.email != null && fields.email !== String(m.email || '').toLowerCase()) {
@@ -2072,12 +2078,20 @@
         '</select></dd></div>';
     };
     var map = function (o, none) { return [['', none || 'Not set']].concat(Object.keys(o).map(function (k) { return [k, o[k]]; })); };
-    var roles = state.roles.map(function (r) { return [r.slug, r.name]; });
+    /* An admin group is offered to an admin alone, and nobody moves
+       themselves or an admin's row without being an admin (TEAM2-1). */
+    var roles = state.roles.filter(function (r) { return amAdmin() || !adminGroup(r) || r.slug === m.role; })
+      .map(function (r) { return [r.slug, r.name]; });
+    var groupCan = edit && !m.system && !self && (amAdmin() || !adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
+    var ended = !m.active && m.expired_at && m.access_until;
     host.innerHTML = '<div class="panel mrec-card mrec-ov"><div class="readgroups">' +
       group('Sign-in and access', '<dl class="ovfacts">' +
         word('name', 'Name', m.name) + word('email', 'Sign-in email', m.email, amAdmin()) +
-        (edit && !(m.system) ? pick('role', 'User group', roles, m.role, roleName(m.role)) : fact('User group', roleName(m.role))) +
-        word('access_until', 'Access until', m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
+        (groupCan ? pick('role', 'User group', roles, m.role, roleName(m.role)) : fact('User group', roleName(m.role))) +
+        /* Access that ended reads so, its pen the way to bring it back
+           (TEAM2-8, 2026-10-24). */
+        word('access_until', 'Access until', ended ? 'Ended ' + untilWord(m.access_until, m.access_until_time)
+          : m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
       group('Employment', '<dl class="ovfacts">' +
         word('staff_code', 'Employee ID', m.staff_code) +
         pick('department', 'Department', [['', 'Not set']].concat(deptChoices(m.department)), m.department || '', deptName(m.department)) +
@@ -2114,7 +2128,9 @@
             v = norm(v);
             var f = {};
             if (k === 'capacity_minutes_week') f[k] = v === '' ? null : Math.round(parseFloat(v) * 60);
-            else if (k === 'access_until') { f.access_until = v || null; if (!v) f.access_until_time = null; }
+            /* A new day for access that ended runs to its end: the old
+               time may already have passed today. */
+            else if (k === 'access_until') { f.access_until = v || null; if (!v || ended) f.access_until_time = null; }
             else f[k] = v || null;
             if (String(f[k] == null ? '' : f[k]) === String(m[k] == null ? '' : m[k])) { paneOverview(m, host); return; }
             patchMember(m, f, function (ok) { if (!ok) paneOverview(m, host); });
@@ -2126,6 +2142,24 @@
       var was = sel.value;
       sel.addEventListener('change', function () {
         var k = sel.getAttribute('data-sel'), f = {};
+        /* A new group carries its access, so it is asked first, the select
+           back until the answer, and the way back drawn where it happened
+           (TEAM2-1, 2026-10-24). */
+        if (k === 'role') {
+          var to = sel.value, from = was;
+          sel.value = was;
+          window.ADspaceConfirm.ask({
+            title: 'Change user group', go: 'Change group',
+            body: m.name + ' moves from ' + roleName(from) + ' to ' + roleName(to) + ' and takes that group\'s access.'
+          }, function () {
+            patchMember(m, { role: to }, function (ok) { if (ok) was = to; }, function (fresh) {
+              undoHere(m.name + ' moved to ' + roleName(to) + '.', function () {
+                patchMember(fresh, { role: from }, function () {});
+              }, $('mrecMsg'));
+            });
+          });
+          return;
+        }
         if (k === 'card_mobile') f[k] = sel.value !== 'hide';
         else if (k === 'card_on') f[k] = sel.value !== 'off';
         else f[k] = sel.value || null;
@@ -2172,7 +2206,7 @@
       if (!live()) return;
       if (failed) {
         host.innerHTML = '<div class="panel mrec-card"><div class="readgroups"><section class="readgroup" id="mrecWorkFail"></section></div></div>';
-        UI().failLine($('mrecWorkFail'), 'their work', '', function () { paneWork(m, host, live); });
+        UI().failLine($('mrecWorkFail'), 'Their work', '', function () { paneWork(m, host, live); });
         return;
       }
       openTasksOf(m, function (tasks, err) {
@@ -2299,7 +2333,7 @@
     if (R && R.paintForMember) R.paintForMember(m, box, function (rows, err) {
       if (!live()) return;
       var sk = box.querySelector('.skel'); if (sk && sk.parentNode) sk.parentNode.remove();
-      if (err) { UI().failLine(box, 'their letters', (err && err.message) || '', function () { paneDocs(m, host, live); }); return; }
+      if (err) { UI().failLine(box, 'Their letters', (err && err.message) || '', function () { paneDocs(m, host, live); }); return; }
       if (!rows.length) box.innerHTML = '<p class="muted">No letters.</p>';
     });
     var is = host.querySelector('[data-r="issue"]');
@@ -2349,9 +2383,9 @@
       if (!state.read && !state.loading) return;
       paintRec();
     },
-    /* Opens one colleague's sheet, for the review profile's Edit on Members:
-       from the rows already read, or once the list has been. */
-    edit: function (id) { pendingEdit = id; if (!state.loading) openPending(); }
+    /* Opens one colleague's record, for the review profile's Edit
+       (TEAM2-6): the record reads it once the list has been read. */
+    open: function (id) { openRec(id); }
   };
   if (bridge.teamReady) bridge.teamReady();
 })();
