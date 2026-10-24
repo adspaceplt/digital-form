@@ -713,7 +713,6 @@
     groups.forEach(function (g) { if (PLAT_FIELDS.some(function (f) { return has(g.lead[f[0]]); })) n++; });
     return { n: n, of: 1 + groups.length };
   }
-  function commentaryCount() { return commentaryState().n; }
   function stepDone(k) {
     var r = st.open || {}, t = r.ads_totals || {};
     if (k === 'accounts') return st.platforms.length > 0;
@@ -5103,13 +5102,10 @@
         var setting = function (k) { return d[k] != null ? d[k] : AI_STD[k]; };
         var rep = setting('report'), adm = setting('report_admin'), chk = setting('check'), chkA = setting('check_admin'), admDay = setting('admin');
         var dayWord = function (v) { return v === 0 ? 'Stopped' : v + ' a day'; };
-        var capC = setting('caption'), capA = setting('caption_admin');
         var wrote = people.filter(function (p) { return p.captions > 0; })
           .sort(function (x, y) { return y.captions - x.captions || String(x.name).localeCompare(String(y.name)); });
-        var scrC = setting('script'), scrA = setting('script_admin');
         var scripted = people.filter(function (p) { return p.scripts > 0; })
           .sort(function (x, y) { return y.scripts - x.scripts || String(x.name).localeCompare(String(y.name)); });
-        var anC = setting('analysis'), anA = setting('analysis_admin');
         var analysed = people.filter(function (p) { return p.analyses > 0; })
           .sort(function (x, y) { return y.analyses - x.analyses || String(x.name).localeCompare(String(y.name)); });
         var cost = d.cost || null;
@@ -5677,7 +5673,6 @@
 
   window.ADspaceReports = {
     clientFile: clientFile, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows, keptPdf: keptPdf,
-    openId: function () { return st.open && st.open.id ? st.open.id : ''; },
     /* The address while the section is open: the report, and the step where
        it is not the one the report would open on anyway. */
     urlState: function () {

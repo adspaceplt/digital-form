@@ -43,7 +43,6 @@
   --fill:       #1b1a17;
   --on-fill:    #ffffff;
   --accent:     #1f7a4d;
-  --accent-bg:  #ecf5f0;
   --ok:         #1f7a4d;
   --ok-bg:      #ecf5f0;
   /* The post date on the calendar: a pastel blue of the Pantone 2717 C
@@ -86,8 +85,6 @@
   --err-bg:     #fdeceb;
   --err-line:   #e9b9b5;
   --err-hi:     #8c1d18;   /* the pressed / heavier step, never a second red */
-  --err-solid:  #b3261e;
-  --on-err:     #ffffff;
   /* One colour, one meaning (the user, 2026-10-07, after the colour audit,
      on Apple's guidelines). Blue is the one primary action of a view, as on
      apple.com: Add, Save, Publish and Approve alike, and never a status.
@@ -144,10 +141,6 @@
   /* A control 32px tall takes 8, so its corner is the same share of its
      height as a 38px control's 10 (see THE CORNER FOLLOWS THE SIZE). */
   --radius-ctl-sm: 8px;
-  /* Two steps above the existing 4/8/12/16/24/32, for separating whole
-     sections of a migrated route. Nothing below 40 changes. */
-  --sp-40: 40px;
-  --sp-64: 64px;
   /* One height for every control, so a button, a select and an input standing
      next to each other line up instead of stepping, at Apple's sizes (34
      and 30 at a desk, 36 and 32 under a finger, where a button still takes
@@ -243,7 +236,6 @@
        paler mint passed the same checks and read as a highlighter pen next to
        everything else, which is the register this portal does not have. */
     --accent:     #4aa876;
-    --accent-bg:  #17281f;
     --ok:         #4aa876;
     --ok-bg:      #17281f;
     --pub:        #a7c6ed;
@@ -264,8 +256,6 @@
     --err-bg:     #2e1d1b;
     --err-line:   #6a3a35;
     --err-hi:     #f2a9a2;
-    --err-solid:  #e8837a;
-    --on-err:     #2b100d;
     /* The same blue under white in both registers, as apple.com draws its
        buttons on a dark ground: 4.70:1, and 3.5:1 as a boundary on the card.
        Blue words take the lighter #2997FF (5.47:1 on the card). */
@@ -1394,12 +1384,6 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
 .row.fgrid-3 > .span-2 { grid-column: span 2; }
-/* Cells that come and go together without a box of their own (the Team
-   sheet's access date and time); with them gone the first cell takes the row. */
-.row > .fcells { display: contents; }
-.fcells > div { min-width: 0; display: flex; flex-direction: column; }
-.fcells > div > .input { margin-top: auto; }
-.row.fgrid-3:has(> .fcells[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A date and its time as one cell of a two-column row, so the row keeps the
    columns of the rows above it (2026-10-20, TEAM-9). */
 .row > .fpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; min-width: 0; }
