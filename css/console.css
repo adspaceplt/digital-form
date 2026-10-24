@@ -2453,12 +2453,8 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .hol-year { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .hol-year .field-label { margin: 0; }
 .hol-acts { display: flex; align-items: center; gap: 4px; }
-/* Overseas access (2026-10-24): a request's reason under its facts, the
-   sheet's groups 16 apart; the cover's request form, left aligned in the
-   cover's column. */
-.ab-sec + .ab-sec { margin-top: 16px; }
-.ab-row .ab-why { color: var(--ink-mute); }
-.ab-row.is-past .dtrow-name b { color: var(--ink-soft); }
+/* Overseas access (2026-10-24): the cover's request form, left aligned in
+   the cover's column. */
 .abroad-past { margin-top: 8px; }
 .abroad-ask { margin-top: 18px; display: grid; gap: 12px; text-align: left; }
 .abroad-ask .field, .abroad-ask .input { width: 100%; }
