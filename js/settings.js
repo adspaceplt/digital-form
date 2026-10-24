@@ -737,15 +737,19 @@
     $('depCount').textContent = plural(dep.rows.length, 'department', 'departments');
     if (!dep.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No departments.'); return; }
     box.innerHTML = dep.rows.map(function (d) {
-      var meta = [plural(d.members || 0, 'colleague', 'colleagues'), d.in_prize ? 'In the department prize' : ''].filter(Boolean).join(' · ');
+      /* Each part held whole, so a phone wraps between them (TEAM2-11). */
+      var meta = [plural(d.members || 0, 'colleague', 'colleagues'), d.in_prize ? 'In the department prize' : ''].filter(Boolean)
+        .map(function (x) { return '<span class="team-part">' + esc(x) + '</span>'; }).join(' · ');
       return '<div class="dtrow dep-row' + (d.active ? '' : ' is-off') + '" data-key="' + esc(d.key) + '">' +
-        '<span class="dtrow-name"><b>' + esc(d.name) + (d.active ? '' : ' <span class="chip">Inactive</span>') + '</b><small>' + esc(meta) + '</small></span>' +
+        '<span class="dtrow-name"><b>' + esc(d.name) + (d.active ? '' : ' <span class="chip">Inactive</span>') + '</b><small>' + meta + '</small></span>' +
         '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-d="edit">' + PEN + 'Edit</button>' +
         '<span class="team-act"><button class="kmenu-btn" type="button" data-d="menu" aria-label="More actions for ' + esc(d.name) + '" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
         '<div class="kmenu" data-menu hidden role="menu">' +
           '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-d="active">' + (d.active ? 'Set inactive' : 'Set active') + '</button>' +
-          (d.members ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-d="delete">Delete</button>') +
+          /* Offered only where it would go through: nobody in it and no
+             record naming it (`in_records`, TEAM2-15). */
+          (d.members || d.in_records ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-d="delete">Delete</button>') +
         '</div></span></span></div>';
     }).join('');
   }
@@ -784,7 +788,7 @@
     }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
   }
   function depDelete(d) {
-    window.ADspaceConfirm.ask({ title: 'Delete this department?', body: d.name + ' is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete', body: d.name + ' is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
           return depSaid(r) || depChanged('Deleted.');
