@@ -1483,7 +1483,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Only an admin makes a colleague or a group admin, or changes an admin's
   group, access, access date, email or standing (`team_admin_guard`,
   `team_roles_admin_guard`, `admin-only`; 2026-10-17): Team Full Access is
-  not admin. A signed-in write never takes away the last active admin: it
+  not admin. Nor does anyone but an admin turn on, change or take off a
+  granted part (an admin tool, Performance, Supplier bank details …) on any
+  group, their own included: the guard compares every key `ops_granted` is
+  asked for, the page stills those switches and selects and saves them as
+  stored (`2026-10-24-admin-tools-admins-only.sql`, S2; the user declined
+  delegating Performance or HR Letters). A signed-in write never takes away the last active admin: it
   takes the team's admin lock first, so two admins standing each other down
   at once leave one (`team_members_last_admin`, `last-admin`;
   `2026-10-18-the-last-admin-is-kept.sql`).
