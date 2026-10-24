@@ -2751,6 +2751,7 @@ button.aiu-row:first-child::before { content: none; }
 .health-talk { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; }
 .health-talk-who { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .health-talk.is-closed .health-talk-who b { font-weight: 400; color: var(--ink-soft); }
+.health-talk-act { display: flex; align-items: center; gap: 4px; }
 .health-talk-act:empty { display: none; }
 .health-scale-word { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
 /* Team: Health. The summary card, then a row a colleague: name, the five
