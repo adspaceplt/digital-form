@@ -682,36 +682,19 @@
           tone: 'warn',
           fields: fields.length ? fields : null
         }, function (v) {
-          saveMember(m, { active: false }, function () { handTo(m, own, v && typeof v === 'object' ? v : {}); });
-        });
-      });
-    });
-    var hov = el.querySelector('[data-a="handover"]');
-    if (hov) hov.addEventListener('click', function () {
-      shutMenus();
-      heldBy(m, function (own, held) {
-        var fields = handFields(m, own, held);
-        if (!fields.length) { msg('teamMsg', 'Nothing is assigned to ' + m.name + '.', ''); return; }
-        window.ADspaceConfirm.ask({
-          title: 'Hand over work', go: 'Hand over',
-          body: 'Choose who takes each kind of ' + m.name + '\'s work.',
-          fields: fields
-        }, function (v) {
+          /* The work moves first and the colleague is stood down only once
+             it has (TEAM2-4, 2026-10-24), as Delete removes nobody whose
+             hand-over failed. */
           v = v && typeof v === 'object' ? v : {};
-          var kept = keptWord(own, held, v, m.name);
-          msg('teamMsg', '');
-          Promise.resolve(handTo(m, own, v)).then(function () {
-            if (!kept) return;
-            var said = ($('teamMsg').textContent || '').trim();
-            msg('teamMsg', (said ? said + ' ' : '') + kept, 'warn');
+          Promise.resolve(handTo(m, own, v, true)).then(function (moved) {
+            if (moved === false) return;
+            saveMember(m, { active: false }, moved ? function () { msg('teamMsg', 'Saved. ' + moved, 'ok'); } : null);
           });
         });
       });
     });
     var rmv = el.querySelector('[data-a="remove"]');
     if (rmv) rmv.addEventListener('click', function () { shutMenus(); removeMember(m); });
-    var ed = el.querySelector('[data-a="edit"]');
-    if (ed) ed.addEventListener('click', function () { openMemberBox(m, this); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
   }
@@ -745,20 +728,20 @@
   }
 
   /* ---- Hand-over and Delete (2026-10-14) -------------------------------------
-     What a colleague holds, read before they are set inactive or removed:
-     the clients and open campaigns they are person in charge of (by name),
-     and the rest of their live work from `team_work_held`. A database
-     without it offers the person in charge alone. */
+     What a colleague holds, read before they are set inactive or removed,
+     all from `team_work_held` (TEAM2-3, 2026-10-24): the clients and open
+     campaigns they are person in charge of, listed, and the rest of their
+     live work counted, whatever the caller's own client scope. */
   var HELD_KINDS = [['tasks', 'Open tasks'], ['months', 'Months they manage'], ['meetings', 'Meetings they lead'],
     ['repeats', 'Repeating tasks'], ['reviews', 'Reports waiting for their review'], ['extensions', 'Extension requests waiting on them'],
     ['templates', 'Templates naming them as default owner']];
   function heldBy(m, then) {
-    ownedBy(m.name, false, function (own) {
-      db.rpc('team_work_held', { p_member: m.id }).then(function (r) {
-        var d = (r && r.data) || {};
-        then(own, r.error || d.error ? {} : d);
-      }).catch(function () { then(own, {}); });
-    });
+    var none = { clients: [], campaigns: [] };
+    db.rpc('team_work_held', { p_member: m.id }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { then(none, {}, true); return; }
+      then({ clients: d.client_list || [], campaigns: d.campaign_list || [] }, d, false);
+    }).catch(function () { then(none, {}, true); });
   }
   function takers(m) {
     return state.rows.filter(function (x) { return x.active && x.id !== m.id && x.name && !x.system; })
@@ -774,7 +757,10 @@
      (`ADspaceAdmin.takesTasks`): a group below My Work Work is offered for
      clients, campaigns and reviews alone (2026-10-15). */
   var TASK_KINDS = ['tasks', 'months', 'meetings', 'repeats', 'extensions', 'templates'];
-  function handFields(m, own, held) {
+  /* For Delete (TEAM2-5, 2026-10-24) the work is given to somebody unless
+     Keep is chosen on purpose: All their work to opens on Choose a
+     colleague and is required while anything is held. */
+  function handFields(m, own, held, leaving) {
     var A = window.ADspaceAdmin;
     var named = function (x) { return [x.id, window.ADspaceForm.named(x.staff_code, x.name)]; };
     var people = takers(m).map(named);
@@ -785,13 +771,13 @@
     add('clients', 'Clients they are person in charge of', own.clients.length);
     add('campaigns', 'Open campaigns', own.campaigns.length);
     HELD_KINDS.forEach(function (k) { add(k[0], k[1], Number(held[k[0]]) || 0); });
-    var keep = ['', 'Keep with ' + m.name];
+    var keep = leaving ? [['', 'Choose a colleague'], [HAND_KEEP, 'Keep with ' + m.name]] : [['', 'Keep with ' + m.name]];
     var whoFor = function (k) { return TASK_KINDS.indexOf(k) > -1 ? workers : people; };
-    if (kinds.length < 2) return kinds.map(function (k) { return { name: k.name, label: k.label, required: false, choices: [keep].concat(whoFor(k.name)) }; });
+    if (kinds.length < 2) return kinds.map(function (k) { return { name: k.name, label: k.label, required: Boolean(leaving), choices: keep.concat(whoFor(k.name)) }; });
     /* All their work goes to one person, so where any of it is My Work's it
        offers only those who take tasks. */
     var anyTask = kinds.some(function (k) { return TASK_KINDS.indexOf(k.name) > -1; });
-    return [{ name: 'all', label: 'All their work to', required: false, choices: [keep].concat(anyTask ? workers : people) }].concat(kinds.map(function (k) {
+    return [{ name: 'all', label: 'All their work to', required: Boolean(leaving), choices: keep.concat(anyTask ? workers : people) }].concat(kinds.map(function (k) {
       return { name: k.name, label: k.label, required: false, choices: [['', 'Same as above'], [HAND_KEEP, 'Keep with ' + m.name]].concat(whoFor(k.name)) };
     }));
   }
@@ -801,7 +787,7 @@
     var out = {};
     handKinds().forEach(function (k) {
       var x = v[k];
-      out[k] = x === HAND_KEEP ? '' : (x || v.all || '');
+      out[k] = x === HAND_KEEP ? '' : (x || (v.all === HAND_KEEP ? '' : v.all) || '');
     });
     return out;
   }
@@ -821,44 +807,38 @@
     var list = parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
     return list.charAt(0).toUpperCase() + list.slice(1) + (total === 1 ? ' stays' : ' stay') + ' with ' + name + '.';
   }
-  /* Moves what was chosen: the person in charge by name, the rest through
-     `team_hand_over`; one line says what moved and what could not. */
-  function handTo(m, own, v) {
+  /* Moves what was chosen through `team_hand_over`, the clients and open
+     campaigns too (TEAM2-3, 2026-10-24); one line says what moved and what
+     could not, and a failure names the Work pane, where it is done again
+     (TEAM2-4). `quiet` leaves the line to the act that asked (Set inactive
+     says Saved. once it has stood them down). */
+  function handTo(m, own, v, quiet) {
     v = handChosen(v || {});
-    var nameOf = function (id) { var x = state.rows.filter(function (r) { return r.id === id; })[0]; return x ? x.name : ''; };
-    var jobs = [];
-    var owned = function (table, list, to) {
-      if (!to || !list.length) return;
-      jobs.push(db.from(table).update({ owner: to }).in('id', list.map(function (c) { return c.id; })).select('id').then(function (r) {
-        if (r.error) return { bad: true };
-        /* Each record that moved is filed, even where others were refused (audit, 2026-10-15). */
-        var got = (r.data || []).map(function (x) { return x.id; });
-        list.filter(function (c) { return got.indexOf(c.id) > -1; }).forEach(function (c) {
-          log(table === 'clients' ? 'client.edited' : 'campaign.edited', c.name || c.title, 'Person in charge: ' + m.name + ' to ' + to);
-        });
-        return got.length < list.length ? { bad: true } : { ok: true };
-      }));
-    };
-    owned('clients', own.clients, nameOf(v.clients));
-    owned('campaigns', own.campaigns, nameOf(v.campaigns));
     var to = {};
-    HELD_KINDS.forEach(function (k) { if (v[k[0]]) to[k[0]] = v[k[0]]; });
-    if (Object.keys(to).length) {
-      jobs.push(db.rpc('team_hand_over', { p_member: m.id, p_to: to }).then(function (r) {
-        var d = (r && r.data) || {};
-        if (r.error || d.error) return { bad: true };
-        return { ok: true, skipped: d.skipped && d.skipped.reviews };
-      }));
-    }
-    if (!jobs.length) return Promise.resolve(true);
-    return Promise.all(jobs).then(function (res) {
-      var bad = res.some(function (x) { return x.bad; });
-      var skip = res.reduce(function (n, x) { return n + (Number(x.skipped) || 0); }, 0);
-      msg('teamMsg', bad ? 'Saved. Some work could not be handed over; open the colleague\'s ⋯ again to hand it over.'
-        : 'Saved. Work handed over.' + (skip ? ' ' + skip + (skip === 1 ? ' report stays' : ' reports stay') +
-          ' with them: the colleague chosen submitted it or does not review reports.' : ''), bad ? 'err' : 'ok');
-      return !bad;
-    }).catch(function () { msg('teamMsg', 'Saved. The work could not be handed over.', 'err'); return false; });
+    handKinds().forEach(function (k) { if (v[k]) to[k] = v[k]; });
+    if (!Object.keys(to).length) return Promise.resolve('');
+    return db.rpc('team_hand_over', { p_member: m.id, p_to: to }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { workMsg(m, 'Some work could not be handed over.'); return false; }
+      var skip = Number(d.skipped && d.skipped.reviews) || 0;
+      var line = 'Work handed over.' + (skip ? ' ' + skip + (skip === 1 ? ' report stays' : ' reports stay') +
+        ' with them: the colleague chosen submitted it or does not review reports.' : '');
+      if (!quiet) msg('teamMsg', line, 'ok');
+      return line;
+    }).catch(function () { workMsg(m, 'The work could not be handed over.'); return false; });
+  }
+  /* A line naming work still to hand over, with the button that opens the
+     colleague's Work pane, where Hand over work is (TEAM2-4). */
+  function workMsg(m, text, kind) {
+    msg('teamMsg', text, kind || 'err');
+    var id = rec.id && $('mrecMsg') && !$('teamRec').hidden ? 'mrecMsg' : 'teamMsg', el = $(id);
+    if (!el || !may('team', 'manage')) return;
+    if (id === 'mrecMsg' && rec.pane === 'work' && rec.id === m.id) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn btn-sm msg-act'; b.textContent = 'Open Work';
+    b.addEventListener('click', function () { openRec(m.id, 'work'); });
+    el.appendChild(document.createTextNode(' '));
+    el.appendChild(b);
   }
   var REMOVE_SAID = {
     own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.', 'admin-only': ADMIN_ONLY,
@@ -871,14 +851,14 @@
      way; Delete their data removes their personal details and sign-in. */
   function removeMember(m) {
     heldBy(m, function (own, held) {
-      var fields = handFields(m, own, held);
+      var fields = handFields(m, own, held, true);
       window.ADspaceConfirm.ask({
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
         /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
         body: m.name + ' loses access for good. There is no restore.' + (fields.length ? ' Choose who takes their work.' : '') +
-          ' Past work, HR letters and performance records are kept. Delete their data also removes their mobile, namecard, sign-in and health check-ins.',
+          ' Past work, HR letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in and health check-ins.',
         fields: fields.concat([
-          { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Delete']], seg: true, value: 'keep' },
+          { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Erase personal details']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
       }, function (v) {
         /* A hand-over that failed removes nobody: the question stays open
@@ -890,7 +870,7 @@
         return Promise.resolve(db.rpc('team_member_remove_check', { p_member: m.id })).then(function (c) {
           var e = c && !c.error && c.data && c.data.error;
           if (e) return { refused: e };
-          return Promise.resolve(handTo(m, own, v)).then(function (moved) { return moved === false ? { held: true } : null; });
+          return Promise.resolve(handTo(m, own, v, true)).then(function (moved) { return moved === false ? { held: true } : null; });
         }).then(function (pre) {
           if (pre) return pre;
           return db.rpc('team_member_remove', { p_member: m.id, p_erase: v.data === 'erase', p_name: v.name });
@@ -904,73 +884,15 @@
              (TEAM-3, 2026-10-14): a removed colleague signs in no more. */
           var kept = keptWord(own, held, v, m.name);
           if (window.ADspaceGroup) window.ADspaceGroup.keep('team', 'off', false);
-          msg('teamMsg', (v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.') +
-            (kept ? ' ' + kept + ' Hand over work is in their ⋯.' : ''), kept ? 'warn' : 'ok');
-          load();
+          var done = v.data === 'erase' ? 'Removed. Their personal details were deleted.' : 'Removed. Their data is kept.';
+          load(function () { if (kept) workMsg(m, done + ' ' + kept, 'warn'); else msg('teamMsg', done, 'ok'); });
           return '';
         });
       });
     });
   }
 
-  /* ---- Person in charge ----------------------------------------------------
-     `clients.owner` and `campaigns.owner` hold the person's name as text, not
-     an id, so the team page is where a stand-down or a rename has to follow
-     through to the records that name them. Matched on the trimmed name in any
-     case, because the field was typed by hand before it was a select. */
-  function ownedBy(name, all, then) {
-    var key = String(name || '').trim().toLowerCase();
-    var none = { clients: [], campaigns: [] };
-    if (!key) { then(none); return; }
-    function mine(r) {
-      return (r && !r.error ? r.data || [] : []).filter(function (x) {
-        return String(x.owner || '').trim().toLowerCase() === key;
-      });
-    }
-    Promise.all([
-      db.from('clients').select('id, name, owner, slug, client_code, stage'),
-      db.from('campaigns').select('id, title, owner, state')
-    ]).then(function (res) {
-      then({
-        clients: mine(res[0]),
-        campaigns: mine(res[1]).filter(function (c) { return all || c.state !== 'completed'; })
-      });
-    }, function () { then(none); });
-  }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
-  function ownWord(own) {
-    return [own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
-            own.campaigns.length ? plural(own.campaigns.length, 'open campaign', 'open campaigns') : '']
-      .filter(Boolean).join(' and ');
-  }
-  /* Each record is written with `.select('id')`, because a refused update is
-     answered with no error and no row, and each move is filed under the client
-     or the campaign it changed, so it reads on that record's own Activity. */
-  function handOver(from, to, own, word) {
-    var jobs = [];
-    if (own.clients.length) jobs.push(db.from('clients').update({ owner: to })
-      .in('id', own.clients.map(function (c) { return c.id; })).select('id'));
-    if (own.campaigns.length) jobs.push(db.from('campaigns').update({ owner: to })
-      .in('id', own.campaigns.map(function (c) { return c.id; })).select('id'));
-    if (!jobs.length) return;
-    Promise.all(jobs).then(function (res) {
-      var moved = 0, bad = null;
-      res.forEach(function (r) {
-        if (r.error) bad = r.error.message;
-        else moved += (r.data || []).length;
-      });
-      var want = own.clients.length + own.campaigns.length;
-      if (bad || moved < want) {
-        msg('teamMsg', 'Saved. The person in charge could not be moved on ' + (want - moved) +
-          ' of ' + want + (bad ? ': ' + bad : '. The database refused the request.'), 'err');
-        return;
-      }
-      own.clients.forEach(function (c) { log('client.edited', c.name, 'Person in charge: ' + from + ' to ' + to); });
-      own.campaigns.forEach(function (c) { log('campaign.edited', c.title, 'Person in charge: ' + from + ' to ' + to); });
-      msg('teamMsg', 'Saved. ' + (word || ownWord(own).replace(/^./, function (x) { return x.toUpperCase(); })) +
-        ' now read ' + to + '.', 'ok');
-    }, function () { msg('teamMsg', 'Saved. The person in charge could not be moved.', 'err'); });
-  }
 
   // ---- Groups -------------------------------------------------------------
   /* A group is read far more often than it is changed: somebody deciding which
@@ -1878,19 +1800,6 @@
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();
-          /* A rename is the same person, so the clients and campaigns that
-             name them follow the new name without being asked, completed
-             campaigns included: they would otherwise name somebody the team
-             list no longer has. */
-          if (name !== String(m.name || '').trim()) {
-            ownedBy(m.name, true, function (own) {
-              var n = own.clients.length + own.campaigns.length;
-              if (n) handOver(m.name, name, own, [
-                own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
-                own.campaigns.length ? plural(own.campaigns.length, 'campaign', 'campaigns') : ''
-              ].filter(Boolean).join(' and ').replace(/^./, function (x) { return x.toUpperCase(); }));
-            });
-          }
         });
       }
       if (email === String(m.email || '').toLowerCase()) { write(); return; }
@@ -2112,15 +2021,9 @@
         var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
         var moved = window.ADspaceRecords.changes(m, filed, MEMBER_LOG);
         var name = fields.name || m.name;
+        /* A rename is carried onto every client and campaign naming them by
+           the database (`team_members_rename_owner`, TEAM2-3). */
         if (moved) log('team.edited', name, moved);
-        if (fields.name && fields.name !== String(m.name || '').trim()) {
-          ownedBy(m.name, true, function (own) {
-            if (own.clients.length + own.campaigns.length) handOver(m.name, fields.name, own, [
-              own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
-              own.campaigns.length ? plural(own.campaigns.length, 'campaign', 'campaigns') : ''
-            ].filter(Boolean).join(' and ').replace(/^./, function (x) { return x.toUpperCase(); }));
-          });
-        }
         back(true);
         /* Said after the repaint, which empties the line (2026-10-20, TEAM-3). */
         load(function () { msg('mrecMsg', 'Saved.', 'ok'); });
@@ -2265,15 +2168,23 @@
   }
   function paneWork(m, host, live) {
     UI().skeleton(host, 3);
-    heldBy(m, function (own, held) {
+    heldBy(m, function (own, held, failed) {
       if (!live()) return;
+      if (failed) {
+        host.innerHTML = '<div class="panel mrec-card"><div class="readgroups"><section class="readgroup" id="mrecWorkFail"></section></div></div>';
+        UI().failLine($('mrecWorkFail'), 'their work', '', function () { paneWork(m, host, live); });
+        return;
+      }
       openTasksOf(m, function (tasks, err) {
         if (!live()) return;
         var today = window.ADspaceClock.today();
         var opens = [], html = '';
         var self = me() && me().id === m.id;
         var anyHeld = own.clients.length || own.campaigns.length || HELD_KINDS.some(function (k) { return Number(held[k[0]] || 0) > 0; });
-        var act = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>' : '';
+        /* Hand over work is the pane's own act, in its head over everything
+           they hold (TEAM2-12, 2026-10-24). */
+        var handAct = anyHeld && !self && !m.system && may('team', 'manage') ? '<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>' : '';
+        var act = '';
         /* A long list shows its first rows and the rest behind Show all
            (the user, 2026-10-18: "imaging u need to fit in 100+ tasks"). */
         var FIRST = 10;
@@ -2332,7 +2243,13 @@
           }).join('') + '</dl>', act);
           act = '';
         }
-        if (!html) html = group('Their work', '<p class="muted">Nothing is assigned to ' + esc(m.name) + '.</p>');
+        var total = handKinds().map(function (k) {
+          var n = k === 'clients' ? own.clients.length : k === 'campaigns' ? own.campaigns.length : Number(held[k]) || 0;
+          return n ? plural(n, HELD_WORD[k][0], HELD_WORD[k][1]) : '';
+        }).filter(Boolean);
+        html = group('Their work', '<p class="mrec-held">' + (total.length
+          ? total.map(function (x) { return '<span class="team-part">' + esc(x) + '</span>'; }).join(' · ')
+          : 'Nothing is assigned to ' + esc(m.name) + '.') + '</p>', handAct) + html;
         host.innerHTML = '<div class="panel mrec-card"><div class="readgroups">' + html + '</div></div>';
         Array.prototype.forEach.call(host.querySelectorAll('[data-all]'), function (b) {
           b.addEventListener('click', function () {
@@ -2347,14 +2264,21 @@
         var h = host.querySelector('[data-r="hand"]');
         if (h) h.addEventListener('click', function () {
           var fields = handFields(m, own, held);
+          if (!fields.length) { msg('mrecMsg', 'No other colleague can take it.', 'warn'); return; }
           window.ADspaceConfirm.ask({
             title: 'Hand over work', go: 'Hand over',
             body: 'Choose who takes each kind of ' + m.name + '\'s work.',
             fields: fields
           }, function (v) {
             v = v && typeof v === 'object' ? v : {};
-            msg('teamMsg', '');
-            Promise.resolve(handTo(m, own, v)).then(function () { if (rec.id === m.id && rec.pane === 'work') paintPane(m); });
+            /* What stays with them is said after what moved (TEAM2-12). */
+            var kept = keptWord(own, held, v, m.name);
+            msg('mrecMsg', '');
+            Promise.resolve(handTo(m, own, v, true)).then(function (moved) {
+              if (moved === false) return;
+              msg('mrecMsg', [moved || '', kept].filter(Boolean).join(' ') || 'Nothing was handed over.', kept ? 'warn' : 'ok');
+              if (rec.id === m.id && rec.pane === 'work') paintPane(m);
+            });
           });
         });
       });
