@@ -6170,7 +6170,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
   `bad-until` today to today plus `abroad_days`, a waiting request
   replaced) tells every active admin (kind `abroad.request`, the bell
-  opening the colleague's record, found by name in `abroad_list()`), and while it waits, its colleague active and
+  opening the colleague's record, the request its `dedupe_key` names
+  (`abroad:{id}:…`), never a namesake's), and while it waits, its colleague active and
   its day not passed, `abroad_remind()` (pg_cron `abroad-remind`, every
   fifteen minutes from 08:00 to 22:45 MYT; `team_abroad.reminded_at`, a
   request asked again starting afresh) tells them again every
