@@ -735,8 +735,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   every item carries its group (`data-g` 1 to 6; `groupOf(label)` is the
   one table of the standard's words, `item(a, label, need)` one item
   written from it), and `tidy` puts the items in group order, lays roles,
-  separators and the red each time a menu shows; a record head's ⋯ (in
-  `.rec-ctl`, or `data-dock`) docks at the foot under 640. A new act's
+  separators and the red each time a menu shows; every ⋯ hangs from its
+  button at every width, a record head's too (the user, 2026-10-24: the
+  foot dock opened away from the finger). A new act's
   word joins `groupOf` and `tests/menus.js` together.
   - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
     `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
