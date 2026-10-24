@@ -1325,7 +1325,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   its own level where one is set, else its section's, in `allowed()` and the
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
   section reads Same as section.
-- Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
+- Granted parts never inherit (`ops_granted()`, which stops answering the minute access ends as `allowed()` does; `2026-10-24-admin-tools-end-on-the-minute.sql`): `ops.all`, `ops.reports`,
   `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`,
   `reports.whitelabel` (on for Managers from 2026-10-07). Every act an admin
   alone could take is one (`2026-10-07-admin-parts.sql`; an admin's by
@@ -1845,7 +1845,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   working notes, approx., TBC, → to where a button leads, ad sets funded
   in order with MONTH 2+ / ON HOLD, the lead estimate, Budget note); the
   PDF draws → in the Chinese face, which holds it.
-  Write with AI on it (Clients Work, an open checklist; the user, 2026-10-15)
+  Write with AI on it (Clients: Checklists Work, an open checklist; the user, 2026-10-15)
   asks up front the monthly ad budget, the objective, where the ads send
   people, the ad account and notes (kept under
   `adspace-checklist-inputs:{client id}`); with no confirmed Brand
@@ -1871,7 +1871,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
   policy, no grant): a client, and each white-label brand, links ad accounts
   (up to 20), one Facebook Page and one Instagram account, each Meta's id and
-  name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients at
+  name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients: Brand at
   Work), never typed; a link Meta no longer shows stays offered. Read first
   on the Brand pane (`#crmMetaRead`, Edit at Clients Work; a brand's from its
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
@@ -1908,7 +1908,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   the Brand pane's last read group (`#crmAnalysis`), Run analysis then Run
   again (the AI mark; asks first: what it reads, analyses left today, notes
   kept under `adspace-analysis-notes:{client id}`), for any colleague at
-  Clients View on a client in scope. It reads as the caller the record
+  Clients: Brand View on a client in scope. It reads as the caller the record
   (brief, notes, services), published reports, My Work's post results and,
   where `meta_checks_on()` and the client links Meta, six months of
   Instagram and Facebook posts, Instagram followers by age, gender and city
@@ -5637,26 +5637,35 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Set inactive and Delete (the ⋯'s last item, red, Team Full Access, never
     one's own or a system account, not drawn once their details are
     deleted) first ask who takes each kind of live work the colleague holds,
-    a picker a kind, Keep with them first, only kinds they hold; with two
-    kinds or more All their work to comes first and each kind reads Same as
-    above until a colleague or Keep is chosen for it
-    (`team_work_held`): clients they are person in charge of and open
-    campaigns (by name, as before), open tasks, months they manage,
+    a picker a kind, only kinds they hold, Keep with them first for Set
+    inactive; Delete's opens on Choose a colleague, required while anything
+    is held, Keep still offered (TEAM2-5); with two kinds or more All their
+    work to comes first and each kind reads Same as above until a colleague
+    or Keep is chosen for it (`team_work_held`, read whatever the caller's
+    client scope, `2026-10-24-hand-over-takes-clients.sql`): clients they
+    are person in charge of and open campaigns (by name, listed for the
+    Work pane), open tasks, months they manage,
     meetings ahead they lead, repeating tasks, reports in review waiting on
     them (left with them where the colleague chosen submitted it or may not
     review, and said), extension requests waiting on them, and templates
     naming them as default owner (`team_hand_over`, each filed on its
     record and one line under the colleague: Work handed over: 2 open
-    tasks → Aisyah; …). Work left with a removed colleague is named in
-    Delete's line (1 client and 1 open task stay with …), and an inactive
-    or removed colleague's Work pane offers Hand over work, the same pickers.
-  - Delete then asks Their data, Keep / Delete, and the name typed back
+    tasks → Aisyah; …; the person in charge moved past the caller's own
+    client scope, `adspace.team_owner`). The work moves first: Set inactive
+    stands them down, and Delete removes them, only once it has (TEAM2-4).
+    Work left with them, or a hand-over refused, is said with Open Work,
+    the button to their Work pane, whose head holds Hand over work over a
+    line of all they hold, the same pickers, and says after what moved
+    what stayed (TEAM2-12). A rename is carried onto every client and
+    campaign naming them, completed ones included, each filed, by trigger
+    `team_members_rename_owner`; the page carries nothing.
+  - Delete then asks Their data, Keep / Erase personal details, and the name typed back
     (the question opens on it); `team_member_remove_check` answers the
     removal's own refusals before any work moves
     (`2026-10-15-colleague-remove-check.sql`), then `team_member_remove` (`own`,
     `system-account`, `bad-name`, `last-admin`) sets them inactive and
     stamps `removed_at` (the row reads Removed, with no Set active);
-    Delete their data also removes the mobile, the namecard (off, its short
+    Erase personal details also removes the mobile, the namecard (off, its short
     link freed), the sign-in email and its login, their health check-ins,
     consents, log and talks, devices, guides met and section order
     (`erased_at`). Their name, Employee ID and group, their name on past

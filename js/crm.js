@@ -2954,7 +2954,7 @@
     'ai-slow': 'The analysis took too long. Try again.',
     'ai-failed': 'No analysis came back. Try again.',
     'ai-incomplete': 'No analysis came back. Try again.',
-    denied: 'This needs Clients at View.',
+    denied: 'This needs Clients: Brand at View.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This analysis is no longer available.',
     'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
@@ -3257,7 +3257,7 @@
     'not-connected': 'Meta is not connected.',
     'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
-    'denied': 'This needs Clients at Work.'
+    'denied': 'This needs Clients: Brand at Manage.'
   };
   function metaSheet(c, b, opener) {
     var id = 'crmMetaSheet', box = $(id);
@@ -3326,7 +3326,7 @@
             save.disabled = false;
             var r = (q && q.data) || {};
             if ((q && q.error) || r.error) {
-              msg('crmMetaMsg', r.error === 'denied' ? 'This needs Clients at Work.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
+              msg('crmMetaMsg', r.error === 'denied' ? 'This needs Clients: Brand at Manage.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
                 (q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This needs a database update.' : 'Not saved. The database refused the request.', 'err');
               return;
             }
