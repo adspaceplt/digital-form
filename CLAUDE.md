@@ -1318,7 +1318,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   its own level where one is set, else its section's, in `allowed()` and the
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
   section reads Same as section.
-- Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
+- Granted parts never inherit (`ops_granted()`, which stops answering the minute access ends as `allowed()` does; `2026-10-24-admin-tools-end-on-the-minute.sql`): `ops.all`, `ops.reports`,
   `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`,
   `reports.whitelabel` (on for Managers from 2026-10-07). Every act an admin
   alone could take is one (`2026-10-07-admin-parts.sql`; an admin's by
