@@ -4059,7 +4059,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   each 2 to 60; `department_save`: `bad-name`, `taken`, `criteria-needed`,
   `bad-criteria`), the ⋯ Set inactive / Set active (never asks; offered to
   nobody, out of the prize, its colleagues keep it) and Delete where
-  nobody is in it (`department_delete`, asked, `in-use`); each filed
+  nobody is in it and no record names it (`departments_list` `in_records`:
+  a colleague active or not, a review profile, a prize score;
+  `2026-10-24-departments-in-records.sql`, TEAM2-15), asked under the title
+  Delete (`department_delete`, `in-use`); a row's line holds each part
+  whole (`team-part`); each filed
   `team.changed` under Departments, from and to. The department prize
   (`perf_quarter_calc`, `perf_quarter_confirm`, `perf_dept_save`) takes
   every active department in the prize in the list's order, each with its
