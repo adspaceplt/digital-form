@@ -3555,6 +3555,12 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-none { margin: 0; font-size: 13px; }
 .mrec-railacts { display: flex; gap: 8px; margin-top: 12px; }
 .mrec-railacts > .btn { flex: 1 1 50%; min-width: 0; }
+/* Overseas access on the record (2026-10-24): the earlier requests under
+   the one in hand, a row each, its state at the right. */
+.mrec-abpast { margin-top: 12px; }
+.mrec-abhead { margin: 0 0 4px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.mrec-abrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.mrec-abrow:first-of-type { border-top: 0; }
 .team-head.team-row > :first-child { padding-left: 44px; }
 /* A colleague's work, a row a record (2026-10-18): the name over its facts,
    the date at the right (red once late), the chevron last. */

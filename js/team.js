@@ -402,6 +402,115 @@
     var g = $('groupCount'); if (g) g.textContent = '';
     paintRec();
   }
+  /* OVERSEAS ACCESS ON THE RECORD (2026-10-24; the user: approval sits on
+     each colleague's record). An admin reads `abroad_list()` with the team,
+     one request: the record's Overview holds the colleague's requests of
+     the last 90 days, and the list names one waiting. Nobody else reads it. */
+  function readAbroad() {
+    state.abroad = null;
+    if (!amAdmin()) return Promise.resolve();
+    return Promise.resolve(db.rpc('abroad_list')).then(function (r) {
+      var d = r && r.data;
+      if (!r || r.error || !d || d.error) return;
+      state.abroad = d.rows || []; state.abDays = d.days; state.abToday = d.today;
+    }).catch(function () {});
+  }
+  function abroadOf(id) { return (state.abroad || []).filter(function (x) { return x.member === id; }); }
+  function abroadWaiting(id) { return abroadOf(id).some(function (x) { return x.status === 'waiting'; }); }
+  function whereWord(code) {
+    if (!code) return 'Unknown';
+    try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
+  }
+  var AB_WORD = { waiting: ['is-warn', 'Waiting'], approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'],
+                  ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
+  var AB_SAID = { denied: 'Not allowed.', 'not-found': 'That request is no longer there.', 'not-waiting': 'That request was already decided.',
+                  'not-approved': 'That access has already ended.', 'too-long': 'Keep the note to 300 characters.' };
+  function abroadGroup(m) {
+    var rows = abroadOf(m.id);
+    if (!rows.length) return '';
+    var C = window.ADspaceClock;
+    var now = rows.filter(function (x) { return x.status === 'waiting' || x.status === 'approved'; })[0];
+    var earlier = rows.filter(function (x) { return x !== now; });
+    var act = '';
+    if (now && now.status === 'waiting') {
+      act = '<span class="mrec-acts"><button class="btn btn-sm" type="button" data-ab="decline">Decline</button>' +
+        '<button class="btn btn-sm btn-primary" type="button" data-ab="approve">Approve</button></span>';
+    } else if (now) {
+      act = menuBtn('<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-ab="end">End access</button>');
+    }
+    var state1 = function (x) { var w = AB_WORD[x.status] || AB_WORD.ended; return '<span class="chip-state ' + w[0] + '">' + w[1] + '</span>'; };
+    var body = now ? '<dl class="ovfacts">' +
+      '<div><dt>From</dt><dd>' + esc(whereWord(now.country)) + '</dd></div>' +
+      '<div><dt>Reason</dt><dd>' + esc(now.reason || '') + '</dd></div>' +
+      '<div><dt>Until</dt><dd>' + esc(C.date(now.until)) + '</dd></div>' +
+      '<div><dt>State</dt><dd>' + state1(now) + '</dd></div>' +
+      (now.decided_by ? '<div><dt>Decided by</dt><dd>' + esc(now.decided_by) + '</dd></div>' : '') +
+      (now.note ? '<div><dt>Note</dt><dd>' + esc(now.note) + '</dd></div>' : '') + '</dl>' : '';
+    if (earlier.length) {
+      body += '<div class="mrec-abpast">' + (now ? '<h5 class="mrec-abhead">Earlier</h5>' : '') + earlier.map(function (x) {
+        var bits = [whereWord(x.country), 'until ' + C.date(x.until), x.decided_by ? (AB_WORD[x.status] || AB_WORD.ended)[1] + ' by ' + x.decided_by : ''].filter(Boolean);
+        return '<div class="mrec-abrow"><span class="mrec-row-who"><b>' + esc(x.reason || '') + '</b><small>' +
+          bits.map(function (b) { return '<span class="team-part">' + esc(b) + '</span>'; }).join(' · ') + '</small></span>' + state1(x) + '</div>';
+      }).join('') + '</div>';
+    }
+    return group('Overseas access', body, act);
+  }
+  function wireAbroad(m, host) {
+    var box = host.querySelector('[data-ab]') && host.querySelector('[data-ab]').closest('.readgroup');
+    if (!box) return;
+    wireMenu(box);
+    var x = abroadOf(m.id).filter(function (r) { return r.status === 'waiting' || r.status === 'approved'; })[0];
+    if (!x) return;
+    var after = function (r, text) {
+      var d = r && r.data;
+      if (!r || r.error || !d || d.error) {
+        if (d && d.error === 'bad-until') return 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.';
+        return (d && AB_SAID[d.error]) || (r && r.error && /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : 'Not saved.');
+      }
+      state.abroad = d.rows || []; state.abDays = d.days; state.abToday = d.today;
+      paintMembers();
+      if (rec.id === m.id && rec.pane === 'overview') paneOverview(m, $('mrecPane'));
+      msg('mrecMsg', text, 'ok');
+      return '';
+    };
+    var who = m.name || 'The colleague';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-ab]'), function (b) {
+      b.addEventListener('click', function () {
+        shutMenus();
+        var a = b.getAttribute('data-ab'), C = window.ADspaceClock;
+        if (a === 'approve') {
+          var today = state.abToday || C.today(), max = C.addDays(today, state.abDays || 14);
+          window.ADspaceConfirm.ask({
+            title: 'Approve overseas access?', go: 'Approve', wait: true,
+            body: who + ' reaches the console from ' + whereWord(x.country) + ' until the end of the day chosen, ' + (state.abDays || 14) + ' days at most.',
+            fields: [{ name: 'until', label: 'Until', type: 'date', value: x.until > max ? max : x.until, min: today, max: max, required: true },
+              { name: 'note', label: 'Note', placeholder: 'Optional', required: false }],
+            check: function (v) { return !v.until || v.until < today || v.until > max ? 'Choose a day from today to ' + C.date(max) + '.' : ''; }
+          }, function (v) {
+            return db.rpc('abroad_decide', { p_id: x.id, p_approve: true, p_until: v.until, p_note: v.note || null })
+              .then(function (r) { return after(r, 'Approved.'); }).catch(function () { return 'Not saved.'; });
+          });
+        } else if (a === 'decline') {
+          window.ADspaceConfirm.ask({
+            title: 'Decline overseas access?', go: 'Decline', tone: 'warn', wait: true,
+            body: who + ' is told, with the note, and may ask again.',
+            fields: [{ name: 'note', label: 'Note', placeholder: 'Optional', required: false }]
+          }, function (v) {
+            return db.rpc('abroad_decide', { p_id: x.id, p_approve: false, p_until: null, p_note: v.note || null })
+              .then(function (r) { return after(r, 'Declined.'); }).catch(function () { return 'Not saved.'; });
+          });
+        } else if (a === 'end') {
+          window.ADspaceConfirm.ask({
+            title: 'End overseas access?', go: 'End access', tone: 'warn', wait: true,
+            body: who + ' stops reaching the console from abroad at once.'
+          }, function () {
+            return db.rpc('abroad_end', { p_id: x.id })
+              .then(function (r) { return after(r, 'Ended.'); }).catch(function () { return 'Not saved.'; });
+          });
+        }
+      });
+    });
+  }
   function load(then) {
     state.loading = true;
     state.failed = false;
@@ -415,7 +524,8 @@
       fillRolePick();
       /* Every column of every colleague is Team's alone (2026-10-18):
          `team_rows()` answers Team at View, the table the rest. */
-      return db.rpc('team_rows').then(function (q) {
+      return Promise.all([db.rpc('team_rows'), readAbroad()]).then(function (all) {
+        var q = all[0];
         if (q.error) { loadFailed(); return; }
         state.rows = q.data || [];
         state.read = true;
@@ -640,6 +750,8 @@
       /* The exception only: Inactive, Access expired, or a card turned off
          for somebody still working. */
       '<span class="team-state">' + (!m.active ? '<span class="tone is-off">' + (m.removed_at ? 'Removed' : m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
+        /* A request to reach the console from abroad, waiting on an admin. */
+        : abroadWaiting(m.id) ? '<span class="tone is-warn">Overseas request</span>'
         : m.card_on === false ? '<span class="tone is-off">Card off</span>' : '') + '</span>' +
       '<svg class="crm-c-go team-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
@@ -2102,6 +2214,7 @@
     var groupCan = edit && !m.system && !self && (amAdmin() || !adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
     var ended = !m.active && m.expired_at && m.access_until;
     host.innerHTML = '<div class="panel mrec-card mrec-ov"><div class="readgroups">' +
+      abroadGroup(m) +
       group('Sign-in and access', '<dl class="ovfacts">' +
         word('name', 'Name', m.name) + word('email', 'Sign-in email', m.email, amAdmin()) +
         (groupCan ? pick('role', 'User group', roles, m.role, roleName(m.role)) : fact('User group', roleName(m.role))) +
@@ -2121,6 +2234,7 @@
         word('card_slug', 'Short link', link) +
         pick('card_on', 'Card', [['on', 'On'], ['off', 'Off']], m.card_on === false ? 'off' : 'on', m.card_on === false ? 'Off' : 'On') + '</dl>') +
       '</div></div>';
+    wireAbroad(m, host);
     Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
       var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
       var norm = function (v) {
