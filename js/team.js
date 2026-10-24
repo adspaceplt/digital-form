@@ -20,14 +20,10 @@
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
-  /* The role standard is said once, in js/words.js; the sheet's select is
-     filled from there before the segment is drawn. The departments are the
+  /* The role standard is said once, in js/words.js, and set on the
+     colleague's record. The departments are the
      list kept in Settings (2026-10-23), read once beside me(). */
   var ROLE_STD = window.ADspaceWords.roleStd;
-  (function () {
-    var sel = document.getElementById('tmRoleStd');
-    if (sel) Object.keys(ROLE_STD).forEach(function (k) { sel.add(new Option(ROLE_STD[k], k)); });
-  })();
   function deptName(k) {
     var A = window.ADspaceAdmin;
     return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
@@ -1706,18 +1702,19 @@
   function openMemberBox(opener) {
     shutMenus();
     memberOpener = opener || null;
-    $('tmTitle').textContent = 'New team member';
+    $('tmTitle').textContent = 'Add member';
     $('tmSave').textContent = 'Add';
-    ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmCap', 'tmUntil', 'tmUntilTime', 'tmMobile', 'tmCardSlug'].forEach(function (id) { $(id).value = ''; });
+    ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmUntil', 'tmUntilTime', 'tmMobile'].forEach(function (id) { $(id).value = ''; });
     $('tmEmail').readOnly = false;
     fillDept('');
-    $('tmRoleStd').value = '';
     $('tmUntilRow').hidden = false;
     $('tmUntil').min = todayMy();
     $('tmUntilTimeBox').hidden = true;
-    $('tmCardOn').value = 'on';
-    $('tmCardMobile').value = 'show';
-    $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
+    $('tmMore').open = false;
+    /* Send invitation email is asked, unticked, only where the colleague
+       may invite (TEAM2-10, 2026-10-24). */
+    $('tmInvite').checked = false;
+    $('tmInviteLine').hidden = !may('team.invite', 'work');
     fillRolePick(); $('tmRole').value = 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1783,50 +1780,48 @@
     var role = $('tmRole').value;
     var staff = ($('tmStaff').value || '').trim().toUpperCase();
     var desig = ($('tmDesig').value || '').trim();
-    var capH = parseFloat($('tmCap').value);
-    if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
-    if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
+    var focusIn = function (id) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal($(id)); $(id).focus(); };
+    if (!name) { msg('tmMsg', 'A name is required.', 'err'); $('tmName').focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); $('tmEmail').focus(); return; }
+    if (!role) { msg('tmMsg', 'A user group is required.', 'err'); $('tmRole').focus(); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
-    if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
     var mobile = ($('tmMobile').value || '').trim();
     var mobDigits = mobile.replace(/\D/g, '').length;
-    if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
-    var cardSlug = ($('tmCardSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(cardSlug)) {
-      msg('tmMsg', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
-    }
+    if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); focusIn('tmMobile'); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
-                   department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
-                   capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
-                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off',
-                   card_mobile: $('tmCardMobile').value !== 'hide' };
-    /* Empty makes it from the name. */
-    fields.card_slug = cardSlug || null;
-    if (!$('tmUntilRow').hidden) {
-      var until = $('tmUntil').value || null;
-      var untilTime = until ? ($('tmUntilTime').value || null) : null;
-      if (until && !aheadMy(until, untilTime)) {
-        msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
-        $(until < todayMy() ? 'tmUntil' : 'tmUntilTime').focus(); return;
-      }
-      fields.access_until = until;
-      fields.access_until_time = untilTime;
+                   department: $('tmDept').value || null, mobile: mobile || null };
+    var until = $('tmUntil').value || null;
+    var untilTime = until ? ($('tmUntilTime').value || null) : null;
+    if (until && !aheadMy(until, untilTime)) {
+      msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
+      focusIn(until < todayMy() ? 'tmUntil' : 'tmUntilTime'); return;
     }
-    db.from('team_members').insert(Object.assign({ active: true }, fields))
+    fields.access_until = until;
+    fields.access_until_time = untilTime;
+    var invite = may('team.invite', 'work') && $('tmInvite').checked;
+    var btn = $('tmSave'); btn.disabled = true;
+    db.from('team_members').insert(Object.assign({ active: true }, fields)).select('id')
       .then(function (r) {
+        btn.disabled = false;
         if (r.error) {
           sheetClash(r.error);
           return;
         }
+        var id = r.data && r.data[0] && r.data[0].id;
         log('team.added', name, email + ' · ' + roleName(role));
+        if (window.ADspaceSheet.clean) window.ADspaceSheet.clean();
         shutMemberBox();
-        load();
-        /* Only a colleague holding Send invitation invites; anyone else adds
-           the colleague plainly, as the record's ⋯ offers them no invitation
-           (2026-10-20, TEAM-12). */
-        if (!may('team.invite', 'work')) { msg('teamMsg', name + ' added.', 'ok'); return; }
+        /* The new colleague's record opens, where everything else is set
+           (TEAM2-10), drawn once the read below holds them. */
+        load(function () { said(); });
+        if (id) openRec(id);
+      }).catch(function () { btn.disabled = false; msg('tmMsg', 'Not saved. Please try again.', 'err'); });
+    /* Said once the record is drawn, on its own line. */
+    function said() {
+        /* An invitation goes only when ticked, by a colleague holding Send
+           invitation (TEAM-12, TEAM2-10). */
+        if (!invite) { msg('teamMsg', name + ' added.', 'ok'); return; }
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
         msg('teamMsg', name + ' added. Sending invitation…', 'ok');
@@ -1842,12 +1837,13 @@
               msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
             }
+            log('team.invited', name, email);
             msg('teamMsg', d.already
               ? name + ' added. A login already exists.'
               : name + ' added. Invitation sent to ' + email + '.',
               'ok');
-          });
-      });
+          }).catch(function () { msg('teamMsg', name + ' added. The invitation could not be sent.', 'warn'); });
+    }
   });
 
   function reinvite(m) {
