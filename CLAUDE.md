@@ -5653,10 +5653,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`own-expiry`);
   - Mobile, Mobile on card Show / Hide (`card_mobile`) and Card On / Off
     (`card_on`).
-- The member sheet is three sections: Sign-in and access (name, sign-in
-  email, group, Access until), Employment (department, position, role
-  standard, Employee ID, weekly capacity), Namecard (mobile, mobile on card,
-  short link, card).
+- Add member asks Name, Sign-in email, User group (required) and Employee
+  ID; Access until, department, position and mobile fold under More details;
+  Send invitation email, unticked, is drawn only at `team.invite`; Add opens
+  the new colleague's record, which says what happened (TEAM2-10,
+  2026-10-24). Role standard, capacity and the namecard are set there.
 - A colleague's row is never deleted, only stood down or removed (the user,
   2026-10-14; `2026-10-14-colleague-hand-over.sql`,
   `2026-10-14-colleague-remove.sql`, the second run in the SQL Editor):
