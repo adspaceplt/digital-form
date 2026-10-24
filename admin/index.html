@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261024a">
-<link rel="stylesheet" href="/css/console.css?v=20261024b">
+<link rel="stylesheet" href="/css/console.css?v=20261024c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -67,7 +67,7 @@
 <script src="/js/acts.js?v=20261023h"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261020c"></script>
-<script src="/js/confirm.js?v=20261022e"></script>
+<script src="/js/confirm.js?v=20261024c"></script>
 <script src="/js/sheet.js?v=20261023g"></script>
 <script src="/js/refresh.js?v=20261010zi"></script>
 <script src="/js/form.js?v=20261023i"></script>
@@ -85,7 +85,7 @@
 <script src="/js/notice.js?v=20261023e"></script>
 <script src="/js/whatsapp.js?v=20261023a"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261023l"></script>
+<script src="/js/money.js?v=20261024c"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261022s"></script>
 </head>
@@ -139,8 +139,23 @@
       <div class="cover-panel">
         <h2>Access denied</h2>
         <p><b id="noTeamWho"></b> has not been added to the team. Please contact an administrator.</p>
+        <p class="abroad-past" id="abroadPast" hidden></p>
+        <div class="abroad-ask" id="abroadAsk" hidden>
+          <div class="field">
+            <label class="field-label" for="abroadWhy">Reason</label>
+            <textarea class="input" id="abroadWhy" data-oneline rows="1" maxlength="300" aria-required="true" placeholder="Client shoot in Tokyo"></textarea>
+          </div>
+          <div class="field">
+            <label class="field-label" for="abroadUntil">Until</label>
+            <input class="input" id="abroadUntil" type="date" aria-required="true">
+          </div>
+        </div>
+        <p class="msg" id="abroadMsg" role="status"></p>
         <div class="row" style="margin-top:18px;justify-content:center">
           <button class="btn" id="noTeamOut" type="button" style="flex:0 0 auto">Sign out</button>
+          <button class="btn" id="abroadEdit" type="button" style="flex:0 0 auto" hidden>Change request</button>
+          <button class="btn btn-primary" id="abroadCheck" type="button" style="flex:0 0 auto" hidden>Check again</button>
+          <button class="btn btn-primary" id="abroadGo" type="button" style="flex:0 0 auto" hidden>Request access</button>
           <button class="btn btn-primary" id="noTeamRetry" type="button" style="flex:0 0 auto" hidden>Try again</button>
         </div>
       </div>
@@ -5328,6 +5343,23 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<div class="sheet" id="abSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="abHead">
+    <div class="sheet-head">
+      <h3 id="abHead">Overseas access</h3>
+      <button class="iconbtn" id="abClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="abMsg" role="status"></p>
+      <div id="abList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="abCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="depSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="depHead">
     <div class="sheet-head">
@@ -5746,7 +5778,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261023e"></script>
-<script src="/js/admin.js?v=20261023i"></script>
+<script src="/js/admin.js?v=20261024c"></script>
 <script src="/js/documents.js?v=20261023q"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261022s"></script>
@@ -5767,11 +5799,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261022zs"></script>
-<script src="/js/ops.js?v=20261023e"></script>
+<script src="/js/ops.js?v=20261024c"></script>
 <script src="/js/perf.js?v=20261023i"></script>
 <script src="/js/health.js?v=20261024b"></script>
 <script src="/js/search.js?v=20261022v"></script>
 <script src="/js/overview.js?v=20261023d"></script>
-<script src="/js/settings.js?v=20261023i"></script>
+<script src="/js/settings.js?v=20261024c"></script>
 </body>
 </html>

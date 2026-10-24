@@ -8167,6 +8167,7 @@
   /* The section a notice opens, as openNotif below decides it. */
   function notifSection(x) {
     if (!x.task_id && x.kind === 'notice') return 'team';
+    if (!x.task_id && /^abroad\./.test(x.kind || '')) return 'team';
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
     if (!x.task_id && x.report_id) return 'reports';
@@ -8230,6 +8231,14 @@
       history.replaceState(null, '', '/admin/?s=mine' + (mv !== 'reviews' ? '&view=' + mv : ''));
       if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView(mv);
       else if (bridge.show) bridge.show('mine');
+      return;
+    }
+    /* An overseas request opens the admin's Overseas access sheet on
+       Settings (2026-10-24); a decision told to the colleague opens nothing. */
+    if (!x.task_id && x.kind === 'abroad.request') {
+      history.replaceState(null, '', '/admin/?s=settings&tab=portal');
+      if (bridge.show) bridge.show('settings');
+      if (window.ADspaceSettings && window.ADspaceSettings.openAbroad) window.ADspaceSettings.openAbroad();
       return;
     }
     /* A letter shared with the colleague opens their Letters. */

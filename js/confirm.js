@@ -326,6 +326,7 @@
         input.spellcheck = false;
         if (numeric(f)) input.inputMode = 'numeric';
         if (f.min) input.min = f.min;
+        if (f.max) input.max = f.max;
       }
       input.id = id;
       if (f.placeholder) input.placeholder = f.placeholder;

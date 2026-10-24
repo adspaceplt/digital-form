@@ -64053,13 +64053,13 @@ begin
       update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
       perform public.ops_notify(v_to, t.id, 'assigned', v_title,
         'Handed back to you: ' || v_who.name || '''s access ended.',
-        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'));
+        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'));
     else
       update public.ops_tasks set open_at = now(), open_by = null, version = version + 1, updated_at = now()
        where id = t.id;
       perform public.ops_notify(x.id, t.id, 'tasks.unassigned', v_title,
         v_who.name || '''s access ended. The task is open to take.',
-        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'))
+        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'))
         from public.team_members x
        where x.active and x.id <> p_member and not coalesce(x.system, false)
          and (coalesce(x.is_admin, false) or coalesce(x.role, '') = 'admin' or public.level_rank(x.access ->> 'ops') >= 3)
@@ -77771,5 +77771,480 @@ revoke all on function public.health_talk_delete(uuid) from public, anon, authen
 grant execute on function public.health_talk_delete(uuid) to authenticated;
 
 -- END OF A WITHDRAWN TALK CAN BE DELETED --------------------------------------
+
+-- ===========================================================================
+-- OVERSEAS ACCESS — the console answers a colleague outside Malaysia and
+-- Singapore only once an admin has approved it, for 14 days at most
+-- (2026-10-24)
+-- ===========================================================================
+-- WHY (the user, 2026-10-24: "due to safety purposes … once detected located
+-- overseas then prompt a window to submit request access and the request
+-- would go to admin for approval … admin excluded"; "Allowed in Malaysia
+-- Singapore"; "14 days per cycle"; "Admins only"): a sign-in used from
+-- abroad, a colleague's or a stolen one, should not read the team's data
+-- without somebody deciding it may.
+--
+-- WHAT IT ADDS
+--   * `request_country()`: the country Cloudflare saw the request come from
+--     (`cf-ipcountry`, which Cloudflare sets and a caller cannot: checked on
+--     the live API, 2026-10-24), empty where there is no request (pg_cron,
+--     the SQL Editor). Internal.
+--   * `team_place_ok(p_admin, p_member)`: true for an admin, a request from
+--     Malaysia or Singapore or with no country, or a colleague holding an
+--     approved request whose day (MYT) has not passed. Internal.
+--   * `is_team()`, `allowed(p_section, p_level)`, `ops_granted`, `ops_me()`
+--     and `me()` ask it, so every policy and every function that asks them
+--     refuses a colleague abroad without approval. `allowed('admin')` is an
+--     admin's alone and needs no change. Client pages never ask them.
+--   * `team_abroad` (RLS on, no policy, no grant): a request a row, waiting,
+--     approved (until a day), declined or ended.
+--   * `abroad_state()`: the signed-in colleague's own country, whether they
+--     are held, their latest request and the days an approval may run.
+--   * `abroad_request(p_reason, p_until)`: a colleague who is not an admin
+--     asks (`bad-reason` 3 to 300, `bad-until` today to today plus
+--     `abroad_days`); a waiting request is replaced; every active admin but a
+--     system account is told (kind `abroad.request`).
+--   * `abroad_list()`, `abroad_decide(p_id, p_approve, p_until, p_note)`,
+--     `abroad_end(p_id)`: an admin's; each decision filed `team.changed`
+--     under Overseas access, and the colleague told (kind `abroad.decided`).
+--   * `abroad_days` (14), a Business setting (Settings, Portal: Overseas
+--     approval, 1 to 30), which `app_settings_set` takes from OVERSEAS
+--     APPROVAL DAYS, the SQL Editor's part.
+--
+-- ORDER: this file (the connector), then
+-- 2026-10-24-overseas-access-days.sql (the SQL Editor: it holds a delete),
+-- then the pages. A page served before it asks nothing;
+-- a colleague abroad then reads Access denied until the pages are live.
+-- Safe to run twice. Rollback: the five functions as ACCESS ENDS ON THE
+-- MINUTE and TEAM ACCESS left them (drop the new ones in the SQL Editor).
+-- ===========================================================================
+
+create table if not exists public.team_abroad (
+  id             uuid primary key default gen_random_uuid(),
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  country        text not null default '',
+  reason         text not null,
+  until          date not null,
+  status         text not null default 'waiting',
+  note           text,
+  asked_at       timestamptz not null default now(),
+  decided_by     uuid references public.team_members(id) on delete set null,
+  decided_at     timestamptz,
+  constraint team_abroad_status_check check (status in ('waiting', 'approved', 'declined', 'ended'))
+);
+create index if not exists team_abroad_member_idx on public.team_abroad (team_member_id, status, until);
+alter table public.team_abroad enable row level security;
+revoke all on public.team_abroad from public, anon, authenticated;
+
+insert into public.app_settings (key, from_date, value)
+select 'abroad_days', date '2023-08-14', 14
+ where not exists (select 1 from public.app_settings s where s.key = 'abroad_days');
+
+create or replace function public.request_country()
+returns text
+language sql stable set search_path = public as $$
+  select upper(left(coalesce(nullif(btrim(h ->> 'cf-ipcountry'), ''), ''), 2))
+  from (select coalesce(nullif(current_setting('request.headers', true), ''), '{}')::json as h) r
+$$;
+revoke all on function public.request_country() from public, anon, authenticated;
+
+create or replace function public.team_home_country(p_country text)
+returns boolean
+language sql immutable set search_path = public as $$
+  select coalesce(p_country, '') in ('', 'MY', 'SG')
+$$;
+revoke all on function public.team_home_country(text) from public, anon, authenticated;
+
+create or replace function public.team_place_ok(p_admin boolean, p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce(p_admin, false)
+      or public.team_home_country(public.request_country())
+      or exists (select 1 from public.team_abroad a
+                  where a.team_member_id = p_member and a.status = 'approved'
+                    and a.until >= (now() at time zone 'Asia/Kuala_Lumpur')::date)
+$$;
+revoke all on function public.team_place_ok(boolean, uuid) from public, anon, authenticated;
+
+create or replace function public.is_team()
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.team_members t
+    where t.active and lower(t.email) = lower(auth.jwt() ->> 'email')
+      and (t.access_until is null or t.is_admin or t.role = 'admin'
+           or public.team_access_ends(t.access_until, t.access_until_time) > now())
+      and public.team_place_ok(t.is_admin or t.role = 'admin', t.id))
+$$;
+grant execute on function public.is_team() to authenticated;
+
+create or replace function public.allowed(p_section text, p_level text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare
+  t public.team_members;
+  k text := lower(coalesce(p_section, ''));
+  lv text;
+begin
+  select * into t from public.team_members x
+    where lower(x.email) = lower(auth.jwt() ->> 'email') and x.active
+      and (x.access_until is null or x.is_admin or x.role = 'admin'
+           or public.team_access_ends(x.access_until, x.access_until_time) > now())
+    limit 1;
+  if t.id is null then return false; end if;
+  if t.is_admin or t.role = 'admin' then return true; end if;
+  if not public.team_place_ok(false, t.id) then return false; end if;
+  lv := t.access ->> k;
+  if lv is null and position('.' in k) > 0 then
+    lv := t.access ->> split_part(k, '.', 1);
+  end if;
+  return public.level_rank(lv) >= public.level_rank(p_level);
+end $$;
+grant execute on function public.allowed(text, text) to authenticated;
+
+create or replace function public.ops_granted(p_key text, p_level text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare t public.team_members;
+begin
+  select * into t from public.team_members
+   where active and lower(email) = lower(auth.jwt() ->> 'email') limit 1;
+  if t.id is null then return false; end if;
+  if t.is_admin or t.role = 'admin' then return true; end if;
+  if not public.team_place_ok(false, t.id) then return false; end if;
+  return public.level_rank(t.access ->> p_key) >= public.level_rank(p_level);
+end $$;
+grant execute on function public.ops_granted(text, text) to authenticated;
+
+create or replace function public.ops_me()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members t
+   where t.active and lower(t.email) = lower(auth.jwt() ->> 'email')
+     and (t.access_until is null or t.is_admin or t.role = 'admin'
+          or public.team_access_ends(t.access_until, t.access_until_time) > now())
+     and public.team_place_ok(t.is_admin or t.role = 'admin', t.id)
+   limit 1
+$$;
+grant execute on function public.ops_me() to authenticated;
+
+create or replace function public.me()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members t
+  where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active
+    and (t.access_until is null or t.is_admin or t.role = 'admin'
+         or public.team_access_ends(t.access_until, t.access_until_time) > now())
+    and public.team_place_ok(t.is_admin or t.role = 'admin', t.id)
+  limit 1
+$$;
+grant execute on function public.me() to authenticated;
+
+/* The colleague signed in, whatever the country: who the cover is for. */
+create or replace function public.abroad_who()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members t
+  where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active
+    and (t.access_until is null or t.is_admin or t.role = 'admin'
+         or public.team_access_ends(t.access_until, t.access_until_time) > now())
+  limit 1
+$$;
+revoke all on function public.abroad_who() from public, anon, authenticated;
+
+create or replace function public.abroad_state()
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  t public.team_members := public.abroad_who();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_admin boolean;
+  a public.team_abroad;
+begin
+  if t.id is null then return jsonb_build_object('team', false); end if;
+  v_admin := t.is_admin or t.role = 'admin';
+  select * into a from public.team_abroad x where x.team_member_id = t.id order by x.asked_at desc limit 1;
+  return jsonb_build_object(
+    'team', true, 'admin', v_admin, 'country', public.request_country(),
+    'held', not public.team_place_ok(v_admin, t.id),
+    'today', v_today,
+    'days', coalesce(public.app_setting('abroad_days', v_today), 14)::int,
+    'request', case when a.id is null then null else jsonb_build_object(
+      'id', a.id, 'status', case when a.status = 'approved' and a.until < v_today then 'expired' else a.status end,
+      'until', a.until, 'country', a.country, 'reason', a.reason, 'note', a.note,
+      'asked_at', a.asked_at, 'decided_at', a.decided_at) end);
+end $$;
+revoke all on function public.abroad_state() from public, anon;
+grant execute on function public.abroad_state() to authenticated;
+
+create or replace function public.abroad_request(p_reason text, p_until date)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  t public.team_members := public.abroad_who();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_days int := coalesce(public.app_setting('abroad_days', (now() at time zone 'Asia/Kuala_Lumpur')::date), 14)::int;
+  v_reason text := btrim(regexp_replace(coalesce(p_reason, ''), '\s+', ' ', 'g'));
+  v_country text := public.request_country();
+  v_id uuid;
+begin
+  if t.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if t.is_admin or t.role = 'admin' then return jsonb_build_object('error', 'admin'); end if;
+  if char_length(v_reason) < 3 or char_length(v_reason) > 300 then return jsonb_build_object('error', 'bad-reason'); end if;
+  if p_until is null or p_until < v_today or p_until > v_today + v_days then
+    return jsonb_build_object('error', 'bad-until', 'max', v_today + v_days);
+  end if;
+  select x.id into v_id from public.team_abroad x
+   where x.team_member_id = t.id and x.status = 'waiting' order by x.asked_at desc limit 1 for update;
+  if v_id is null then
+    insert into public.team_abroad (team_member_id, country, reason, until)
+    values (t.id, v_country, v_reason, p_until) returning id into v_id;
+  else
+    update public.team_abroad set country = v_country, reason = v_reason, until = p_until, asked_at = now()
+     where id = v_id;
+  end if;
+  insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
+  select m.id, 'abroad.request', 'Overseas access requested · ' || t.name,
+         case when v_country <> '' then 'From ' || v_country || ' · ' else '' end ||
+         'until ' || public.register_day(p_until) || ' · ' || v_reason,
+         'abroad:' || v_id || ':' || m.id || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI')
+    from public.team_members m
+   where m.active and (m.is_admin or m.role = 'admin') and not coalesce(m.system, false)
+  on conflict (dedupe_key) do nothing;
+  return public.abroad_state();
+end $$;
+revoke all on function public.abroad_request(text, date) from public, anon;
+grant execute on function public.abroad_request(text, date) to authenticated;
+
+create or replace function public.abroad_list()
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object(
+    'today', v_today,
+    'days', coalesce(public.app_setting('abroad_days', v_today), 14)::int,
+    'rows', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', a.id, 'member', a.team_member_id, 'name', m.name, 'code', m.staff_code,
+        'country', a.country, 'reason', a.reason, 'until', a.until, 'note', a.note,
+        'status', case when a.status = 'approved' and a.until < v_today then 'expired' else a.status end,
+        'asked_at', a.asked_at, 'decided_at', a.decided_at,
+        'decided_by', (select d.name from public.team_members d where d.id = a.decided_by))
+        order by (a.status = 'waiting') desc, (a.status = 'approved' and a.until >= v_today) desc, a.asked_at desc)
+      from public.team_abroad a join public.team_members m on m.id = a.team_member_id
+     where a.status = 'waiting' or (a.status = 'approved' and a.until >= v_today)
+        or a.asked_at > now() - interval '90 days'), '[]'::jsonb));
+end $$;
+revoke all on function public.abroad_list() from public, anon;
+grant execute on function public.abroad_list() to authenticated;
+
+create or replace function public.abroad_decide(p_id uuid, p_approve boolean, p_until date default null, p_note text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members := public.ops_me();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_days int := coalesce(public.app_setting('abroad_days', (now() at time zone 'Asia/Kuala_Lumpur')::date), 14)::int;
+  v_note text := nullif(btrim(regexp_replace(coalesce(p_note, ''), '\s+', ' ', 'g')), '');
+  a public.team_abroad; v_name text;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  select * into a from public.team_abroad x where x.id = p_id for update;
+  if a.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if a.status <> 'waiting' then return jsonb_build_object('error', 'not-waiting'); end if;
+  if char_length(coalesce(v_note, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  if coalesce(p_approve, false) and (p_until is null or p_until < v_today or p_until > v_today + v_days) then
+    return jsonb_build_object('error', 'bad-until', 'max', v_today + v_days);
+  end if;
+  update public.team_abroad
+     set status = case when p_approve then 'approved' else 'declined' end,
+         until = case when p_approve then p_until else until end,
+         note = v_note, decided_by = v_me.id, decided_at = now()
+   where id = a.id;
+  select m.name into v_name from public.team_members m where m.id = a.team_member_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, 'admin'), 'team.changed', 'Overseas access',
+    coalesce(v_name, 'A colleague') || ': ' ||
+    case when p_approve then 'approved until ' || public.register_day(p_until) else 'declined' end ||
+    case when a.country <> '' then ' · from ' || a.country else '' end ||
+    case when v_note is not null then ' · ' || v_note else '' end);
+  insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
+  values (a.team_member_id, 'abroad.decided',
+    case when p_approve then 'Overseas access approved until ' || public.register_day(p_until)
+         else 'Overseas access declined' end,
+    v_note, 'abroad.decided:' || a.id)
+  on conflict (dedupe_key) do nothing;
+  return public.abroad_list();
+end $$;
+revoke all on function public.abroad_decide(uuid, boolean, date, text) from public, anon;
+grant execute on function public.abroad_decide(uuid, boolean, date, text) to authenticated;
+
+create or replace function public.abroad_end(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members := public.ops_me();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  a public.team_abroad; v_name text;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  select * into a from public.team_abroad x where x.id = p_id for update;
+  if a.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if a.status <> 'approved' or a.until < v_today then return jsonb_build_object('error', 'not-approved'); end if;
+  update public.team_abroad set status = 'ended', decided_by = v_me.id, decided_at = now() where id = a.id;
+  select m.name into v_name from public.team_members m where m.id = a.team_member_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(v_me.name, 'admin'), 'team.changed', 'Overseas access',
+    coalesce(v_name, 'A colleague') || ': ended · was approved until ' || public.register_day(a.until));
+  insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
+  values (a.team_member_id, 'abroad.decided', 'Overseas access ended', null, 'abroad.ended:' || a.id)
+  on conflict (dedupe_key) do nothing;
+  return public.abroad_list();
+end $$;
+revoke all on function public.abroad_end(uuid) from public, anon;
+grant execute on function public.abroad_end(uuid) to authenticated;
+
+-- END OF OVERSEAS ACCESS ----------------------------------------------------
+
+-- ===========================================================================
+-- OVERSEAS APPROVAL DAYS — the days an overseas approval may run are a
+-- Business setting like any other (2026-10-24)
+-- ===========================================================================
+-- WHY (the user, 2026-10-24: "14 days per cycle"): the figure is the team's
+-- to change, from a day on, through the one sheet every setting uses.
+--
+-- WHAT IT CHANGES
+--   * `app_settings_set` takes `abroad_days` (1 to 30 whole days), filed
+--     as Overseas approval, from and to. Nothing else moves.
+--
+-- ORDER: after OVERSEAS ACCESS, in the SQL Editor (the function holds a
+-- delete, which the connector holds back). Safe to run twice. Rollback:
+-- run app_settings_set from A PLANNED SETTING WITHDRAWN again.
+-- ===========================================================================
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
+        when 'abroad_days' then 'Overseas approval'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k = 'meta_checks' then case when v_was = 1 then 'On' else 'Off' end else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k = 'meta_checks' then case when v_v = 1 then 'On' else 'Off' end else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF OVERSEAS APPROVAL DAYS ---------------------------------------------
 
 select public.functions_tidy();
