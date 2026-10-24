@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261024d">
-<link rel="stylesheet" href="/css/console.css?v=20261024g">
+<link rel="stylesheet" href="/css/console.css?v=20261024l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3514,45 +3514,39 @@
       <div class="sheet" id="teamAddBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="tmTitle">
           <div class="sheet-head">
-            <h3 id="tmTitle">New team member</h3>
+            <h3 id="tmTitle">Add member</h3>
             <button class="iconbtn" id="tmClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
           <div class="sheet-body">
-            <section class="fsec">
-              <h4 class="fsec-h">Sign-in and access</h4>
-              <!-- A sign-in address runs long, so it takes half the row. -->
-              <div class="row fgrid">
-                <div><label class="field-label" for="tmName">Name</label>
-                  <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
-                <div><label class="field-label" for="tmEmail">Sign-in email</label>
-                  <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
-              </div>
+            <!-- What is known on day one (TEAM2-10, 2026-10-24): four fields;
+                 the rest folds under More details, and everything else is
+                 set on the colleague's record, where it is read. -->
+            <div class="row fgrid">
+              <div><label class="field-label" for="tmName">Name</label>
+                <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
+              <div><label class="field-label" for="tmEmail">Sign-in email</label>
+                <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
+              <div><label class="field-label" for="tmRole">User group</label>
+                <select class="select" id="tmRole" aria-required="true"></select></div>
+              <div><label class="field-label" for="tmStaff">Employee ID</label>
+                <input class="input" id="tmStaff" placeholder="AD001" autocapitalize="characters" spellcheck="false"></div>
+            </div>
+            <details class="fmore" id="tmMore">
+              <summary>More details <span class="fmore-sum"></span></summary>
               <!-- The last day their access runs, and the time on it (empty
-                   for the day's end); empty for no end. Nobody sets their own
-                   (the database refuses it), and then Group takes the row. -->
+                   for the day's end); empty for no end. -->
               <div class="row fgrid">
-                <div><label class="field-label" for="tmRole">Group</label>
-                  <select class="select" id="tmRole" aria-required="true"></select></div>
-                <div class="fpair" id="tmUntilRow">
+                <div class="fpair span-all" id="tmUntilRow">
                   <div><label class="field-label" for="tmUntil">Access until</label>
-                    <input class="input" id="tmUntil" type="date"></div>
+                    <input class="input" id="tmUntil" type="date" data-none="No end" data-some="Access until set"></div>
                   <!-- A time means something only on a day, so it arrives with one
                        (Team audit, 2026-10-03). -->
                   <div id="tmUntilTimeBox"><label class="field-label" for="tmUntilTime">Time</label>
                     <input class="input" id="tmUntilTime" type="time" step="300"></div>
                 </div>
               </div>
-            </section>
-            <!-- Who the person is to the company, kept once, here: the HR serial is
-                 built from the Employee ID, the position is printed under a
-                 signature, and Performance reads the department and the role
-                 standard from this row rather than keeping its own copy. -->
-            <section class="fsec">
-              <h4 class="fsec-h">Employment</h4>
-              <!-- The department's segment takes its own row, so no option is
-                   cut on a phone (2026-10-20, TEAM-9). -->
               <div class="row fgrid">
                 <div class="span-all"><label class="field-label" for="tmDept">Department</label>
                   <!-- The options are the departments kept in Settings, filled by js/team.js. -->
@@ -3563,49 +3557,13 @@
               <div class="row fgrid">
                 <div><label class="field-label" for="tmDesig">Position</label>
                   <input class="input" id="tmDesig" placeholder="Production Executive"></div>
-                <div><label class="field-label" for="tmRoleStd">Role standard</label>
-                  <select class="select" id="tmRoleStd">
-                    <option value="">Not set</option>
-                  </select></div>
-              </div>
-              <!-- The capacity is a planning figure, in the unit people plan in.
-                   Stored in minutes because the sessions it is read against are. -->
-              <div class="row fgrid">
-                <div><label class="field-label" for="tmStaff">Employee ID</label>
-                  <input class="input" id="tmStaff" placeholder="AD001" autocapitalize="characters" spellcheck="false"></div>
-                <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
-                  <input inputmode="decimal" class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
-              </div>
-            </section>
-            <!-- What their digital namecard shows besides the name, position
-                 and sign-in email. -->
-            <section class="fsec">
-              <h4 class="fsec-h">Namecard</h4>
-              <div class="row fgrid">
                 <div><label class="field-label" for="tmMobile">Mobile</label>
                   <input class="input" id="tmMobile" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
-                <div><label class="field-label" for="tmCardMobile">Mobile on card</label>
-                  <select class="select" id="tmCardMobile" data-seg>
-                    <option value="show">Show</option>
-                    <option value="hide">Hide</option>
-                  </select></div>
               </div>
-              <!-- The card's short link on the links host: made from the name,
-                   edited here; left empty, it is made again from the name. -->
-              <div class="row fgrid">
-                <div><label class="field-label" for="tmCardSlug">Short link</label>
-                  <div class="slugfield">
-                    <span class="slugfield-pre" id="tmSlugPre">hi.adspace.me/</span>
-                    <input class="input" id="tmCardSlug" placeholder="Made from the name" autocapitalize="off"
-                           autocorrect="off" spellcheck="false">
-                  </div></div>
-                <div><label class="field-label" for="tmCardOn">Card</label>
-                  <select class="select" id="tmCardOn" data-seg>
-                    <option value="on">On</option>
-                    <option value="off">Off</option>
-                  </select></div>
-              </div>
-            </section>
+            </details>
+            <!-- An invitation goes only when asked, and only where the
+                 colleague holds Send invitation (js/team.js). -->
+            <div class="row" id="tmInviteLine" hidden><label class="tickline"><input type="checkbox" id="tmInvite" data-nodraft> Send invitation email</label></div>
             <div class="msg" id="tmMsg"></div>
           </div>
           <div class="sheet-foot">
@@ -5778,7 +5736,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261023e"></script>
-<script src="/js/admin.js?v=20261024i"></script>
+<script src="/js/admin.js?v=20261024k"></script>
 <script src="/js/documents.js?v=20261023q"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261024d"></script>
@@ -5792,7 +5750,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261024e"></script>
 <script src="/js/crm.js?v=20261024e"></script>
 <script src="/js/sales.js?v=20261022t"></script>
-<script src="/js/team.js?v=20261024i"></script>
+<script src="/js/team.js?v=20261024l"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
 <script src="/js/handbook.js?v=20261023e"></script>
 <script src="/js/scripts.js?v=20261024es"></script>

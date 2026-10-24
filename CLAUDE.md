@@ -1478,7 +1478,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     not scoped): the sheet refuses it and trigger `team_roles_scope_guard`
     (`scope-activity`) holds it for every group but an admin's
     (`2026-10-10-letters-held-to-their-lines.sql`).
-  - No preset below Admin opens Team, HR letters or performance reviews.
+  - No preset below Admin opens Team, HR letters or performance reviews,
+    their history included (`activity.team`, `activity.hr` shut; S5).
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
   Members, Performance and Health (`tab=health`, an admin's alone); the
   strip is drawn only where two tabs show.
@@ -4457,8 +4458,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `brand_name` to the brand. A white-label report is not transferred
     (`white-label`). The list names it by its brand with a White label
     chip, the client under it. There is no list of partners
-    (`report_partners` and `partner_id` are no longer used; the functions
-    that wrote them were dropped on 2026-10-19). Each brand says whose mark heads
+    (`report_partners`, `report_partner_clients` and `sm_reports.partner_id`
+    were dropped on 2026-10-24, `2026-10-24-unused-tables-dropped.sql`, with
+    `activity_viewers`, `ops_kpi_targets` and `video_script_reviews`). Each brand says whose mark heads
     its reports (`client_brands.logo`, `partner` by default or `adspace`;
     `client_brand_logo`, the brand's ⋯ Use ADspace logo / Use {client} logo,
     never asks, filed from and to; the row's `ADspace logo` chip;
@@ -5616,6 +5618,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   behind its own lock) and Health (their check-ins and talks from
   `health_team`, an admin's behind the master code), each drawn only where readable
   (`tests/teamrec.js`).
+- A colleague's record has a rail, as a client's (`.rec`, 1.618 : 1,
+  splitting below 1100, its blocks leading the tabs on a phone; TEAM2-9,
+  2026-10-24): Their work (Team Full Access, off the Work pane: the counts
+  `team_work_held` and their open tasks answer, read once a visit and
+  again after a hand-over, overdue in red, Open Work and Hand over work)
+  and Access (the access end off Overview, where it is set; at Team Full
+  Access `team_member_seen(p_id)`: Active 2 hours ago / Active today,
+  9:14am, Last sign-in 22 Oct, 9:14am from `auth.users`, else Not signed
+  in yet and Invitation sent {day}). `team_members.last_seen_at` is
+  stamped by `page_pulse` for the team audience alone, once in 15
+  minutes, never moving `updated_at`; withheld from the column grants,
+  read through `team_rows()` at Team Full Access (null below), cleared on
+  erasure (`team_members_erased_seen`;
+  `2026-10-24-colleague-last-seen.sql`).
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
 - Add member, Set access expiry, a member's values and Set inactive, and a
@@ -5655,10 +5671,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`own-expiry`);
   - Mobile, Mobile on card Show / Hide (`card_mobile`) and Card On / Off
     (`card_on`).
-- The member sheet is three sections: Sign-in and access (name, sign-in
-  email, group, Access until), Employment (department, position, role
-  standard, Employee ID, weekly capacity), Namecard (mobile, mobile on card,
-  short link, card).
+- Add member asks Name, Sign-in email, User group (required) and Employee
+  ID; Access until, department, position and mobile fold under More details;
+  Send invitation email, unticked, is drawn only at `team.invite`; Add opens
+  the new colleague's record, which says what happened (TEAM2-10,
+  2026-10-24). Role standard, capacity and the namecard are set there.
 - A colleague's row is never deleted, only stood down or removed (the user,
   2026-10-14; `2026-10-14-colleague-hand-over.sql`,
   `2026-10-14-colleague-remove.sql`, the second run in the SQL Editor):
@@ -5809,7 +5826,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per section (`activity.clients`, `.whatsapp`, `.ops`, `.team`,
   `.review`, `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`,
-  `.services`, `.handbook`). The link draws where any part is readable.
+  `.services`, `.handbook`, `.hr`). The link draws where any part is readable.
+- An HR letter's history (a Documents tag filed under subject HR) is its own
+  part, HR letters (`activity.hr`), after Documents in the Section select:
+  `activity_read` answers it only at `activity.hr` and `register.hr` View
+  together, and Documents reads without it (`2026-10-24-hr-history-apart.sql`,
+  S5; the user: "file it apart").
 - Reports files a report's steps (`report.*`: started, submitted, returned,
   confirmed, published, revised, unpublished, deleted), every save
   (`report.saved`, filed by the page through `fileReport()`: the period and

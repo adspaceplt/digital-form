@@ -20,14 +20,10 @@
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
-  /* The role standard is said once, in js/words.js; the sheet's select is
-     filled from there before the segment is drawn. The departments are the
+  /* The role standard is said once, in js/words.js, and set on the
+     colleague's record. The departments are the
      list kept in Settings (2026-10-23), read once beside me(). */
   var ROLE_STD = window.ADspaceWords.roleStd;
-  (function () {
-    var sel = document.getElementById('tmRoleStd');
-    if (sel) Object.keys(ROLE_STD).forEach(function (k) { sel.add(new Option(ROLE_STD[k], k)); });
-  })();
   function deptName(k) {
     var A = window.ADspaceAdmin;
     return !k ? '' : A && A.deptName ? A.deptName(k) : (window.ADspaceWords.dept || {})[k] || k;
@@ -213,7 +209,9 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'],
+                /* An HR letter's history, read with HR Letters too (S5). */
+                ['hr', 'HR letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -833,6 +831,8 @@
      (TEAM2-4). `quiet` leaves the line to the act that asked (Set inactive
      says Saved. once it has stood them down). */
   function handTo(m, own, v, quiet) {
+    /* What they hold is read again once work moves (the rail, Work). */
+    rec.work = null;
     v = handChosen(v || {});
     var to = {};
     handKinds().forEach(function (k) { if (v[k]) to[k] = v[k]; });
@@ -1119,11 +1119,15 @@
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                /* On for Managers from 2026-10-07, as the live group holds it (N5). */
-               'reports.whitelabel': 'work', 'register.hr': 'none' },
+               'reports.whitelabel': 'work', 'register.hr': 'none',
+               /* No preset below Admin opens Team, HR letters or performance
+                  reviews, their history included (S5, 2026-10-24). */
+               'activity.hr': 'none', 'activity.team': 'none' },
     staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', suppliers: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
     viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', suppliers: 'view', reports: 'view',
-               links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
+               links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none',
+               'activity.hr': 'none', 'activity.team': 'none' }
   };
 
   /* THE PANEL, SIMPLER (2026-10-10, the proposal the user approved). It
@@ -1700,18 +1704,19 @@
   function openMemberBox(opener) {
     shutMenus();
     memberOpener = opener || null;
-    $('tmTitle').textContent = 'New team member';
+    $('tmTitle').textContent = 'Add member';
     $('tmSave').textContent = 'Add';
-    ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmCap', 'tmUntil', 'tmUntilTime', 'tmMobile', 'tmCardSlug'].forEach(function (id) { $(id).value = ''; });
+    ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmUntil', 'tmUntilTime', 'tmMobile'].forEach(function (id) { $(id).value = ''; });
     $('tmEmail').readOnly = false;
     fillDept('');
-    $('tmRoleStd').value = '';
     $('tmUntilRow').hidden = false;
     $('tmUntil').min = todayMy();
     $('tmUntilTimeBox').hidden = true;
-    $('tmCardOn').value = 'on';
-    $('tmCardMobile').value = 'show';
-    $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
+    $('tmMore').open = false;
+    /* Send invitation email is asked, unticked, only where the colleague
+       may invite (TEAM2-10, 2026-10-24). */
+    $('tmInvite').checked = false;
+    $('tmInviteLine').hidden = !may('team.invite', 'work');
     fillRolePick(); $('tmRole').value = 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1777,50 +1782,48 @@
     var role = $('tmRole').value;
     var staff = ($('tmStaff').value || '').trim().toUpperCase();
     var desig = ($('tmDesig').value || '').trim();
-    var capH = parseFloat($('tmCap').value);
-    if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
-    if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
+    var focusIn = function (id) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal($(id)); $(id).focus(); };
+    if (!name) { msg('tmMsg', 'A name is required.', 'err'); $('tmName').focus(); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); $('tmEmail').focus(); return; }
+    if (!role) { msg('tmMsg', 'A user group is required.', 'err'); $('tmRole').focus(); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
-    if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
     var mobile = ($('tmMobile').value || '').trim();
     var mobDigits = mobile.replace(/\D/g, '').length;
-    if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
-    var cardSlug = ($('tmCardSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
-    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(cardSlug)) {
-      msg('tmMsg', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
-    }
+    if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); focusIn('tmMobile'); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
-                   department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
-                   capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
-                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off',
-                   card_mobile: $('tmCardMobile').value !== 'hide' };
-    /* Empty makes it from the name. */
-    fields.card_slug = cardSlug || null;
-    if (!$('tmUntilRow').hidden) {
-      var until = $('tmUntil').value || null;
-      var untilTime = until ? ($('tmUntilTime').value || null) : null;
-      if (until && !aheadMy(until, untilTime)) {
-        msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
-        $(until < todayMy() ? 'tmUntil' : 'tmUntilTime').focus(); return;
-      }
-      fields.access_until = until;
-      fields.access_until_time = untilTime;
+                   department: $('tmDept').value || null, mobile: mobile || null };
+    var until = $('tmUntil').value || null;
+    var untilTime = until ? ($('tmUntilTime').value || null) : null;
+    if (until && !aheadMy(until, untilTime)) {
+      msg('tmMsg', until < todayMy() ? 'Choose today or a later date.' : 'Choose a later time.', 'err');
+      focusIn(until < todayMy() ? 'tmUntil' : 'tmUntilTime'); return;
     }
-    db.from('team_members').insert(Object.assign({ active: true }, fields))
+    fields.access_until = until;
+    fields.access_until_time = untilTime;
+    var invite = may('team.invite', 'work') && $('tmInvite').checked;
+    var btn = $('tmSave'); btn.disabled = true;
+    db.from('team_members').insert(Object.assign({ active: true }, fields)).select('id')
       .then(function (r) {
+        btn.disabled = false;
         if (r.error) {
           sheetClash(r.error);
           return;
         }
+        var id = r.data && r.data[0] && r.data[0].id;
         log('team.added', name, email + ' · ' + roleName(role));
+        if (window.ADspaceSheet.clean) window.ADspaceSheet.clean();
         shutMemberBox();
-        load();
-        /* Only a colleague holding Send invitation invites; anyone else adds
-           the colleague plainly, as the record's ⋯ offers them no invitation
-           (2026-10-20, TEAM-12). */
-        if (!may('team.invite', 'work')) { msg('teamMsg', name + ' added.', 'ok'); return; }
+        /* The new colleague's record opens, where everything else is set
+           (TEAM2-10), drawn once the read below holds them. */
+        load(function () { said(); });
+        if (id) openRec(id);
+      }).catch(function () { btn.disabled = false; msg('tmMsg', 'Not saved. Please try again.', 'err'); });
+    /* Said once the record is drawn, on its own line. */
+    function said() {
+        /* An invitation goes only when ticked, by a colleague holding Send
+           invitation (TEAM-12, TEAM2-10). */
+        if (!invite) { msg('teamMsg', name + ' added.', 'ok'); return; }
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
         msg('teamMsg', name + ' added. Sending invitation…', 'ok');
@@ -1836,12 +1839,13 @@
               msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
             }
+            log('team.invited', name, email);
             msg('teamMsg', d.already
               ? name + ' added. A login already exists.'
               : name + ' added. Invitation sent to ' + email + '.',
               'ok');
-          });
-      });
+          }).catch(function () { msg('teamMsg', name + ' added. The invitation could not be sent.', 'warn'); });
+    }
   });
 
   function reinvite(m) {
@@ -1897,13 +1901,13 @@
   }
   function pushUrl() { if (bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl(); }
   function openRec(id, pane) {
-    rec.id = id; rec.pane = pane || 'overview';
+    rec.id = id; rec.pane = pane || 'overview'; rec.work = null;
     pushUrl();
     paintRec();
     window.scrollTo(0, 0);
   }
   function closeRec() {
-    rec.id = null; rec.pane = 'overview';
+    rec.id = null; rec.pane = 'overview'; rec.work = null;
     pushUrl();
     paintRec();
   }
@@ -1950,12 +1954,16 @@
           '<p class="rec-id-meta">' + esc(meta) + '</p></div>' +
         '<div class="rec-ctl">' + stateChip(m) + (menu ? menuBtn(menu) : '') + '</div>' +
       '</div></section>' +
+      /* The record's grid, as a client's: the pane and its rail on 1.618 : 1,
+         the rail's blocks leading the tabs below 1100 (TEAM2-9, 2026-10-24). */
+      '<div class="rec mrec-body">' +
       (panes.length > 1 ? '<nav class="rectabs mrec-tabs" role="tablist" aria-label="Colleague">' + panes.map(function (x) {
         var on = x[0] === rec.pane;
         return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
       }).join('') + '</nav>' : '') +
-      '<div class="msg" id="mrecMsg"></div>' +
-      '<div class="mrec-pane" id="mrecPane" data-narrow="640"></div>';
+      '<div class="rec-panes"><div class="msg" id="mrecMsg"></div>' +
+      '<div class="mrec-pane rec-pane" id="mrecPane" data-narrow="640"></div></div>' +
+      '<aside class="rec-rail" id="mrecRail" aria-label="Colleague facts"></aside></div>';
     if (rec.said && rec.said.id === m.id) {
       var said = rec.said;
       msg('mrecMsg', said.text, said.kind);
@@ -1978,6 +1986,7 @@
     }
     if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
     paintPane(m);
+    paintRail(m);
   }
   function paintPane(m) {
     var host = $('mrecPane'), seq = ++rec.seq;
@@ -2208,17 +2217,34 @@
     history.replaceState(null, '', url);
     if (bridge.show) bridge.show(section);
   }
+  /* What a colleague holds, read once a visit to their record and shared by
+     the rail and the Work pane (TEAM2-9): `team_work_held` and their open
+     tasks, read again after a hand-over. */
+  function workOf(m, then) {
+    var w = rec.work;
+    if (w && w.id === m.id) { if (w.done) then(w); else w.wait.push(then); return; }
+    w = rec.work = { id: m.id, done: false, wait: [then] };
+    heldBy(m, function (own, held, failed) {
+      var finish = function (tasks, err) {
+        w.own = own; w.held = held; w.failed = failed; w.tasks = tasks; w.err = err; w.done = true;
+        var q = w.wait; w.wait = [];
+        q.forEach(function (f) { f(w); });
+      };
+      if (failed) { finish(null, null); return; }
+      openTasksOf(m, finish);
+    });
+  }
   function paneWork(m, host, live) {
     UI().skeleton(host, 3);
-    heldBy(m, function (own, held, failed) {
+    workOf(m, function (w) {
+      var own = w.own, held = w.held, failed = w.failed;
       if (!live()) return;
       if (failed) {
         host.innerHTML = '<div class="panel mrec-card"><div class="readgroups"><section class="readgroup" id="mrecWorkFail"></section></div></div>';
-        UI().failLine($('mrecWorkFail'), 'Their work', '', function () { paneWork(m, host, live); });
+        UI().failLine($('mrecWorkFail'), 'Their work', '', function () { rec.work = null; paneWork(m, host, live); });
         return;
       }
-      openTasksOf(m, function (tasks, err) {
-        if (!live()) return;
+      (function (tasks, err) {
         var today = window.ADspaceClock.today();
         var opens = [], html = '';
         var self = me() && me().id === m.id;
@@ -2304,25 +2330,117 @@
           b.addEventListener('click', function () { opens[Number(b.getAttribute('data-w'))](); });
         });
         var h = host.querySelector('[data-r="hand"]');
-        if (h) h.addEventListener('click', function () {
-          var fields = handFields(m, own, held);
-          if (!fields.length) { msg('mrecMsg', 'No other colleague can take it.', 'warn'); return; }
-          window.ADspaceConfirm.ask({
-            title: 'Hand over work', go: 'Hand over',
-            body: 'Choose who takes each kind of ' + m.name + '\'s work.',
-            fields: fields
-          }, function (v) {
-            v = v && typeof v === 'object' ? v : {};
-            /* What stays with them is said after what moved (TEAM2-12). */
-            var kept = keptWord(own, held, v, m.name);
-            msg('mrecMsg', '');
-            Promise.resolve(handTo(m, own, v, true)).then(function (moved) {
-              if (moved === false) return;
-              msg('mrecMsg', [moved || '', kept].filter(Boolean).join(' ') || 'Nothing was handed over.', kept ? 'warn' : 'ok');
-              if (rec.id === m.id && rec.pane === 'work') paintPane(m);
-            });
-          });
-        });
+        if (h) h.addEventListener('click', function () { handOverAsk(m, own, held); });
+      })(w.tasks, w.err);
+    });
+  }
+  /* The rail (TEAM2-9, 2026-10-24): one block a question, as a client's.
+     Their work: what they hold, overdue in red, Open Work and Hand over
+     work (both left to the Work pane while it is open). Access: when it
+     ends, and at Team Full Access when they last signed in and were last
+     active (`team_member_seen`), else whether an invitation went. */
+  function whenWord(iso) {
+    var C = window.ADspaceClock, d = C.day(iso);
+    if (!d) return '';
+    var on = d === C.today() ? 'today' : C.date(d, { year: d.slice(0, 4) !== C.today().slice(0, 4) ? undefined : false });
+    return on + ', ' + C.clock(iso);
+  }
+  function activeWord(iso) {
+    var min = Math.floor((Date.now() - Date.parse(iso)) / 6e4);
+    if (!(min >= 0)) return '';
+    /* The console's minute stamps a colleague once in 15 minutes. */
+    if (min < 15) return 'Active now';
+    if (min < 60) return 'Active ' + min + ' minutes ago';
+    if (min < 180) { var h = Math.floor(min / 60); return 'Active ' + h + (h === 1 ? ' hour' : ' hours') + ' ago'; }
+    return 'Active ' + whenWord(iso);
+  }
+  function paintRail(m) {
+    var rail = $('mrecRail');
+    if (!rail) return;
+    var self = me() && me().id === m.id;
+    var onWork = rec.pane === 'work';
+    /* A fact is said once on a screen: the access end is Overview's own
+       row, so the rail says it on the other panes, where an end is set. */
+    var end = rec.pane !== 'overview' && m.access_until ? (m.expired_at && !m.active ? 'Access ended ' : 'Access until ') +
+      window.ADspaceClock.date(m.access_until) + (m.access_until_time ? ', ' + window.ADspaceClock.clock(m.access_until + 'T' + m.access_until_time) : '') : '';
+    var seenToo = may('team', 'manage') && !m.erased_at;
+    var access = end || seenToo ? '<div class="railblock" id="mrecAccess"' + (end ? '' : ' hidden') + '><h3 class="railtitle">Access</h3><ul class="railseen" id="mrecSeen">' +
+      (end ? '<li>' + esc(end) + '</li>' : '') + '</ul></div>' : '';
+    /* Their work is the Work pane's, read at Team Full Access, and left to
+       it while it is open. */
+    var work = paneOk('work') && !onWork;
+    rail.innerHTML = (work ? '<div class="railblock" id="mrecHeld"><h3 class="railtitle">Their work</h3><div id="mrecHeldBody"></div></div>' : '') + access;
+    var lastOne = function () {
+      var shown = rail.querySelectorAll('.railblock:not([hidden])');
+      Array.prototype.forEach.call(rail.querySelectorAll('.railblock'), function (b) { b.classList.remove('is-last'); });
+      if (shown.length) shown[shown.length - 1].classList.add('is-last');
+      rail.hidden = !shown.length;
+    };
+    lastOne();
+    var body = $('mrecHeldBody');
+    if (body) body.innerHTML = '<div class="skel"><div class="skel-row"></div><div class="skel-row"></div></div>';
+    if (body) workOf(m, function (w) {
+      if ($('mrecHeldBody') !== body) return;
+      if (w.failed) { UI().failLine(body, 'Their work', '', function () { rec.work = null; paintRail(m); }); return; }
+      var today = window.ADspaceClock.today(), held = w.held || {};
+      var late = (w.tasks || []).filter(function (t) { return t.current_final_due_at && window.ADspaceClock.day(t.current_final_due_at) < today; }).length;
+      var rows = [['Open tasks', w.tasks ? w.tasks.length : Number(held.tasks || 0)]];
+      if (w.tasks) rows.push(['Overdue', late, true]);
+      rows.push(['Clients', (w.own.clients || []).length], ['Open campaigns', (w.own.campaigns || []).length]);
+      var other = HELD_KINDS.filter(function (k) { return k[0] !== 'tasks'; }).reduce(function (n, k) { return n + (Number(held[k[0]]) || 0); }, 0);
+      rows.push(['Other work', other]);
+      var shown = rows.filter(function (r) { return r[1] > 0; });
+      var acts = [];
+      if (shown.length) {
+        acts.push('<button class="btn btn-sm" type="button" data-r="work">Open Work</button>');
+        if (!self && !m.system && may('team', 'manage')) acts.push('<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>');
+      }
+      body.innerHTML = (shown.length ? '<dl class="raildates">' + shown.map(function (r) {
+        return '<div><dt>' + esc(r[0]) + '</dt><dd' + (r[2] ? ' class="is-late"' : '') + '>' + esc(String(r[1])) + '</dd></div>';
+      }).join('') + '</dl>' : '<p class="muted mrec-none">Nothing is assigned.</p>') +
+        (acts.length ? '<div class="mrec-railacts">' + acts.join('') + '</div>' : '');
+      var go = body.querySelector('[data-r="work"]');
+      if (go) go.addEventListener('click', function () { rec.pane = 'work'; pushUrl(); paintRec(); });
+      var hand = body.querySelector('[data-r="hand"]');
+      if (hand) hand.addEventListener('click', function () { handOverAsk(m, w.own, held); });
+    });
+    if (!seenToo) return;
+    var list = $('mrecSeen');
+    db.rpc('team_member_seen', { p_id: m.id }).then(function (r) {
+      var d = r && !r.error && r.data;
+      if (!d || $('mrecSeen') !== list) return;
+      var lines = [];
+      if (d.last_seen_at) lines.push(activeWord(d.last_seen_at));
+      if (d.last_sign_in_at) lines.push('Last sign-in ' + whenWord(d.last_sign_in_at));
+      else {
+        lines.push('Not signed in yet');
+        if (d.invited_at) lines.push('Invitation sent ' + window.ADspaceClock.date(d.invited_at, { year: false }));
+      }
+      list.insertAdjacentHTML('afterbegin', lines.filter(Boolean).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join(''));
+      if (list.children.length) $('mrecAccess').hidden = false;
+      lastOne();
+    }).catch(function () {});
+  }
+  /* Hand over work, from the Work pane's head and the rail alike. */
+  function handOverAsk(m, own, held) {
+    var fields = handFields(m, own, held);
+    if (!fields.length) { msg('mrecMsg', 'No other colleague can take it.', 'warn'); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Hand over work', go: 'Hand over',
+      body: 'Choose who takes each kind of ' + m.name + '\'s work.',
+      fields: fields
+    }, function (v) {
+      v = v && typeof v === 'object' ? v : {};
+      /* What stays with them is said after what moved (TEAM2-12). */
+      var kept = keptWord(own, held, v, m.name);
+      msg('mrecMsg', '');
+      Promise.resolve(handTo(m, own, v, true)).then(function (moved) {
+        if (moved === false) return;
+        msg('mrecMsg', [moved || '', kept].filter(Boolean).join(' ') || 'Nothing was handed over.', kept ? 'warn' : 'ok');
+        if (rec.id !== m.id) return;
+        rec.work = null;
+        if (rec.pane === 'work') paintPane(m);
+        paintRail(m);
       });
     });
   }

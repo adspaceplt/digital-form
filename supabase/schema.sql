@@ -78742,9 +78742,6 @@ revoke all on function public.team_roles_admin_guard() from public, anon, authen
 
 -- END OF ADMIN TOOLS ARE AN ADMIN'S ------------------------------------------
 
--- ADMIN NOTICES REACH THE SYSTEM ACCOUNT — and a waiting overseas request
--- reminds the admins until it is decided (2026-10-24)
--- ===========================================================================
 -- WHY (the user, 2026-10-24): a colleague's overseas request reached one
 -- admin, whose phone takes no notifications, and nobody else: the system
 -- account was left out. "System account acts same as other admins. The
@@ -78781,10 +78778,422 @@ select 'abroad_remind_hours', date '2023-08-14', 2
  where not exists (select 1 from public.app_settings s where s.key = 'abroad_remind_hours');
 
 create or replace function public.team_notice_send(p_title text, p_body text, p_to uuid[])
-returns jsonb
+=======
+-- ===========================================================================
+-- HR HISTORY APART — an HR letter's history is read at HR Letters, its own
+-- part of the Activity record (2026-10-24)
+-- ===========================================================================
+-- WHY (the permissions audit of 2026-10-24, S5; the user decided "file it
+-- apart")
+--   An HR document's history (issued, edited, voided, deleted; filed under
+--   subject HR with its kind alone) is tagged as a Documents act, so the
+--   Activity record's Documents part opened it: the View only and Manager
+--   presets, which hold the Activity record at View and never HR Letters,
+--   read when each colleague's letters were issued and voided.
+--
+-- WHAT CHANGED
+--   * The read policy `activity_read` answers a Documents row filed under
+--     subject HR only where the reader holds the Activity record's own part
+--     for it, HR letters (`activity.hr`), and HR Letters themselves
+--     (`register.hr`) at View. Every other row is read as before, by its
+--     section's part. `activity_section()` and the tags are unchanged.
+--   * The policy is altered in place (`alter policy`), so nothing is
+--     dropped and a page reading the record keeps reading it meanwhile.
+--
+-- ORDER
+--   This file, then the page (the Section select offers HR letters, and
+--   Documents reads without them). An open page before reads Documents
+--   without the HR rows a reader may no longer see.
+--
+-- Safe to run twice. Rollback:
+--   alter policy activity_read on public.activity_log
+--     using (public.allowed('activity.' || public.activity_section(action), 'view'));
+-- ===========================================================================
+
+alter policy activity_read on public.activity_log
+  using (case when public.activity_section(action) = 'register' and subject = 'HR'
+              then public.allowed('activity.hr', 'view') and public.allowed('register.hr', 'view')
+              else public.allowed('activity.' || public.activity_section(action), 'view') end);
+
+-- END OF HR HISTORY APART ----------------------------------------------------
+
+-- ===========================================================================
+-- UNUSED TABLES DROPPED — five tables nothing reads or writes any more
+-- (2026-10-24)
+-- ===========================================================================
+-- WHY (the cleanup audit of 2026-10-24, R5; the user: "Ok yes")
+--   Five tables stood in the database with no page, function, view or
+--   policy of another table reading them: `activity_viewers` (the old
+--   Activity switch, replaced by the access map; one row), `ops_kpi_targets`
+--   (never filled), `report_partners` and `report_partner_clients` (white
+--   label moved onto the client, 2026-10-07; their functions dropped
+--   2026-10-19) and `video_script_reviews` (the client's link decides
+--   nothing since 2026-10-09; `script_decide` answers `closed`).
+--   `sm_reports.partner_id` (set on no report) goes with `report_partners`.
+--   `ops_engagement_events` is kept: it is a month's change history.
+--
+-- WHAT CHANGED
+--   * `sm_report_brand` no longer clears `partner_id`.
+--   * `sm_reports.partner_id` is dropped, then the five tables.
+--
+-- ORDER
+--   This file in the SQL Editor (it holds drops the connector holds back).
+--   No page reads any of them, so an open page meets nothing.
+--
+-- Safe to run twice. Rollback: run REPORT PARTNERS, WHITE LABEL ON THE
+-- REPORT, the ACTIVITY VIEWERS, OPS KPI TARGETS and VIDEO SCRIPTS table
+-- sections of schema.sql again (empty tables; the one activity_viewers row
+-- is not restored), and WHITE LABEL BRANDS' sm_report_brand.
+-- ===========================================================================
+
+create or replace function public.sm_report_brand(p_id uuid, p_brand uuid)
+-- ADMIN NOTICES REACH THE SYSTEM ACCOUNT — and a waiting overseas request
+-- reminds the admins until it is decided (2026-10-24)
+-- ====================================================================returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   me public.team_members := public.ops_me();
+-- OVERSEAS REMINDER SETTING — how often a waiting overseas request reminds
+-- the admins is a Business setting like any other (2026-10-24)
+-- ===========================================================================
+-- WHY (the user, 2026-10-24: a request waited with nothing to bring it
+-- back): the hours between reminders are the team's to change, from a day
+-- on, through the one sheet every setting uses.
+--
+-- WHAT IT CHANGES
+--   * `app_settings_set` takes `abroad_remind_hours` (0 to 24 whole hours,
+--     0 sends none), filed as Overseas reminder, from and to. Nothing else
+--     moves.
+--
+-- ORDER: after ADMIN NOTICES REACH THE SYSTEM ACCOUNT, in the SQL Editor
+-- (the function holds a delete, which the connector holds back). Safe to
+-- run twice. Rollback: run app_settings_set from OVERSEAS APPROVAL DAYS
+-- again.
+-- ===========================================================================
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k = 'meta_checks' then case when v_was = 1 then 'On' else 'Off' end else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k = 'meta_checks' then case when v_v = 1 then 'On' else 'Off' end else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF OVERSEAS REMINDER SETTING ------------------------------------------
+=======
+  r public.sm_reports;
+  c public.clients;
+  b public.client_brands;
+begin
+  if me.id is null or not public.ops_granted('reports.whitelabel', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.client_seen(r.client_id, 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if r.status = 'published' then return jsonb_build_object('error', 'published'); end if;
+  select * into c from public.clients where id = r.client_id;
+  if p_brand is not null then
+    select * into b from public.client_brands where id = p_brand;
+    if b.id is null or b.client_id <> r.client_id or not b.active or not c.white_label or c.report_logo is null then
+      return jsonb_build_object('error', 'bad-brand');
+    end if;
+  end if;
+  if r.brand_id is not distinct from p_brand then return jsonb_build_object('ok', true); end if;
+  if exists (select 1 from public.sm_reports x
+              where x.client_id = r.client_id and x.kind = r.kind and x.id <> r.id
+                and x.period_start = r.period_start and x.period_end = r.period_end
+                and x.brand_id is not distinct from p_brand) then
+    return jsonb_build_object('error', 'exists');
+  end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  begin
+    update public.sm_reports
+       set brand_id = b.id, brand_name = b.name,
+           label_client = case when b.id is not null then r.client_id end
+     where id = p_id;
+  exception when unique_violation then
+    perform set_config('adspace.sm_fn', 'off', true);
+    return jsonb_build_object('error', 'index-pending');
+  end;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.saved',
+    'White label: ' || coalesce(r.brand_name, 'not set') || ' → ' || coalesce(b.name, 'not set'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.sm_report_brand(uuid, uuid) from public, anon;
+grant execute on function public.sm_report_brand(uuid, uuid) to authenticated;
+
+alter table public.sm_reports drop column if exists partner_id;
+drop table if exists public.report_partner_clients;
+drop table if exists public.report_partners;
+drop table if exists public.video_script_reviews;
+drop table if exists public.ops_kpi_targets;
+drop table if exists public.activity_viewers;
+
+-- END OF UNUSED TABLES DROPPED -----------------------------------------------
+
+-- ===========================================================================
+-- A COLLEAGUE'S LAST SIGN-IN AND LAST ACTIVE — read on their record's rail
+-- at Team Full Access (2026-10-24)
+-- ===========================================================================
+-- WHY (Team audit TEAM2-9; the user decided the colleague record takes a
+-- rail as a client's does, with when they last signed in and were last
+-- active)
+--   Team showed nothing of whether a colleague uses the console: an invited
+--   colleague who never signed in, or one who stopped, read the same as
+--   everybody else.
+--
+-- WHAT CHANGED
+--   * `team_members.last_seen_at`: stamped by `page_pulse` for the team
+--     audience (the console's minute) at most once every 15 minutes, for the
+--     signed-in colleague alone (`ops_me()`); a client page asks for the
+--     clients' audience and never stamps. Withheld from the table's column
+--     grants (never named in them); `team_rows()` answers it at Team Full
+--     Access alone and as null below it.
+--   * `team_role_defaults` leaves `updated_at` alone when only
+--     `last_seen_at` moved, so the stamp never makes a colleague's record
+--     read as changed meanwhile (a save over the row as read).
+--   * `page_pulse` is volatile (it writes the stamp); a stamp that fails is
+--     swallowed and never fails the minute.
+--   * `team_member_seen(p_id)` (Team Full Access, else null): the last
+--     sign-in from `auth.users`, the last active, and when an invitation
+--     was last sent (`team_invites`), for one colleague not erased.
+--   * Trigger `team_members_erased_seen` clears `last_seen_at` the moment a
+--     colleague's personal details are erased.
+--
+-- ORDER
+--   This file, then the pages (the rail asks `team_member_seen`). An open
+--   page before never asks it; one after this file and before the pages
+--   reads nothing new.
+--
+-- Safe to run twice. Rollback: run THE TEAM LIST HOLDS WHAT EVERY COLLEAGUE
+-- NEEDS' team_rows, ONE CHECK A MINUTE's page_pulse and the schema's
+-- team_role_defaults again; the column, trigger and function may stay.
+-- ===========================================================================
+
+alter table public.team_members add column if not exists last_seen_at timestamptz;
+
+create or replace function public.team_role_defaults()
+returns trigger language plpgsql as $$
+declare r public.team_roles;
+begin
+  /* The console's minute stamps when a colleague was last active; that
+     alone is no change to their record (A COLLEAGUE'S LAST SIGN-IN). */
+  if tg_op = 'UPDATE' and new.last_seen_at is distinct from old.last_seen_at
+     and (to_jsonb(new) - 'last_seen_at') = (to_jsonb(old) - 'last_seen_at') then
+    return new;
+  end if;
+  select * into r from public.team_roles where slug = new.role;
+  if r.slug is null then
+    select * into r from public.team_roles where slug = 'account';
+    new.role := 'account';
+  end if;
+  new.is_admin      := r.is_admin;
+  new.can_clients   := r.can_clients;   new.can_review   := r.can_review;
+  new.can_campaigns := r.can_campaigns; new.can_links    := r.can_links;
+  new.can_activity  := r.can_activity;  new.can_billing  := r.can_billing;
+  new.can_remove    := r.can_remove;    new.can_doc_void := r.can_doc_void;
+  new.access        := coalesce(r.access, '{}'::jsonb);
+  new.client_scope  := coalesce(r.client_scope, 'all');
+  new.updated_at    := now();
+  return new;
+end $$;
+
+create or replace function public.team_members_erased_seen()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.erased_at is not null then new.last_seen_at := null; end if;
+  return new;
+end $$;
+revoke all on function public.team_members_erased_seen() from public, anon, authenticated;
+create or replace trigger team_members_erased_seen before update of erased_at on public.team_members
+  for each row execute function public.team_members_erased_seen();
+
+create or replace function public.page_pulse(p_audience text default null, p_bell boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members;
+  v  jsonb := jsonb_build_object('maintenance', public.maintenance_state());
+begin
+  if p_audience in ('team', 'clients') then
+    v := v || jsonb_build_object('announcements', coalesce(public.announcement_now(p_audience), '[]'::jsonb));
+  end if;
+  /* The console's minute says the colleague is active, at most once every
+     15 minutes; a client page asks for the clients and never stamps. */
+  if p_audience = 'team' then
+    begin
+      update public.team_members t set last_seen_at = now()
+       where t.id = (public.ops_me()).id
+         and (t.last_seen_at is null or t.last_seen_at < now() - interval '15 minutes');
+    exception when others then null;
+    end;
+  end if;
+  if coalesce(p_bell, false) then
+    me := public.ops_me();
+    if me.id is not null then
+      v := v || jsonb_build_object('bell', jsonb_build_object(
+        'unread', coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc)
+                              from (select * from public.ops_notifications o
+                                     where o.team_member_id = me.id and o.read_at is null and o.hidden_at is null
+                                     order by o.created_at desc limit 30) x), '[]'::jsonb),
+        'earlier', coalesce((select jsonb_agg(to_jsonb(x) order by x.created_at desc)
+                               from (select * from public.ops_notifications o
+                                      where o.team_member_id = me.id and o.read_at is not null and o.hidden_at is null
+                                        and o.created_at >= now() - interval '7 days'
+                                      order by o.created_at desc limit 10) x), '[]'::jsonb)));
+    end if;
+  end if;
+  return v;
+end $$;
+revoke all on function public.page_pulse(text, boolean) from public;
+grant execute on function public.page_pulse(text, boolean) to anon, authenticated;
+
+create or replace function public.team_rows()
+returns setof public.team_members
+language sql stable security definer set search_path = public as $$
+  select (jsonb_populate_record(t, case when public.allowed('team', 'manage') then '{}'::jsonb
+                                        else '{"last_seen_at": null}'::jsonb end)).*
+    from public.team_members t
+   where public.allowed('team', 'view')
+   order by t.active desc, t.role, t.name
+$$;
+revoke all on function public.team_rows() from public, anon, authenticated;
+grant execute on function public.team_rows() to authenticated;
+
+create or replace function public.team_member_seen(p_id uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+           'last_sign_in_at', (select u.last_sign_in_at from auth.users u
+                                where lower(u.email) = lower(t.email)
+                                order by u.last_sign_in_at desc nulls last limit 1),
+           'last_seen_at', t.last_seen_at,
+           'invited_at', (select max(i.created_at) from public.team_invites i
+                           where lower(i.email) = lower(t.email) and i.kind = 'team'))
+    from public.team_members t
+   where t.id = p_id and t.erased_at is null and public.allowed('team', 'manage')
+$$;
+revoke all on function public.team_member_seen(uuid) from public, anon, authenticated;
+grant execute on function public.team_member_seen(uuid) to authenticated;
+
+-- END OF A COLLEAGUE'S LAST SIGN-IN -------------------------------------------
   v_title text := btrim(coalesce(p_title, ''));
   v_body  text := nullif(btrim(coalesce(p_body, '')), '');
   v_to    uuid[];
@@ -79048,148 +79457,5 @@ end $$;
 
 -- END OF ADMIN NOTICES REACH THE SYSTEM ACCOUNT ------------------------------
 
--- ===========================================================================
--- OVERSEAS REMINDER SETTING — how often a waiting overseas request reminds
--- the admins is a Business setting like any other (2026-10-24)
--- ===========================================================================
--- WHY (the user, 2026-10-24: a request waited with nothing to bring it
--- back): the hours between reminders are the team's to change, from a day
--- on, through the one sheet every setting uses.
---
--- WHAT IT CHANGES
---   * `app_settings_set` takes `abroad_remind_hours` (0 to 24 whole hours,
---     0 sends none), filed as Overseas reminder, from and to. Nothing else
---     moves.
---
--- ORDER: after ADMIN NOTICES REACH THE SYSTEM ACCOUNT, in the SQL Editor
--- (the function holds a delete, which the connector holds back). Safe to
--- run twice. Rollback: run app_settings_set from OVERSEAS APPROVAL DAYS
--- again.
--- ===========================================================================
-
-create or replace function public.app_settings_set(p_from date, p_values jsonb)
-returns jsonb
-language plpgsql security definer set search_path = public as $$
-declare
-  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
-  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
-  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
-    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
-    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
-    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
-    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
-    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
-    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
-    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
-    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours'];
-  v_moved text[] := '{}';
-  v_drop boolean; v_fw text; v_fv text;
-begin
-  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
-  v_me := public.ops_me();
-  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
-  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
-  for v_k in select jsonb_object_keys(p_values) loop
-    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
-      return jsonb_build_object('error', 'bad-value', 'key', v_k);
-    end if;
-    v_v := (p_values ->> v_k)::numeric;
-    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
-       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
-       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
-       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
-       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
-       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
-       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
-       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
-       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
-       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
-       or (v_k = 'meta_checks' and v_v not in (0, 1))
-       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
-       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
-       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
-       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
-       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
-       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
-       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
-       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
-       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
-       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
-       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
-       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
-       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
-       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
-      return jsonb_build_object('error', 'bad-value', 'key', v_k);
-    end if;
-  end loop;
-  for v_k in select jsonb_object_keys(p_values) loop
-    v_v := (p_values ->> v_k)::numeric;
-    v_was := public.app_setting(v_k, p_from);
-    if v_was is distinct from v_v then
-      /* A planned change saved back to the value in force the day before is
-         withdrawn: its row goes, rather than a second row restating it. */
-      v_drop := p_from > v_today
-        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
-        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
-        and public.app_setting(v_k, p_from - 1) = v_v;
-      if v_drop then
-        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
-      else
-        insert into public.app_settings (key, from_date, value, set_by, set_at)
-        values (v_k, p_from, v_v, v_me.id, now())
-        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
-      end if;
-      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
-        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
-        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
-        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
-        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
-        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
-        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
-        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
-        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
-        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
-        when 'wa_repeat_hours' then 'WhatsApp sent again'
-        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
-        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
-        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
-        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
-        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
-        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
-        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
-        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
-        when 'fx_sgd' then 'Singapore dollar rate'
-        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
-        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
-        else 'Report due' end;
-      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
-      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
-        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
-        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
-        when v_pre <> '' then '' else '%' end;
-      v_fw := case when v_k = 'meta_checks' then case when v_was = 1 then 'On' else 'Off' end else coalesce(v_pre ||
-              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
-      v_fv := case when v_k = 'meta_checks' then case when v_v = 1 then 'On' else 'Off' end else v_pre ||
-              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
-      insert into public.activity_log (actor, action, subject, detail)
-      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
-              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
-                ', stays ' || v_fv else
-              v_name || ': ' || case when v_k = 'meta_checks' then
-                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
-                ' · from ' || public.register_day(p_from) else '' end ||
-              case when v_k = 'meta_checks' then '' else coalesce(v_pre ||
-              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
-              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
-              ' · from ' || public.register_day(p_from) end end);
-      v_moved := v_moved || v_k;
-    end if;
-  end loop;
-  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
-end $$;
-revoke all on function public.app_settings_set(date, jsonb) from public, anon;
-grant execute on function public.app_settings_set(date, jsonb) to authenticated;
-
--- END OF OVERSEAS REMINDER SETTING ------------------------------------------
-
+-- ====================================================================
 select public.functions_tidy();
