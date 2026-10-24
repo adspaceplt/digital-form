@@ -78732,7 +78732,7 @@ begin
   if tg_op = 'DELETE' then return old; end if;
   foreach k in array v_granted loop
     if coalesce(new.access ->> k, '') is distinct from
-       case when tg_op = 'INSERT' then '' else coalesce(old.access ->> k, '') end then
+       (case when tg_op = 'INSERT' then '' else coalesce(old.access ->> k, '') end) then
       raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin tool.';
     end if;
   end loop;
