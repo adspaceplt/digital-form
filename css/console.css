@@ -3545,6 +3545,13 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #mrecPane.is-narrow .mrec-acts { flex: 1 0 100%; flex-wrap: nowrap; }
 #mrecPane.is-narrow .mrec-acts .btn { flex: 1 1 0; min-width: 0; }
 #mrecMsg { margin: 0 0 12px; }
+/* The record's rail (TEAM2-9, 2026-10-24): the client record's grid, its
+   pane holding the message line and the pane with no gap of its own. */
+.mrec-body > .rec-panes { gap: 0; }
+.railseen { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 13px; color: var(--ink); }
+.mrec-none { margin: 0; font-size: 13px; }
+.mrec-railacts { display: flex; gap: 8px; margin-top: 12px; }
+.mrec-railacts > .btn { flex: 1 1 50%; min-width: 0; }
 .team-head.team-row > :first-child { padding-left: 44px; }
 /* A colleague's work, a row a record (2026-10-18): the name over its facts,
    the date at the right (red once late), the chevron last. */
