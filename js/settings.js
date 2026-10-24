@@ -520,7 +520,7 @@
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
       '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-' + k + '="delete">Delete</button></div></span></span>';
   }
-  /* Shuts a list's ⋯ menus (`#holList`, `#taxList`). */
+  /* Shuts a list's ⋯ menus (`#holList`, `#depList`, `#taxList`). */
   function shutMenus(list, k) {
     Array.prototype.forEach.call(document.querySelectorAll(list + ' .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll(list + ' [data-' + k + '="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -825,7 +825,6 @@
       if (k === 'active') depActive(d);
       if (k === 'delete') depDelete(d);
     });
-    document.addEventListener('click', function (e) { if (!e.target.closest('#depList .team-act')) depShut(); });
   }
 
   /* ---- Tax codes (2026-10-22) --------------------------------------------
@@ -1075,9 +1074,10 @@
   }
   wireHol();
   wireDeps();
-  /* A press outside a list's ⋯ shuts it: one listener for both lists. */
+  /* A press outside a list's ⋯ shuts it: one listener for every list. */
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#holList .team-act')) holShut();
+    if (!e.target.closest('#depList .team-act')) depShut();
     if (!e.target.closest('#taxList .team-act')) taxShut();
     if (!e.target.closest('#abList .team-act')) abShut();
   });
