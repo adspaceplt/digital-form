@@ -4264,7 +4264,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Ask for a talk (`health_talk_ask`: a colleague, an optional note;
   `already-asked`, `bad-colleague`) tells the colleague asked (`health.talk`,
   the asker's name, never the note); the asker withdraws it and asks again,
-  the colleague asked marks it done and reopens it (`health_talk_set`).
+  the colleague asked marks it done and reopens it (`health_talk_set`); a
+  withdrawn talk, which the colleague asked and Team: Health no longer
+  read, is its asker's to delete from its ⋯ (`health_talk_delete`, asked,
+  no restore, `bad-status` for an open or done talk;
+  `2026-10-24-health-talk-delete.sql`, the SQL Editor's).
 - Team: Health (`tab=health`) is an admin's alone, behind the Performance
   master code with its 15-minute unlock (`health_check(p_token)`,
   `health_team(p_token)`, `2026-10-18-team-health-is-an-admins.sql`; the

@@ -21,6 +21,7 @@
   if (!API || !API.configured || !db) return;
 
   var $ = function (id) { return document.getElementById(id); };
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
   var bridge = window.ADspaceAdmin || {};
   var UI = window.ADspaceState;
   function esc(s) {
@@ -213,7 +214,12 @@
           (t.note ? '<span class="health-note">' + esc(t.note) + '</span>' : '') + '</span>' +
         '<span class="health-talk-act">' + (t.status === 'open'
           ? '<button class="btn btn-sm" type="button" data-talk="' + esc(t.id) + '" data-to="withdrawn">Withdraw</button>'
-          : t.status === 'withdrawn' ? '<button class="btn btn-sm" type="button" data-talk="' + esc(t.id) + '" data-to="open">Ask again</button>' : '') +
+          : t.status === 'withdrawn' ? '<button class="btn btn-sm" type="button" data-talk="' + esc(t.id) + '" data-to="open">Ask again</button>' +
+            /* A withdrawn talk is the asker's alone, so its ⋯ holds Delete
+               (2026-10-24). */
+            '<span class="team-act"><button class="kmenu-btn" type="button" data-talkmenu aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+              '<div class="kmenu" hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-talkdel="' +
+                esc(t.id) + '" data-with="' + esc(t.with) + '">Delete</button></div></span>' : '') +
         '</span></div>');
     });
     return rows.length ? '<div class="health-talks">' + rows.join('') + '</div>' : '<p class="perf-quiet">No talks.</p>';
@@ -231,6 +237,39 @@
     on('withdraw', withdraw);
     Array.prototype.forEach.call(box.querySelectorAll('[data-talk]'), function (b) {
       b.addEventListener('click', function () { setTalk(b); });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-talkmenu]'), function (mb) {
+      var mn = mb.nextElementSibling;
+      mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = mn.hidden;
+        shutTalkMenus();
+        mn.hidden = !open;
+        mb.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(mb, mn);
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-talkdel]'), function (b) {
+      b.addEventListener('click', function () {
+        shutTalkMenus();
+        window.ADspaceConfirm.ask({ title: 'Delete this talk?',
+          body: 'Your withdrawn request to talk with ' + b.getAttribute('data-with') + ' is removed for good. There is no restore.',
+          go: 'Delete', tone: 'danger' }, function () { dropTalk(b.getAttribute('data-talkdel')); });
+      });
+    });
+  }
+  function shutTalkMenus() {
+    var box = $('mineHealthBox');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-talkmenu]'), function (mb) {
+      mb.setAttribute('aria-expanded', 'false');
+      mb.nextElementSibling.hidden = true;
+    });
+  }
+  function dropTalk(id) {
+    mineCall('health_talk_delete', { p_id: id }, function (d) {
+      if (d.error) { msg('mineHealthMsg', said(d), 'err'); return; }
+      st.mine = d; paintMine();
+      msg('mineHealthMsg', 'Deleted.', 'ok');
     });
   }
   /* Agreeing never asks: the card above the button is the question. */
