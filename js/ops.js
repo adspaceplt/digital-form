@@ -8226,8 +8226,8 @@
     }
     /* An overseas request opens the colleague's record, where it is
        decided (2026-10-24; the user: approval sits on each colleague's
-       record): the waiting request whose colleague the title names, else
-       the Team list. A decision told to the colleague opens nothing. */
+       record): the request its key names, else the waiting request whose
+       colleague the title names, else the Team list. A decision told to the colleague opens nothing. */
     if (!x.task_id && x.kind === 'abroad.request') {
       var abName = String(x.title || '').split(' · ').slice(1).join(' · ').trim();
       var abGo = function (id) {
@@ -8240,7 +8240,11 @@
       };
       Promise.resolve(db.rpc('abroad_list')).then(function (r) {
         var rows = (r && !r.error && r.data && r.data.rows) || [];
-        var hit = rows.filter(function (a) { return a.name === abName && a.status === 'waiting'; })[0] ||
+        /* The notice's key names its request (abroad:{id}:…), so two
+           colleagues of one name are never confused; the name is the fallback. */
+        var abId = (String(x.dedupe_key || '').match(/^abroad:([^:]+):/) || [])[1];
+        var hit = (abId && rows.filter(function (a) { return a.id === abId; })[0]) ||
+          rows.filter(function (a) { return a.name === abName && a.status === 'waiting'; })[0] ||
           rows.filter(function (a) { return a.name === abName; })[0];
         abGo(hit && hit.member);
       }).catch(function () { abGo(null); });
