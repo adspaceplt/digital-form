@@ -575,7 +575,7 @@
     return [post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
-  var ADMIN_ONLY = 'Only an admin makes a colleague admin or changes an admin.';
+  var ADMIN_ONLY = 'Only an admin makes a colleague admin, changes an admin or turns an admin tool on or off.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
     if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
@@ -1319,6 +1319,12 @@
       var same = access[k.split('.')[0]] || 'none';
       if (adds(k, carried[k], same)) access[k] = carried[k];
     });
+    /* For anyone not an admin the granted parts are kept exactly as the
+       group stored them, which `team_roles_admin_guard` holds (S2). */
+    if (!amAdmin()) {
+      var held = state.editing ? accessOf(state.editing) : {};
+      Object.keys(GRANTED).forEach(function (k) { if (held[k]) access[k] = held[k]; else delete access[k]; });
+    }
     return access;
   }
   /* The same access in one comparable shape, whatever was stored before:
@@ -1451,7 +1457,9 @@
       /* A client part inherited from Clients says nothing while Clients is
          No Access, so it is greyed there; a granted part stands alone
          (N2, 2026-10-24). */
-      sel.disabled = locked || admin || (sec === 'clients' && !isGranted(k) && lv === 'none');
+      sel.disabled = locked || admin || (sec === 'clients' && !isGranted(k) && lv === 'none') ||
+        /* A granted part is an admin's to give (S2, 2026-10-24). */
+        (isGranted(k) && !amAdmin());
       /* Leads and Past clients narrow Clients and never widen it, so they
          offer no level above it (N3). */
       if (k === 'clients.leads' || k === 'clients.past') {
@@ -1463,7 +1471,7 @@
       }
     });
     toolSwitches().forEach(function (sw) {
-      sw.disabled = locked || admin;
+      sw.disabled = locked || admin || !amAdmin();
     });
     $('grScope').disabled = locked || admin;
     var shape = shapeOf(access, admin, readScope());
