@@ -535,9 +535,11 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     (`js/menu.js`, each item's group as `data-g`), or as static markup
     carrying `data-g`; `ADspaceMenu.tidy` lays the roles, the red and the
     separators whenever a menu shows.
-11. On a phone a record head's ⋯ docks at the foot inside the gutters, as
-    the account menu does, and never covers the record's name; a row's
-    keeps hanging from its row.
+11. On a phone every ⋯ hangs from its own button, a record head's too
+    (under it, upward only where the room is above; it may cover the name
+    while open), as an iPhone's pull-down menu does: the menu opens where
+    the finger is (the user, 2026-10-24, reversing the foot dock of
+    2026-10-22).
 12. A bulk bar mirrors the row: only acts one row offers, in the same
     words; drawn once something is ticked and hidden (never greyed) at
     zero; Delete red and last.

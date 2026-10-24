@@ -70,14 +70,9 @@
        height cannot be measured otherwise. */
     place: function (btn, menu, align) {
       tidy(menu);
-      /* A record head's ⋯ on a phone docks at the foot of the screen inside
-         the gutters, as the account menu does, so it never covers the
-         record's name (DESIGN.md §5 Menus, 11); a row's keeps hanging from
-         its row. */
-      var dock = !!(phone && phone.matches && menu.classList.contains('kmenu') &&
-        (menu.hasAttribute('data-dock') || (btn.closest && btn.closest('.rec-ctl'))));
-      menu.classList.toggle('is-footdock', dock);
-      menu.style.width = dock ? (window.innerWidth - 32) + 'px' : '';
+      /* Every ⋯ hangs from its own button, on a phone as at a desk, so the
+         menu opens where the finger already is (DESIGN.md §5 Menus, 11; the
+         user, 2026-10-24). */
       var r = btn.getBoundingClientRect(), h = menu.offsetHeight;
       menu.style.position = 'fixed';
       menu.style.right = 'auto';
@@ -101,10 +96,6 @@
       menu.style.top = (r.bottom + 4 + h <= floor || r.top - 4 - h < 8)
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
-      if (dock) {
-        menu.style.left = '16px';
-        menu.style.top = Math.max(8, floor - menu.offsetHeight) + 'px';
-      }
       /* `position: fixed` is measured from the viewport only while no
          ancestor is transformed, and on an iPhone not always then: a sheet
          on a phone is (`will-change: transform`, so it lifts in one piece),

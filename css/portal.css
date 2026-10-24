@@ -3693,9 +3693,6 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* A ⋯ menu is as wide as its words on a phone too (2026-10-11): drawn
      the screen's width, the task card's covered the card's whole head. */
   .kmenu { right: 6px; top: 46px; width: min(260px, calc(100vw - 32px)); }
-  /* A record head's ⋯ docks at the foot inside the gutters, as the account
-     menu does, and never covers the record's name (MENU-16, 2026-10-22). */
-  .kmenu.is-footdock { max-width: none; transform-origin: bottom center; }
   .kactions { gap: 8px; }
 
   /* Full label on a phone too: the client has to know which profile they are
