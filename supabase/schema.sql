@@ -64053,13 +64053,13 @@ begin
       update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
       perform public.ops_notify(v_to, t.id, 'assigned', v_title,
         'Handed back to you: ' || v_who.name || '''s access ended.',
-        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'));
+        'returned:' || t.id::text || ':' || v_to::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'));
     else
       update public.ops_tasks set open_at = now(), open_by = null, version = version + 1, updated_at = now()
        where id = t.id;
       perform public.ops_notify(x.id, t.id, 'tasks.unassigned', v_title,
         v_who.name || '''s access ended. The task is open to take.',
-        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'))
+        'unassigned:' || t.id::text || ':' || x.id::text || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI'))
         from public.team_members x
        where x.active and x.id <> p_member and not coalesce(x.system, false)
          and (coalesce(x.is_admin, false) or coalesce(x.role, '') = 'admin' or public.level_rank(x.access ->> 'ops') >= 3)
