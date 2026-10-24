@@ -72,6 +72,12 @@
     if (family === 'hr') return 'register.hr';
     if (family === 'offer') return 'clients.documents';
     if (family === 'supplier') return 'suppliers';
+    /* A client letter answers to either part (register_may): name the one
+       granting more, so a row offers what the database would allow. */
+    if (family === 'client') {
+      var top = function (k) { return may(k, 'manage') ? 3 : may(k, 'work') ? 2 : may(k, 'view') ? 1 : 0; };
+      return top('clients.documents') > top('register.documents') ? 'clients.documents' : 'register.documents';
+    }
     return 'register.documents';
   }
 

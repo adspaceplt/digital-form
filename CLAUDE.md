@@ -1838,7 +1838,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   working notes, approx., TBC, → to where a button leads, ad sets funded
   in order with MONTH 2+ / ON HOLD, the lead estimate, Budget note); the
   PDF draws → in the Chinese face, which holds it.
-  Write with AI on it (Clients Work, an open checklist; the user, 2026-10-15)
+  Write with AI on it (Clients: Checklists Work, an open checklist; the user, 2026-10-15)
   asks up front the monthly ad budget, the objective, where the ads send
   people, the ad account and notes (kept under
   `adspace-checklist-inputs:{client id}`); with no confirmed Brand
@@ -1864,7 +1864,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Meta links (`2026-10-08-meta-links.sql`, `meta_links`, RLS on, no
   policy, no grant): a client, and each white-label brand, links ad accounts
   (up to 20), one Facebook Page and one Instagram account, each Meta's id and
-  name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients at
+  name, picked in `#crmMetaSheet` from `meta-import` `assets` (Clients: Brand at
   Work), never typed; a link Meta no longer shows stays offered. Read first
   on the Brand pane (`#crmMetaRead`, Edit at Clients Work; a brand's from its
   ⋯, Meta accounts); `meta_links_save` (Clients Work, the client in scope at
@@ -1901,7 +1901,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   the Brand pane's last read group (`#crmAnalysis`), Run analysis then Run
   again (the AI mark; asks first: what it reads, analyses left today, notes
   kept under `adspace-analysis-notes:{client id}`), for any colleague at
-  Clients View on a client in scope. It reads as the caller the record
+  Clients: Brand View on a client in scope. It reads as the caller the record
   (brief, notes, services), published reports, My Work's post results and,
   where `meta_checks_on()` and the client links Meta, six months of
   Instagram and Facebook posts, Instagram followers by age, gender and city

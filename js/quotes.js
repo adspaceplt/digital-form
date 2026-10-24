@@ -23,7 +23,7 @@
   var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var SAID = {
-    denied: 'This needs Clients: Services at Work.', 'client-scope': 'This client is outside your access.',
+    denied: 'This needs Clients: Quotations at Manage.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
