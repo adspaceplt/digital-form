@@ -8224,12 +8224,26 @@
       else if (bridge.show) bridge.show('mine');
       return;
     }
-    /* An overseas request opens the admin's Overseas access sheet on
-       Settings (2026-10-24); a decision told to the colleague opens nothing. */
+    /* An overseas request opens the colleague's record, where it is
+       decided (2026-10-24; the user: approval sits on each colleague's
+       record): the waiting request whose colleague the title names, else
+       the Team list. A decision told to the colleague opens nothing. */
     if (!x.task_id && x.kind === 'abroad.request') {
-      history.replaceState(null, '', '/admin/?s=settings&tab=portal');
-      if (bridge.show) bridge.show('settings');
-      if (window.ADspaceSettings && window.ADspaceSettings.openAbroad) window.ADspaceSettings.openAbroad();
+      var abName = String(x.title || '').split(' · ').slice(1).join(' · ').trim();
+      var abGo = function (id) {
+        history.replaceState(null, '', '/admin/?s=team' + (id ? '&member=' + encodeURIComponent(id) : ''));
+        if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
+        if (bridge.show) bridge.show('team');
+        /* As search opens a colleague: on Members, the tab last used aside. */
+        var tab = document.querySelector('#teamTabs .tab[data-tab="members"]');
+        if (tab && !tab.classList.contains('is-on') && !tab.closest('[hidden]')) tab.click();
+      };
+      Promise.resolve(db.rpc('abroad_list')).then(function (r) {
+        var rows = (r && !r.error && r.data && r.data.rows) || [];
+        var hit = rows.filter(function (a) { return a.name === abName && a.status === 'waiting'; })[0] ||
+          rows.filter(function (a) { return a.name === abName; })[0];
+        abGo(hit && hit.member);
+      }).catch(function () { abGo(null); });
       return;
     }
     /* A letter shared with the colleague opens their Letters. */

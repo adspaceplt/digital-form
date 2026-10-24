@@ -247,7 +247,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
-| Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas rows) | abroadsql, abroad, sql, settings, then `ui` |
+| Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas rows) | abroadsql, abroad, abroadrec, sql, settings, team, teamrec, then `ui` |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
@@ -6170,12 +6170,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
   `bad-until` today to today plus `abroad_days`, a waiting request
   replaced) tells every active admin (kind `abroad.request`, the bell
-  opening Settings' sheet), and while it waits, its colleague active and
+  opening the colleague's record, found by name in `abroad_list()`), and while it waits, its colleague active and
   its day not passed, `abroad_remind()` (pg_cron `abroad-remind`, every
   fifteen minutes from 08:00 to 22:45 MYT; `team_abroad.reminded_at`, a
   request asked again starting afresh) tells them again every
   `abroad_remind_hours` (2, 0 to 24, 0 sends none; Overseas approval's
-  sheet) as Overseas access waiting. Settings, Portal:
+  sheet) as Overseas access waiting. The colleague's record decides it
+  (the user, 2026-10-24: "Build its from me"): an admin's Team read asks
+  `abroad_list()` beside `team_rows()`, the list's state column reads
+  Overseas request while one waits, and Overview leads with Overseas
+  access while the colleague holds a request of the last 90 days (the one
+  waiting or approved as facts, Decline and Approve on the group, Approve
+  asking Until, or End access in its ⋯; the rest under Earlier); nobody
+  else reads it (`tests/abroadrec.js`). Settings, Portal:
   Overseas access (an admin's; `#abSheet`: Waiting with Decline and Approve,
   each asked, Approve asking Until; Approved with its ⋯ End access, asked;
   Earlier, 90 days), `abroad_decide` / `abroad_end` filed `team.changed`
