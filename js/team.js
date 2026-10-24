@@ -213,7 +213,9 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
+                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'],
+                /* An HR letter's history, read with HR Letters too (S5). */
+                ['hr', 'HR letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
@@ -1119,11 +1121,15 @@
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                /* On for Managers from 2026-10-07, as the live group holds it (N5). */
-               'reports.whitelabel': 'work', 'register.hr': 'none' },
+               'reports.whitelabel': 'work', 'register.hr': 'none',
+               /* No preset below Admin opens Team, HR letters or performance
+                  reviews, their history included (S5, 2026-10-24). */
+               'activity.hr': 'none', 'activity.team': 'none' },
     staff:   { ops: 'work', clients: 'work', whatsapp: 'work', review: 'work', scripts: 'work', campaigns: 'work', register: 'view', suppliers: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
     viewer:  { ops: 'view', clients: 'view', whatsapp: 'view', review: 'view', scripts: 'view', campaigns: 'view', register: 'view', suppliers: 'view', reports: 'view',
-               links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
+               links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none',
+               'activity.hr': 'none', 'activity.team': 'none' }
   };
 
   /* THE PANEL, SIMPLER (2026-10-10, the proposal the user approved). It
