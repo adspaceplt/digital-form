@@ -79013,4 +79013,455 @@ grant execute on function public.team_member_seen(uuid) to authenticated;
 
 -- END OF A COLLEAGUE'S LAST SIGN-IN -------------------------------------------
 
+-- ===========================================================================
+-- ADMIN NOTICES REACH THE SYSTEM ACCOUNT — and a waiting overseas request
+-- reminds the admins until it is decided (2026-10-24)
+-- ===========================================================================
+-- WHY (the user, 2026-10-24): a colleague's overseas request reached one
+-- admin, whose phone takes no notifications, and nobody else: the system
+-- account was left out. "System account acts same as other admins. The
+-- only difference is that it could overwrite everything without reason."
+-- A request then waited with nothing to bring it back.
+--
+-- WHAT CHANGED
+--   * `team_notice_send`, `quote_tell`, `client_details_submit`,
+--     `supplier_form_submit` and `abroad_request` tell a system account as
+--     they tell every other colleague who qualifies. Nothing else in them
+--     moves. Task work (the reminders, pickers) still leaves it out.
+--   * `team_abroad.reminded_at`; a request asked again starts afresh.
+--   * `abroad_remind()` (pg_cron `abroad-remind`, every fifteen minutes from
+--     08:00 to 22:45 MYT): every request still waiting, its colleague
+--     active and its day not passed, tells every active admin again once
+--     `abroad_remind_hours` (2, a Business setting, 0 sends none) have
+--     passed since it was asked or last reminded. The service role's alone.
+--
+-- ORDER
+--   This file, then OVERSEAS REMINDER SETTING in the SQL Editor (Settings
+--   edits the hours only once it has run), then the pages. The page before
+--   reads no new key; a reminder reads as the request's own notice.
+--
+-- Safe to run twice. Rollback: run each function from its section before
+-- (TEAM NOTICES' send as last restated, QUOTATION WEBSITE, CLIENT DETAILS
+-- FORM, SUPPLIER UPDATE LINK, OVERSEAS ACCESS) and unschedule
+-- `abroad-remind`.
+-- ===========================================================================
+
+alter table public.team_abroad add column if not exists reminded_at timestamptz;
+
+insert into public.app_settings (key, from_date, value)
+select 'abroad_remind_hours', date '2023-08-14', 2
+ where not exists (select 1 from public.app_settings s where s.key = 'abroad_remind_hours');
+
+create or replace function public.team_notice_send(p_title text, p_body text, p_to uuid[])
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_title text := btrim(coalesce(p_title, ''));
+  v_body  text := nullif(btrim(coalesce(p_body, '')), '');
+  v_to    uuid[];
+  v_id    uuid;
+  n       int;
+  v_sent  int;
+  v_first timestamptz;
+begin
+  if me.id is null or not public.ops_granted('team.notice', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if v_title = '' or length(v_title) > 120 then return jsonb_build_object('error', 'bad-title'); end if;
+  if v_body is not null and length(v_body) > 1000 then return jsonb_build_object('error', 'bad-body'); end if;
+  perform pg_advisory_xact_lock(hashtext('team-notice-send:' || me.id::text));
+  select count(*), min(tn.created_at) into v_sent, v_first
+    from (select x.created_at from public.team_notices x
+           where x.sent_by = me.id and x.created_at > now() - interval '1 hour'
+           order by x.created_at desc limit 10) tn;
+  if v_sent >= 10 then
+    return jsonb_build_object('error', 'too-many', 'limit', 10, 'next', v_first + interval '1 hour');
+  end if;
+  select coalesce(array_agg(m.id order by m.name), '{}') into v_to
+    from public.team_members m
+   where m.active and m.id <> me.id
+     and (p_to is null or m.id = any(p_to));
+  n := coalesce(array_length(v_to, 1), 0);
+  if n = 0 then return jsonb_build_object('error', 'no-one'); end if;
+  insert into public.team_notices (title, body, to_all, recipients, sent_by, sent_by_name)
+  values (v_title, v_body, p_to is null, v_to, me.id, me.name)
+  returning id into v_id;
+  insert into public.ops_notifications (team_member_id, kind, title, body, notice_id, from_name)
+  select x, 'notice', v_title, v_body, v_id, me.name from unnest(v_to) as x;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Notices',
+    'Sent to ' || case when p_to is null then 'all colleagues (' || n || ')'
+                       when n = 1 then '1 colleague' else n || ' colleagues' end || ': ' || v_title);
+  return jsonb_build_object('ok', true, 'id', v_id, 'count', n);
+end $$;
+revoke all on function public.team_notice_send(text, text, uuid[]) from public, anon;
+grant execute on function public.team_notice_send(text, text, uuid[]) to authenticated;
+
+create or replace function public.quote_tell(p_client uuid, p_kind text, p_title text, p_body text, p_key text)
+returns void
+language plpgsql volatile security definer set search_path = public as $$
+begin
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, p_kind, p_title, p_body, p_client, p_kind || ':' || p_key || ':' || m.id
+    from public.team_members m
+   where m.active
+     and (m.is_admin or m.role = 'admin'
+          or public.level_rank(coalesce(m.access ->> 'clients.leads', m.access ->> 'clients')) >= 2)
+  on conflict (dedupe_key) do nothing;
+end $$;
+revoke all on function public.quote_tell(uuid, text, text, text, text) from public, anon, authenticated;
+
+create or replace function public.client_details_submit(p_key text, p_answers jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_f    public.client_detail_forms;
+  v_cl   public.clients;
+  a      jsonb := coalesce(p_answers, '{}'::jsonb);
+  t      text;
+  v_name text := upper(btrim(regexp_replace(coalesce(a->>'legal_name', ''), '\s+', ' ', 'g')));
+  v_brn  text := upper(regexp_replace(coalesce(a->>'company_no', ''), '\s+', '', 'g'));
+  v_old  text := nullif(upper(regexp_replace(coalesce(a->>'company_no_old', ''), '\s+', '', 'g')), '');
+  v_tin  text := nullif(upper(regexp_replace(coalesce(a->>'tin', ''), '\s+', '', 'g')), '');
+  v_sst  text := nullif(upper(regexp_replace(coalesce(a->>'sst_no', ''), '\s+', '', 'g')), '');
+  v_addr text := btrim(coalesce(a->>'billing_address', ''));
+  v_fin  text := nullif(lower(btrim(coalesce(a->>'finance_email', ''))), '');
+  v_sal  text := nullif(btrim(coalesce(a->>'contact_salutation', '')), '');
+  v_cn   text := btrim(regexp_replace(coalesce(a->>'contact_name', ''), '\s+', ' ', 'g'));
+  v_cp   text := btrim(coalesce(a->>'contact_phone', ''));
+  v_ce   text := lower(btrim(coalesce(a->>'contact_email', '')));
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into v_f from public.client_detail_forms f where f.access_key = p_key and f.voided_at is null for update;
+  if v_f.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if v_f.submitted_at is not null then return jsonb_build_object('error', 'submitted'); end if;
+  if v_f.expires_at <= now() then return jsonb_build_object('error', 'expired'); end if;
+  if exists (select 1 from public.clients c where c.id = v_f.client_id and c.stage = 'past') then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+  if length(v_name) < 2 or length(v_name) > 160 then return jsonb_build_object('error', 'bad-legal_name'); end if;
+  if v_brn !~ '^[A-Z0-9-]{6,20}$' then return jsonb_build_object('error', 'bad-company_no'); end if;
+  if v_old is not null and v_old !~ '^[A-Z0-9-]{4,20}$' then return jsonb_build_object('error', 'bad-company_no_old'); end if;
+  if v_tin is not null and v_tin !~ '^[A-Z0-9-]{6,20}$' then return jsonb_build_object('error', 'bad-tin'); end if;
+  if v_sst is not null and v_sst !~ '^[A-Z0-9-]{6,25}$' then return jsonb_build_object('error', 'bad-sst_no'); end if;
+  if length(v_addr) < 10 or length(v_addr) > 400 then return jsonb_build_object('error', 'bad-billing_address'); end if;
+  if v_fin is not null and (v_fin !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_fin) > 160) then
+    return jsonb_build_object('error', 'bad-finance_email');
+  end if;
+  if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
+      'Dato'' Sri', 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik') then
+    return jsonb_build_object('error', 'bad-contact_salutation');
+  end if;
+  if length(v_cn) < 2 or length(v_cn) > 80 then return jsonb_build_object('error', 'bad-contact_name'); end if;
+  t := regexp_replace(v_cp, '[^0-9]', '', 'g');
+  if length(t) < 8 or length(t) > 15 or length(v_cp) > 30 then return jsonb_build_object('error', 'bad-contact_phone'); end if;
+  if v_ce !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_ce) > 160 then return jsonb_build_object('error', 'bad-contact_email'); end if;
+
+  update public.client_detail_forms f
+     set submitted_at = now(),
+         answers = jsonb_strip_nulls(jsonb_build_object(
+           'legal_name', v_name, 'company_no', v_brn, 'company_no_old', v_old, 'tin', v_tin, 'sst_no', v_sst,
+           'billing_address', v_addr, 'finance_email', v_fin, 'contact_salutation', v_sal,
+           'contact_name', v_cn, 'contact_phone', v_cp, 'contact_email', v_ce))
+   where f.id = v_f.id;
+  select * into v_cl from public.clients c where c.id = v_f.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Details form', 'client.edited', v_cl.name,
+          'Billing details received on the details form from ' || coalesce(v_sal || ' ', '') || v_cn);
+  insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+  select m.id, 'client.details', 'Billing details received · ' || v_cl.name,
+         'From ' || coalesce(v_sal || ' ', '') || v_cn || '. Review them on the client''s Billing.',
+         v_cl.id, 'client.details:' || v_f.id || ':' || m.id
+    from public.team_members m
+   where m.active
+     and (m.is_admin or m.role = 'admin'
+          or (public.level_rank(coalesce(m.access ->> 'clients.billing', m.access ->> 'clients')) >= 2
+              -- held to the colleague's own client scope, as client_row_seen holds a reader (audit S7)
+              and (v_cl.stage not in ('lead', 'contacted', 'proposal', 'past')
+                   or public.level_rank(coalesce(m.access ->> case when v_cl.stage = 'past' then 'clients.past' else 'clients.leads' end,
+                                                 m.access ->> 'clients')) >= 1)
+              and (coalesce(m.client_scope, 'all') <> 'own'
+                   or (nullif(btrim(coalesce(v_cl.owner, '')), '') is null and v_cl.stage in ('lead', 'contacted', 'proposal'))
+                   or lower(btrim(coalesce(v_cl.owner, ''))) = lower(btrim(coalesce(m.name, ''))))))
+  on conflict (dedupe_key) do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_details_submit(text, jsonb) from public;
+grant execute on function public.client_details_submit(text, jsonb) to anon, authenticated;
+
+create or replace function public.supplier_form_submit(p_key text, p_answers jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  f public.supplier_forms;
+  s public.suppliers;
+  v jsonb;
+  a jsonb := coalesce(p_answers, '{}'::jsonb);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into f from public.supplier_forms x where x.access_key = p_key and x.voided_at is null for update;
+  if f.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if f.submitted_at is not null then return jsonb_build_object('error', 'submitted'); end if;
+  if f.expires_at <= now() then return jsonb_build_object('error', 'expired'); end if;
+  if coalesce(a->>'authorise', '') <> 'true' then return jsonb_build_object('error', 'bad-authorise'); end if;
+  select * into s from public.suppliers x where x.id = f.supplier_id;
+  /* An update keeps the NRIC and the bank details held where left blank. */
+  if f.purpose = 'update' then
+    if btrim(coalesce(a->>'bank_account', '')) = '' and s.bank_account is not null then
+      a := a || jsonb_build_object('payee_name', s.payee_name, 'bank_name', s.bank_name, 'bank_account', s.bank_account,
+                                   'swift', s.swift, 'bank_address', s.bank_address);
+    end if;
+    if btrim(coalesce(a->>'nric', '')) = '' and s.nric is not null then
+      a := a || jsonb_build_object('nric', s.nric);
+    end if;
+  end if;
+  v := public.supplier_values_check(a, true);
+  if v ? 'error' then return v; end if;
+  update public.supplier_forms x set submitted_at = now(), answers = jsonb_strip_nulls(v) where x.id = f.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Supplier form', 'supplier.edited', coalesce(s.name, v->>'name'), s.code || ' · ' ||
+          case when f.purpose = 'update' then 'Details update received on the update link' else 'Details received on the details form' end ||
+          coalesce(' from ' || nullif(btrim(v->>'contact_name'), ''), ''));
+  insert into public.ops_notifications (team_member_id, kind, title, body, supplier_id, dedupe_key)
+  select m.id, 'supplier.details',
+         case when f.purpose = 'update' then 'Supplier details update received · ' else 'Supplier details received · ' end || coalesce(s.name, v->>'name'),
+         'From ' || (v->>'contact_name') || '. Review them on the supplier.',
+         s.id, 'supplier.details:' || f.id || ':' || m.id
+    from public.team_members m
+   where m.active
+     and (m.is_admin or m.role = 'admin'
+          or public.level_rank(m.access ->> 'suppliers') >= 2)
+  on conflict (dedupe_key) do nothing;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.supplier_form_submit(text, jsonb) from public;
+grant execute on function public.supplier_form_submit(text, jsonb) to anon, authenticated;
+
+create or replace function public.abroad_request(p_reason text, p_until date)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  t public.team_members := public.abroad_who();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_days int := coalesce(public.app_setting('abroad_days', (now() at time zone 'Asia/Kuala_Lumpur')::date), 14)::int;
+  v_reason text := btrim(regexp_replace(coalesce(p_reason, ''), '\s+', ' ', 'g'));
+  v_country text := public.request_country();
+  v_id uuid;
+begin
+  if t.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if t.is_admin or t.role = 'admin' then return jsonb_build_object('error', 'admin'); end if;
+  if char_length(v_reason) < 3 or char_length(v_reason) > 300 then return jsonb_build_object('error', 'bad-reason'); end if;
+  if p_until is null or p_until < v_today or p_until > v_today + v_days then
+    return jsonb_build_object('error', 'bad-until', 'max', v_today + v_days);
+  end if;
+  select x.id into v_id from public.team_abroad x
+   where x.team_member_id = t.id and x.status = 'waiting' order by x.asked_at desc limit 1 for update;
+  if v_id is null then
+    insert into public.team_abroad (team_member_id, country, reason, until)
+    values (t.id, v_country, v_reason, p_until) returning id into v_id;
+  else
+    update public.team_abroad set country = v_country, reason = v_reason, until = p_until, asked_at = now(), reminded_at = null
+     where id = v_id;
+  end if;
+  insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
+  select m.id, 'abroad.request', 'Overseas access requested · ' || t.name,
+         case when v_country <> '' then 'From ' || v_country || ' · ' else '' end ||
+         'until ' || public.register_day(p_until) || ' · ' || v_reason,
+         'abroad:' || v_id || ':' || m.id || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI')
+    from public.team_members m
+   where m.active and (m.is_admin or m.role = 'admin')
+  on conflict (dedupe_key) do nothing;
+  return public.abroad_state();
+end $$;
+revoke all on function public.abroad_request(text, date) from public, anon;
+grant execute on function public.abroad_request(text, date) to authenticated;
+
+create or replace function public.abroad_remind()
+returns int
+language plpgsql security definer set search_path = public as $$
+declare
+  v_hours numeric := coalesce(public.app_setting('abroad_remind_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 2);
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_n int := 0;
+  r record;
+begin
+  if v_hours <= 0 then return 0; end if;
+  for r in
+    select x.id, x.country, x.reason, x.until, t.name
+      from public.team_abroad x join public.team_members t on t.id = x.team_member_id
+     where x.status = 'waiting' and t.active and x.until >= v_today
+       and greatest(x.asked_at, coalesce(x.reminded_at, x.asked_at)) <= now() - make_interval(mins => (v_hours * 60)::int)
+     order by x.asked_at
+     for update of x skip locked
+  loop
+    update public.team_abroad set reminded_at = now() where id = r.id;
+    insert into public.ops_notifications (team_member_id, kind, title, body, dedupe_key)
+    select m.id, 'abroad.request', 'Overseas access waiting · ' || r.name,
+           case when r.country <> '' then 'From ' || r.country || ' · ' else '' end ||
+           'until ' || public.register_day(r.until) || ' · ' || r.reason,
+           'abroad:' || r.id || ':remind:' || m.id || ':' || to_char(now() at time zone 'Asia/Kuala_Lumpur', 'YYYYMMDDHH24MI')
+      from public.team_members m
+     where m.active and (m.is_admin or m.role = 'admin')
+    on conflict (dedupe_key) do nothing;
+    v_n := v_n + 1;
+  end loop;
+  return v_n;
+end $$;
+revoke all on function public.abroad_remind() from public, anon, authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: no overseas reminders go out until it is.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'abroad-remind';
+  perform cron.schedule('abroad-remind', '*/15 0-14 * * *', 'select public.abroad_remind()');
+end $$;
+
+-- END OF ADMIN NOTICES REACH THE SYSTEM ACCOUNT ------------------------------
+
+-- ===========================================================================
+-- OVERSEAS REMINDER SETTING — how often a waiting overseas request reminds
+-- the admins is a Business setting like any other (2026-10-24)
+-- ===========================================================================
+-- WHY (the user, 2026-10-24: a request waited with nothing to bring it
+-- back): the hours between reminders are the team's to change, from a day
+-- on, through the one sheet every setting uses.
+--
+-- WHAT IT CHANGES
+--   * `app_settings_set` takes `abroad_remind_hours` (0 to 24 whole hours,
+--     0 sends none), filed as Overseas reminder, from and to. Nothing else
+--     moves.
+--
+-- ORDER: after ADMIN NOTICES REACH THE SYSTEM ACCOUNT, in the SQL Editor
+-- (the function holds a delete, which the connector holds back). Safe to
+-- run twice. Rollback: run app_settings_set from OVERSEAS APPROVAL DAYS
+-- again.
+-- ===========================================================================
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k = 'meta_checks' then case when v_was = 1 then 'On' else 'Off' end else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k = 'meta_checks' then case when v_v = 1 then 'On' else 'Off' end else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF OVERSEAS REMINDER SETTING ------------------------------------------
+
 select public.functions_tidy();
