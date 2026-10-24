@@ -5630,26 +5630,35 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Set inactive and Delete (the ⋯'s last item, red, Team Full Access, never
     one's own or a system account, not drawn once their details are
     deleted) first ask who takes each kind of live work the colleague holds,
-    a picker a kind, Keep with them first, only kinds they hold; with two
-    kinds or more All their work to comes first and each kind reads Same as
-    above until a colleague or Keep is chosen for it
-    (`team_work_held`): clients they are person in charge of and open
-    campaigns (by name, as before), open tasks, months they manage,
+    a picker a kind, only kinds they hold, Keep with them first for Set
+    inactive; Delete's opens on Choose a colleague, required while anything
+    is held, Keep still offered (TEAM2-5); with two kinds or more All their
+    work to comes first and each kind reads Same as above until a colleague
+    or Keep is chosen for it (`team_work_held`, read whatever the caller's
+    client scope, `2026-10-24-hand-over-takes-clients.sql`): clients they
+    are person in charge of and open campaigns (by name, listed for the
+    Work pane), open tasks, months they manage,
     meetings ahead they lead, repeating tasks, reports in review waiting on
     them (left with them where the colleague chosen submitted it or may not
     review, and said), extension requests waiting on them, and templates
     naming them as default owner (`team_hand_over`, each filed on its
     record and one line under the colleague: Work handed over: 2 open
-    tasks → Aisyah; …). Work left with a removed colleague is named in
-    Delete's line (1 client and 1 open task stay with …), and an inactive
-    or removed colleague's Work pane offers Hand over work, the same pickers.
-  - Delete then asks Their data, Keep / Delete, and the name typed back
+    tasks → Aisyah; …; the person in charge moved past the caller's own
+    client scope, `adspace.team_owner`). The work moves first: Set inactive
+    stands them down, and Delete removes them, only once it has (TEAM2-4).
+    Work left with them, or a hand-over refused, is said with Open Work,
+    the button to their Work pane, whose head holds Hand over work over a
+    line of all they hold, the same pickers, and says after what moved
+    what stayed (TEAM2-12). A rename is carried onto every client and
+    campaign naming them, completed ones included, each filed, by trigger
+    `team_members_rename_owner`; the page carries nothing.
+  - Delete then asks Their data, Keep / Erase personal details, and the name typed back
     (the question opens on it); `team_member_remove_check` answers the
     removal's own refusals before any work moves
     (`2026-10-15-colleague-remove-check.sql`), then `team_member_remove` (`own`,
     `system-account`, `bad-name`, `last-admin`) sets them inactive and
     stamps `removed_at` (the row reads Removed, with no Set active);
-    Delete their data also removes the mobile, the namecard (off, its short
+    Erase personal details also removes the mobile, the namecard (off, its short
     link freed), the sign-in email and its login, their health check-ins,
     consents, log and talks, devices, guides met and section order
     (`erased_at`). Their name, Employee ID and group, their name on past

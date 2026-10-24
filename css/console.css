@@ -945,7 +945,7 @@ button.appver {
 }
 .team-row, .group-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
 .team-row:last-child, .group-row:last-child { border-bottom: 0; }
-.team-who .team-part { white-space: nowrap; }
+.team-part { white-space: nowrap; }
 /* What a group opens, in the panel that edits one: a level per section, then
    the two capabilities that are not sections. The selects carry the ladder and
    the tickboxes carry what has no ladder, so the panel says which is which
@@ -3578,8 +3578,9 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #docScaSec .readgroup-head { margin-bottom: 12px; }
 /* A colleague's work at a desk is one line a row: the name, its facts after
    it in the mute ink, the date at the right (2026-10-18: a hundred tasks). */
-.mrec-sum { margin: -4px 0 8px; font-size: 13px; color: var(--ink-soft); }
+.mrec-sum, .mrec-held { margin: -4px 0 8px; font-size: 13px; color: var(--ink-soft); }
 .mrec-sum .is-late { color: var(--err); }
+.msg .msg-act { margin-left: 8px; }
 .mrec-rest { display: contents; }
 .mrec-rest[hidden] { display: none; }
 .mrec-all { margin-top: 12px; }
