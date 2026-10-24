@@ -831,6 +831,8 @@
      (TEAM2-4). `quiet` leaves the line to the act that asked (Set inactive
      says Saved. once it has stood them down). */
   function handTo(m, own, v, quiet) {
+    /* What they hold is read again once work moves (the rail, Work). */
+    rec.work = null;
     v = handChosen(v || {});
     var to = {};
     handKinds().forEach(function (k) { if (v[k]) to[k] = v[k]; });
@@ -2357,15 +2359,24 @@
     if (!rail) return;
     var self = me() && me().id === m.id;
     var onWork = rec.pane === 'work';
-    var access = '<div class="railblock" id="mrecAccess"><h3 class="railtitle">Access</h3><ul class="railseen" id="mrecSeen">' +
-      '<li>' + esc(m.access_until ? (m.expired_at && !m.active ? 'Access ended ' : 'Access until ') + window.ADspaceClock.date(m.access_until) +
-        (m.access_until_time ? ', ' + window.ADspaceClock.clock(m.access_until + 'T' + m.access_until_time) : '') : 'No access end date') + '</li>' +
-      '</ul></div>';
-    /* Their work is the Work pane's, read at Team Full Access. */
-    var work = paneOk('work');
+    /* A fact is said once on a screen: the access end is Overview's own
+       row, so the rail says it on the other panes, where an end is set. */
+    var end = rec.pane !== 'overview' && m.access_until ? (m.expired_at && !m.active ? 'Access ended ' : 'Access until ') +
+      window.ADspaceClock.date(m.access_until) + (m.access_until_time ? ', ' + window.ADspaceClock.clock(m.access_until + 'T' + m.access_until_time) : '') : '';
+    var seenToo = may('team', 'manage') && !m.erased_at;
+    var access = end || seenToo ? '<div class="railblock" id="mrecAccess"' + (end ? '' : ' hidden') + '><h3 class="railtitle">Access</h3><ul class="railseen" id="mrecSeen">' +
+      (end ? '<li>' + esc(end) + '</li>' : '') + '</ul></div>' : '';
+    /* Their work is the Work pane's, read at Team Full Access, and left to
+       it while it is open. */
+    var work = paneOk('work') && !onWork;
     rail.innerHTML = (work ? '<div class="railblock" id="mrecHeld"><h3 class="railtitle">Their work</h3><div id="mrecHeldBody"></div></div>' : '') + access;
-    var blocks = rail.querySelectorAll('.railblock');
-    Array.prototype.forEach.call(blocks, function (b, i) { b.classList.toggle('is-last', i === blocks.length - 1); });
+    var lastOne = function () {
+      var shown = rail.querySelectorAll('.railblock:not([hidden])');
+      Array.prototype.forEach.call(rail.querySelectorAll('.railblock'), function (b) { b.classList.remove('is-last'); });
+      if (shown.length) shown[shown.length - 1].classList.add('is-last');
+      rail.hidden = !shown.length;
+    };
+    lastOne();
     var body = $('mrecHeldBody');
     if (body) body.innerHTML = '<div class="skel"><div class="skel-row"></div><div class="skel-row"></div></div>';
     if (body) workOf(m, function (w) {
@@ -2380,7 +2391,7 @@
       rows.push(['Other work', other]);
       var shown = rows.filter(function (r) { return r[1] > 0; });
       var acts = [];
-      if (shown.length && !onWork) {
+      if (shown.length) {
         acts.push('<button class="btn btn-sm" type="button" data-r="work">Open Work</button>');
         if (!self && !m.system && may('team', 'manage')) acts.push('<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>');
       }
@@ -2393,7 +2404,7 @@
       var hand = body.querySelector('[data-r="hand"]');
       if (hand) hand.addEventListener('click', function () { handOverAsk(m, w.own, held); });
     });
-    if (!may('team', 'manage') || m.erased_at) return;
+    if (!seenToo) return;
     var list = $('mrecSeen');
     db.rpc('team_member_seen', { p_id: m.id }).then(function (r) {
       var d = r && !r.error && r.data;
@@ -2406,6 +2417,8 @@
         if (d.invited_at) lines.push('Invitation sent ' + window.ADspaceClock.date(d.invited_at, { year: false }));
       }
       list.insertAdjacentHTML('afterbegin', lines.filter(Boolean).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join(''));
+      if (list.children.length) $('mrecAccess').hidden = false;
+      lastOne();
     }).catch(function () {});
   }
   /* Hand over work, from the Work pane's head and the rail alike. */

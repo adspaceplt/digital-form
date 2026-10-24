@@ -5614,6 +5614,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   behind its own lock) and Health (their check-ins and talks from
   `health_team`, an admin's behind the master code), each drawn only where readable
   (`tests/teamrec.js`).
+- A colleague's record has a rail, as a client's (`.rec`, 1.618 : 1,
+  splitting below 1100, its blocks leading the tabs on a phone; TEAM2-9,
+  2026-10-24): Their work (Team Full Access, off the Work pane: the counts
+  `team_work_held` and their open tasks answer, read once a visit and
+  again after a hand-over, overdue in red, Open Work and Hand over work)
+  and Access (the access end off Overview, where it is set; at Team Full
+  Access `team_member_seen(p_id)`: Active 2 hours ago / Active today,
+  9:14am, Last sign-in 22 Oct, 9:14am from `auth.users`, else Not signed
+  in yet and Invitation sent {day}). `team_members.last_seen_at` is
+  stamped by `page_pulse` for the team audience alone, once in 15
+  minutes, never moving `updated_at`; withheld from the column grants,
+  read through `team_rows()` at Team Full Access (null below), cleared on
+  erasure (`team_members_erased_seen`;
+  `2026-10-24-colleague-last-seen.sql`).
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
 - Add member, Set access expiry, a member's values and Set inactive, and a
