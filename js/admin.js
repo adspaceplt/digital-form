@@ -643,14 +643,22 @@
           $('noTeamRetry').hidden = false;
           return;
         }
-        /* Access that ended on its date says so (TEAM ACCESS EXPIRY). */
+        /* A colleague outside Malaysia and Singapore asks an admin for
+           access (OVERSEAS ACCESS, 2026-10-24); else access that ended on
+           its date says so (TEAM ACCESS EXPIRY). */
+        db.rpc('abroad_state').then(function (r) {
+          if (!r.error && r.data && r.data.team && r.data.held) { paintAbroad(r.data); return; }
+          expiredLine();
+        }).catch(expiredLine);
+        return;
+      }
+      function expiredLine() {
         db.rpc('my_access_expired').then(function (r) {
           if (r.error || r.data !== true) return;
           var panel = $('noTeamShell').querySelector('.cover-panel');
           panel.querySelector('h2').textContent = 'Access expired';
           panel.querySelector('p').innerHTML = 'Access for <b>' + String(actor).replace(/[&<>"]/g, '') + '</b> has ended. Please contact an administrator to extend it.';
         }).catch(function () {});
-        return;
       }
       $('console').classList.remove('is-booting');
       $('console').hidden = false;
@@ -668,6 +676,75 @@
       /* Once per browser, on a device that can hold one, a colleague with no
          passkey is asked whether to add one. */
       if (window.ADspacePasskey) setTimeout(window.ADspacePasskey.offer, 1200);
+    });
+  }
+
+  /* OVERSEAS ACCESS (2026-10-24; the user: a colleague abroad asks, an
+     admin approves, for 14 days at most; admins are never held). The
+     database refuses the colleague everywhere (`team_place_ok`); this cover
+     says why and takes the request (`abroad_request`). */
+  function countryName(code) {
+    if (!code) return '';
+    try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
+  }
+  var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An administrator is never held.',
+    denied: 'This sign-in is not on the team.' };
+  function paintAbroad(st) {
+    var panel = $('noTeamShell').querySelector('.cover-panel');
+    var where = countryName(st.country);
+    var req = st.request || null, waiting = req && req.status === 'waiting';
+    panel.querySelector('h2').textContent = waiting ? 'Request sent' : 'Access from ' + (where || 'outside Malaysia and Singapore') + ' needs approval';
+    var C = window.ADspaceClock;
+    var line = waiting
+      ? 'An administrator has been asked to approve access until ' + C.date(req.until) + '.'
+      : 'Outside Malaysia and Singapore, the console opens once an administrator approves it, for up to ' + st.days + ' days.';
+    panel.querySelector('p').textContent = line;
+    var past = $('abroadPast');
+    var said = req && req.status === 'declined' ? 'Declined on ' + C.date(req.decided_at) + (req.note ? ': ' + req.note : '.')
+      : req && req.status === 'ended' ? 'Access ended on ' + C.date(req.decided_at) + '.'
+      : req && req.status === 'expired' ? 'Access ended on ' + C.date(req.until) + '.' : '';
+    past.textContent = said;
+    past.hidden = !said;
+    var max = C.addDays(st.today, st.days);
+    var until = $('abroadUntil');
+    until.setAttribute('min', st.today);
+    until.setAttribute('max', max);
+    if (!until.value) until.value = waiting ? req.until : C.addDays(st.today, Math.min(7, st.days));
+    if (waiting && !$('abroadWhy').value) $('abroadWhy').value = req.reason || '';
+    $('abroadAsk').hidden = Boolean(waiting) && !abroadEditing;
+    $('abroadGo').textContent = waiting ? 'Update request' : 'Request access';
+    $('abroadGo').hidden = $('abroadAsk').hidden;
+    $('abroadEdit').hidden = !waiting || abroadEditing;
+    $('abroadCheck').hidden = !waiting;
+    if (!abroadWired) wireAbroad();
+  }
+  var abroadEditing = false, abroadWired = false;
+  function abroadMsg(text, tone) { var m = $('abroadMsg'); m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function wireAbroad() {
+    abroadWired = true;
+    $('abroadEdit').addEventListener('click', function () {
+      abroadEditing = true;
+      db.rpc('abroad_state').then(function (r) { if (r.data) paintAbroad(r.data); $('abroadWhy').focus(); });
+    });
+    $('abroadCheck').addEventListener('click', function () { location.reload(); });
+    $('abroadGo').addEventListener('click', function () {
+      var btn = this, why = $('abroadWhy').value.replace(/\s+/g, ' ').trim(), until = $('abroadUntil').value;
+      abroadMsg('');
+      if (why.length < 3) { abroadMsg('Enter a reason of 3 to 300 characters.'); $('abroadWhy').focus(); return; }
+      if (!until) { abroadMsg('Choose the last day you need access.'); $('abroadUntil').focus(); return; }
+      btn.disabled = true;
+      db.rpc('abroad_request', { p_reason: why, p_until: until }).then(function (r) {
+        var d = r.data, e = r.error || (d && d.error);
+        if (e) {
+          abroadMsg(e.message ? (/function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message)
+            : e === 'bad-until' ? 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.' : ABROAD_SAID[e] || 'Not sent.');
+          return;
+        }
+        abroadEditing = false;
+        paintAbroad(d);
+        abroadMsg('Sent.', 'ok');
+      }).catch(function () { abroadMsg('Not sent. Please try again.'); })
+        .then(function () { btn.disabled = false; });
     });
   }
 
@@ -5445,7 +5522,7 @@
      ringgit to one Singapore dollar, four decimals) may stay unset. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
-    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true] };
+    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true] };
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The
      details form's days are the Settings page's Clients group (SET-9). */
@@ -5512,6 +5589,8 @@
       ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
       ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
+    /* The longest an overseas approval runs (2026-10-24). */
+    abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }

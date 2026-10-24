@@ -240,6 +240,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
+| Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas rows) | abroadsql, abroad, sql, settings, then `ui` |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
@@ -532,7 +533,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, or Suppliers or WhatsApp at Full Access (2026-10-22,
   SET2-11); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Health data kept), Clients (Follow-up limits, Details forms: a
+  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas access, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
   client's and a supplier's link alike), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -6082,6 +6083,32 @@ Each line is a rule that broke once. Its reason is in the archive.
     auth events meanwhile (`ADspaceAdmin.hold`); another account's answer is
     revoked on this device (`signOut({ scope: 'local' })`) and the person's
     own session put back (`setSession`), else the console signs out.
+- Overseas access (`2026-10-24-overseas-access.sql`, its SQL Editor part
+  `2026-10-24-overseas-access-days.sql`; the user, 2026-10-24: "Allowed in
+  Malaysia Singapore", "14 days per cycle", "Admins only"): the console
+  answers a colleague outside Malaysia and Singapore only once an admin
+  approves it. The country is Cloudflare's `cf-ipcountry` header
+  (`request_country()`, which a caller cannot set; none, as for pg_cron, is
+  never held); `team_place_ok` (an admin, MY or SG, no country, or an
+  approved `team_abroad` row whose day (MYT) has not passed) is asked by
+  `is_team()`, `allowed(p_section, p_level)`, `ops_granted`, `ops_me()` and
+  `me()`, so every policy and function refuses the colleague; client pages
+  never ask them. `me()` answering nothing, the console asks `abroad_state()`
+  and a held colleague meets the cover (`paintAbroad`, js/admin.js: Access
+  from {country} needs approval, Reason and Until, Request access; then
+  Request sent with Change request and Check again; a decline, an end or a
+  day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
+  `bad-until` today to today plus `abroad_days`, a waiting request
+  replaced) tells every active admin but a system account (kind
+  `abroad.request`, the bell opening Settings' sheet). Settings, Portal:
+  Overseas access (an admin's; `#abSheet`: Waiting with Decline and Approve,
+  each asked, Approve asking Until; Approved with its ⋯ End access, asked;
+  Earlier, 90 days), `abroad_decide` / `abroad_end` filed `team.changed`
+  under Overseas access and told to the colleague (`abroad.decided`);
+  Overseas approval (`abroad_days`, 14, 1 to 30, Business settings). An
+  approval covers any country until its day. A VPN or roaming data reads as
+  where it exits; an edge function reads as where it runs (Singapore for a
+  colleague here). The stand-in reads `window.__country` (Malaysia unset).
 - One person per console: a session that turns into somebody else's (another
   tab, any sign-in over this one) restarts the console from the top
   (`gate()`, after 1.5s unless the session has come back).

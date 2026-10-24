@@ -82,6 +82,18 @@
     m.textContent = text;
   }
   var READ = {
+    /* What the Overseas access row holds (2026-10-24): what waits on an
+       admin and who is away now. */
+    abroad: function () {
+      return isAdmin() && db.rpc('abroad_list').then(function (r) {
+        if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+        ab.rows = r.data.rows || []; ab.days = r.data.days; ab.today = r.data.today;
+        var w = ab.rows.filter(function (x) { return x.status === 'waiting'; }).length;
+        var a = ab.rows.filter(function (x) { return x.status === 'approved'; }).length;
+        return w || a ? parts([w ? plural(w, 'request', 'requests') + ' waiting' : '', a ? plural(a, 'colleague', 'colleagues') + ' approved' : ''].filter(Boolean))
+          : 'Malaysia and Singapore only';
+      });
+    },
     /* What the Departments row holds, from the list (2026-10-23). */
     depts: function () {
       return db.rpc('departments_list').then(function (r) {
@@ -165,6 +177,11 @@
       may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice') },
       biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() },
       biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts') },
+      /* Overseas access (2026-10-24): an admin decides who reaches the
+         console from abroad, and for how long at most. */
+      isAdmin() && { id: 'abroad', name: 'Overseas access', kind: 'open', meta: line('abroad') },
+      biz && { id: 'abroadays', name: 'Overseas approval', kind: 'edit',
+        meta: num('abroad_days') == null ? '' : 'Up to ' + plural(num('abroad_days'), 'day', 'days') },
       biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
         meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
           'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]);
@@ -428,6 +445,7 @@
     if (a === 'holidays') { openHol(btn); return; }
     if (a === 'depts') { openDepts(btn); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
+    if (a === 'abroad') { openAbroad(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
@@ -534,6 +552,141 @@
         }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
       });
   }
+  /* ---- Overseas access (2026-10-24) --------------------------------------
+     A colleague outside Malaysia and Singapore reaches the console only
+     once an admin approves it (`team_place_ok`). The sheet lists what waits
+     (Decline, Approve), who is approved now (its ⋯ End access) and the last
+     90 days' decisions. */
+  var ab = { rows: null, err: null, days: 14, today: '' };
+  function isAdmin() { return Boolean(bridge.isAdmin && bridge.isAdmin()); }
+  var AB_SAID = { denied: 'Only an administrator decides overseas access.', 'not-found': 'This request was removed in the meantime.',
+    'not-waiting': 'This request was decided in the meantime.', 'not-approved': 'This access has already ended.', 'too-long': 'Keep the note to 300 characters.' };
+  function abSaid(r) {
+    var d = r && r.data, e = r && (r.error || (d && d.error));
+    if (!e) return '';
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
+    if (e === 'bad-until') return 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.';
+    return AB_SAID[e] || 'Not saved.';
+  }
+  function abMsg(text, tone) { var m = $('abMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function abWhere(code) {
+    if (!code) return 'Unknown';
+    try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
+  }
+  function readAb(done) {
+    db.rpc('abroad_list').then(function (r) {
+      if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+      ab.rows = r.data.rows || []; ab.days = r.data.days; ab.today = r.data.today; ab.err = null;
+    }).catch(function (e) { ab.rows = null; ab.err = e; }).then(function () { if (done) done(); });
+  }
+  var AB_STATE = { approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'], ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
+  function abRow(x) {
+    var C = window.ADspaceClock;
+    var bits = [abWhere(x.country), 'until ' + C.date(x.until)];
+    if (x.status !== 'waiting' && x.decided_by) bits.push(AB_STATE[x.status][1] + ' by ' + x.decided_by);
+    var acts = x.status === 'waiting'
+      ? '<span class="hol-acts"><button class="btn btn-sm" type="button" data-ab="decline">Decline</button>' +
+        '<button class="btn btn-sm" type="button" data-ab="approve">Approve</button></span>'
+      : x.status === 'approved'
+        ? '<span class="hol-acts"><span class="chip chip-state ' + AB_STATE.approved[0] + '">' + AB_STATE.approved[1] + '</span>' +
+          '<span class="team-act"><button class="kmenu-btn" type="button" data-ab="menu" aria-label="More actions for ' + esc(x.name) + '" aria-expanded="false">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+          '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item" data-g="5" type="button" role="menuitem" data-ab="end">End access</button></div></span></span>'
+        : '<span class="chip chip-state ' + AB_STATE[x.status][0] + '">' + AB_STATE[x.status][1] + '</span>';
+    return '<div class="dtrow ab-row' + (x.status === 'waiting' || x.status === 'approved' ? '' : ' is-past') + '" data-id="' + esc(x.id) + '">' +
+      '<span class="dtrow-name"><b>' + esc(x.name || 'A colleague') + '</b><small>' + esc(parts(bits)) + '</small>' +
+        '<small class="ab-why">' + esc(x.reason || '') + (x.note ? ' · ' + esc(x.note) : '') + '</small></span>' + acts + '</div>';
+  }
+  function paintAb() {
+    var box = $('abList');
+    if (!box) return;
+    if (ab.err) { window.ADspaceState.failLine(box, 'Overseas access', (ab.err && ab.err.message) || '', function () { readAb(paintAb); }); return; }
+    if (!ab.rows) { window.ADspaceState.skeleton(box, 3); return; }
+    var groups = [['Waiting', ab.rows.filter(function (x) { return x.status === 'waiting'; })],
+      ['Approved', ab.rows.filter(function (x) { return x.status === 'approved'; })],
+      ['Earlier', ab.rows.filter(function (x) { return x.status !== 'waiting' && x.status !== 'approved'; })]];
+    var html = groups.filter(function (g) { return g[1].length; }).map(function (g) {
+      return '<section class="ab-sec"><h4 class="fsec-h">' + g[0] + '</h4>' + g[1].map(abRow).join('') + '</section>';
+    }).join('');
+    if (!html) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No requests.'); return; }
+    box.innerHTML = html;
+  }
+  function abShut() { shutMenus('#abList', 'ab'); }
+  function abAfter(r, text) {
+    var said = abSaid(r);
+    if (said) return said;
+    ab.rows = r.data.rows || []; ab.days = r.data.days; ab.today = r.data.today;
+    paintAb(); readLine('abroad'); abMsg(text, 'ok');
+    return '';
+  }
+  function abApprove(x) {
+    var C = window.ADspaceClock, max = C.addDays(ab.today, ab.days);
+    window.ADspaceConfirm.ask({
+      title: 'Approve overseas access?', go: 'Approve', wait: true,
+      body: (x.name || 'The colleague') + ' reaches the console from ' + abWhere(x.country) + ' until the end of the day chosen, ' + ab.days + ' days at most.',
+      fields: [{ name: 'until', label: 'Until', type: 'date', value: x.until > max ? max : x.until, min: ab.today, max: max, required: true },
+        { name: 'note', label: 'Note', placeholder: 'Optional', required: false }],
+      check: function (v) { return !v.until || v.until < ab.today || v.until > max ? 'Choose a day from today to ' + C.date(max) + '.' : ''; }
+    }, function (v) {
+      return db.rpc('abroad_decide', { p_id: x.id, p_approve: true, p_until: v.until, p_note: v.note || null })
+        .then(function (r) { return abAfter(r, 'Approved.'); }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+    });
+  }
+  function abDecline(x) {
+    window.ADspaceConfirm.ask({
+      title: 'Decline overseas access?', go: 'Decline', tone: 'warn', wait: true,
+      body: (x.name || 'The colleague') + ' is told, with the note, and may ask again.',
+      fields: [{ name: 'note', label: 'Note', placeholder: 'Optional', required: false }]
+    }, function (v) {
+      return db.rpc('abroad_decide', { p_id: x.id, p_approve: false, p_until: null, p_note: v.note || null })
+        .then(function (r) { return abAfter(r, 'Declined.'); }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+    });
+  }
+  function abEnd(x) {
+    window.ADspaceConfirm.ask({
+      title: 'End overseas access?', go: 'End access', tone: 'warn', wait: true,
+      body: (x.name || 'The colleague') + ' stops reaching the console from abroad at once.'
+    }, function () {
+      return db.rpc('abroad_end', { p_id: x.id })
+        .then(function (r) { return abAfter(r, 'Ended.'); }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+    });
+  }
+  function openAbroad(opener) {
+    if (!isAdmin()) return;
+    abMsg('');
+    paintAb();
+    window.ADspaceSheet.show($('abSheet'), { opener: opener });
+    readAb(paintAb);
+  }
+  var abWired = false;
+  function wireAb() {
+    if (abWired || !$('abSheet')) return;
+    abWired = true;
+    $('abCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('abClose').addEventListener('click', function () { $('abCancel').click(); });
+    $('abList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-ab]');
+      if (!b) return;
+      var row = b.closest('.ab-row'), id = row && row.getAttribute('data-id');
+      var x = (ab.rows || []).filter(function (y) { return y.id === id; })[0];
+      if (!x) return;
+      var k = b.getAttribute('data-ab');
+      if (k === 'menu') {
+        e.stopPropagation();
+        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
+        abShut();
+        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(b, mn);
+        return;
+      }
+      abShut(); abMsg('');
+      if (k === 'approve') abApprove(x);
+      if (k === 'decline') abDecline(x);
+      if (k === 'end') abEnd(x);
+    });
+  }
+  wireAb();
+
   /* ---- Departments (2026-10-23) ------------------------------------------
      The team's departments (the user: "can add more departments?"): a
      colleague's department on Team, and the departments the quarter's
@@ -926,6 +1079,7 @@
     if (!e.target.closest('#holList .team-act')) holShut();
     if (!e.target.closest('#depList .team-act')) depShut();
     if (!e.target.closest('#taxList .team-act')) taxShut();
+    if (!e.target.closest('#abList .team-act')) abShut();
   });
 
   function enter() {
@@ -978,6 +1132,6 @@
   }
   wire();
 
-  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, urlState: urlState, allowed: allowed, say: say };
+  window.ADspaceSettings = { enter: function () { wire(); enter(); }, openAbroad: function () { openAbroad(null); }, paint: paint, urlState: urlState, allowed: allowed, say: say };
   if (bridge.settingsReady) bridge.settingsReady();
 })();

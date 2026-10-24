@@ -30,7 +30,7 @@
     lead_followup_hours: 48, proposal_followup_days: 21, report_due_days: 7, revision_due_days: 1,
     ai_price_in: 4, ai_price_out: 20, reach_allowance_pct: 0.5, approval_reminder_days: 3, ai_price_search: 10,
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72, task_remind_hours: 3, task_start_days: 2, quote_valid_days: 30, details_form_days: 14, wa_repeat_hours: 24,
-    vic_lead_followup_hours: 24, vic_proposal_followup_days: 7 };
+    vic_lead_followup_hours: 24, vic_proposal_followup_days: 7, abroad_days: 14 };
   var ROWS = [];
   var loading = null;
   function today() {
