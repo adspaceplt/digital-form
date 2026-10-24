@@ -953,7 +953,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'handbook'],
+    activity:  ['ops', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'hr', 'suppliers', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -2617,7 +2617,7 @@
   var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', suppliers: 'Suppliers', links: 'Short Links',
+                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', hr: 'HR letters', suppliers: 'Suppliers', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */
@@ -2703,7 +2703,13 @@
   var actRows = [];
 
   function sectionOf(action) { return (ACTION_LABEL[action] || [])[2] || 'other'; }
-  function sectionOfRow(a) { return a._section || sectionOf(a.action); }
+  /* An HR letter's history is its own part (HR HISTORY APART, 2026-10-24):
+     a Documents tag filed under subject HR. */
+  function sectionOfRow(a) {
+    if (a._section) return a._section;
+    var s = sectionOf(a.action);
+    return s === 'register' && a.subject === 'HR' ? 'hr' : s;
+  }
   function monthLong(p) {
     return ADspaceClock.month(String(p).slice(0, 7), { long: true }) || String(p);
   }
@@ -2790,6 +2796,7 @@
   function actOffered(k) {
     if (k === 'all') return true;
     if (k === 'performance') return may('team.performance', 'view');
+    if (k === 'hr') return may('activity.hr', 'view') && may('register.hr', 'view');
     return may('activity.' + k, 'view');
   }
   function fillActSections() {
@@ -2821,7 +2828,8 @@
   function actRead(before) {
     if (actFilter === 'performance') return Promise.resolve({ data: [] });
     var q = db.from('activity_log').select('*');
-    if (actFilter !== 'all') q = q.in('action', actionsOf(actFilter));
+    if (actFilter === 'hr') q = q.in('action', actionsOf('register')).eq('subject', 'HR');
+    else if (actFilter !== 'all') q = q.in('action', actionsOf(actFilter));
     if (before) q = q.lt('created_at', before);
     return q.order('created_at', { ascending: false }).limit(ACT_PAGE);
   }

@@ -1474,7 +1474,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     not scoped): the sheet refuses it and trigger `team_roles_scope_guard`
     (`scope-activity`) holds it for every group but an admin's
     (`2026-10-10-letters-held-to-their-lines.sql`).
-  - No preset below Admin opens Team, HR letters or performance reviews.
+  - No preset below Admin opens Team, HR letters or performance reviews,
+    their history included (`activity.team`, `activity.hr` shut; S5).
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
   Members, Performance and Health (`tab=health`, an admin's alone); the
   strip is drawn only where two tabs show.
@@ -5806,7 +5807,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per section (`activity.clients`, `.whatsapp`, `.ops`, `.team`,
   `.review`, `.scripts`, `.campaigns`, `.links`, `.register`, `.reports`,
-  `.services`, `.handbook`). The link draws where any part is readable.
+  `.services`, `.handbook`, `.hr`). The link draws where any part is readable.
+- An HR letter's history (a Documents tag filed under subject HR) is its own
+  part, HR letters (`activity.hr`), after Documents in the Section select:
+  `activity_read` answers it only at `activity.hr` and `register.hr` View
+  together, and Documents reads without it (`2026-10-24-hr-history-apart.sql`,
+  S5; the user: "file it apart").
 - Reports files a report's steps (`report.*`: started, submitted, returned,
   confirmed, published, revised, unpublished, deleted), every save
   (`report.saved`, filed by the page through `fileReport()`: the period and
