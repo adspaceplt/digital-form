@@ -5589,8 +5589,10 @@
       ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
       ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
-    /* The longest an overseas approval runs (2026-10-24). */
-    abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')]] },
+    /* The longest an overseas approval runs, and how often a waiting request
+       reminds the admins (2026-10-24). */
+    abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')],
+      ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }

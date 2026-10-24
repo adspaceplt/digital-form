@@ -680,7 +680,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   colleagues ticked code first, Title (one line, 120) and Message (1,000),
   the count beside Send). `team_notice_send(p_title, p_body, p_to)` writes
   one `ops_notifications` row (kind `notice`, `notice_id`, `from_name`) to
-  each active colleague but the sender and a system account (`bad-title`,
+  each active colleague but the sender (`bad-title`,
   `bad-body`, `no-one`; ten a sender in any hour, `too-many` with when the
   next can go, `2026-10-18-ten-notices-an-hour.sql`), so it reaches the bell
   and a push;
@@ -1423,6 +1423,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   every colleague picker, the capacity bars, the review list, Health and the
   report reviewers leave it out (`ADspaceAdmin.isSystem`, one read beside
   `me()`; `sm_report_may_review`); Set access expiry for everyone skips it.
+  Every notice an admin or a colleague is sent reaches it as any other
+  (Notices, a form answered, a quotation request, an overseas request; the
+  user, 2026-10-24: "System account acts same as other admins";
+  `2026-10-24-admin-notices-system-account.sql`); task reminders do not.
   The mark is set only with no sign-in (the connector or the SQL editor;
   a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
   by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
@@ -6120,8 +6124,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     auth events meanwhile (`ADspaceAdmin.hold`); another account's answer is
     revoked on this device (`signOut({ scope: 'local' })`) and the person's
     own session put back (`setSession`), else the console signs out.
-- Overseas access (`2026-10-24-overseas-access.sql`, its SQL Editor part
-  `2026-10-24-overseas-access-days.sql`; the user, 2026-10-24: "Allowed in
+- Overseas access (`2026-10-24-overseas-access.sql`,
+  `2026-10-24-admin-notices-system-account.sql`, their SQL Editor parts
+  `2026-10-24-overseas-access-days.sql` and
+  `2026-10-24-overseas-reminder-setting.sql`; the user, 2026-10-24: "Allowed in
   Malaysia Singapore", "14 days per cycle", "Admins only"): the console
   answers a colleague outside Malaysia and Singapore only once an admin
   approves it. The country is Cloudflare's `cf-ipcountry` header
@@ -6136,13 +6142,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   Request sent with Change request and Check again; a decline, an end or a
   day passed said under it); `abroad_request` (`bad-reason` 3 to 300,
   `bad-until` today to today plus `abroad_days`, a waiting request
-  replaced) tells every active admin but a system account (kind
-  `abroad.request`, the bell opening Settings' sheet). Settings, Portal:
+  replaced) tells every active admin (kind `abroad.request`, the bell
+  opening Settings' sheet), and while it waits, its colleague active and
+  its day not passed, `abroad_remind()` (pg_cron `abroad-remind`, every
+  fifteen minutes from 08:00 to 22:45 MYT; `team_abroad.reminded_at`, a
+  request asked again starting afresh) tells them again every
+  `abroad_remind_hours` (2, 0 to 24, 0 sends none; Overseas approval's
+  sheet) as Overseas access waiting. Settings, Portal:
   Overseas access (an admin's; `#abSheet`: Waiting with Decline and Approve,
   each asked, Approve asking Until; Approved with its ⋯ End access, asked;
   Earlier, 90 days), `abroad_decide` / `abroad_end` filed `team.changed`
   under Overseas access and told to the colleague (`abroad.decided`);
-  Overseas approval (`abroad_days`, 14, 1 to 30, Business settings). An
+  Overseas approval (`abroad_days`, 14, 1 to 30, and the reminder hours,
+  Business settings). An
   approval covers any country until its day. A VPN or roaming data reads as
   where it exits; an edge function reads as where it runs (Singapore for a
   colleague here). The stand-in reads `window.__country` (Malaysia unset).

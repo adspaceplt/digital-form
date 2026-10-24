@@ -181,7 +181,9 @@
          console from abroad, and for how long at most. */
       isAdmin() && { id: 'abroad', name: 'Overseas access', kind: 'open', meta: line('abroad') },
       biz && { id: 'abroadays', name: 'Overseas approval', kind: 'edit',
-        meta: num('abroad_days') == null ? '' : 'Up to ' + plural(num('abroad_days'), 'day', 'days') },
+        meta: num('abroad_days') == null ? '' : parts(['Up to ' + plural(num('abroad_days'), 'day', 'days'),
+          num('abroad_remind_hours') == null ? '' : num('abroad_remind_hours') === 0 ? 'No reminder'
+            : 'Reminder every ' + plural(num('abroad_remind_hours'), 'hour', 'hours')].filter(Boolean)) },
       biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
         meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
           'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]);
