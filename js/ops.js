@@ -6519,7 +6519,7 @@
           (can && !done
             ? '<button class="btn-quiet btn-sm mcheck-na" type="button" data-a="na">' + (na ? 'Needed' : 'Not needed') + '</button>'
             : '') +
-          (e.client_id && !na
+          (e.client_id && !na && may('clients.checklists', 'view')
             ? '<button class="btn-quiet btn-sm mcheck-open" type="button" data-a="open">Open</button>'
             : '') +
         '</div>';

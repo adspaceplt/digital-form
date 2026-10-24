@@ -301,7 +301,8 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
 
   if (action === 'assets') {
-    const may = await db.rpc('allowed', { p_section: 'clients', p_level: 'work' });
+    /* The picker serves Meta accounts, Clients: Brand since 2026-10-22. */
+    const may = await db.rpc('allowed', { p_section: 'clients.brand', p_level: 'work' });
     if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
   }
   if (!TOKEN()) return json({ error: 'not-connected' }, 200, origin);

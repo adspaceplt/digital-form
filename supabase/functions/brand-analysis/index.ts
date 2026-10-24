@@ -336,7 +336,7 @@ Deno.serve(async (req) => {
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
 
-  const may = await db.rpc('allowed', { p_section: 'clients', p_level: 'view' });
+  const may = await db.rpc('allowed', { p_section: 'clients.brand', p_level: 'view' });
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
   const cl = await db.from('clients')
     .select('id, name, industry, market, website, handle_ig, handle_fb, handle_tiktok, handle_xhs, brand_notes, brief, stage')

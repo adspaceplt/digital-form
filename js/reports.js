@@ -4640,7 +4640,7 @@
     'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'no-mapping': 'This account is no longer linked on the client\'s Brand.',
-    'denied': 'This needs Reports at Work.',
+    'denied': 'This needs Reports at Manage.',
     'not-draft': 'Only a draft takes an import.',
     'needs-update': 'This needs a database update.'
   };
