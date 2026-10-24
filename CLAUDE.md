@@ -548,17 +548,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Templates at WhatsApp Full Access, Sent again: WhatsApp and supplier
   emails), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
-  no row drawn is left out. One page at every width, each group a card under
-  its heading, so a setting is the account menu, Settings, then its sheet
-  (the user, 2026-10-11, refusing a drill-down: "It now takes five layers");
-  at a desk the groups also run down the left, the one in view marked, a
-  press scrolling to its card and naming it in the address (`tab=`, the
-  first left out; replaced, never pushed), so a refresh lands on it; it
-  never stands between the person and a row. At 640 and under (the phone line)
-  the groups are the view strip (`#stgStrip`, `.actstrip.stg-strip`),
-  sticky under the head on the page's ground, scrolling sideways with
-  faded edges; a press scrolls as at a desk and the chosen tab follows the
-  scroll (the user, 2026-10-22, SET2-17: "approve"); never a drill-down. Each row drawn only for its
+  no row drawn is left out. One group at a time (the user, 2026-10-24:
+  "the business settings are getting longer … categorize or structure it
+  into a proper settings page"): at a desk the groups run down the left,
+  a press showing that group's card alone under its heading, the page at
+  its top; at 640 and under the groups are the view strip (`#stgStrip`,
+  `.actstrip.stg-strip`), sticky under the head, a press or a sideways
+  swipe on the group (`data-swipe`) showing the next; the group shown is
+  in the address (`tab=`, the first left out; replaced, never pushed), so
+  a refresh lands on it. Still one press from Settings to a row and one to
+  its sheet, never a drill-down (refused 2026-10-11: "It now takes five
+  layers"); with fewer than three groups every group shows. Each row drawn only for its
   part, its value under its name, a switch, Edit or Open at the right edge
   opening the one sheet that already edits it; a figure changed from a
   later day reads `From 14 Nov 2026: SST 6%` under the value

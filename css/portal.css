@@ -9266,3 +9266,16 @@ body.qs-page { background: var(--card); }
     flex: 0 1 220px; white-space: nowrap;
   }
 }
+
+/* Squircle corners (the user, 2026-10-24: "Yes, where supported"): where the
+   browser draws `corner-shape` (Chrome), the bounded surfaces and the
+   controls take Apple's continuous corner, the same radius tokens; a
+   browser without it (Safari today) keeps the round corner. Pills, discs,
+   dots and rings stay round. */
+@supports (corner-shape: squircle) {
+  .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head,
+  .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-bill,
+  .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn {
+    corner-shape: squircle;
+  }
+}

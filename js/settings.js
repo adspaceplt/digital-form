@@ -254,20 +254,25 @@
       '<div class="stg-ctl">' + ctl + '</div></div>';
   }
 
-  /* One page of every group (the user, 2026-10-11, after a drill-down was
-     tried: "It now takes five layers into the individual settings"): each
-     group a card under its heading, each row opening its own sheet, so a
-     setting is the account menu, Settings, then its sheet. At a desk the
-     groups also run down the left and a press there only scrolls the page
-     to its card; the group pressed is in the address (`tab=`, the first left
-     out), so a refresh lands on it. */
+  /* One group at a time (the user, 2026-10-24: "the business settings are
+     getting longer … categorize or structure it into a proper settings
+     page", one group at a time chosen over folds): at a desk the groups run
+     down the left and a press shows that group's card alone; on a phone
+     the strip does the same, a sideways swipe moving along it. Still one
+     press from Settings to a row and one to its sheet, never a drill-down
+     (refused 2026-10-11: "It now takes five layers"). The group shown is
+     in the address (`tab=`, the first left out), so a refresh lands on
+     it. */
   var phoneMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
   function phone() { return Boolean(phoneMedia && phoneMedia.matches); }
   var chosen = '';
   function fromUrl() { chosen = new URLSearchParams(location.search).get('tab') || ''; }
 
-  function sec(g) {
-    return '<section class="stg-sec" id="stg-' + g.key + '" data-sec="' + g.key + '" aria-labelledby="stgT-' + g.key + '">' +
+  function current(list) {
+    return list.some(function (x) { return x.key === chosen; }) ? chosen : (list[0] ? list[0].key : '');
+  }
+  function sec(g, on) {
+    return '<section class="stg-sec" id="stg-' + g.key + '" data-sec="' + g.key + '" aria-labelledby="stgT-' + g.key + '"' + (on ? '' : ' hidden') + '>' +
       '<h3 class="stg-title" id="stgT-' + g.key + '">' + esc(g.name) + '</h3>' +
       '<div class="stg-card">' + g.rows.map(rowHtml).join('') + '</div></section>';
   }
@@ -295,7 +300,11 @@
       (strip ? '<div class="actstrip stg-strip"><span class="cmdbar-views actviews" id="stgStrip" role="group" aria-label="Settings">' + list.map(function (x) {
         return '<button class="acttab btn-sm stg-tab" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '" aria-pressed="false">' + esc(x.name) + '</button>';
       }).join('') + '</span></div>' : '') +
-      '<div class="stg-groups">' + list.map(sec).join('') + '</div>';
+      '<div class="stg-groups"' + (strip ? ' data-swipe="stgStrip"' : '') + '>' + list.map(function (g) {
+        /* With fewer than three groups there is nothing to move between,
+           and every group shows (2026-10-14, SET-5). */
+        return sec(g, !(desk || strip) || g.key === current(list));
+      }).join('') + '</div>';
     if (html !== drawn || box.className !== cls || !box.firstChild) {
       var had = document.activeElement && box.contains(document.activeElement) ? document.activeElement.getAttribute('data-a') : '';
       drawn = html;
@@ -309,25 +318,15 @@
     mark();
   }
 
-  /* The group in view wears the list's fill; never more than one. */
-  function mark(key) {
+  /* The group shown wears the list's fill; never more than one. */
+  function mark() {
     var box = $('setList');
     if (!box) return;
-    var secs = box.querySelectorAll('.stg-sec');
-    if (!key) {
-      key = secs[0] ? secs[0].getAttribute('data-sec') : '';
-      var edge = topOf() + 24;
-      Array.prototype.forEach.call(secs, function (x) { if (x.getBoundingClientRect().top <= edge) key = x.getAttribute('data-sec'); });
-      if (secs.length && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
-        var last = secs[secs.length - 1];
-        if (last.getBoundingClientRect().top < window.innerHeight) key = last.getAttribute('data-sec');
-      }
-      if (pinned && box.querySelector('.stg-sec[data-sec="' + pinned + '"]')) key = pinned;
-    }
+    var key = current(groups());
     Array.prototype.forEach.call(box.querySelectorAll('.stg-go'), function (b) {
       if (b.getAttribute('data-g') === key) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current');
     });
-    /* The strip's chosen tab follows the scroll, its thumb sliding to it. */
+    /* The strip's chosen tab, its thumb sliding to it. */
     Array.prototype.forEach.call(box.querySelectorAll('.stg-tab'), function (b) {
       var on = b.getAttribute('data-g') === key;
       if (b.classList.contains('is-on') === on) return;
@@ -335,29 +334,7 @@
       b.setAttribute('aria-pressed', String(on));
     });
   }
-  /* The page's top for a group: under the head, and under the strip where
-     it stands. */
-  function topOf() {
-    var h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head-h')) || 64;
-    var st = document.querySelector('#setList .stg-strip');
-    return h + (st ? st.offsetHeight : 0);
-  }
-
-  /* A group pressed holds the fill until the person scrolls the page
-     themselves (a short last group cannot reach the top). */
-  var pinned = '';
-  ['wheel', 'touchmove', 'keydown'].forEach(function (ev) {
-    window.addEventListener(ev, function (e) {
-      if (ev === 'keydown' && e.target && e.target.closest && e.target.closest('#setList .stg-go, #setList .stg-tab')) return;
-      pinned = '';
-    }, { passive: true, capture: true });
-  });
   function shown() { var s = $('sectionSettings'); return s && !s.hidden; }
-  var spy = 0;
-  window.addEventListener('scroll', function () {
-    if (!shown() || spy) return;
-    spy = requestAnimationFrame(function () { spy = 0; mark(); });
-  }, { passive: true });
 
   function urlState() {
     var list = groups();
@@ -365,18 +342,16 @@
     return { tab: chosen };
   }
 
-  function reveal(key, smooth) {
-    var el = $('stg-' + key);
-    if (!el) return;
-    var top = el.getBoundingClientRect().top + window.scrollY - topOf() - 12;
-    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
-  }
+  /* A group pressed is shown alone, the page at its top. */
   function go(key) {
     chosen = key;
-    pinned = key;
     say('');
-    mark(key);
-    reveal(key, !(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches));
+    var box = $('setList');
+    if (box) Array.prototype.forEach.call(box.querySelectorAll('.stg-sec'), function (x) {
+      x.hidden = box.classList.contains('is-single') ? false : x.getAttribute('data-sec') !== key;
+    });
+    mark();
+    window.scrollTo(0, 0);
     if (bridge.setUrl) bridge.setUrl();
   }
   function follow() { if (shown()) paint(); }
@@ -944,7 +919,6 @@
     said = null;
     lines = {};
     fromUrl();
-    pinned = chosen;
     var M = window.ADspaceMoney;
     paint();
     /* The figures are read once a page; a colleague who changed one in
@@ -955,10 +929,8 @@
        to, and the guide's ring. */
     if (biz()) readHol(holLine);
     Object.keys(READ).forEach(readLine);
-    /* A group named in the address is brought to the top, else the page's
-       own scroll. */
-    if (chosen && $('stg-' + chosen)) reveal(chosen, false);
-    else if (bridge.restoreScroll) bridge.restoreScroll();
+    /* The page's own scroll, within the group shown. */
+    if (bridge.restoreScroll) bridge.restoreScroll();
   }
 
   var wired = false;

@@ -3097,11 +3097,10 @@ button.vs-row { cursor: pointer; }
   border: 0; border-radius: calc(var(--radius) - 6px); background: none;
   font: inherit; font-size: 14px; color: var(--ink-soft); text-align: left; cursor: pointer;
 }
-/* Settings (js/settings.js, 2026-10-10; regrouped 2026-10-11). One page:
-   every group a card under its heading, 24 apart as the sections of a list.
-   At a desk the groups also run down the left in a card, sticky, the group
-   in view the `--line-soft` fill; a press there scrolls to the group, never
-   stands between the person and a row. A row: the name over its value as it
+/* Settings (js/settings.js, 2026-10-10; one group at a time 2026-10-24).
+   At a desk the groups run down the left in a card, sticky, the group shown
+   the `--line-soft` fill; a press there shows that group's card alone under
+   its heading, never standing between the person and a row. A row: the name over its value as it
    stands, the control at the right edge (a switch, Edit or Open), one row's
    height whatever the control. Its own names (`stg-`): `.set-row` is
    Content Review's set. The console's alone, so in this sheet (2026-10-22,
@@ -3110,13 +3109,11 @@ button.vs-row { cursor: pointer; }
 /* On a phone the groups are the view strip, held under the head on the
    page's ground, edge to edge in the gutters (2026-10-22, SET2-17). */
 .stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: 0 -16px 12px; padding: 4px 16px 12px; }
-.stg.is-phone .stg-sec { scroll-margin-top: calc(var(--head-h) + 64px); }
 .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
 /* What was pressed answers on its row (2026-10-14, audit SET-2). */
 .stg-what > .msg.stg-said { margin: 4px 0 0; }
 .stg-ctl .btn { flex: 0 0 auto; }
 .stg-groups { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
-.stg-sec { scroll-margin-top: calc(var(--head-h) + 12px); }
 .stg-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: var(--ctl-h); }
 .stg-card { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
 .stg-row {
