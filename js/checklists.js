@@ -21,7 +21,8 @@
   var KINDS = [['onboarding', 'New Client Onboarding Checklist'], ['pre_ads', 'Pre-Advertising Checklist']];
   var STATE = { open: ['In progress', 'is-warn'], prepared: ['Waiting for review', 'is-warn'], signed: ['Signed off', 'is-ok'] };
   var SAID = {
-    denied: 'This needs Clients at Work.', 'client-scope': 'This client is outside your access.',
+    denied: 'This needs Clients: Checklists at Manage.',
+    'brand-denied': 'Write with AI reads the Brand analysis, which needs Clients: Brand at View.', 'client-scope': 'This client is outside your access.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
     'bad-value': 'That answer is not one the checklist takes.', 'bad-item': 'This checklist has changed. Open it again.',
     'too-long': 'A note is 1,000 characters at most.', own: 'Somebody who did not prepare or fill it in signs it off.',

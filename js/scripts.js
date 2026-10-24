@@ -112,7 +112,7 @@
 
   /* A refusal in the team's words. */
   var SAID = {
-    denied: 'This needs Video Scripts at Work.',
+    denied: 'This needs Video Scripts at Manage.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.',
     'bad-kind': 'Choose the script type.',
@@ -1062,7 +1062,7 @@
     'ai-model': 'The script model name in Supabase is not recognised.',
     'ai-failed': 'No script came back. Try again.',
     'ai-incomplete': 'No script came back. Try again.',
-    denied: 'This needs Video Scripts at Work.',
+    denied: 'This needs Video Scripts at Manage.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.'
   };

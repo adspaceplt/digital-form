@@ -29,7 +29,7 @@
   function mayWork(kind) { return kind === 'client' ? may('clients.billing', 'work') : may('suppliers', 'work'); }
 
   var SAID = {
-    denied: 'This needs Clients: Billing (a client) or Suppliers (a supplier) at Work.',
+    denied: 'This needs Clients: Billing (a client) or Suppliers (a supplier) at Manage.',
     'not-found': 'That record is no longer there.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',

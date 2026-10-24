@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
-  const may = await db.rpc('allowed', { p_section: 'clients', p_level: 'work' });
+  const may = await db.rpc('allowed', { p_section: 'clients.checklists', p_level: 'work' });
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
   const cl = await db.from('clients').select('id, name, industry, market, website, brief').eq('id', clientId).maybeSingle();
   if (cl.error || !cl.data) return json({ error: 'client-scope' }, 200, origin);
@@ -225,6 +225,7 @@ Deno.serve(async (req) => {
   /* The confirmed Brand analysis, before anything is counted. */
   const ba = await db.rpc('brand_analyses_list', { p_client: clientId });
   const vers = (ba.data && (ba.data as Record<string, unknown>).versions) as Record<string, unknown>[] | undefined;
+  if (ba.data && (ba.data as Record<string, unknown>).error === 'denied') return json({ error: 'brand-denied' }, 200, origin);
   if (ba.error || !Array.isArray(vers)) return json({ error: 'needs-update' }, 200, origin);
   const confirmed = vers.find((v) => v.confirmed_at);
   if (!confirmed) return json({ error: 'no-analysis' }, 200, origin);
