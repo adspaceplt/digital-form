@@ -69,6 +69,13 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     live database does not hold (PGRST205, PGRST204, PGRST202), from its
     LIVE SCHEMA map (`tests/schema-map.sql` refreshes it). A push that adds
     a column or an argument adds it to the map.
+  - It holds every table whose policies ask a level to them (`POLICY`, read
+    from pg_policies: a refused read no rows, a refused insert 42501, a
+    refused update or delete no rows and no error; `tests/policies.js` holds
+    it equal to schema.sql), and every function to the signed-in colleague's
+    own levels; `__teamCan` only takes one away (audit 2026-10-24: a Sales
+    colleague deleted a letter). A policy changed joins the map in the same
+    push.
   - Its seed holds the live groups' access maps: a change to who a page
     offers or allows is checked against the live map (`team_roles.access`)
     and the seed before it merges (2026-10-15: the seed's Marketing group
@@ -198,7 +205,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
 | Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
-| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
+| `supabase/schema.sql` or a migration | `sql` and `policies`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Once the day's requests are merged | `all` on main, `ui` included; its findings are the next batch |
 
