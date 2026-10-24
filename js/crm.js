@@ -3148,7 +3148,6 @@
   function runAnalysis(c, btn) {
     baMsg('');
     btn.disabled = true;
-    var AD = window.ADspaceAdmin;
     /* No brief first (2026-10-15): the analysis writes it, from the
        website, the handles and Meta; confirming fills what is empty. */
     Promise.all([db.rpc('ai_analysis_left')]).then(function (both) {

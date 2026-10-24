@@ -22,7 +22,6 @@
  * emoji is one paragraph and not three.
  */
 (function () {
-  var ORG = window.ADSPACE_ORG || {};
   var CFG = window.ADSPACE_CONFIG || {};
 
   // ---- Page geometry ----------------------------------------------------------
@@ -1018,7 +1017,6 @@
     var EDGE = FILL;               // the grid, in the title row's grey
     var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
     var PAPER = g(1);
-    var periodW = periodWord(rep.period_start, rep.period_end);
 
     var pages = [];
     var pg = null, y = 0;
@@ -1102,7 +1100,6 @@
       if (last) y -= last.size * 0.28 + BLOCK;
     };
 
-    var groupWord = function (p) { return p._group ? p._group.label : ''; };
     var typeWord = function (p) { return TYPE_WORD[p.content_type] || (p.content_type ? String(p.content_type) : ''); };
     var shortDay = function (s) { var d = dateOf(s); return d ? (ZH ? zhDay(d) : d.getDate() + ' ' + MON3[d.getMonth()]) : ''; };
     /* A post without a title is named by what it is and when it went out, so

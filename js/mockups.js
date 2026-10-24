@@ -720,11 +720,6 @@
       const p = post.platform || 'instagram';
       return p === 'cover' ? 'instagram' : p;
     },
-    dimensions: function (post) {
-      const m = (post.media || [])[0];
-      if (m && m.width && m.height) return m.width + ' x ' + m.height;
-      return (LABELS[key(post)] || ['Post', ''])[1];
-    },
     key: key
   };
 })();

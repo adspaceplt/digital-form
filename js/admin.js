@@ -5778,7 +5778,6 @@
     depts: depts,
     deptName: deptName,
     deptsReload: loadDepts,
-    vicMark: function (el, id) { if (el) el.classList.toggle('is-vic', Boolean(vicOf(id))); },
     hold: hold,
     iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's

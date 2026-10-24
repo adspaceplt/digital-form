@@ -1,6 +1,5 @@
 /* Client review page. Runs at /review/<token> and at /review/?k=<token>. */
 (function () {
-  var cfg = window.ADSPACE_CONFIG;
   var API = window.ADspaceAPI;
   var MK  = window.ADspaceMockups;
   var feed = null;

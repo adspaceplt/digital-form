@@ -22,7 +22,6 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
-  var bridge = window.ADspaceAdmin || {};
   var UI = window.ADspaceState;
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')

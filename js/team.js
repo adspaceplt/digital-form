@@ -319,7 +319,6 @@
     var same = isGranted(key) ? 'none' : ((acc && acc[sec]) || 'none');
     return adds(key, held, same) ? held : '';
   }
-  var CAPS = [];
 
   function accessOf(r) {
     var a = r && r.access;

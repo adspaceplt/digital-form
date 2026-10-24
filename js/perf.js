@@ -3603,8 +3603,7 @@
     },
     /* The colleague's own call, for js/health.js: a stale proof puts the
        lock back over My records. */
-    mineCall: function (fn, args, then) { mineCall(fn, args, then); },
-    showMineLock: function (on) { showMineLock(on); }
+    mineCall: function (fn, args, then) { mineCall(fn, args, then); }
   };
   if (bridge.perfReady) bridge.perfReady();
 })();

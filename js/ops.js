@@ -65,8 +65,6 @@
      both ends are the team is not a reason to hand one of them that. */
   function safeUrl(u) { return /^https?:\/\//i.test(String(u || '')) ? String(u) : ''; }
 
-  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  var CHEV = '<svg class="crm-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
   // ---- Dates ---------------------------------------------------------------
   /* One reading of "when", because a queue that calls the same day two
@@ -813,7 +811,6 @@
     cancelled: { word: 'Cancelled', tone: 'is-off' }
   };
   /* The everyday stage each plain status is. */
-  var PLAIN_KEY = { todo: 'todo', doing: 'doing', waiting: 'waiting', review: 'review', done: 'complete' };
   function plainOf(t) {
     if (t.cancelled_at) return 'cancelled';
     if (t.completed_at) return 'done';
@@ -6066,7 +6063,6 @@
      month's Add task). */
   var PLUS_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var OUT_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
     var ty = row.querySelector('.piece-type select');
@@ -6355,7 +6351,6 @@
   }
 
   /* REPEAT. The rule that copies this task on each date. */
-  var FREQ_WORD = { weekly: 'Weekly', monthly: 'Monthly', custom: 'Every {n} days' };
   function ruleWord(r) {
     if (!r) return '';
     var w = r.frequency === 'custom' ? 'Every ' + (r.interval_days || '?') + ' days'
@@ -6440,10 +6435,6 @@
      forms, and the month records that each is done and who ticked it. */
   var CHECK_WORD = { onboarding: 'Onboarding Checklist', pre_ads: 'Pre-advertising Checklist' };
   var CHECK_ORDER = ['onboarding', 'pre_ads'];
-  var CHECK_STATE = [
-    ['not_started', 'Not started', 'is-off'], ['waiting_client', 'Waiting on client', 'is-warn'],
-    ['in_progress', 'In progress', 'is-warn'], ['ready', 'Ready', 'is-ok'], ['na', 'Not applicable', 'is-off']
-  ];
   var ENG_STATE = [
     ['planning', 'Planning', 'is-off'], ['ready', 'Ready', 'is-ok'],
     ['in_production', 'In production', 'is-warn'], ['closing', 'Ready to close', 'is-warn'],
@@ -8322,10 +8313,6 @@
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
     enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
-    /* Which task is open, and a re-read of it. The record is otherwise only
-       reachable through a press, so a change made to the row underneath it
-       has no way to reach the screen. */
-    openId: function () { return (state.task && state.task.id) || null; },
     /* Add task, from anywhere: the tab bar's My Work held down. */
     add: function () { if (may('ops', 'work')) openQuick(); },
     reload: function () { if (state.task) readTask(state.task.id); },
