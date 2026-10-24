@@ -247,7 +247,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
-| Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas rows) | abroadsql, abroad, abroadrec, sql, settings, team, teamrec, then `ui` |
+| Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas approval) | abroadsql, abroad, abroadrec, sql, settings, team, teamrec, then `ui` |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone, fileworker |
 | `money.js`, the settings sheets | crm, letter, sgd, settings |
@@ -540,7 +540,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, or Suppliers or WhatsApp at Full Access (2026-10-22,
   SET2-11); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas access, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
+  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
   client's and a supplier's link alike), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -6183,10 +6183,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   access while the colleague holds a request of the last 90 days (the one
   waiting or approved as facts, Decline and Approve on the group, Approve
   asking Until, or End access in its ⋯; the rest under Earlier); nobody
-  else reads it (`tests/abroadrec.js`). Settings, Portal:
-  Overseas access (an admin's; `#abSheet`: Waiting with Decline and Approve,
-  each asked, Approve asking Until; Approved with its ⋯ End access, asked;
-  Earlier, 90 days), `abroad_decide` / `abroad_end` filed `team.changed`
+  else reads it (`tests/abroadrec.js`); Settings holds no list of
+  requests. `abroad_decide` / `abroad_end` filed `team.changed`
   under Overseas access and told to the colleague (`abroad.decided`);
   Overseas approval (`abroad_days`, 14, 1 to 30, and the reminder hours,
   Business settings). An
