@@ -1219,15 +1219,16 @@
     if (!bar) return;
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     var open = navItems().filter(function (b) { return !b.hidden; });
-    /* Analytics is an occasional tool: it waits under More, never a tab. */
-    open = open.filter(function (b) { return b.getAttribute('data-section') !== 'analytics'; })
-      .concat(open.filter(function (b) { return b.getAttribute('data-section') === 'analytics'; }));
+    /* Analytics is an occasional tool: it waits under More, never a tab,
+       however few sections the person holds (2026-10-25, review 3). */
+    var isAn = function (b) { return b.getAttribute('data-section') === 'analytics'; };
+    var main = open.filter(function (b) { return !isAn(b); });
     /* Arrange sections, Settings and the Activity record are marks at the
        rail's foot, so the bar holds sections alone. */
-    var room = open.length <= 5 ? 5 : 4;
+    var room = main.length < open.length ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
     tabRoom = room;
-    var tabs = open.slice(0, room);
-    var more = open.length > room;
+    var tabs = main.slice(0, room);
+    var more = open.length > tabs.length;
     var edit = $('railEdit');
     if (edit) edit.hidden = !(open.length > 2);
     tabbed = tabs.map(function (b) { return b.getAttribute('data-section'); });
@@ -5553,7 +5554,19 @@
      ringgit to one Singapore dollar, four decimals) may stay unset. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
-    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true] };
+    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
+    month: [202308, 209912, true] };
+  /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
+  function monthOfSetting(v) {
+    v = Number(v);
+    return v ? ADspaceClock.month(Math.floor(v / 100) + '-' + String(v % 100).padStart(2, '0') + '-01') : '';
+  }
+  /* The months a YYYYMM setting offers: ADSPACE PLT's registration to now. */
+  function monthChoices() {
+    var out = [], k = ADspaceClock.today().slice(0, 7);
+    while (k >= '2023-08') { out.push([k.replace('-', ''), monthOfSetting(k.replace('-', ''))]); k = ADspaceClock.addMonths(k, -1); }
+    return out;
+  }
   /* Tax and terms, one list for the Services bar and the Settings page:
      eight figures read as three sections (2026-10-14, audit SET-4). The
      details form's days are the Settings page's Clients group (SET-9). */
@@ -5626,7 +5639,10 @@
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
-    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] }
+    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] },
+    /* Before this month the portal held clients typed in later, never the
+       leads that came to nothing (2026-10-25). */
+    analytics: { title: 'Analytics', keys: [['analytics_from', 'Count leads and clients from', 'month', '', 'Counts from', monthOfSetting]] }
   };
   /* A figure in words, as the Settings row says it ("SST 6%"): the key's
      own short name and format where the Settings page gives them (k[4],
@@ -5662,6 +5678,7 @@
       var cur = MON.setting(k[0]), opt = SET_BOUND[k[2]] && SET_BOUND[k[2]][4];
       shown[k[0]] = cur == null ? '' : String(cur);
       var f = { name: k[0], label: k[1], type: 'number', value: cur == null ? '' : String(cur), required: !opt,
+        choices: k[2] === 'month' ? monthChoices() : undefined,
         half: !third && n > 1 && !(n % 2 && at === n), third: third,
         note: next ? 'From ' + ADspaceClock.date(next.from) + ': ' + setWord(k, next.value) : '' };
       /* A planned change is withdrawn from its own note (2026-10-20, SET-1):
@@ -5791,6 +5808,7 @@
     editSettings: editSettings,
     TAX_KEYS: TAX_KEYS,
     SETTING_SHEETS: SETTING_SHEETS,
+    monthOfSetting: monthOfSetting,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
     letterOf: letterOf,
