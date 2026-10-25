@@ -5132,10 +5132,11 @@
   /* A colleague's AI uses a day: their own limit, else the standard. */
   function aiCapOf(p, d) { return p.cap != null ? p.cap : (p.limit != null ? p.limit : d.person); }
   var AI_STD = { person: 10, admin: 20, report: 1, report_admin: 5, check: 1, check_admin: 5, caption: 20, caption_admin: 40,
-    script: 10, script_admin: 20, analysis: 3, analysis_admin: 10, checklist: 10, checklist_admin: 20 };
+    script: 10, script_admin: 20, analysis: 3, analysis_admin: 10, checklist: 10, checklist_admin: 20,
+    analytics: 3, analytics_admin: 10 };
   /* This month's tokens and what they cost (2026-10-08): each call's tokens
      are kept on its row and priced at the Business settings of its day. */
-  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Scripts', analysis: 'Brand analyses', checklist: 'Checklists' };
+  var AI_USE_WORD = { draft: 'Report drafts', check: 'Commentary checks', caption: 'Captions', script: 'Scripts', analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses' };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'k' : String(n);
@@ -5270,7 +5271,7 @@
     var LIMITS = [['person', 'admin', 'AI uses'], ['report', 'report_admin', 'Drafts, each report'],
       ['check', 'check_admin', 'Checks, each report'], ['caption', 'caption_admin', 'Captions'],
       ['script', 'script_admin', 'Scripts'], ['analysis', 'analysis_admin', 'Brand analyses'],
-      ['checklist', 'checklist_admin', 'Checklists']];
+      ['checklist', 'checklist_admin', 'Checklists'], ['analytics', 'analytics_admin', 'Analytics analyses']];
     var limitsHtml = function (setting) {
       var day = function (v) { return v === 0 ? 'Stopped' : v + ' a day'; };
       return '<section class="fsec aiu-limits' + (editing ? ' is-editing' : '') + '"><h4 class="fsec-h">Limits, each person</h4><div class="aiu-list">' +

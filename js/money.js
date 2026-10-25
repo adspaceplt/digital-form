@@ -32,7 +32,10 @@
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72, task_remind_hours: 3, task_start_days: 2, quote_valid_days: 30, details_form_days: 14, wa_repeat_hours: 24,
     vic_lead_followup_hours: 24, vic_proposal_followup_days: 7, abroad_days: 14, abroad_remind_hours: 2,
     /* The month Analytics counts its history from, YYYYMM (2026-10-25). */
-    analytics_from: 202609 };
+    analytics_from: 202609,
+    /* When an Analytics figure reads better or worse, and when churn is an
+       alert (2026-10-25). */
+    analytics_change_pct: 10, analytics_churn_pct: 10 };
   var ROWS = [];
   var loading = null;
   function today() {

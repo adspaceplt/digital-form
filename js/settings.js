@@ -187,7 +187,8 @@
         meta: num('details_form_days') == null ? '' : 'Client and supplier links open ' + plural(num('details_form_days'), 'day', 'days').replace(' ', '\u00a0') },
       /* The month Analytics counts leads and clients from (2026-10-25). */
       biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
-        meta: num('analytics_from') == null ? '' : 'Counts from ' + bridge.monthOfSetting(num('analytics_from')) }]);
+        meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
+          .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% a quarter'])) }]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',

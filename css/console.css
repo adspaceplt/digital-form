@@ -2456,6 +2456,50 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .anl-wait-words span, .anl-wait-bar > span:first-child { font-size: 12.5px; color: var(--ink-mute); }
 .anl-wait-bar .ovw-kpi-bar { margin-top: 6px; background: var(--line-soft); }
 .anl-wait-bar .ovw-kpi-bar i { background: var(--fill); }
+/* Better, worse or steady (2026-10-25, the user: "i dont see whether this
+   analytics trend is good or bad"): the status's dot and its word in ink,
+   never a colour alone; the arrow of a finding in its ink. */
+.anl-verdict { display: inline-block; margin-right: 8px; font-size: 12.5px; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.anl-verdict::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--dot-off); }
+.anl-verdict.is-ok::before { background: var(--dot-ok); }
+.anl-verdict.is-wait::before { background: var(--dot-wait); }
+.anl-verdict.is-late::before { background: var(--dot-late); }
+.anl-ins-dir.is-ok { color: var(--ok); }
+.anl-ins-dir.is-late { color: var(--err); }
+.anl-ins-val { display: grid; justify-items: end; gap: 2px; }
+.anl-ins-val > .anl-verdict { margin-right: 0; font-size: 12px; }
+.anl-dirs { display: grid; gap: 2px; margin: 0 0 8px; }
+.anl-dir { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 12.5px; }
+.anl-dir > b { font-weight: 500; }
+.anl-dir > .anl-verdict { margin-right: 0; }
+.anl-dir > span:last-child { color: var(--ink-mute); }
+/* The AI analysis: the health and the headline read first, the risks,
+   what works, the forecast and the actions in a fold under them. */
+.anl-ai-acts { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.anl-ai-left { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+.anl-ai > .msg:empty { display: none; }
+.anl-ai-body { display: grid; gap: 4px; }
+.anl-ai-health { margin: 0; display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; }
+.anl-ai-health > b { font-weight: 500; color: var(--ink-mute); }
+.anl-ai-headline { margin: 4px 0 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.anl-ai-summary { margin: 0; color: var(--ink-soft); }
+.anl-ai-more { margin-top: 8px; border-top: 1px solid var(--line-soft); }
+.anl-ai-more > summary { list-style: none; display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h); cursor: pointer; font-weight: 500; }
+.anl-ai-more > summary::-webkit-details-marker { display: none; }
+.anl-ai-more > summary svg { width: 15px; height: 15px; margin-left: auto; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.anl-ai-more[open] > summary svg { transform: rotate(180deg); }
+.anl-ai-sec { padding: 12px 0 0; display: grid; gap: 8px; }
+.anl-ai-sec .fsec-h { margin: 0; }
+.anl-ai-row p { margin: 0; }
+.anl-ai-row p:first-child { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.anl-ai-row p:first-child b { font-weight: 500; }
+.anl-ai-row p + p { color: var(--ink-soft); }
+.anl-ai-acts-list { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.anl-ai-acts-list b { display: block; font-weight: 500; }
+.anl-ai-acts-list span { color: var(--ink-soft); }
+.anl-ai-cav { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.anl-ai-meta { margin: 8px 0 0; font-size: 12px; color: var(--ink-mute); }
+.is-narrow .anl-ai > .ovw-cardhead { flex-wrap: wrap; }
 .ovw-grid.is-three .chart-pie { gap: 16px; }
 .ovw-grid.is-three .cp-ring { width: 104px; height: 104px; }
 .ovw-grid.is-three .cp-value small { display: none; }
