@@ -2478,6 +2478,7 @@
     'report.revised':        ['Report revised', '', 'reports'],
     'report.unpublished':    ['Report unpublished', 'is-warn', 'reports'],
     'report.deleted':        ['Report deleted', 'is-danger', 'reports'],
+    'report.version_deleted': ['Version deleted', 'is-danger', 'reports'],
     /* Every save and every Draft with AI, filed by the page (2026-10-01). */
     'report.saved':          ['Report saved', '', 'reports'],
     /* The Handbook (2026-10-01): its files and their versions. */
