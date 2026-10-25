@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
   if (!body || typeof body.sel !== 'object' || typeof body.contact !== 'object') {
     return json({ error: 'bad-request' }, 400, origin);
   }
-  const ip = req.headers.get('CF-Connecting-IP') || (req.headers.get('X-Forwarded-For') || '').split(',')[0].trim() || null;
+  /* The address Cloudflare saw, else the last X-Forwarded-For entry, the
+     one the platform added: the first is whatever the caller wrote (as
+     media-pass and sign-download read it). */
+  const xff = (req.headers.get('X-Forwarded-For') || '').split(',');
+  const ip = (req.headers.get('CF-Connecting-IP') || '').trim() || xff[xff.length - 1].trim() || null;
   if (!(await human(String(body.token || ''), ip))) return json({ error: 'captcha' }, 200, origin);
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);

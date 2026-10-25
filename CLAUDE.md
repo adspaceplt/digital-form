@@ -6249,7 +6249,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`gate()`, after 1.5s unless the session has come back).
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
-    `portal_access`, and answers `{ok: true}` to every address.
+    `portal_access`, and answers `{ok: true}` to every address, each in the
+    same least time (`FLOOR_MS`, 900 ms; a fault logged, never a 500), so
+    the wait never says who is a client (2026-10-25, `tests/portalloginfn.js`).
   - `signInWithOtp` with `shouldCreateUser: false`.
   - The email's code signs in on the page as well as its link (`#signCode`,
     6 to 10 digits, `verifyOtp` type `email`), with Use another email; a wrong
@@ -6259,6 +6261,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     clients.
 - Sign-in never says whether an address has an account ("If {email} is
   registered, …").
+- An edge function reads a caller's address as `cf-connecting-ip`, else the
+  last X-Forwarded-For entry, never the first (`media-pass`, `sign-download`,
+  `quote-request`; 2026-10-25).
 - An email is matched as itself in every edge function (`exactEmail`: `_`
   and `%` are letters, never wildcards; audit P2, 2026-10-10).
 - A colleague's upload names its purpose and record, and `sign-upload`
