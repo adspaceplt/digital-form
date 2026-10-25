@@ -19,8 +19,9 @@
  * Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are provided by the
  * platform. Nothing else is needed.
  *
- * Turn OFF "Verify JWT" for this function in the dashboard: it is called by
- * somebody who is not signed in yet, which is the whole point.
+ * Verify JWT is on: the sign-in page calls it through supabase-js with the
+ * project's public key, which passes the check, so a caller holding no key
+ * is turned away before the function runs (2026-10-25).
  *
  * It answers `{ ok: true }` to every well-formed request, whether or not it
  * made a login (2026-09-26). Anybody can call it, so an answer that differed
@@ -31,6 +32,7 @@
  * back later would say the same thing as one that differed (2026-10-25).
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { cors, json } from '../_shared/cors.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
@@ -39,27 +41,6 @@ const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 /* Longer than the slowest ordinary run (a read and a createUser), so a
    known address and an unknown one answer alike. */
 const FLOOR_MS = 900;
-
-const ALLOWED_ORIGINS = [
-  'https://digital.adspace.me',
-  'http://localhost:8899',
-  'http://127.0.0.1:8899'
-];
-
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json', ...cors(origin) }
-  });
-}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');

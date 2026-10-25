@@ -36,15 +36,15 @@
  */
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { cors, json as send } from '../_shared/cors.ts';
+
+/* Every answer is no-store: it carries a signed pass or link. */
+const json = (body: unknown, status: number, origin: string | null) =>
+  send(body, status, origin, { 'Cache-Control': 'no-store' });
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
 const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
-
-const ALLOWED_ORIGINS = [
-  'https://digital.adspace.me',
-  'http://localhost:8899'
-];
 
 // Five minutes: long enough to open, short enough that a forwarded link dies.
 const EXPIRES = 300;
@@ -105,23 +105,6 @@ async function callerHeaders(req: Request, admin: any): Promise<Record<string, s
   if (!/^[0-9A-Fa-f.:]{3,45}$/.test(ip)) return {};
   const { data } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
   return data && data.value ? { 'x-adspace-ip': ip, 'x-adspace-relay': String(data.value) } : {};
-}
-
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...cors(origin) }
-  });
 }
 
 Deno.serve(async (req) => {
