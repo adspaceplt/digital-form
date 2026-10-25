@@ -126,6 +126,8 @@
     'not-linked': 'This client links no Meta accounts.',
     'not-unavailable': 'Meta is answering, so the figures must match it. Run the audit again.',
     'not-published': 'This report is not published.',
+    'in-review': 'Send the report back to draft before restoring a version.',
+    'on-portal': 'This version is on the client portal. Publish a newer one or unpublish it first.',
     'not-finished': 'This report is not finished.',
     'reason-required': 'Give a reason.',
     'confirm-mismatch': 'That does not match the period.',
@@ -2403,14 +2405,80 @@
     /* A line of parts wraps between its parts; the reason, being typed,
        breaks where it must. */
     var nb = function (t) { return '<span class="nb">' + esc(t) + '</span>'; };
+    /* Restore puts a version back as the draft (Reports at Work, a draft or
+       a published report); Delete takes one the portal no longer shows
+       (Full Access) (2026-10-25). */
+    var canRestore = may('work') && (r.status === 'draft' || r.status === 'published');
+    var canDelete = function (v) { return may('manage') && !(live && v.id === live.id); };
     host.innerHTML = '<div class="rp-vlist">' + vers.map(function (v) {
       var meta = [nb('Published ' + stampWord(v.published_at)) + (v.published_by ? ' ' + nb('by ' + v.published_by) : '')];
       if (v.withdrawn_at) meta.push(nb('Unpublished ' + stampWord(v.withdrawn_at)) + (v.withdraw_reason ? ': ' + esc(v.withdraw_reason) : ''));
       else if (live && v.id === live.id) meta.push(nb('On the client portal'));
+      var acts = [canRestore ? 'Restore' : '', canDelete(v) ? 'Delete' : ''].filter(Boolean);
       return '<div class="rp-vrow" data-v="' + esc(v.id) + '">' +
         '<span class="rp-name"><b>Version ' + v.version_no + '</b><small>' + meta.join(' · ') + '</small></span>' +
-        '<span class="rp-vact"><button class="btn btn-sm" type="button" data-a="vdl">' + ICON.file + 'Download</button></span></div>';
+        '<span class="rp-vact"><button class="btn btn-sm" type="button" data-a="vdl">' + ICON.file + 'Download</button>' +
+        (acts.length ? rowMenu(acts) : '') + '</span></div>';
     }).join('') + '</div>';
+    var shut = function () {
+      Array.prototype.forEach.call(host.querySelectorAll('.kmenu'), function (k) {
+        k.hidden = true;
+        var kb = k.parentNode.querySelector('.kmenu-btn'); if (kb) kb.setAttribute('aria-expanded', 'false');
+      });
+    };
+    if (!box._vshut) { box._vshut = 1; box.addEventListener('click', function (e) { if (!e.target.closest('.kmenu-wrap')) Array.prototype.forEach.call(box.querySelectorAll('.rp-vlist .kmenu'), function (k) { k.hidden = true; }); }); }
+    Array.prototype.forEach.call(host.querySelectorAll('.kmenu-btn'), function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var menu = b.parentNode.querySelector('.kmenu'), open = menu.hidden;
+        shut();
+        menu.hidden = !open; b.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(b, menu);
+      });
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('.kmenu-item[data-act]'), function (it) {
+      it.addEventListener('click', function () {
+        var v = vers.filter(function (x) { return x.id === it.closest('[data-v]').getAttribute('data-v'); })[0];
+        var b = it.closest('.kmenu-wrap').querySelector('.kmenu-btn');
+        shut();
+        if (!v) return;
+        if (it.getAttribute('data-act') === 'Restore') {
+          var next = r.status === 'published' ? r.version_no + 1 : r.version_no;
+          window.ADspaceConfirm.ask({
+            title: 'Restore version ' + v.version_no + '?',
+            body: (r.status === 'published'
+              ? 'Version ' + next + ' starts as a draft holding version ' + v.version_no + '\'s figures and commentary.'
+              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s.') +
+              (live ? ' The client keeps version ' + live.version_no + ' until a version is published.' : ''),
+            go: 'Restore'
+          }, function () {
+            b.disabled = true; say(m, '');
+            db.rpc('sm_report_version_restore', { p_version: v.id }).then(function (res) {
+              b.disabled = false;
+              var d = res.data || {};
+              if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+              window.ADspaceSheet.close();
+              reopen('Version ' + v.version_no + ' restored as the draft of version ' + d.version_no + '.');
+            }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+          });
+          return;
+        }
+        window.ADspaceConfirm.ask({
+          title: 'Delete version ' + v.version_no + '?',
+          body: 'Version ' + v.version_no + ' and its kept copy are removed from the report. There is no restore.',
+          go: 'Delete', tone: 'danger', wait: true
+        }, function () {
+          return db.rpc('sm_report_version_delete', { p_version: v.id }).then(function (res) {
+            var d = res.data || {};
+            if (res.error || d.error) return said(res.error || d);
+            st.openVersions = (st.openVersions || []).filter(function (x) { return x.id !== v.id; });
+            versionsSheet(opener);
+            say(box.querySelector('[data-m="sheet"]'), 'Version ' + v.version_no + ' deleted.', 'ok');
+            return '';
+          }).catch(function (e) { return said(e); });
+        });
+      });
+    });
     Array.prototype.forEach.call(host.querySelectorAll('[data-a="vdl"]'), function (b) {
       b.addEventListener('click', function () {
         var v = vers.filter(function (x) { return x.id === b.closest('[data-v]').getAttribute('data-v'); })[0];

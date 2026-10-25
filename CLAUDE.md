@@ -4535,7 +4535,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     "Drawn again: the kept file did not open.". The head's ⋯ Versions
     (`#rpVerSheet`) lists every version newest first (published when and
     by whom; On the client portal, or Unpublished and why) with its own
-    Download.
+    Download, and its ⋯ Restore and Delete (the user, 2026-10-25,
+    `2026-10-25-report-versions-restore-delete.sql`): Restore
+    (`sm_report_version_restore`, Reports at Work, a draft or published
+    report, asked first; `in-review` otherwise) writes that version's kept
+    snapshot back over the report's rows and commentary as the draft, a
+    published report becoming the next version's draft, the portal keeping
+    what it shows until a version is published, filed `report.revised`
+    Restored from version n; Delete (`sm_report_version_delete`, Full
+    Access, asked, no restore) removes a version the portal no longer
+    shows (`on-portal` for the newest not withdrawn), filed
+    `report.version_deleted`, its PDF left in S3.
   - Delete (the head's ⋯, Reports Full Access, the period typed back as the
     page writes it, which `sm_period_word` writes alike: 16 September to 10
     October 2026; `2026-10-13-period-words.sql`) removes
