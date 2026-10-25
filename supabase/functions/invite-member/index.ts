@@ -19,33 +19,14 @@
  * header, and this function verifies the caller itself.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { cors, json } from '../_shared/cors.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
 const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 
-const ALLOWED_ORIGINS = [
-  'https://digital.adspace.me',
-  'http://localhost:8899',
-  'http://127.0.0.1:8899'
-];
 const SIGN_IN_PAGE = 'https://digital.adspace.me/admin/';
 const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
-
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json', ...cors(origin) }
-  });
-}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
