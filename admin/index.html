@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261024p">
-<link rel="stylesheet" href="/css/console.css?v=20261024p">
+<link rel="stylesheet" href="/css/console.css?v=20261025a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -77,7 +77,7 @@
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261023e"></script>
 <script src="/js/records.js?v=20261012a"></script>
-<script src="/js/chart.js?v=20261022t"></script>
+<script src="/js/chart.js?v=20261025a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261023j"></script>
 <script src="/js/maintenance.js?v=20261022s"></script>
@@ -203,6 +203,11 @@
       <div class="navgroup">
         <button class="navitem" data-section="overview" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Dashboard</span>
+        </button>
+        <!-- Analytics (2026-10-25): trends and what to expect next, an
+             admin's tool (granted part team.analytics). -->
+        <button class="navitem" data-section="analytics" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="m4 15 5-5 4 3 7-7"/><path d="M15 6h5v5"/></svg><span>Analytics</span>
         </button>
       </div>
       <div class="navgroup">
@@ -533,6 +538,10 @@
     <!-- ---- CRM: the client record everything else points at ---- -->
     <div class="console-body" id="sectionOverview" hidden>
       <div class="ovw" id="ovwBody"></div>
+    </div>
+
+    <div class="console-body" id="sectionAnalytics" hidden>
+      <div class="ovw anl" id="anlBody"></div>
     </div>
 
     <div class="console-body" id="sectionClients" hidden>
@@ -5719,7 +5728,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261023e"></script>
-<script src="/js/admin.js?v=20261024k"></script>
+<script src="/js/admin.js?v=20261025a"></script>
 <script src="/js/documents.js?v=20261023q"></script>
 <script src="/js/letters.js?v=20261022v"></script>
 <script src="/js/smreport.js?v=20261025"></script>
@@ -5732,8 +5741,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotepdf.js?v=20261023l"></script>
 <script src="/js/checklists.js?v=20261024e"></script>
 <script src="/js/crm.js?v=20261024e"></script>
-<script src="/js/sales.js?v=20261022t"></script>
-<script src="/js/team.js?v=20261024m"></script>
+<script src="/js/sales.js?v=20261025a"></script>
+<script src="/js/team.js?v=20261025a"></script>
 <script src="/js/namecard.js?v=20261022s"></script>
 <script src="/js/handbook.js?v=20261023e"></script>
 <script src="/js/scripts.js?v=20261024es"></script>
@@ -5745,6 +5754,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/health.js?v=20261024d"></script>
 <script src="/js/search.js?v=20261022v"></script>
 <script src="/js/overview.js?v=20261023d"></script>
+<script src="/js/analytics.js?v=20261025a"></script>
 <script src="/js/settings.js?v=20261024p"></script>
 </body>
 </html>

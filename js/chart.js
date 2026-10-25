@@ -23,6 +23,9 @@
  *           its slice as a status dot does (ok, warn, err, off).
  *   columns `labels`  each figure over its column; a category's `tone` (mute)
  *           marks the one still running (this month).
+ *   line    a series' `dash` draws it dashed (a forecast); `band`, one
+ *           `[low, high]` a category or null, shades the likely range under
+ *           the lines (Analytics, 2026-10-25).
  *
  * `spark(values, tone)` draws a tile's trend as a small line with no axis,
  * an image the tile's own words already state (aria-hidden).
@@ -190,16 +193,26 @@
   }
   function line(spec, fmt) {
     var cats = spec.cats || [], series = spec.series || [{ label: '' }];
-    var top = spec.max || 0;
-    if (!spec.max) cats.forEach(function (c) { c.values.forEach(function (v) { if (v != null) top = Math.max(top, num(v)); }); });
+    var top = spec.max || 0, band = spec.band || [];
+    if (!spec.max) cats.forEach(function (c, i) {
+      c.values.forEach(function (v) { if (v != null) top = Math.max(top, num(v)); });
+      if (band[i]) top = Math.max(top, num(band[i][1]));
+    });
     var max = spec.max || nice(top);
     var n = cats.length;
     var xOf = function (i) { return n < 2 ? 50 : (i + .5) / n * 100; };
-    var paths = series.map(function (s, si) {
+    var hi = [], lo = [];
+    band.forEach(function (b, i) {
+      if (!b) return;
+      hi.push(xOf(i) + ',' + (100 - pct(b[1], max)));
+      lo.unshift(xOf(i) + ',' + (100 - pct(b[0], max)));
+    });
+    var shade = hi.length > 1 ? '<polygon class="cl-band" points="' + hi.concat(lo).join(' ') + '"/>' : '';
+    var paths = shade + series.map(function (s, si) {
       var pts = [];
       cats.forEach(function (c, i) { if (c.values[si] != null) pts.push(xOf(i) + ',' + (100 - pct(c.values[si], max))); });
       return pts.length > 1
-        ? '<polyline class="cl-line' + toneClass(s.tone) + '" points="' + pts.join(' ') + '" vector-effect="non-scaling-stroke"/>' : '';
+        ? '<polyline class="cl-line' + toneClass(s.tone) + (s.dash ? ' is-dash' : '') + '" points="' + pts.join(' ') + '" vector-effect="non-scaling-stroke"/>' : '';
     }).join('');
     var dots = cats.map(function (c, i) {
       return series.map(function (s, si) {
@@ -301,11 +314,11 @@
       }).join('') + '</tbody></table></div>';
   }
 
-  function keyHtml(series) {
-    if (!series || series.length < 2) return '';
+  function keyHtml(series, bandWord) {
+    if (!series || (series.length < 2 && !bandWord)) return '';
     return '<ul class="chart-key">' + series.map(function (s) {
-      return '<li><i class="' + toneClass(s.tone).trim() + '"></i>' + esc(s.label) + '</li>';
-    }).join('') + '</ul>';
+      return '<li><i class="' + (toneClass(s.tone) + (s.dash ? ' is-dash' : '')).trim() + '"></i>' + esc(s.label) + '</li>';
+    }).join('') + (bandWord ? '<li><i class="is-band"></i>' + esc(bandWord) + '</li>' : '') + '</ul>';
   }
 
   function isEmpty(spec) {
@@ -351,7 +364,7 @@
       : bars(spec, fmt);
     card.innerHTML = head +
       '<div class="chart-plot" role="img" aria-label="' + esc(nameOf(spec, fmt)) + '">' + body + '</div>' +
-      keyHtml(spec.kind === 'columns' || spec.kind === 'line' ? spec.series : null) +
+      keyHtml(spec.kind === 'columns' || spec.kind === 'line' ? spec.series : null, spec.kind === 'line' && spec.band && spec.bandWord) +
       (spec.kind === 'bars' && spec.markLabel && (spec.rows || []).some(function (r) { return num(r.mark) > 0; })
         ? '<ul class="chart-key"><li><i class="is-mark"></i>' + esc(spec.markLabel) + '</li></ul>' : '') +
       '<details class="fmore chart-data"><summary>Figures</summary>' + tableHtml(tableOf(spec, fmt)) + '</details>';

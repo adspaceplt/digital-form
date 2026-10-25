@@ -966,7 +966,7 @@
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice'],
+    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice', 'analytics'],
     /* White label (2026-10-07): granted like the ones above, so an admin
        holds it and any other group only once it is set. So is every act an
        admin alone could take before (2026-10-07, ADMIN PARTS): task
@@ -979,7 +979,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1047,6 +1047,11 @@
        2026-10-03). Named the Dashboard on the screen (2026-10-11); a group
        may hide it (`overview` No Access in its access map), which only hides
        the page and never opens a card. */
+    /* Analytics (2026-10-25): an admin's tool, a granted part. */
+    if (name === 'analytics') {
+      var an = window.ADspaceAnalytics;
+      return an && an.allowed ? an.allowed() : may('team.analytics', 'work');
+    }
     if (name === 'overview') {
       if (me && !(me.is_admin || me.role === 'admin') && (me.access || {}).overview === 'none') return false;
       var ov = window.ADspaceOverview;
@@ -1148,7 +1153,7 @@
      bar under a thumb. The bar steps away while a field takes the keyboard,
      so it never sits on what is typed. */
   var TAB_WORD = {
-    overview: 'Dashboard', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
+    overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
@@ -1214,6 +1219,9 @@
     if (!bar) return;
     document.documentElement.classList.toggle('has-tabbar', tabbarOn());
     var open = navItems().filter(function (b) { return !b.hidden; });
+    /* Analytics is an occasional tool: it waits under More, never a tab. */
+    open = open.filter(function (b) { return b.getAttribute('data-section') !== 'analytics'; })
+      .concat(open.filter(function (b) { return b.getAttribute('data-section') === 'analytics'; }));
     /* Arrange sections, Settings and the Activity record are marks at the
        rail's foot, so the bar holds sections alone. */
     var room = open.length <= 5 ? 5 : 4;
@@ -1591,6 +1599,7 @@
   var section = 'clients';
   var SECTION_TITLE = {
     overview: 'Dashboard',
+    analytics: 'Analytics',
     clients: 'Clients',
     whatsapp: 'WhatsApp',
     work: 'My Work',
@@ -1622,6 +1631,7 @@
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
     overview:  'What each section has waiting, for the groups that manage it.',
+    analytics: 'Trends across sales and clients, what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
     whatsapp:  'Every WhatsApp message the portal sent, with what Meta reports of its delivery.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
@@ -1644,6 +1654,10 @@
      each on a control the section draws; a step whose control this person
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
   var GUIDES = {
+    analytics: { name: 'Analytics', steps: [
+      { at: '#anlTabs', text: 'One subject a tab: sales, clients, and the sections still building their history.' },
+      { at: '#anlPeriod', text: 'Every figure reads the period chosen here, against the same length before it.' },
+      { at: '.anl-changed', text: 'What moved most against the period before, worked out from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
       { at: '#ovwPeriod', text: 'Every figure reads the period chosen here.' },
       { at: '#ovwGlance', text: 'The share of work that reached the client on time, and of posts that went live on their day.' },
@@ -1882,6 +1896,7 @@
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
     section = name;
     $('sectionOverview').hidden  = name !== 'overview';
+    $('sectionAnalytics').hidden = name !== 'analytics';
     $('sectionClients').hidden   = name !== 'clients';
     $('sectionWhatsApp').hidden  = name !== 'whatsapp';
     $('sectionWork').hidden      = name !== 'work';
@@ -1926,6 +1941,11 @@
     if (name === 'overview') {
       if (!window.ADspaceOverview) { enterLater = 'overview'; return; }
       window.ADspaceOverview.enter();
+      return;
+    }
+    if (name === 'analytics') {
+      if (!window.ADspaceAnalytics) { enterLater = 'analytics'; return; }
+      window.ADspaceAnalytics.enter();
       return;
     }
     if (name === 'clients') {
@@ -2118,6 +2138,9 @@
     } else if (section === 'reports' && window.ADspaceReports) {
       var rp = window.ADspaceReports.urlState();
       Object.keys(rp).forEach(function (k) { if (rp[k]) q.push(k + '=' + encodeURIComponent(rp[k])); });
+    } else if (section === 'analytics' && window.ADspaceAnalytics) {
+      var an = window.ADspaceAnalytics.urlState();
+      Object.keys(an).forEach(function (k) { if (an[k]) q.push(k + '=' + encodeURIComponent(an[k])); });
     } else if (section === 'overview' && window.ADspaceOverview && window.ADspaceOverview.urlState) {
       var ov = window.ADspaceOverview.urlState();
       Object.keys(ov).forEach(function (k) { if (ov[k]) q.push(k + '=' + encodeURIComponent(ov[k])); });
@@ -5861,6 +5884,11 @@
       if (enterLater !== 'reports' || section !== 'reports') return;
       enterLater = '';
       window.ADspaceReports.enterHub();
+    },
+    analyticsReady: function () {
+      if (enterLater !== 'analytics' || section !== 'analytics') return;
+      enterLater = '';
+      window.ADspaceAnalytics.enter();
     },
     overviewReady: function () {
       if (enterLater !== 'overview' || section !== 'overview') return;
