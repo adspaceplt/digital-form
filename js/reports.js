@@ -1120,7 +1120,7 @@
      Not set. */
   var FIG_WORD = { result_label: 'Result type', results: 'Results', reach: 'Reach', impressions: 'Impressions', spend: 'Amount spent',
     ctr: 'CTR', cpr: 'Cost per result', hook_rate: 'Hook rate', hold_rate: 'Hold rate', avg_play: 'Average play time',
-    retention: 'Retention', age: 'Age split' };
+    retention: 'Retention', age: 'Age split', purchase_value: 'Purchase value' };
   function figText(k, v) {
     if (v == null || v === '') return 'Not set';
     if (k === 'retention' || k === 'age') {
@@ -1131,7 +1131,7 @@
       return ks.length ? ks.map(function (x) { return (k === 'retention' ? x.replace(/^p/, '') + '% watched' : x) + ' ' + Number(v[x]) + '%'; }).join(', ') : 'Not set';
     }
     if (k === 'result_label') return resultWord(v) || 'Not set';
-    if (k === 'spend' || k === 'cpr') return money2(v);
+    if (k === 'spend' || k === 'cpr' || k === 'purchase_value') return money2(v);
     if (k === 'ctr' || k === 'hook_rate' || k === 'hold_rate') return Number(v).toFixed(2) + '%';
     if (k === 'avg_play') return Number(v) + ' s';
     return fmt(v);
@@ -1180,7 +1180,7 @@
      play time, the retention and age splits) that the report does not hold
      is listed apart, Not in the report, and never counted as a difference
      (the user, 2026-10-12). */
-  var EXTRA_FIGS = ['result_label', 'hook_rate', 'hold_rate', 'avg_play', 'retention', 'age'];
+  var EXTRA_FIGS = ['result_label', 'purchase_value', 'hook_rate', 'hold_rate', 'avg_play', 'retention', 'age'];
   function heldNot(k, v) {
     if (v == null || v === '') return true;
     return (k === 'retention' || k === 'age') && typeof v === 'object' && !Object.keys(v).some(function (x) { return v[x] != null && v[x] !== ''; });
@@ -3735,14 +3735,26 @@
   /* The PDF's own rule (ADspaceSmReport.cprOf), so the two never differ. */
   function adCpr(a) { return window.ADspaceSmReport.cprOf(a); }
   function adPer1000(a) { return window.ADspaceSmReport.perThousand(a); }
+  function roasOf(a) { return window.ADspaceSmReport.roasOf(a); }
+  function roasWord(r) { return window.ADspaceSmReport.roasWord(r); }
   /* Each objective's ads in the order the PDF ranks them (the user,
      2026-10-01): cheapest cost per result first, then those with no result
      by what they spent, most first; the paste order only breaks a tie. */
   function sortAds() {
     var ord = {}; OBJECTIVES.forEach(function (o, i) { ord[o[0]] = i; });
+    var roasSales = {};
+    st.ads.forEach(function (a) { if (a.objective === 'sales' && a.purchase_value != null && a.purchase_value !== '') roasSales[adPlat(a)] = true; });
     st.ads.sort(function (a, b) {
       var d = (adPlat(a) === 'tiktok') - (adPlat(b) === 'tiktok') || ord[a.objective] - ord[b.objective] || adErr(a) - adErr(b);
       if (d) return d;
+      /* A Sales objective holding purchase values ranks by ROAS, highest
+         first, as the PDF does (2026-10-25). */
+      if (a.objective === 'sales' && roasSales[adPlat(a)]) {
+        var ra = roasOf(a), rb = roasOf(b);
+        if (ra === null && rb !== null) return 1;
+        if (rb === null && ra !== null) return -1;
+        if (ra !== null && rb !== null && ra !== rb) return rb - ra;
+      }
       var ca = adCpr(a), cb = adCpr(b);
       if (ca === null && cb !== null) return 1;
       if (cb === null && ca !== null) return -1;
@@ -3945,8 +3957,13 @@
       var ads = st.ads.filter(function (a) { return a.objective === o[0] && adPlat(a) === pk; });
       if (!ads.length) return '';
       var spend = ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
+      /* A Sales objective's ROAS over the ads holding a purchase value. */
+      var pvAds = o[0] === 'sales' ? ads.filter(function (a) { return a.purchase_value != null && a.purchase_value !== ''; }) : [];
+      var gRoas = pvAds.length ? roasOf({ spend: pvAds.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0),
+        purchase_value: pvAds.reduce(function (s0, a) { return s0 + (Number(a.purchase_value) || 0); }, 0) }) : null;
       return '<div class="rp-postgroup"><p class="rp-group">' + esc(o[1] + (multi ? ' · ' + adPlatWord(pk) : '')) +
-        ' <span class="mute">' + ads.length + ' ad' + (ads.length === 1 ? '' : 's') + ' · ' + esc(money2(spend)) + '</span></p>' +
+        ' <span class="mute">' + ads.length + ' ad' + (ads.length === 1 ? '' : 's') + ' · ' + esc(money2(spend)) +
+        (gRoas !== null ? ' · ROAS ' + esc(roasWord(gRoas)) : '') + '</span></p>' +
         '<div class="crm-table softpanel rp-ad-table' + (pick ? ' is-picking' : '') + '" data-obj="' + o[0] + '">' +
         '<div class="crm-head rp-ad-row">' + (pick ? tick(null, 'Select every ' + o[1] + ' ad', ads.every(function (a) { return pick[a.id]; })) : '') +
           '<span></span><span>Ad</span><span>Amount spent</span><span>Results</span><span>Cost per result</span><span></span></div>' +
@@ -3956,7 +3973,9 @@
           /* Each date holds its own spaces, so a narrow row wraps between
              the parts, never inside a date (2026-10-22, RPT-5). */
           var nb = function (d) { return dayWord(d).replace(/ /g, '\u00a0'); };
-          var sub = [a.audience ? a.audience + ' audience' : '', a.starts_on ? nb(a.starts_on) + (a.ends_on ? ' to ' + nb(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
+          var ar = a.objective === 'sales' ? roasOf(a) : null;
+          var sub = [a.audience ? a.audience + ' audience' : '', a.starts_on ? nb(a.starts_on) + (a.ends_on ? ' to ' + nb(a.ends_on) : '') : '',
+            ar !== null ? 'ROAS\u00a0' + roasWord(ar) : ''].filter(Boolean).join(' · ');
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
@@ -4216,7 +4235,11 @@
         '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" data-num="money" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost per result is</label><select class="select" id="rpAdBasis" data-seg>' +
-          '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reach</option></select></div></div></section>' +
+          '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reach</option></select></div></div>' +
+        /* A Sales ad's purchase value, as Meta reports it (2026-10-25): its
+           ROAS is worked out from it, never typed. */
+        '<div class="row fgrid" id="rpAdPvRow" hidden><div><label class="field-label" for="rpAdPv">Purchase value</label><input class="input" id="rpAdPv" data-num="money" type="text" inputmode="decimal"></div>' +
+        '<div><span class="field-label">ROAS</span><p class="readfield" id="rpAdRoas">Not set</p></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Results by age (%)</h4><div class="row fgrid-3 fgrid">' +
         AGE_BANDS.map(function (b) { return '<div><label class="field-label" for="rpAge_' + b.replace('+', 'p') + '">' + esc(b) + '</label><input class="input" id="rpAge_' + b.replace('+', 'p') + '" data-age="' + esc(b) + '" data-num="pct" type="text" inputmode="decimal"></div>'; }).join('') +
       '</div><p class="rp-agesum" id="rpAgeSum"></p></section>' +
@@ -4238,6 +4261,7 @@
     v('rpAdStart', a.starts_on || (a.id || copy ? null : st.open.period_start)); v('rpAdEnd', a.ends_on || (a.id || copy ? null : st.open.period_end));
     v('rpAdSpend', a.spend); v('rpAdResults', a.results); v('rpAdCtr', a.ctr); v('rpAdReach', a.reach); v('rpAdImpr', a.impressions);
     v('rpAdCpr', a.cpr); $('rpAdBasis').value = a.cpr_basis || '';
+    v('rpAdPv', a.purchase_value);
     AGE_BANDS.forEach(function (b) { v('rpAge_' + b.replace('+', 'p'), (a.age || {})[b]); });
     v('rpAdHook', a.hook_rate); v('rpAdHold', a.hold_rate); $('rpAdPlay').value = playOut(a.avg_play);
     RET.forEach(function (r0) { v('rpRet_' + r0[0], (a.retention || {})[r0[0]]); });
@@ -4271,7 +4295,14 @@
       var o = OBJECTIVES.filter(function (x) { return x[0] === $('rpAdObj').value; })[0];
       $('rpAdResult').placeholder = o ? o[2] : '';
     };
-    $('rpAdObj').onchange = fillResult; fillResult();
+    var paintRoas = function () {
+      var sales = $('rpAdObj').value === 'sales';
+      $('rpAdPvRow').hidden = !sales;
+      var r = roasOf({ spend: numIn($('rpAdSpend').value), purchase_value: numIn($('rpAdPv').value) });
+      $('rpAdRoas').textContent = r === null ? 'Not set' : roasWord(r);
+    };
+    $('rpAdObj').onchange = function () { fillResult(); paintRoas(); }; fillResult(); paintRoas();
+    $('rpAdPv').addEventListener('input', paintRoas); $('rpAdSpend').addEventListener('input', paintRoas);
     var thumb = a.thumb_data || null;
     var showThumb = function () { $('rpAdThumbShow').innerHTML = thumb ? '<img src="' + esc(thumb) + '" alt="">' : ''; $('rpAdThumbX').hidden = !thumb; };
     $('rpAdThumb').value = ''; showThumb();
@@ -4303,6 +4334,7 @@
         audience: $('rpAdAud').value.trim() || null, starts_on: $('rpAdStart').value || null, ends_on: $('rpAdEnd').value || null,
         spend: n('rpAdSpend'), results: n('rpAdResults', true), ctr: n('rpAdCtr'), reach: n('rpAdReach', true), impressions: n('rpAdImpr', true),
         cpr: n('rpAdCpr'), cpr_basis: $('rpAdBasis').value || null,
+        purchase_value: $('rpAdObj').value === 'sales' ? n('rpAdPv') : null,
         hook_rate: n('rpAdHook'), hold_rate: n('rpAdHold'), thumb_data: thumb || null, remark: $('rpAdRemark').value.trim() || null,
         age: {}, retention: {}
       };
@@ -4380,7 +4412,10 @@
     [/^age$/, 'age'],
     [/^(3-second video plays|video plays at 3 ?s(econds)?|3-second plays|2-second video views)$/, 'plays3'], [/^(thruplays|6-second video views)$/, 'thruplays'], [/^video (plays|views)$/, 'plays'],
     [/^video (plays|views) at 25%/, 'v25'], [/^video (plays|views) at 50%/, 'v50'], [/^video (plays|views) at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video (plays|views) at 100%/, 'v100'],
-    [/^(video average play time|average play time per video view)/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
+    [/^(video average play time|average play time per video view)/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate'],
+    /* A Sales ad's purchase value (2026-10-25): Ads Manager's conversion
+       value of its purchases, added up across copies and days. */
+    [/^(website |meta |on-facebook |in-app )?purchases? (conversion )?value$/, 'purchase_value']
   ];
   /* Headers only TikTok's export carries, so a paste names its platform. */
   var TIKTOK_HEAD = /^(ad group name|ad group|advertiser id|advertiser name|cost|2-second video views|6-second video views|average play time per video view|video views at \d+%|primary status|secondary status|campaign budget|cpc \(destination\)|clicks \(destination\)|ctr \(destination\)|goal-based budget increase|qualified conversion)$/;
@@ -4423,7 +4458,7 @@
     var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
     var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord, AN = window.ADspaceSmReport && window.ADspaceSmReport.adName;
     var hasAge = head.indexOf('age') > -1;
-    var NUMS = ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'];
+    var NUMS = ['results', 'reach', 'impressions', 'spend', 'purchase_value', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'];
     var acc0 = function () { return { n: {}, w: {}, rows: [], count: 0, ctrw: 0 }; };
     /* One row's figures into an ad's tally. */
     var tally = function (a, raw) {
@@ -4598,6 +4633,7 @@
         reach: n.reach != null && !byDay ? Math.round(n.reach) : null,
         impressions: n.impressions != null ? Math.round(n.impressions) : null,
         spend: n.spend != null ? Math.round(n.spend * 100) / 100 : null,
+        purchase_value: ad.objective === 'sales' && n.purchase_value != null ? Math.round(n.purchase_value * 100) / 100 : null,
         ctr: a.ctrw ? Math.round(n.ctrSum / a.ctrw * 100) / 100 : null,
         cpr: a.count === 1 && n.cpr != null ? n.cpr : null,
         avg_play: w.avg_play ? Math.round(n.avg_play / w.avg_play * 10) / 10 : null, age: {}, retention: {} };
@@ -4828,7 +4864,7 @@
      only ads of its own platform. `o`: the platform (else the export's
      own), the objective for rows that name none, and ageOnly (an age export
      that follows the figures adds no ad). */
-  var AD_FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
+  var AD_FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'purchase_value', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
   function adMatch(list, r0) {
     /* An ad named by its Ad ID is that row, whatever its name reads. */
     if (r0.ad_ids) {

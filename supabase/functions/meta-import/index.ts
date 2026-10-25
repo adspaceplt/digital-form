@@ -134,7 +134,7 @@ async function all(path: string, params: Record<string, string>, max = 20, token
 
 const AD_FIELDS = ['account_id', 'account_name', 'ad_id', 'ad_name', 'adset_name', 'objective', 'optimization_goal', 'reach', 'impressions',
   'spend', 'ctr', 'actions', 'video_play_actions', 'video_thruplay_watched_actions', 'video_p25_watched_actions', 'video_p50_watched_actions',
-  'video_p75_watched_actions', 'video_p95_watched_actions', 'video_p100_watched_actions', 'video_avg_time_watched_actions'];
+  'video_p75_watched_actions', 'video_p95_watched_actions', 'video_p100_watched_actions', 'video_avg_time_watched_actions', 'action_values'];
 const RESULT_FIELDS = ['results', 'cost_per_result'];
 
 async function adInsights(act: string, range: string, extra: Record<string, string>, fields: string[]) {

@@ -434,6 +434,14 @@
     }
     return sp !== null && rs ? sp / rs : null;
   }
+  /* ROAS (2026-10-25): a Sales ad's purchase value over its amount spent,
+     as Meta reports both; nothing where either is missing or nothing was
+     spent. Never added across objectives or platforms. Read as 3.25x. */
+  function roasOf(a) {
+    var sp = num(a.spend), pv = num(a.purchase_value);
+    return sp !== null && sp > 0 && pv !== null ? pv / sp : null;
+  }
+  function roasWord(r) { return r == null ? '' : (Math.round(r * 100) / 100).toFixed(2) + 'x'; }
   function model(snap) {
     var rep = snap.report || {};
     var accs = (snap.platforms || []).slice().sort(function (a, b) { return (Number(a.position) || 0) - (Number(b.position) || 0); });
@@ -586,6 +594,12 @@
       g.per1000 = /reach/i.test(g.label);
       g.cpr = g.spend !== null && g.results ? g.spend / g.results * (g.per1000 ? 1000 : 1) : null;
       g.share = spendAll ? (g.spend || 0) / spendAll : null;
+      /* A Sales objective's return (2026-10-25): its ads holding a purchase
+         value, that value over what those ads spent. */
+      var held = list.filter(function (a) { a._roas = roasOf(a); return k === 'sales' && num(a.purchase_value) !== null; });
+      g.pv = held.length ? sumOf(held, function (a) { return num(a.purchase_value); }) : null;
+      g.pvSpend = held.length ? sumOf(held, function (a) { return num(a.spend); }) : null;
+      g.roas = g.pv !== null && g.pvSpend ? g.pv / g.pvSpend : null;
       var pg = pk === 'meta' ? (T0.prev_groups || {})[k] : null;
       if (pg) {
         g.prevSpend = num(pg.spend); g.prevResults = num(pg.results);
@@ -1817,6 +1831,18 @@
       var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended, and the next round builds on the creatives that did.';
       /* The note under a table holding an ad the team marked as an ad error
          (2026-10-16): neutral words for the client, never "error". */
+      /* Under every table that prints a purchase value or ROAS (the user,
+         2026-10-25: both are Meta's own reading, not the client's sales). */
+      var ROAS_NOTE = '\u00b2 Purchase value and ROAS are as reported by Meta, based on purchases its tracking attributes to these ads, and may differ from the sales your own records show.';
+      var roasNote = function () {
+        y -= TY.small * 0.72 + S(-1);
+        sh.linesOf(ROAS_NOTE, CW, TY.small, book).forEach(function (ln, i) {
+          if (i) y -= S(0);
+          need(S(0));
+          sh.draw(pg.page, ln, M, y, TY.small, MUTE);
+        });
+        y -= TY.small * 0.28;
+      };
       var NOT_RANKED = '\u00b9 Not ranked: this ad recorded minimal delivery during the period, so its cost per result is not comparable.';
 
       // ------------------------------------------------ Executive summary
@@ -1880,6 +1906,17 @@
                 g.share === null ? '' : (g.share * 100).toFixed(1) + '%'
               ] };
             }), { labelCol: true, roomy: true, band: 'Results by objective' });
+          /* Return on ad spend (2026-10-25): each Sales objective holding a
+             purchase value, as Meta reports it, under the note that says so. */
+          var roasG = am.groups.filter(function (g) { return g.roas !== null; });
+          if (roasG.length) {
+            gap(BLOCK);
+            need(S(4) * (roasG.length + 2) + S(2));
+            table([{ w: 0.31, align: 'left' }, { w: 0.23 }, { w: 0.23 }, { w: 0.23 }],
+              [{ t: 'Objective', align: 'left' }, 'Purchase value \u00b2', 'Amount spent', 'ROAS \u00b2'],
+              roasG.map(function (g) { return { cells: [{ t: g.name, f: reg }, money(g.pv), money(g.pvSpend), roasWord(g.roas)] }; }),
+              { labelCol: true, roomy: true, band: 'Return on ad spend' });
+          }
         }
         // The note the asterisks point at, under the tables it qualifies.
         if (hasMeta) {
@@ -1890,6 +1927,7 @@
           });
           y -= TY.small * 0.28;
         }
+        if (am.groups.some(function (g) { return g.roas !== null; })) roasNote();
         y -= BLOCK;
         var paras = paragraphsOf(rep.intro).filter(function (s) { return s.trim(); });
         if (paras.length) {
@@ -2121,18 +2159,28 @@
             if (p._cpr === null && q._cpr === null) return (num(q.spend) || 0) - (num(p.spend) || 0);
             if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
           };
-          var fair = g.ads.filter(function (a) { return !errOf(a); }).sort(byCost);
-          var ranked = fair.concat(g.ads.filter(errOf).sort(byCost));
+          /* A Sales objective holding purchase values ranks by ROAS, the
+             highest first (the user, 2026-10-25); an ad with none follows,
+             by what a purchase cost. Its ROAS stands where CTR stands. */
+          var byRoas = g.roas !== null;
+          var rank = byRoas ? function (p, q) {
+            if (p._roas === null && q._roas === null) return byCost(p, q);
+            if (p._roas === null) return 1; if (q._roas === null) return -1; return q._roas - p._roas;
+          } : byCost;
+          var fair = g.ads.filter(function (a) { return !errOf(a); }).sort(rank);
+          var ranked = fair.concat(g.ads.filter(errOf).sort(rank));
           /* The cheapest is marked only where the results are the same
              kind: a lead and an ad recall lift are not bought at one price. */
           var oneKind = uniq(fair.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
-          var best = fair.length > 1 && oneKind && fair[0]._cpr !== null ? fair[0] : null;
+          var best = fair.length > 1 && (byRoas ? fair[0]._roas !== null : oneKind && fair[0]._cpr !== null) ? fair[0] : null;
           /* The ad's name takes the room the figures do not need, so a name
              reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
-          var rankHead = [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'];
+          var rankHead = [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', byRoas ? 'ROAS \u00b2' : 'CTR'];
           var rankRows = ranked.map(function (a) {
             var f = a === best ? med : book;
-            return { cells: [{ t: adName(a.name) + (errOf(a) ? ' \u00b9' : '') + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f }].concat(rankFig(a).map(function (t0) { return { t: t0, f: f }; })) };
+            var figs = rankFig(a);
+            if (byRoas) figs[4] = a._roas === null ? '\u2014' : roasWord(a._roas);
+            return { cells: [{ t: adName(a.name) + (errOf(a) ? ' \u00b9' : '') + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f }].concat(figs.map(function (t0) { return { t: t0, f: f }; })) };
           });
           table(rankW.map(function (w0, i) { return i ? { w: w0 } : { w: w0, align: 'left' }; }), rankHead, rankRows, { labelCol: false });
           if (fair.length < g.ads.length) {
@@ -2140,6 +2188,7 @@
             need(S(0) + fn.length * S(0));
             fn.forEach(function (ln) { y -= S(0); sh.draw(pg.page, ln, M, y, TY.small, MUTE); });
           }
+          if (byRoas) roasNote();
           /* A full block step before the next objective, so each reads as
              its own table (the user, 2026-10-01). */
           y -= BLOCK;
@@ -2248,7 +2297,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, perThousand: perThousand, cprOf: cprOf, shortResult: shortResult, adName: adName,
+    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, perThousand: perThousand, cprOf: cprOf, roasOf: roasOf, roasWord: roasWord, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, platWord: platWord, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
     AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord
   };

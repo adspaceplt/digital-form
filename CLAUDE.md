@@ -4948,6 +4948,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     `report-draft` reads it as `not_ranked` (left out of `cost_rank`, its
     reason never sent) and never names it an error or a mark, even where
     the notes do; the check flags those words (`AVOID`).
+  - ROAS (`sm_report_ads.purchase_value`, `2026-10-25-ads-purchase-value.sql`;
+    the user, 2026-10-25): a Sales ad alone holds a purchase value (the ad
+    sheet's Purchase value with its ROAS read beside it; Ads Manager's
+    Purchases conversion value column; `meta-import` from `action_values`),
+    never below nought. ROAS is purchase value over amount spent
+    (`ADspaceSmReport.roasOf`, `roasWord` `3.25x`), the objective's over the
+    ads holding a value. Where any Sales ad holds one, the step, the PDF and
+    `report-draft` (`roas_rank`) rank its Sales ads by ROAS, highest first,
+    those without after by cost; the PDF's summary adds Return on ad spend
+    and the Sales table's ROAS stands where CTR does, each marked ² with one
+    note (as reported by Meta, from purchases its tracking attributes, may
+    differ from the client's own records). A report holding none reads as
+    before; `sm_report_meta_print` adds the value only where set.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The Ads and Posts step heads keep the import and Add on show; Select,
