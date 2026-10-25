@@ -245,6 +245,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
 | `analytics.js`, the Analytics trends (`js/sales.js`, `js/chart.js` line bands) | analytics, overview, sales, levels, team, then `ui` |
+| `supabase/functions/analytics-read/`, Analytics' Write with AI, the ANALYTICS READ WITH AI and ANALYTICS ALERTS sections | analytics, analyticsfn, smsql, abroadsql, mailfn, settings, sql |
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -3361,7 +3362,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.analytics` (an admin's by itself; `2026-10-25-analytics-admin-tool.sql`
   adds it to `team_roles_admin_guard`, so only an admin grants it), never
   the start page, never a tab of the phone's bar (under More). The data is
-  read under each table's own policies; nothing new is stored and no AI.
+  read under each table's own policies; only an AI analysis is stored.
 - Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
   drawn where its section is at Full Access: Sales (Clients and Leads),
   Clients (Clients); no tab for a section until it holds a trend's history
@@ -3375,10 +3376,48 @@ Each line is a rule that broke once. Its reason is in the archive.
   log) through `ADspaceSales.figures`, one figure call for the whole
   history: Sales' tiles (new leads a month, win rate, lead to client,
   clients lost), its trend of leads and new clients by month, What
-  changed (five rules worked out on the page, never written), the busiest
+  changed (rules worked out on the page, never written), the busiest
   months, sources and lost reasons; Clients' tiles (active, joined, left,
-  time as a client), active by month, joined and left, by industry, by
-  market, why paused or left, and how long active clients have stayed.
+  time as a client), active by month beside its own What changed, joined
+  and left, by industry, by market, why paused or left, and how long
+  active clients have stayed.
+- Better or worse (`2026-10-25-analytics-alerts.sql`; the user,
+  2026-10-25: "i dont see whether this analytics trend is good or bad"):
+  every tile that compares and every What changed finding says Better,
+  Worse or Steady (`judge`: each figure's own good direction, leads up,
+  churn, days to win and clients lost down; a move under the Business
+  setting `analytics_change_pct`, 10, or of under 2 in a count, is
+  Steady), the dot and its word in ink (`.anl-verdict`), a finding's arrow
+  in `--ok` / `--err`. Churn a quarter (clients lost over those active at
+  the start, `churnOf`) above `analytics_churn_pct` (10) reads Above alert
+  on Clients lost and leads What changed (Churn above the alert; More
+  clients left than joined; an industry most leavers came from), Sales'
+  What changed taking the client findings that are Worse. Each trend
+  says where the last six full months head (`direction`, a least squares
+  slope: Rising, Falling or Steady, judged the same way). Both settings
+  are Settings, Clients: Analytics.
+- Write with AI (`analytics-read`, `2026-10-25-analytics-read-with-ai.sql`;
+  the user, 2026-10-25: "use AI to do analytics deep analysis and
+  reporting"): the AI analysis card heads both tabs (`.anl-ai`), the
+  latest version read first: Health (good, mixed, poor), a headline, a
+  summary, then a fold of risks (by severity), what is working, the
+  forecast's credibility, three to five actions and caveats, and Version n
+  · period · Written by AI for {name}. Read before using. Write with AI
+  asks first (what it reads, n left today, notes kept in this browser
+  under `adspace-analytics-notes`) and sends the figures this page worked
+  out for the period on show (`figuresOf`: both tabs, the period before,
+  the verdicts, the months, the forecast, `leads_complete_from` Sept 2026)
+  and never a client's name; every number Claude quotes is checked against
+  them (a point quoting another is left out, a headline or summary refused
+  `ai-incomplete`). Its own count (`ai_analytics_claim`, `analytics` 3,
+  `analytics_admin` 10, team.analytics at Work; AI usage lists it), kept
+  as the next version (`analytics_reads`, RLS on, no policy, no grant;
+  `analytics_read_save`, `analytics_reads_list` the last twenty), filed
+  `team.changed` under Analytics. Its ⋯: Versions (one shown at a time),
+  Download (asks the AI declaration; drawn in the browser, FOR INTERNAL
+  USE, never stored) and Delete (asked, no restore,
+  `analytics_read_delete`, filed). Secret `ANALYTICS_MODEL` (unset,
+  `claude-opus-5-5`).
 - Full months count from the Business setting `analytics_from` (YYYYMM,
   seeded Sept 2026, Settings, Clients: Analytics, a month chosen from a
   list; `2026-10-25-analytics-counts-from.sql`, the SQL Editor's): before
@@ -6449,7 +6488,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
