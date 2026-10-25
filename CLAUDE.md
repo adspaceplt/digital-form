@@ -542,7 +542,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   SET2-11); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
-  client's and a supplier's link alike), My
+  client's and a supplier's link alike, Analytics), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
@@ -3364,10 +3364,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   read under each table's own policies; nothing new is stored and no AI.
 - Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
   drawn where its section is at Full Access: Sales (Clients and Leads),
-  Clients (Clients), Delivery (My Work), Content and campaigns (Content
-  Review or Creator Campaigns), Reports (Reports). The period (`p=`: Last
-  12 months by default, 6, 24, This year, Last year) is measured on the
-  same span before it.
+  Clients (Clients); no tab for a section until it holds a trend's history
+  (2026-10-25, review 7). The period (`p=`: Last 12 months by default, 6,
+  24, This year, Last year) is measured on the same span before it, ending
+  at the same moment of its month, and a month a figure is divided by is
+  the share of it passed (`prevOf`, `monthsIn`; review 2). A group at Own
+  clients only reads one line, Your clients only., under the bar
+  (`.anl-own`; review 4).
 - Sales and Clients read every client once a visit (`readPages`, the stage
   log) through `ADspaceSales.figures`, one figure call for the whole
   history: Sales' tiles (new leads a month, win rate, lead to client,
@@ -3376,14 +3379,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   months, sources and lost reasons; Clients' tiles (active, joined, left,
   time as a client), active by month, joined and left, by industry, by
   market, why paused or left, and how long active clients have stayed.
-- A forecast (three months, dashed, over its likely range: the mean of
-  the last six full months times the month's usual share, ± the last
-  twelve's spread) is drawn only once 12 full months are held; the busiest
-  months only once 24 are; until then each card says how many are held and
-  when it opens. Delivery, Content and campaigns and Reports count the
-  months their section holds against the six a trend needs (a progress bar
-  and the month it opens), read from each table's first row.
-- A refused read is `failLine` with Try again (`tests/analytics.js`).
+- Full months count from the Business setting `analytics_from` (YYYYMM,
+  seeded Sept 2026, Settings, Clients: Analytics, a month chosen from a
+  list; `2026-10-25-analytics-counts-from.sql`, the SQL Editor's): before
+  it the portal held won clients typed in later, never the leads lost
+  (review 1). A forecast (dashed, over its likely range: the mean of the
+  last six full months times the month's usual share, ± the last twelve's
+  spread) is drawn only once 12 full months are held, from the month still
+  running (its count so far in its name, the line of what happened ending
+  at the last full month; review 8) to three ahead; the busiest months only
+  once 24 are; until then each card says how many are held and when it
+  opens.
+- A refused read is `failLine` with Try again (`tests/analytics.js`, the
+  forecast's arithmetic included through `ADspaceAnalytics._forecast`).
 
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):

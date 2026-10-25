@@ -4,19 +4,21 @@
  * detailed about the past and also the future"). Admins only, as a granted
  * part (`team.analytics`); its own section, under the Dashboard.
  *
- * One tab a subject (Sales, Clients, Delivery, Content and campaigns,
- * Reports) and one period over all of it (Last 12 months by default). Sales
- * and Clients are drawn from what every client already carries (its stage
- * history, source, industry and market; `ADspaceSales`), read once a visit.
- * The other three hold too little history to read a trend from yet, so
- * each counts the months it holds against the six a trend needs.
+ * One tab a subject (Sales, Clients) and one period over all of it (Last
+ * 12 months by default), each period read against the same span before it,
+ * to the same moment. Both are drawn from what every client already carries
+ * (its stage history, source, industry and market; `ADspaceSales`), read
+ * once a visit. Delivery, content and reports join once they hold enough
+ * history to read a trend from (2026-10-25: no tab until then).
  *
- * A forecast is drawn only where twelve full months are held and the period
- * runs to now: the mean of the last six full months, times each month's
- * usual share of the year once twenty-four are held, with one standard
- * deviation of the last twelve as its likely range. Everything is worked
- * out on the page from the figures; nothing is written by AI and nothing
- * is stored.
+ * Months count only from the Business setting `analytics_from` (YYYYMM):
+ * before it the portal held clients typed in later, never the leads that
+ * came to nothing. A forecast is drawn only where twelve full months are
+ * held from it and the period runs to now: the mean of the last six full
+ * months, times each month's usual share of the year once twenty-four are
+ * held, with one standard deviation of the last twelve as its likely range.
+ * Everything is worked out on the page from the figures; nothing is written
+ * by AI and nothing is stored.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -44,17 +46,19 @@
 
   // ---- Who sees what -------------------------------------------------------------
   function allowed() { return may('team.analytics', 'work') && TABS.some(function (t) { return canTab(t[0]); }); }
-  var TABS = [['sales', 'Sales'], ['clients', 'Clients'], ['delivery', 'Delivery'],
-              ['content', 'Content and campaigns'], ['reports', 'Reports']];
+  var TABS = [['sales', 'Sales'], ['clients', 'Clients']];
   /* Each tab reads only what its sections are held at Full Access, as the
      Dashboard's cards do. */
   function canTab(k) {
     if (k === 'sales') return may('clients', 'manage') && may('clients.leads', 'manage');
     if (k === 'clients') return may('clients', 'manage');
-    if (k === 'delivery') return may('ops', 'manage');
-    if (k === 'content') return may('review', 'manage') || may('campaigns', 'manage');
-    if (k === 'reports') return may('reports', 'manage');
     return false;
+  }
+  /* A group that sees its own clients alone reads its own figures: said
+     once under the bar, so they are never taken for the company's. */
+  function ownOnly() {
+    var me = bridge.me && bridge.me();
+    return Boolean(me && me.client_scope === 'own' && !me.is_admin && me.role !== 'admin');
   }
 
   // ---- The period ------------------------------------------------------------------
@@ -75,19 +79,26 @@
   /* The period before: the same months a span earlier (Last year the year
      before it, This year the same days of last year). */
   function prevOf(p) {
-    var r = rangeOf(p);
-    if (p === 'year' || p === 'lastyear') {
-      return { from: monthStart(CK.addMonths(CK.day(r.from), -12)), to: new Date(addYears(r.to, -1)) };
-    }
-    var n = Number(p) || 12;
-    return { from: monthStart(CK.addMonths(CK.day(r.from), -n)), to: r.from };
+    var r = rangeOf(p), n = p === 'year' || p === 'lastyear' ? 12 : Number(p) || 12;
+    /* The span before ends at the same moment of its own month: a period
+       running to now is read against one running to now's day n months
+       back, never against whole months (2026-10-25, review 2). */
+    return { from: monthStart(CK.addMonths(CK.day(r.from), -n)), to: new Date(shiftMonths(r.to, -n)) };
   }
-  function addYears(d, n) {
-    var day = CK.day(d), y = Number(day.slice(0, 4)) + n;
-    var key = y + day.slice(4, 7);
+  /* A moment n months earlier or later, on the same day and time in
+     Malaysia (the last day of a shorter month where the day is not held). */
+  function shiftMonths(d, n) {
+    var day = CK.day(d), key = CK.addMonths(day.slice(0, 7), n);
     var last = Number(CK.addDays(CK.addMonths(key, 1) + '-01', -1).slice(8, 10));
     var p = CK.parts(d);
     return CK.at(key + '-' + pad2(Math.min(p.d, last)), pad2(p.h) + ':' + pad2(p.mi)).getTime();
+  }
+  /* How many months a range covers, its last one counted as the share of
+     it that has passed, so a month is read the same in both spans. */
+  function monthsIn(r) {
+    var ks = keysOf(r), last = ks[ks.length - 1];
+    var a = monthStart(last).getTime(), b = monthStart(CK.addMonths(last, 1)).getTime();
+    return ks.length - 1 + Math.max(0, Math.min(1, (r.to.getTime() - a) / (b - a)));
   }
   function prevWord(p) {
     if (p === 'year') return 'the same months last year';
@@ -121,14 +132,6 @@
       }).then(rows).then(function (l) { return l || []; });
     });
   }
-  /* The first record a section holds, for how many months of history it has. */
-  function firstOf(table, col) {
-    return once('first:' + table, function () {
-      return db.from(table).select(col).order(col, { ascending: true }).limit(1).then(rows).then(function (l) {
-        return l && l[0] ? l[0][col] : null;
-      });
-    });
-  }
 
   // ---- Sums by month ---------------------------------------------------------------------
   function firstAt(c) { var m = S().movesOf(c)[0]; return m ? m.at : c.created_at; }
@@ -147,8 +150,19 @@
     });
     return { start: key0, months: out, keys: keys };
   }
-  /* Full months held: every month from the first to the last before this one. */
-  function fullKeys(h) { var cur = CK.today().slice(0, 7); return h.keys.filter(function (k) { return k < cur; }); }
+  /* The month the history counts from (Business setting `analytics_from`,
+     YYYYMM): the later of it and the oldest client's first move. */
+  function countsFrom(h) {
+    var M = window.ADspaceMoney, v = M && M.setting ? Number(M.setting('analytics_from')) : 0;
+    var set = v >= 190001 ? String(Math.floor(v / 100)) + '-' + pad2(v % 100) : '';
+    return h.start && h.start > set ? h.start : (set || h.start);
+  }
+  /* Full months held: every month from the one it counts from to the last
+     before this one. */
+  function fullKeys(h) {
+    var cur = CK.today().slice(0, 7), from = countsFrom(h) || '';
+    return h.keys.filter(function (k) { return k < cur && k >= from; });
+  }
 
   // ---- The forecast ------------------------------------------------------------------------
   function mean(a) { return a.length ? a.reduce(function (s, x) { return s + x; }, 0) / a.length : 0; }
@@ -171,8 +185,9 @@
     if (full.length < 12) return null;
     var vals = full.map(function (k) { return h.months[k][field]; });
     var base = mean(vals.slice(-6)), spread = sd(vals.slice(-12)), season = seasonOf(h, field);
-    var out = [], k = CK.today().slice(0, 7);
-    for (var i = 0; i < n; i++) {
+    /* From this month, still running, to n months after it. */
+    var out = [], k = CK.addMonths(CK.today().slice(0, 7), -1);
+    for (var i = 0; i <= n; i++) {
       k = CK.addMonths(k, 1);
       var idx = season ? season.by[Number(k.slice(5, 7)) - 1].idx : 1;
       var v = base * idx;
@@ -277,7 +292,7 @@
     var f = S().figures(cl, null, r), fp = S().figures(cl, null, pr);
     var h = history(cl), keys = keysOf(r);
     var per = function (k, fld) { return (h.months[k] || {})[fld] || 0; };
-    var n = keys.length, np = keysOf(pr).length;
+    var n = monthsIn(r), np = monthsIn(pr);
     var lead = f.newLeads.length / n, leadP = fp.newLeads.length / np;
     var wr = winRate(f), wrP = winRate(fp);
     var churnRate = f.activeStart ? f.churned.length / f.activeStart : null;
@@ -326,24 +341,34 @@
     var band = null, note = '', aside = '';
     var full = fullKeys(h).length;
     if (fl) {
-      var last = cats[cats.length - 1];
-      last.values[2] = last.values[0]; last.values[3] = last.values[1];
+      /* The line of what happened ends at the last full month; the month
+         still running is the forecast's first point, its count so far in
+         its name, so a part month never reads as a fall (review 8). */
+      var r1 = function (v) { return Math.round(v * 10) / 10; };
+      var lastFull = cats[cats.length - 2], now = cats[cats.length - 1];
       band = cats.map(function () { return null; });
-      band[band.length - 1] = [last.values[0], last.values[0]];
-      fl.forEach(function (x, i) {
-        cats.push({ label: monWord(x.key), long: monthLong(x.key) + ' (forecast)', values: [null, null, Math.round(x.value * 10) / 10, Math.round(fw[i].value * 10) / 10] });
-        band.push([Math.round(x.low * 10) / 10, Math.round(x.high * 10) / 10]);
+      if (lastFull) {
+        lastFull.values[2] = lastFull.values[0]; lastFull.values[3] = lastFull.values[1];
+        band[band.length - 2] = [lastFull.values[0], lastFull.values[0]];
+      }
+      now.long = now.long + ' (forecast; ' + plain(now.values[0]) + ' so far)';
+      now.values = [null, null, r1(fl[0].value), r1(fw[0].value)];
+      band[band.length - 1] = [r1(fl[0].low), r1(fl[0].high)];
+      fl.slice(1).forEach(function (x, i) {
+        cats.push({ label: monWord(x.key), long: monthLong(x.key) + ' (forecast)', values: [null, null, r1(x.value), r1(fw[i + 1].value)] });
+        band.push([r1(x.low), r1(x.high)]);
       });
       series.push({ label: 'Forecast: leads', dash: true }, { label: 'Forecast: new clients', tone: 'mute', dash: true });
-      var lo = Math.round(Math.min.apply(null, fl.map(function (x) { return x.low; })));
-      var hi = Math.round(Math.max.apply(null, fl.map(function (x) { return x.high; })));
-      var wl = Math.round(Math.min.apply(null, fw.map(function (x) { return x.low; })));
-      var wh = Math.round(Math.max.apply(null, fw.map(function (x) { return x.high; })));
-      note = monWord(fl[0].key) + ' to ' + monWord(fl[2].key) + ' expected: ' + lo + ' to ' + hi + ' leads a month, ' + wl + ' to ' + wh +
-        ' new clients. From the last ' + Math.min(full, 24) + ' full months' + (seasonOf(h, 'newLeads') ? ' and each month\'s usual share of the year.' : '.');
-      aside = 'Forecast to ' + monWord(fl[2].key) + ' ' + fl[2].key.slice(0, 4);
+      var ahead = fl.slice(1), wa = fw.slice(1), endK = ahead[ahead.length - 1].key;
+      var lo = Math.round(Math.min.apply(null, ahead.map(function (x) { return x.low; })));
+      var hi = Math.round(Math.max.apply(null, ahead.map(function (x) { return x.high; })));
+      var wl = Math.round(Math.min.apply(null, wa.map(function (x) { return x.low; })));
+      var wh = Math.round(Math.max.apply(null, wa.map(function (x) { return x.high; })));
+      note = monWord(ahead[0].key) + ' to ' + monWord(endK) + ' expected: ' + lo + ' to ' + hi + ' leads a month, ' + wl + ' to ' + wh +
+        ' new clients. From the average of the last 6 full months' + (seasonOf(h, 'newLeads') ? ' and each month\'s usual share of the year.' : '.');
+      aside = 'Forecast to ' + monWord(endK) + ' ' + endK.slice(0, 4);
     } else if (r.open) {
-      aside = full >= 12 ? '' : 'Forecast from ' + monthLong(CK.addMonths(h.start || CK.today(), 12));
+      aside = full >= 12 ? '' : 'Forecast from ' + monthLong(CK.addMonths(countsFrom(h) || CK.today().slice(0, 7), 12));
       if (full < 12) note = 'A forecast is drawn once 12 full months are held. ' + monthsWord(full) + (full === 1 ? ' is' : ' are') + ' held.';
     }
     var el = chart(grid, 'trend', 'Leads and new clients by month', {
@@ -410,7 +435,7 @@
     if (!se) {
       card(grid, 'season', 'Busiest months for new leads', '',
         waitHtml('Busiest months show once 24 full months of leads are held',
-          full, 24, full ? 'Leads are held from ' + monthLong(h.start) + '. The months show in ' + monthLong(CK.addMonths(h.start, 24)) + '.' : 'No lead is held yet.'));
+          full, 24, full ? 'Leads are counted from ' + monthLong(countsFrom(h)) + '. The months show in ' + monthLong(CK.addMonths(countsFrom(h), 24)) + '.' : 'No lead is held yet.'));
       return;
     }
     var sorted = se.by.map(function (x) { return x.avg; }).slice().sort(function (a, b) { return a - b; });
@@ -483,41 +508,6 @@
       rows: BANDS.map(function (b) { return { label: b[0], value: ten.filter(function (d) { return d >= b[1] && d < b[2]; }).length }; }) }, 'Now');
   }
 
-  // ---- The sections with too little history -------------------------------------------------------
-  var WAITS = {
-    delivery: { what: 'My Work', trends: 'On-time, revisions and turnaround trends', reads: [['ops_tasks', 'created_at']] },
-    content: { what: 'Content Review and Creator Campaigns', trends: 'Approval rounds, turnaround and creator booking trends',
-      reads: [['batches', 'created_at'], ['campaigns', 'created_at']] },
-    reports: { what: 'Reports', trends: 'Reports on time and days to publish', reads: [['sm_reports', 'period_start']] }
-  };
-  function waiting(box, k) {
-    var w = WAITS[k];
-    var grid = row(box);
-    var el = card(grid, 'wait', w.what, '', '');
-    var body = el.querySelector('.ovw-body');
-    var run = function () {
-      UI.skeleton(body, 2);
-      var reads = w.reads.filter(function (x) {
-        if (x[0] === 'batches') return may('review', 'manage');
-        if (x[0] === 'campaigns') return may('campaigns', 'manage');
-        return true;
-      });
-      Promise.all(reads.map(function (x) { return firstOf(x[0], x[1]); })).then(function (list) {
-        var first = list.filter(Boolean).sort()[0];
-        var cur = CK.today().slice(0, 7);
-        if (!first) { body.innerHTML = waitHtml('Trends start once there are 6 months of work', 0, 6, w.what + ' holds no work yet.'); return; }
-        var k0 = CK.day(first).slice(0, 7), held = 0, kk = k0;
-        while (kk <= cur) { held++; kk = CK.addMonths(kk, 1); }
-        var line = held >= 6
-          ? w.what + ' holds ' + monthsWord(held) + ', from ' + monthLong(k0) + '. ' + w.trends + ' are the next part of Analytics to be built.'
-          : w.what + ' holds ' + monthsWord(held) + ' (' + (held === 1 ? monthLong(k0) : monthLong(k0) + ' to ' + monthLong(cur)) + '). ' +
-            w.trends + ' open in ' + monthLong(CK.addMonths(k0, 6)) + '; forecasts after 12 months.';
-        body.innerHTML = waitHtml(held >= 6 ? 'Six months of work are held' : 'Trends start once there are 6 months of work', Math.min(held, 6), 6, line);
-      }).catch(function (e) { fail(body, w.what, e, run); });
-    };
-    run();
-  }
-
   // ---- The page --------------------------------------------------------------------------------------
   function bar(box) {
     var head = document.createElement('div');
@@ -575,18 +565,20 @@
     page.className = 'anl-page';
     page.setAttribute('data-tab', tab);
     box.appendChild(page);
-    if (tab === 'sales' || tab === 'clients') {
-      var run = function () {
-        UI.skeleton(page, 6);
-        clients().then(function (cl) {
-          page.innerHTML = '';
-          if (tab === 'sales') sales(page, cl); else clientsTab(page, cl);
-        }).catch(function (e) { fail(page, tab === 'sales' ? 'Sales' : 'Clients', e, run); });
-      };
-      run();
-    } else {
-      waiting(page, tab);
-    }
+    var run = function () {
+      UI.skeleton(page, 6);
+      clients().then(function (cl) {
+        page.innerHTML = '';
+        if (ownOnly()) {
+          var own = document.createElement('p');
+          own.className = 'anl-own';
+          own.textContent = 'Your clients only.';
+          page.appendChild(own);
+        }
+        if (tab === 'sales') sales(page, cl); else clientsTab(page, cl);
+      }).catch(function (e) { fail(page, tab === 'sales' ? 'Sales' : 'Clients', e, run); });
+    };
+    run();
     window.scrollTo(0, y);
   }
   function urlState() { return { tab: tab !== 'sales' ? tab : '', p: period !== '12' ? period : '' }; }
@@ -604,6 +596,6 @@
   }
 
   window.ADspaceAnalytics = { enter: enter, urlState: urlState, allowed: allowed,
-    _forecast: forecast, _season: seasonOf, _history: history };
+    _forecast: forecast, _season: seasonOf, _history: history, _range: rangeOf, _prev: prevOf, _monthsIn: monthsIn };
   if (bridge.analyticsReady) bridge.analyticsReady();
 })();
