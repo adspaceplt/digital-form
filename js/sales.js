@@ -185,5 +185,5 @@
     return { active: sum(f.activeNow), won: sum(f.won), churned: sum(f.churned) };
   }
 
-  window.ADspaceSales = { figures: figures, reasonWord: reasonWord };
+  window.ADspaceSales = { figures: figures, reasonWord: reasonWord, movesOf: movesOf };
 })();

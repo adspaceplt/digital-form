@@ -17,6 +17,7 @@ Each section gets two grades:
 | Key | Section | Route | Scripts | Key flows (who) | Budget |
 |---|---|---|---|---|---|
 | overview | Overview | `?s=overview` | overview.js | See what needs attention; open the item (manager) | 2 presses to the item |
+| analytics | Analytics | `?s=analytics` | analytics.js, sales.js, chart.js | Read a trend and what changed; change the period; open a tab still counting its months (admin) | 1 press to any tab |
 | work | My Work | `?s=work` | ops.js | Add a task; move a task on; find one by number; plan a client's month; ask for an extension (colleague, manager) | 3 presses for a daily act |
 | clients | Clients | `?s=clients` | crm.js, sales.js | Key in a lead; log a call; move to Active through billing; add a service line and issue the Letter of Offer (sales) | Intake 5 visible fields |
 | review | Content Review | `?s=review` | admin.js, mockups.js | New set, add assets, publish; act on a change request; confirm internally (marketing) | Publish 3 presses after upload |

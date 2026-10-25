@@ -2411,6 +2411,50 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-key { grid-row: 3; align-self: start; }
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-data { grid-row: 4; margin-top: 12px; align-self: start; }
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > :has(+ .chart-data) { margin-bottom: 0; }
+/* Analytics (2026-10-25): the Dashboard's bar, tiles and cards, then its
+   own pieces: the trend beside What changed on the record's proportion, the
+   forecast drawn dashed over its likely range, the busiest months as a
+   strip of twelve, and the months a section holds against those it needs. */
+.anl { grid-template-columns: minmax(0, 1fr); }
+.anl-bar { justify-content: space-between; }
+.anl-bar > .tabrow { min-width: 0; max-width: 100%; }
+.is-narrow .anl-bar > .tabrow { flex: 1 1 100%; }
+.anl-page { display: grid; gap: 12px; }
+.anl-lead { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); }
+.is-narrow .anl-lead { grid-template-columns: minmax(0, 1fr); }
+.anl-lead > .chartcard { display: flex; flex-direction: column; }
+.anl-aside { margin-left: auto; font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+.anl-note { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.cl-band { fill: var(--line-soft); stroke: none; }
+.cl-line.is-dash { stroke-dasharray: 5 4; }
+.chart-key i.is-dash { height: 0; border-radius: 0; background: none; border-top: 2px dashed var(--ink-soft); }
+.chart-key i.is-mute.is-dash { border-top-color: var(--line-ctl); }
+.chart-key i.is-band { background: var(--line-soft); }
+.anl-ins { display: grid; }
+.anl-ins-row { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.anl-ins-row:first-child { padding-top: 0; }
+.anl-ins-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.anl-ins-dir { color: var(--ink-mute); text-align: center; }
+.anl-ins-what b { display: block; font-weight: 500; }
+.anl-ins-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.anl-ins-val { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.anl-season { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4px; }
+.is-narrow .anl-season { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.anl-mon { display: grid; gap: 2px; justify-items: center; padding: 8px 0 6px; border-radius: var(--radius-ctl-sm); font-size: 12px; color: var(--ink-soft); }
+.anl-mon b { font-size: 13px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.anl-mon.l0 { background: var(--sunk); }
+.anl-mon.l1 { background: var(--line-soft); }
+.anl-mon.l2 { background: var(--line); }
+.anl-mon.l3 { background: var(--line-ctl); color: var(--ink); }
+.anl-mon.l4 { background: var(--fill); color: var(--on-fill); }
+.anl-mon.l4 b { color: var(--on-fill); }
+.anl-wait { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px 24px; align-items: center; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk); }
+.is-narrow .anl-wait { grid-template-columns: minmax(0, 1fr); }
+.anl-wait-words { display: grid; gap: 2px; }
+.anl-wait-words b { font-weight: 600; }
+.anl-wait-words span, .anl-wait-bar > span:first-child { font-size: 12.5px; color: var(--ink-mute); }
+.anl-wait-bar .ovw-kpi-bar { margin-top: 6px; background: var(--line-soft); }
+.anl-wait-bar .ovw-kpi-bar i { background: var(--fill); }
 .ovw-grid.is-three .chart-pie { gap: 16px; }
 .ovw-grid.is-three .cp-ring { width: 104px; height: 104px; }
 .ovw-grid.is-three .cp-value small { display: none; }

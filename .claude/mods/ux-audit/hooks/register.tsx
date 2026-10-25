@@ -18,6 +18,7 @@ const RESULTS = 'tests/ux-audit/results.json'
    silent. */
 export const SECTIONS: readonly { key: string; name: string; files: readonly string[] }[] = [
   { key: 'overview', name: 'Overview', files: ['js/overview.js'] },
+  { key: 'analytics', name: 'Analytics', files: ['js/analytics.js', 'js/sales.js'] },
   { key: 'work', name: 'My Work', files: ['js/ops.js'] },
   { key: 'clients', name: 'Clients', files: ['js/crm.js', 'js/sales.js'] },
   { key: 'review', name: 'Content Review', files: ['js/admin.js', 'js/mockups.js'] },

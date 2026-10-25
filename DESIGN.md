@@ -228,6 +228,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A client page while its link is read | `.pageload` in its `main`: one turning ring (32px, a 3px arc fading round to its head in `--ink-soft`, a smooth turn of .9s, centred), `role="status"` named Loading, no words; drawn only while nothing marked `data-shown` is on show (`:has()`), so no script hides it |
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
+| A trend and what to expect (Analytics) | The Dashboard's tiles and `.chartcard`s under one bar (`.anl-bar`: the view strip at the left, the period and its span at the right); the lead row `.anl-lead` (1.618 : 1, one column when narrow) holds the trend, its forecast a dashed line over a `--sunk` band (`.cl-band`, keyed Likely range) with one mute `.anl-note`, beside What changed (`.anl-ins-row`: an ink arrow, the finding over its figures, the change at the right edge); the busiest months a strip of twelve (`.anl-mon`, five steps from `--sunk` to `--fill`); a card still counting its months is `.anl-wait` (the line, then `n of N months` over a 4px track in `--fill`) |
 | A section's figures at a glance (the Dashboard) | `.ovw-kpi` tiles in `.ovw-kpis`, two by two under a group's label with a hairline (`.ovw-group-h`): the label 12/600 mute, the figure 24/600 (21 for money; late in red), its change in the soft ink (never green), its trend (`ADspaceChart.spark`) or a progress track; every tile keeps the trend's room so a row stands one height, and groups side by side share their rows (subgrid) |
 | The period at a glance (the Dashboard) | `#ovwGlance`: the two `meter` rings alone (one share each, its figure in the middle, the arc `--ok-solid`), first on the page |
 | Everything waiting across sections (the Dashboard) | `#ovwAttention`, straight under the rings: its head a view strip of the sources holding rows (`#ovwSrcs`, the card's width, All then each source's short word and `.tab-n` count, red where late; a tab narrows the list), then What (name over meta) · Section (a grey `.chip`) · Who · Since (late in red words, else the dot and its word), five rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
@@ -742,6 +743,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
 ## 7. Architecture
 - The Dashboard sits alone above the two chunks, with no label, drawn only for
   a group that manages a section (`CLAUDE.md`).
+- Analytics follows it, above the chunks, drawn only for `team.analytics`.
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Video Scripts, Creator

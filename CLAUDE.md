@@ -244,6 +244,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
+| `analytics.js`, the Analytics trends (`js/sales.js`, `js/chart.js` line bands) | analytics, overview, sales, levels, team, then `ui` |
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -1340,7 +1341,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.notice` (Notices, 2026-10-09) and `reports.meta`
   (Meta import and audit, 2026-10-10) and `campaigns.files_delete` (Delete
   approved files, 2026-10-10) and `clients.vic` (Mark VIC clients,
-  2026-10-15); each offers Manage
+  2026-10-15) and `team.analytics` (Analytics, 2026-10-25); each offers Manage
   alone (on or off). Team: Health (every colleague's answers by name) is
   no part: an admin's alone, never offered to a group (2026-10-18, below).
   `suppliers.pay` (Supplier bank details,
@@ -3352,6 +3353,37 @@ Each line is a rule that broke once. Its reason is in the archive.
   its task.
 - `batches.published_at` is stamped by `batches_published_at` on the move to
   published and cleared on Unpublish.
+
+### Analytics (`js/analytics.js`, `?s=analytics`)
+- Trends over months, apart from the Dashboard's period (the user,
+  2026-10-25; mockup `digital-form-tests` `mockups/analytics`): the rail
+  row after the Dashboard, for whoever holds the granted part
+  `team.analytics` (an admin's by itself; `2026-10-25-analytics-admin-tool.sql`
+  adds it to `team_roles_admin_guard`, so only an admin grants it), never
+  the start page, never a tab of the phone's bar (under More). The data is
+  read under each table's own policies; nothing new is stored and no AI.
+- Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
+  drawn where its section is at Full Access: Sales (Clients and Leads),
+  Clients (Clients), Delivery (My Work), Content and campaigns (Content
+  Review or Creator Campaigns), Reports (Reports). The period (`p=`: Last
+  12 months by default, 6, 24, This year, Last year) is measured on the
+  same span before it.
+- Sales and Clients read every client once a visit (`readPages`, the stage
+  log) through `ADspaceSales.figures`, one figure call for the whole
+  history: Sales' tiles (new leads a month, win rate, lead to client,
+  clients lost), its trend of leads and new clients by month, What
+  changed (five rules worked out on the page, never written), the busiest
+  months, sources and lost reasons; Clients' tiles (active, joined, left,
+  time as a client), active by month, joined and left, by industry, by
+  market, why paused or left, and how long active clients have stayed.
+- A forecast (three months, dashed, over its likely range: the mean of
+  the last six full months times the month's usual share, ± the last
+  twelve's spread) is drawn only once 12 full months are held; the busiest
+  months only once 24 are; until then each card says how many are held and
+  when it opens. Delivery, Content and campaigns and Reports count the
+  months their section holds against the six a trend needs (a progress bar
+  and the month it opens), read from each table's first row.
+- A refused read is `failLine` with Try again (`tests/analytics.js`).
 
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):
