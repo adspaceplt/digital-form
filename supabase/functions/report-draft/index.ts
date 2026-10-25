@@ -79,7 +79,7 @@ const AVOID = `Never said of our creative, design, copy, caption, content plan o
 Never as praise: excellent, outstanding, exceptional, remarkable, impressive, amazing, incredible, perfect, flawless, seamless, phenomenal, a huge success, all goals achieved, every ad performed well, no issues, as always, consistently strong. In Chinese: 完美, 卓越, 出色, 优异, 非常成功, 圆满成功, 全面提升, 毫无问题, 零失误, 一如既往, 持续优秀. Give the figure instead.
 Never as comfort in place of a figure: room to grow, valuable insights, valuable learnings, a learning opportunity, a clear signal, laid a strong foundation, positive momentum, despite the challenges. In Chinese: 仍有提升空间, 宝贵经验, 学习机会, 打下坚实基础, 积极势头, 尽管面临挑战. Say what fell short, by how much, and what we will change.
 No word that colours a figure up or down, before or around it: only, just, merely, a mere, as few as, barely, a whopping, as many as, unfortunately, sadly, thankfully, encouragingly. In Chinese: 仅, 仅仅, 仅有, 只, 只有, 才, 高达, 足足, 竟, 竟然, 遗憾, 可惜, 幸好. Give the figure plainly ("278 views and 10 engagements", "获得278次观看与10次互动").
-A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank), never worked out by reading the figures.
+A rank or a place (first, second, third, the most viewed, the cheapest, 第一, 第二, 居首) is said only as the data's own rank fields give it (rank_views, rank_engagements, cost_rank, roas_rank), never worked out by reading the figures.
 An ad with not_ranked true recorded minimal delivery and is left out of the ranking: never call it the cheapest or the dearest, never judge the work by it, and never write "ad error", "Ad Error", "error", "marked", "flagged", 广告错误, 错误 or 标记 of it, nor say the team marked it, even where the notes use those words: those words are internal. Where it needs a mention, say so in the draft's own language, never the other: in English "its delivery was too limited to compare"; in Chinese "投放量有限，暂不纳入比较".
 Never compare one ad with another by name as a multiple or a gap (two times, double, three times, RM 5.90 more than, 两倍, 三倍, 高出, 比…高), and never call an ad's cost the worst or the highest (最差, 最高); read it against its objective's cost per result (group_cost_per_result) instead.`;
 
@@ -128,7 +128,7 @@ TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
 
 READING THE FIGURES
-Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the cheapest; out of ads_in_group), worked out for you: say an ad is the cheapest or the second only from it, and never name an ad the dearest; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
+Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the cheapest; out of ads_in_group), worked out for you: say an ad is the cheapest or the second only from it, and never name an ad the dearest; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so. A Sales ad may carry purchase_value and roas (its purchase value over its amount spent, both as Meta reports them) with roas_rank (1 is the highest, out of ads_with_roas): for a Sales objective the return is the measure the client reads first, so say what the ads returned (a ROAS of 3.25x, written with the x) and which returned most only from roas_rank; give a Sales objective's own ROAS as its purchase values added up over what those ads spent; never add ROAS across objectives or platforms, never work out a ROAS the data does not give, and where purchase values are given say once that they are as Meta reports them.
 Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
@@ -184,7 +184,7 @@ const CHECK = `You check the commentary of a monthly social media report that AD
 
 LIST ONLY WHAT IS WRONG
 1. A figure that is not in the data or does not match it: a count, an amount, a percentage, a change against the previous period, a currency, a date or period, an ad or post name.
-2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform, a place (first, second, third, the cheapest) that is not the rank the data gives (rank_views, rank_engagements, cost_rank).
+2. A claim the figures contradict or do not support: a rise that is a fall, the best or the strongest that is not, a result credited to the wrong ad, post, objective or platform, a place (first, second, third, the cheapest) that is not the rank the data gives (rank_views, rank_engagements, cost_rank, roas_rank), or a ROAS or purchase value that is not the data's.
 3. A comparison the figures do not allow: cost per result compared between different result types; platforms ranked against each other or their figures added into one judgement; a post compared with a post on another platform.
 4. A word against our own work: the creatives, copy, captions, content plan, schedule and targeting are ours, so calling any of them bad, poor, weak, unclear, ineffective, a mistake or a problem, or blaming them for a result, is a finding.
 5. A word or phrase from these lists, in English or Chinese; the fix gives the plain words and the figure instead:
@@ -445,7 +445,7 @@ Deno.serve(async (req) => {
   }
   if (kind === 'ads') {
     const ads = await db.from('sm_report_ads')
-      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform, ad_error')
+      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform, ad_error, purchase_value')
       .eq('report_id', id).order('position', { ascending: true });
     if (ads.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ads.data || []).length) return json({ error: 'no-ads' }, 200, origin);
@@ -491,8 +491,19 @@ Deno.serve(async (req) => {
       return { cost_rank: 1 + peers.filter((b) => cprOf(b)! < mine - 0.0001).length, ads_in_group: peers.length,
         group_cost_per_result: groupAvg(a) };
     };
+    /* A Sales ad's ROAS, purchase value over amount spent, both as Meta
+       reports them (2026-10-25), and its place by ROAS among its platform's
+       Sales ads holding one, highest first, worked out here as cost_rank is. */
+    const roasOf = (a: Record<string, unknown>) => a.objective === 'sales' && num(a.purchase_value) !== null && num(a.spend)
+      ? Math.round(num(a.purchase_value)! / num(a.spend)! * 100) / 100 : null;
+    const roasRank = (a: Record<string, unknown>) => {
+      const mine = roasOf(a);
+      if (mine === null || marked(a)) return {};
+      const peers = adRows.filter((b) => !marked(b) && (b.platform || 'meta') === (a.platform || 'meta') && roasOf(b) !== null);
+      return { purchase_value: num(a.purchase_value), roas: mine, roas_rank: 1 + peers.filter((b) => roasOf(b)! > mine).length, ads_with_roas: peers.length };
+    };
     data.ads = adRows.map((a) => ({
-      ...rankAd(a),
+      ...rankAd(a), ...roasRank(a),
       ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label, audience: a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),

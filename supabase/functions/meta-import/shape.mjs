@@ -114,7 +114,7 @@ export function resultOf(row) {
 const AD_COLS = ['Account ID', 'Account name', 'Ad ID', 'Ad name', 'Ad set name', 'Objective', 'Result indicator', 'Results',
   'Reach', 'Impressions', 'Amount spent', 'CTR (all)', 'Cost per result', '3-second video plays', 'ThruPlays', 'Video plays',
   'Video plays at 25%', 'Video plays at 50%', 'Video plays at 75%', 'Video plays at 95%', 'Video plays at 100%',
-  'Video average play time', 'Reporting starts', 'Reporting ends'];
+  'Video average play time', 'Purchases conversion value', 'Reporting starts', 'Reporting ends'];
 
 /* Ads Manager's export for the period: the account's own row (no ad name)
    first, then an ad a row. `account` is the account-level insights row (or
@@ -148,6 +148,9 @@ export function adsText(account, ads, period) {
       'Video plays at 95%': figure(total(a.video_p95_watched_actions)),
       'Video plays at 100%': figure(total(a.video_p100_watched_actions)),
       'Video average play time': figure(total(a.video_avg_time_watched_actions)),
+      /* The purchases' value, as Ads Manager's Purchases conversion value
+         counts it (2026-10-25): Meta's all-channel purchase first. */
+      'Purchases conversion value': figure(actionOf(a.action_values, ['omni_purchase', 'purchase', 'offsite_conversion.fb_pixel_purchase']), 2),
       'Reporting starts': a.date_start || ps, 'Reporting ends': a.date_stop || pe
     };
     lines.push(AD_COLS.map((k) => flat(row[k])).join('\t'));
