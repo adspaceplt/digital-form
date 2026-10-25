@@ -14,15 +14,11 @@
  */
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
+import { cors, json } from '../_shared/cors.ts';
 
 /* An email compared as itself, never as a pattern: `_` and `%` in an
    address are letters here, not wildcards (audit P2, 2026-10-10). */
 const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
-
-const ALLOWED_ORIGINS = [
-  'https://digital.adspace.me',
-  'http://localhost:8899'
-];
 
 /* What the pages upload, and the one type each is stored as (audit
    2026-10-16, finding 4): a content set's videos and pictures and their cover
@@ -80,26 +76,6 @@ const PURPOSES: Record<string, {
       return c ? { client: String(c.client_id) } : null; } }
 };
 const MAX_BYTES = 2 * 1024 * 1024 * 1024;   // 2 GB, a sane ceiling for a review copy
-
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    // supabase-js sends x-client-info and apikey as well. Leaving them out makes
-    // the browser preflight fail, which surfaces as "Failed to send a request".
-    'Access-Control-Allow-Headers':
-      'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...cors(origin) }
-  });
-}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');

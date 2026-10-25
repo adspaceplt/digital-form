@@ -70,20 +70,8 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { adsText, ageText, reachWithAges, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.mjs';
+import { cors, json } from '../_shared/cors.ts';
 
-const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
-}
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
 class MetaError extends Error {

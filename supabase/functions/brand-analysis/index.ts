@@ -44,6 +44,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import Anthropic from 'npm:@anthropic-ai/sdk';
+import { cors, json } from '../_shared/cors.ts';
 
 /* A Business setting as app_setting(key, at) answers it: the newest row
    from on or before the day (app_settings_read lists them by key and day).
@@ -58,22 +59,6 @@ function settingsAt(data: unknown, test: RegExp): Record<string, number> {
   return out;
 }
 
-const ALLOWED_ORIGINS = ['https://digital.adspace.me', 'http://localhost:8899'];
-
-function cors(origin: string | null) {
-  const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Vary': 'Origin'
-  };
-}
-function json(body: unknown, status: number, origin: string | null) {
-  return new Response(JSON.stringify(body), {
-    status, headers: { 'Content-Type': 'application/json', ...cors(origin) }
-  });
-}
 /* The answer once it is ready, the connection held open by a space every
    few seconds meanwhile (JSON allows leading whitespace). */
 function held(work: Promise<unknown>, origin: string | null) {

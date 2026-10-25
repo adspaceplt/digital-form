@@ -6460,7 +6460,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
   A function that imports `../_shared/` is sent with that file in the same
-  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`), and both read back.
+  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; every function a
+  browser calls: `_shared/cors.ts`, the one list of origins and the one
+  answer's headers, `tests/mailfn.js`), and both read back.
 - The report lists what the user does by hand: a dashboard setting.
 - Every go-live report names the version the console shows exactly as the rail reads it (`v{YY.MM.DD} · {commit}`), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
