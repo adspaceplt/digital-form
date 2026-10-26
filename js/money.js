@@ -349,6 +349,7 @@
     termKey: termKey,
     QUOTE_TERMS: QUOTE_TERMS,
     rateFor: rateFor,
+    cents: cents,
     TERMS: TERMS,
     TERM_PCT: TERM_PCT,
     sign: signOf,

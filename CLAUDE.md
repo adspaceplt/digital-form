@@ -2279,7 +2279,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     cent, by the month where every line of more than a month shares a
     term with a one-month line its own one-off subtotal, SST at today's rate
     unless exempt) and keeps the page's figures only within a sen, else
-    refuses `stale` with its own (audit S4, 2026-10-10).
+    refuses `stale` with its own (audit S4, 2026-10-10). A colleague at
+    Clients: Letters who cannot list quotations reads the quotation's rate
+    and term through `letter_quote_terms` (2026-10-26); a line with no code
+    is priced at the client's rate in the same group as a coded line at
+    that rate, and every total is rounded by `cents()`, never `Math.round`.
   - `verify_letter` confirms only the lines as printed: a line removed since
     (`archived-line`) or one whose quantity, rate, term or adjustment moved
     since the letter (`changed-terms`) is refused, and the letter reissued.
