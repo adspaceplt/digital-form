@@ -204,7 +204,9 @@
     /* One sentence of what the figure holds; SST named only where it applies. */
     var holds = [];
     if (own && t.once) holds.push('the one-off items');
-    if (sstOn) holds.push('SST at ' + t.sst_pct + '%');
+    /* The rate the lines carry, as the SST row names it (the audit of
+       2026-10-26, finding 9: an exempt client's coded line read SST at 0%). */
+    if (sstOn) holds.push(/\d/.test(taxed.word) ? taxed.word.replace(/^SST /, 'SST at ') : 'SST');
     if (t.month && holds.length) notes.push((own ? 'The first month\'s amount' : 'The amount per month') + ' includes ' + holds.join(' and ') + '.');
     if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
       notes.push('The advertising budget is not included in the service fee and is billed separately.');

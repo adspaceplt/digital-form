@@ -5464,6 +5464,18 @@
       i.addEventListener('change', pickSum);
     });
     pickSum();
+    /* Lines from one quotation the reader cannot list (no Quotations part)
+       are priced on its rate and term as the letter is (the audit of
+       2026-10-26, finding 2). */
+    state.letterQuotes = [];
+    var tick = (state.services || []).filter(function (l) { return pickedIds().indexOf(l.id) > -1; });
+    if (tick.length && DOCS.quoteTerms) {
+      DOCS.quoteTerms(tick, state.quotes).then(function (qs) {
+        var have = state.quotes || [];
+        state.letterQuotes = qs.filter(function (x) { return have.indexOf(x) < 0; });
+        if (state.letterQuotes.length && !$('pickSheet').hidden) pickSum();
+      });
+    }
     /* Opened and shut through js/sheet.js (2026-10-22, QT-3): the focus held
        in it and handed back, Escape, and a press outside that never throws
        away a typed reference. Read again in place while it is open. */
@@ -5504,7 +5516,7 @@
     var c = state.client;
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
-    var price = rows.length ? DOCS.quoteOf(c, rows, state.quotes, renewal) : null;
+    var price = rows.length ? DOCS.quoteOf(c, rows, (state.quotes || []).concat(state.letterQuotes || []), renewal) : null;
     /* Lines all from one quotation read as the quotation reads, its own
        figure and term, never the letter's whole total (2026-10-22, QT-1). */
     var qid = rows.length && rows[0].quotation_id;
@@ -5574,7 +5586,7 @@
       stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms
     };
     DOCS.issue('offer', c, rows, deal,
-      { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: state.quotes,
+      { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;

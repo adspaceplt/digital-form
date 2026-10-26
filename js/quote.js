@@ -508,12 +508,16 @@
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */
-  function sstOn(tt) { return window.ADspaceMoney.sstApplies(tt.sst_pct); }
+  function taxed(tt) { return window.ADspaceMoney.sstOf(Q && Q.lines, tt.sst_pct); }
+  function sstOn(tt) { return taxed(tt).on; }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
   function totalsRows(tt) {
     /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
     var w = t(), on = sstOn(tt);
-    var sst = on ? f(w.sst, { p: tt.sst_pct }) : w.sstNone;
+    /* The rate the lines carry (a revision may hold a line's own code; the
+       audit of 2026-10-26, finding 9), else SST where they differ. */
+    var rt = /([\d.]+)%/.exec(taxed(tt).word);
+    var sst = on ? (rt ? f(w.sst, { p: rt[1] }) : 'SST') : w.sstNone;
     var WORD = { monthSub: w.monthSub, onceSub: w.onceSub, firstExcl: w.firstExcl, monthExcl: w.monthExcl, sst: sst,
       first: word(tt, 'first'), monthly: word(tt, 'monthly'), oneOff: word(tt, 'oneOff') };
     var r = window.ADspaceMoney.quoteRows(tt, Q && Q.lines, on).map(function (x) {

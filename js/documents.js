@@ -108,7 +108,7 @@
       if (l.term_adjust === true) { month = true; msub += v; span += cents(v) * n; b.msub += v; b.span += cents(v) * n; if (n !== qm.term) even = false; }
       else { once += v; b.once += v; }
     });
-    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    var r2 = cents;
     var by = function (f) { return r2(Object.keys(g).reduce(function (a, k) { return a + f(g[k]); }, 0)); };
     var otax = by(function (b) { return cents(b.once * b.r / 100); });
     var mtaxOf = function (b) { return cents((b.msub + cents(b.msub * qm.pct / 100)) * b.r / 100); };
@@ -168,10 +168,16 @@
       /* Each line at its own tax code's rate where it carries one
          (`tax_pct`, 2026-10-22), else the client's: the SST worked a rate
          at a time, rounded once each, as issue_letter works it. */
+      /* A line with no code takes the client's own rate (none where it is
+         exempt), and lines at one rate are one group whatever carries it,
+         as issue_letter groups them (`coalesce(code rate, v_pct)`): a coded
+         8% line beside an uncoded one at 8% is one SST, never two (the
+         audit of 2026-10-26, finding 1). */
+      var own = taxOn === false ? 0 : Number(MON.setting('sst_pct', at) || 0);
       g = {};
       lines.forEach(function (l) {
         var v = Number(l.qty || 0) * rateOf(l);
-        var r = l.tax_pct == null || l.tax_pct === '' ? '' : Number(l.tax_pct);
+        var r = l.tax_pct == null || l.tax_pct === '' ? own : Number(l.tax_pct);
         var b = g[r] || (g[r] = { r: r, each: 0, once: 0 });
         if (isMonthly(l, term)) { each += v; b.each += v; }
         else { var w = v * Math.max(1, Number(l.tenure || 1)); once += w; b.once += w; }
@@ -181,17 +187,19 @@
     var taxOn1 = function (v) { return qm ? (taxOn === false ? 0 : cents(v * qm.sst / 100)) : MON.taxOf(v, market, taxOn, at); };
     var taxOn2 = function (v, part) {
       if (!g) return taxOn1(v);
-      return Math.round(Object.keys(g).reduce(function (a, k) {
-        var b = g[k];
-        return a + (b.r === '' ? taxOn1(b[part]) : cents(b[part] * b.r / 100));
-      }, 0) * 100) / 100;
+      return cents(Object.keys(g).reduce(function (a, k) {
+        return a + cents(g[k][part] * g[k].r / 100);
+      }, 0));
     };
     var eachTax = taxOn2(each, 'each');
-    var eachTotal = Math.round((each + eachTax) * 100) / 100;
+    /* Every total to the cent as the database rounds (a half away from
+       nought): Math.round on a float rounds 150.495 down, so a part
+       quantity was refused as stale (the audit of 2026-10-26, finding 3). */
+    var eachTotal = cents(each + eachTax);
     var onceTax = taxOn2(once, 'once');
-    var onceTotal = Math.round((once + onceTax) * 100) / 100;
+    var onceTotal = cents(once + onceTax);
     var n = term || 1;
-    var r2 = function (v) { return Math.round(v * 100) / 100; };
+    var r2 = cents;
     return {
       sstPct: qm ? qm.sst : null, quote: quote,
       term: term, each: each, eachTax: eachTax, eachTotal: eachTotal,
@@ -213,7 +221,14 @@
     if (n === 1) return longDate(l.start_on);
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dayOf(l.start_on));
     if (!m) return n + ' months';
-    var end = new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1)).toISOString().slice(0, 10);
+    /* The day before the same day n months on; where that month is too
+       short for the day (a start on the 29th to 31st), its last day, never
+       a day rolled into the month after (the audit of 2026-10-26,
+       finding 8: 31 Dec for two months read 2 March). */
+    var last = new Date(Date.UTC(+m[1], +m[2] - 1 + n + 1, 0)).getUTCDate();
+    var end = +m[3] > last
+      ? new Date(Date.UTC(+m[1], +m[2] - 1 + n, last)).toISOString().slice(0, 10)
+      : new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1)).toISOString().slice(0, 10);
     return longDate(l.start_on) + ' to ' + longDate(end);
   }
 
@@ -268,6 +283,22 @@
     return priceOf(lines, MON.curOf(client), client.sst_applies !== false);
   }
 
+  /* The quotation the lines came from, as the letter prices it: read from
+     the quotations the page holds, else asked of `letter_quote_terms`
+     (its id, validity and the two figures the price reads), so a colleague
+     at Clients: Letters without Quotations prices as issue_letter does and
+     is not refused `stale` press after press (the audit of 2026-10-26,
+     finding 2). A database without it answers as before. */
+  function quoteTerms(lines, quotes) {
+    quotes = quotes || [];
+    var q = lines.length ? lines[0].quotation_id : null;
+    if (!q || !lines.every(function (l) { return l.quotation_id === q; }) ||
+        quotes.some(function (x) { return x.id === q; })) return Promise.resolve(quotes);
+    return db.rpc('letter_quote_terms', { p_services: lines.map(function (l) { return l.id; }) })
+      .then(function (r) { return r.data && r.data.id ? quotes.concat([r.data]) : quotes; })
+      .catch(function () { return quotes; });
+  }
+
   /* client: the record. picked: the service rows the person chose. deal: the
      display facts the record knows that the client row does not spell out.
      opts: { idem, replaces, renewal, serial }. A blank serial is the everyday
@@ -289,7 +320,9 @@
        at its rate (2026-10-22). */
     (MON.taxCodes ? MON.taxCodes() : Promise.resolve([])).then(function (list) {
     if (list && list.length) taxRates(list);
-    var price = quoteOf(client, use, opts.quotes, opts.renewal);
+    return quoteTerms(use, opts.quotes);
+    }).then(function (quotes) {
+    var price = quoteOf(client, use, quotes, opts.renewal);
     db.rpc('issue_letter', {
       p_client: client.id,
       p_services: use.map(function (l) { return l.id; }),
@@ -855,7 +888,7 @@
          month due is the figure in bold, then what each later month is. */
       var sst = Number(price.tax) > 0;
       var incl = sst ? ' incl. SST' : '';
-      var firstDue = Math.round((Number(price.eachTotal) + Number(price.onceTotal || 0)) * 100) / 100;
+      var firstDue = cents(Number(price.eachTotal) + Number(price.onceTotal || 0));
       /* A quoted letter: the rows' subtotal, then the term's row, as the
          quotation's totals read (`12-Month Commitment (5%)`). */
       var signed = function (v) { return v < 0 ? '(' + MON.money2(-v, doc.market) + ')' : MON.money2(v, doc.market); };
@@ -877,7 +910,7 @@
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));
         termRow();
         trow('One-off subtotal', MON.money2(price.once, doc.market));
-        trow(taxWord, MON.money2(Math.round((Number(price.eachTax) + Number(price.onceTax)) * 100) / 100, doc.market));
+        trow(taxWord, MON.money2(cents(Number(price.eachTax) + Number(price.onceTax)), doc.market));
         y += 4; rule(y, lx, R, true); y -= 14;
         trow('First month due', MON.money2(firstDue, doc.market), 'strong');
         nearRow(firstDue);
@@ -1300,7 +1333,7 @@
     issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
-    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey,
+    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
     pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
     logoWarn: function () { return logoWarn; }

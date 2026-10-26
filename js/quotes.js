@@ -48,7 +48,9 @@
      the same rate: a rate to the cent, a budget in whole dollars. */
   var CUR = 'RM', FX = null;
   function curOf(q) { return q && q.totals && q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
-  function cv(n) { return FX ? Math.round(Number(n) / FX * 100) / 100 : Number(n); }
+  /* To the cent as quote_fx_snap rounds (a half away from nought; the audit
+     of 2026-10-26, finding 13). */
+  function cv(n) { return FX ? MON.cents(Number(n) / FX) : Number(n); }
   function whole(n) { return Number(FX ? Math.round(Number(n) / FX) : n).toLocaleString('en-MY'); }
   function acct(n) { n = Number(n || 0); return n < 0 ? '(' + rm(-n) + ')' : rm(n); }
 
