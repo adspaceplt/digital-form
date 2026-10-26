@@ -5443,7 +5443,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   answers one `stage` (quote, ready, billing with the client's open
   details form's key, billing_sent, letter while a Letter of Offer stands
   on the quotation's lines, never lines made with no letter, signed,
-  welcome once verified and Active, expired) and the panel beside the
+  welcome once verified and Active, expired, closed once Not proceeding;
+  billing only on the website quotation that made the lead, never one
+  that matched an existing lead; `quote_proceed` judged on the revision
+  shown; a name or brand holding a web address refused, `bad-name`,
+  `bad-brand`, `quote_link_like`) and the panel beside the
   quotation follows it, the representative under each step; Welcome
   offers Sign in to your client portal (`/client/`) where the prospect's
   address holds portal access, never a sign-in itself; expired keeps
