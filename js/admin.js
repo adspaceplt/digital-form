@@ -5573,15 +5573,15 @@
      details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
-    /* A website prospect ready to proceed is contacted within these working
-       days (2026-10-26). */
-    ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Tax and validity'],
     ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
     ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
     ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
     ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
-    ['fx_sgd', 'RM to S$1', 'fx', 'Singapore']];
+    ['fx_sgd', 'RM to S$1', 'fx', 'Singapore'],
+    /* A website prospect ready to proceed is contacted within these working
+       days (2026-10-26). */
+    ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Quotation website']];
   /* Every sheet of Business settings, one list (2026-10-22, SET2-4): the
      Settings page's rows and every other door to the same figures (My
      Work's ⋯ Due dates, the Services bar's Tax and terms) read it, so a
