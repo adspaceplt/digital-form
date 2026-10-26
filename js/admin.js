@@ -5556,7 +5556,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -5573,6 +5573,9 @@
      details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
+    /* A website prospect ready to proceed is contacted within these working
+       days (2026-10-26). */
+    ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Tax and validity'],
     ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
     ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
     ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
@@ -5590,7 +5593,7 @@
   function setSigned(n) { return (n > 0 ? '+' : n < 0 ? '\u2212' : '') + Math.abs(n) + '%'; }
   function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
-  var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')],
+  var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
     term_1_3: ['1 to 3 months', setSigned], term_4_5: ['4 and 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
     term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };

@@ -47,7 +47,7 @@ declare
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'quote_catalogue', 'quote_website_read', 'quote_website_request', 'public_holidays_between',
+    'quote_catalogue', 'quote_website_read', 'quote_proceed', 'public_holidays_between',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
     'review_draft', 'review_link_preview', 'save_selection', 'share_link_preview', 'script_decide', 'script_shot_link', 'submit_review', 'submit_review_seen', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');

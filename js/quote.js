@@ -13,10 +13,13 @@
  *                           consent; Proceed quote makes the quotation
  *   5 Your quotation        priced by the database (`quote-request`, then
  *                           `quote_website_read` by its key, `?q=` in the
- *                           address); Download, Chat on WhatsApp, Proceed
- *                           asks the billing details and requests the
- *                           Letter of Offer (`quote_website_request`)
- *   6 Request received
+ *                           address), the rates at once; Download; beside
+ *                           it Ready to proceed: when they would start and
+ *                           whether they decide, then Proceed with this
+ *                           quotation (`quote_proceed`, 2026-10-26), else
+ *                           the colleague who took the lead. The link shows the latest revision the
+ *                           team made of it. No billing is asked: the Letter
+ *                           of Offer is the sales team's.
  *
  * No rate is shown before the quotation: the catalogue (`quote_catalogue`)
  * holds none. What the person picked is kept in this tab
@@ -37,7 +40,7 @@
       introP: 'Select the services your brand requires and receive your quotation instantly.',
       introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the contents, languages and commitment.',
-        'Provide your contact details to receive the quotation immediately.', 'Proceed with your billing details to request the Letter of Offer.'],
+        'Provide your contact details to receive the quotation immediately.', 'Proceed with the quotation when you are ready, and our team will contact you.'],
       introNote: 'This takes about three minutes.',
       start: 'Start',
       needT: 'What do you need?',
@@ -74,26 +77,27 @@
       make: 'Proceed quote', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
-      proceed: 'Proceed', download: 'Download', chat: 'Chat on WhatsApp',
+      download: 'Download', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
-      billT: 'Billing details', reg: 'Registered company name', brn: 'Registration no.', brnHint: '12 digits', brnSg: 'UEN', brnHintSg: '9 or 10 characters', addr: 'Billing address',
-      ask: 'Request Letter of Offer', asking: 'Sending…',
-      askNote: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
-      billBad: { reg: 'Enter the registered company name.', brn: 'Enter the 12-digit registration number.', brnSg: 'Enter the UEN.', addr: 'Enter the billing address.' },
-      doneT: 'Request received', doneTo: 'Once ADspace approves your quotation, the Letter of Offer will be sent to {wa} on WhatsApp.',
-      doneAny: 'Once ADspace approves your quotation, the Letter of Offer will be sent to you on WhatsApp.',
+      propT: 'Ready to proceed?', propP: 'Let us know when you would like to begin. Our team will contact you to finalise the details and prepare your onboarding plan.',
+      startQ: 'When would you like to start?', starts: [['month', 'Within a month'], ['quarter', 'In 1 to 3 months']],
+      decQ: 'Are you the decision maker?', decs: [['yes', 'Yes'], ['others', 'I will involve others']],
+      propAsk: 'Proceed with this quotation', propAsking: 'Sending…', propNeed: 'Answer both questions to proceed.',
+      propDone: 'Request received', propBy: 'Our team will contact you by {d} to finalise the details.',
+      repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
+      repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
-      ref: 'Reference', monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST', status: 'Status', requested: 'Letter of Offer requested',
+      monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
       newQuote: 'New quotation',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'This contact has made five quotations today. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'A valid Malaysia or Singapore registered WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
         expired: 'This quotation has expired. Please make a new one.', 'not-proceeding': 'This quotation is closed. Please make a new one.',
-        'bad-billing': 'Check the billing details.', 'not-found': 'This quotation could not be found.',
+        'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
       },
@@ -109,7 +113,7 @@
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可即时获得报价。',
       introH: '流程说明',
-      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，即可获得报价。', '确认报价后填写开票资料，申请服务确认函（Letter of Offer）。'],
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，即可获得报价。', '准备好后确认报价，我们的团队将与您联系。'],
       introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
@@ -146,26 +150,27 @@
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价 ({c})', sub: '小计 ({c})', onReq: '另行报价',
-      proceed: '继续办理', download: '下载', chat: 'WhatsApp 咨询',
+      download: '下载', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
-      billT: '账单资料', reg: '公司注册名称', brn: '注册编号', brnHint: '12位数字', brnSg: 'UEN 编号', brnHintSg: '9或10位', addr: '账单地址',
-      ask: '申请服务确认函', asking: '提交中…',
-      askNote: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
-      billBad: { reg: '请填写公司注册名称。', brn: '请填写12位注册编号。', brnSg: '请填写 UEN 编号。', addr: '请填写账单地址。' },
-      doneT: '已收到申请', doneTo: 'ADspace 确认您的报价后，将通过 WhatsApp 向 {wa} 发送服务确认函。',
-      doneAny: 'ADspace 确认您的报价后，将通过 WhatsApp 向您发送服务确认函。',
+      propT: '准备好开始了吗？', propP: '请告诉我们您希望何时开始。我们的团队将与您联系，确认细节并准备您的启动计划。',
+      startQ: '您希望何时开始？', starts: [['month', '一个月内'], ['quarter', '一至三个月内']],
+      decQ: '您是否为决策人？', decs: [['yes', '是'], ['others', '需与他人商议']],
+      propAsk: '确认此报价', propAsking: '提交中…', propNeed: '请回答以上两个问题。',
+      propDone: '已收到您的确认', propBy: '我们的团队将于 {d} 前与您联系，确认细节。',
+      repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
+      repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
-      ref: '编号', monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）', status: '状态', requested: '已申请服务确认函',
+      monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
       newQuote: '重新报价',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。',
-        'bad-billing': '请检查账单资料。', 'not-found': '找不到此报价。',
+        'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
       },
@@ -227,12 +232,6 @@
     return d;
   }
   function waOk(d) { return /^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$/.test(d); }
-  /* +60 12-345 6789, +60 11-1234 5678, +60 7-123 4567, +65 8123 4567. */
-  function waShow(d) {
-    if (/^65/.test(d)) return '+65 ' + d.slice(2, 6) + ' ' + d.slice(6);
-    var r = d.slice(2), a = /^1/.test(r) ? 2 : 1, mid = r.length - a > 7 ? 4 : 3;
-    return '+60 ' + r.slice(0, a) + '-' + r.slice(a, a + mid) + ' ' + r.slice(a + mid);
-  }
   function key8() {
     var a = '23456789abcdefghjkmnpqrstuvwxyz', out = '', buf = new Uint8Array(24);
     (window.crypto || window.msCrypto).getRandomValues(buf);
@@ -252,12 +251,11 @@
   try { var kept = JSON.parse(sessionStorage.getItem(KEEP) || 'null'); if (kept && kept.need) S = Object.assign(S, kept); } catch (e) {}
   function keep() { try { sessionStorage.setItem(KEEP, JSON.stringify(S)); } catch (e) {} }
 
-  var CAT = null, Q = null, proceeding = false;
-  /* Held in this page alone, never kept in the tab: the number the request
-     is sent to and the contact for Change selection, once the quotation is
-     made (the user, 2026-10-14: "dont cache my record"); the billing details
-     typed beside the quotation, through a language switch. */
-  var sentTo = '', madeBy = null, billTyped = { reg: '', brn: '', addr: '' };
+  var CAT = null, Q = null;
+  /* Held in this page alone, never kept in the tab: the contact for Change
+     selection, once the quotation is made (the user, 2026-10-14: "dont
+     cache my record"). */
+  var madeBy = null;
   var root = function () { return $('qsRoot'); };
 
   function planOf() { return CAT && S.plan ? CAT.plans.filter(function (p) { return p.slug === S.plan; })[0] || null : null; }
@@ -505,10 +503,9 @@
     return r;
   }
   function paintQuote() {
-    var q = Q, tt = q.totals || {}, gone = q.valid_until < q.today;
-    if (q.requested) return paintDone();
-    var status = gone
-      ? '<span class="chip-state is-off">' + esc(f(t().expired, { d: day(q.valid_until) })) + '</span>'
+    var q = Q, tt = q.totals || {}, offer = q.status === 'offer', gone = !offer && q.valid_until < q.today;
+    var status = offer ? '<span class="chip-state is-ok">' + esc(t().offer) + '</span>'
+      : gone ? '<span class="chip-state is-off">' + esc(f(t().expired, { d: day(q.valid_until) })) + '</span>'
       : '<span class="chip-state is-ok">' + esc(f(t().valid, { d: day(q.valid_until) })) + '</span>';
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];
@@ -525,24 +522,15 @@
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
     notes.push(f(t().basis, { v: q.version }));
-    var sg = q.market === 'SG';
-    var aside = gone ? '' :
-      '<aside class="qs-bill" id="qsBill"><h2>' + esc(t().billT) + '</h2><form class="qs-form" id="qsBillForm" novalidate>' +
-        field('qsReg', t().reg, true, '<input class="input qs-caps" id="qsReg" autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true" value="' + esc(billTyped.reg) + '">') +
-        (sg ? field('qsBrn', t().brnSg, true, '<input class="input qs-caps" id="qsBrn" autocapitalize="characters" maxlength="12" placeholder="201912345K" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHintSg)
-            : field('qsBrn', t().brn, true, '<input class="input" id="qsBrn" inputmode="numeric" maxlength="14" placeholder="202301234567" aria-required="true" value="' + esc(billTyped.brn) + '">', t().brnHint)) +
-        field('qsAddr', t().addr, true, '<textarea class="input" id="qsAddr" rows="3" autocomplete="street-address" aria-required="true">' + esc(billTyped.addr) + '</textarea>') +
-        '<button class="btn btn-primary" id="qsAsk" type="submit">' + esc(t().ask) + '</button>' +
-        '<p class="msg" id="qsBillMsg" role="status"></p><p class="qs-note">' + esc(t().askNote) + '</p></form></aside>';
-    return '<div class="qs-quote' + (proceeding ? ' is-proceed' : '') + '" data-shown><section class="qs-main">' +
-      (gone ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
-      '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span></div>' +
+    var aside = gone ? '' : '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
+    return '<div class="qs-quote" data-shown><section class="qs-main">' +
+      (gone || offer || q.revised ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span>' +
+        (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
-      (gone ? '' : '<button class="btn btn-primary qs-proceed" type="button" data-a="proceed">' + esc(t().proceed) + '</button>') +
-      '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button>' +
-      '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(t().chat) + '</a></div>' +
+      '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>' +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
       '</section>' + aside + '</div>';
@@ -570,16 +558,39 @@
     var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
     return who + '?text=' + encodeURIComponent('Hi ADspace, I would like to ask about my quotation ' + (q ? q.ref : '') + '.');
   }
-  function paintDone() {
-    var q = Q, tt = q.totals || {}, wa = waOk(waDigits(sentTo)) ? waShow(waDigits(sentTo)) : '';
-    return '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
-      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">' + esc(t().doneT) + '</h1><p>' + (wa ? esc(f(t().doneTo, { wa: '\u0000' })).replace('\u0000', '<span class="qs-nowrap">' + esc(wa) + '</span>') : esc(t().doneAny)) + '</p>' +
-      '<dl class="qs-facts"><dt>' + esc(t().ref) + '</dt><dd>' + esc(q.ref) + '</dd>' +
-      (tt.month ? '<dt>' + esc(word(tt, ownMonths(tt) ? 'first' : 'monthly')) + '</dt><dd>' + qc() + ' ' + esc(n2(ownMonths(tt) ? firstIncl(tt) : tt.month.incl)) + '</dd>' : '') +
-      (tt.once && !(tt.month && ownMonths(tt)) ? '<dt>' + esc(word(tt, 'oneOff')) + '</dt><dd>' + qc() + ' ' + esc(n2(tt.once.incl)) + '</dd>' : '') +
-      '<dt>' + esc(t().status) + '</dt><dd><span class="chip-state is-warn">' + esc(t().requested) + '</span></dd></dl>' +
-      '<button class="btn qs-dl" type="button" data-a="pdf">' + esc(t().download) + '</button></div>';
+  /* Beside the quotation (under it on a phone): the colleague who took the
+     lead, once one has, with their own WhatsApp where their namecard shows
+     it; before that, Ready to proceed: when the prospect would start and
+     whether they decide, recorded on the lead with Proceed with this
+     quotation, which opens nothing (2026-10-26). A free proposal is never
+     offered. */
+  function sideHtml(q) {
+    var w = t();
+    if (q.rep) {
+      var first = String(q.rep.name || '').split(' ')[0];
+      var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
+        encodeURIComponent('Hi ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
+      return '<h2>' + esc(w.repT) + '</h2><div class="qs-rep"><span class="qs-rep-mark" aria-hidden="true">' + esc(initials(q.rep.name)) + '</span>' +
+        '<span class="qs-rep-who"><b>' + esc(q.rep.name) + '</b>' + (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span></div>' +
+        '<p>' + esc(f(w.repP, { n: first, b: q.brand })) + '</p>' +
+        '<a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a>';
+    }
+    var head = '<h2>' + esc(w.propT) + '</h2>';
+    if (q.proceed_at) {
+      return '<div class="qs-asked"><span class="qs-asked-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
+        '<span><b>' + esc(w.propDone) + '</b><span>' + esc(f(w.propBy, { d: day(q.proceed_due) })) + '</span></span></div>';
+    }
+    function ask(name, label, opts) {
+      return '<fieldset class="qs-ask"><legend>' + esc(label) + '</legend>' +
+        opts.map(function (o) { return pick('radio', name, o[0], false, o[1]); }).join('') + '</fieldset>';
+    }
+    return head + '<p>' + esc(w.propP) + '</p>' + ask('pStart', w.startQ, w.starts) + ask('pDecider', w.decQ, w.decs) +
+      '<button class="btn btn-primary" id="qsPropose" type="button" data-a="propose">' + esc(w.propAsk) + '</button>' +
+      '<p class="msg" id="qsSideMsg" role="status"></p>';
+  }
+  function initials(n) {
+    var p = String(n || '').trim().split(/\s+/);
+    return ((p[0] || '').charAt(0) + (p[1] || '').charAt(0)).toUpperCase();
   }
   function cover(title, text, start) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
@@ -679,7 +690,7 @@
         return;
       }
       // Made: nothing chosen or typed stays in the tab (a refresh reads the quotation by its key).
-      sentTo = S.contact.whatsapp; madeBy = S.contact;
+      madeBy = S.contact;
       S = blank();
       try { sessionStorage.removeItem(KEEP); } catch (e) {}
       history.replaceState(null, '', '/quote/?q=' + encodeURIComponent(d.key));
@@ -694,23 +705,17 @@
       Q = d; paint(); window.scrollTo(0, 0);
     }).catch(function () { paint.off = true; paint(); });
   }
-  function request(e) {
-    e.preventDefault();
-    var reg = $('qsReg').value.replace(/\s+/g, ' ').trim().toUpperCase(), sg = Q && Q.market === 'SG',
-        brn = sg ? $('qsBrn').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase() : $('qsBrn').value.replace(/[^0-9]/g, ''), addr = $('qsAddr').value.trim();
-    var first = null, bad = function (id, w) { say(id + 'Msg', w); $(id).setAttribute('aria-invalid', 'true'); first = first || $(id); };
-    ['qsReg', 'qsBrn', 'qsAddr'].forEach(function (id) { say(id + 'Msg', ''); $(id).removeAttribute('aria-invalid'); });
-    if (reg.length < 3) bad('qsReg', t().billBad.reg);
-    if (sg ? !/^([0-9]{8,9}[A-Z]|[TSR][0-9]{2}[A-Z]{2}[0-9]{4}[A-Z])$/.test(brn) : !/^[0-9]{12}$/.test(brn)) bad('qsBrn', sg ? t().billBad.brnSg : t().billBad.brn);
-    if (addr.length < 10) bad('qsAddr', t().billBad.addr);
-    if (first) { first.focus(); return; }
-    var btn = $('qsAsk'); btn.disabled = true; btn.textContent = t().asking;
+  function propose(btn) {
     var k = new URLSearchParams(location.search).get('q');
-    db.rpc('quote_website_request', { p_key: k, p_billing: { registered_name: reg, brn: brn, address: addr } }).then(function (r) {
+    var st = root().querySelector('input[name="pStart"]:checked'), dc = root().querySelector('input[name="pDecider"]:checked');
+    if (!st || !dc) { say('qsSideMsg', t().propNeed); (root().querySelector('input[name="' + (st ? 'pDecider' : 'pStart') + '"]') || btn).focus(); return; }
+    btn.disabled = true; btn.textContent = t().propAsking;
+    db.rpc('quote_proceed', { p_key: k, p_start: st.value, p_decider: dc.value }).then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { btn.disabled = false; btn.textContent = t().ask; say('qsBillMsg', t().err[d.error] || t().err.any); return; }
-      Q.requested = true; Q.status = 'requested'; paint(); window.scrollTo(0, 0);
-    }).catch(function () { btn.disabled = false; btn.textContent = t().ask; say('qsBillMsg', t().err.any); });
+      if (r.error || d.error) { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
+      Q.proceed_at = d.at; Q.proceed_due = d.due;
+      $('qsSide').innerHTML = sideHtml(Q);
+    }).catch(function () { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err.any); });
   }
   function pdf(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
@@ -737,16 +742,12 @@
     if (a === 'next') next();
     else if (a === 'start') go('need');
     else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
-    else if (a === 'proceed') {
-      proceeding = true;
-      var q = root().querySelector('.qs-quote'); if (q) q.classList.add('is-proceed');
-      var bill = $('qsBill'); if (bill) { bill.scrollIntoView({ behavior: 'smooth', block: 'start' }); setTimeout(function () { if ($('qsReg')) $('qsReg').focus({ preventScroll: true }); }, 350); }
-    }
+    else if (a === 'propose') propose(b);
     else if (a === 'pdf') pdf(b);
     else if (a === 'change' || a === 'new') {
       if (madeBy) S.contact = madeBy;
       if (Q && Q.selection) adopt(Q.selection);
-      Q = null; proceeding = false;
+      Q = null;
       history.replaceState(null, '', '/quote/');
       load(function () { go(a === 'new' ? 'need' : 'custom'); });
     }
@@ -794,6 +795,7 @@
       }
       keep(); paint(); return;
     }
+    else if (nm === 'pStart' || nm === 'pDecider') { say('qsSideMsg', ''); }
     else if (id === 'qsConsent') { el.removeAttribute('aria-invalid'); say('qsConsentMsg', ''); }
     else if (id === 'qsBudget') { S.budget = Number(el.value); }
     else if (id === 'qsTerm') { S.term = Number(el.value); }
@@ -807,8 +809,7 @@
     keep();
   });
   document.addEventListener('submit', function (e) {
-    if (e.target.id === 'qsBillForm') request(e);
-    else if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
+    if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
   });
   document.addEventListener('input', function (e) {
     // A refusal leaves its field once the field is changed; the next press checks it again.
@@ -853,7 +854,6 @@
     lang = lang === 'en' ? 'zh' : 'en';
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     if (S.step === 'details' && !Q && $('qsName')) readDetails();
-    if ($('qsReg')) billTyped = { reg: $('qsReg').value, brn: $('qsBrn').value, addr: $('qsAddr').value };
     paint();
   });
 

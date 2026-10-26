@@ -4459,16 +4459,7 @@
       })(),
       reload: function (done) { loadQuotes(done); },
       painted: paintDeal,
-      offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); },
-      /* A website quotation's billing (2026-10-14) fills the Billing sheet
-         where the record holds nothing yet; Save keeps it as any edit. */
-      billing: function (b, opener) {
-        openBilling(opener);
-        [['crmLegalName', b.registered_name], ['crmCompanyNo', b.brn], ['crmBillAddr', b.address]].forEach(function (x) {
-          var el = $(x[0]);
-          if (el && !el.value && x[1]) { el.value = x[1]; el.dispatchEvent(new Event('input', { bubbles: true })); }
-        });
-      } };
+      offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); } };
   }
   /* `always`: done is called on a refused read too (the letter sheet reads
      again either way). */
@@ -4482,7 +4473,7 @@
       state.quotes = rows;
       Q.paint(host, quoteCtx(), rows);
       paintSummary();
-      if (done) done();
+      if (done) done(rows);
     });
   }
   function repaintQuotes() {

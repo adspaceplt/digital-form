@@ -9190,18 +9190,26 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-acts { display: flex; gap: 8px; }
 .qs-acts > .btn { flex: 1 1 0; }
 .qs-notes { display: grid; gap: 2px; font-size: 13px; color: var(--ink-mute); }
-.qs-bill { background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; align-self: start; }
-.qs-bill h2 { margin: 0 0 12px; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
-.qs-bill .btn-primary { width: 100%; }
-.qs-bill .msg:empty { display: none; }
+/* Beside the quotation (under it on a phone): a proposal to ask for, else
+   the colleague who took the lead (2026-10-26). */
+.qs-side { display: grid; gap: 12px; align-content: start; align-self: start; background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; }
+.qs-side h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.qs-side p { margin: 0; color: var(--ink-soft); }
+.qs-side .btn { width: 100%; }
+.qs-side .msg:empty { display: none; }
+.qs-ask { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
+.qs-ask legend { padding: 0; margin: 0 0 8px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.qs-side .qs-pick { background: var(--card); }
+.qs-asked { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; }
+.qs-asked > span:last-child { display: grid; gap: 2px; color: var(--ink-soft); }
+.qs-asked b { color: var(--ink); font-weight: 600; }
+.qs-asked-tick { width: 24px; height: 24px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); display: inline-flex; align-items: center; justify-content: center; }
+.qs-rep { display: flex; align-items: center; gap: 12px; }
+.qs-rep-mark { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; background: var(--tonal); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+.qs-rep-who { display: grid; min-width: 0; }
+.qs-rep-who small { font-size: 14px; color: var(--ink-mute); }
 @media (min-width: 900px) {
   .qs-quote { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 32px; }
-  .qs-proceed { display: none; }
-}
-@media (max-width: 899px) {
-  .qs-quote:not(.is-proceed) .qs-bill { display: none; }
-  /* Once pressed, Proceed has done its work: the billing card's Request is the one blue act. */
-  .qs-quote.is-proceed .qs-proceed { display: none; }
 }
 @media (max-width: 640px) {
   .shell.qs { padding-top: 16px; }
@@ -9274,7 +9282,7 @@ body.qs-page { background: var(--card); }
    dots and rings stay round. */
 @supports (corner-shape: squircle) {
   .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head,
-  .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-bill,
+  .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-side,
   .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn {
     corner-shape: squircle;
   }
