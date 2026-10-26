@@ -172,7 +172,7 @@
       else c.values.forEach(function (v) { top = Math.max(top, num(v)); });
     });
     var max = nice(top);
-    var cols = cats.map(function (c) {
+    var cols = cats.map(function (c, ci) {
       var marks;
       if (spec.stacked) {
         marks = '<span class="cc-stack">' + c.values.map(function (v, i) {
@@ -186,10 +186,18 @@
       }
       return '<div class="cc-col" data-tip="' + esc(tipOf(c, series, fmt)) + '">' +
         '<div class="cc-plot">' + marks + '</div>' +
-        '<span class="cc-label">' + esc(c.label) + '</span></div>';
+        '<span class="cc-label' + tickOf(ci, cats.length) + '">' + esc(c.label) + '</span></div>';
     }).join('');
-    return '<div class="chart-cols">' + axis(max, fmt) + '<div class="cc-body">' +
+    return '<div class="chart-cols' + density(cats.length) + '">' + axis(max, fmt) + '<div class="cc-body">' +
       '<div class="cc-grid" aria-hidden="true"><i></i><i></i><i></i></div>' + cols + '</div></div>';
+  }
+  /* Which labels a narrow pane keeps, counted back from the last: every
+     second of seven or more, every third of eleven or more, so months
+     never run into one another on a phone. */
+  function density(n) { return n >= 11 ? ' is-many' : n >= 7 ? ' is-some' : ''; }
+  function tickOf(i, n) {
+    var back = n - 1 - i;
+    return (back % 2 ? ' is-skip2' : '') + (back % 3 ? ' is-skip3' : '');
   }
   function line(spec, fmt) {
     var cats = spec.cats || [], series = spec.series || [{ label: '' }];
@@ -224,11 +232,11 @@
       var any = c.values.some(function (v) { return v != null; });
       var none = spec.none || 'No figure';
       return '<div class="cc-col cl-hit" data-tip="' + esc(any ? tipOf(c, series, function (v) { return v == null ? none : fmt(v); }) : (c.long || c.label) + ': ' + none) + '">' +
-        '<div class="cc-plot"></div><span class="cc-label">' + esc(c.label) + '</span></div>';
+        '<div class="cc-plot"></div><span class="cc-label' + tickOf(i, cats.length) + '">' + esc(c.label) + '</span></div>';
     }).join('');
     /* The months' hover grounds first and the line over them, so a month
        under the pointer never covers the line it is part of. */
-    return '<div class="chart-cols chart-line">' + axis(max, fmt) + '<div class="cc-body">' +
+    return '<div class="chart-cols chart-line' + density(cats.length) + '">' + axis(max, fmt) + '<div class="cc-body">' +
       '<div class="cc-grid" aria-hidden="true"><i></i><i></i><i></i></div>' + hits +
       '<div class="cl-plot" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none">' + paths + '</svg>' + dots + '</div>' +
       '</div></div>';
