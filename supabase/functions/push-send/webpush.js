@@ -88,7 +88,11 @@ export async function send(sub, payload, keys, subject, ttl) {
       'TTL': String(ttl || 86400),
       'Urgency': 'normal'
     },
-    body
+    body,
+    /* A push service that never answers is let go after ten seconds, so
+       the message is closed with the others rather than claimed again and
+       sent to every device once more (the audit of 2026-10-26, finding 6). */
+    signal: AbortSignal.timeout(10000)
   });
   return { status: r.status, text: r.ok ? '' : (await r.text().catch(() => '')).slice(0, 200) };
 }

@@ -241,7 +241,8 @@
             /* Counted by the database for every set in one request
                (`review_set_counts`): a read of every post and decision passed
                a thousand ids in the address and stopped at a thousand rows. */
-            return db.rpc('review_set_counts', { p_sets: sets.map(function (s) { return s.id; }) }).then(rows).then(function (counts) {
+            /* A thousand rows at a time (the audit of 2026-10-26, finding 4). */
+            return API.readPages(function () { return db.rpc('review_set_counts', { p_sets: sets.map(function (s) { return s.id; }) }).order('set_id'); }).then(rows).then(function (counts) {
               var by = {};
               (counts || []).forEach(function (c) { by[c.set_id] = c; });
               return sets.map(function (s) {
@@ -261,7 +262,8 @@
         var since = CK.start(CK.addMonths(CK.today(), -12) + '-01');
         return Promise.all([
           db.from('clients').select('id, name, slug, owner').eq('stage', 'active').eq('review_hidden', false).order('name').then(rows),
-          db.from('batches').select('client_id, created_at').gte('created_at', since.toISOString()).order('created_at', { ascending: false }).then(rows)
+          /* Paged (the audit of 2026-10-26, finding 12): a busy year passed a thousand sets. */
+          API.readPages(function () { return db.from('batches').select('id, client_id, created_at').gte('created_at', since.toISOString()).order('created_at', { ascending: false }).order('id'); }).then(rows)
         ]).then(function (r) {
           var last = {};
           (r[1] || []).forEach(function (b) { if (!last[b.client_id]) last[b.client_id] = b.created_at; });

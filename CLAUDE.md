@@ -3350,7 +3350,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   never polled. The work figures (the period, the one before it and, once a
   visit, the last six months) are one `ops_reports(p_ranges)`, ops_report's
   own answer a span; the sets with none this month read a year back.
-  Where a set's posts stand is one `review_set_counts(p_sets)`
+  Where a set's posts stand is one `review_set_counts(p_sets)`, read a
+  thousand at a time (`readPages`; every list a function answers is)
   (invoker; posts, approved, changes, undecided, the oldest change), here
   and in Waiting for you alike, never a read of every post and decision;
   every set named is counted, with no cap
@@ -6284,7 +6285,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A notification never fails the write that caused it (the triggers
     swallow their own errors).
 - `pg_net` wakes `push-send` after the commit (`push_kick`, once a
-  transaction, with the wake secret; WhatsApp, above). It claims 50 at
+  transaction, with the wake secret; WhatsApp, above). A run stops claiming
+  after 90 seconds and each send waits 10 at most (2026-10-26). It claims 50 at
   a time for five minutes (`push_claim`, skip locked), sends a day's TTL, drops
   a device the service answers 404/410 for (`push_done`) and keeps a month.
 - The VAPID pair is made by `push-send`'s first run and kept in `app_secrets`;
@@ -6476,7 +6478,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   five, then a count), the notice opening the first one's task; the morning
   run keeps a rule nobody active can make, or whose task its colleague
   cannot see, as its error, which the task card's Repeats line shows
-  (`2026-10-18-failed-jobs-named.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
+  (`2026-10-18-failed-jobs-named.sql`), and of the automatic WhatsApp
+  messages that failed in the window, counted (`2026-10-26-jobs-watch-whatsapp.sql`); `jobs_prune()` (`jobs-prune`, 03:40 MYT) removes job history
   over 14 days and notices read over 90 days ago or unread over 180
   (`2026-10-19-unread-notices-pruned.sql`), never a colleague's notice. Neither is a page's to call.
 - The database is kept every night (`workers/db-backup/`,

@@ -23,6 +23,7 @@ import { send, vapidKeys } from './webpush.js';
 const SUBJECT = 'mailto:advertise@adspacestudios.com';
 const TTL = 86400;          // a day: a phone off for longer gets nothing stale
 const ROUNDS = 5;           // at most 5 × 50 messages a wake; the next wake takes the rest
+const BUDGET = 90000;       // no message is started after 90 seconds: one left claimed and unsent is sent once by a later wake
 
 /* The push services the database accepts (push_endpoint_ok). Checked again
    here so this function never posts anywhere else, whatever a row holds. */
@@ -54,11 +55,17 @@ Deno.serve(async (req) => {
   const pair = { publicKey: keys.public as string, privateJwk: keys.private as string };
 
   let sent = 0, failed = 0, messages = 0;
+  const began = Date.now();
+  rounds:
   for (let round = 0; round < ROUNDS; round++) {
+    if (Date.now() - began > BUDGET) break;
     const { data: batch, error: e } = await db.rpc('push_claim', { p_limit: 50 });
     if (e) return json({ error: 'push-claim', reason: e.message, sent, failed });
     if (!Array.isArray(batch) || !batch.length) break;
     for (const m of batch as Msg[]) {
+      /* Past the budget the rest of the batch stays claimed, unsent: a later
+         wake takes it in five minutes, and nothing is sent twice. */
+      if (Date.now() - began > BUDGET) break rounds;
       let ok = 0, bad = 0;
       const dead: string[] = [];
       await Promise.all((m.subs || []).map(async (s) => {

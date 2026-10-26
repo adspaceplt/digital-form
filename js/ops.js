@@ -1269,7 +1269,9 @@
               sets.forEach(function (b) { setById[b.id] = b; });
               /* Counted by the database in one request (`review_set_counts`):
                  a read of every post and decision stopped at a thousand rows. */
-              return got(db.rpc('review_set_counts', { p_sets: sets.map(function (b) { return b.id; }) }), 'Content Review')
+              /* A thousand rows at a time: one a set, so past a thousand
+                 sets the rest were lost (the audit of 2026-10-26, finding 4). */
+              return got(readPages(function () { return db.rpc('review_set_counts', { p_sets: sets.map(function (b) { return b.id; }) }).order('set_id'); }), 'Content Review')
                 .then(function (counts) {
                   (counts || []).forEach(function (k) {
                     var b = setById[k.set_id];
