@@ -3774,9 +3774,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-18-held-tasks-resume-where-they-left.sql`); a task held before
   the column keeps the workflow's own steps. Reopen works on every
   cancelled task. Leaving Cancelled clears `cancelled_at`.
-  A task finishes and reopens through `ops_transition_task` alone: the first
-  model's `ops_complete_task` and `ops_reopen_task` are closed to every
-  browser (`2026-10-18-unused-task-shortcuts-closed.sql`).
+  A task finishes and reopens through `ops_transition_task` alone; the first
+  model's functions are dropped (`2026-10-26-unused-functions-dropped.sql`).
 - A task read that finds no row (deleted, or out of reach) closes its sheet
   or record and lands on the list with "That task is no longer available."
   (`taskGone`, `.maybeSingle()`); never the database's words.
@@ -4022,7 +4021,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   templates, Duplicate and repeats (a repeat waits, `held`). Everyday,
   internal and lead tasks are exempt.
 - The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
-  add or Run repeating tasks (`ops_generate_month` stays, uncalled).
+  add or Run repeating tasks.
   - It reads Task details (For as a small segment with Include past clients
     at the right; Client and its Content month, Month for a lead, neither
     for Internal) and Posts, nothing else: complexity, a brief and a repeat
@@ -5700,8 +5699,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   of one script opens it. It reads only `get_scripts` (shared scripts by
   month and their scenes; never a clip number, a tick, who ticked, a
   colleague's name or a version; `2026-10-09-script-shots-internal.sql`).
-  Nobody decides or records there: `script_decide` and `script_shot_link`
-  answer `closed`.
+  Nobody decides or records there.
 - The PDF (`ADspaceScriptPdf.draw`, drawn in the browser, never stored)
   carries the Reports PDF's furniture and scale (the user, 2026-10-09:
   "refer back to the Reports style"): the Optima wordmark in ink at the head
@@ -6217,10 +6215,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   messaged (`no-number`). A client's main contact's WhatsApp number, else
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
-- `wa_report_prepare`, `wa_feedback_prepare`, `wa_record` and
-  `wa_creator_send` (the sends before the composer) are closed to every
-  browser, and `wa-send` answers `report` and `feedback` with bad-request
-  (2026-10-19). A refusal is one
+- `wa-send` answers `report` and `feedback` with bad-request (2026-10-19). A refusal is one
   line in the team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
   bell (`tasks.empty`, `outstation`, `perf.remind`, `perf.reflect`,
