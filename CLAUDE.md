@@ -865,7 +865,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   bars `inline` (label, bar and figure on one line; a row's `part` red at
   the bar's end), pie `total` (the whole in the middle) and status `tone`s
   on its slices, columns `labels` (the figure over each) and a category's
-  `tone`. `ADspaceChart.spark(values, tone)` is a tile's trend, an image its
+  `tone`; in a narrow pane a row of seven columns or more keeps every
+  second label and one of eleven or more every third, counted back from
+  the last, so months never run together (2026-10-26). `ADspaceChart.spark(values, tone)` is a tile's trend, an image its
   words already state. The figures fold under every chart as a table; a
   column, a point and a slice give their figure on hover or a tap. No chart
   library.
@@ -3374,7 +3376,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`.anl-own`; review 4).
 - Sales and Clients read every client once a visit (`readPages`, the stage
   log) through `ADspaceSales.figures`, one figure call for the whole
-  history: Sales' tiles (new leads a month, win rate, lead to client,
+  history (a source named as Clients names it, `ADspaceCRM.sourceWord`;
+  in a narrow pane a card's span takes its own line under its title):
+  Sales' tiles (new leads a month, win rate, lead to client,
   clients lost), its trend of leads and new clients by month, What
   changed (rules worked out on the page, never written), the busiest
   months, sources and lost reasons; Clients' tiles (active, joined, left,
@@ -3400,7 +3404,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the user, 2026-10-25: "use AI to do analytics deep analysis and
   reporting"): the AI analysis card heads both tabs (`.anl-ai`), the
   latest version read first: Health (good, mixed, poor), a headline, a
-  summary, then a fold of risks (by severity), what is working, the
+  summary, then a fold of risks (by severity, each level High risk, Medium
+  risk or Low risk in one column at the right, `.anl-ai-risk`; 2026-10-26),
+  what is working, the
   forecast's credibility, three to five actions and caveats, and Version n
   · period · Written by AI for {name}. Read before using. Write with AI
   asks first (what it reads, n left today, notes kept in this browser

@@ -749,7 +749,7 @@
       { key: 'sources', title: 'New leads by source', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
         return figuresFor('now').then(function (f) {
-          var rowsOf = Object.keys(f.bySource).map(function (k) { return { label: k, value: f.bySource[k].length }; })
+          var rowsOf = Object.keys(f.bySource).map(function (k) { var C = window.ADspaceCRM; return { label: C && C.sourceWord ? C.sourceWord(k) : k, value: f.bySource[k].length }; })
             .sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
           if (!rowsOf.length) return { empty: 'No new leads ' + periodName(period) + '.' };
           return { kind: 'bars', inline: true, rows: rowsOf, valueHead: 'New leads' };

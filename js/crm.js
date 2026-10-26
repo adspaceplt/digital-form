@@ -6577,6 +6577,7 @@
     }).join('');
 
   window.ADspaceCRM = {
+    sourceWord: sourceWord,
     urlState: function () {
       var o = { client: keyOf(state.client) };
       /* Overview is the default, so it stays out of the address: a link to a

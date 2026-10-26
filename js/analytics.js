@@ -383,7 +383,7 @@
     var g3 = row(box);
     var src = Object.keys(f.bySource).map(function (k) {
       var list = f.bySource[k], won = list.filter(everActive).length;
-      return { label: k, value: list.length, won: won };
+      return { label: srcWord(k), value: list.length, won: won };
     }).sort(function (a, b) { return b.value - a.value || a.label.localeCompare(b.label); });
     chart(g3, 'sources', 'Where leads come from', {
       kind: 'bars', inline: true, empty: 'No new leads in the period.',
@@ -398,6 +398,9 @@
 
   /* Clients lost, judged on the period before and on the churn alert: churn
      above it reads Above alert whatever the count did. */
+  /* A source reads as Clients names it (Referral, Walk-in), never its key. */
+  function srcWord(k) { var C = window.ADspaceCRM; return C && C.sourceWord ? C.sourceWord(k) : k; }
+
   function lostTile(f, fp, ch, keys, per) {
     return { key: 'lost', label: 'Clients lost', fig: plain(f.churned.length),
       verdict: ch && ch.over ? { tone: 'late', word: 'Above alert' } : judge(f.churned.length, fp.churned.length, 'down', 2),
@@ -643,7 +646,7 @@
   var AI = window.ADspaceConfirm && window.ADspaceConfirm.ai;
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
   var HEALTH = { good: ['ok', 'Good'], mixed: ['wait', 'Mixed'], poor: ['late', 'Poor'] };
-  var SEVERITY = { high: ['late', 'High'], medium: ['wait', 'Medium'], low: ['off', 'Low'] };
+  var SEVERITY = { high: ['late', 'High risk'], medium: ['wait', 'Medium risk'], low: ['off', 'Low risk'] };
   var CREDIBLE = { credible: 'Credible', partly: 'Partly credible', not_credible: 'Not credible', not_drawn: 'Not drawn' };
   var AI_SAID = {
     denied: 'Analytics access is required.', 'ai-not-set-up': 'Write with AI is not set up yet. Contact an admin.',
@@ -743,7 +746,7 @@
       '<details class="anl-ai-more"><summary><span>Risks, what is working and actions</span>' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></summary>' +
       list('Risks', a.risks, function (x) {
-        return '<div class="anl-ai-row"><p><b>' + esc(x.title) + '</b>' + dot(SEVERITY[x.severity] || SEVERITY.medium) + '</p><p>' + esc(x.detail) + '</p></div>';
+        return '<div class="anl-ai-row anl-ai-risk"><p><b>' + esc(x.title) + '</b></p>' + dot(SEVERITY[x.severity] || SEVERITY.medium) + '<p>' + esc(x.detail) + '</p></div>';
       }) +
       list('What is working', a.working, function (x) { return '<div class="anl-ai-row"><p><b>' + esc(x.title) + '</b></p><p>' + esc(x.detail) + '</p></div>'; }) +
       (a.forecast ? '<section class="anl-ai-sec"><h4 class="fsec-h">Forecast</h4><div class="anl-ai-row"><p><b>' + esc(CREDIBLE[a.forecast.verdict] || '') + '</b></p>' +
