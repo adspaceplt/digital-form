@@ -88,6 +88,14 @@
       propDone: 'Request received', propBy: 'Our team will contact you by {d} to finalise the details.',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
+      billT: 'Billing details', billP: 'Please provide your company\'s billing details so that we can prepare your Letter of Offer.', billBtn: 'Provide billing details',
+      billSentT: 'Billing details received', billSentP: 'Your Letter of Offer is being prepared.',
+      letterP: 'Please review and sign the Letter of Offer, then return the signed copy to us.',
+      signedT: 'Signed copy received', signedP: 'We are confirming your services.', confirmed: 'Confirmed',
+      welcomeT: 'Welcome to ADspace', welcomeP: 'Your services, letters, reports and meetings are in your client portal.',
+      portalBtn: 'Sign in to your client portal', portalLater: 'Your account manager will set up your client portal access.',
+      goneT: 'This quotation has expired', goneP: 'Request a new quotation at today\'s rates, or chat with us on WhatsApp.',
+      goneAsked: 'Request received. Our team will contact you.',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
@@ -161,6 +169,14 @@
       propDone: '已收到您的确认', propBy: '我们的团队将于 {d} 前与您联系，确认细节。',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
+      billT: '账单资料', billP: '请提供公司账单资料，以便我们准备服务确认函。', billBtn: '填写账单资料',
+      billSentT: '已收到账单资料', billSentP: '我们正在准备您的服务确认函。',
+      letterP: '请审阅并签署服务确认函，然后将签署副本交回给我们。',
+      signedT: '已收到签署副本', signedP: '我们正在确认您的服务。', confirmed: '已确认',
+      welcomeT: '欢迎加入 ADspace', welcomeP: '您的服务、函件、报告及会议均可在客户平台查看。',
+      portalBtn: '登录客户平台', portalLater: '您的客户经理将为您开通客户平台。',
+      goneT: '本报价已过期', goneP: '您可按最新价格重新报价，或通过 WhatsApp 联系我们。',
+      goneAsked: '已收到您的确认，我们的团队将与您联系。',
       monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
@@ -502,11 +518,20 @@
     });
     return r;
   }
+  /* Where the prospect stands, one word from the database (2026-10-26):
+     quote, ready, billing, billing_sent, letter, signed, welcome, expired.
+     A page read from a database before it reads the older fields. */
+  function stageOf(q) {
+    if (q.stage) return q.stage;
+    if (q.status === 'offer') return 'letter';
+    if (q.valid_until < q.today) return 'expired';
+    return q.proceed_at ? 'ready' : 'quote';
+  }
   function paintQuote() {
-    var q = Q, tt = q.totals || {}, offer = q.status === 'offer', gone = !offer && q.valid_until < q.today;
-    var status = offer ? '<span class="chip-state is-ok">' + esc(t().offer) + '</span>'
-      : gone ? '<span class="chip-state is-off">' + esc(f(t().expired, { d: day(q.valid_until) })) + '</span>'
-      : '<span class="chip-state is-ok">' + esc(f(t().valid, { d: day(q.valid_until) })) + '</span>';
+    var q = Q, tt = q.totals || {}, st = stageOf(q), gone = st === 'expired';
+    var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'signed' ? ['is-ok', t().signedT] : st === 'letter' ? ['is-ok', t().offer]
+      : gone ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
+    var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];
       return '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
@@ -522,9 +547,9 @@
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
     notes.push(f(t().basis, { v: q.version }));
-    var aside = gone ? '' : '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
+    var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
-      (gone || offer || q.revised ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
+      ((st !== 'quote' && st !== 'ready') || q.revised ? '' : '<button class="btn btn-quiet qs-change" type="button" data-a="change"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>' + esc(t().change) + '</button>') +
       '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span><span class="qs-status">' + status + '</span>' +
         (q.revised ? '<span class="qs-meta">' + esc(f(t().revised, { d: day(q.issued_at), r: q.first_ref })) + '</span>' : '') + '</div>' +
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
@@ -532,7 +557,6 @@
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
       '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>' +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
-      (gone ? '<button class="btn btn-primary" type="button" data-a="new">' + esc(t().newQuote) + '</button>' : '') +
       '</section>' + aside + '</div>';
   }
   /* The advertising budget the quotation's fees manage each month: the
@@ -564,27 +588,50 @@
      whether they decide, recorded on the lead with Proceed with this
      quotation, which opens nothing (2026-10-26). A free proposal is never
      offered. */
+  var TICK = '<span class="qs-asked-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>';
+  function done(title, line) {
+    return '<div class="qs-asked">' + TICK + '<span><b>' + esc(title) + '</b>' + (line ? '<span>' + esc(line) + '</span>' : '') + '</span></div>';
+  }
+  function repHtml(q) {
+    var w = t(), first = String(q.rep.name || '').split(' ')[0];
+    var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
+      encodeURIComponent('Hi ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
+    return '<h2>' + esc(w.repT) + '</h2><div class="qs-rep"><span class="qs-rep-mark" aria-hidden="true">' + esc(initials(q.rep.name)) + '</span>' +
+      '<span class="qs-rep-who"><b>' + esc(q.rep.name) + '</b>' + (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span></div>' +
+      '<p>' + esc(f(w.repP, { n: first, b: q.brand })) + '</p>' +
+      '<a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a>';
+  }
+  /* What stands beside the quotation (under it on a phone), by stage
+     (2026-10-26). Ready to proceed asks when the prospect would start and
+     whether they decide, never a free proposal; then billing through the
+     client's own details form, the Letter of Offer, its signed copy, and
+     Welcome with the client portal's sign-in (never a sign-in itself). The
+     colleague who took the lead stands under each step. */
   function sideHtml(q) {
-    var w = t();
-    if (q.rep) {
-      var first = String(q.rep.name || '').split(' ')[0];
-      var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
-        encodeURIComponent('Hi ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
-      return '<h2>' + esc(w.repT) + '</h2><div class="qs-rep"><span class="qs-rep-mark" aria-hidden="true">' + esc(initials(q.rep.name)) + '</span>' +
-        '<span class="qs-rep-who"><b>' + esc(q.rep.name) + '</b>' + (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span></div>' +
-        '<p>' + esc(f(w.repP, { n: first, b: q.brand })) + '</p>' +
-        '<a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a>';
+    var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>' : '';
+    if (st === 'expired') {
+      return '<h2>' + esc(w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
+        '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
+        '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
-    var head = '<h2>' + esc(w.propT) + '</h2>';
-    if (q.proceed_at) {
-      return '<div class="qs-asked"><span class="qs-asked-tick" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-        '<span><b>' + esc(w.propDone) + '</b><span>' + esc(f(w.propBy, { d: day(q.proceed_due) })) + '</span></span></div>';
+    if (st === 'welcome') {
+      return '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
+        (q.portal ? '<a class="btn btn-primary" href="/client/">' + esc(w.portalBtn) + '</a>' : '<p>' + esc(w.portalLater) + '</p>') + rep;
     }
+    if (st === 'signed') return done(w.signedT, w.signedP) + rep;
+    if (st === 'letter') return done(w.offer, w.letterP) + rep;
+    if (st === 'billing_sent') return done(w.billSentT, w.billSentP) + rep;
+    if (st === 'billing') {
+      return '<h2>' + esc(w.billT) + '</h2><p>' + esc(w.billP) + '</p>' +
+        '<a class="btn btn-primary" href="/details/?k=' + encodeURIComponent(q.details_key || '') + '">' + esc(w.billBtn) + '</a>' + rep;
+    }
+    if (st === 'ready') return done(w.propDone, q.rep ? '' : f(w.propBy, { d: day(q.proceed_due) })) + rep;
+    if (q.rep) return repHtml(q);
     function ask(name, label, opts) {
       return '<fieldset class="qs-ask"><legend>' + esc(label) + '</legend>' +
         opts.map(function (o) { return pick('radio', name, o[0], false, o[1]); }).join('') + '</fieldset>';
     }
-    return head + '<p>' + esc(w.propP) + '</p>' + ask('pStart', w.startQ, w.starts) + ask('pDecider', w.decQ, w.decs) +
+    return '<h2>' + esc(w.propT) + '</h2><p>' + esc(w.propP) + '</p>' + ask('pStart', w.startQ, w.starts) + ask('pDecider', w.decQ, w.decs) +
       '<button class="btn btn-primary" id="qsPropose" type="button" data-a="propose">' + esc(w.propAsk) + '</button>' +
       '<p class="msg" id="qsSideMsg" role="status"></p>';
   }
@@ -713,7 +760,7 @@
     db.rpc('quote_proceed', { p_key: k, p_start: st.value, p_decider: dc.value }).then(function (r) {
       var d = (r && r.data) || {};
       if (r.error || d.error) { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
-      Q.proceed_at = d.at; Q.proceed_due = d.due;
+      Q.proceed_at = d.at; Q.proceed_due = d.due; Q.stage = 'ready';
       $('qsSide').innerHTML = sideHtml(Q);
     }).catch(function () { btn.disabled = false; btn.textContent = t().propAsk; say('qsSideMsg', t().err.any); });
   }

@@ -9200,6 +9200,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-ask { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
 .qs-ask legend { padding: 0; margin: 0 0 8px; font-size: 15px; font-weight: 600; color: var(--ink); }
 .qs-side .qs-pick { background: var(--card); }
+.qs-side-rep { display: grid; gap: 12px; border-top: 1px solid var(--line); padding-top: 16px; margin-top: 4px; }
 .qs-asked { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; }
 .qs-asked > span:last-child { display: grid; gap: 2px; color: var(--ink-soft); }
 .qs-asked b { color: var(--ink); font-weight: 600; }

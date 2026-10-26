@@ -326,6 +326,7 @@
   var ISSUE_WORD = {
     'not-allowed': 'You do not have permission to issue a letter.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
+    'needs-billing': 'Add the registered company name, business registration no., billing address and a billing contact on Billing before issuing a Letter of Offer.',
     'no-client': 'That client could not be found.',
     'no-lines': 'Choose at least one service.',
     'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',
@@ -359,6 +360,8 @@
     if (/could not find|does not exist|schema cache|function public\.(issue_letter|letter_delete|letter_set_void)/i.test(m)) {
       return 'This needs a database update.';
     }
+    /* A guard trigger answers in its own word (`needs-billing`). */
+    if (ISSUE_WORD[m]) return ISSUE_WORD[m];
     return m || 'The letter could not be issued.';
   }
 
