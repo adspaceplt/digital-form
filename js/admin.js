@@ -14,8 +14,8 @@
      the same way rather than repeating the fallback here. */
   if (window.ADspaceChrome) window.ADspaceChrome.mark('sideLogo', 'sideWordmark');
   /* Installable, and a lost connection answered with a page that says so.
-     The worker caches nothing else (see /admin/sw.js), so a release still
-     reaches everybody on their next load. */
+     The worker keeps the stamped files and never the page (see
+     /admin/sw.js), so a release still reaches everybody on their next load. */
   try {
     if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       window.addEventListener('load', function () {
@@ -901,10 +901,18 @@
       SYSTEM = { ids: {}, names: {} };
       (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; });
     }, function () {});
-    var go = function () { Promise.all([rates.then(null, function () {}), sys, loadVic(), loadDepts()]).then(then, then); };
+    /* Asked beside me(), never after it (2026-10-26): neither needs its
+       answer, and waiting for it cost the phone one more round trip. */
+    var vic = loadVic(), dep = loadDepts(), again = false;
+    var go = function () {
+      /* me() needed a fresh session: these two are asked again under it. */
+      if (again) { vic = loadVic(); dep = loadDepts(); }
+      Promise.all([rates.then(null, function () {}), sys, vic, dep]).then(then, then);
+    };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
       if (!r.error) return r;
+      again = true;
       return db.auth.refreshSession().then(ask, ask);
     }).then(function (r) {
       meFailed = Boolean(r.error);
