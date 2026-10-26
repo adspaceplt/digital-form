@@ -2041,7 +2041,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Remove is soft, then Delete permanently at Manage.
 - Portal access is one switch per contact (Enable / Revoke in the ⋯, with
   Undo), shown as Portal access after its green dot.
-  - Enabling opens a sheet with **Send invitation email unticked**.
+  - Enabling opens a sheet with **Send invitation email unticked**; a move
+    into Active asks it of the main contact (Give client portal access?),
+    the invitation ticked, never switched on by itself (2026-10-26).
   - Send invitation stays in the ⋯. Undo emails nobody.
 - Services:
   - Quantity × rate × months from a start date; neither below zero
@@ -2206,6 +2208,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   too), anything else is the connection
   (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
+  - Billing first (2026-10-26; the user: "billing should be before LoO"):
+    trigger `client_documents_billing` refuses a letter while the registered
+    name, BRN or billing address is empty or no billing contact stands
+    (`needs-billing`, as Active holds); the letter sheet opens Billing on
+    its first missing field instead, offering the details form, and Billing's
+    Save carries on into the letter sheet.
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
     digits is a floor, not a width.
@@ -5430,7 +5438,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   representative: name, position, Chat on their WhatsApp only where their
   namecard shows the mobile, else the office's). The link shows the latest
   revision (`quotations.replaces`, `quote_shown`: Revised on {d}. It
-  replaces {ref}.). The team who work leads are told at each step (kinds
+  replaces {ref}.). The link follows the prospect to the client portal
+  (`2026-10-26-quotation-to-client-portal.sql`): `quote_website_read`
+  answers one `stage` (quote, ready, billing with the client's open
+  details form's key, billing_sent, letter while a Letter of Offer stands
+  on the quotation's lines, never lines made with no letter, signed,
+  welcome once verified and Active, expired) and the panel beside the
+  quotation follows it, the representative under each step; Welcome
+  offers Sign in to your client portal (`/client/`) where the prospect's
+  address holds portal access, never a sign-in itself; expired keeps
+  Request received where they had said they were ready, with New
+  quotation and Chat on WhatsApp. The team who work leads are told at each step (kinds
   `quote.website`, `quote.proceed` with the answers;
   `ops_notifications.client_id` opens the lead's Services); while nobody
   has taken the lead, the managers (Clients: Leads Full Access, or an

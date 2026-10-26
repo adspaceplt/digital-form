@@ -2375,22 +2375,9 @@
       var missing = billingMissing(c);
       if (missing.length) {
         this.value = was;
-        /* The refusal lands where the fix is, with the first missing field
-           focused instead of describing a different screen. */
-        showPane('billing');
-        setUrl();
-        if (mayPart('clients.billing', 'work')) {
-          openBilling(this);
-          /* Active was asked for: the Billing sheet's Save carries on into
-             the move once nothing is missing (2026-10-20, CLI-6). */
-          state.toActive = c.id;
-          paintBillAsk();
-          msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
-          var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
-          if (first && $(first[0])) $(first[0]).focus();
-        } else {
-          msg('crmBillNote', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
-        }
+        /* Active was asked for: the Billing sheet's Save carries on into
+           the move once nothing is missing (2026-10-20, CLI-6). */
+        gateBilling(missing, 'Active', this, function () { state.toActive = c.id; });
         return;
       }
     }
@@ -2502,7 +2489,15 @@
         (why ? ' · ' + leaveWord(why.reason) + (why.note ? ': ' + why.note : '') : ''));
       // The clock and the history are stamped by the trigger, so the row has
       // to come back from the database rather than be guessed at here.
-      refreshClient(c, function () { openClient(c); if (also && also.after) requestAnimationFrame(also.after); });
+      /* Active asks whether the main contact gets the client portal, the
+         invitation ticked (2026-10-26): nothing else leads a new client
+         there. Asked, never switched on by itself. */
+      var invitee = to === 'active' ? mainContact() : null;
+      refreshClient(c, function () {
+        openClient(c);
+        if (also && also.after) requestAnimationFrame(also.after);
+        if (invitee && invitee.email && !invitee.portal_access && mayPart('clients.contacts', 'work')) askPortal(invitee, true);
+      });
       return '';
     }).catch(function () {
       if (inSheet) return 'Not saved. Please try again.';
@@ -2593,11 +2588,31 @@
     if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('crmBillIn'));
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
   }
+  /* Billing comes first, for Active and for a Letter of Offer alike
+     (2026-10-26: a letter printed with no registered name was signed as
+     it stood). The refusal lands where the fix is: the Billing sheet on
+     its first missing field, offering the details form; `then` marks what
+     its Save carries on into. */
+  function gateBilling(missing, before, opener, then) {
+    showPane('billing');
+    setUrl();
+    if (mayPart('clients.billing', 'work')) {
+      openBilling(opener);
+      if (then) then();
+      paintBillAsk();
+      msg('crmBillMsg', 'Billing details required before ' + before + ': ' + missing.join(', ') + '.', 'err');
+      var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
+      if (first && $(first[0])) $(first[0]).focus();
+    } else {
+      msg('crmBillNote', 'Billing details required before ' + before + ': ' + missing.join(', ') + '.', 'err');
+    }
+  }
   function openBilling(opener) {
     /* The details form's answers are taken only by the Save of the sheet
        Use details filled; a sheet left any other way forgets them. */
     state.detUse = null;
     state.toActive = null;
+    state.toLetter = null;
     fillBilling(state.client);
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
@@ -2607,7 +2622,7 @@
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
   $('crmBillCancel').addEventListener('click', function () {
     state.detUse = null;
-    state.toActive = null;
+    state.toActive = null; state.toLetter = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
   });
   sheetClose('crmBillClose', 'crmBillCancel');
@@ -3463,7 +3478,8 @@
         db.rpc('client_details_used', { p_id: used, p_client: state.client.id }).then(function () { loadDetForm(); }).catch(function () {});
       }
       var goActive = state.toActive === state.client.id && !still.length;
-      state.toActive = null;
+      var goLetter = state.toLetter && state.toLetter.id === state.client.id && !still.length ? state.toLetter : null;
+      state.toActive = null; state.toLetter = null;
       openClient(state.client);
       msg('crmBillNote', still.length
         ? 'Saved. Required before Active: ' + still.join(', ') + '.'
@@ -3482,6 +3498,9 @@
           askCode(c, function (code) { return moveStage(c, 'active', null, { client_code: code, inSheet: true, after: toHead }); });
         } else moveStage(c, 'active', null, { after: toHead });
       }
+      /* A Letter of Offer was asked for: billing now complete, the letter
+         sheet opens on the lines it was asked with. */
+      if (goLetter) loadServices(function () { openPick(goLetter.only); });
     });
   });
 
@@ -3713,7 +3732,7 @@
      nowhere is the account manager's conversation to time, not ours. */
   var portalFor = null;
 
-  function askPortal(ct) {
+  function askPortal(ct, invite) {
     // The ⋯ it was chosen from would otherwise sit open behind the sheet.
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     if (!ct.email) { msg('ctMsg', 'An email is required.', 'err'); openContact(ct); return; }
@@ -3722,7 +3741,9 @@
       .map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
     // Off by default: access is the decision, an email is a separate one, and
     // the client can sign in without ever receiving one.
-    $('portalInvite').checked = false;
+    $('portalInvite').checked = Boolean(invite);
+    /* Asked at Active, it reads as the question it is (2026-10-26). */
+    $('portalHeading').textContent = invite ? 'Give client portal access?' : 'Enable portal access';
     msg('portalMsg', '');
     $('portalSheet').hidden = false;
   }
@@ -5386,6 +5407,13 @@
     var c = state.client;
     msg('crmDocMsg', '');
     msg('pickMsg', '');
+    /* No Letter of Offer without the billing it prints (2026-10-26); the
+       database refuses it too (`needs-billing`). */
+    var missing = billingMissing(c);
+    if (missing.length) {
+      gateBilling(missing, 'a Letter of Offer', document.activeElement, function () { state.toLetter = { id: c.id, only: only || null }; });
+      return;
+    }
     /* The Client ID is what an automatic reference is built from, so a client
        without one is told here rather than at the end. It is a caution and no
        longer a refusal to open the sheet: a typed reference needs no code,
