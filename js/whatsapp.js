@@ -129,11 +129,7 @@
   function $(id) { return document.getElementById(id); }
   function bridge() { return window.ADspaceAdmin || {}; }
   function may(key, level) { var b = bridge(); return Boolean(b.may && b.may(key, level || 'work')); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function said(e) {
     if (!e) return SAID['wa-failed'];
     if (e.code === 'wa-not-set-up' && e.missing && e.missing.length) {

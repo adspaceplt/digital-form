@@ -19,11 +19,7 @@
   var TITLE_MAX = 120, BODY_MAX = 1000;
 
   function db() { return API && API.client; }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function when(iso) {
     var M = window.ADspaceMaintenance;
     return M && M.when ? M.when(iso) : String(iso || '');

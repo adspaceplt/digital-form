@@ -55,11 +55,7 @@
   var st = { list: [], clients: [], loaded: false, open: null, scenes: [],
              series: [], key: null, draft: [], idem: null, find: '', editing: null, base: '' };
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function say(el, text, tone) {
     if (!el) return;
     el.textContent = text || '';
@@ -717,21 +713,7 @@
   }
 
   /* The way back, drawn where the act happened: one line under `host`. */
-  var undoTimer = null;
-  function undoBar(text, undo, host) {
-    if (!host || !host.parentNode) return;
-    var here = host.parentNode.querySelector(':scope > .undobar-here');
-    if (!here) {
-      here = document.createElement('div');
-      here.className = 'undobar undobar-here';
-      host.parentNode.insertBefore(here, host.nextSibling);
-    }
-    var shut = function () { if (here.parentNode) here.parentNode.removeChild(here); };
-    here.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    here.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(shut, 8000);
-  }
+  function undoBar(text, undo, host) { window.ADspaceAdmin.undoHere(text, undo, host); }
 
   function clientLink(key) { return location.origin + '/script/?k=' + key; }
   /* The address and Copy link give the short link (hi.adspace.me/s/{key},

@@ -19,11 +19,7 @@
 
   function db() { return API && API.client; }
   function $(id) { return document.getElementById(id); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function day(iso) { return iso && window.ADspaceClock ? window.ADspaceClock.date(iso) : ''; }
   function may(k, l) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(k, l)); }
   function mayWork(kind) { return kind === 'client' ? may('clients.billing', 'work') : may('suppliers', 'work'); }

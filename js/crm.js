@@ -96,10 +96,7 @@
     if (issue) issue.hidden = !(mayPart('clients.documents', 'work') || mayPart('register.documents', 'work'));
   }
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function msg(id, text, kind) {
     var el = $(id);
     if (!el) return;
@@ -3984,20 +3981,7 @@
   function undoBar(text, undo, host) {
     /* Drawn where the act happened when it was not on a record (the list's
        Select, 2026-10-07): one line under `host`. */
-    if (host && host.parentNode) {
-      var here = host.parentNode.querySelector(':scope > .undobar-here');
-      if (!here) {
-        here = document.createElement('div');
-        here.className = 'undobar undobar-here';
-        host.parentNode.insertBefore(here, host.nextSibling);
-      }
-      var shut = function () { if (here.parentNode) here.parentNode.removeChild(here); };
-      here.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-      here.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
-      clearTimeout(undoTimer);
-      undoTimer = setTimeout(shut, 8000);
-      return;
-    }
+    if (host && host.parentNode) { window.ADspaceAdmin.undoHere(text, undo, host); return; }
     var bar = $('crmUndo');
     bar.hidden = false;
     bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
@@ -6624,7 +6608,6 @@
     keyOf: keyOf,
     /* The directory's own order and bands, for every other place a client
        is picked from, so a picker reads the way the Clients list does. */
-    byCode: byCode,
     bands: GROUPS,
     bandOf: function (stage) { return stageWord(stage || 'lead')[3]; },
     enter: function () {
@@ -6653,7 +6636,6 @@
       readPages(function () { return db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name').order('id'); })
         .then(function (r) { then(r.data || []); }, function () { then([]); });
     },
-    billingMissing: billingMissing,
     // How long a stage may run before it reads Overdue (the Overview asks).
     staleH: staleH,
     isStale: isStale,

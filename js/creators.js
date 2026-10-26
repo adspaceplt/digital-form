@@ -858,19 +858,8 @@
     }).join('') + '</div>';
   }
 
-  /* A link with a scheme is drawn only on http or https: `javascript://`
-     passes the scheme test and runs on a press (audit M1, 2026-10-17). */
-  /* A link holding a space, a quote, <, >, a backtick or a backslash is
-     not a web address either: the database's checks on a draft and a post
-     link refuse them, and the page said so in the database's words
-     (2026-10-18). */
-  function absUrl(u) {
-    u = String(u || '').trim();
-    if (!u) return '';
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) { if (!/^https?:\/\//i.test(u)) return ''; }
-    else u = 'https://' + u.replace(/^\/+/, '');
-    return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
-  }
+  /* A stored address drawn as a link: http or https alone (js/words.js). */
+  function absUrl(u) { return window.ADspaceWords.absUrl(u); }
 
   // ---- Draft review -------------------------------------------------------
 

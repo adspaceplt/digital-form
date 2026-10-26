@@ -58,10 +58,7 @@
     if (typeof id === 'function') { id(text || '', kind || ''); return; }
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
   }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
   /* The review link as it is sent (2026-10-12): a short link on the links
      host, the client's key, and with a set the first eight characters of its
@@ -3279,21 +3276,24 @@
     }).catch(function (e) { no((e && e.message) || String(e)); });
   }
   /* The way back, drawn where the act lands: one line and Undo, eight
-     seconds, under `host`. */
-  var undoTimer = null;
+     seconds, under `host`; one bar a host, each its own clock. The one copy
+     every console script draws it with (`ADspaceAdmin.undoHere`,
+     2026-10-26). */
   function undoHere(text, undo, host) {
-    if (!host || !host.parentNode) return;
+    if (!host || !host.parentNode) return null;
     var bar = host.parentNode.querySelector(':scope > .undobar-here');
     if (!bar) {
       bar = document.createElement('div');
       bar.className = 'undobar undobar-here';
       host.parentNode.insertBefore(bar, host.nextSibling);
     }
-    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    var shut = function () { clearTimeout(bar.undoTimer); if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.hidden = false;
     bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    bar.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(shut, 8000);
+    bar.querySelector('button').addEventListener('click', function () { shut(); undo(); });
+    clearTimeout(bar.undoTimer);
+    bar.undoTimer = setTimeout(shut, 8000);
+    return bar;
   }
 
   $('copyLink').addEventListener('click', function () {
@@ -5817,6 +5817,7 @@
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
+    undoHere: undoHere,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
     linkLock: linkLock,
@@ -5827,7 +5828,6 @@
     monthOfSetting: monthOfSetting,
     /* Write with AI waits for the client's brand (2026-10-12). */
     shortLink: shortLink,
-    letterOf: letterOf,
     brandGate: brandGate,
     brandSay: brandSay,
     brandWords: brandWords,
@@ -5846,7 +5846,6 @@
     deptName: deptName,
     deptsReload: loadDepts,
     hold: hold,
-    iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's
        Activity pane reads it rather than keeping a second copy that would
        drift from the activity record's own. */

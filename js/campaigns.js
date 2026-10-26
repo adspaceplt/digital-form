@@ -79,10 +79,7 @@
   var $ = function (id) { return document.getElementById(id); };
   /* Clients and colleagues in a picker lead with their code (js/form.js). */
   var F = window.ADspaceForm;
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function msg(id, text, kind) {
     var n = $(id); if (!n) return;
     n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
@@ -4404,19 +4401,8 @@
   function today() { return ADspaceClock.today(); }
 
   // A link typed without its scheme is still a link.
-  /* A link with a scheme is drawn only on http or https: `javascript://`
-     passes the scheme test and runs on a press (audit M1, 2026-10-17). */
-  /* A link holding a space, a quote, <, >, a backtick or a backslash is
-     not a web address either: the database's checks on a draft and a post
-     link refuse them, and the page said so in the database's words
-     (2026-10-18). */
-  function absUrl(u) {
-    u = String(u || '').trim();
-    if (!u) return '';
-    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) { if (!/^https?:\/\//i.test(u)) return ''; }
-    else u = 'https://' + u.replace(/^\/+/, '');
-    return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
-  }
+  /* A stored address drawn as a link: http or https alone (js/words.js). */
+  function absUrl(u) { return window.ADspaceWords.absUrl(u); }
 
   /* The campaign ⋯ menus only: the account menu is shut by its own control,
      and a scroll as a list finished loading used to take it with these. */
@@ -5202,20 +5188,15 @@
      and taken away again. Without one it falls back to the record's own bar,
      which is right for something at the top of the record. */
   function undoBar(text, undo, host) {
-    var bar = $('campUndo');
-    if (host && host.parentNode) {
-      bar = host.parentNode.querySelector(':scope > .undobar-here');
-      if (!bar) {
-        bar = document.createElement('div');
-        bar.className = 'undobar undobar-here';
-        host.parentNode.insertBefore(bar, host.nextSibling);
-      }
+    var bar = host && host.parentNode && window.ADspaceAdmin.undoHere(text, undo, host);
+    if (!bar) {
+      bar = $('campUndo');
+      bar.hidden = false;
+      bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+      bar.querySelector('button').addEventListener('click', function () { shutUndo(bar); undo(); });
+      clearTimeout(undoTimer);
+      undoTimer = setTimeout(function () { shutUndo(bar); }, 8000);
     }
-    bar.hidden = false;
-    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    bar.querySelector('button').addEventListener('click', function () { shutUndo(bar); undo(); });
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { shutUndo(bar); }, 8000);
     /* It is put where the act was, so it is already on screen in the ordinary
        case; this is for the one where the card sits at the very foot of the
        pane and the bar lands under the fold it opened in. */

@@ -9223,19 +9223,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-done { justify-items: start; padding-top: 16px; }
 .qs-done p { margin: 0; }
 .qs-tick { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); }
-.qs-facts { margin: 0; width: 100%; box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); }
-.qs-facts dt { color: var(--ink-mute); }
-.qs-facts dd { margin: 0; min-width: 0; font-variant-numeric: tabular-nums; }
-.qs-nowrap { white-space: nowrap; }
 body.qs-page { background: var(--card); }
 .qs-change { display: inline-flex; align-items: center; gap: 6px; margin-left: -8px; }
-/* A status reads whole on its line (a value never wraps); on a phone each
-   fact's label stands over its value, so the status takes the box's width. */
-.qs-facts .chip-state { font-size: inherit; white-space: nowrap; }
-@media (max-width: 480px) {
-  .qs-facts { grid-template-columns: minmax(0, 1fr); row-gap: 2px; }
-  .qs-facts dd + dt { margin-top: 10px; }
-}
 @media (min-width: 900px) { .qs-acts > .btn { flex: 0 0 auto; } }
 
 /* A finished booking on the creator's page (2026-10-14): its name and state,

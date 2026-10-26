@@ -38,11 +38,7 @@
 
   var st = { docs: [], vers: {}, loaded: false, editing: null, verFor: null };
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function day(iso) {
     if (!iso) return '';
     return window.ADspaceClock.date(iso);

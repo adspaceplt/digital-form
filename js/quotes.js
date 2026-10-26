@@ -17,9 +17,7 @@
   var MON = window.ADspaceMoney;
   var $ = function (id) { return document.getElementById(id); };
   function WA() { return window.ADspaceWhatsApp; }
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  };
+  var esc = window.ADspaceWords.esc;
   var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var SAID = {

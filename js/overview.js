@@ -29,11 +29,7 @@
   var W = (window.ADspaceWords && window.ADspaceWords.en) || {};
 
   function $(id) { return document.getElementById(id); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   /* Full Access (manage) on a section or its part opens its tiles and cards
      (the user, 2026-10-03); the granted parts (ops.reports, ops.all,
      team.performance) are asked at their grant. */

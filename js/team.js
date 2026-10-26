@@ -49,10 +49,7 @@
     sel.value = current || '';
   }
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   /* A success line goes after 8 seconds, as the Undo bar does, so a later
      act never reads under an earlier one's Saved. (TEAM-11, 2026-10-14);
      a refusal or a warning stays until the next act replaces it. */

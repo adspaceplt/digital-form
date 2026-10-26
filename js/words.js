@@ -256,5 +256,16 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  /* The one reading of a stored address drawn as a link: http or https
+     alone, a bare address taking https, and nothing for a space, a quote,
+     <, >, a backtick or a backslash the column's check refuses (audit M1,
+     2026-10-17; one copy, 2026-10-26). */
+  W.absUrl = function (u) {
+    u = String(u || '').trim();
+    if (!u) return '';
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(u)) { if (!/^https?:\/\//i.test(u)) return ''; }
+    else u = 'https://' + u.replace(/^\/+/, '');
+    return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
+  };
   window.ADspaceWords = W;
 })();

@@ -46,11 +46,7 @@
   /* A Very Important Client's tag (2026-10-15), from the console's one read. */
   function vicTag(id, inRow) { var A = window.ADspaceAdmin; return id && A && A.vicTag ? A.vicTag(id, inRow) : ''; }
   var byClient = F.byClient;
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function msg(id, text, kind) {
     /* A function says it where it was asked (the Settings page's row). */
     if (typeof id === 'function') { id(text || '', kind || ''); return; }
@@ -5609,24 +5605,7 @@
     }, function (why) { move(to, why); });
   }
   // ---- The way back, drawn where the act happened --------------------------
-  function undoBar(text, undo, host) {
-    if (!host || !host.parentNode) return;
-    /* One bar at a time: two removals in a row would otherwise stack two
-       offers of a way back and neither would say which. */
-    var old = host.parentNode.querySelector(':scope > .undobar-here');
-    if (old) old.remove();
-    var bar = document.createElement('div');
-    bar.className = 'undobar undobar-here';
-    bar.innerHTML = '<span></span><button class="btn btn-sm" type="button">Undo</button>';
-    bar.querySelector('span').textContent = text;
-    var timer = setTimeout(function () { bar.remove(); }, 8000);
-    bar.querySelector('button').addEventListener('click', function () {
-      clearTimeout(timer);
-      bar.remove();
-      undo();
-    });
-    host.parentNode.insertBefore(bar, host.nextSibling);
-  }
+  function undoBar(text, undo, host) { window.ADspaceAdmin.undoHere(text, undo, host); }
 
   // ---- Calling the database ------------------------------------------------
   /* Every write goes through one place, so a refusal is named the same way

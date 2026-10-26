@@ -34,10 +34,7 @@
   var SM = function () { return window.ADspaceSmReport; };
 
   function may(key) { return Boolean(bridge.may && bridge.may(key, 'view')); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 
   var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
