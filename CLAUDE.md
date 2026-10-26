@@ -380,6 +380,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `.topbar .brand-logo` is `flex: 0 0 auto; max-width: 60vw`, because Safari
   drew it 0px wide. Safari cannot run in the sandbox; the user confirms on an
   iPhone.
+- `loadMe` asks `me()`, the business figures, the system accounts, the VIC
+  clients and the departments at once, never one after another
+  (2026-10-26); a `me()` asked again after a session refresh asks the VIC
+  clients and departments again under it.
 - The console boots as `.console.is-booting`: its own shell and rail with the
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied; a
@@ -577,12 +581,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   This device
   (Theme, Passkeys, Notifications); Sign out. The Reports bar
   holds no AI usage (`tests/adminparts.js`, `tests/run.js`).
-- `admin/sw.js` caches only `offline.html` and the wordmark, and answers only a
-  page load that failed, and a PDF the console drew, for an hour, at
-  `/admin/file/` (`js/file-sw.js`, `adspace-files`; see `ADspaceDocs.save`).
-  `client/sw.js` holds that alone, at `/client/file/`, registered by
-  `js/portal.js`. It never caches scripts or styles (the `?v=` stamps
-  would serve yesterday's console). A failed registration is silent.
+- `admin/sw.js` keeps `offline.html` and the wordmark for a page load that
+  failed, and every same-origin file whose address carries `?v=`
+  (`adspace-console-assets`), answered from the store first, one copy a
+  file, the copy under an older stamp let go when the new one is stored
+  (2026-10-26: a reopen after ten minutes asked the server about 69 files).
+  The page itself always goes to the network (navigation preload on), and
+  an unstamped file is never kept: a changed file without a new stamp would
+  be served stale, so the `?v=` bump below is load bearing. It also holds a
+  PDF the console drew, for an hour, at `/admin/file/` (`js/file-sw.js`,
+  `adspace-files`; see `ADspaceDocs.save`). `client/sw.js` holds that
+  alone, at `/client/file/`, registered by `js/portal.js`. A failed
+  registration is silent.
 - The rail's foot names the build beside Settings' and the Activity record's marks (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
