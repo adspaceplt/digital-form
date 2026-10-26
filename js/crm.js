@@ -488,7 +488,11 @@
     /* The newest of each per client in one read (`client_last_activity`,
        2026-10-19), never every row: three unpaged reads lost the newest
        past a thousand. A refused read leaves the stage moves alone. */
-    db.rpc('client_last_activity').then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; }).then(function (all) {
+    /* Read a thousand at a time: up to three rows a client passed
+       PostgREST's thousand at about 350 clients (the audit of 2026-10-26,
+       finding 5). */
+    window.ADspaceAPI.readPages(function () { return db.rpc('client_last_activity').order('client_id').order('source'); })
+      .then(function (r) { return r.data || []; }, function () { return []; }).then(function (all) {
       all.forEach(function (x) {
         take(x.client_id, x.at, x.source === 'touch' ? (KIND_WORD[x.kind] || 'Call')
           : x.source === 'letter' ? 'Letter of Offer' : (x.kind ? title(x.kind) : 'Document'));
@@ -6669,10 +6673,15 @@
   /* Every open next action, across every client, soonest first. Overdue ones
      lead. Each line opens its client, and Done clears it from here without
      touching the log entry it came from. */
+  /* Every open one is read and counted; the fifty soonest are drawn (the
+     audit of 2026-10-26, finding 11: the count read 50 where more stood). */
+  var DUE_SHOW = 50;
   function loadDue() {
-    db.from('client_touches').select('*').not('next_action', 'is', null)
-      .is('done_at', null).is('archived_at', null)
-      .order('next_at', { ascending: true, nullsFirst: false }).limit(50)
+    window.ADspaceAPI.readPages(function () {
+      return db.from('client_touches').select('*').not('next_action', 'is', null)
+        .is('done_at', null).is('archived_at', null)
+        .order('next_at', { ascending: true, nullsFirst: false }).order('id');
+    })
       .then(function (r) {
         var rows = (r.data || []).filter(function (t) { return t.next_action; });
         // Soonest first, undated last.
@@ -6695,7 +6704,7 @@
     var over = rows.filter(function (t) { return t.next_at && t.next_at < today(); }).length;
     $('crmDueCount').textContent = rows.length + ' open' + (over ? ' · ' + over + ' overdue' : '');
     box.innerHTML = '';
-    rows.forEach(function (t) {
+    rows.slice(0, DUE_SHOW).forEach(function (t) {
       var c = byId[t.client_id];
       var due = t.next_at && t.next_at < today();
       var soon = !due && t.next_at && t.next_at <= ADspaceClock.addDays(today(), 6);

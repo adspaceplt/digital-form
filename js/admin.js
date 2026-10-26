@@ -2352,7 +2352,7 @@
      audit, item 8): never a read of every post and decision. Keyed by set. */
   function setCounts(batchIds) {
     if (!batchIds.length) return Promise.resolve({});
-    return db.rpc('review_set_counts', { p_sets: batchIds }).then(function (r) {
+    return window.ADspaceAPI.readPages(function () { return db.rpc('review_set_counts', { p_sets: batchIds }).order('set_id'); }).then(function (r) {
       if (r.error) throw r.error;
       var out = {};
       (r.data || []).forEach(function (x) { out[x.set_id] = x; });
