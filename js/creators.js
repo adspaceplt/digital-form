@@ -1455,14 +1455,6 @@
       p_token: TOKEN, p_person: name, p_passcode: passcode,
       p_selected: sel, p_backup: bak, p_seen: seen, p_idem: confirmKey
     }).then(function (r) {
-      var missing = r && r.error && (r.error.code === 'PGRST202' || /confirm_selection_with/.test(r.error.message || ''));
-      if (!missing) return r;
-      return db.rpc('save_selection', { p_token: TOKEN, p_selected: sel, p_backup: bak, p_passcode: passcode })
-        .then(function (s) {
-          if ((s && s.error) || (s && s.data && s.data.error)) return s;
-          return db.rpc('confirm_selection', { p_token: TOKEN, p_person: name, p_passcode: passcode });
-        });
-    }).then(function (r) {
       btn.disabled = false;
       var d = (r && r.data) || {};
       /* In the client's words, never the database's; where the campaign

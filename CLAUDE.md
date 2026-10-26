@@ -1186,7 +1186,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - What a client page or a creator writes through a function is held to a
   length: a name 80, a note 2,000, a caption 5,000, refused `too-long`
   before anything is written (`submit_review` `too_long`; `review_draft`,
-  `confirm_selection`, `confirm_selection_with`, `creator_submit`,
+  `confirm_selection_with`, `creator_submit`,
   `portal_request_once`; `2026-10-18-what-a-client-types-is-held-to-a-length.sql`).
 - **A write that changed nothing is not a success.** PostgREST answers a refused
   delete or update with 204 and no error. Every delete and every
@@ -2990,7 +2990,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   offered only while closed with a free slot, whether the campaign is Open
   or In production (every booking reverted puts it back to Open, still
   closed; 2026-10-10). While closed, `save_selection`
-  and `confirm_selection` refuse (`closed`), except backups where opened and
+  and `confirm_selection_with` refuse (`closed`), except backups where opened and
   every slot is taken. The Creators tab folds options and backups under Not
   selected (`#campUnpicked`) while closed.
 - The one stage step in blue on a card is Release to client; every other
@@ -3076,7 +3076,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `campaign_confirm_creators` (Creator Campaigns at Work, client scope;
   `stale` with the count): the confirmation, the bookings and the campaign
   move together, filed `campaign.locked`. The same key again answers `again`
-  and files nothing. `confirm_selection` (an older page) refuses `empty`.
+  and files nothing. The older `confirm_selection` is dropped (2026-10-26).
   `get_campaign` sends the client's last confirmation (`campaign.confirmed`:
   person, time, the creators chosen); while the picks match it the bar reads
   Confirmed by {name} on {day} with no Confirm (2026-10-15).
@@ -3088,10 +3088,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   the bookings (`slots-booked`), whoever writes them. The selection page
   reads `over-slots` in its own words with how many may still be chosen
   (`overSlots`), shuts the sheet and rests Confirm while the picks and the
-  bookings pass the slots (2026-10-20, SEL-1).
+  bookings pass the slots (2026-10-20, SEL-1). The autosave
+  (`save_selection`) counts the booked alike (`over-slots`, 2026-10-26).
 - A client's confirmation is the record of what was accepted
   (`2026-10-18-confirmations-kept.sql`): `campaign_confirmations` is
-  written by `confirm_selection_with`, `confirm_selection` and
+  written by `confirm_selection_with` and
   `campaign_confirm_creators` alone (its insert, update and delete policies
   admit nothing), keeps the campaign's title and client (stamped on insert),
   and has no foreign key, so a deleted campaign leaves it. A campaign's
@@ -3240,7 +3241,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.
 - Client-side decisions write an activity row under the typed name:
-  `submit_review`, `confirm_selection`, `creator_submit`, `creator_rate`,
+  `submit_review`, `confirm_selection_with`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
 ### Dashboard (`js/overview.js`, `?s=dashboard`)
@@ -6411,7 +6412,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Campaigns: Campaigns at Work, a key from `new_link_key()`), and
   `get_campaign` answers `not-found` once the client is Past (2026-10-18),
   so `sign-download` and `media-pass` close with it, as do
-  `save_selection`, `confirm_selection`, `confirm_selection_with` and
+  `save_selection`, `confirm_selection_with` and
   `review_draft`, before the passcode, and `share_link_preview` names no
   Past client (`2026-10-18-past-client-links-act-on-nothing.sql`); a
   completed campaign stays readable for its results, a Past client's too,
@@ -6420,7 +6421,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   988's results were never read).
   A link's passcode is asked through `link_passcode(kind, token, stored,
   given)` by `get_review_feed`, `submit_review`, `submit_review_seen`,
-  `get_campaign`, `save_selection`, `confirm_selection`,
+  `get_campaign`, `save_selection`,
   `confirm_selection_with` and `review_draft`
   (`2026-10-18-passcode-locks-per-caller.sql`,
   `2026-10-18-review-decisions-ask-the-passcode.sql`): asked without one is never
