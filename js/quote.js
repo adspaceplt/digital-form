@@ -96,6 +96,7 @@
       portalBtn: 'Sign in to your client portal', portalLater: 'Your account manager will set up your client portal access.',
       goneT: 'This quotation has expired', goneP: 'Request a new quotation at today\'s rates, or chat with us on WhatsApp.',
       goneAsked: 'Request received. Our team will contact you.',
+      closed: 'Closed', closedT: 'This quotation is closed',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
@@ -104,6 +105,7 @@
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'This contact has made five quotations today. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'A valid Malaysia or Singapore registered WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
+        'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.',
         expired: 'This quotation has expired. Please make a new one.', 'not-proceeding': 'This quotation is closed. Please make a new one.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
@@ -177,6 +179,7 @@
       portalBtn: '登录客户平台', portalLater: '您的客户经理将为您开通客户平台。',
       goneT: '本报价已过期', goneP: '您可按最新价格重新报价，或通过 WhatsApp 联系我们。',
       goneAsked: '已收到您的确认，我们的团队将与您联系。',
+      closed: '已结束', closedT: '本报价已结束',
       monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
@@ -185,6 +188,7 @@
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
+        'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。',
         expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
@@ -530,6 +534,7 @@
   function paintQuote() {
     var q = Q, tt = q.totals || {}, st = stageOf(q), gone = st === 'expired';
     var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'signed' ? ['is-ok', t().signedT] : st === 'letter' ? ['is-ok', t().offer]
+      : st === 'closed' ? ['is-off', t().closed]
       : gone ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
     var lines = (q.lines || []).map(function (l) {
@@ -609,8 +614,8 @@
      colleague who took the lead stands under each step. */
   function sideHtml(q) {
     var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>' : '';
-    if (st === 'expired') {
-      return '<h2>' + esc(w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
+    if (st === 'expired' || st === 'closed') {
+      return '<h2>' + esc(st === 'closed' ? w.closedT : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
         '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
