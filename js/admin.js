@@ -785,7 +785,7 @@
       var next = {};
       (r && !r.error && r.data || []).forEach(function (v) { if (v && v.client_id) next[v.client_id] = v; });
       VIC = next;
-    }, function () {});
+    }).catch(function () {});
   }
   function vicOf(id) { return (id && VIC[id]) || null; }
   /* DEPARTMENTS (2026-10-23, the user: "can add more departments?"): the list
