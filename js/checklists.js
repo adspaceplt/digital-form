@@ -15,9 +15,7 @@
 (function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  };
+  var esc = window.ADspaceWords.esc;
   var KINDS = [['onboarding', 'New Client Onboarding Checklist'], ['pre_ads', 'Pre-Advertising Checklist']];
   var STATE = { open: ['In progress', 'is-warn'], prepared: ['Waiting for review', 'is-warn'], signed: ['Signed off', 'is-ok'] };
   var SAID = {

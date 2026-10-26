@@ -497,14 +497,6 @@
      (2026-10-15). */
   function qc() { return Q && Q.totals && Q.totals.currency === 'SGD' ? 'S$' : 'RM'; }
   function qb(n) { var fx = Q && Q.totals && Number(Q.totals.fx); return fx ? Math.round(Number(n) / fx) : Number(n); }
-  /* A monthly line running months of its own makes the month's figures the
-     first month's, named so (2026-10-18), as the Letter of Offer does. */
-  function ownMonths(tt) {
-    return ((Q && Q.lines) || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(tt.term); });
-  }
-  /* The first month holds the one-off items too (the user, 2026-10-18). */
-  function sum2(a, b) { return Math.round((Number(a || 0) + Number(b || 0)) * 100) / 100; }
-  function firstIncl(tt) { return sum2(tt.month.incl, tt.once && tt.once.incl); }
   /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies): where
      it does not apply, its row reads not applicable, no total names it and
      the row before it, the same figure, is left out. */

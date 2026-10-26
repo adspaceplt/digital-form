@@ -40,10 +40,7 @@
   var AIQ = (window.ADspaceConfirm && window.ADspaceConfirm.ai) || null;
   var AI_GLYPH = AIQ ? AIQ.glyph : '';
   function me() { return bridge.me ? bridge.me() : null; }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function say(el, text, kind) {
     if (!el) return;
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
@@ -2709,17 +2706,7 @@
     window.ADspaceConfirm.ask({ title: 'Remove this account?', body: 'Its ' + n + ' post' + (n === 1 ? '' : 's') + ' go with it.', go: 'Remove', tone: 'danger' }, go);
   }
 
-  var undoTimer = null;
-  function undoBar(text, host, undo) {
-    if (!host || !host.parentNode) return;
-    var bar = host.parentNode.querySelector(':scope > .undobar-here');
-    if (!bar) { bar = document.createElement('div'); bar.className = 'undobar undobar-here'; host.parentNode.insertBefore(bar, host.nextSibling); }
-    bar.hidden = false;
-    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    bar.querySelector('button').addEventListener('click', function () { if (bar.parentNode) bar.parentNode.removeChild(bar); undo(); });
-    clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { if (bar.parentNode) bar.parentNode.removeChild(bar); }, 8000);
-  }
+  function undoBar(text, host, undo) { window.ADspaceAdmin.undoHere(text, undo, host); }
 
   // ---- Posts ------------------------------------------------------------------------------
   function postName(p) {

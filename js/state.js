@@ -9,11 +9,7 @@
    already there. A read that failed is not an empty list, and saying so once
    is the only way the whole console can agree on it. */
 (function () {
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
 
   /* The shape of what is coming, rather than the word for it. */
   function skeleton(box, n) {

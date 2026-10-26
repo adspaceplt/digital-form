@@ -24,11 +24,7 @@
   if (!API || !API.configured || !db || !UI) return;
 
   function $(id) { return document.getElementById(id); }
-  var esc = UI.esc || function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  };
+  var esc = window.ADspaceWords.esc;
   function may(k, l) { return Boolean(bridge.may && bridge.may(k, l)); }
   function day(iso) { return iso ? window.ADspaceClock.date(iso) : ''; }
   function msg(id, text, kind) { var m = $(id); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (kind && text ? ' ' + kind : ''); }

@@ -1167,8 +1167,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A public form's typed name is never an actor: it is filed under the form
   (Details form, Supplier form, Quotation website), the name in the detail
   (2026-10-22, BE-3).
-- Every page's `esc` (a client page's is `ADspaceWords.esc`; `js/chrome.js`
-  keeps its own, loaded before it) escapes `"` and `'` as well as `&`, `<`, `>`: a stored
+- Every page's `esc` is `ADspaceWords.esc` (`js/chrome.js` keeps its own,
+  loaded before it; one copy, 2026-10-26), escaping `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
   holding a quote ran script in the console).
 - A value is never drawn raw because of what it starts with: a fact not set
@@ -1176,7 +1176,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   an Industry or push format reading `<span…` drew as markup).
 - A stored address drawn as a link is held to the web twice: a check on its
   column (`^https?://`, an invoice `https://` or `private/`) and the page
-  drawing it only on http or https (`absUrl` answers nothing for another
+  drawing it only on http or https (`ADspaceWords.absUrl`, the one copy, answers nothing for another
   scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
   column's check refuses; 2026-10-17: `javascript://` passed the scheme test). A link typed
   bare takes `https://` (a month's Drive folder too, its column https
@@ -1201,8 +1201,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Back navigates, Revert undoes a state, Restore brings back a record,
   Reinstate brings back a person, Undo reverses a removal, Void then Delete
   retires an issued document.
-- The way back is drawn where the act happened (`undoBar(text, undo, host)`,
-  `.undobar-here`), naming what went.
+- The way back is drawn where the act happened (`ADspaceAdmin.undoHere(text,
+  undo, host)`, `.undobar-here`, one bar a host on its own clock), naming
+  what went.
 - A soft remove comes before a hard delete. Anything a person can upload, a
   person can remove.
 - An act that destroys somebody else's work, from a control inside that work,

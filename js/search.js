@@ -31,11 +31,7 @@
   if (!btn || !box || !field || !list || !say || !db || !SHEET) return;
 
   var LIMIT = 5, WAIT = 200, MIN = 2;
-  var esc = UI.esc || function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  };
+  var esc = window.ADspaceWords.esc;
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level || 'view')); }
 
   /* ---- The query ---------------------------------------------------------

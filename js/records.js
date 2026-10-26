@@ -32,11 +32,7 @@
 
   var RUN_MS = 10 * 60 * 1000;
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   /* Times and days are Malaysia's (js/clock.js), whatever the device's
      clock: a history read abroad dates its entries as the office does. */
   var CK = window.ADspaceClock;

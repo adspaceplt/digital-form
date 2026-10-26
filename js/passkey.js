@@ -25,11 +25,7 @@
   var API = window.ADspaceAPI;
   var db = API && API.client;
   var $ = function (id) { return document.getElementById(id); };
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  };
+  var esc = window.ADspaceWords.esc;
 
   /* The library that knows passkeys is 2.117 and later; a browser with no
      WebAuthn has nothing to offer. Where either is missing the button and

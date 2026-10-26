@@ -41,11 +41,7 @@
   function S() { return window.ADspaceSales; }
 
   function $(id) { return document.getElementById(id); }
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function may(key, lv) { return Boolean(bridge.may && bridge.may(key, lv || 'view')); }
   function pad2(n) { return String(n).padStart(2, '0'); }
   function plain(n) { return Number(n || 0).toLocaleString('en-GB'); }

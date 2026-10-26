@@ -48,11 +48,7 @@
 (function () {
   'use strict';
 
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
+  function esc(s) { return window.ADspaceWords.esc(s); }
   function num(v) { return Number(v) || 0; }
   function plain(v) { return num(v).toLocaleString('en-GB'); }
 

@@ -30,11 +30,7 @@
   if (!API || !API.configured || !db || !LET || !UI) return;
 
   function $(id) { return document.getElementById(id); }
-  var esc = UI.esc || function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  };
+  var esc = window.ADspaceWords.esc;
   /* A document's kind is its formal name, so it reads in title case however
      it was typed (js/form.js). */
   function nameOf(k) { return window.ADspaceForm && window.ADspaceForm.title ? window.ADspaceForm.title(k) : String(k || ''); }
