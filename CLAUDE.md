@@ -5338,12 +5338,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   and totals, valid `quote_valid_days` (30, Tax and terms) from issue;
   never edited. The Services pane lists them above the lines
   (`#crmQuotes`; the Overview opens on them while any stand): the state
-  worked out on read (Valid until, Expired, Letter of Offer requested, Not
+  worked out on read (Valid until, Expired, Ready to proceed, Revised, Letter of Offer requested, Not
   proceeding, Letter of Offer issued once a live letter holds its lines),
-  Download on the row, and on a row that can be offered (Valid, Letter of
-  Offer requested) Issue Letter of Offer beside it, with Use billing
-  details while the letter is asked for (at a desk under the figure, the
-  reference kept whole; equal halves under the meta on a phone); the ⋯
+  the row two short lines (the plan and term, then who made it and when;
+  2026-10-26), Download on the row, and on a row that can be offered
+  (Valid, Ready to proceed, Letter of Offer requested) Issue Letter of
+  Offer beside it (at a desk under the figure, the reference kept whole;
+  equal halves under the meta on a phone); the ⋯
   Make a copy, Send on WhatsApp, Not proceeding / Restore, Remove with Undo
   (Restore after) (the user, 2026-10-22, QT-M1: "approve"). The pane's one
   blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
@@ -5413,17 +5414,37 @@ Each line is a rule that broke once. Its reason is in the archive.
   counted under a lock on each, only the selection keys the price reads
   kept, the number read as `wa_number` reads it (`quote_website_number`;
   `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). No rate is
-  shown before the quotation (`quote_catalogue`, anon, holds none). Proceed
-  (beside it at a desk) asks the registered name, a 12-digit registration
-  number (a Singapore lead its UEN, `market` read with the quotation) and
-  the address (`quote_website_request`, anon, by the key;
-  `expired`, `not-proceeding`, `bad-billing`), Request received after.
-  The team who work leads are told at each step (kinds `quote.website`,
-  `quote.requested`; `ops_notifications.client_id` opens the lead's
-  Services); a KOL campaign and a custom KOC list are quoted on request.
-  The billing given is withheld from the table, read through
-  `quotation_billing` (Clients: Billing at View); the row's ⋯ Use billing
-  details fills the client's Billing sheet where it is empty.
+  shown before the quotation (`quote_catalogue`, anon, holds none). The
+  rates show at once, with Download (the A4 PDF); the website asks no
+  billing and never a Letter of Offer, which the team sends after a
+  conversation, the billing through the Details form
+  (`2026-10-26-quotation-website-follow-up.sql`; the user, 2026-10-26).
+  Beside it (under it on a phone) Ready to proceed?, never a free
+  proposal: when they would start (Within a month, In 1 to 3 months) and
+  whether they decide (Yes, I will involve others), both asked, then
+  Proceed with this quotation (`quote_proceed(p_key, p_start, p_decider)`,
+  anon; `bad-answer`, `expired`, `not-proceeding`; `proceed_at`,
+  `proceed_due` the moment plus `quote_reply_days` working days, 2, Tax
+  and terms), Request received with the day the team will be in touch.
+  Once a colleague takes the lead the page names them (Your
+  representative: name, position, Chat on their WhatsApp only where their
+  namecard shows the mobile, else the office's). The link shows the latest
+  revision (`quotations.replaces`, `quote_shown`: Revised on {d}. It
+  replaces {ref}.). The team who work leads are told at each step (kinds
+  `quote.website`, `quote.proceed` with the answers;
+  `ops_notifications.client_id` opens the lead's Services); while nobody
+  has taken the lead, the managers (Clients: Leads Full Access, or an
+  admin) are told once six hours before the time ends
+  (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
+  is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
+  link button the key), when the quotation is made; nothing else is sent
+  by itself. On the lead's Services a website quotation reads Ready to
+  proceed · Contact by {day}, offers Adjust and send (Build quote on its
+  selection, saved as its revision through `quotation_replace`, then the
+  WhatsApp composer) and in its ⋯ Mark Do not contact / Clear Do not
+  contact (`quotation_set`, a website quotation's alone; no reminder
+  while marked); a revised one reads Revised · By {ref}. A KOL campaign
+  and a custom KOC list are quoted on request.
 
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at

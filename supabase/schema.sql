@@ -715,7 +715,7 @@ declare
     'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
-    'quote_catalogue', 'quote_website_read', 'quote_website_request', 'public_holidays_between',
+    'quote_catalogue', 'quote_website_read', 'quote_proceed', 'public_holidays_between',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
     'review_draft', 'review_link_preview', 'save_selection', 'share_link_preview', 'script_decide', 'script_shot_link', 'submit_review', 'submit_review_seen', 'verify_serial'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
@@ -80457,5 +80457,610 @@ grant execute on function public.analytics_reads_list() to authenticated;
 grant execute on function public.analytics_read_delete(uuid) to authenticated;
 
 -- END OF ANALYTICS READ WITH AI ----------------------------------------------
+
+select public.functions_tidy();
+
+-- ===========================================================================
+-- QUOTATION WEBSITE FOLLOW-UP — a prospect says they are ready to proceed
+-- with their quotation, the team revises it in place of the first, and the
+-- prospect is told on WhatsApp that it is ready (2026-10-26)
+-- ===========================================================================
+-- WHY (the user, 2026-10-26): the Letter of Offer is the sales team's to
+-- send after a conversation, never the website's; the website's rates are
+-- the card's, and the team usually revises them once it has spoken to the
+-- prospect. Only a prospect ready to go ahead is asked forward, never a
+-- free proposal, and the team is held to answering.
+--
+-- WHAT IT CHANGES
+--   * The website no longer asks for billing details or a Letter of Offer.
+--     Beside the quotation the prospect may say they are ready to proceed
+--     (`quote_proceed(p_key, p_start, p_decider)`, anon, by the quotation's
+--     key), answering when they would start (`month`: within a month,
+--     `quarter`: in 1 to 3 months) and whether they decide (`yes`,
+--     `others`); refused `bad-answer`, `expired`, `not-proceeding`. It
+--     stamps `quotations.proceed_at`, `proceed_due` (the moment plus
+--     `quote_reply_days` working days, 2, weekends and public holidays
+--     passed over; a Business setting), `proceed_start` and
+--     `proceed_decider`, tells the leads team with the answers (kind
+--     `quote.proceed`) and files `client.quotation`. Pressed again it
+--     answers `again` and changes nothing.
+--   * `quote_proceed_remind()` (pg_cron `quote-proceed-remind`, every
+--     fifteen minutes) tells the managers (Clients: Leads Full Access, or an
+--     admin) once, six hours before the time ends, while nobody has taken
+--     the lead, it is not marked Do not contact, not withdrawn and not
+--     removed.
+--   * A revised quotation replaces the website's (`quotations.replaces`):
+--     `quotation_replace(p_new, p_old)` (Clients: Quotations at Work, the
+--     client in scope) links a quotation made in the console to the
+--     website quotation of the same client it revises; the prospect's link
+--     shows the latest revision.
+--   * Do not contact (`quotations.no_contact_at`, `no_contact_by`):
+--     `quotation_set` takes `no_contact` and `contact` on a website
+--     quotation, filed from and to; a quotation so marked sends no
+--     reminder.
+--   * `quote_website_read` answers the quotation the link shows (the latest
+--     revision, else the website's own), whether the prospect said they are
+--     ready to proceed, whether a Letter of Offer stands on it, and the
+--     colleague who took the lead (their name and position, and their
+--     mobile only where their namecard shows it). It never answers billing.
+--   * `quote_website_create` queues the `quote_ready` WhatsApp message to
+--     the prospect (greeting, brand, reference; its link button the
+--     quotation's key) where that template is on; a queueing fault never
+--     fails the quotation.
+--   * `quote_reply_days` is seeded (2); the SQL Editor part lets
+--     `app_settings_set` take it (1 to 10), since that function holds a
+--     delete the connector stops on.
+--
+-- ORDER: this file (connector), then the pages, then
+-- 2026-10-26-quotation-website-follow-up-editor.sql in the SQL Editor (the
+-- `quote_ready` purpose, `app_settings_set` taking `quote_reply_days`, and
+-- the billing step's functions and column dropped). A page served before this file offers no Ready to proceed (it
+-- reads that the database needs an update); an old open quotation page
+-- still asks billing until the editor part drops it, then answers
+-- not-found.
+--
+-- ROLLBACK: pages first; then drop the five new functions and the cron
+-- job, restore the earlier quote_website_read, quote_website_create,
+-- and quotation_set from schema.sql's earlier sections;
+-- the new columns may stay (nothing else reads them).
+-- ===========================================================================
+
+alter table public.quotations add column if not exists proceed_at timestamptz;
+alter table public.quotations add column if not exists proceed_due timestamptz;
+alter table public.quotations add column if not exists proceed_start text check (proceed_start in ('month', 'quarter'));
+alter table public.quotations add column if not exists proceed_decider text check (proceed_decider in ('yes', 'others'));
+alter table public.quotations add column if not exists proceed_reminded_at timestamptz;
+alter table public.quotations add column if not exists replaces uuid references public.quotations(id) on delete set null;
+alter table public.quotations add column if not exists no_contact_at timestamptz;
+alter table public.quotations add column if not exists no_contact_by text;
+create index if not exists quotations_replaces_idx on public.quotations (replaces) where replaces is not null;
+grant select (proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, no_contact_by) on table public.quotations to authenticated;
+
+insert into public.app_settings (key, from_date, value)
+select 'quote_reply_days', date '2023-08-14', 2
+ where not exists (select 1 from public.app_settings s where s.key = 'quote_reply_days');
+
+-- The moment a prospect ready to proceed is owed contact by: working days after it.
+create or replace function public.quote_reply_by(p_at timestamptz)
+returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select public.ops_add_business_days(p_at,
+    coalesce(public.app_setting('quote_reply_days', (p_at at time zone 'Asia/Kuala_Lumpur')::date), 2)::int)
+$$;
+revoke all on function public.quote_reply_by(timestamptz) from public, anon, authenticated;
+
+-- The quotation a website link shows: the latest revision of it, else its own.
+create or replace function public.quote_shown(p_id uuid)
+returns uuid
+language sql stable security definer set search_path = public as $$
+  with recursive chain(id, n) as (
+    select p_id, 0
+    union all
+    select q.id, c.n + 1 from public.quotations q join chain c on q.replaces = c.id
+     where q.removed_at is null and c.n < 20
+  )
+  select c.id from chain c join public.quotations q on q.id = c.id
+   order by c.n desc, q.issued_at desc limit 1
+$$;
+revoke all on function public.quote_shown(uuid) from public, anon, authenticated;
+
+create or replace function public.quote_website_read(p_key text)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  w  public.quotations;
+  q  public.quotations;
+  c  public.clients;
+  m  public.team_members;
+  v_offer boolean;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  select * into w from public.quotations x
+   where x.access_key = p_key and x.source = 'website' and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  select * into c from public.clients x where x.id = w.client_id;
+  if nullif(btrim(coalesce(c.owner, '')), '') is not null then
+    select * into m from public.team_members x
+     where x.active and not coalesce(x.system, false) and x.removed_at is null and x.name = c.owner
+     limit 1;
+  end if;
+  select exists (select 1 from public.client_services s where s.quotation_id = q.id and s.archived_at is null) into v_offer;
+  return jsonb_build_object(
+    'ref', q.ref, 'first_ref', w.ref, 'revised', q.id <> w.id,
+    'brand', coalesce(w.contact->>'brand', w.brand), 'version', q.version,
+    'issued_at', q.issued_at, 'valid_until', q.valid_until, 'lines', q.lines, 'totals', q.totals,
+    'selection', w.selection, 'attention', w.contact->>'name',
+    'status', case when v_offer then 'offer' else q.status end,
+    'proceed_at', w.proceed_at, 'proceed_due', w.proceed_due,
+    'rep', case when m.id is null then null else jsonb_build_object('name', m.name, 'title', nullif(btrim(coalesce(m.designation, '')), ''),
+             'whatsapp', case when coalesce(m.card_mobile, true) then nullif(public.wa_number(m.mobile), '') end) end,
+    'market', case when c.market = 'SG' then 'SG' else 'MY' end,
+    'today', (now() at time zone 'Asia/Kuala_Lumpur')::date);
+end $$;
+revoke all on function public.quote_website_read(text) from public;
+grant execute on function public.quote_website_read(text) to anon, authenticated;
+
+-- What the prospect answered, in the team's words.
+create or replace function public.quote_proceed_words(p_start text, p_decider text)
+returns text
+language sql immutable set search_path = public as $$
+  select case p_start when 'month' then 'starts within a month' else 'starts in 1 to 3 months' end || ' · ' ||
+         case p_decider when 'yes' then 'decision maker' else 'others involved' end
+$$;
+revoke all on function public.quote_proceed_words(text, text) from public, anon, authenticated;
+
+create or replace function public.quote_proceed(p_key text, p_start text, p_decider text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w  public.quotations;
+  v_due timestamptz;
+  v_words text;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  select * into w from public.quotations x
+   where x.access_key = p_key and x.source = 'website' and x.removed_at is null for update;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if w.proceed_at is not null then
+    return jsonb_build_object('ok', true, 'again', true, 'at', w.proceed_at, 'due', w.proceed_due);
+  end if;
+  if w.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if coalesce(p_start, '') not in ('month', 'quarter') or coalesce(p_decider, '') not in ('yes', 'others') then
+    return jsonb_build_object('error', 'bad-answer');
+  end if;
+  if w.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  v_due := public.quote_reply_by(now());
+  v_words := public.quote_proceed_words(p_start, p_decider);
+  update public.quotations
+     set proceed_at = now(), proceed_due = v_due, proceed_start = p_start, proceed_decider = p_decider
+   where id = w.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Quotation website', 'client.quotation', w.brand,
+          w.ref || ' · Ready to proceed on the website' ||
+          coalesce(' by ' || nullif(btrim(w.contact->>'name'), ''), '') || ' · ' || v_words);
+  perform public.quote_tell(w.client_id, 'quote.proceed', 'Ready to proceed · ' || w.brand,
+    w.ref || coalesce(' · ' || nullif(btrim(w.contact->>'name'), ''), '') || ' · ' || v_words || ' · contact by ' ||
+      public.register_day((v_due at time zone 'Asia/Kuala_Lumpur')::date) || ', ' ||
+      lower(to_char(v_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam')),
+    w.id::text);
+  return jsonb_build_object('ok', true, 'at', now(), 'due', v_due);
+end $$;
+revoke all on function public.quote_proceed(text, text, text) from public;
+grant execute on function public.quote_proceed(text, text, text) to anon, authenticated;
+
+create or replace function public.quotation_replace(p_new uuid, p_old uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  n public.quotations;
+  o public.quotations;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into n from public.quotations where id = p_new for update;
+  select * into o from public.quotations where id = p_old;
+  if n.id is null or o.id is null or n.client_id <> o.client_id or n.id = o.id
+     or n.removed_at is not null or o.removed_at is not null
+     or not public.client_scope_ok('client', n.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if n.source <> 'console' or n.replaces is not null then return jsonb_build_object('error', 'bad-quotation'); end if;
+  update public.quotations set replaces = o.id where id = n.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', n.brand, n.ref || ' revises ' || o.ref);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quotation_replace(uuid, uuid) from public, anon;
+grant execute on function public.quotation_replace(uuid, uuid) to authenticated;
+
+create or replace function public.quote_proceed_remind()
+returns integer
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  r record;
+  v_n int := 0;
+begin
+  for r in
+    select q.id, q.ref, q.brand, q.client_id, q.proceed_due, q.proceed_start, q.proceed_decider
+      from public.quotations q
+      join public.clients c on c.id = q.client_id
+     where q.source = 'website' and q.proceed_at is not null and q.proceed_reminded_at is null
+       and q.removed_at is null and q.no_contact_at is null and q.status <> 'not_proceeding'
+       and nullif(btrim(coalesce(c.owner, '')), '') is null
+       and now() >= q.proceed_due - interval '6 hours'
+  loop
+    update public.quotations set proceed_reminded_at = now() where id = r.id;
+    insert into public.ops_notifications (team_member_id, kind, title, body, client_id, dedupe_key)
+    select m.id, 'quote.proceed', 'Ready to proceed, waiting · ' || r.brand,
+           r.ref || ' · ' || public.quote_proceed_words(r.proceed_start, r.proceed_decider) ||
+             ' · nobody has taken the lead · contact by ' ||
+             public.register_day((r.proceed_due at time zone 'Asia/Kuala_Lumpur')::date) || ', ' ||
+             lower(to_char(r.proceed_due at time zone 'Asia/Kuala_Lumpur', 'FMHH12:MIam')),
+           r.client_id, 'quote.proceed:' || r.id || ':remind:' || m.id
+      from public.team_members m
+     where m.active
+       and (m.is_admin or m.role = 'admin'
+            or public.level_rank(coalesce(m.access ->> 'clients.leads', m.access ->> 'clients')) >= 3)
+    on conflict (dedupe_key) do nothing;
+    v_n := v_n + 1;
+  end loop;
+  return v_n;
+end $$;
+revoke all on function public.quote_proceed_remind() from public, anon, authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: no reminders to contact a prospect go out until it is.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'quote-proceed-remind';
+  perform cron.schedule('quote-proceed-remind', '*/15 * * * *', 'select public.quote_proceed_remind()');
+end $$;
+
+create or replace function public.quote_website_create(p_sel jsonb, p_contact jsonb, p_idem text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_name  text := btrim(regexp_replace(coalesce(p_contact->>'name', ''), '\s+', ' ', 'g'));
+  v_email text := lower(btrim(coalesce(p_contact->>'email', '')));
+  v_wa    text := public.quote_website_number(p_contact->>'whatsapp');
+  v_brand text := btrim(regexp_replace(coalesce(p_contact->>'brand', ''), '\s+', ' ', 'g'));
+  v_ind   text := nullif(btrim(coalesce(p_contact->>'industry', '')), '');
+  v_lang  text := case when p_contact->>'lang' = 'zh' then 'zh' else 'en' end;
+  v_sal   text := nullif(btrim(coalesce(p_contact->>'salutation', '')), '');
+  v_idem  text := nullif(btrim(coalesce(p_idem, '')), '');
+  v_sel   jsonb;
+  v_q     public.quotations;
+  v_c     public.clients;
+  v_base  text;
+  v_slug  text;
+  v_n     int := 1;
+  v_r     jsonb;
+  v_new   boolean := false;
+begin
+  if v_idem is null or length(v_idem) > 80 then return jsonb_build_object('error', 'bad-request'); end if;
+  select * into v_q from public.quotations q
+   where q.idem = v_idem and q.source = 'website' and lower(q.contact->>'email') = v_email;
+  if v_q.id is not null then
+    return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key, 'again', true);
+  end if;
+  if length(v_name) < 2 or length(v_name) > 80 then return jsonb_build_object('error', 'bad-name'); end if;
+  if v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_email) > 160 then return jsonb_build_object('error', 'bad-email'); end if;
+  if v_wa !~ '^(60(1[0-9]{8,9}|7[0-9]{7,8})|65[0-9]{8})$' then return jsonb_build_object('error', 'bad-whatsapp'); end if;
+  if length(v_brand) < 2 or length(v_brand) > 120 then return jsonb_build_object('error', 'bad-brand'); end if;
+  if v_ind is not null and v_ind not in ('Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
+                                         'Automotive', 'Tech', 'Education', 'Other') then
+    return jsonb_build_object('error', 'bad-industry');
+  end if;
+  if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
+      'Dato'' Sri', 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik') then
+    return jsonb_build_object('error', 'bad-salutation');
+  end if;
+  if coalesce((p_contact->>'consent')::boolean, false) is not true then return jsonb_build_object('error', 'consent'); end if;
+  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-selection'); end if;
+  if jsonb_typeof(p_sel->'once') = 'array' and jsonb_array_length(p_sel->'once') > 20
+     or jsonb_typeof(p_sel->'extra') = 'object' and (select count(*) from jsonb_object_keys(p_sel->'extra')) > 10 then
+    return jsonb_build_object('error', 'bad-selection');
+  end if;
+
+  -- What the price reads, and nothing else.
+  v_sel := jsonb_strip_nulls(jsonb_build_object(
+    'mix', case when jsonb_typeof(p_sel->'mix') = 'string' and length(p_sel->>'mix') <= 20 then p_sel->'mix' end,
+    'plan', case when jsonb_typeof(p_sel->'plan') = 'string' and length(p_sel->>'plan') <= 80 then p_sel->'plan' end,
+    'term', case when jsonb_typeof(p_sel->'term') in ('number', 'string') and length(p_sel->>'term') <= 4 then p_sel->'term' end,
+    'budget', case when jsonb_typeof(p_sel->'budget') in ('number', 'string') and length(p_sel->>'budget') <= 12 then p_sel->'budget' end,
+    'translate', case when jsonb_typeof(p_sel->'translate') = 'boolean' then p_sel->'translate' end,
+    'platforms', (select jsonb_agg(distinct v) from jsonb_array_elements_text(
+                    case when jsonb_typeof(p_sel->'platforms') = 'array' then p_sel->'platforms' else '[]'::jsonb end) v
+                   where v in ('meta', 'tiktok', 'rednote', 'linkedin')),
+    'langs', (select jsonb_agg(distinct l) from jsonb_array_elements_text(
+                case when jsonb_typeof(p_sel->'langs') = 'array' then p_sel->'langs' else '[]'::jsonb end) l
+               where l in ('en', 'zh', 'ms')),
+    'extra', case when jsonb_typeof(p_sel->'extra') = 'object' then
+               (select jsonb_object_agg(left(k, 80), p_sel->'extra'->k) from jsonb_object_keys(p_sel->'extra') k) end,
+    'once', case when jsonb_typeof(p_sel->'once') = 'array' then
+              (select jsonb_agg(jsonb_strip_nulls(jsonb_build_object('slug', left(o->>'slug', 80), 'qty', o->'qty')))
+                 from jsonb_array_elements(p_sel->'once') o where jsonb_typeof(o) = 'object') end));
+
+  -- Two posts at once are counted one after the other.
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || least(v_email, v_wa), 0));
+  perform pg_advisory_xact_lock(hashtextextended('quote-web:' || greatest(v_email, v_wa), 0));
+  if (select count(*) from public.quotations q
+       where q.source = 'website' and q.issued_at > now() - interval '1 day'
+         and (lower(q.contact->>'email') = v_email or q.contact->>'whatsapp' = '+' || v_wa)) >= 5 then
+    return jsonb_build_object('error', 'limit');
+  end if;
+
+  -- A lead this person already is (the same contact holds both the email
+  -- and the number), else a new one.
+  select c.* into v_c from public.clients c
+    join public.client_contacts k on k.client_id = c.id
+   where c.stage in ('lead', 'contacted', 'proposal')
+     and k.archived_at is null
+     and lower(k.email) = v_email
+     and public.quote_website_number(k.whatsapp) = v_wa
+   order by c.created_at desc limit 1;
+  if v_c.id is null then
+    v_base := btrim(regexp_replace(lower(v_brand), '[^a-z0-9]+', '-', 'g'), '-');
+    if v_base = '' then v_base := 'client'; end if;
+    v_slug := v_base;
+    while exists (select 1 from public.clients c where lower(c.slug) = v_slug) loop
+      v_n := v_n + 1; v_slug := v_base || '-' || v_n;
+    end loop;
+    insert into public.clients (name, access_token, stage, industry, source, market, slug, deal_note)
+    values (v_brand, public.new_link_key(), 'lead', v_ind, 'website',
+            case when v_wa like '65%' then 'SG' else 'MY' end, v_slug,
+            'Quotation requested on the website.')
+    returning * into v_c;
+    insert into public.client_contacts (client_id, salutation, name, email, whatsapp, lang, is_primary)
+    values (v_c.id, v_sal, v_name, v_email, '+' || v_wa, v_lang, true);
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Website', 'client.added', v_c.name, 'Website · ' || coalesce(v_sal || ' ', '') || v_name);
+    v_new := true;
+  end if;
+
+  v_r := public.quotation_make(v_c.id, v_sel, v_idem, 'website', null,
+    jsonb_strip_nulls(jsonb_build_object('salutation', v_sal, 'name', v_name, 'email', v_email,
+      'whatsapp', '+' || v_wa, 'lang', v_lang, 'brand', v_brand)));
+  if v_r ? 'error' then
+    if v_new then raise exception using message = 'quote:' || (v_r->>'error'); end if;
+    return v_r;
+  end if;
+  select * into v_q from public.quotations where id = (v_r->>'id')::uuid;
+  perform public.quote_tell(v_c.id, 'quote.website', 'Quotation made on the website · ' || v_c.name,
+    v_q.ref || ' · ' || coalesce('Monthly incl. SST RM ' ||
+      to_char((v_q.totals->'month'->>'incl')::numeric, 'FM999,999,990.00'), 'one-off') || ' · ' || v_name,
+    v_q.id::text);
+  -- The prospect is told on WhatsApp that the quotation is ready, its link
+  -- button the quotation's key; a queueing fault never fails the quotation.
+  begin
+    perform public.wa_enqueue('quote_ready', v_wa, v_name,
+      jsonb_build_array(public.contact_greeting(v_sal, v_name), v_brand, v_q.ref),
+      'quotation', v_q.id, v_c.id, v_q.access_key);
+  exception when others then null;
+  end;
+  return jsonb_build_object('ok', true, 'ref', v_q.ref, 'key', v_q.access_key);
+exception when raise_exception then
+  if sqlerrm like 'quote:%' then return jsonb_build_object('error', substr(sqlerrm, 7)); end if;
+  raise;
+end $$;
+revoke all on function public.quote_website_create(jsonb, jsonb, text) from public, anon, authenticated;
+grant execute on function public.quote_website_create(jsonb, jsonb, text) to service_role;
+
+create or replace function public.quotation_set(p_id uuid, p_what text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_q public.quotations;
+  v_word text;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_q from public.quotations where id = p_id;
+  if v_q.id is null or not public.client_scope_ok('client', v_q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if p_what = 'not_proceeding' then
+    update public.quotations set status = 'not_proceeding' where id = p_id; v_word := ' marked Not proceeding';
+  elsif p_what = 'proceeding' then
+    update public.quotations set status = case when requested_at is not null then 'requested' else 'sent' end
+     where id = p_id;
+    v_word := ' restored';
+  elsif p_what in ('no_contact', 'contact') then
+    if v_q.source <> 'website' then return jsonb_build_object('error', 'bad-what'); end if;
+    update public.quotations
+       set no_contact_at = case when p_what = 'no_contact' then coalesce(no_contact_at, now()) end,
+           no_contact_by = case when p_what = 'no_contact' then coalesce(no_contact_by, me.name) end
+     where id = p_id;
+    v_word := case when p_what = 'no_contact' then ' · Do not contact: off → on' else ' · Do not contact: on → off' end;
+  elsif p_what = 'remove' then
+    update public.quotations set removed_at = now(), removed_by = me.name where id = p_id; v_word := ' removed';
+  elsif p_what = 'restore' then
+    update public.quotations set removed_at = null, removed_by = null where id = p_id; v_word := ' restored';
+  else
+    return jsonb_build_object('error', 'bad-what');
+  end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', v_q.brand, v_q.ref || v_word);
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- END OF QUOTATION WEBSITE FOLLOW-UP -----------------------------------------
+
+-- ===========================================================================
+-- QUOTATION WEBSITE FOLLOW-UP, SQL EDITOR PART — the `quote_ready`
+-- WhatsApp purpose, the reply setting saved, and the website's billing step
+-- taken away (2026-10-26)
+-- ===========================================================================
+-- Run in the SQL Editor after 2026-10-26-quotation-website-follow-up.sql and
+-- after the pages that no longer ask billing are live (it replaces a check
+-- and drops two functions and a column, and restates app_settings_set,
+-- which holds a delete; the Supabase connector stops on all of them). Safe
+-- to run twice.
+--
+-- WHAT IT CHANGES
+--   * `wa_templates.purpose` takes `quote_ready`, its row seeded switched
+--     off: the message a prospect is sent when the website makes their
+--     quotation (WhatsApp, Templates).
+--   * `app_settings_set` takes `quote_reply_days` (Contact within, 1 to 10
+--     working days; Settings, Money: Tax and terms).
+--   * `quote_website_request` and `quotation_billing` are dropped, and
+--     `quotations.billing` with them: the Letter of Offer is the sales
+--     team's to send, the billing details coming through the client's
+--     Details form. No quotation held billing when it was dropped.
+--
+-- ROLLBACK: restate app_settings_set from schema.sql's section before this
+-- one; put the check back without `quote_ready` (delete its row first);
+-- the dropped functions and column are restated from schema.sql's
+-- QUOTATION WEBSITE and QUOTATION WEBSITE GUARDS sections.
+-- ===========================================================================
+
+alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
+alter table public.wa_templates add constraint wa_templates_purpose_check
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready'));
+insert into public.wa_templates (purpose) values ('quote_ready') on conflict (purpose) do nothing;
+
+drop function if exists public.quote_website_request(text, jsonb);
+drop function if exists public.quotation_billing(uuid);
+alter table public.quotations drop column if exists billing;
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k = 'meta_checks' and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics churn alert, a quarter'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k = 'quote_reply_days' then ' working days'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k = 'meta_checks' then case when v_was = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k = 'meta_checks' then case when v_v = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k = 'analytics_from' then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k = 'meta_checks' then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k = 'meta_checks' then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF QUOTATION WEBSITE FOLLOW-UP, SQL EDITOR PART ------------------------
 
 select public.functions_tidy();

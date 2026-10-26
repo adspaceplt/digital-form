@@ -29,7 +29,7 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
 
-  /* The five purposes a template is set for, and what each message is. */
+  /* The purposes a template is set for, and what each message is. */
   var PURPOSE = {
     report: ['Report to client', 'A published report\'s PDF as the header document. Variables: the greeting (salutation and name), the client or brand, the report and its period.'],
     feedback: ['Feedback request', 'Sent from the client\'s record. Variables: the greeting (salutation and name), the client.'],
@@ -37,7 +37,8 @@
     creator: ['Creator updates', 'A booking confirmed. Variables: the creator\'s first name, the campaign. Its link button opens the creator\'s own page by their code.'],
     approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.'],
     quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
-    offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.']
+    offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.'],
+    quote_ready: ['Quotation ready', 'Sent by the portal when the quotation website makes a quotation, to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
   };
   /* A purpose whose message carries a record's PDF as its Document header. */
   var DOC = { report: 1, quotation: 1, offer: 1 };
@@ -49,7 +50,7 @@
      2026-10-10: not a list of the purposes allowed). */
   var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
-    quotation: 'Quotation', offer: 'Letter of Offer', message: 'Message' };
+    quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
                 ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['unknown', 'Not confirmed', 'is-warn'],
