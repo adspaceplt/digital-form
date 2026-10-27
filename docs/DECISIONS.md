@@ -6666,3 +6666,23 @@ sentence.
   everywhere, with a few stiff or casual lines (呈交, 等您确认, 谢谢) put
   right. The WhatsApp templates are Meta's to approve: their new wording
   waits on the user before it is submitted.
+
+### 2026-10-27 — One email layout, the message as typed
+- The user: the sign-in emails keep only what Supabase sends (Magic Link,
+  Invite user; the other four are never sent), and three design faults are
+  fixed in the one layout both use: the confidentiality line's grey
+  (`#8e8a84`, 3.15:1 on the page) is the mute ink (`#6b6760`, 5.16:1), the
+  sign-in code is in the token face, and the words are 16px as a client
+  page's are. A supplier email is that layout with one content box: the
+  subject as its heading and the message the colleague wrote, word for
+  word, with no facts table of its own (the message already states the
+  Supplier ID and terms), so what is typed is what goes.
+- The user, the same day: "the ratio and spacings look weird". Measured:
+  the company's lines under the card started 32px left of the card's words
+  (two left edges), the wordmark stood 28px above the heading while the
+  heading stood 12px above the greeting (the greeting read as part of it),
+  the gaps (28, 36, 40, 18, 20) were off the 4 to 32 scale, the code was
+  centred in a left-aligned card and the heading was the phone's 21px at a
+  desk. Now: card 32 (24 on a phone), wordmark 24 above the heading, the
+  heading 16 above the words at 24px (21 on a phone), the code left, the
+  lines under the card on the card's own left edge (`mailfn` holds it).

@@ -22,9 +22,11 @@
  *                          complained reach `supplier_email_status` with the
  *                          service role, which alone may call it.
  *
- * The email is the portal's own layout (the sign-in emails' white card on
- * the light grey page), the colleague's words in it as plain paragraphs,
- * escaped. From MAIL_FROM (unset: ADspace <noreply-supplier@sc.adspace.me>),
+ * The email is the portal's one layout (the sign-in emails' white card on
+ * the light grey page, docs/SIGN-IN-EMAILS.md): the subject as its heading,
+ * then the message the colleague wrote in the Send email sheet, word for
+ * word as plain paragraphs, escaped; nothing else is added but a document's
+ * verify line (the user, 2026-10-27: one content box, sent as it was typed). From MAIL_FROM (unset: ADspace <noreply-supplier@sc.adspace.me>),
  * replies to MAIL_REPLY_TO (unset: ap@adspacestudios.com).
  *
  * Secrets: RESEND_API_KEY, RESEND_WEBHOOK_SECRET (the webhook's signing
@@ -61,31 +63,27 @@ const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial
 function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }
-export function layout(o: { heading: string; body: string; facts: [string, string][]; foot?: string; preheader?: string }): string {
+export function layout(o: { heading: string; body: string; foot?: string; preheader?: string }): string {
   const ps = paras(o.body).map((p) =>
-    '<p style="margin:0 0 16px;font-size:15px;line-height:1.55;color:#524e47;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
-  const facts = o.facts.filter((f) => f[1]).map((f, i) =>
-    '<tr><td style="padding:10px 14px;font-size:14px;color:#6b6760;width:40%;' + (i ? 'border-top:1px solid #ececec;' : '') + '">' + esc(f[0]) +
-    '</td><td style="padding:10px 14px;font-size:14px;color:#1b1a17;' + (i ? 'border-top:1px solid #ececec;' : '') + '">' + esc(f[1]) + '</td></tr>').join('');
+    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#524e47;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">' +
     '<meta name="x-apple-disable-message-reformatting"><title>' + esc(o.heading) + '</title>' +
-    '<style>@media (max-width:600px){.card{padding:28px 20px !important;}}</style></head>' +
+    '<style>@media (max-width:600px){.card{padding:24px !important;}.foot{padding:24px 24px 0 !important;}h1{font-size:21px !important;}}</style></head>' +
     '<body style="margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;">' +
     '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' + esc(o.preheader || o.heading) + '</div>' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
-    '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:36px 40px;font-family:' + FONT + ';color:#1b1a17;">' +
+    '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1b1a17;">' +
     '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="112" style="display:block;width:112px;height:auto;border:0;outline:none;">' +
-    '<h1 style="margin:28px 0 12px;font-size:21px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1b1a17;">' + esc(o.heading) + '</h1>' +
+    '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1b1a17;">' + esc(o.heading) + '</h1>' +
     ps +
-    (facts ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:10px;margin:4px 0 20px;">' + facts + '</table>' : '') +
-    (o.foot ? '<p style="margin:12px 0 0;padding-top:20px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#6b6760;">' + esc(o.foot) + '</p>' : '') +
+    (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#6b6760;">' + esc(o.foot) + '</p>' : '') +
     '</td></tr>' +
-    '<tr><td style="padding:20px 8px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#6b6760;">' +
+    '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#6b6760;">' +
     'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia<br>' +
     '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#6b6760;text-decoration:none;">adspacestudios.com</a>' +
-    '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#8e8a84;">This email and any attachments are confidential and may be privileged. ' +
+    '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#6b6760;">This email and any attachments are confidential and may be privileged. ' +
     'If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>' +
     '</td></tr></table></td></tr></table></body></html>';
 }
@@ -168,12 +166,14 @@ Deno.serve(async (req) => {
   const b = (begun.data || {}) as Record<string, any>;
   if (b.error) return json(b, 200, origin);
 
-  const v = (b.values || {}) as Record<string, string>;
   const doc = (b.document || null) as Record<string, string> | null;
+  /* The heading is the subject as sent, less its closing " · ADspace" (the
+     wordmark above it says so). */
+  const heading = String(b.subject || '').replace(/\s*[·|-]\s*ADspace\s*$/i, '').trim() ||
+    (purpose === 'approved' ? 'Supplier registration approved' : String((doc && doc.kind) || 'Document'));
   const html = layout({
-    heading: purpose === 'approved' ? 'Supplier registration approved' : String((doc && doc.kind) || 'Document'),
+    heading,
     body: String(b.body || ''),
-    facts: [['Supplier ID', v['supplier id'] || ''], ['Payment term', v['payment term'] || ''], ['Currency', v['currency'] || '']],
     foot: doc ? 'Verify this document at digital.adspace.me/verify.' : '',
     preheader: String(b.subject || '')
   });
