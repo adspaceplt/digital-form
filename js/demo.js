@@ -15,11 +15,18 @@
      that changes something, an edge function, an upload) with one line,
      Demo: changes are not saved.;
    - draws a bar under the head, Demo · Sample data, with Exit demo, which
-     signing out does too. */
+     signing out does too.
+   The client pages (the client portal, Content Review, the creator
+   selection, the creator's page, Video Scripts, a namecard) load it the same
+   way, so a link the demo console hands out opens on the same sample data:
+   the client portal signed in as a sample client's main contact, the rest on
+   their link as a client or a creator meets it. Signing out of the client
+   portal returns to the console, still in the demo. */
 (function () {
   'use strict';
   var KEY = 'adspace-demo';
   var on = window.ADSPACE_DEMO;
+  var CONSOLE = /^\/admin\//.test(location.pathname);
   function leave() {
     try { localStorage.removeItem(KEY); localStorage.removeItem('adspace-logo-ratio'); } catch (e) {}
   }
@@ -116,7 +123,12 @@
       };
     }
     var out = c.auth && c.auth.signOut;
-    if (out) c.auth.signOut = function () { leave(); return out.apply(c.auth, arguments).then(function (r) { location.replace('/admin/'); return r; }); };
+    if (out) c.auth.signOut = function () {
+      if (CONSOLE) leave();
+      /* A client page reloads itself once signed out, which would sign the
+         sample contact in again: back to the console instead, nothing after. */
+      return out.apply(c.auth, arguments).then(function (r) { location.replace('/admin/'); return CONSOLE ? r : new Promise(function () {}); });
+    };
     return c;
   }
   var lib = window.supabase;
@@ -126,10 +138,12 @@
   /* The engine's own client for its test hooks writes through the same door. */
   if (window.__db) guard(window.__db);
   /* Every guide already met: the demo opens on the screens, not on tours. */
-  if (window.__signIn) window.__signIn('alex@example.com');
+  if (window.__signIn && CONSOLE) window.__signIn('alex@example.com');
+  if (window.__signIn && /^\/client\//.test(location.pathname)) window.__signIn('client@example.com');
 
   function words() {
-    document.title = NAME + ' · Demo';
+    if (CONSOLE) document.title = NAME + ' · Demo';
+    else if (/ADspace/.test(document.title)) document.title = document.title.replace(/ADspace/g, NAME);
     var foot = document.querySelector('.portalfoot-copy');
     if (foot) foot.textContent = '© ' + new Date().getFullYear() + ' ' + NAME + '. Sample data for demonstration.';
     var link = document.querySelector('.portalfoot-link');
@@ -139,15 +153,25 @@
   function bar() {
     if (document.getElementById('demoBar')) return;
     var b = document.createElement('div');
-    b.className = 'upgradebar demobar';
     b.id = 'demoBar';
     b.setAttribute('role', 'status');
-    b.innerHTML = '<span class="upgradebar-text"><b>Demo</b> · Sample data. Changes are not saved.</span>' +
-      '<button class="btn btn-sm" type="button" id="demoExit">Exit demo</button>';
-    /* Where the upgrade line stands, above it. */
-    var up = document.getElementById('upgradeBar');
-    if (!up) return;
-    up.parentNode.insertBefore(b, up);
+    var exit = '<button class="btn btn-sm" type="button" id="demoExit">Exit demo</button>';
+    var line = '<b>Demo</b> · Sample data. Changes are not saved.';
+    if (CONSOLE) {
+      /* Where the upgrade line stands, above it. */
+      var up = document.getElementById('upgradeBar');
+      if (!up) return;
+      b.className = 'upgradebar demobar';
+      b.innerHTML = '<span class="upgradebar-text">' + line + '</span>' + exit;
+      up.parentNode.insertBefore(b, up);
+    } else {
+      /* A client page: edge to edge under its bar, as an announcement. */
+      var top = document.querySelector('.topbar');
+      if (!top) return;
+      b.className = 'annbar demobar';
+      b.innerHTML = '<p class="annbar-text">' + line + '</p><span class="annbar-acts">' + exit + '</span>';
+      top.parentNode.insertBefore(b, top.nextSibling);
+    }
     document.getElementById('demoExit').addEventListener('click', function () { window.ADspaceDemo.leave(); });
   }
   function ready() { words(); bar(); }

@@ -6803,3 +6803,12 @@ sentence.
   holds them (`position: relative`). `demo_set`'s first draft added a word
   to a list without its type, which the Postgres suite refused before it
   shipped.
+- Release 2, the same day: the client pages load the same seed and engine
+  while the demo stands, so Preview and Open from the demo console land on
+  sample data. The sample clients carry review and script keys, and the
+  first active client's main contact signs in to the client portal. A
+  client page reloads itself after Sign out, which signed the sample
+  contact in again; it now returns to the console. The bar's words took the
+  whole row at first (an announcement's line is a slide, `flex: 0 0 100%`)
+  and pushed Exit demo off the screen; the demo's line now shares the row.
+  The namecard's wordmark reads the agency name from the config.

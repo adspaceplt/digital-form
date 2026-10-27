@@ -126,6 +126,8 @@
       c.billing_address = (10 + i) + ' Jalan Contoh ' + (i % 7 + 1) + ', 81100 Johor Bahru, Johor';
       c.finance_email = 'accounts@example.com';
     }
+    /* The links a client is sent: the review page and the video scripts. */
+    if (stage === 'active') { c.access_token = 'drv' + String(10000 + i).slice(-5); c.script_key = 'dsk' + String(10000 + i).slice(-5); }
     if (stage === 'active' && (i === 0 || i === 4)) { c.vic_at = ago(40); c.vic_by = 'd0'; c.vic_note = 'Group account. Approvals go to the director.'; }
     if (stage === 'active') c.brief = { audience: 'Young families and working adults in Johor Bahru.', pillars: 'Product, behind the scenes, customer stories.', tone: 'Warm, clear and friendly.' };
     DB.clients.push(c);
@@ -150,6 +152,8 @@
     }
   });
   var ACTIVE = DB.clients.filter(function (c) { return c.stage === 'active'; });
+  /* The client portal's demo signs in as the first active client's main contact. */
+  DB.client_contacts.forEach(function (k) { if (k.client_id === ACTIVE[0].id && k.is_primary) { k.email = 'client@example.com'; k.portal_access = true; } });
 
   /* My Work: this month and last for every active client, four posts a
      month and its report, spread across the team and the workflow. */
