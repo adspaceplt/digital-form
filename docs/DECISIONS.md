@@ -6876,3 +6876,12 @@ sentence.
 - The shared wait words hold their figure and unit on one line: the 1280
   shot of the lock line broke "15 / minutes".
 
+
+### 2026-10-27 — The short link host's cover takes the portal's bar
+- The user, from a phone on hi.adspace.me: the Link not recognised page drew
+  the mark small above the title, unlike the portal's own 404, and named an
+  account manager to people who are not clients. The cover now draws the
+  mark in a bar at the top left, the portal's bar height and its rule under
+  it, the title and line on the optical centre of what is left, no foot;
+  every outcome's line reads Please contact ADspace. The client pages'
+  covers keep their account manager line.
