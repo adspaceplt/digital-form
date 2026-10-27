@@ -7439,6 +7439,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!pushOk(args.p_endpoint) || String(args.p_p256dh || '').length < 80 || String(args.p_p256dh || '').length > 100 ||
             String(args.p_auth || '').length < 16 || String(args.p_auth || '').length > 32) pushOut = { error: 'bad-subscription' };
         else if (['team', 'client', 'creator'].indexOf(aud) < 0) pushOut = { error: 'bad-audience' };
+        else if (aud === 'creator' && (pushOut = creatorTry(args.p_ref)).locked) pushOut = { error: 'locked', minutes: pushOut.locked };
         else {
           var tg = pushTarget(aud, args.p_ref);
           if (!tg) pushOut = { error: aud === 'team' ? 'not-team' : 'not-found' };
@@ -7799,7 +7800,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var sl2 = (DB.campaigns || []).filter(function (k) { return k.access_token === slk && !k.passcode && k.state !== 'draft'; })[0];
         if (sl2 && slc(sl2.client_id) && slc(sl2.client_id).stage !== 'past') { slo.brand = slc(sl2.client_id).name; if (String(sl2.title || '').trim()) slo.title = String(sl2.title).trim(); }
       } else if (args.p_kind === 'creator' && /^[A-Za-z0-9]{8}$/.test(slk)) {
-        var sl3 = (DB.creators || []).filter(function (c) { return c.access_code === slk.toUpperCase() && c.active !== false; })[0];
+        var slT = creatorTry(slk);
+        var sl3 = slT.id ? (DB.creators || []).filter(function (c) { return c.id === slT.id && c.active !== false; })[0] : null;
         var OPEN = ['confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted'];
         var sl4 = sl3 ? (DB.campaign_options || []).filter(function (o) { return o.creator_id === sl3.id && OPEN.indexOf(o.state) > -1; }) : [];
         var sl5 = sl4.length === 1 ? (DB.campaigns || []).filter(function (k) { return k.id === sl4[0].campaign_id; })[0] : null;
@@ -7969,6 +7971,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return c.access_code && c.access_code === String(code || '').toUpperCase();
       })[0];
     }
+
+    function creatorTry(code) {
+      var c = String(code || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+      if (!/^[A-Z0-9]{8}$/.test(c)) return {};
+      var KEY = 'stub-creator-tries', now = Date.now(), t;
+      try { t = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) { t = null; }
+      t = t || { fails: 0, last: 0, until: 0, strikes: 0, struck: 0 };
+      var left = function () { return Math.max(1, Math.ceil((t.until - now) / 60000)); };
+      if (t.until > now) return { locked: left() };
+      var k = DB.creators.filter(function (x) { return x.access_code === c; })[0];
+      if (k) return { id: k.id };
+      t.fails = t.until || now - t.last > 900000 ? 1 : t.fails + 1;
+      t.last = now;
+      if (t.fails >= 5) {
+        t.strikes = t.struck > now - 86400000 ? t.strikes + 1 : 1;
+        t.until = now + [15, 60, 1440][Math.min(t.strikes, 3) - 1] * 60000;
+        t.struck = t.until;
+      } else t.until = 0;
+      try { sessionStorage.setItem(KEY, JSON.stringify(t)); } catch (e) {}
+      return t.until ? { locked: left() } : {};
+    }
     if (name === 'reset_creator_code') {
       var cc = DB.creators.filter(function (c) { return c.id === args.p_creator; })[0];
       if (!cc) return Promise.resolve({ data: { error: 'not-found' }, error: null });
@@ -7979,7 +8002,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { code: out }, error: null });
     }
     if (name === 'get_creator') {
-      var who = creatorBy(args.p_code);
+      var gTry = creatorTry(args.p_code);
+      if (gTry.locked) return Promise.resolve({ data: { error: 'locked', minutes: gTry.locked }, error: null });
+      var who = gTry.id ? DB.creators.filter(function (x) { return x.id === gTry.id; })[0] : null;
       if (!who) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       if (who.active === false) return Promise.resolve({ data: { error: 'inactive' }, error: null });
       var books = DB.campaign_options.filter(function (o) {
@@ -8020,7 +8045,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'creator_set_profiles') {
-      var cS = creatorBy(args.p_code);
+      var sTry = creatorTry(args.p_code);
+      if (sTry.locked) return Promise.resolve({ data: { error: 'locked', minutes: sTry.locked }, error: null });
+      var cS = sTry.id ? DB.creators.filter(function (x) { return x.id === sTry.id; })[0] : null;
       if (!cS || cS.active === false) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       return Promise.resolve({ data: profilesReplace(cS, args.p_profiles, cS.name, 'creator', 'creator.links_self'), error: null });
     }

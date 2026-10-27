@@ -6859,3 +6859,20 @@ sentence.
   character, as the code is printed (`7K2M-9PQR`), and takes it back with a
   deletion; the code sent never holds it.
 
+### 2026-10-27 — A creator's code checks itself, and wrong codes are counted
+- The user asked whether the creator's page should check the code once
+  eight characters are in, then: "What if someone keeps trying on one
+  browser?". Every other code a page takes was counted per caller (a link's
+  passcode, /verify/, the demo PIN); a creator's code was not, so
+  `get_creator` answered any number of guesses (20 creators among 852
+  billion codes: unlikely to be found, but unlimited and metered).
+- Built: the code checks itself at its eighth character, and a wrong one
+  is counted against the caller's address, five in 15 minutes locking it
+  out (15 minutes, an hour, a day), the right code included. A right code
+  resets nothing, since a creator holds one and could otherwise reset a
+  guesser's count; no count across addresses, since one would let a guesser
+  lock every creator out. Every function that answers a code (the page, its
+  profile save, notifications, a link's preview) asks the same count.
+- The shared wait words hold their figure and unit on one line: the 1280
+  shot of the lock line broke "15 / minutes".
+

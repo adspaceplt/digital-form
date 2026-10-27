@@ -3194,7 +3194,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     alphabet), carried in the link and kept in `localStorage`. Reset in the
     record. Typed, it reads as printed, `7K2M-9PQR`: the dash comes by
     itself after the fourth character and goes with a deletion (`codeShape`;
-    the user, 2026-10-27), and is never sent.
+    the user, 2026-10-27), and is never sent. Its eighth character, typed or
+    pasted, checks it with no press (`autoCheck`; the same code is not sent
+    again until it changes, nothing while an input method composes; Open
+    stays). A wrong code is counted against the caller's address
+    (`creator_code_try`, `link_tries` kind `creator`,
+    `2026-10-27-creator-codes-counted.sql`): five within 15 minutes lock it
+    out, the right code included, for 15 minutes, then an hour, then a day;
+    a right code resets nothing; no count across addresses. `get_creator`,
+    `creator_set_profiles`, `push_subscribe` and the creator branch of
+    `share_link_preview` all ask it; the page says `locked` as a link's lock
+    is said (`W.lockedLine`).
   - `get_creator` sends the creator's own booking only.
     - Never the client's stage, commercial state, amount, other creators or
       the team's notes on the row.
