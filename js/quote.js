@@ -619,7 +619,10 @@
      Welcome with the client portal's sign-in (never a sign-in itself). The
      colleague who took the lead stands under each step. */
   function sideHtml(q) {
-    var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>' : '';
+    /* With no colleague named yet, every step still offers a way to reach
+       ADspace: the office's Chat on WhatsApp (2026-10-27, QTE-2). */
+    var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>'
+      : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     if (st === 'expired' || st === 'closed') {
       return '<h2>' + esc(st === 'closed' ? w.closedT : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +

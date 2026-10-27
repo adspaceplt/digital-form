@@ -1313,8 +1313,11 @@
     if (parts.indexOf('billing') > -1) loadDetForm();
     /* The checklists are read on every visit and on a record opened on
        them (2026-10-15). */
+    /* An address naming the other checklist opens it, even on a record
+       already showing one (2026-10-27, OVW-12). */
+    var ckWant = new URLSearchParams(location.search).get('list');
     if (parts.indexOf('checklists') > -1 && window.ADspaceChecklists && state.client &&
-        (visit || ckFor !== state.client.id)) {
+        (visit || ckFor !== state.client.id || (ckWant && ckWant !== window.ADspaceChecklists.kind(state.client.id)))) {
       ckFor = state.client.id;
       window.ADspaceChecklists.mount($('crmChecklists'), { db: db, client: state.client, msg: msg, undo: undoBar,
         brief: function (filled) { if (filled.length) { ba.id = null; briefAgain(state.client); } } });
@@ -3456,6 +3459,29 @@
     if (!$('crmBillInRow').hidden) patch.bill_sgd = $('crmBillIn').value === 'SG';
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
+    /* A Save that changes nothing writes and files nothing; while Active or
+       a Letter of Offer waits on billing still missing, the sheet stays
+       open on the first missing field and the move stays asked for
+       (2026-10-27, CLI-13). */
+    var cid = state.client.id;
+    var gate = state.toActive === cid ? 'Active' : state.toLetter && state.toLetter.id === cid ? 'a Letter of Offer' : '';
+    var held = function (still) {
+      msg('crmBillMsg', 'Billing details required before ' + gate + ': ' + still.join(', ') + '.', 'err');
+      var first = BILLING.filter(function (f) { return still.indexOf(f[2]) > -1; })[0];
+      if (first && $(first[0])) $(first[0]).focus();
+    };
+    var same = !state.detUse && Object.keys(patch).every(function (k) {
+      return String(patch[k] == null ? '' : patch[k]) === String(was[k] == null ? '' : was[k]);
+    });
+    if (same) {
+      var now = billingMissing(state.client);
+      if (gate && now.length) { held(now); return; }
+      if (!gate) {
+        if (window.ADspaceSheet) window.ADspaceSheet.clean();
+        shutSheet('crmBillSheet'); msg('crmBillMsg', '');
+        return;
+      }
+    }
     db.from('clients').update(patch).eq('id', state.client.id).select('id').then(function (r) {
       if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
@@ -3471,6 +3497,7 @@
       }
       log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
         .filter(Boolean).join(' · '));
+      if (gate && still.length) { paintBilling(state.client); held(still); return; }
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
       shutSheet('crmBillSheet');
       /* The details form's answers taken in by this Save (2026-10-14). */
@@ -5382,7 +5409,12 @@
             (tick === false && !r.on ? '' : '') + '>' +
           '<span class="lpickname"><b>' + esc(l.label) + '</b>' +
             '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
-          '<span class="lpickamt">' + esc(MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
+          /* A line of more than a month reads its month, as the letter's
+             total does, never its whole term beside a monthly foot
+             (2026-10-27, CLI-14); a one-off item its amount. */
+          '<span class="lpickamt">' + esc(Number(l.tenure || 1) > 1
+            ? MON.money2(MON.cents ? MON.cents(Number(l.qty || 0) * rateOf(l)) : Number(l.qty || 0) * rateOf(l), MON.curOf(c)) + ' / month'
+            : MON.money2(amountOf(l), MON.curOf(c))) + '</span>' +
         '</label>';
       }).join('') +
       (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
@@ -6414,23 +6446,30 @@
       label: 'Rate of ' + s.name,
       saveLabel: 'Save the rate',
       onClose: function () { tick.remove(); },
+      /* A rate refused stays open with what was typed and the reason under
+         it; a database refusal is said on its row, in sight (2026-10-27,
+         SVC-10). */
+      check: function (v) { return v === '' || (isFinite(Number(v)) && Number(v) >= 0) ? '' : 'Enter the rate as an amount in RM.'; },
       save: function (v) {
         var rate = v === '' ? null : Number(v);
-        if (rate !== null && !(isFinite(rate) && rate >= 0)) { msg('svcListMsg', 'Enter the rate as an amount in RM.', 'err'); return; }
         if (rate === (s.rate == null ? null : Number(s.rate))) return;
+        var onRow = function (text, kind) {
+          var at = document.querySelector('#svcList .svc-row[data-slug="' + (window.CSS && CSS.escape ? CSS.escape(s.slug) : s.slug) + '"] .svc-name');
+          if (!at) { msg('svcListMsg', text, kind); return; }
+          var said = document.createElement('small'); said.className = 'msg ' + kind + ' svc-said'; said.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+          said.textContent = text; at.appendChild(said);
+        };
         db.from('services').update({ rate: rate }).eq('slug', s.slug).select('slug').then(function (r) {
-          if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) { msg('svcListMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          if (r.error) { paintServicesPage(); onRow(r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { paintServicesPage(); onRow('Not saved. The database refused the request.', 'err'); return; }
           log('service.changed', s.name, changed({ rate: s.rate }, { rate: rate }, [['rate', 'Rate']]));
           /* Repainted from the row as written, never read again: nothing
              moves but the figure and its Changed tag. */
           s.rate = rate;
           paintServicesPage();
           /* Said on the row it changed, in sight (2026-10-20, SVC-2). */
-          var at = document.querySelector('#svcList .svc-row[data-slug="' + (window.CSS && CSS.escape ? CSS.escape(s.slug) : s.slug) + '"] .svc-name');
-          if (at) { var said = document.createElement('small'); said.className = 'msg ok svc-said'; said.setAttribute('role', 'status'); said.textContent = 'Saved.'; at.appendChild(said); }
-          else msg('svcListMsg', 'Saved.', 'ok');
-        }).catch(function () { msg('svcListMsg', 'Not saved. Please try again.', 'err'); });
+          onRow('Saved.', 'ok');
+        }).catch(function () { paintServicesPage(); onRow('Not saved. Please try again.', 'err'); });
       }
     });
   }
@@ -6599,6 +6638,9 @@
       /* Overview is the default, so it stays out of the address: a link to a
          client is the client, not the client on its first pane. */
       if (o.client && pane && pane !== 'overview') o.tab = pane;
+      /* The checklist open keeps its place through a refresh (OVW-12). */
+      var ck = window.ADspaceChecklists && state.client && window.ADspaceChecklists.kind(state.client.id);
+      if (o.tab && ck && (TABS[pane] || TABS[GROUP_OF[pane]] || []).indexOf('checklists') > -1) o.list = ck;
       return o;
     },
     byKey: clientByKey,

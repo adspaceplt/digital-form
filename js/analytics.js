@@ -53,10 +53,17 @@
     var M = window.ADspaceMoney, v = M && M.setting ? M.setting(k) : null;
     return v == null || isNaN(Number(v)) ? d : Number(v);
   }
-  /* Leads were first kept in the portal in this month: before it the team
-     typed in only the clients it won, never the leads that came to nothing.
-     A fact of the record, told to the AI analysis (2026-10-25). */
-  var LEADS_KEPT_FROM = '2026-09';
+  /* Leads are kept in the portal from the Business setting `analytics_from`
+     (Sept 2026): before it the team typed in only the clients it won, never
+     the leads that came to nothing (2026-10-25). One source for both, never
+     a month typed here (2026-10-27, ANL-1). */
+  function leadsFrom() {
+    var v = setting('analytics_from', 0);
+    return v >= 190001 ? String(Math.floor(v / 100)) + '-' + pad2(v % 100) : '';
+  }
+  /* A span before that month holds no lost leads, so leads and win rate
+     are never judged against it. */
+  function leadsComparable(pr) { var k = leadsFrom(); return !k || CK.day(pr.from).slice(0, 7) >= k; }
 
   // ---- Better or worse -------------------------------------------------------------
   /* A figure against the period before, `good` the way it should move ('up'
@@ -355,14 +362,20 @@
     var n = monthsIn(r), np = monthsIn(pr);
     var lead = f.newLeads.length / n, leadP = fp.newLeads.length / np;
     var wr = winRate(f), wrP = winRate(fp);
-    var ch = churnOf(f, n);
+    var ch = churnOf(f, n), cmp = leadsComparable(pr);
+    if (!cmp) {
+      var note = document.createElement('p');
+      note.className = 'anl-own anl-from';
+      note.textContent = 'Leads are counted from ' + monthLong(leadsFrom()) + '.';
+      box.appendChild(note);
+    }
     tiles(box, [
-      { key: 'leads', label: 'New leads a month', fig: one(lead), sub: changeWord(lead, leadP, true),
-        verdict: judge(f.newLeads.length, fp.newLeads.length, 'up', 2),
+      { key: 'leads', label: 'New leads a month', fig: one(lead), sub: cmp ? changeWord(lead, leadP, true) : '',
+        verdict: cmp ? judge(f.newLeads.length, fp.newLeads.length, 'up', 2) : null,
         spark: keys.map(function (k) { return per(k, 'newLeads'); }) },
       { key: 'win', label: 'Win rate', fig: wr ? pct(wr.rate) : '—',
-        verdict: wr && wrP && wr.decided >= 3 && wrP.decided >= 3 ? judge(wr.rate, wrP.rate, 'up') : null,
-        sub: wr ? wr.won + ' of ' + wr.decided + ' leads decided' + (wrP ? ' · ' + pct(wrP.rate) + ' before' : '') : 'No lead decided in the period' },
+        verdict: cmp && wr && wrP && wr.decided >= 3 && wrP.decided >= 3 ? judge(wr.rate, wrP.rate, 'up') : null,
+        sub: wr ? wr.won + ' of ' + wr.decided + ' leads decided' + (cmp && wrP ? ' · ' + pct(wrP.rate) + ' before' : '') : 'No lead decided in the period' },
       { key: 'toclient', label: 'Lead to client', fig: f.medianToWin == null ? '—' : daysWord(f.medianToWin),
         verdict: f.won.length >= 3 && fp.won.length >= 3 ? judge(f.medianToWin, fp.medianToWin, 'down') : null,
         sub: 'Median' + (fp.medianToWin == null ? '' : ' · ' + daysWord(fp.medianToWin) + ' before') },
@@ -371,7 +384,7 @@
 
     var g1 = row(box, true);
     trendCard(g1, h, keys, r);
-    insights(g1, clientChanges(f, fp, n).filter(function (x) { return x.verdict && x.verdict.tone === 'late'; }).concat(salesChanges(f, fp, h)));
+    insights(g1, clientChanges(f, fp, n).filter(function (x) { return x.verdict && x.verdict.tone === 'late'; }).concat(salesChanges(f, fp, h, cmp)));
 
     var g2 = row(box);
     season(g2, h);
@@ -464,10 +477,10 @@
      at most. Each finding knows the way it should move (`good`) and says
      Better, Worse or Steady beside its figure; one that is only a fact
      (the busiest month) says neither. */
-  function salesChanges(f, fp, h) {
+  function salesChanges(f, fp, h, cmp) {
     var out = [];
     var a = f.newLeads.length, b = fp.newLeads.length;
-    if (Math.max(a, b) >= 3 && b && Math.abs(a - b) / b >= .2) {
+    if (cmp !== false && Math.max(a, b) >= 3 && b && Math.abs(a - b) / b >= .2) {
       out.push({ w: Math.abs(a - b) / b, dir: a > b ? 'up' : 'down', verdict: judge(a, b, 'up', 2), title: 'New leads',
         sub: a + ' in the period, against ' + b + ' in ' + prevWord(period), value: (a > b ? '+' : '−') + Math.round(Math.abs(a - b) / b * 100) + '%' });
     }
@@ -476,6 +489,9 @@
     Object.keys(fp.bySource).forEach(function (k) { srcs[k] = 1; });
     Object.keys(srcs).forEach(function (k) {
       var x = (f.bySource[k] || []).length, y = (fp.bySource[k] || []).length;
+      /* An unrecorded source, or one holding every lead, only repeats New
+         leads (2026-10-27, ANL-2). */
+      if (cmp === false || !k || k === 'Not recorded' || (x === a && y === b)) return;
       if (Math.max(x, y) < 3 || Math.abs(x - y) < 2) return;
       var ch = y ? (x - y) / y : 1;
       if (Math.abs(ch) < .5) return;
@@ -484,7 +500,7 @@
         sub: x + ' in the period, against ' + y + ' in ' + prevWord(period), value: y ? (x > y ? '+' : '−') + Math.round(Math.abs(ch) * 100) + '%' : 'New' });
     });
     var wr = winRate(f), wp = winRate(fp);
-    if (wr && wp && wr.decided >= 3 && wp.decided >= 3 && Math.abs(wr.rate - wp.rate) >= .1) {
+    if (cmp !== false && wr && wp && wr.decided >= 3 && wp.decided >= 3 && Math.abs(wr.rate - wp.rate) >= .1) {
       out.push({ w: Math.abs(wr.rate - wp.rate) * 2, dir: wr.rate > wp.rate ? 'up' : 'down', verdict: judge(wr.rate, wp.rate, 'up'), title: 'Win rate',
         sub: wr.won + ' of ' + wr.decided + ' decided, against ' + wp.won + ' of ' + wp.decided, value: pct(wr.rate) });
     }
@@ -695,7 +711,7 @@
     var lo = function (a, k) { return Math.round(Math.min.apply(null, a.map(function (x) { return x[k]; }))); };
     var hi = function (a, k) { return Math.round(Math.max.apply(null, a.map(function (x) { return x[k]; }))); };
     return {
-      period: spanWord(r), compared_with: spanWord(pr), leads_complete_from: monthLong(LEADS_KEPT_FROM),
+      period: spanWord(r), compared_with: spanWord(pr), leads_complete_from: leadsFrom() ? monthLong(leadsFrom()) : null,
       counted_from: countsFrom(h) ? monthLong(countsFrom(h)) : null, full_months_held: fullKeys(h).length,
       thresholds: { change_pct: setting('analytics_change_pct', 10), churn_alert_pct_a_quarter: setting('analytics_churn_pct', 10) },
       sales: {

@@ -216,7 +216,7 @@
       if (d.error) throw new Error(d.error);
       state = 'done'; paint(); window.scrollTo(0, 0);
     }).catch(function () {
-      say('sfMsg', W.notSent);
+      say('sfMsg', W.notSentAdspace);
     }).then(function () { sending = false; if (btn && btn.isConnected) btn.disabled = false; });
   }
 

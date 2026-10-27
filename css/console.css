@@ -1982,6 +1982,9 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .rh-row > .rp-name { grid-area: name; }
 .is-narrow .rh-row > .rh-vno { grid-area: ver; text-align: right; }
 .is-narrow .rh-row > .rh-upd { grid-area: upd; text-align: right; }
+.rh-row > .rh-sent { display: none; }
+.is-narrow .rh-row > .rh-sent { display: block; grid-area: sent; text-align: right; }
+.is-narrow .rh-row .rh-sentin { display: none; }
 .is-narrow .rh-row > .rp-go { display: none; }
 .rh-row.is-picking > .rp-go { visibility: hidden; }
 .rh-pick { display: flex; align-items: center; }
@@ -2854,6 +2857,8 @@ button.aiu-row:first-child::before { content: none; }
 .health-talk-act { display: flex; align-items: center; gap: 4px; }
 .health-talk-act:empty { display: none; }
 .health-scale-word { display: block; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+.health-scale-ends { display: block; margin-top: 6px; font-size: 12px; color: var(--ink-mute); }
+.health-scale-ends + .health-scale-word { margin-top: 2px; }
 /* Team: Health. The summary card, then a row a colleague: name, the five
    answers of this half month, when they checked in. */
 .health-count { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
@@ -3625,6 +3630,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-who-h h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; overflow-wrap: anywhere; }
 .sup-meta { font-size: 12.5px; color: var(--ink-mute); }
 .sup-ctl { display: flex; align-items: center; gap: 12px; }
+.sup-go { margin-top: 12px; display: flex; }
 
 /* A colleague's record (2026-10-18, js/team.js): the list and the Team strip
    step away while it is open. */

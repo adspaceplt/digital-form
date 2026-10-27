@@ -678,6 +678,22 @@
       el.value = LET.fill(x[2], vars); seeded[x[1]] = el.value;
     });
   }
+  /* A client picked in the sheet brings its main contact (else its first),
+     so Attn and {first name} fill as from the record (2026-10-27, DOC-7).
+     A refused read leaves them empty; Issue then names what is unfilled. */
+  var contactSeq = 0;
+  function readContact() {
+    if (!issuing || issuing.client) return;
+    var id = $('docClient').value, seq = ++contactSeq;
+    issuing.contact = null;
+    if (!id) return;
+    db.from('client_contacts').select('name, salutation, role, is_primary').eq('client_id', id).is('archived_at', null)
+      .then(function (r) {
+        if (seq !== contactSeq || !issuing || r.error || !(r.data || []).length) return;
+        issuing.contact = r.data.filter(function (x) { return x.is_primary; })[0] || r.data[0];
+        seed({ target: { id: 'docContact' } });
+      }).catch(function () {});
+  }
   function seed(e) {
     var t = typeById($('docKind').value);
     if (!t) return;
@@ -1066,6 +1082,17 @@
         });
       }
       if (left) { msg('docMsg', 'Fill in ' + fieldWord(left) + '.', 'err'); var fe = fieldInput(left); if (fe) fe.focus(); return; }
+      /* Nothing is issued with words still in braces: the reference would be
+         spent on a letter reading Dear {first name} (DOC-7). Preview draws
+         it as it stands. */
+      if (forIssue) {
+        var still = [['docTitleIn', title, 'title'], ['docSal', salutation, 'salutation'], ['docBodyEn', body.en, 'letter']]
+          .filter(function (x) { return /\{[^{}\n]+\}/.test(x[1]); })[0];
+        if (still) {
+          msg('docMsg', 'Replace ' + still[1].match(/\{[^{}\n]+\}/)[0] + ' in the ' + still[2] + '.', 'err');
+          $(still[0]).focus(); return;
+        }
+      }
       if (keys.length) body.fields = fieldValues();
     }
     if (!body.en) { msg('docMsg', 'The letter needs a body.', 'err'); $('docBodyEn').focus(); return; }
@@ -1533,7 +1560,10 @@
     on('regAddClose', shutAdd); on('regAddCancel', shutAdd); on('regAddGo', sendAdd);
     on('rvoidClose', shutVoid); on('rvoidCancel', shutVoid);
     if ($('docKind')) $('docKind').addEventListener('change', seed);
-    if ($('docClient')) $('docClient').addEventListener('change', seed);
+    if ($('docClient')) $('docClient').addEventListener('change', function (e) {
+      if (issuing && !issuing.client) issuing.contact = null;
+      seed(e); readContact();
+    });
     if ($('docMember')) $('docMember').addEventListener('change', seed);
     if ($('docSupplier')) $('docSupplier').addEventListener('change', seed);
     if ($('regAddKind')) $('regAddKind').addEventListener('change', function () { this.value = nameOf(this.value); });

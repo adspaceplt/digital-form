@@ -5464,9 +5464,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .link-row.is-off > :not(.link-act) { opacity: .55; }
 @media (max-width: 640px) {
-  /* Three fixed tracks, so a namecard's copy and open marks stand under a
-     link's copy and QR marks (ux-audit LNK-1, 2026-10-14). */
-  .link-row > .link-act { display: grid; grid-template-columns: repeat(3, var(--ctl-h)); justify-content: end; justify-items: center; }
+  /* Four fixed tracks, one a control (Copy, Open, QR codes, ⋯; LNK-2), so
+     a namecard's Copy and Open stand under a link's and the ⋯ never wraps
+     alone (ux-audit LNK-1, 2026-10-14; LNK-8, 2026-10-27). */
+  .link-row > .link-act { display: grid; grid-template-columns: repeat(4, var(--ctl-h)); justify-content: end; justify-items: center; }
   .link-row > .link-label:empty { display: none; }
   .crm-head.link-row { display: none; }
 }
@@ -7434,11 +7435,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
 .rp-vrow .rp-name .nb { white-space: nowrap; }
 .rh-row.crm-head { padding: 12px 15px 8px; }
-.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "name upd"; gap: 4px 12px; }
+.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "name upd" "name sent"; gap: 4px 12px; }
 /* Select (2026-10-06): a tick leads each row; the row is its label. */
 .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 64px 110px 20px; cursor: pointer; }
 .rh-row.is-picked { background: var(--line-soft); }
-.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd"; }
+.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd" "pick name sent"; }
 /* =========================================================================
    THE PHONE'S OWN EDGES (2026-09-26)
    =========================================================================

@@ -1356,6 +1356,9 @@
     $('confirmCancel').textContent = t().cancel;
     paintConfirmList();
     msg('confirmMsg', '');
+    /* The name already held on this device fills the field, still the
+       client's to change (2026-10-27, SEL-4). */
+    if (!$('confirmName').value && window.ADspaceDecide && window.ADspaceDecide.known()) $('confirmName').value = window.ADspaceDecide.known();
     /* The one sheet mechanism (js/sheet.js): focus held inside and handed
        back, Escape, the card focused rather than a field (SELECTION-4). */
     if (window.ADspaceSheet) window.ADspaceSheet.show($('confirmSheet'), { opener: $('confirmBtn') });

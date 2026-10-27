@@ -6237,7 +6237,8 @@
       /* Made from a client's month, the pieces take their place on that
          month rather than carrying the person off to My Work. */
       if (fromClient && cw.box && cw.client && cw.client.id === payload.client_id) { readClientWork(); return; }
-      if (made.length === 1) { openTask(made[0].id, true); return; }
+      /* One task made joins the list behind its card (2026-10-27, WORK-1). */
+      if (made.length === 1) { refreshOne(made[0].id); openTask(made[0].id, true); return; }
       var c = scope === 'internal' ? null : state.clients.filter(function (x) { return x.id === payload.client_id; })[0];
       msg('workMsg', made.length + ' tasks added' +
         (c ? ' for ' + clientName(c) + ', ' + monthWord(payload.code_period) : '') + '.', 'ok');
@@ -6278,7 +6279,9 @@
     if (taken) months = months.filter(function (k) { return taken.indexOf(k) < 0; });
     if (chosen && months.indexOf(chosen) < 0) months.unshift(chosen);
     var pick = chosen || monthKey(now.slice(0, 7));
-    if (months.indexOf(pick) < 0) pick = months[0];
+    /* This month already held: the next month free, never the oldest
+       offered (2026-10-27, WORK-2). */
+    if (months.indexOf(pick) < 0) pick = months.filter(function (k) { return k > pick; })[0] || months[0];
     sel.innerHTML = months.map(function (k) {
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
@@ -6320,6 +6323,7 @@
       btn.disabled = false;
       dupKey = '';
       sheet('dupSheet', false);
+      refreshOne(d.id);
       openTask(d.id, true);
     }, function () { btn.disabled = false; });
   }
