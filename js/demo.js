@@ -42,7 +42,11 @@
     } catch (e) { /* storage refused */ }
   }
   function leave() {
-    try { localStorage.removeItem(KEY); localStorage.removeItem('adspace-logo-ratio'); } catch (e) {}
+    try {
+      localStorage.removeItem(KEY); localStorage.removeItem('adspace-logo-ratio');
+      /* A sample creator's code kept by the creator's page goes with it. */
+      if (/^DEMO0/.test(localStorage.getItem('adspace-creator') || '')) localStorage.removeItem('adspace-creator');
+    } catch (e) {}
     dropDrafts();
   }
   window.ADspaceDemo = {
@@ -154,6 +158,27 @@
     };
     return c;
   }
+  var UNBOOKED = ['option', 'shortlisted', 'backup', 'withdrawn', 'replaced'];
+  /* The client pages on the sample data, each on its own sample link, for
+     the console's Client pages menu: nobody needs to know an address, and
+     a public page opens the demo only in a browser that entered its PIN
+     (the user, 2026-10-27). */
+  function samples() {
+    var D = window.__DB || {}, first = function (list, ok) { return (list || []).filter(ok)[0]; };
+    var rv = first(D.clients, function (c) { return c.stage === 'active' && !c.review_hidden && c.access_token; });
+    var cm = first(D.campaigns, function (c) { return c.state === 'open' && c.access_token; }) || first(D.campaigns, function (c) { return c.state !== 'draft' && c.access_token; });
+    var booked = {}; (D.campaign_options || []).forEach(function (o) { if (UNBOOKED.indexOf(o.state) < 0) booked[o.creator_id] = 1; });
+    var cr = first(D.creators, function (c) { return c.active !== false && booked[c.id] && c.access_code; });
+    var shared = {}; (D.video_scripts || []).forEach(function (v) { if (v.status === 'shared') shared[v.client_id] = 1; });
+    var vs = first(D.clients, function (c) { return shared[c.id] && c.script_key; });
+    var me = first(D.team_members, function (m) { return m.email === 'alex@example.com' && m.card_key; });
+    return [['Client portal', '/client/'],
+      rv && ['Content Review', '/review/?k=' + rv.access_token],
+      cm && ['Creator selection', '/creators/?k=' + cm.access_token],
+      cr && ['Creator page', '/creator/?k=' + cr.access_code],
+      vs && ['Video Scripts', '/script/?k=' + vs.script_key],
+      me && ['Namecard', '/card/?k=' + me.card_key]].filter(Boolean);
+  }
   var lib = window.supabase;
   /* The engine sets its own library in place of the real one and then
      __signIn, so a page holding __signIn holds the sample database. Without
@@ -171,6 +196,17 @@
     /* Every guide already met: the demo opens on the screens, not on tours. */
     if (CONSOLE) window.__signIn('alex@example.com');
     if (/^\/client\//.test(location.pathname)) window.__signIn('client@example.com');
+    /* The creator's page opened bare (no link, no code kept) opens on a
+       sample creator holding a booking, as the client portal opens signed
+       in; it had asked for an access code the real database answered. */
+    if (/^\/creator\//.test(location.pathname) && !/[?&]k=/.test(location.search)) {
+      var kept = ''; try { kept = localStorage.getItem('adspace-creator') || ''; } catch (e) {}
+      if (!kept) {
+        var booked = {}; (window.__DB.campaign_options || []).forEach(function (o) { if (o.creator_id && UNBOOKED.indexOf(o.state) < 0) booked[o.creator_id] = 1; });
+        var who = (window.__DB.creators || []).filter(function (c) { return c.active !== false && booked[c.id] && c.access_code; })[0];
+        if (who) history.replaceState(history.state, '', location.pathname + '?k=' + encodeURIComponent(who.access_code) + location.hash);
+      }
+    }
   }
   /* Sign out in the demo ends it as Exit demo does: the console's own Sign
      out would clear this browser's notes, drafts and notification setting,
@@ -206,8 +242,31 @@
       var up = document.getElementById('upgradeBar');
       if (!up) return;
       b.className = 'upgradebar demobar';
-      b.innerHTML = '<span class="upgradebar-text">' + line + '</span>' + exit;
+      var pages = samples();
+      b.innerHTML = '<span class="upgradebar-text">' + line + '</span>' +
+        '<button class="btn btn-sm" type="button" id="demoPages" aria-haspopup="menu" aria-expanded="false">Client pages</button>' + exit;
       up.parentNode.insertBefore(b, up);
+      var menu = document.createElement('div');
+      menu.className = 'kmenu'; menu.id = 'demoPagesMenu'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+      menu.innerHTML = window.ADspaceMenu ? window.ADspaceMenu.items([pages.map(function (x) { return { label: x[0], attrs: 'data-href="' + x[1] + '"' }; })]) : '';
+      document.body.appendChild(menu);
+      var btn = document.getElementById('demoPages');
+      var shut = function () { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!menu.hidden) { shut(); return; }
+        menu.hidden = false; btn.setAttribute('aria-expanded', 'true');
+        if (window.ADspaceMenu) { window.ADspaceMenu.tidy(menu); window.ADspaceMenu.place(btn, menu); }
+        var f = menu.querySelector('.kmenu-item'); if (f) f.focus();
+      });
+      /* Each opens in a tab of its own, the console kept where it was. */
+      menu.addEventListener('click', function (e) {
+        var it = e.target.closest('[data-href]');
+        if (!it) return;
+        shut(); window.open(it.getAttribute('data-href'), '_blank');
+      });
+      document.addEventListener('click', function (e) { if (!menu.hidden && !menu.contains(e.target)) shut(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !menu.hidden) { shut(); btn.focus(); } });
     } else {
       /* A client page: edge to edge under its bar, as an announcement. */
       var top = document.querySelector('.topbar');

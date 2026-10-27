@@ -6843,3 +6843,19 @@ sentence.
   Billing's finance email, the supplier sheet's two) and replaces the five
   copies of a looser pattern (team, details form, supplier form, /quote/).
   `tests/emailbox.js`, `tests/demo.js` and `tests/portal.js` hold it.
+
+### 2026-10-27 — The demo's client pages from one place; the creator's code takes its dash
+- The user: "Creator portal doesn't work?". With the demo on, the creator's
+  page opened bare (no link, no code kept) loaded the real page and asked
+  for an access code the real database answered; only its sample link
+  opened the demo. It now opens a sample creator holding a booking, as the
+  client portal opens signed in, and Exit demo lets go of the sample code
+  the page kept.
+- The user then asked for one way in: the console's demo bar holds Client
+  pages, a menu of every client page on its sample link, each in a tab of
+  its own, so no address is typed or guessed. A public page still opens the
+  demo only in a browser that entered the PIN in the console.
+- The creator's access code field puts the dash in after the fourth
+  character, as the code is printed (`7K2M-9PQR`), and takes it back with a
+  deletion; the code sent never holds it.
+
