@@ -725,7 +725,7 @@
     var c = S.contact, first = null, bad = function (id, w) { say(id + 'Msg', w); var el = $(id); if (el) el.setAttribute('aria-invalid', 'true'); first = first || el; };
     ['qsName', 'qsEmail', 'qsWa', 'qsBrand', 'qsConsent'].forEach(function (id) { say(id + 'Msg', ''); if ($(id)) $(id).removeAttribute('aria-invalid'); });
     if (c.name.length < 2) bad('qsName', t().req.name);
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c.email)) bad('qsEmail', t().req.email);
+    if (!ADspaceWords.emailOk(c.email)) bad('qsEmail', t().req.email);
     else if (FREE.test(c.email)) say('qsEmailMsg', t().freeMail, 'warn');
     if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
     if (c.brand.length < 2) bad('qsBrand', t().req.brand);
@@ -882,7 +882,7 @@
     if (id && e.target.getAttribute('aria-invalid') === 'true') { e.target.removeAttribute('aria-invalid'); if (id !== 'qsEmail') say(id + 'Msg', ''); }
     if (id === 'qsEmail') {
       var v = e.target.value.trim();
-      say('qsEmailMsg', /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) && FREE.test(v) ? t().freeMail : '', 'warn');
+      say('qsEmailMsg', ADspaceWords.emailOk(v) && FREE.test(v) ? t().freeMail : '', 'warn');
     }
     if (e.target.closest && e.target.closest('#qsDetails')) readDetails();
   });

@@ -63,6 +63,7 @@
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
       emailNeeded: 'An email is required.',
+      emailBad: 'Enter a valid email address.',
       signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
@@ -101,6 +102,7 @@
       codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
       codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
       emailNeeded: '请输入电子邮箱。',
+      emailBad: '请输入有效的电子邮箱。',
       signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
@@ -410,6 +412,7 @@
   function sendLink() {
     var email = ($('signEmail').value || '').trim().toLowerCase();
     if (!email) { msg('stateMsg', t().emailNeeded, 'err'); $('signEmail').focus(); return; }
+    if (!ADspaceWords.emailOk(email)) { msg('stateMsg', t().emailBad, 'err'); $('signEmail').focus(); return; }
     $('signGo').disabled = true;
     /* Granting access is all the team should have to do, so the login is made
        here, on the way in, rather than depending on a call the console made

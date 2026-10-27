@@ -136,7 +136,7 @@
     billing_address: 'dfAddr', finance_email: 'dfFin', contact_salutation: 'dfSal', contact_name: 'dfName',
     contact_phone: 'dfPhone', contact_email: 'dfEmail' };
   function check() {
-    var w = t(), first = null, mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+    var w = t(), first = null, mail = { test: ADspaceWords.emailOk };
     var bad = function (k, text) {
       var id = ID[k] || k; say(id + 'Msg', text);
       if ($(id)) $(id).setAttribute('aria-invalid', 'true');

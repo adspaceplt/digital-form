@@ -160,7 +160,7 @@
     kind: 'Choose how you are registered.', currency: 'Choose a currency.'
   };
   function check() {
-    var first = null, mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/, ind = typed.kind === 'individual';
+    var first = null, mail = { test: ADspaceWords.emailOk }, ind = typed.kind === 'individual';
     var v = function (k) { return String(typed[k] || '').trim(); };
     var digits = function (k) { return v(k).replace(/\D/g, ''); };
     var bad = function (k) {

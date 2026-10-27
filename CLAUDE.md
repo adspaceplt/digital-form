@@ -274,6 +274,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | the Short Links route | qr, shortlinks, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
 | `js/demo.js`, `demo/`, the DEMO ACCESS section, `tests/stub2.js` | demo, sql, settings |
+| An email box, `ADspaceWords.emailOk` | emailbox, demo, portal, signin, detailsform, suppliers, quotesite, team |
 
 **Global > parent > child** (the user, 2026-10-11, the light version): a
 base element (button, field, select, chip) is styled by its own rule and its
@@ -1184,6 +1185,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A public form's typed name is never an actor: it is filed under the form
   (Details form, Supplier form, Quotation website), the name in the detail
   (2026-10-22, BE-3).
+- Every email box takes an address alone (`ADspaceWords.emailOk`, the one
+  reading; the user, 2026-10-27: "every email boxes"): a value that is no
+  address (digits, a host with no domain, a space, a list) is refused where
+  it was typed as Enter a valid email address., nothing written; the
+  console's sign-in, the client portal's, a lead's, a contact's, Billing's
+  finance email, a colleague's, a supplier's, the details and supplier forms
+  and /quote/ alike (`tests/emailbox.js`). Page-side only.
 - Every page's `esc` is `ADspaceWords.esc` (`js/chrome.js` keeps its own,
   loaded before it; one copy, 2026-10-26), escaping `"` and `'` as well as `&`, `<`, `>`: a stored
   value is drawn inside attributes (2026-10-17: a creator's file address
@@ -6380,8 +6388,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   ppl this portal", "Just enter in the email input"): four to eight digits
   in the sign-in's email box are asked of `demo_pin_ok` (anon, true only
   while Demo access is on and the PIN right, wrong ones counted as a
-  link's passcode, `link_passcode` kind `demo`); anything else carries on as
-  an address, so the box never says a PIN exists. A right PIN keeps
+  link's passcode, `link_passcode` kind `demo`); the box takes an email
+  address or that PIN alone: a wrong PIN and any value that is no address
+  read Enter a valid email address., the same words, so the box never says
+  a PIN exists (the client portal's sign-in refuses one alike). A right PIN keeps
   `adspace-demo` in this browser for twelve hours, and the head then loads
   `demo/seed.js` (a made-up agency, Sample Studio, its six colleagues and 48
   clients over two years, built on every load relative to today) and

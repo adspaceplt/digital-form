@@ -270,5 +270,11 @@
     else u = 'https://' + u.replace(/^\/+/, '');
     return /^https?:\/\/[^\s"'<>`\\]+$/i.test(u) ? u : '';
   };
+  /* The one reading of an email address typed anywhere (2026-10-27, the
+     user: "every email box"): a name, @, a host and a top-level domain of
+     two letters or more, with no space, comma, quote, bracket or second @. */
+  W.emailOk = function (v) {
+    return /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i.test(String(v == null ? '' : v).trim());
+  };
   window.ADspaceWords = W;
 })();

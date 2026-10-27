@@ -158,19 +158,22 @@
     var email = $('authEmail').value.trim();
     if (!email) return;
     var b = $('authSend');
-    b.disabled = true;
-    /* The demo's PIN (2026-10-27, js/demo.js): four to eight digits in this
-       box are asked of the database first; a right one opens the console on
-       sample data, anything else carries on as any address would, so the
-       box never says a PIN exists. */
+    /* The box takes an email address or the demo's PIN, nothing else
+       (2026-10-27, js/demo.js): four to eight digits are asked of the
+       database; a right PIN opens the console on sample data, and a wrong one
+       is refused in the same words as any other value that is no address,
+       so the box never says a PIN exists. */
+    var bad = function () { msg('authMsg', 'Enter a valid email address.', 'err'); $('authEmail').focus(); };
     if (/^[0-9]{4,8}$/.test(email) && window.ADspaceDemo && !window.ADspaceDemo.on) {
-      var onward = function () { sendCode(email, b); };
+      b.disabled = true;
       db.rpc('demo_pin_ok', { p_pin: email }).then(function (r) {
         if (r && r.data === true && window.ADspaceDemo.enter()) { location.replace('/admin/'); return; }
-        onward();
-      }).catch(onward);
+        b.disabled = false; bad();
+      }).catch(function () { b.disabled = false; msg('authMsg', 'Not signed in. Please try again.', 'err'); });
       return;
     }
+    if (!ADspaceWords.emailOk(email)) { bad(); return; }
+    b.disabled = true;
     sendCode(email, b);
   });
   function sendCode(email, b) {
