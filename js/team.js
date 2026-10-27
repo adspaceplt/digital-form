@@ -1935,7 +1935,7 @@
     var desig = ($('tmDesig').value || '').trim();
     var focusIn = function (id) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal($(id)); $(id).focus(); };
     if (!name) { msg('tmMsg', 'A name is required.', 'err'); $('tmName').focus(); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); $('tmEmail').focus(); return; }
+    if (!ADspaceWords.emailOk(email)) { msg('tmMsg', 'Enter a valid email address.', 'err'); $('tmEmail').focus(); return; }
     if (!role) { msg('tmMsg', 'A user group is required.', 'err'); $('tmRole').focus(); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
@@ -2241,7 +2241,7 @@
   /* What a typed value must be, in the sheet's own words; null when fine. */
   function badValue(k, v) {
     if (k === 'name' && !v) return 'A name is required.';
-    if (k === 'email' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) return 'A valid email is required.';
+    if (k === 'email' && !ADspaceWords.emailOk(v)) return 'Enter a valid email address.';
     if (k === 'staff_code' && v && !/^[A-Z0-9]{3,8}$/.test(v)) return 'An Employee ID is 3 to 8 letters or digits.';
     if (k === 'capacity_minutes_week' && v !== '' && !(parseFloat(v) >= 0 && parseFloat(v) <= 80)) return 'Weekly capacity is 0 to 80 hours.';
     if (k === 'mobile' && v) { var n = v.replace(/\D/g, '').length; if (n < 8 || n > 15) return 'Enter a mobile number of 8 to 15 digits.'; }

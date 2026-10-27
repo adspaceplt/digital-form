@@ -6827,3 +6827,19 @@ sentence.
   pages load the demo only for keys holding a 0, which no real key holds.
   The PIN guards nothing secret (the sample data is public in the
   repository), so a lock of the demo's PIN is a nuisance alone.
+
+### 2026-10-27 — The sign-in box takes an email or the demo PIN, nothing else
+- The user, on an iPhone: 99999990 typed in the console's sign-in moved to
+  "Check your email … If 99999990 is registered". A wrong PIN and anything
+  that was no address were sent on as an email, by the rule that the box
+  never says a PIN exists. That rule held the wrong way: refusing every
+  value that is no address in one sentence (Enter a valid email address.)
+  says nothing about a PIN either. The console's sign-in now refuses them
+  before any code is asked; the client portal's sign-in refuses a value
+  that is no address too. The user then asked for every email box: one
+  reading, `ADspaceWords.emailOk` (a top-level domain of two letters or
+  more; no space, comma, quote, bracket or second @), now refuses in the
+  four console boxes that took anything (a new lead's email, a contact's,
+  Billing's finance email, the supplier sheet's two) and replaces the five
+  copies of a looser pattern (team, details form, supplier form, /quote/).
+  `tests/emailbox.js`, `tests/demo.js` and `tests/portal.js` hold it.

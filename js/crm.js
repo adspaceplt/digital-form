@@ -984,6 +984,9 @@
     // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
     if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
+    if (!state.editing && val('crmContactEmail') && !ADspaceWords.emailOk(val('crmContactEmail'))) {
+      msg('crmMsg', 'Enter a valid email address.', 'err'); $('crmContactEmail').focus(); return;
+    }
     if (!state.editing && waUser(val('crmContactWa')) && !waIsNumber(waUser(val('crmContactWa'))) && !waUserOk(waUser(val('crmContactWa')))) {
       msg('crmMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
       $('crmContactWa').focus(); return;
@@ -3471,6 +3474,9 @@
     if (!$('crmBillInRow').hidden) patch.bill_sgd = $('crmBillIn').value === 'SG';
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
+    if (patch.finance_email && !ADspaceWords.emailOk(patch.finance_email)) {
+      msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
+    }
     /* A Save that changes nothing writes and files nothing; while Active or
        a Letter of Offer waits on billing still missing, the sheet stays
        open on the first missing field and the move stays asked for
@@ -3911,6 +3917,7 @@
   $('ctSave').addEventListener('click', function () {
     var name = val('ctName');
     if (!name) { msg('ctMsg', 'A contact needs a name.', 'err'); $('ctName').focus(); return; }
+    if (val('ctEmail') && !ADspaceWords.emailOk(val('ctEmail'))) { msg('ctMsg', 'Enter a valid email address.', 'err'); $('ctEmail').focus(); return; }
     var phone = val('ctPhone'), waU = waUser(val('ctWa'));
     if (waU && !waIsNumber(waU) && !waUserOk(waU)) {
       msg('ctMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');

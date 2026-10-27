@@ -41,7 +41,7 @@
     'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
     'bad-sst_no': 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
     'bad-mobile': 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', 'bad-address': 'Enter the full billing address.',
-    'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email.',
+    'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email address.', 'bad-finance_email': 'Enter a valid email address.',
     'bad-finance_email': 'Enter a valid finance email.', 'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
     'bad-swift': 'Enter the SWIFT code, 8 or 11 letters or digits.', 'bad-bank_address': 'The bank address is up to 300 characters.',
@@ -856,6 +856,8 @@
     if (!editing) return;
     var v = {};
     F.forEach(function (x) { if (!PAY[x[0]] || payWork()) v[x[0]] = $(x[1]).value.trim(); });
+    var badMail = [['email', 'supEdEmail'], ['finance_email', 'supEdFin']].filter(function (x) { return v[x[0]] && !ADspaceWords.emailOk(v[x[0]]); })[0];
+    if (badMail) { msg('supEditMsg', 'Enter a valid email address.', 'err'); $(badMail[1]).focus(); return; }
     var go = $('supEditGo');
     go.disabled = true;
     rpc('supplier_save', { p_id: state.rec.id, p_values: v, p_form: editing.form || null }).then(function (r) {
