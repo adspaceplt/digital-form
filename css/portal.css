@@ -8154,7 +8154,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-group { display: grid; gap: 8px; align-content: start; min-width: 0; }
 .ovw-group-h { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; color: var(--ink-mute); }
 .ovw-group-h::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-.ovw-kpi { display: grid; align-content: start; gap: 2px; min-width: 0; }
+/* The trend stands at the tile's foot, so tiles side by side draw theirs on
+   one line however their words wrap (2026-10-27). */
+.ovw-kpi { display: grid; grid-template-rows: auto auto 1fr auto; gap: 2px; min-width: 0; }
 .ovw-kpi-label .ovw-short { display: none; }
 .ovw-kpi-fig.is-money { font-size: 21px; }
 .ovw-kpi-fig.is-err { color: var(--err); }
@@ -8936,6 +8938,54 @@ body.is-maint { overflow: hidden; }
     :root.has-tabbar .sheet-card,
     :root.has-tabbar .sheet-side > .sheet-card.taskcard { max-height: calc(100dvh - var(--sheet-top) - var(--sheet-floor)); }
     }
+}
+/* Upright at the right edge (the user, 2026-10-27, on the iPhone Duo's
+   front screen: "it should be at the right as portrait tabs"). Where a
+   phone's page stands narrower than its screen, Safari keeps its own
+   controls in a column at the right, and the bar takes that column's line:
+   the same tabs one over another, its foot on the bar's usual floor. The
+   page keeps the bar's column clear (`--tabbar-room`) in place of the foot,
+   More and every panel open beside it, and it is never drawn in. Its tabs
+   are their glyphs alone, each still named for a screen reader (the user,
+   the same day: "no text needed … just the glyphs icons"). */
+:root.has-tabbar.tabbar-side {
+  --tabbar-w: 56px;
+  --tabbar-right: max(8px, env(safe-area-inset-right, 0px));
+  --tabbar-room: calc(var(--tabbar-w) + var(--tabbar-right) + 8px);
+  --tabbar-space: env(safe-area-inset-bottom, 0px);
+  --sheet-floor: var(--tabbar-bottom);
+  --tb-h: var(--tabbar-w);
+}
+:root.has-tabbar.tabbar-side .tabbar:not([hidden]) {
+  left: auto; right: var(--tabbar-right); bottom: var(--tabbar-bottom);
+  width: var(--tabbar-w); max-width: none; height: auto; margin: 0;
+  max-height: calc(100vh - var(--head-h) - var(--tabbar-bottom) - 16px); overflow-y: auto;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: repeat(var(--tabs, 5), 52px);
+  padding: 3px; border-radius: calc(var(--tabbar-w) / 2);
+}
+:root.has-tabbar.tabbar-side .tabbar-word {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+:root.has-tabbar.tabbar-side .tabbar-dot { top: 9px; }
+:root.has-tabbar.tabbar-side .tabbar-thumb {
+  top: 0; left: 3px; width: calc(100% - 6px); height: var(--tw, 0px);
+  transform: translateY(var(--tx, 0px));
+}
+:root.has-tabbar.tabbar-side .console-body { padding-right: var(--tabbar-room); }
+:root.has-tabbar.tabbar-side .confirmbar { margin-right: 0; }
+:root.has-tabbar.tabbar-side .sidebar {
+  right: var(--tabbar-room); bottom: var(--tabbar-bottom);
+  max-height: calc(100vh - var(--tabbar-bottom) - var(--head-h) - 16px);
+  transform: translateX(calc(100% + var(--tabbar-room)));
+}
+:root.has-tabbar.tabbar-side .sidebar.is-open { transform: none; }
+:root.has-tabbar.tabbar-side .popcard.is-dock { right: var(--tabbar-room); }
+:root.has-tabbar.tabbar-side .picker.is-full { right: var(--tabbar-room); }
+@media (max-width: 640px) {
+  :root.has-tabbar.tabbar-side .sheet,
+  :root.has-tabbar.tabbar-side .sheet.sheet-side,
+  :root.has-tabbar.tabbar-side .sheet.searchsheet { padding-right: var(--tabbar-room); }
 }
 .crm-logcall.is-here { display: none; }
 /* =========================================================================

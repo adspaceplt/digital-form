@@ -518,7 +518,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   user: "can go abit down"), and scrolling down draws it in to its glyphs
   (`.tabbar-min`: 54px, 56px a tab), scrolling up, the page's top, More or
   a press bringing the words back; the room the page keeps clear never
-  changes. My Work held half a
+  changes. Where a phone's page stands upright and narrower than its
+  screen (the iPhone Duo's front screen, Safari's controls in a column at
+  its right; `ADSPACE_TABSIDE` in the head script, `:root.tabbar-side`),
+  the bar stands upright at the right edge, its tabs glyphs alone named for
+  a screen reader, the page keeping its column clear (`--tabbar-room`),
+  More and every panel opening beside it, never drawn in, a finger drawn
+  down it as along it (the user, 2026-10-27: "at the right as portrait
+  tabs", "just the glyphs icons"; `tests/tabbar.js`). My Work held half a
   second opens My Work with Add task (`ADspaceOps.add`, My Work at Work;
   the user, 2026-10-11); a shorter press is a tap.
 - Arrange sections (`2026-10-10-rail-order.sql`; the user, 2026-10-10:
@@ -880,9 +887,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   bars `inline` (label, bar and figure on one line; a row's `part` red at
   the bar's end), pie `total` (the whole in the middle) and status `tone`s
   on its slices, columns `labels` (the figure over each) and a category's
-  `tone`; in a narrow pane a row of seven columns or more keeps every
-  second label and one of eleven or more every third, counted back from
-  the last, so months never run together (2026-10-26). `ADspaceChart.spark(values, tone)` is a tile's trend, an image its
+  `tone`; a row of columns or a line keeps every label its own width holds,
+  else every second, else every third, counted back from the last, measured
+  on the chart (`fitLabels`), never on the pane, so months never run
+  together in a narrow card beside another (2026-10-27, the iPhone Duo). `ADspaceChart.spark(values, tone)` is a tile's trend, an image its
   words already state. The figures fold under every chart as a table; a
   column, a point and a slice give their figure on hover or a tap. No chart
   library.
@@ -3429,7 +3437,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Sales and Clients read every client once a visit (`readPages`, the stage
   log) through `ADspaceSales.figures`, one figure call for the whole
   history (a source named as Clients names it, `ADspaceCRM.sourceWord`;
-  in a narrow pane a card's span takes its own line under its title):
+  a card's span takes its own line under its title at every width, so
+  cards side by side read alike; 2026-10-27):
   Sales' tiles (new leads a month, win rate, lead to client,
   clients lost), its trend of leads and new clients by month, What
   changed (rules worked out on the page, never written), the busiest

@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261027f">
-<link rel="stylesheet" href="/css/console.css?v=20261027d">
+<link rel="stylesheet" href="/css/portal.css?v=20261027g">
+<link rel="stylesheet" href="/css/console.css?v=20261027g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -49,8 +49,11 @@
      about to open. js/admin.js takes the attribute off once it knows. -->
 <script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
 <!-- The phone tab bar's one media query (js/admin.js reads it), so the bar's
-     room and the head without its menu toggle are drawn from first paint. -->
-<script>window.ADSPACE_TABBAR='(max-width: 640px), (pointer: coarse) and (max-width: 1023px)';try{if(window.matchMedia&&matchMedia(window.ADSPACE_TABBAR).matches)document.documentElement.classList.add('has-tabbar');}catch(e){}</script>
+     room and the head without its menu toggle are drawn from first paint.
+     Where a phone's page stands upright and narrower than its screen (the
+     iPhone Duo's front screen keeps Safari's controls in a column at its
+     right), the bar stands upright at the right edge (`tabbar-side`). -->
+<script>window.ADSPACE_TABBAR='(max-width: 640px), (pointer: coarse) and (max-width: 1023px)';window.ADSPACE_TABSIDE=function(){try{return matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<600&&innerHeight>innerWidth&&screen.width-innerWidth>=40;}catch(e){return false;}};try{if(window.matchMedia&&matchMedia(window.ADSPACE_TABBAR).matches){document.documentElement.classList.add('has-tabbar');if(window.ADSPACE_TABSIDE())document.documentElement.classList.add('tabbar-side');}}catch(e){}</script>
 <!-- 2.117 is the first line of the library that signs in with a passkey. The
      console alone takes it; the client pages stay on the version they were
      built and tested against until they need something it adds. -->
@@ -77,7 +80,7 @@
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261023e"></script>
 <script src="/js/records.js?v=20261026f"></script>
-<script src="/js/chart.js?v=20261027d"></script>
+<script src="/js/chart.js?v=20261027g"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261023j"></script>
 <script src="/js/maintenance.js?v=20261027a"></script>
@@ -5728,7 +5731,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261027d"></script>
+<script src="/js/admin.js?v=20261027g"></script>
 <script src="/js/documents.js?v=20261027a"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
