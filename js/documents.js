@@ -937,14 +937,14 @@
       if (price.term) {
         /* The term is stated once (the user, 2026-10-15). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months, a total of ' +
-                   MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ' with the one-off items' : '') + '.');
+                   MON.money2(price.total, doc.market) + incl + (price.once > 0 ? ', one-off items included' : '') + '.');
       } else if (price.plan) {
         /* A quoted letter whose lines run months of their own: the
            quotation's term, and the total over the months stated for each
            line, as the quotation says it (2026-10-18). */
         terms.push('Fees are billed monthly in advance for a minimum term of ' + price.plan + ' months, a total of ' +
                    MON.money2(price.total, doc.market) + incl + ' over the months stated for each line' +
-                   (price.planOnce ? ', with the one-off items' : '') + '.');
+                   (price.planOnce ? ', one-off items included' : '') + '.');
       }
       /* A letter whose terms carry its validity (`terms_own`) prints them
          as typed; one issued before prints the validity it was issued with. */

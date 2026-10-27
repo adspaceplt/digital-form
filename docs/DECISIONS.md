@@ -6626,3 +6626,25 @@ sentence.
   content in two languages takes the translation rate. The note and the
   tick (Make every content bilingual, on the website and in Build quote)
   now say so, in English and Chinese.
+
+### 2026-10-27 — What a client reads is formal English
+- The user asked for a review of the words every client, creator, prospect
+  and supplier reads ("some client-facing public-facing tone dont sound
+  good"), then "fix all". Changed, in English (Chinese left as it was but
+  the upgrade cover): the website's button Proceed quote (now View
+  quotation) and its casual lines (Let us know, make a new one, I will
+  involve others); "contents" counted as a noun (6 content pieces per month,
+  on the website, Build quote and every new quotation line through
+  `quote_price`, `2026-10-27-quotation-words-for-a-client.sql`; a quotation
+  issued before keeps its words); the upgrade cover (Upgrading in progress,
+  We'll be right back!, now Upgrade in progress, The portal will be
+  available again shortly.); Proceeded by on the selection page (now
+  Confirmed by, as the review page says); the creator's Needs you and Hand
+  in; the portal's sign-in refusals, guide and request labels; the review
+  page's Approve as it is; the supplier's bank authorisation (copied word
+  for word from Jotform, with grammar a dispute could turn on); the report
+  PDF's How to read this (it spoke as a chat: "the chats came alongside",
+  "doing its job"); the quotation PDF's PO reference and per the agreed
+  timeline; the letters' Verify document authenticity. Kept: Touch N Go
+  Digital (a stored value `supplier_values_check` holds), Chat on WhatsApp
+  (the user's own words for the front door).

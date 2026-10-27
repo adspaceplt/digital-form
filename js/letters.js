@@ -336,7 +336,7 @@
 
       var n = pages.length;
       var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +
-        'Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
+        'Verify this document at ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
       /* One row at the foot (the user, 2026-10-06): the reference on the
          left, the page count on the right, the verify line between them,
          centred on the page where it clears both, else in the room they
@@ -532,7 +532,7 @@
         }));
 
       var n = pages.length;
-      var footWord = 'This is a computer-generated document. Verify document authenticity: ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
+      var footWord = 'This is a computer-generated document. Verify this document at ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
       var FZ = 7.5;
       var refEnd = M + font.widthOfTextAtSize(String(doc.serial || ''), FZ);
       var sentW = font.widthOfTextAtSize(footWord, FZ);

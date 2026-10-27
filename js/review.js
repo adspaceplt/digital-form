@@ -402,7 +402,7 @@
     if (post.reset_note) {
       var again = document.createElement('div');
       again.className = 'reask';
-      again.innerHTML = '<b>Updated since you approved this</b>' +
+      again.innerHTML = '<b>This post has been updated since your approval</b>' +
         '<span>' + escapeHtml(post.reset_note) + '</span>';
       card.appendChild(again);
     }
@@ -632,7 +632,7 @@
       var standing = post.review && post.review.decision === 'changes';
       if (standing && !approveBtn.classList.contains('is-armed')) {
         approveBtn.classList.add('is-armed');
-        approveBtn.textContent = 'Approve as it is';
+        approveBtn.textContent = 'Approve without changes';
         say('Approving withdraws your request for changes.');
         return;
       }
