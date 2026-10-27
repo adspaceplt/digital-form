@@ -3150,7 +3150,7 @@ button.vs-row { cursor: pointer; }
 .wam-row small.wam-why, .wat-row small.wam-why { color: var(--err); white-space: normal; overflow-wrap: anywhere; }
 /* Not confirmed (2026-10-17) is a caution, never a refusal: the soft ink. */
 .wam-row small.wam-why.is-unknown { color: var(--ink-soft); }
-.wam-why .wam-open { margin-left: 4px; font-size: 12.5px; }
+.wam-why .wam-open { display: flex; width: fit-content; margin: 2px 0 0 -8px; font-size: 12.5px; }
 .wam-to .wam-why { display: none; }
 .is-narrow .crm-head.wam-row { display: none; }
 .is-narrow .wam-row {
