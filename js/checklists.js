@@ -860,5 +860,7 @@
     });
   }
 
-  window.ADspaceChecklists = { mount: mount, count: count, draw: draw };
+  window.ADspaceChecklists = { mount: mount, count: count, draw: draw,
+    /* The checklist open now, so a record asked for another remounts. */
+    kind: function (clientId) { return V && V.ctx.client.id === clientId ? V.kind : null; } };
 })();

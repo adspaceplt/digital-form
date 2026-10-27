@@ -43,6 +43,8 @@
     failText: 'Please refresh, or contact your ADspace account manager.',
     // A client's act the database did not take, said without its words.
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
+    /* A supplier holds no account manager (2026-10-27, SPF-6). */
+    notSentAdspace: 'Not sent. Please try again, or contact ADspace.',
     tooLong: 'Not sent. A name holds up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
     // A file sign-upload does not take (2026-10-17).
     uploadType: 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.',
@@ -136,6 +138,7 @@
     failTitle: '无法加载',
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
+    notSentAdspace: '未能提交，请重试或联系 ADspace。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
     uploadType: '此类文件无法上传，请使用视频、图片或 PDF。',
     uploadSize: '{file}超过{n}MB的上限。',

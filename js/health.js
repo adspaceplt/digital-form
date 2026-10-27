@@ -337,7 +337,18 @@
   }
   SCALES.forEach(function (s) {
     var sel = $('hcS_' + s[0]);
-    if (sel) sel.addEventListener('change', function () { sayScale(s[0]); });
+    if (!sel) return;
+    sel.addEventListener('change', function () { sayScale(s[0]); });
+    /* Each scale says what its ends mean before a choice: Workload runs
+       Overwhelming to Comfortable, the others ill to well (2026-10-27,
+       MINE-7). Named for a screen reader, never in the live line. */
+    var ends = document.createElement('span');
+    ends.className = 'health-scale-ends';
+    ends.id = 'hcE_' + s[0];
+    ends.textContent = '1 ' + s[2][0] + ' · 5 ' + s[2][4];
+    var out = $('hcW_' + s[0]);
+    sel.parentNode.insertBefore(ends, out || null);
+    sel.setAttribute('aria-describedby', ends.id);
   });
   if ($('healthSheet')) {
     $('hcClose').addEventListener('click', function () { window.ADspaceSheet.close(); });

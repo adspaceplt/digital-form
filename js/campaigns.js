@@ -1371,6 +1371,10 @@
       log('campaign.created', title, slots + ' creators');
       shutCampForm();
       openCampaign(r.data);
+      /* A new campaign opens on Creators, where its next step (Add
+         creators) is the blue one (2026-10-27, CMP-18). */
+      showCampPane('creators');
+      setUrl();
     });
   }
 
@@ -1533,7 +1537,6 @@
     gateCampTabs();
     parkCampForm();
     $('campListView').hidden = true;
-    setUrl();
     $('campWork').hidden = false;
     $('campName').textContent = campName(c);
     // Not the form's input of the same name: this is the line under the title.
@@ -1559,8 +1562,11 @@
     $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');
     $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
     if (!same) window.ADspaceAdmin.linkLock($('campLinkLock'), 'selection', c.id, Boolean(c.passcode), 'campaigns.campaigns');
-    showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
+    /* The pane is read from the address before the address is written: a
+       link to the Schedule lands on the Schedule (2026-10-27, CMP-17). */
+    showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
+    setUrl();
     // The invoice panel depends on who is confirmed, so it is painted once the
     // creators are in (paintOptions), never from the stale list.
     $('invoicePanel').hidden = true;

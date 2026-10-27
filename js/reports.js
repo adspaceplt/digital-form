@@ -1801,26 +1801,9 @@
     if (btn) btn.disabled = true;
     say(m, 'Saving…');
     var rid = r.id;
-    var local = function (vals) {
-      if (!st.open || st.open.id !== rid) return;
-      if (typeof vals.intro !== 'undefined') st.open.intro = vals.intro;
-      if (vals.insights) st.open.insights = vals.insights;
-      Object.keys(vals.platforms || {}).forEach(function (id) {
-        (st.platforms || []).forEach(function (p) { if (p.id === id) Object.assign(p, vals.platforms[id]); });
-      });
-      Object.keys(vals.posts || {}).forEach(function (id) {
-        (st.posts || []).forEach(function (p) { if (p.id === id) p.notable = vals.posts[id]; });
-      });
-    };
+    var local = function (vals) { localDraft(rid, vals); };
     storeDraft(rid, dr).then(function (before) {
-      var ins = Object.assign({}, before.insights || {}), after = { insights: ins, platforms: {}, posts: {} };
-      Object.keys(dr).forEach(function (k) {
-        if (typeof dr[k] !== 'string') return;
-        if (k === 'intro') after.intro = dr[k]; else ins[k] = dr[k];
-      });
-      dr.platforms.forEach(function (pl) { var c = Object.assign({}, pl); delete c.ref; after.platforms[pl.ref] = c; });
-      dr.posts.forEach(function (pp) { after.posts[pp.ref] = pp.remark; });
-      local(after);
+      local(draftAfter(before.insights, dr));
       fileReport('report.saved', 'Report audit · Commentary · ' + (n === 1 ? 'one correction applied' : n + ' corrections applied'), r, st.client);
       paintEditor();
       var card = st.host && st.host.querySelector('[data-m="aicheck"]');
@@ -3597,7 +3580,10 @@
     var told = function (out, m) {
       put(out.draft);
       if (out.unsaved) { say(m, 'Drafted, but not saved: ' + out.unsaved + ' Save before leaving.', 'err'); return; }
-      Object.assign(st.open, { intro: out.draft.intro != null ? out.draft.intro : st.open.intro });
+      /* Every field the draft wrote reaches the page's copy, so the strip
+         reads Commentary written at once (2026-10-27, RPT-10). */
+      localDraft(rid, draftAfter(st.open && st.open.insights, out.draft));
+      paintSteps();
       say(m, '');
       undoBar('Written by AI. Read before submitting.', m, function () {
         /* Read the report again: the page's copy still holds the draft. */
@@ -3648,6 +3634,29 @@
      2026-10-04: a draft left unsaved was lost on Back, and paid for all the
      same). What it replaces is kept, so Undo puts it back. Written from the
      report's own rows, not the screen, so it holds wherever the person is. */
+  /* The words a draft wrote, as the page holds them: the commentary step
+     and its strip read the page's copy, so a save reaches it too. */
+  function draftAfter(insights, dr) {
+    var ins = Object.assign({}, insights || {}), after = { insights: ins, platforms: {}, posts: {} };
+    Object.keys(dr).forEach(function (k) {
+      if (typeof dr[k] !== 'string') return;
+      if (k === 'intro') after.intro = dr[k]; else ins[k] = dr[k];
+    });
+    (dr.platforms || []).forEach(function (pl) { var c = Object.assign({}, pl); delete c.ref; after.platforms[pl.ref] = c; });
+    (dr.posts || []).forEach(function (pp) { after.posts[pp.ref] = pp.remark; });
+    return after;
+  }
+  function localDraft(rid, vals) {
+    if (!st.open || st.open.id !== rid) return;
+    if (typeof vals.intro !== 'undefined') st.open.intro = vals.intro;
+    if (vals.insights) st.open.insights = vals.insights;
+    Object.keys(vals.platforms || {}).forEach(function (id) {
+      (st.platforms || []).forEach(function (p) { if (p.id === id) Object.assign(p, vals.platforms[id]); });
+    });
+    Object.keys(vals.posts || {}).forEach(function (id) {
+      (st.posts || []).forEach(function (p) { if (p.id === id) p.notable = vals.posts[id]; });
+    });
+  }
   function storeDraft(rid, dr) {
     return Promise.all([
       db.from('sm_reports').select('id, intro, insights').eq('id', rid).maybeSingle(),
@@ -5583,7 +5592,10 @@
                 '</span><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
                 (wholeMonth(r) ? '' : ' · ' + periodWord(r.period_start, r.period_end)) +
-                (r.status === 'published' ? (r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') : '')) + '</small></span>' +
+                '') + (r.status === 'published' ? '<span class="rh-sentin">' + esc(r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') + '</span>' : '') + '</small></span>' +
+              /* On a narrow pane Sent or Not sent takes the right column, never
+                 cut off the end of the name's line (2026-10-27, RPT-11). */
+              (r.status === 'published' ? '<span class="rp-ver rh-sent">' + esc(r.sent_on ? 'Sent ' + dayWord(r.sent_on) : 'Not sent') + '</span>' : '') +
               '<span class="rp-ver rh-vno">v' + r.version_no + '</span>' +
               '<span class="rp-ver rh-upd">' + esc(stampWord(r.updated_at)) + '</span>' +
               '<span class="rp-go" aria-hidden="true">' + ICON.go + '</span>';

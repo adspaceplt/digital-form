@@ -108,6 +108,9 @@
       }
       /* A name cannot be blank; a description under a code can, because the
          code is then the name. The caller says which. */
+      /* A number box holding what is no number reads as empty: refused in
+         place, never saved as nothing (2026-10-27, SVC-10). */
+      if (field.validity && field.validity.badInput) { sayUnder('Enter a number.'); field.focus(); return; }
       if (!v && !opts.allowEmpty) { field.focus(); return; }
       if (v === was) { shut(); return; }
       var no = opts.check ? opts.check(v) : '';

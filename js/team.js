@@ -761,10 +761,16 @@
 
   /* The acts on a colleague, one list for the row's ⋯ and the record's
      (2026-10-18): the same items, drawn by the same permissions. */
+  /* An admin's standing and access date are an admin's to change alone
+     (`team_admin_guard`): for anyone else the acts are not drawn, so no
+     work moves before the refusal (2026-10-27, TEAM-1). */
+  function adminLocked(m) {
+    return !amAdmin() && Boolean(m.is_admin || adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
+  }
   function memberMenu(m) {
     var self = me() && me().id === m.id;
     var sysRow = Boolean(m.system) && !self;
-    var manage = may('team', 'manage') && !sysRow;
+    var manage = may('team', 'manage') && !sysRow && !adminLocked(m);
     /* No Edit: every value is changed where it is read on Overview; no Hand
        over work: it is the Work pane's button (MENU-5, 2026-10-22). */
     return (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
@@ -1863,11 +1869,18 @@
       var it = e.target.closest('.kmenu-item');
       if (!it) return;
       shut();
-      var others = state.rows.filter(function (x) { return x.active && !x.system && !(me() && me().id === x.id); }).length;
+      /* The colleagues the function changes, as it chooses them: an admin's
+         date is an admin's to set. Their own dates are named in the
+         question and put back by Undo (2026-10-27, TEAM-3). */
+      var hit = state.rows.filter(function (x) { return x.active && !x.system && !(me() && me().id === x.id) && !adminLocked(x); });
+      var others = hit.length;
+      var own = hit.filter(function (x) { return x.access_until; }).length;
+      var was = hit.map(function (x) { return { id: x.id, access_until: x.access_until || null, access_until_time: x.access_until_time || null }; });
       window.ADspaceConfirm.ask({
         title: 'Set access expiry',
         /* Two plain sentences (TEAM-9, 2026-10-14). */
-        body: 'Applies to ' + others + (others === 1 ? ' active colleague' : ' active colleagues') + ', not including you. Leave the date empty for no end.',
+        body: 'Applies to ' + others + (others === 1 ? ' active colleague' : ' active colleagues') + ', not including you. Leave the date empty for no end.' +
+          (own ? ' ' + own + (own === 1 ? ' of them has their own end date, which this replaces.' : ' of them have their own end date, which this replaces.') : ''),
         go: 'Set for all',
         fields: [{ name: 'day', label: 'Access until', type: 'date', min: todayMy(), required: false },
                  { name: 'time', label: 'Time', type: 'time', required: false }],
@@ -1879,8 +1892,26 @@
         db.rpc('team_set_expiry_at', { p_until: day, p_time: time }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'Not allowed.' : d.error), 'err'); return; }
-          msg('teamMsg', 'Saved.', 'ok');
-          load();
+          var n = d.count == null ? others : d.count;
+          load(function () {
+            if (!n) { msg('teamMsg', 'Saved.', 'ok'); return; }
+            undoHere('Access until set for ' + n + (n === 1 ? ' colleague.' : ' colleagues.'), function () {
+              /* Each row put back over the row as read again, one line filed. */
+              var jobs = was.map(function (w) {
+                var row = (state.rows || []).filter(function (x) { return x.id === w.id; })[0];
+                if (!row || (row.access_until || null) === w.access_until && (row.access_until_time || null) === w.access_until_time) return Promise.resolve(0);
+                return asRead(db.from('team_members').update({ access_until: w.access_until, access_until_time: w.access_until_time }).eq('id', w.id), row)
+                  .select('id').then(function (q) { return q.error ? -1 : (q.data || []).length; });
+              });
+              Promise.all(jobs).then(function (got) {
+                var back = got.filter(function (x) { return x > 0; }).length, refused = got.filter(function (x) { return x < 0; }).length;
+                if (back) log('team.changed', 'Team', 'Access until put back for ' + back + (back === 1 ? ' colleague' : ' colleagues'));
+                load(function () {
+                  if (refused) msg('teamMsg', refused + (refused === 1 ? ' colleague was' : ' colleagues were') + ' not put back. The database refused the request.', 'err');
+                });
+              }).catch(function () { msg('teamMsg', 'Not put back. Please try again.', 'err'); });
+            }, $('teamMsg'));
+          });
         }).catch(function () { msg('teamMsg', 'Not saved. Please try again.', 'err'); });
       });
     });
@@ -2176,6 +2207,18 @@
     }
     write();
   }
+  /* A name, email or Employee ID another colleague holds is refused in the
+     open field, what was typed kept, in clashSaid's words (2026-10-27,
+     TEAM-2). A removed colleague's values are free. */
+  function taken(k, v, m) {
+    if (!v || ['name', 'email', 'staff_code'].indexOf(k) < 0) return null;
+    var low = String(v).toLowerCase();
+    var hit = (state.rows || []).some(function (x) {
+      return x.id !== m.id && !x.removed_at && String(x[k] == null ? '' : x[k]).toLowerCase() === low;
+    });
+    if (!hit) return null;
+    return k === 'staff_code' ? 'That Employee ID is already on the list.' : k === 'email' ? 'That email is already on the list.' : 'That name is already on the list.';
+  }
   /* What a typed value must be, in the sheet's own words; null when fine. */
   function badValue(k, v) {
     if (k === 'name' && !v) return 'A name is required.';
@@ -2220,7 +2263,7 @@
         /* Access that ended reads so, its pen the way to bring it back
            (TEAM2-8, 2026-10-24). */
         word('access_until', 'Access until', ended ? 'Ended ' + untilWord(m.access_until, m.access_until_time)
-          : m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self) + '</dl>') +
+          : m.access_until ? untilWord(m.access_until, m.access_until_time) : 'No end', !self && !adminLocked(m)) + '</dl>') +
       group('Employment', '<dl class="ovfacts">' +
         word('staff_code', 'Employee ID', m.staff_code) +
         pick('department', 'Department', [['', 'Not set']].concat(deptChoices(m.department)), m.department || '', deptName(m.department)) +
@@ -2253,7 +2296,7 @@
           allowEmpty: ['name', 'email'].indexOf(k) < 0,
           /* A value refused keeps its field open, the refusal under it
              (2026-10-20, TEAM-4). */
-          check: function (v) { return badValue(k, norm(v)) || ''; },
+          check: function (v) { return badValue(k, norm(v)) || taken(k, norm(v), m) || ''; },
           save: function (v) {
             v = norm(v);
             var f = {};

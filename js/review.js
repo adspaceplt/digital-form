@@ -415,6 +415,7 @@
       decision._openChanges(true);
     });
     paintDecision(post.review, head.querySelector('.badge'), card.querySelector('.approve'));
+    decision._restoreDraft();
     /* The gallery is how a client sees the month; the canvas is how they
        decide on one post. Opening it is the mockup itself, which is the thing
        they are already looking at, plus a named control for a keyboard. */
@@ -658,7 +659,35 @@
       if (!fromPen) textarea.focus();
     };
     wrap.querySelector('.btn-changes').addEventListener('click', function () { wrap._openChanges(false); });
+    /* A request refused because the post moved is kept in this tab and
+       opened again after Refresh: the note always, the caption edit only
+       where the caption it was written over still stands (2026-10-27,
+       RVP-3). */
+    var draftKey = 'adspace-review-draft:' + token + ':' + post.id;
+    wrap._keepDraft = function (note, copy) {
+      try {
+        sessionStorage.setItem(draftKey, JSON.stringify({ note: note || '', caption: copy && copy.caption, caption_zh: copy && copy.caption_zh,
+          base: post.caption || '', base_zh: post.caption_zh || '' }));
+      } catch (e) { /* no storage: the request stays on the screen */ }
+    };
+    function dropDraft() { try { sessionStorage.removeItem(draftKey); } catch (e) {} }
+    wrap._restoreDraft = function () {
+      var d = null;
+      try { d = JSON.parse(sessionStorage.getItem(draftKey) || 'null'); } catch (e) { d = null; }
+      if (!d) return;
+      dropDraft();
+      var sameCap = (post.caption || '') === d.base && (post.caption_zh || '') === d.base_zh;
+      if (copyBlock && sameCap && (d.caption != null || d.caption_zh != null)) {
+        copyBlock._start();
+        if (d.caption != null) { var a = copyBlock.querySelector('.copyfield[data-f="caption"]'); if (a) { a.value = d.caption; grow(a); } }
+        if (d.caption_zh != null) { var z = copyBlock.querySelector('.copyfield[data-f="caption_zh"]'); if (z) { z.value = d.caption_zh; grow(z); } }
+      }
+      textarea.value = d.note || '';
+      openBox(true);
+      grow(textarea);
+    };
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
+      dropDraft();
       openBox(false);
       restore();
       if (copyBlock) copyBlock._stop();
@@ -682,6 +711,7 @@
       /* The request and the caption edit stay open until the answer is in,
          so a failed send loses nothing typed. */
       send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh }, function () {
+        dropDraft();
         openBox(false);
         if (copyBlock) copyBlock._stop();
       });
@@ -725,6 +755,16 @@
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       /* Only the database's own ok is a decision recorded (audit F5). */
       if (!res || res.error || res.ok !== true) {
+        /* Moved since the page opened: the request is kept for the reload,
+           and the line carries its Refresh (RVP-3). */
+        if (res && res.error === 'changed') {
+          if (decision === 'changes' && wrap._keepDraft) wrap._keepDraft(note, copy);
+          var line = wrap.querySelector('.approve-state');
+          line.innerHTML = escapeHtml('This post was updated after the page opened. Please refresh to review the latest version.') +
+            ' <button class="btn btn-sm approve-refresh" type="button">Refresh</button>';
+          line.querySelector('.approve-refresh').addEventListener('click', function () { location.reload(); });
+          return;
+        }
         wrap.querySelector('.approve-state').textContent =
           res && res.error === 'note_required'
             ? 'Please describe the required changes.'

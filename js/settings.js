@@ -944,12 +944,17 @@
       /* Focus comes back while the sheet is still shutting: the row is read
          once it has shut, never skipped (2026-10-20, SET-2). */
       var open = function () { return document.querySelector('.sheet:not([hidden])'); };
-      if (!open()) { readLine(id); return; }
-      var mo = new MutationObserver(function () {
-        if (open()) return;
-        mo.disconnect(); readLine(id);
-      });
-      mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+      /* Asked a tick later: a sheet that swaps for another (Notices' list
+         for New) hands focus back between the two, and the row was read
+         before the send (2026-10-27, SET-2). */
+      setTimeout(function () {
+        if (!open()) { readLine(id); return; }
+        var mo = new MutationObserver(function () {
+          if (open()) return;
+          mo.disconnect(); readLine(id);
+        });
+        mo.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
+      }, 0);
     });
     $('setList').addEventListener('click', function (e) {
       var gb = e.target.closest('[data-g]');

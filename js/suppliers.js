@@ -411,10 +411,13 @@
         '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
           (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</span></div>' +
           '<div class="sup-ctl">' + chip(s, got && s.status === 'pending') +
-            (s.status === 'pending' && work && complete ? '<button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button>' : '') +
             (menu ? '<span class="team-act"><button class="kmenu-btn" type="button" data-s="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" data-s-menu="rec" hidden>' + menu + '</div></span>' : '') +
-          '</div></div></div>' +
+          '</div></div>' +
+          /* The forward move under the head at its own width, so the name
+             keeps its line beside the state and the ⋯ (2026-10-27, SUP-10). */
+          (s.status === 'pending' && work && complete ? '<div class="sup-go"><button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button></div>' : '') +
+        '</div>' +
       '<nav class="rectabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
         var on = x[0] === state.pane;
         return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';

@@ -573,7 +573,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   row states what it holds (Team n live · Clients n live, Last sent, Next
   #WT…, Used today n of N, n of N on, n types offered), each from its
   section's own read once a visit, filled in place and read again when
-  its sheet hands focus back; a value line is a value, never a sentence
+  its sheet hands focus back (asked a tick later, so a sheet swapping for
+  another is read once both shut; 2026-10-27, SET-2); a value line is a value, never a sentence
   (SET-6, SET-7). The list of groups is drawn only with three groups or
   more (SET-5). The
   account menu reads, in compact rows at a desk (a control's height; 48px
@@ -846,7 +847,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     handle carries `box`.
   - `rename`'s `check(v)` refuses in place: the field stays open with what
     was typed and the refusal under it (`.askmsg`), as a sheet refuses
-    (2026-10-20, TEAM-4).
+    (2026-10-20, TEAM-4); a number box holding what is no number is
+    refused so (Enter a number.), never saved as nothing (2026-10-27,
+    SVC-10).
   - There is no sheet in it.
 - `js/decide.js` records a client decision.
   - The name grows out of Approve (`.namebox`), key `adspace_reviewer`.
@@ -855,6 +858,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ADspaceDecide.whoLine`, words in `js/words.js`): Change edits it in
     place, Forget removes it from this device and the name field returns to
     a request. Decisions already made keep the name they were made under.
+    The selection page's Confirm opens its name on it (2026-10-27, SEL-4).
   - Request changes steps aside while it asks (`.approve-row.is-asking`).
   - An open note box carries `.changebox-who`.
 - `js/swipe.js` is the only swipe: on touch, a sideways swipe inside a
@@ -1503,7 +1507,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Only an admin makes a colleague or a group admin, or changes an admin's
   group, access, access date, email or standing (`team_admin_guard`,
   `team_roles_admin_guard`, `admin-only`; 2026-10-17): Team Full Access is
-  not admin. Nor does anyone but an admin turn on, change or take off a
+  not admin, and is drawn no Set inactive, Delete or Access until pen on an
+  admin's record (2026-10-27, TEAM-1). Nor does anyone but an admin turn on, change or take off a
   granted part (an admin tool, Performance, Supplier bank details …) on any
   group, their own included: the guard compares every key `ops_granted` is
   asked for, the page stills those switches and selects and saves them as
@@ -1821,7 +1826,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `#crmBrandSheet`. The Active gate opens the sheet on the first missing
     field, and its Save, billing then complete, carries on into the move
     (the Client ID asked, the head brought back into view); Cancel forgets
-    it (2026-10-20, CLI-6).
+    it (2026-10-20, CLI-6). A Save while that move still lacks a required
+    field keeps the sheet on it and the move asked; a Save that changes
+    nothing writes and files nothing (2026-10-27, CLI-13).
   - The billing columns (registered name, both registration numbers, TIN,
     SST no., billing contact, finance email, billing address) are withheld
     from the table by column grants. They are read only through
@@ -1839,7 +1846,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Client Onboarding and Pre-Advertising Checklists, ver. r1.1-26, once per
   client): one `client_checklists` row a client and kind (RLS on, no
   policy, no grant), the template copied in when it is first written
-  (`checklist_template`). The pane lists both, `list=` opening one (its
+  (`checklist_template`). The pane lists both, `list=` opening one, on a
+  record already open too, and kept in the address (2026-10-27, OVW-12) (its
   Back line and head brought under the bar, never below the fold), read
   first (the user, 2026-10-15: "the checklist is coming back in the wrong
   design"): a head card (title, version, state, Write with AI, Preview PDF
@@ -2431,7 +2439,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `team.changed` under Document types from and to.
   - A type's fields are the words its wording holds in braces ({intern
     name}, {from}); {first name}, {role} and {client} fill themselves, and
-    on an HR letter {name}, the colleague's full name.
+    on an HR letter {name}, the colleague's full name; a client picked in
+    the Register's sheet brings its main contact (else its first), and
+    Issue refuses any word still in braces in the title, salutation or
+    letter, naming it (2026-10-27, DOC-7).
     `doc_types.fields` says how each is asked: Text, Date or Paragraph (a
     name holding "date" is a date until set). Issue groups the kinds
     (Quotation, Client letters, HR letters) and asks for them under Details,
@@ -2468,7 +2479,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   groups of Not set (2026-10-20, SUP-1 to SUP-3).
 - The supplier's page (`supplier_form_read`, `supplier_form_submit`, anon)
   leads For ADspace · Supplier ID, Enter moving to the next field and
-  submitting from the last alone (2026-10-20, SPF-2, SPF-3),
+  submitting from the last alone (2026-10-20, SPF-2, SPF-3), a failed
+  send naming ADspace, never an account manager (`W.notSentAdspace`,
+  2026-10-27, SPF-6),
   reads the Supplier ID (and the name once held) and checks as the Jotform
   form did: Company or Individual, NRIC (XXXXXX-XX-XXXX) for an individual
   alone, a company's 12-digit BRN, TIN, SST no. (AXX-XXXX-XXXXXXXX), Office
@@ -2501,7 +2514,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   charge), Payment (Payment details, the Details update form, Bukku),
   Documents, Emails; a pane with nothing in it is not drawn.
 - Approve (`supplier_set_status`, a name, the details and the bank account
-  whole, `incomplete`) makes it Active; Set inactive / Set active in the
+  whole, `incomplete`; under the record's head at its own width, `.sup-go`,
+  2026-10-27, SUP-10) makes it Active; Set inactive / Set active in the
   ⋯, Delete at Manage with the name (else the Supplier ID) typed back
   (letters keep their words). The NRIC and the bank details are sent and
   saved only at `suppliers.pay` (granted), filed by name, never by value.
@@ -2768,7 +2782,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   sends it as `version`, and the page decides through
   `submit_review_seen(… p_version)`, which refuses a post changed since
   (`changed`: "This post was updated after the page opened. Please refresh to
-  review the latest version.") and keeps what was decided on in
+  review the latest version.", with Refresh; a request for changes so
+  refused is kept in the tab and reopened after it, its caption edit only
+  where the caption stands; 2026-10-27, RVP-3) and keeps what was decided on in
   `reviews.seen`; `ADspaceAPI.submitReview` sends a decision with its
   version through `submit_review_seen` alone, a refusal never sent again
   without it (2026-10-22, BE-13).
@@ -3032,7 +3048,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the record's ⋯ holds Edit and Delete, last.
 - The campaign record:
   - Its panes (`pane=`) are Overview, Creators, Schedule, Selection,
-    Finance, Activity.
+    Finance, Activity; the address's pane is read before the address is
+    written, and a new campaign opens on Creators (2026-10-27, CMP-17,
+    CMP-18).
   - A draft with no creator draws no Publish and Add creators is its blue,
     the empty list offering no second one (2026-10-20, CMP-1).
   - Below 1100 Details, Key dates and Timing follow the pane (`.rail-after`);
@@ -3437,7 +3455,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   asks first (what it reads, n left today, notes kept in this browser
   under `adspace-analytics-notes`) and sends the figures this page worked
   out for the period on show (`figuresOf`: both tabs, the period before,
-  the verdicts, the months, the forecast, `leads_complete_from` Sept 2026)
+  the verdicts, the months, the forecast, `leads_complete_from` the setting
+  `analytics_from`)
   and never a client's name; every number Claude quotes is checked against
   them (a point quoting another is left out, a headline or summary refused
   `ai-incomplete`). Its own count (`ai_analytics_claim`, `analytics` 3,
@@ -3453,7 +3472,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   seeded Sept 2026, Settings, Clients: Analytics, a month chosen from a
   list; `2026-10-25-analytics-counts-from.sql`, the SQL Editor's): before
   it the portal held won clients typed in later, never the leads lost
-  (review 1). A forecast (dashed, over its likely range: the mean of the
+  (review 1), so a span before it judges no leads or win rate and the
+  Sales tab says Leads are counted from {month}. (`leadsComparable`); an
+  unrecorded source, or one holding every lead, is never a finding
+  (2026-10-27, ANL-1, ANL-2). A forecast (dashed, over its likely range: the mean of the
   last six full months times the month's usual share, ± the last twelve's
   spread) is drawn only once 12 full months are held, from the month still
   running (its count so far in its name, the line of what happened ending
@@ -4012,8 +4034,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     and the value runs full width beneath.
 - New month never edits a month held: it offers only the months the client
   does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
-  `exists` (2026-10-22, WRK-1).
-- A press on one task reads that task alone; the catalogue is read once a
+  `exists` (2026-10-22, WRK-1), opening on this month, else the next one
+  free (2026-10-27, WORK-2).
+- A press on one task reads that task alone, as does a task made alone or
+  copied, which joins the list behind its card (2026-10-27, WORK-1); the catalogue is read once a
   visit and Waiting for you on entering and after a decision; a failed
   Waiting read is said in the card with Try again (2026-10-22, WRK-3, WRK-5).
 - Every client deliverable goes into a confirmed month: one that exists, is
@@ -4387,7 +4411,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   stops the check-ins and takes the answers out of Team: Health; Agree again
   is the way back.
 - The check-in: Body, Mind, Sleep, Energy, Workload, 1 to 5 each (5 is well,
-  a word for every step) as segments, and an optional note of 1,000
+  a word for every step; each scale's two ends named under it, `hcE_*`,
+  2026-10-27, MINE-7) as segments, and an optional note of 1,000
   characters, once a half month (the 1st to the 15th, the 16th to the month's
   end, MYT), edited until it ends (`health_checkin_save`: `no-consent`,
   `incomplete`, `bad-score`, `too-long`; the page names the half its sheet
@@ -4634,7 +4659,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   arrows; `tab=` in the address, Drafts left out): Drafts, In review,
   Confirmed, Published, each with its count, opening on the first that
   holds any. Under the tab, a card a report month (`period_start`), newest
-  first. Published is held to a period (`#rhPeriod`, Last 3 months by
+  first, a published row's Sent or Not sent in its own right column on a
+  narrow pane (`.rh-sent`, 2026-10-27, RPT-11). Published is held to a period (`#rhPeriod`, Last 3 months by
   default, Last 12 months, This year, All months; drawn only on that tab),
   only its newest month open; a search (client, code, month, type) looks
   through every report, whatever the tab and the period. New report opens
@@ -5035,7 +5061,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     settings (`app_settings_set`, from today; Edit prices, `team.settings`).
     A use from before tokens were kept is counted as not priced.
   - A draft is paid for once asked, so it is saved to the report as it
-    arrives (`storeDraft`), with Undo putting the earlier text back
+    arrives (`storeDraft`) and to the page's copy, the strip reading it at
+    once (`localDraft`, 2026-10-27, RPT-10), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with
     "Save before leaving.". While one runs, closing or reloading the tab
     asks first (`beforeunload`), and an answer that lands after the person
@@ -5249,7 +5276,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Two tables, Services and Add-ons, with categories that carry their count.
   Admins edit; everyone reads. Rates are in RM. At Services Full Access the
   price on a line is changed where it is read (`ADspaceAsk.rename`, empty is
-  On quote), into the draft as the sheet's Save is.
+  On quote), into the draft as the sheet's Save is; a rate below nought
+  stays open with its refusal, a database refusal said on the row
+  (2026-10-27, SVC-10).
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
 - A line's key is its slug, made from its name: a name already on the card
   is refused as such ("A service with this name is already on the card."),
@@ -5452,7 +5481,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   and terms), Request received with the day the team will be in touch.
   Once a colleague takes the lead the page names them (Your
   representative: name, position, Chat on their WhatsApp only where their
-  namecard shows the mobile, else the office's). The link shows the latest
+  namecard shows the mobile, else the office's); until then every step
+  offers the office's Chat on WhatsApp (2026-10-27, QTE-2). The link shows the latest
   revision (`quotations.replaces`, `quote_shown`: Revised on {d}. It
   replaces {ref}.). The link follows the prospect to the client portal
   (`2026-10-26-quotation-to-client-portal.sql`): `quote_website_read`
@@ -5536,7 +5566,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `go.adspace.me` is never retired: printed QR codes encode it.
   - The host is `ADSPACE_CONFIG.linkHost`.
 - A live link's row offers Copy, Open (its short address, a new tab), QR
-  codes and the ⋯ (LNK-2, 2026-10-22). The Worker keeps which kind an `/s/`
+  codes and the ⋯ (LNK-2, 2026-10-22), four fixed tracks on a phone
+  (LNK-8). The Worker keeps which kind an `/s/`
   key is a day at its edge (`caches.default`, a kind the database named
   alone), so a person's visit is sent on without a read (LNK-3).
 - Bulk import is behind the bar's ⋯ (`data-rare`) and is a sheet (`#importBox`, `links:work`, as the QR sheet's
@@ -5767,7 +5798,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Sign-in and access, Employment, Namecard, each value changed where it
   is read at Team Full Access: a word or a date its pen, a choice a
   select drawn as the value, saved alone through `patchMember`, refused
-  in place as the sheet refuses, filed from and to; no Edit button; the
+  in place as the sheet refuses, a name, email or Employee ID another
+  colleague holds included (2026-10-27, TEAM-2), filed from and to; no Edit button; the
   user, 2026-10-18), Work (each open task they own, each client they are
   person in charge of, each open campaign they run, a row a record opening
   it as search does, one line at a desk, an overdue task's date in red;
@@ -5921,7 +5953,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the bar's ⋯ Set access expiry (`team_set_expiry_at`, Team at Manage)
     asks for a date and an optional time, refusing a moment passed in the
     question (TEAM2-7), and sets them for every active colleague but the
-    caller and a system account;
+    caller and a system account (an admin's for an admin alone), naming
+    how many own end dates it replaces, Undo putting each back
+    (2026-10-27, TEAM-3);
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
   - the moment passes before the run comes: `is_team()`, `allowed()`,
