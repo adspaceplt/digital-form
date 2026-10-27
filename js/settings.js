@@ -966,6 +966,18 @@
   }
   wire();
 
-  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, urlState: urlState, allowed: allowed, say: say };
+  /* Every row this colleague is drawn, with its group, for console search
+     (2026-10-27, SET-9: 26 rows in eight groups, one shown at a time). */
+  function rows() {
+    var out = [];
+    groups().forEach(function (g) { g.rows.forEach(function (r) { out.push({ id: r.id, name: r.name, group: g.key, groupName: g.name }); }); });
+    return out;
+  }
+  /* A row found by search: its group shown and its control focused. */
+  function focusRow(id) {
+    var b = document.querySelector('#setList .stg-row[data-row="' + id + '"] [data-a]');
+    if (b) b.focus();
+  }
+  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow };
   if (bridge.settingsReady) bridge.settingsReady();
 })();

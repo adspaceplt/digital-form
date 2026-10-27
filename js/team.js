@@ -823,7 +823,13 @@
           v = v && typeof v === 'object' ? v : {};
           Promise.resolve(handTo(m, own, v, true)).then(function (moved) {
             if (moved === false) return;
-            saveMember(m, { active: false }, moved ? function () { msg('teamMsg', 'Saved. ' + moved, 'ok'); } : null);
+            /* It ends on what happened and on what stays with them, with
+               the way to it (2026-10-27, TEAM-4: "Saved." alone). */
+            saveMember(m, { active: false }, function () {
+              var kept = keptWord(own, held, v, m.name);
+              var line = m.name + ' set inactive.' + (moved ? ' ' + moved : '') + (kept ? ' ' + kept : '');
+              if (kept) workMsg(m, line, 'ok'); else msg('teamMsg', line, 'ok');
+            });
           });
         });
       });
@@ -976,6 +982,9 @@
     b.addEventListener('click', function () { openRec(m.id, 'work'); });
     el.appendChild(document.createTextNode(' '));
     el.appendChild(b);
+    /* The record repaints after the read the act starts: the button is
+       drawn again with the line (TEAM-4). */
+    if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
     own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.', 'admin-only': ADMIN_ONLY,
@@ -2043,6 +2052,9 @@
   }
   function pushUrl() { if (bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl(); }
   function openRec(id, pane) {
+    /* What the list said stays with the list (2026-10-27, TEAM-8). */
+    var lm = $('teamMsg');
+    if (lm && lm.className.indexOf('err') < 0) { lm.textContent = ''; lm.className = 'msg'; }
     rec.id = id; rec.pane = pane || 'overview'; rec.work = null;
     pushUrl();
     paintRec();
@@ -2109,6 +2121,13 @@
     if (rec.said && rec.said.id === m.id) {
       var said = rec.said;
       msg('mrecMsg', said.text, said.kind);
+      if (said.work && rec.pane !== 'work' && may('team', 'manage')) {
+        var wb = document.createElement('button');
+        wb.type = 'button'; wb.className = 'btn btn-sm msg-act'; wb.textContent = 'Open Work';
+        wb.addEventListener('click', function () { openRec(said.work, 'work'); });
+        $('mrecMsg').appendChild(document.createTextNode(' '));
+        $('mrecMsg').appendChild(wb);
+      }
       rec.said = null;
     }
     var head = box.querySelector('.rec-ctl');

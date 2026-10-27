@@ -135,7 +135,7 @@
       nextUp: {
         confirmed: 'Shoot date to be scheduled', pending_visit: 'Filming',
         pending_draft: 'Draft in progress', reviewing: 'Your approval',
-        changes: 'Revision in progress', scheduled: 'Goes live',
+        changes: 'Revision in progress', scheduled: 'Post date',
         posted: 'Results in 7 days'
       },
       tbc: 'To be confirmed',
@@ -146,7 +146,8 @@
       pdf: 'PDF',
       pdfFail: 'Unable to open the invoice. Please refresh and try again.',
       pic: 'Contact',
-      goLive: 'Going live',
+      /* Post date, as the step track names it (2026-10-27, SEL-5). */
+      goLive: 'Post date',
       viewPost: 'View post',
       /* The post itself, named for where it lives (the user, 2026-09-27: the
          platform's name alone was "too not obvious"). */
@@ -239,7 +240,7 @@
       nextUp: {
         confirmed: '安排拍摄日期', pending_visit: '拍摄',
         pending_draft: '初稿制作中', reviewing: '待您确认',
-        changes: '修改中', scheduled: '即将发布',
+        changes: '修改中', scheduled: '发布日期',
         posted: '7天后提供数据'
       },
       tbc: '待定',
@@ -1037,7 +1038,7 @@
     }
   }
 
-  /* A time of day on the twelve-hour clock the client pages read (10:47 am,
+  /* A time of day on the twelve-hour clock the client pages read (10:47am,
      as the scripts page writes it), never 24-hour beside a shoot's 2pm
      (SELECTION-10). */
   function ampm(hm) {
@@ -1049,7 +1050,7 @@
     if (h > 23) return s;
     var x = h >= 12 ? 'pm' : 'am', zh = h < 12 ? '上午' : '下午';
     h = h % 12 || 12;
-    return lang === 'zh' ? zh + h + ':' + (m[2] || '00') : h + ':' + (m[2] || '00') + ' ' + x;
+    return lang === 'zh' ? zh + h + ':' + (m[2] || '00') : h + ':' + (m[2] || '00') + x;
   }
   function fmtDate(d) {
     /* Days are Malaysia's (js/clock.js), whatever the device's clock. */

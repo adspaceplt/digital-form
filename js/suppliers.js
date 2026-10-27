@@ -275,18 +275,25 @@
   /* What a details form brought back, read in place before Use details
      (2026-10-20, SUP-2): each answer under its label, the bank details by
      name alone without Supplier bank details. */
+  /* Under the record's own three headings, so seventeen answers read as
+     the record will hold them (2026-10-27, SUP-12). */
   function answersOf(f) {
-    var a = f.answers || {}, rows = [];
-    if (a.name) rows.push('<div><dt>Name</dt><dd>' + esc(a.name) + '</dd></div>');
-    Object.keys(FIELD).forEach(function (k) {
-      if (k === 'nric' && a.kind !== 'individual') return;
-      var v = valueOf(a, k);
-      if (!v) return;
-      if (FIELD[k][2] && !state.pay) return;
-      rows.push('<div><dt>' + esc(FIELD[k][1]) + '</dt><dd' + (k === 'address' || k === 'bank_address' ? ' class="is-pre"' : '') + '>' + esc(v) + '</dd></div>');
+    var a = f.answers || {}, out = '';
+    GROUPS.forEach(function (g, gi) {
+      var rows = [];
+      if (gi === 0 && a.name) rows.push('<div><dt>Name</dt><dd>' + esc(a.name) + '</dd></div>');
+      g[1].forEach(function (it) {
+        var k = it[0];
+        if (k === 'nric' && a.kind !== 'individual') return;
+        var v = valueOf(a, k);
+        if (!v) return;
+        if (it[2] && !state.pay) return;
+        rows.push('<div><dt>' + esc(it[1]) + '</dt><dd' + (k === 'address' || k === 'bank_address' ? ' class="is-pre"' : '') + '>' + esc(v) + '</dd></div>');
+      });
+      if (gi === 2 && !state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Given</dd></div>');
+      if (rows.length) out += '<h5 class="sup-ans-h">' + esc(g[0]) + '</h5><dl class="ovfacts">' + rows.join('') + '</dl>';
     });
-    if (!state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Given</dd></div>');
-    return rows.join('');
+    return out;
   }
   function formBlock() {
     var f = state.form, work = may('suppliers', 'work'), s = state.rec;
@@ -295,8 +302,9 @@
       var held = update && f.bank_changed && !payWork();
       return formHead(update ? 'Details update' : 'Details form', work && !held
           ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
-        '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in</dd></div>' +
-        (update ? changesOf(f) : answersOf(f)) + '</dl>' +
+        /* The received day is the head's; the state says what waits. */
+        '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in' : 'Waiting to be taken in') + '</dd></div>' +
+        (update ? changesOf(f) + '</dl>' : '</dl>' + answersOf(f)) +
         (held && work ? '<p class="msg warn">The bank details changed. A colleague with Supplier bank details takes this in.</p>' : '');
     }
     /* An open link reads the same whether it asks for the details first or
@@ -403,6 +411,10 @@
           (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
           '<div id="supEmailList"><p class="muted">Loading.</p></div></section>'
     };
+    /* A Pending supplier holding no details has nothing a document or an
+       email can name yet: those panes wait until it does (2026-10-27,
+       SUP-13). */
+    if (s.status === 'pending' && noDetails) { panes.documents = ''; panes.emails = ''; }
     var shown = PANES.filter(function (x) { return panes[x[0]]; });
     if (!shown.some(function (x) { return x[0] === state.pane; })) state.pane = 'overview';
     rec.innerHTML =
@@ -418,10 +430,10 @@
              keeps its line beside the state and the ⋯ (2026-10-27, SUP-10). */
           (s.status === 'pending' && work && complete ? '<div class="sup-go"><button class="btn btn-sm btn-primary" type="button" data-s="approve">Approve</button></div>' : '') +
         '</div>' +
-      '<nav class="rectabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
+      (shown.length > 1 ? '<nav class="rectabs sup-tabs" id="supTabs" role="tablist" aria-label="Supplier">' + shown.map(function (x) {
         var on = x[0] === state.pane;
         return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
-      }).join('') + '</nav>' +
+      }).join('') + '</nav>' : '') +
       '<div class="msg" id="supRecMsg"></div>' +
       '<div class="panel sup-rec sup-body" data-swipe="supTabs">' + shown.map(function (x) {
         return '<div class="readgroups sup-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
@@ -603,16 +615,19 @@
   function offerMail(s) {
     if (!s.email || !may('suppliers', 'work')) return;
     window.ADspaceConfirm.ask({ title: 'Send the approval email?', go: 'Send email', cancel: 'Not now',
-      body: (s.contact_name || nameOf(s)) + ' is told by email that the registration is approved.' }, function () { openMail('approved'); });
+      body: (s.contact_name || nameOf(s)) + ' is told by email that the registration is approved.' }, function () { openMail('approved', null, true); });
   }
 
   /* Send email (#supMailSheet): the template's words filled from the record
      by supplier_email_prepare, changed here if need be, sent by
      supplier-mail; a letter is drawn here and goes as its PDF. */
   var mail = null;
-  function openMail(purpose, docId) {
+  /* Opened from Approve's question, the sheet's Send sends without asking
+     again: the question was asked once (the user, 2026-10-27, SUP-11: it
+     asks, never sends by itself, until the portal's flows are settled). */
+  function openMail(purpose, docId, asked) {
     var s = state.rec;
-    mail = { supplier: s.id, docs: [] };
+    mail = { supplier: s.id, docs: [], asked: Boolean(asked) };
     msg('supMailMsg', ''); $('supMailRecent').hidden = true;
     $('supMailTo').textContent = 'Loading.';
     var tpl = $('supMailTpl');
@@ -701,6 +716,7 @@
   function askMail() {
     var p = mail && mail.prep;
     if (!p) return;
+    if (mail.asked) { sendMail(false); return; }
     var cc = !$('supMailCcLine').hidden && $('supMailCc').checked;
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
       body: 'To ' + p.to.email + (cc ? ', a copy to ' + p.cc : '') + '.' }, function () { sendMail(false); });

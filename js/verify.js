@@ -17,7 +17,7 @@
     en: {
       title: 'Verify document', text: 'Enter the reference printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
-      notFound: 'Not found', notFoundText: 'Check the reference, or contact ADspace.',
+      notFound: 'Not found', notFoundText: 'Check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
       issued: 'Issued', state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced' }
@@ -25,7 +25,7 @@
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号。',
       kicker: '文件核验', go: '核验', checking: '核验中…', lang: 'EN',
-      notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。',
+      notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
       failed: '无法核验', failedText: '请稍后再试。',
       locked: '查询次数过多', lockedText: '此网络连接查询编号的次数过多。请于{wait}后重试。',
       issued: '签发于', state: { valid: '有效', voided: '已作废', replaced: '已替换' },
@@ -73,6 +73,7 @@
     last = a;
     var out = $('vOut');
     out.hidden = false;
+    if (a.need) { out.innerHTML = '<span class="verify-need">' + esc(t().enterRef) + '</span>'; return; }
     if (a.failed) {
       out.innerHTML = '<b>' + esc(t().failed) + '</b><span>' + esc(t().failedText) + '</span>';
       return;
@@ -107,7 +108,13 @@
     serial = String(serial || '').trim();
     /* An empty check takes the last answer away with it, so nothing on the
        page answers a reference no longer asked (VERIFY-4). */
-    if (!serial) { last = null; $('vOut').hidden = true; $('vOut').innerHTML = ''; keep(''); $('vSerial').focus(); return; }
+    /* An empty check says what is needed (2026-10-27, VER-2). */
+    if (!serial) {
+      keep(''); paint({ need: true });
+      $('vSerial').setAttribute('aria-invalid', 'true'); $('vSerial').focus();
+      return;
+    }
+    $('vSerial').removeAttribute('aria-invalid');
     var go = $('vGo');
     go.disabled = true; go.textContent = t().checking;
     var done = function (a) { go.disabled = false; go.textContent = t().go; paint(a); if (!a.failed && !a.locked) keep(serial); };

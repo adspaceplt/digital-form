@@ -40,7 +40,8 @@
     var m = /^(\d{1,2}):(\d{2})/.exec(t || '');
     if (!m) return '';
     var h = Number(m[1]);
-    return ((h % 12) || 12) + ':' + m[2] + ' ' + (h >= 12 ? 'pm' : 'am');
+    /* 2:00pm, as every client page writes a time (2026-10-27, VSP-2). */
+    return ((h % 12) || 12) + ':' + m[2] + (h >= 12 ? 'pm' : 'am');
   }
   function dur(n) {
     n = Number(n) || 0;

@@ -87,6 +87,8 @@
 .is-narrow .rec-id-set .rec-id-meta { grid-area: meta; }
 .rec-id-set .rec-name .rec-pen { vertical-align: middle; margin-left: 4px; }
 .rec-id-set .rec-name:has(> .askfield) .rec-pen { margin-left: 0; }
+.rec-id-set .rec-name:has(> .rec-pen:not([hidden])) .rec-tail { white-space: nowrap; padding-right: calc(var(--ctl-h) + 4px); }
+.rec-id-set .rec-name:not(:has(> .askfield)) > h2 + .rec-pen { margin-left: calc(-1 * var(--ctl-h)); }
 .rec-month .part { white-space: nowrap; }
 .zone-head { display: flex; gap: 11px; align-items: center; margin-bottom: 16px; }
 /* Where things come in reads as an input surface */
@@ -226,6 +228,11 @@ button.appver {
    under the lines it prices and above the actions, on the block step, and the
    field fills the sheet rather than sizing itself to its own placeholder. */
 .lpickref { margin-top: 12px; }
+/* A Client ID asked in the letter sheet, the next number a press beside it (CLI-15). */
+.pickcode-row { display: flex; gap: 8px; align-items: center; }
+.pickcode-row > .input { flex: 1 1 auto; min-width: 0; }
+.pickcode-row > .btn { flex: 0 0 auto; }
+.lpickref .msg { margin: 6px 0 0; }
 @media (max-width: 640px) {.lpickrow { grid-template-columns: 18px minmax(0, 1fr); grid-template-areas: "tick name" ". amt"; gap: 2px 12px; }
   .lpickname { grid-area: name; }
   .lpickamt { grid-area: amt; }
@@ -1447,8 +1454,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .cal-chip.is-ok .cal-chip-who::before { background: var(--dot-ok); }
 .cal-chip.is-warn .cal-chip-who::before { background: var(--dot-wait); }
 .cal-chip.is-danger .cal-chip-who::before { background: var(--dot-late); }
-.cal-key { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 12px; color: var(--ink-mute); }
-.cal-key > span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+.cal-key { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--ink-mute); }
 .calbar .cal-key + .btn-quiet { margin-left: 4px; }
 @media (max-width: 479px) {.cal-key { display: none; }
   }
@@ -2200,6 +2206,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .init-row { grid-template-columns: minmax(0, 1fr) var(--state-w) var(--ctl-h); padding-top: 10px; padding-bottom: 10px; }
 .init-name .init-link { align-self: flex-start; margin-top: 6px; }
 .init-row > .team-act { align-self: start; margin-block: calc((20px - var(--ctl-h)) / 2); }
+/* The state sits on the title's line, as the ⋯ does (2026-10-27, MINE-8). */
+.init-row > .init-state { align-self: start; display: flex; align-items: center; min-height: 20px; }
 .is-narrow .init-row > .init-name { grid-area: who; }
 .is-narrow .init-row > .init-state { grid-area: state; justify-self: end; }
 .is-narrow .init-row > .team-act { grid-area: act; }
@@ -2332,6 +2340,11 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 #setPanel > .cr-rec:not(:has(> .cr-rail > .railblock:not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
 #setPanel > .cr-rec:not(:has(> .cr-rail > .railblock:not([hidden]))) > .cr-rail { display: none; }
 #assetSheet .sheet-body > .panel { margin: 0 0 12px; }
+/* In the sheet the pending assets sit on the sheet's own ground, each one
+   shaded: a shaded zone round white cards was a region inside a region
+   (2026-10-27, REV-10). */
+#assetSheet .zone-draft { background: none; padding: 0; border-radius: 0; }
+#assetSheet .zone-draft .draft { background: var(--sunk); }
 .zone-out .zone-head > #addAssets { margin-left: auto; }
 
 .ovw-cardhead .tone { flex: 0 0 auto; }
@@ -3137,6 +3150,7 @@ button.vs-row { cursor: pointer; }
 .wam-row small.wam-why, .wat-row small.wam-why { color: var(--err); white-space: normal; overflow-wrap: anywhere; }
 /* Not confirmed (2026-10-17) is a caution, never a refusal: the soft ink. */
 .wam-row small.wam-why.is-unknown { color: var(--ink-soft); }
+.wam-why .wam-open { margin-left: 4px; font-size: 12.5px; }
 .wam-to .wam-why { display: none; }
 .is-narrow .crm-head.wam-row { display: none; }
 .is-narrow .wam-row {
@@ -3615,6 +3629,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
 .sup-rec { padding: 18px 20px; }
 .sup-rec .readgroups { margin-top: 16px; }
+.sup-ans-h { margin: 16px 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 /* The record in panes (SUP-4, 2026-10-22): the head its own card, the
    strip under it, then the pane's card; the step between is the 12 every
    block in a section keeps. */
@@ -3643,9 +3658,12 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .mrec-card { padding: 18px 20px; }
 .mrec-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 #mrecMsg:empty { display: none; }
-#mrecPane.is-narrow .readgroup-head:has(.mrec-acts) { flex-wrap: wrap; }
-#mrecPane.is-narrow .mrec-acts { flex: 1 0 100%; flex-wrap: nowrap; }
-#mrecPane.is-narrow .mrec-acts .btn { flex: 1 1 0; min-width: 0; }
+/* The acts stay in the group's head at its right edge, beside the title,
+   until the pane is a phone's: the record's pane is narrow at every desk
+   width, and they stood as two slabs over the facts (2026-10-27, TEAM-6). */
+#mrecPane.is-tight .readgroup-head:has(.mrec-acts) { flex-wrap: wrap; }
+#mrecPane.is-tight .mrec-acts { flex: 1 0 100%; flex-wrap: nowrap; }
+#mrecPane.is-tight .mrec-acts .btn { flex: 1 1 0; min-width: 0; }
 #mrecMsg { margin: 0 0 12px; }
 /* The record's rail (TEAM2-9, 2026-10-24): the client record's grid, its
    pane holding the message line and the pane with no gap of its own. */

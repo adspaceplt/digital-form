@@ -3648,7 +3648,11 @@
 
   function paintSetHeader() {
     var live = state.batch.published;
-    $('setTitle').textContent = state.batch.title;
+    /* The last word holds the rename pen beside it, so the pen never wraps
+       alone onto a line of its own (2026-10-27, REV-9). */
+    var tt = String(state.batch.title || ''), cut = tt.replace(/\s+$/, '').lastIndexOf(' ');
+    $('setTitle').innerHTML = cut > 0 ? esc(tt.slice(0, cut + 1)) + '<span class="rec-tail">' + esc(tt.slice(cut + 1)) + '</span>'
+      : '<span class="rec-tail">' + esc(tt) + '</span>';
 
     var chip = $('setState');
     chip.textContent = live ? 'Published' : 'Draft';
@@ -5751,6 +5755,12 @@
         vals[k[0]] = Number(x);
       });
       if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'mute'); return; }
+      /* A save that only puts back the figures in force before a planned
+         change withdraws it, and says so (2026-10-27, SET-8). */
+      var withdrawn = Object.keys(vals).every(function (key) {
+        var nx = MON.next ? MON.next(key) : null, was = nx && MON.setting(key, ADspaceClock.addDays(nx.from, -1));
+        return nx && nx.from === v.from && was != null && Number(vals[key]) === Number(was);
+      });
       db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) {
@@ -5761,7 +5771,7 @@
         }
         return MON.load(true).then(function () {
           var word = ADspaceClock.date(v.from);
-          if (spec.msg) msg(spec.msg, 'Saved. From ' + word + '.', 'ok');
+          if (spec.msg) msg(spec.msg, withdrawn ? 'Planned change withdrawn.' : 'Saved. From ' + word + '.', 'ok');
           if (spec.done) spec.done();
         });
       }).catch(function (e) { if (spec.msg) msg(spec.msg, String((e && e.message) || e), 'err'); });
@@ -6959,8 +6969,9 @@
       row.innerHTML =
         // Live is true of nearly every row, so only the exception is named,
         // and it is named beside the thing it is true of.
-        '<span class="link-slug">/' + esc(l.slug) +
-          (off ? ' <span class="tone is-off">Paused</span>' : '') + '</span>' +
+        /* A paused link stands in the Paused card, which says it once
+           (2026-10-27, LNK-10). */
+        '<span class="link-slug">/' + esc(l.slug) + '</span>' +
         '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
         '<span class="link-label">' + esc(l.title || '') + '</span>' +
         '<span class="link-act">' +
@@ -7120,26 +7131,37 @@
   if ($('linkClose')) $('linkClose').addEventListener('click', shutLinkForm);
   $('linkSearch').addEventListener('input', paintLinks);
 
+  /* A refusal marks the field it names and takes the focus there (2026-10-27,
+     LNK-9: focus stayed on Create, no field marked). */
+  function linkBad(id, text) {
+    msg('linkMsg', text, 'err');
+    var f = $(id);
+    if (f) { f.setAttribute('aria-invalid', 'true'); f.setAttribute('aria-describedby', 'linkMsg'); f.focus(); }
+  }
+  ['newSlug', 'newTarget'].forEach(function (id) {
+    if ($(id)) $(id).addEventListener('input', function () { this.removeAttribute('aria-invalid'); });
+  });
   $('saveLink').addEventListener('click', function () {
     var slug = cleanSlug($('newSlug').value);
     var target = cleanTarget($('newTarget').value);
-    if (!slug)       { msg('linkMsg', 'A short link needs a slug.', 'err'); return; }
+    ['newSlug', 'newTarget'].forEach(function (id) { $(id).removeAttribute('aria-invalid'); });
+    if (!slug)       { linkBad('newSlug', 'A short link needs a slug.'); return; }
     if (!slugOk(slug)) {
-      msg('linkMsg', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.', 'err');
+      linkBad('newSlug', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.');
       return;
     }
     if (!target) {
-      msg('linkMsg', $('newTarget').value.trim()
+      linkBad('newTarget', $('newTarget').value.trim()
         ? 'That destination does not look like a web address.'
-        : 'A destination is required.', 'err');
+        : 'A destination is required.');
       return;
     }
 
     // Renaming a slug is a new row plus a delete, so catch the collision first.
     var clash = links.filter(function (l) { return l.slug === slug && l.slug !== editingSlug; });
-    if (clash.length) { msg('linkMsg', '/' + slug + ' is already in use.', 'err'); return; }
+    if (clash.length) { linkBad('newSlug', '/' + slug + ' is already in use.'); return; }
     if ((cards || []).some(function (t) { return t.card_slug === slug; })) {
-      msg('linkMsg', '/' + slug + ' is a colleague\'s namecard.', 'err'); return;
+      linkBad('newSlug', '/' + slug + ' is a colleague\'s namecard.'); return;
     }
 
     var body = {
@@ -7157,7 +7179,8 @@
     db.from('links').upsert(body, { onConflict: 'slug' }).then(function (r) {
       go.disabled = false;
       if (r.error) {
-        msg('linkMsg', /slug-taken/.test(r.error.message) ? '/' + slug + ' is a colleague\'s namecard.' : r.error.message, 'err');
+        if (/slug-taken/.test(r.error.message)) linkBad('newSlug', '/' + slug + ' is a colleague\'s namecard.');
+        else msg('linkMsg', r.error.message, 'err');
         return;
       }
       if (was && was !== slug) {

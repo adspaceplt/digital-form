@@ -384,8 +384,10 @@
   var PRIORITY_RANK = { 1: 1, 2: 2, 4: 3, 3: 4, 5: 4 };
   var PRIORITY_OPTS = [['1', 'Urgent'], ['2', 'High'], ['4', 'Medium'], ['3', 'Normal']];
   function prioValue(t) { var p = Number(t && t.priority_level); return PRIORITY_WORD[p] && p !== 5 ? p : 3; }
+  /* The database stores `other` where no format was chosen, so it reads as
+     Not set, never as a format (2026-10-27, WORK-5). */
   function formatWord(t) {
-    if (!t || !t.deliverable_type) return '';
+    if (!t || !t.deliverable_type || t.deliverable_type === 'other') return '';
     return DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type);
   }
   /* The format in a calendar cell's width: the family's own word, as the
@@ -2364,7 +2366,8 @@
        due today reads Today on both, not a bare date. */
     var n = daysAway(v);
     var near = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : '';
-    var sh = near || shortDate(v) + (n < 0 ? ' · late' : '');
+    /* The phone keeps how late, as the desk does (2026-10-27, WORK-6). */
+    var sh = near || shortDate(v) + (n < 0 ? ' · ' + (-n) + (n === -1 ? ' day late' : ' days late') : '');
     if (kind) sh = kind + ' ' + (near ? near.toLowerCase() : shortDate(v));
     return { long: w, short: sh, label: (kind ? kind + ' ' : 'Due ') + niceDate(v) };
   }
@@ -3684,11 +3687,16 @@
     if (!b.box) return;
     if (b.steps) paintSteps(t, b.steps);
     b.box.classList.toggle('is-blocked', Boolean(n.blocked));
-    b.title.textContent = n.title;
-    b.line.textContent = n.line || '';
-    b.line.hidden = !n.line;
-    b.list.innerHTML = (n.list || []).map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
-    b.list.hidden = !(n.list || []).length;
+    /* A reader who cannot move work (My Work at View) reads where the task
+       stands and its next stage on the strip, never an instruction they
+       have no control for (2026-10-27, WORK-4). */
+    var told = may('ops', 'work') || n.blocked || n.rate || !b.steps || (b.steps && b.steps.hidden);
+    b.title.textContent = told ? n.title : '';
+    b.title.hidden = !told;
+    b.line.textContent = told ? n.line || '' : '';
+    b.line.hidden = !told || !n.line;
+    b.list.innerHTML = told ? (n.list || []).map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') : '';
+    b.list.hidden = !told || !(n.list || []).length;
     paintMonth(b, t, n);
     /* The final date is the day the work is owed AT CLIENT REVIEW, so the
        line says which of the two has happened. */
@@ -5048,7 +5056,7 @@
       var bits = [];
       if ('priority_level' in to) bits.push('Priority ' + (PRIORITY_WORD[String(from.priority_level)] || 'Normal') + ' to ' + (PRIORITY_WORD[String(to.priority_level)] || 'Normal'));
       if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief cleared');
-      var fw = function (k) { return k ? (DELIVER_WORD[k] || sentence(k)) : 'not set'; };
+      var fw = function (k) { return k && k !== 'other' ? (DELIVER_WORD[k] || sentence(k)) : 'not set'; };
       if ('deliverable_type' in to) bits.push('Format ' + fw(from.deliverable_type) + ' to ' + fw(to.deliverable_type));
       if ('task_type' in to) bits.push('Type ' + (TASK_TYPE_WORD[from.task_type] || 'not set') + ' to ' + (TASK_TYPE_WORD[to.task_type] || 'not set'));
       if ('complexity' in to) bits.push('Complexity ' + (COMPLEX_WORD[from.complexity] || 'not set') + ' to ' + (COMPLEX_WORD[to.complexity] || 'not set'));
@@ -5360,9 +5368,9 @@
     var forWord = t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client';
     var rows = [frow('For', esc(forWord))];
     if (edit) {
-      var fmts = [['', 'Not set']].concat(pairsOf(DELIVER_WORD));
-      if (t.deliverable_type && !DELIVER_WORD[t.deliverable_type]) fmts.push([t.deliverable_type, formatWord(t)]);
-      rows.push(frow('Format', detailSelect('deliverable_type', 'Format', fmts, t.deliverable_type || '')));
+      var fmts = [['', 'Not set']].concat(pairsOf(DELIVER_WORD).filter(function (x) { return x[0] !== 'other'; }));
+      if (t.deliverable_type && t.deliverable_type !== 'other' && !DELIVER_WORD[t.deliverable_type]) fmts.push([t.deliverable_type, formatWord(t)]);
+      rows.push(frow('Format', detailSelect('deliverable_type', 'Format', fmts, t.deliverable_type === 'other' ? '' : t.deliverable_type || '')));
       rows.push(frow('Type', detailSelect('task_type', 'Type', pairsOf(TASK_TYPE_WORD), t.task_type)));
       if (t.code && t.code_period && mayMove(t)) {
         rows.push(frow('Month', '<span class="tdetail-pair">' +
@@ -7133,12 +7141,13 @@
       var pick = e && e.manager_id ? m.id === e.manager_id : (me && me.id === m.id);
       return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
-    $('engPlanned').value = e ? (e.planned_count || '') : '';
     $('engDrive').value = (e && e.drive_url) || '';
-    /* A new month takes the start day and the reports of the client's month
-       before, prefilled and the person's to change. */
+    /* A new month takes the start day, the reports and the posts planned of
+       the client's month before, prefilled and the person's to change
+       (posts planned since 2026-10-27, WORK-3). */
     var before = e ? e : (cw.engs || []).filter(function (x) { return x.client_id === client.id; })
       .sort(function (a, b) { return String(b.period).localeCompare(String(a.period)); })[0] || {};
+    $('engPlanned').value = before.planned_count || '';
     var day = Number(before.start_day) || 1;
     $('engStart').innerHTML = Array.apply(null, Array(28)).map(function (x, i) {
       return '<option value="' + (i + 1) + '"' + (i + 1 === day ? ' selected' : '') + '>' + (i + 1) + ordinal(i + 1) + ' of the month</option>';

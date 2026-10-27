@@ -1144,6 +1144,12 @@
     }).join('');
     sel.disabled = !bandMay(c.stage || 'lead', 'work');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
+    /* A reader who cannot move the stage reads it as a status, never a
+       select drawn disabled (2026-10-27, CLI-16). */
+    sel.hidden = sel.disabled;
+    $('crmClientStageRead').hidden = !sel.disabled;
+    $('crmClientStageRead').className = 'chip-state ' + (w[2] || '');
+    $('crmClientStageRead').textContent = w[1];
     /* A lead nobody is in charge of is anybody's to take who may work leads. */
     $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() &&
                             bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
@@ -5453,11 +5459,20 @@
          sentence; a reference is typed to fill a gap a deleted letter left,
          which is the only reason this field exists. Typing one spends no
          sequence number, so the next automatic letter keeps its place. */
+      /* A client with no Client ID is asked for one here, the next AC
+         number a press away; the letter is refused until it is set, and
+         the reference is then numbered from it (the user, 2026-10-27,
+         CLI-15: "refuse and request input Client ID"). */
+      (noCode ? '<div class="lpickref">' +
+        '<label class="field-label" for="pickCode">Client ID</label>' +
+        '<div class="pickcode-row"><input class="input input-sm" id="pickCode" type="text" autocomplete="off" spellcheck="false" maxlength="12"' +
+          ' aria-required="true" aria-describedby="pickRefNote" placeholder="AC001">' +
+          '<button class="btn btn-sm" id="pickCodeNext" type="button" hidden></button></div>' +
+        '<p class="msg warn" id="pickRefNote">This client has no Client ID. Set one to number the letter.</p>' +
+      '</div>' : '') +
       '<div class="lpickref">' +
         '<label class="field-label" for="pickRef">Reference</label>' +
-        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false"' +
-          (noCode ? ' aria-required="true" aria-describedby="pickRefNote" placeholder="AQL/AC001/261001"' : ' placeholder="Numbered automatically"') + '>' +
-        (noCode ? '<p class="msg warn" id="pickRefNote">This client has no Client ID, so the reference cannot be numbered automatically. Type one, or set the ID on the record.</p>' : '') +
+        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false" placeholder="Numbered automatically">' +
       '</div>' +
       /* Terms of this letter's own, one point a line, printed under TERMS
          after the term and the validity (the user, 2026-10-23). */
@@ -5468,6 +5483,19 @@
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan($('pickBody'));
+    if (noCode) {
+      nextClientCode(function (next) {
+        var b = $('pickCodeNext');
+        if (!b || !next) return;
+        b.textContent = 'Use ' + next;
+        b.setAttribute('aria-label', 'Use ' + next + ' as the Client ID');
+        b.hidden = false;
+        b.onclick = function () {
+          var f = $('pickCode');
+          f.value = next; f.dispatchEvent(new Event('input', { bubbles: true })); f.focus();
+        };
+      });
+    }
     Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
       i.disabled = true;
     });
@@ -5577,9 +5605,32 @@
     var ids = pickedIds();
     if (!ids.length) return;
     var c = state.client;
-    if (!String(c.client_code || '').trim() && !($('pickRef').value || '').trim()) {
-      msg('pickMsg', 'Type a reference.', 'err');
-      $('pickRef').focus();
+    /* No Client ID: the letter waits for one, set on the client first. */
+    if (!String(c.client_code || '').trim()) {
+      var code = codeOf(($('pickCode') || {}).value);
+      var bad = !code ? 'Enter the Client ID.' : !CODE_OK.test(code) ? 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.'
+        : (state.clients || []).some(function (x) { return x.id !== c.id && x.client_code === code; }) ? 'That Client ID is already used by another client.' : '';
+      if (bad) {
+        msg('pickMsg', bad, 'err');
+        if ($('pickCode')) { $('pickCode').setAttribute('aria-invalid', 'true'); $('pickCode').focus(); }
+        return;
+      }
+      var gb = $('pickGo');
+      gb.disabled = true;
+      db.from('clients').update({ client_code: code }).eq('id', c.id).select('id, updated_at').then(function (r) {
+        gb.disabled = false;
+        if (r.error || !(r.data || []).length) {
+          msg('pickMsg', r.error ? saveWord(r.error.message) : 'Not saved. The database refused the request.', 'err');
+          $('pickCode').setAttribute('aria-invalid', 'true'); $('pickCode').focus();
+          return;
+        }
+        c.client_code = code; c.updated_at = r.data[0].updated_at;
+        (state.clients || []).forEach(function (x) { if (x.id === c.id) { x.client_code = code; x.updated_at = c.updated_at; } });
+        log('client.edited', c.name, 'Client ID: not set → ' + code);
+        if ($('pickCode')) $('pickCode').removeAttribute('aria-invalid');
+        paintIdentity(c); paintRail(c);
+        $('pickGo').click();
+      }).catch(function (e) { gb.disabled = false; msg('pickMsg', String((e && e.message) || e), 'err'); });
       return;
     }
     var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
