@@ -291,7 +291,8 @@ baseline only shrinks (`--write` refuses to add).
     outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
     a button's glyph in another ink than its words (`glyphink`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
-    floor (`target`); a field under the phone scale (`zoom`);
+    floor (`target`); a page setting the size token to a figure of its own
+    (`ctlh`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
     more than two blue actions in a view (`accent`);
   - contrast under 4.5:1; a control border under 3:1; focus without a ring;
