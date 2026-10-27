@@ -242,7 +242,7 @@
     $('stateMsg').className = 'msg';
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
   }
-  function askCode() { cover(t().codeTitle, t().codeText, { ask: true }); }
+  function askCode() { tried = ''; cover(t().codeTitle, t().codeText, { ask: true }); }
   /* A link carrying a code that opens nothing reads as the same code typed
      would: the code in the field and the invalid line under it (ux-audit
      CREATOR-5, 2026-10-14). */
@@ -265,6 +265,15 @@
       var d = r.data;
       if (r.error || !d) { cover(t().failTitle, t().failText); return; }
       if (d.error === 'inactive') { forget(); cover(t().standDown, t().standDownText); return; }
+      /* Wrong codes are counted against the caller: five within 15 minutes
+         lock it out, the right code included (2026-10-27). The code is kept
+         in the field and in this browser, so Open works once it ends. */
+      if (d.error === 'locked') {
+        if (!typed) { askCode(); $('codeInput').value = codeShape(c, false); }
+        $('stateMsg').textContent = W.lockedLine(t(), d.minutes);
+        $('stateMsg').className = 'msg err';
+        return;
+      }
       if (d.error) {
         // A typed code that is wrong is answered on the form they typed it in,
         // not by throwing the whole page away underneath them.
@@ -1414,6 +1423,7 @@
     if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveLinks(); }
   });
 
+  var checking = false, tried = '';
   $('codeGo').addEventListener('click', function () {
     var c = tidy($('codeInput').value);
     if (c.length !== 8) {
@@ -1421,8 +1431,21 @@
       $('stateMsg').className = 'msg err';
       return;
     }
-    load(c, true);
+    if (checking) return;
+    checking = true; tried = c;
+    var done = function () { checking = false; };
+    load(c, true).then(done, done);
   });
+  /* The code checks itself once its eighth character is typed or pasted
+     (the user, 2026-10-27): the same code is not sent again until it is
+     changed, and nothing goes while an input method is composing. Open
+     stays for the keyboard and for a try again. */
+  function autoCheck() {
+    var c = tidy($('codeInput').value);
+    if (c.length < 8) { tried = ''; return; }
+    if (c !== tried && !checking) $('codeGo').click();
+  }
+  $('codeInput').addEventListener('compositionend', autoCheck);
   $('codeInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); $('codeGo').click(); }
   });
@@ -1438,10 +1461,12 @@
     var pos = el.selectionStart == null ? el.value.length : el.selectionStart;
     var before = tidy(el.value.slice(0, pos)).length;
     var v = codeShape(el.value, adding);
-    if (v === el.value) return;
-    el.value = v;
-    var at = Math.min(v.length, before + (before > 4 || (before === 4 && adding) ? 1 : 0));
-    try { el.setSelectionRange(at, at); } catch (x) {}
+    if (v !== el.value) {
+      el.value = v;
+      var at = Math.min(v.length, before + (before > 4 || (before === 4 && adding) ? 1 : 0));
+      try { el.setSelectionRange(at, at); } catch (x) {}
+    }
+    if (!e.isComposing) autoCheck();
   });
 
   // ---- Start ----------------------------------------------------------------

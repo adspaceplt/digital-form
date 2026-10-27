@@ -30,13 +30,14 @@
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code.',
-    // A link locked after wrong access codes from this connection.
+    // A link locked after wrong access codes from this connection. A wait
+    // keeps its figure and its unit on one line (a no-break space).
     lockedTitle: 'Link temporarily locked',
     lockedText: 'Several incorrect access codes were entered. Please try again in {wait}.',
-    waitMinutes: '{n} minutes',
-    waitMinute: '1 minute',
-    waitHours: '{n} hours',
-    waitHour: '1 hour',
+    waitMinutes: '{n}\u00a0minutes',
+    waitMinute: '1\u00a0minute',
+    waitHours: '{n}\u00a0hours',
+    waitHour: '1\u00a0hour',
     noAccess: 'Access denied',
     noAccessText: 'Please contact your ADspace account manager.',
     failTitle: 'Unable to load',
