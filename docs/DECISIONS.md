@@ -6749,3 +6749,35 @@ sentence.
   control whose `--ctl-h` or `--ctl-h-sm` reads a figure other than the
   pointer's two sizes; quotesite asks for 34 at 1280 and 36 at 390. Rule written in `DESIGN.md` §5 Forms: controls made one
   height come down to the size token, never up to a page's own figure.
+
+### 2026-10-27 — The iPhone Duo: the bar upright on the front screen, Analytics even on the inner
+
+- 2026-10-27 · The user, photographing the iPhone Duo's front screen: "U see
+  the iPhone duo front screen bottom bar it should be at the right as
+  portrait tabs", then "no text needed it looks ugly … Just the glyphs
+  icons". On that screen Safari keeps its own controls (back, reader, new
+  tab, tabs) in a column at the right and the address at the foot, so the
+  page is narrower than the screen (about 378 × 581 on 466 × 678). The head
+  script now tells that shape apart (`ADSPACE_TABSIDE`: a coarse pointer, a
+  screen under 600 at its short side, the page upright and at least 40px
+  narrower than the screen), which no ordinary phone meets, its page being
+  its screen; there `:root.tabbar-side` stands the bar upright at the right
+  edge, glyphs alone (each still named for a screen reader), the page
+  keeping its 72px column clear, More and every panel beside it, never
+  drawn in on scroll, a finger drawn down it as along it. Not measured on
+  the device: the Duo's own screen and page sizes are read off the photo,
+  and Safari cannot run in the sandbox; the user confirms on the phone. A
+  first build showed the words under the glyphs at 64 and 68px wide, and
+  Dashboard was cut until the bar's padding was taken in; the user then
+  asked for the glyphs alone, so the bar is 56px.
+- 2026-10-27 · The same day, the inner screen's Analytics: "The larger
+  screen shows uneven cards". Reproduced at 744 × 1100: the four tiles drew
+  their trends at different heights (each under its own wrapped words),
+  What changed wrapped its title onto two lines beside its span while the
+  trend card's did not, and the trend's fifteen months ran into one another
+  (NovDecJarFeb…), because the labels were thinned only in a narrow pane,
+  never in a narrow card. Now a tile's trend stands at its foot (`.ovw-kpi`
+  rows auto auto 1fr auto, the Dashboard's tiles too), every Analytics
+  card's span sits under its title at every width, and a chart keeps the
+  labels its own width holds (`fitLabels`, a ResizeObserver on the chart),
+  every second or every third, counted back from the last.

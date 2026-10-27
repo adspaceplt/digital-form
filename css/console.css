@@ -2065,8 +2065,10 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .cc-stack { height: 100%; display: flex; flex-direction: column-reverse; }
 .cc-stack .cc-seg:last-child { border-radius: 3px 3px 0 0; }
 .cc-label { margin-top: 8px; font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
-.is-narrow .chart-cols.is-some .cc-label.is-skip2,
-.is-narrow .chart-cols.is-many .cc-label.is-skip3 { visibility: hidden; }
+/* The labels a chart's own width holds (js/chart.js `fitLabels`): every
+   second, else every third, counted back from the last. */
+.chart-cols.is-thin2 .cc-label.is-skip2,
+.chart-cols.is-thin3 .cc-label.is-skip3 { visibility: hidden; }
 .cl-plot { position: absolute; inset: 0 0 auto 0; height: 140px; pointer-events: none; }
 .cl-line { fill: none; stroke: var(--ink-soft); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
 .cl-line.is-ok { stroke: var(--ok); }
@@ -2442,10 +2444,11 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .is-narrow .anl-lead { grid-template-columns: minmax(0, 1fr); }
 .anl-lead > .chartcard { display: flex; flex-direction: column; }
 .anl-aside { margin-left: auto; font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
-/* In a narrow pane a card's span takes its own line under the title, so
-   neither wraps beside the other. */
-.is-narrow .ovw-cardhead:has(> .anl-aside) { flex-wrap: wrap; row-gap: 2px; }
-.is-narrow .ovw-cardhead > .anl-aside { flex-basis: 100%; margin-left: 0; white-space: normal; }
+/* A card's span takes its own line under the title at every width, so two
+   cards side by side read the same two lines and neither title wraps beside
+   its span (the user, 2026-10-27, on the iPhone Duo: "uneven cards"). */
+.ovw-cardhead:has(> .anl-aside) { flex-wrap: wrap; row-gap: 2px; }
+.ovw-cardhead > .anl-aside { flex-basis: 100%; margin-left: 0; white-space: normal; }
 .anl-note { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .anl-own { margin: 0; font-size: 13px; color: var(--ink-mute); }
 .cl-band { fill: var(--line-soft); stroke: none; }

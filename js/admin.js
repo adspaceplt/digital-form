@@ -1219,10 +1219,20 @@
     }).catch(function () {});
   }
   function tabbarOn() { return Boolean(tabMedia && tabMedia.matches); }
+  /* The iPhone Duo's front screen keeps Safari's own controls in a column
+     at its right, so the page is narrower than the screen: there the bar
+     stands upright at the right edge, in that column's line (the user,
+     2026-10-27: "it should be at the right as portrait tabs"). The head
+     script's `ADSPACE_TABSIDE` decides it before first paint. */
+  function sideOn() { return tabbarOn() && typeof window.ADSPACE_TABSIDE === 'function' && window.ADSPACE_TABSIDE(); }
+  function wearBar() {
+    document.documentElement.classList.toggle('has-tabbar', tabbarOn());
+    document.documentElement.classList.toggle('tabbar-side', sideOn());
+  }
   function paintTabbar() {
     var bar = $('tabBar');
     if (!bar) return;
-    document.documentElement.classList.toggle('has-tabbar', tabbarOn());
+    wearBar();
     var open = navItems().filter(function (b) { return !b.hidden; });
     /* Analytics is an occasional tool: it waits under More, never a tab,
        however few sections the person holds (2026-10-25, review 3). */
@@ -1264,7 +1274,9 @@
      chosen, sliding there as the choice moves (the user, 2026-10-11: "allow
      the selected … button to slide around left right"); a first placement,
      a change of size and no tab chosen snap. `x` lays it under a finger
-     drawn along the bar instead, centred on the finger within the bar. */
+     drawn along the bar instead, centred on the finger within the bar: the
+     finger's x, or its y where the bar stands upright (`tabbar-side`). */
+  function upright() { return document.documentElement.classList.contains('tabbar-side'); }
   function placeThumb(snap, x) {
     var bar = $('tabBar');
     var th = bar && bar.querySelector('.tabbar-thumb');
@@ -1272,12 +1284,14 @@
     var on = bar.querySelector('.tabbar-tab.is-on');
     var any = bar.querySelector('.tabbar-tab');
     if (!any || !any.offsetWidth) return;
-    var box = bar.getBoundingClientRect(), w = any.offsetWidth, left;
+    var up = upright(), box = bar.getBoundingClientRect();
+    var w = up ? any.offsetHeight : any.offsetWidth, left;
     if (x != null) {
-      var pad = any.offsetLeft;
-      left = Math.max(pad, Math.min(x - box.left - bar.clientLeft - w / 2, bar.clientWidth - pad - w));
+      var pad = up ? any.offsetTop : any.offsetLeft;
+      left = up ? Math.max(pad, Math.min(x - box.top - bar.clientTop - w / 2, bar.clientHeight - pad - w))
+        : Math.max(pad, Math.min(x - box.left - bar.clientLeft - w / 2, bar.clientWidth - pad - w));
     } else if (on) {
-      left = on.offsetLeft;
+      left = up ? on.offsetTop : on.offsetLeft;
     } else {
       th.classList.add('is-none');
       return;
@@ -1334,10 +1348,12 @@
        under it read in ink; let go, and the tab it rests on is pressed. A
        press that barely moves is an ordinary tap. */
     var drag = null, swallow = false;
+    /* Along the bar: across it at the foot, down it where it stands upright. */
+    function along(e) { return upright() ? e.clientY : e.clientX; }
     function tabAt(x) {
-      var best = null, gap = Infinity;
+      var best = null, gap = Infinity, up = upright();
       Array.prototype.forEach.call(bar.querySelectorAll('.tabbar-tab'), function (t) {
-        var r = t.getBoundingClientRect(), d = Math.abs(x - (r.left + r.width / 2));
+        var r = t.getBoundingClientRect(), d = Math.abs(x - (up ? r.top + r.height / 2 : r.left + r.width / 2));
         if (d < gap) { gap = d; best = t; }
       });
       return best;
@@ -1353,7 +1369,7 @@
     function letGo() { if (hold) { clearTimeout(hold); hold = null; } }
     bar.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      drag = { id: e.pointerId, x: e.clientX, moved: false };
+      drag = { id: e.pointerId, x: along(e), moved: false };
       letGo();
       var t = e.target.closest && e.target.closest('.tabbar-tab[data-tab="work"]');
       if (t && window.ADspaceOps && ADspaceOps.add && may('ops', 'work')) {
@@ -1373,15 +1389,15 @@
     bar.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.tabbar-tab')) e.preventDefault(); });
     bar.addEventListener('pointermove', function (e) {
       if (!drag || e.pointerId !== drag.id) return;
-      if (!drag.moved && Math.abs(e.clientX - drag.x) < 8) return;
+      if (!drag.moved && Math.abs(along(e) - drag.x) < 8) return;
       letGo();
       if (!drag.moved) {
         drag.moved = true;
         bar.classList.add('is-drag');
         try { bar.setPointerCapture(e.pointerId); } catch (x) {}
       }
-      placeThumb(true, e.clientX);
-      nearOnly(tabAt(e.clientX));
+      placeThumb(true, along(e));
+      nearOnly(tabAt(along(e)));
     });
     function endDrag(e, go) {
       if (!drag || e.pointerId !== drag.id) return;
@@ -1393,7 +1409,7 @@
       try { bar.releasePointerCapture(e.pointerId); } catch (x) {}
       swallow = true;
       setTimeout(function () { swallow = false; }, 0);
-      var t = go ? tabAt(e.clientX) : null;
+      var t = go ? tabAt(along(e)) : null;
       if (t && !t.classList.contains('is-on')) choose(t);
       else placeThumb(false);
     }
@@ -1404,6 +1420,7 @@
        the top of the page and while More is open (2026-10-11). */
     var lastY = window.scrollY || 0, small = false;
     function shrink(on) {
+      if (on && upright()) on = false;
       if (small === on) return;
       small = on;
       document.documentElement.classList.toggle('tabbar-min', on);
@@ -1564,14 +1581,17 @@
     });
     function follow() {
       var was = document.documentElement.classList.contains('has-tabbar');
-      if (was !== tabbarOn() && rail.isOpen()) rail.shut();
+      var side = upright();
+      if ((was !== tabbarOn() || side !== sideOn()) && rail.isOpen()) rail.shut();
       paintTabbar();
     }
     if (tabMedia) {
       if (tabMedia.addEventListener) tabMedia.addEventListener('change', follow);
       else if (tabMedia.addListener) tabMedia.addListener(follow);
     }
-    document.documentElement.classList.toggle('has-tabbar', tabbarOn());
+    /* Turned or unfolded, the bar follows the page's new shape. */
+    window.addEventListener('resize', function () { if (upright() !== sideOn()) follow(); });
+    wearBar();
     /* The keyboard: a field that takes typing hides the bar under a finger,
        and it returns once nothing is typed in. A select, a date or a time
        opens the system's own picker and leaves the bar where it is: the card

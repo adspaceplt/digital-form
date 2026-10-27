@@ -184,13 +184,35 @@
         '<div class="cc-plot">' + marks + '</div>' +
         '<span class="cc-label' + tickOf(ci, cats.length) + '">' + esc(c.label) + '</span></div>';
     }).join('');
-    return '<div class="chart-cols' + density(cats.length) + '">' + axis(max, fmt) + '<div class="cc-body">' +
+    return '<div class="chart-cols">' + axis(max, fmt) + '<div class="cc-body">' +
       '<div class="cc-grid" aria-hidden="true"><i></i><i></i><i></i></div>' + cols + '</div></div>';
   }
-  /* Which labels a narrow pane keeps, counted back from the last: every
-     second of seven or more, every third of eleven or more, so months
-     never run into one another on a phone. */
-  function density(n) { return n >= 11 ? ' is-many' : n >= 7 ? ' is-some' : ''; }
+  /* Which labels the chart's own width keeps, counted back from the last:
+     all where each column holds its widest label, else every second, else
+     every third, so months never run into one another, in a narrow pane or
+     a narrow card beside another (the user, 2026-10-27, the iPhone Duo).
+     Measured, never counted: a card's width is not the pane's. */
+  var thinObs = null;
+  function fitLabels(el) {
+    var body = el.querySelector('.cc-body'), labels = el.querySelectorAll('.cc-label');
+    var w = body ? body.clientWidth : 0;
+    if (!w || !labels.length) return;
+    var need = 0;
+    for (var i = 0; i < labels.length; i++) need = Math.max(need, labels[i].scrollWidth);
+    var col = w / labels.length;
+    need += 6;
+    el.classList.toggle('is-thin2', col < need && col * 2 >= need);
+    el.classList.toggle('is-thin3', col * 2 < need);
+  }
+  function watchLabels(card) {
+    var el = card.querySelector('.chart-cols');
+    if (!el) return;
+    if (!window.ResizeObserver) { requestAnimationFrame(function () { fitLabels(el); }); return; }
+    if (!thinObs) thinObs = new window.ResizeObserver(function (rs) {
+      for (var i = 0; i < rs.length; i++) fitLabels(rs[i].target);
+    });
+    thinObs.observe(el);
+  }
   function tickOf(i, n) {
     var back = n - 1 - i;
     return (back % 2 ? ' is-skip2' : '') + (back % 3 ? ' is-skip3' : '');
@@ -232,7 +254,7 @@
     }).join('');
     /* The months' hover grounds first and the line over them, so a month
        under the pointer never covers the line it is part of. */
-    return '<div class="chart-cols chart-line' + density(cats.length) + '">' + axis(max, fmt) + '<div class="cc-body">' +
+    return '<div class="chart-cols chart-line">' + axis(max, fmt) + '<div class="cc-body">' +
       '<div class="cc-grid" aria-hidden="true"><i></i><i></i><i></i></div>' + hits +
       '<div class="cl-plot" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none">' + paths + '</svg>' + dots + '</div>' +
       '</div></div>';
@@ -374,6 +396,7 @@
       '<details class="fmore chart-data"><summary>Figures</summary>' + tableHtml(tableOf(spec, fmt)) + '</details>';
     card.setAttribute('data-kind', spec.kind || 'bars');
     if (spec.kind === 'columns' || spec.kind === 'line' || spec.kind === 'pie') wireTip(card);
+    if (spec.kind === 'columns' || spec.kind === 'line') watchLabels(card);
     if (host) host.appendChild(card);
     return card;
   }
