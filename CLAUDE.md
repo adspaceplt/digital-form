@@ -1835,7 +1835,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     `client_billing(p_ids)` (`ADspaceAPI.withBilling`): the values at
     Clients: Billing View, the name and address at Documents Work
     (`register_may('client', 'work')`), and `billing_missing` alone at
-    Clients View, so the gate still names what is missing.
+    Clients View, so the gate still names what is missing; it names a
+    missing billing contact too (`bill_contact_id`, as
+    `clients_active_billing` holds it), which the record reads until its
+    contacts arrive, so the gate never changes under the reader
+    (2026-10-27, `tests/billgate.js`).
   - Every read of `clients` names `ADspaceAPI.CLIENT_COLS` or its own list,
     never `*` (refused). A new column is granted by running the CLIENT
     BILLING COLUMNS section again; `script_key` stays withheld with the

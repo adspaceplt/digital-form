@@ -352,11 +352,17 @@
   }
   /* Where Billing withholds the values, the database still names the
      required fields left blank (`billing_missing`), so the gate says what is
-     missing to somebody who cannot read what is there. */
+     missing to somebody who cannot read what is there. It names a missing
+     billing contact too, which is read until the client's contacts arrive:
+     worked out from contacts not yet read, every record drew the contact
+     as missing for a second (the user, 2026-10-27). */
   function billingMissing(c) {
     var told = !maySeeBilling() && c.billing_missing;
     return BILLING_REQUIRED.filter(function (f) {
-      if (f[1] === 'bill_contact_id') return !billContact(c);
+      if (f[1] === 'bill_contact_id') {
+        if (state.contactsFor !== c.id && Array.isArray(c.billing_missing)) return c.billing_missing.indexOf(f[1]) > -1;
+        return !billContact(c);
+      }
       if (told) return told.indexOf(f[1]) > -1;
       return !String(c[f[1]] || '').trim();
     }).map(function (f) { return f[2]; });
@@ -1095,7 +1101,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.log = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
+    if (!same) { state.contacts = []; state.contactsFor = null; state.log = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -3623,6 +3629,7 @@
         ovFailed('contacts', false);
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
+        state.contactsFor = state.client.id;
         paintSummary();
         var gone = all.filter(function (c) { return c.archived_at; });
         paintBilling(state.client);
