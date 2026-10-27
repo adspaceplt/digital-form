@@ -195,12 +195,12 @@ async function share(request, env, letter, key) {
 /* One page, four outcomes. The title says what happened and the line says
    what to do about it, which is the rule every cover in the portal follows;
    neither repeats the other. A short link is opened by people who are not
-   our clients, so the line names the account manager rather than assuming
-   the reader knows who we are. */
+   our clients and have no account manager, so the line names ADspace alone
+   (the user, 2026-10-27). */
 const SAY = {
-  missing: ['Link not recognised', 'Please contact your ADspace account manager.'],
-  paused:  ['Link expired', 'Please contact your ADspace account manager.'],
-  revoked: ['Code withdrawn', 'Please contact your ADspace account manager.'],
+  missing: ['Link not recognised', 'Please contact ADspace.'],
+  paused:  ['Link expired', 'Please contact ADspace.'],
+  revoked: ['Code withdrawn', 'Please contact ADspace.'],
   failed:  ['Unable to load', 'Please try again in a moment.']
 };
 
@@ -211,38 +211,59 @@ function esc(s) {
 }
 
 /* Flat, quiet, one column, the portal's own neutrals and no framework. The
-   mark is the only fetch on the page and the wordmark stands in if it fails,
-   exactly as js/chrome.js does. */
+   mark sits in a bar at the top left, as the portal's 404 draws it (the
+   user, 2026-10-27): the portal's bar height, its rule under it, the mark
+   at 26px on the 24px edge (16 on a phone); the panel on the optical centre
+   of what is left; no foot. The mark is the only fetch on the page and the
+   wordmark stands in if it fails, exactly as js/chrome.js does. */
 function page(kind) {
   const [title, line] = SAY[kind] || SAY.missing;
   const body = `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
 <title>${esc(title)}</title>
 <style>
-  :root { color-scheme: light; }
+  :root { color-scheme: light; --head-h: 64px; }
   * { box-sizing: border-box; }
+  html, body { height: 100%; }
   body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center;
-    justify-content: center; padding: 24px 16px; background: #fff;
-    color: #1b1a17; line-height: 1.55;
+    margin: 0; display: flex; flex-direction: column; background: #fff;
+    color: #1b1a17;
     font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  .panel {
-    padding: 32px 8px; max-width: 420px; width: 100%; text-align: center;
+  .bar {
+    height: var(--head-h); flex: 0 0 auto; display: flex; align-items: center;
+    padding: 0 24px; border-bottom: 1px solid #e2dfd8;
   }
-  .mark { height: 22px; width: auto; margin-bottom: 20px; }
-  h1 { margin: 0 0 8px; font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+  .bar img { height: 26px; width: auto; display: block;
+    object-fit: contain; object-position: left center; }
+  .bar b { font-weight: 600; font-size: 19px; }
+  main {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    padding: 24px 24px calc(24px + var(--head-h) / 2);
+  }
+  .panel { max-width: 420px; width: 100%; text-align: center; }
+  h1 { margin: 0 0 8px; font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; }
   p { margin: 0; color: #6b6760; font-size: 15px; }
+  @media (max-width: 640px) {
+    :root { --head-h: 56px; }
+    .bar { padding: 0 16px; }
+    main { padding: 20px 16px calc(20px + var(--head-h) / 2); }
+  }
 </style>
 </head><body>
-  <main class="panel">
-    <img class="mark" src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
+  <header class="bar">
+    <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
          onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
-    <h1>${esc(title)}</h1>
-    <p>${esc(line)}</p>
+  </header>
+  <main>
+    <div class="panel">
+      <h1>${esc(title)}</h1>
+      <p>${esc(line)}</p>
+    </div>
   </main>
 </body></html>`;
   return new Response(body, {
