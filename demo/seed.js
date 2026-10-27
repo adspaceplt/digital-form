@@ -62,7 +62,7 @@
     return { id: t[0], name: t[1], email: first + '@example.com', role: t[2], is_admin: t[2] === 'admin', active: true,
       access: role.access || null, staff_code: 'SS00' + (i + 1), designation: t[3], department: t[4],
       role_family: t[4] === 'creative' ? 'creative' : 'marketing', capacity_minutes_week: 2400,
-      card_key: 'demo' + 'abcdef'.charAt(i) + 'k2m', card_slug: first + 'demo', card_on: true, card_mobile: true,
+      card_key: 'demo0' + 'abcdef'.charAt(i) + 'km', card_slug: first + 'demo', card_on: true, card_mobile: true,
       mobile: '012-345 67' + (10 + i), created_at: ago(700 - i * 60), updated_at: ago(30), last_seen_at: ago(0, i + 1) };
   });
   var who = function (id) { return DB.team_members.filter(function (m) { return m.id === id; })[0].name; };
@@ -126,8 +126,10 @@
       c.billing_address = (10 + i) + ' Jalan Contoh ' + (i % 7 + 1) + ', 81100 Johor Bahru, Johor';
       c.finance_email = 'accounts@example.com';
     }
-    /* The links a client is sent: the review page and the video scripts. */
-    if (stage === 'active') { c.access_token = 'drv' + String(10000 + i).slice(-5); c.script_key = 'dsk' + String(10000 + i).slice(-5); }
+    /* The links a client is sent: the review page and the video scripts. Every
+       demo key holds a 0, which no real key's alphabet does, so the client
+       pages load the demo for its own links alone (js/demo.js). */
+    if (stage === 'active') { c.access_token = 'demo0r' + String(100 + i).slice(-2); c.script_key = 'demo0s' + String(100 + i).slice(-2); }
     if (stage === 'active' && (i === 0 || i === 4)) { c.vic_at = ago(40); c.vic_by = 'd0'; c.vic_note = 'Group account. Approvals go to the director.'; }
     if (stage === 'active') c.brief = { audience: 'Young families and working adults in Johor Bahru.', pillars: 'Product, behind the scenes, customer stories.', tone: 'Warm, clear and friendly.' };
     DB.clients.push(c);
@@ -298,7 +300,7 @@
   DB.creators = [['Amelia Chen', 12400, 380], ['Hafiz Rahman', 8100, 320], ['Chloe Tan', 30200, 650], ['Daniel Ho', 15600, 450],
     ['Siti Aisyah', 21800, 560], ['Jessica Lau', 6400, 280]].map(function (k, i) {
     return { id: 'dcr' + i, name: k[0], followers: k[1], cost_rate: Math.round(k[2] * 0.75), client_rate: k[2], industries: 'lifestyle',
-      active: true, access_code: 'DEMO' + 'ABCDEF'.charAt(i) + 'XYZ', created_at: ago(300 - i * 20) };
+      active: true, access_code: 'DEMO0' + 'ABCDEF'.charAt(i) + 'XY', created_at: ago(300 - i * 20) };
   });
   DB.creator_profiles = DB.creators.map(function (k, i) {
     var h = k.name.toLowerCase().replace(/ /g, '.');
@@ -306,9 +308,9 @@
   });
   DB.campaigns = [
     { id: 'dcm1', client_id: ACTIVE[0].id, title: 'Weekend Open House', slots: 3, state: 'production', deliverable: 'video', push_format: 'site_visit',
-      access_token: 'demo2cmp', owner: 'Mei Ling Chan', created_at: ago(30), updated_at: ago(2), deadline: dayOf(ahead(12)), brief: 'Tour the show unit and share why it suits young families.' },
+      access_token: 'demo0c01', owner: 'Mei Ling Chan', created_at: ago(30), updated_at: ago(2), deadline: dayOf(ahead(12)), brief: 'Tour the show unit and share why it suits young families.' },
     { id: 'dcm2', client_id: ACTIVE[1].id, title: 'Festive Menu Launch', slots: 2, state: 'open', deliverable: 'video', push_format: 'site_visit',
-      access_token: 'demo3cmp', owner: 'Nur Aina', created_at: ago(6), updated_at: ago(1), deadline: dayOf(ahead(20)), brief: 'Try the festive set and film the first bite.' }];
+      access_token: 'demo0c02', owner: 'Nur Aina', created_at: ago(6), updated_at: ago(1), deadline: dayOf(ahead(20)), brief: 'Try the festive set and film the first bite.' }];
   DB.campaign_options = [
     { id: 'dco1', campaign_id: 'dcm1', creator_id: 'dcr0', rate: 380, platforms: 'instagram', state: 'submitted', submitted_at: ago(1), added_at: ago(28), position: 0, revision_round: 1 },
     { id: 'dco2', campaign_id: 'dcm1', creator_id: 'dcr2', rate: 650, platforms: 'instagram', state: 'pending_draft', submission_due: dayOf(ahead(4)), visit_date: dayOf(ago(3)), added_at: ago(28), position: 1 },

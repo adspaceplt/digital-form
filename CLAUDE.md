@@ -6395,9 +6395,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`)
   load the same while it stands: the client portal signed in as a sample
   client's main contact (`client@example.com`), the rest on their sample
-  links (`drv…`, `demo…cmp`, `DEMO…XYZ`, `dsk…`), each under the bar edge
+  links alone, each key holding a 0 that no real key's alphabet holds
+  (`demo0r…`, `demo0c…`, `DEMO0…`, `demo0s…`, `demo0…`), so a real link
+  opened while the demo stands is the real page; each under the bar edge
   to edge (`.annbar.demobar`; the namecard has no bar), and signing out of
-  the client portal returns to the console. Settings, Portal: Demo
+  the client portal returns to the console. A demo whose sample data did
+  not arrive takes the real library away (Unable to load under the bar),
+  never the real database; Sign out in the demo is Exit demo, never the
+  console's clearing of the colleague's notes and drafts; a sheet's draft
+  is let go as the demo starts and ends (audit, 2026-10-27). Settings, Portal: Demo
   access (`team.settings`): On / Off and a PIN, 4 to 8 digits, kept as a
   bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`), filed
   `team.changed` under Demo access, never the PIN.

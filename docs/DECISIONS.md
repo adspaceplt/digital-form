@@ -6812,3 +6812,18 @@ sentence.
   whole row at first (an announcement's line is a slide, `flex: 0 0 100%`)
   and pushed Exit demo off the screen; the demo's line now shares the row.
   The namecard's wordmark reads the agency name from the config.
+- The demo's audit, the same day (the user: "see if any real data could be
+  compromised"; "ship all"): the page checked that the sample data had
+  arrived but not the sample database, so with `demo/engine.js` blocked the
+  console and the client portal built a real database client under the
+  demo's bar (shown by blocking the file in a browser). It now asks for the
+  engine's own `__signIn` and, without it, takes the real library away so
+  the page reads Unable to load. Sign out in the demo ran the console's own
+  clearing of this browser's notes, drafts and notification setting, which
+  belong to the colleague: it now ends the demo as Exit demo does. A phone
+  sheet's draft could carry sample values into the real console in the same
+  tab: drafts are let go as the demo starts and ends. A real client link
+  opened in a browser holding the demo read Link not recognised: the client
+  pages load the demo only for keys holding a 0, which no real key holds.
+  The PIN guards nothing secret (the sample data is public in the
+  repository), so a lock of the demo's PIN is a nuisance alone.
