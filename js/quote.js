@@ -60,9 +60,9 @@
       ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
-      extra: 'Additional contents per month', fewer: 'One fewer', more: 'One more',
-      langs: 'Languages', langsNote: 'Your contents are shared across the languages selected, at no extra charge.',
-      translate: 'Translate every content into each language selected', translateNote: 'Charged per content, per language',
+      extra: 'Additional contents per month', mixH: 'Contents per month', fewer: 'One fewer', more: 'One more',
+      langs: 'Languages', langsNote: 'Each content is in one language. Your monthly contents may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no extra charge.',
+      translate: 'Make every content bilingual', translateNote: 'A content in more than one language is charged the translation rate, per content, for each added language.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
@@ -143,9 +143,9 @@
       ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
       planNone: '请选择平台与方案。',
       customT: '自定义', customPlan: '自定义方案 {p}',
-      extra: '每月额外内容', fewer: '减少一条', more: '增加一条',
-      langs: '语言', langsNote: '您的内容将以所选语言共用发布，不另收费。',
-      translate: '将每条内容翻译为所选的每种语言', translateNote: '按每条内容、每种语言收费',
+      extra: '每月额外内容', mixH: '每月内容', fewer: '减少一条', more: '增加一条',
+      langs: '语言', langsNote: '每条内容使用一种语言。每月内容可分配至所选语言，例如2条英文、4条中文，不另收费。',
+      translate: '每条内容均制作为双语', translateNote: '一条内容使用多种语言时，按翻译费计算，每条内容、每增加一种语言收费。',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n}个月',
       once: '内容制作', onceNote: '一次性，按件收费',
@@ -264,7 +264,7 @@
      nothing chosen or typed carried over (the user, 2026-10-14). */
   function blank() {
     return { need: { social: true, ads: false, content: false, koc: false, verify: false }, platforms: ['meta'], withAds: false,
-      plan: null, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
+      plan: null, mix: 0, extra: {}, langs: ['en'], translate: false, budget: null, term: 12, once: {}, koc: '', kol: false, verify: [],
       contact: { salutation: '', name: '', email: '', whatsapp: '', brand: '', industry: '', consent: false }, step: 'intro', idem: null };
   }
   var S = blank();
@@ -309,6 +309,9 @@
     var sel = { term: monthly() ? S.term : 1 };
     if (p) {
       sel.plan = p.slug;
+      /* Which of the plan's content options (1 graphic and 3 reels, or 4
+         reels), as Build quote asks it; a string, as the website keeps it. */
+      if ((p.mix || []).length > 1) sel.mix = String(S.mix < p.mix.length ? S.mix : 0);
       sel.platforms = S.platforms.slice();
       var ex = {};
       Object.keys(S.extra).forEach(function (k) { if (S.extra[k] > 0) ex[k] = S.extra[k]; });
@@ -367,16 +370,18 @@
   function contentName(c) { return lang === 'zh' && ZH_KIND[c.kind] ? ZH_KIND[c.kind] : EN_KIND[c.kind] || c.name; }
   /* What a plan's contents are, so a visitor knows what the count covers
      (the user, 2026-10-14): "4 contents per month: 2 graphics and 2 reels". */
-  function mixLine(p) {
+  function mixWords(m) {
     var K = t().kindN;
-    return (p.mix || []).map(function (m) {
-      return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
-        .filter(function (k) { return m[k]; }).map(function (k) {
-          var w = K[k] || ['{n} ' + k, '{n} ' + k];
-          return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
-        }).join(t().mixAnd);
-    }).join(t().mixOr);
+    return ['graphic', 'reel'].concat(Object.keys(m).filter(function (k) { return k !== 'graphic' && k !== 'reel'; }))
+      .filter(function (k) { return m[k]; }).map(function (k) {
+        var w = K[k] || ['{n} ' + k, '{n} ' + k];
+        return f(w[m[k] === 1 ? 0 : 1], { n: m[k] });
+      }).join(t().mixAnd);
   }
+  function mixLine(p) {
+    return (p.mix || []).map(mixWords).join(t().mixOr);
+  }
+
   function planLine(p) {
     var mix = mixLine(p);
     var parts = [f(t().contents, { n: p.contents }) + (mix ? (lang === 'zh' ? '：' : ': ') + mix : '')];
@@ -420,7 +425,12 @@
   function extrasHtml() {
     var p = planOf();
     if (!p) return '';
-    return sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
+    /* A plan holding two content options asks which (2026-10-27, the user:
+       the website showed both and asked neither). */
+    var mixes = p.mix || [], cur = S.mix < mixes.length ? S.mix : 0;
+    return (mixes.length > 1 ? sec(t().mixH, '<div class="qs-list">' + mixes.map(function (m, i) {
+      return pick('radio', 'mix', String(i), i === cur, mixWords(m));
+    }).join('') + '</div>') : '') + sec(t().extra, extrasOf(p).map(function (c) { return stepper('extra', c.slug, contentName(c), S.extra[c.slug] || 0); }).join(''));
   }
 
   function budgetOptions() {
@@ -815,7 +825,7 @@
       if (el.checked) S.platforms.push(el.value);
     }
     else if (nm === 'plan') {
-      S.plan = el.value;
+      S.plan = el.value; S.mix = 0;
       // Extras the new plan does not offer leave with the old one.
       var ok = extrasOf(planOf()).map(function (c) { return c.slug; });
       Object.keys(S.extra).forEach(function (k) { if (ok.indexOf(k) < 0) delete S.extra[k]; });
@@ -828,6 +838,7 @@
       if (!S.langs.length) { S.langs = [el.value]; el.checked = true; }
       keep(); paint(); return;
     }
+    else if (nm === 'mix') { S.mix = Number(el.value) || 0; }
     else if (nm === 'translate') { S.translate = el.checked; }
     else if (nm === 'kol') { S.kol = el.checked; }
     else if (nm === 'verify') {
@@ -873,7 +884,7 @@
   /* A quotation's own selection, to change and make again. */
   function adopt(sel) {
     S.need = { social: Boolean(sel.plan), ads: sel.budget != null, content: false, koc: false, verify: false };
-    S.plan = sel.plan || null; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
+    S.plan = sel.plan || null; S.mix = Number(sel.mix) || 0; S.platforms = (sel.platforms || ['meta']).slice(); S.extra = sel.extra || {};
     S.langs = (sel.langs || ['en']).slice(); S.translate = Boolean(sel.translate); S.budget = sel.budget == null ? null : Number(sel.budget);
     S.term = TERMS.indexOf(Number(sel.term)) >= 0 ? Number(sel.term) : 12; S.once = {}; S.koc = ''; S.kol = false; S.verify = [];
     (sel.once || []).forEach(function (o) {
