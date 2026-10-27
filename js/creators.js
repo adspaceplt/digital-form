@@ -10,7 +10,7 @@
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Choose your creators', zh: '挑选创作者' }, steps: [
-    { at: '.crow-tick', text: { en: 'Tick the creators you want for this campaign. Each pick is kept as you go.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
+    { at: '.crow-tick', text: { en: 'Select the creators for this campaign. Your selection is saved automatically.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
     { at: '#confirmBtn', text: { en: 'Confirm selection once your picks are final.', zh: '选定后，请点「确认选择」。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
@@ -76,18 +76,18 @@
       lang: '中文',
       chooseMore: function (n) { return 'Choose ' + n + ' more.'; },
       complete: 'All chosen.',
-      over: 'You have chosen more than your campaign allows.',
+      over: 'The selection exceeds the number of creators for this campaign.',
       yourSelection: 'Your selection',
       count: function (a, b) { return a + ' of ' + b + ' chosen'; },
       newAdded: function (n) { return n + ' creators were added recently'; },
-      seeNew: 'See what is new',
+      seeNew: 'View new creators',
       select: 'Select',
       selected: 'Selected',
       backup: 'Backup',
       isBackup: 'Backup ✓',
       backupHint: 'Select your creators. Backups are optional and not charged.',
-      backupsNeeded: function () { return 'Backups optional.'; },
-      backupsDone: 'Backups marked.',
+      backupsNeeded: function () { return 'Backup creators are optional.'; },
+      backupsDone: 'Backup creators selected.',
       backupCount: function (a, b) { return a + ' of ' + b + ' marked'; },
       priorityNotice: 'A creator is unavailable. Please select a replacement; your backups are listed first.',
       priority: 'Priority',
@@ -159,9 +159,9 @@
       sendRequest: 'Send request',
       theClient: 'the client',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
-      proceededBy: function (who, when) { return 'Proceeded by ' + who + (when ? ' on ' + when : '') + '.'; },
+      proceededBy: function (who, when) { return 'Confirmed by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
-      reviewThanks: 'Received. The team will follow up.',
+      reviewThanks: 'Thank you. Your response has been received, and our team will follow up.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
       selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',

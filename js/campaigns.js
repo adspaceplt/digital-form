@@ -4478,7 +4478,7 @@
     var name = (o.creators || {}).name || 'this creator';
     window.ADspaceConfirm.ask({
       title: 'Confirm internally',
-      body: name + '\u2019s draft moves to Scheduled. The client\u2019s page reads Proceeded by ' +
+      body: name + '\u2019s draft moves to Scheduled. The client\u2019s page reads Confirmed by ' +
         ((bridge.actorName && bridge.actorName()) || 'you') + '.',
       go: 'Confirm'
     }, function () {

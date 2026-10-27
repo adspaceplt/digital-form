@@ -719,6 +719,11 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     (Not issued, Not set, No reviews.).
   - A missing value in a table cell is a mute em dash (the one place a dash is
     allowed).
+- Content is uncountable: a client page, a quotation and its PDF count
+  content pieces (`6 content pieces per month`), never contents; no
+  contraction or exclamation mark, and no chat words (Hand in, Needs you,
+  Let us know) where a client, creator, prospect or supplier reads (the
+  user, 2026-10-27).
 - Count creators, not slots. rednote is lower case; never Xiaohongshu or
   RedNote. Say Post, never Note.
 - Placeholders: a value a person would type, from one generic set: John Doe

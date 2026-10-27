@@ -157,28 +157,28 @@
     'app promotion': '应用推广',
     'reel': 'Reels', 'video': '视频', 'photo': '图片', 'carousel': '轮播帖', 'story': '限时动态',
     'live': '直播', 'short': '短视频', 'article': '文章', 'rednote': '小红书',
-    'the headline figures for the period, before the detail.': '本期核心数据一览。',
-    'what the period’s figures mean, and what happens next.': '本期数据解读与后续计划。',
-    'each objective ranked by what a result cost, then each creative with its results across objectives.':
+    'the key figures for the period, ahead of the detailed results.': '本期核心数据一览。',
+    'what the period’s figures mean, and the next steps.': '本期数据解读与后续计划。',
+    'each objective is ranked by cost per result, followed by each creative and its results across objectives.':
       '各广告目标按单次成效费用排序，随后呈现每个创意在各目标下的成效。',
-    'cost per result is what it cost to get one lead, click or action. compare it only between ads with the same objective, which is why each objective is ranked on its own.':
+    'cost per result is the cost of obtaining one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, shown as / 1,000. it should be compared only between ads with the same objective, which is why each objective is ranked separately.':
       '单次成效费用指获得一次潜在客户、点击或行动所需的费用。此数据只宜在同一广告目标的广告之间比较，因此每个目标均单独排名。',
-    'each ad is priced only against the result its objective was set to get. a leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.':
+    'each ad is assessed only against the result its objective was set to achieve. a leads ad that also started conversations is assessed by its cost per lead; those conversations are incidental, and the budget was not spent on them.':
       '每则广告只按其投放目标所设定的成效计算费用。例如潜在客户广告即使同时带来少量对话，仍以单次潜在客户费用评估；这些对话属附带成效，预算并非为其投放。',
-    'reach is how many people saw an ad; impressions is how many times it was shown. frequency is impressions divided by reach.':
+    'reach is the number of people who saw an ad; impressions are the number of times it was shown. frequency is impressions divided by reach.':
       '覆盖人数指看过广告的人数；展示次数指广告获得展示的总次数。频次即展示次数除以覆盖人数。',
-    'a creative that ran under two objectives shows one line for each. compare the lines to see which goal it served best.':
+    'a creative that ran under two objectives is shown on one line for each, so the lines can be compared to see which objective it served best.':
       '同一创意若在两个广告目标下投放，将各列一行，便于比较该创意最能达成哪一个目标。',
-    'hook rate is the share of people who kept watching once the ad appeared. the first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.':
+    'hook rate is the proportion of viewers who continued watching after the ad appeared. the opening seconds determine whether a viewer stops or scrolls past: a high hook rate indicates an effective opening, and a low one shows where the next creative should be strengthened.':
       '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
-    'hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. a strong hold rate means the content is doing its job; a low one shows where people start to drop off.':
+    'hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. a high hold rate indicates engaging content; a low one shows where viewers stop watching.':
       '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
     'every ad term is explained at go.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 go.adspace.me/fb-ad-terms。',
-    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst, charged separately.':
+    'amount spent is the total spent on ads, excluding the 10% wht and 8% sst, which are charged separately.':
       '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
-    'amount spent is the full amount spent on ads. it excludes the 5% dcc and 9% gst, charged separately.':
+    'amount spent is the total spent on ads, excluding the 5% dcc and 9% gst, which are charged separately.':
       '广告花费为投放于广告的全部金额，不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。',
-    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst on a malaysian ad account, and the 5% dcc and 9% gst on a singapore one, charged separately.':
+    'amount spent is the total spent on ads, excluding the 10% wht and 8% sst on a malaysian ad account and the 5% dcc and 9% gst on a singapore ad account, which are charged separately.':
       '广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。'
   };
   /* A count reads as Chinese does: the figure, then its measure word. */
@@ -1795,10 +1795,10 @@
          on the user (2026-10-05), so a TikTok figure carries no note. */
       var hasMeta = am.platforms.some(function (o) { return o.key === 'meta'; });
       var TAX = mk === 'SG'
-        ? 'Amount spent is the full amount spent on ads. It excludes the 5% DCC and 9% GST, charged separately.'
+        ? 'Amount spent is the total spent on ads, excluding the 5% DCC and 9% GST, which are charged separately.'
         : mk === 'MY'
-          ? 'Amount spent is the full amount spent on ads. It excludes the 10% WHT and 8% SST, charged separately.'
-          : 'Amount spent is the full amount spent on ads. It excludes the 10% WHT and 8% SST on a Malaysian ad account, and the 5% DCC and 9% GST on a Singapore one, charged separately.';
+          ? 'Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST, which are charged separately.'
+          : 'Amount spent is the total spent on ads, excluding the 10% WHT and 8% SST on a Malaysian ad account and the 5% DCC and 9% GST on a Singapore ad account, which are charged separately.';
 
       /* A line under a page title, in the second ink: what the page is for,
          said once, in the first month only. */
@@ -1828,7 +1828,7 @@
       /* A row is one creative with every variation of it added together,
          so a weak row reads as the creative tried several ways (the user,
          2026-10-02, their option B). */
-      var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended, and the next round builds on the creatives that did.';
+      var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended; the next round builds on the creatives that performed.';
       /* The note under a table holding an ad the team marked as an ad error
          (2026-10-16): neutral words for the client, never "error". */
       /* Under every table that prints a purchase value or ROAS (the user,
@@ -1849,7 +1849,7 @@
       (function summary() {
         newPage('Executive Summary');
         pageTitle('Executive Summary');
-        if (first) leadLine('The headline figures for the period, before the detail.');
+        if (first) leadLine('The key figures for the period, ahead of the detailed results.');
         var head = words(rep.headline).trim();
         if (head) proseBlock(sh.linesOf(head, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
         if (am.multi) {
@@ -2103,12 +2103,12 @@
         newPage('Ad Performance');
         pageTitle('Ad Performance');
         if (first) {
-          leadLine('Each objective ranked by what a result cost, then each creative with its results across objectives.');
+          leadLine('Each objective is ranked by cost per result, followed by each creative and its results across objectives.');
           panel('How to read this', [
-            'Cost per result is what it cost to get one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, written / 1,000. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
-            'Each ad is priced only against the result its objective was set to get. A leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.',
-            'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
-            'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.',
+            'Cost per result is the cost of obtaining one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, shown as / 1,000. It should be compared only between ads with the same objective, which is why each objective is ranked separately.',
+            'Each ad is assessed only against the result its objective was set to achieve. A leads ad that also started conversations is assessed by its cost per lead; those conversations are incidental, and the budget was not spent on them.',
+            'Reach is the number of people who saw an ad; impressions are the number of times it was shown. Frequency is impressions divided by reach.',
+            'A creative that ran under two objectives is shown on one line for each, so the lines can be compared to see which objective it served best.',
             VARIATIONS
           ]);
         } else {
@@ -2202,8 +2202,8 @@
           if (first && c.vidAd && !videoRead) {
             videoRead = true;
             panel('How to read the video figures', [
-              'Hook rate is the share of people who kept watching once the ad appeared. The first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.',
-              'Hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. A strong hold rate means the content is doing its job; a low one shows where people start to drop off.',
+              'Hook rate is the proportion of viewers who continued watching after the ad appeared. The opening seconds determine whether a viewer stops or scrolls past: a high hook rate indicates an effective opening, and a low one shows where the next creative should be strengthened.',
+              'Hold rate is the proportion of viewers who continued watching after the opening, showing whether the message holds attention to the end. A high hold rate indicates engaging content; a low one shows where viewers stop watching.',
               GLOSSARY
             ]);
           }
@@ -2217,7 +2217,7 @@
         if (!blocks.length) return;
         newPage('Insights and Recommendations');
         pageTitle('Insights and Recommendations');
-        if (first) leadLine('What the period’s figures mean, and what happens next.');
+        if (first) leadLine('What the period’s figures mean, and the next steps.');
         blocks.forEach(function (b, i) {
           if (i) gap(BLOCK);
           table([{ w: 1, align: 'left' }], [{ t: b[0], align: 'left' }], [{ cells: [{ items: pointTree(b[1]) }], split: true }]);

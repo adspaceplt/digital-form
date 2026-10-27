@@ -24,7 +24,7 @@
     denied: 'This needs Clients: Quotations at Manage.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional contents are whole numbers.',
+    empty: 'Choose a plan, an advertising budget or a one-off item.', 'bad-extra': 'Additional content pieces are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
@@ -417,7 +417,7 @@
       return '<button class="qb-plan' + (on ? ' is-on' : '') + '" type="button" role="radio" aria-checked="' + on + '" data-plan="' + esc(p.slug) + '">' +
         '<span class="qb-radio" aria-hidden="true"></span><span class="qb-plantext"><b>' + esc(p.spec.plan) + ' · ' + CUR + ' ' + esc(rm(cv(p.rate)).replace(/\.00$/, '')) +
         '</b><small>' + (p.spec.platforms === 1 ? '1 platform' : 'Up to ' + p.spec.platforms + ' platforms') + '</small>' +
-        '<small>' + p.spec.contents + ' contents: ' + mixWords(p.spec.mix || [], true) + '</small>' +
+        '<small>' + p.spec.contents + ' content pieces: ' + mixWords(p.spec.mix || [], true) + '</small>' +
         (p.spec.ad_budget ? '<small>Ad budget up to ' + esc(CUR + ' ' + whole(p.spec.ad_budget)) + '</small>' : '') +
         '</span></button>';
     }).join('');

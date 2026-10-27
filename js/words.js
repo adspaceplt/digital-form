@@ -45,9 +45,9 @@
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     /* A supplier holds no account manager (2026-10-27, SPF-6). */
     notSentAdspace: 'Not sent. Please try again, or contact ADspace.',
-    tooLong: 'Not sent. A name holds up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
+    tooLong: 'Not sent. A name may contain up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
     // A file sign-upload does not take (2026-10-17).
-    uploadType: 'This kind of file cannot be uploaded. Use a video, a picture or a PDF.',
+    uploadType: 'This file type is not supported. Please upload a video, an image or a PDF.',
     uploadSize: '{file} is over the {n} MB limit.',
     uploadTooLarge: 'A file is over the {n} MB limit.',
     // The name decisions are recorded under (js/decide.js, 2026-10-08).
@@ -57,8 +57,8 @@
     decideSave: 'Save',
     decideCancel: 'Cancel',
     decideName: 'Your name',
-    maintTitle: 'Upgrading in progress',
-    maintText: "We'll be right back!",
+    maintTitle: 'Upgrade in progress',
+    maintText: 'The portal will be available again shortly.',
     maintBack: 'Expected back by {when}.',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
@@ -150,7 +150,7 @@
     decideCancel: '取消',
     decideName: '您的姓名',
     maintTitle: '系统升级中',
-    maintText: '我们马上回来！',
+    maintText: '系统将于稍后恢复使用。',
     maintBack: '预计于 {when} 恢复。',
     closed: '选择已结束',
     closedText: '如需调整，请联系您的 ADspace 客户经理。',

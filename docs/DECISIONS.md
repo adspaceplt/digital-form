@@ -6626,4 +6626,26 @@ sentence.
   content in two languages takes the translation rate. The note and the
   tick (Make every content bilingual, on the website and in Build quote)
   now say so, in English and Chinese.
+
+### 2026-10-27 — What a client reads is formal English
+- The user asked for a review of the words every client, creator, prospect
+  and supplier reads ("some client-facing public-facing tone dont sound
+  good"), then "fix all". Changed, in English (Chinese left as it was but
+  the upgrade cover): the website's button Proceed quote (now View
+  quotation) and its casual lines (Let us know, make a new one, I will
+  involve others); "contents" counted as a noun (6 content pieces per month,
+  on the website, Build quote and every new quotation line through
+  `quote_price`, `2026-10-27-quotation-words-for-a-client.sql`; a quotation
+  issued before keeps its words); the upgrade cover (Upgrading in progress,
+  We'll be right back!, now Upgrade in progress, The portal will be
+  available again shortly.); Proceeded by on the selection page (now
+  Confirmed by, as the review page says); the creator's Needs you and Hand
+  in; the portal's sign-in refusals, guide and request labels; the review
+  page's Approve as it is; the supplier's bank authorisation (copied word
+  for word from Jotform, with grammar a dispute could turn on); the report
+  PDF's How to read this (it spoke as a chat: "the chats came alongside",
+  "doing its job"); the quotation PDF's PO reference and per the agreed
+  timeline; the letters' Verify document authenticity. Kept: Touch N Go
+  Digital (a stored value `supplier_values_check` holds), Chat on WhatsApp
+  (the user's own words for the front door).
 - 2026-10-27 · The UX audit of all sections, its P1 and P2 findings fixed (the user: "/ux-audit all", then a ponytail review of the findings, then "ok fix"). Twenty-four findings, each built as the review's better fix and each held by a suite assertion. What broke and how it was found: the Dashboard's checklist row opened the record still showing the other checklist, because the pane remounted only on a visit and `list=` fell out of the address (OVW-12, walked); Analytics judged leads and win rate against months before leads were kept, and a month typed in the script stood beside the `analytics_from` setting it duplicated, now the one source (ANL-1), and an unrecorded source repeated the New leads finding (ANL-2); a task made alone or copied opened its card with the list behind it stale, and New month on a client holding this month opened on the oldest month offered (WORK-1, WORK-2); a client picked in the Register's Issue sheet left Attn empty and issued "Dear {first name}," spending its reference (DOC-7); the Commentary strip read Not written after Write with AI until a reload, because only the summary reached the page's copy (RPT-10), and a published row's Sent was cut off a phone's line (RPT-11); Team Full Access was drawn Set inactive and Delete on an admin, and Set inactive moved the admin's tasks before the guard refused the stand-down (TEAM-1; the database's hand-over left as documented, a change of that rule being the user's call), a taken name closed the field and lost the typing (TEAM-2), and Set access expiry replaced colleagues' own dates with no word and no Undo (TEAM-3); the Notices row read None sent after a send because focus came back between the two swapping sheets (SET-2); the check-in's scales showed bare 1 to 5, Workload running the other way to the eye (MINE-7); a billing Save with nothing changed shut the sheet, forgot the Active move and filed "3 fields still needed" (CLI-13); the Letter of Offer's lines read six months' total beside a monthly foot (CLI-14); a pending supplier's name broke over two lines beside Approve (SUP-10, Approve moved under the head rather than the two-row head the review advised against, which the 2026-10-20 decision had set aside); a campaign link to the Schedule landed on Overview because the address was written before its pane was read, and two suites pressed the tab to work round it, now asserted instead (CMP-17), and a new campaign opened on an Overview with no way on (CMP-18); a short link's four controls wrapped the ⋯ alone on a phone (LNK-8); a rate below nought shut its field and said so out of sight (SVC-10); a review refused for a post changed since said "Please refresh" with no Refresh and lost the request on reloading (RVP-3); the selection page asked again for a name the device held (SEL-4); the supplier form named an account manager a supplier never has (SPF-6); the quotation website's later steps offered no way to reach ADspace before a colleague took the lead (QTE-2). The AI payload test asked `leads_complete_from` for the month once typed in the script; it now asks the setting's month, the seed's Aug 2023.

@@ -627,8 +627,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every portal page loads it after `api.js` but `/`, the 404 and `/card/`,
     so the front door, short links and every colleague's namecard (a
     printed QR's page) stay up. A client page covers itself under
-    its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
-    progress / 系统升级中 (`W.maintTitle`; `maintText` We'll be right back! / 我们马上回来！; `maintBack` Expected
+    its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrade in
+    progress / 系统升级中 (`W.maintTitle`; `maintText` The portal will be available again shortly. / 系统将于稍后恢复使用。; `maintBack` Expected
     back by {end}), following the 中文 switch. Every open page, the console
     included, asks again every minute while on screen and on every return
     (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
@@ -2961,7 +2961,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - At Reviewing the card offers Confirm internally (asked first) in place
     of the plain step forward: a `source` team approval under the
     colleague's name. `get_campaign` sends it as `by_team`, and the client's
-    page reads Proceeded by {name}. Revert out of Scheduled is
+    page reads Confirmed by {name}. Revert out of Scheduled is
     `campaign_revert_approval` (the approval kept, undone). The card names
     who approved (`.kapproved`).
   - The card shows the open request (Changes requested, who, when, the note)
@@ -3212,7 +3212,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     be the main focus").
   - The open booking (2026-10-08): its six steps by name
     (`ADspaceIcons.journey`; Submitted and Reviewing are Review); what is
-    owed (Next up: Hand in your draft, or the revision, its countdown, the
+    owed (Next up: Submit your draft, or the revision, its countdown, the
     change note, the files and one large Add photos or videos area, the
     caption opening two lines) above the facts, else where the booking
     stands as one line in ink there (`.cx-status`), so after Submit it is read
@@ -5447,15 +5447,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The quotation website (`/quote/`, `js/quote.js`,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
-  asked; each plan names its contents, `4 contents per month: 2 graphics
-  and 2 reels of up to 60 seconds`, its budget on a line of its own, and
-  once a plan is chosen its Additional contents per month are asked under
-  the plans, after Contents per month where the plan holds two content
+  asked; each plan names its content, `4 content pieces per month: 2
+  graphics and 2 reels of up to 60 seconds`, its budget on a line of its own, and
+  once a plan is chosen its Additional content pieces per month are asked
+  under the plans, after Content pieces per month where the plan holds two content
   options (1 graphic and 3 reels, or 4 reels; sent as `mix`, a string; the
   user, 2026-10-27); the user, 2026-10-14), Customise (languages: each
-  content is in one language, the month's contents divided across those
-  chosen at no charge, Make every content bilingual the translation rate a
-  content, each added language; 2026-10-27; budget,
+  content piece is in one language, the month's content pieces divided
+  across those chosen at no charge, Make every content piece bilingual the
+  translation rate a content piece, each additional language; 2026-10-27; budget,
   commitment; with a plan, Content production lists only the formats its
   additional contents do not),
   what is chosen and typed kept in the tab only while the steps are gone
