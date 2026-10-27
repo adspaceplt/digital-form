@@ -6781,3 +6781,25 @@ sentence.
   card's span sits under its title at every width, and a chart keeps the
   labels its own width holds (`fitLabels`, a ResizeObserver on the chart),
   every second or every third, counted back from the last.
+
+## 2026-10-27 — The demo: a PIN in the sign-in's email box opens the console on sample data
+
+- The user: "Is it possible to have … pin … allow me access however it will
+  only show all fake populated data unable to add anything … so i can sell
+  ppl this portal"; then "Just enter in the email input", "A neutral sample
+  agency", and "the demo act as one setting to control the pin (input or
+  change) and active / inactive".
+- Built on the suites' stand-in, which already answers every function and
+  table the console calls in the browser: `tests/demo-build.js` writes it to
+  `demo/engine.js` without the suites' seed (it names real clients) and
+  without comments. A new seed, `demo/seed.js`, is a made-up agency built
+  relative to today, so the Dashboard, Analytics, My Work and Reports are
+  always current. Nothing reaches the database once the demo is entered.
+- The PIN is checked by the database (not the page, where the code is
+  public), counted as a link's passcode, and a wrong one carries on exactly
+  as any address would, so nobody learns the box takes a PIN.
+- Found on the way: the board's screen-reader labels escaped its sideways
+  scroll and widened the page once a board held many columns; `.board` now
+  holds them (`position: relative`). `demo_set`'s first draft added a word
+  to a list without its type, which the Postgres suite refused before it
+  shipped.

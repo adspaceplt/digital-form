@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261027g">
+<link rel="stylesheet" href="/css/portal.css?v=20261027h">
 <link rel="stylesheet" href="/css/console.css?v=20261027g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -47,7 +47,7 @@
      this browser is known now, so the first paint is already the right page:
      white under the sign-in card, and no sign-in bar over a console that is
      about to open. js/admin.js takes the attribute off once it knows. -->
-<script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
+<script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}try{var dq=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dq&&dq.until>Date.now())s=true;}catch(e){}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
 <!-- The phone tab bar's one media query (js/admin.js reads it), so the bar's
      room and the head without its menu toggle are drawn from first paint.
      Where a phone's page stands upright and narrower than its screen (the
@@ -58,10 +58,15 @@
      console alone takes it; the client pages stay on the version they were
      built and tested against until they need something it adds. -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js" integrity="sha384-Rj26LVGvoeRVR6+mwQmFfcR3QOBEwT+ZmuCWpuiqeTzJpCs0ER4ITAWGb4Hiy3Ok" crossorigin="anonymous"></script>
+<!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
+     `adspace-demo` in this browser (js/demo.js); while it stands the page
+     loads sample data in place of the database, and never reaches it. -->
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261027h"><\/script><script src="/demo/engine.js?v=20261027h"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261015zn"></script>
+<script src="/js/demo.js?v=20261027h"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261027c"></script>
 <script src="/js/clock.js?v=20261012b"></script>
@@ -5731,7 +5736,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261027g"></script>
+<script src="/js/admin.js?v=20261027h"></script>
 <script src="/js/documents.js?v=20261027a"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
@@ -5758,6 +5763,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261027d"></script>
 <script src="/js/overview.js?v=20261026f"></script>
 <script src="/js/analytics.js?v=20261027d"></script>
-<script src="/js/settings.js?v=20261027d"></script>
+<script src="/js/settings.js?v=20261027h"></script>
 </body>
 </html>

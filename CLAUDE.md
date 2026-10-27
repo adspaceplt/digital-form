@@ -59,6 +59,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - `tests/STATUS.md` says what each suite covers. Keep it true.
 - `tests/stub2.js` is the Supabase stand-in. Add every new table, function and
   refusal to it, under the same names.
+  - It is also the demo's engine: a push that changes it runs
+    `node tests/demo-build.js` and commits `demo/engine.js` (the seed and
+    comments left out; `demo` fails while they differ).
   - It must never be more generous than PostgREST. It refuses an ambiguous
     embed, honours `.order()`, `.gte()`, `.lte()`, `.in()` and embedded column
     lists, treats a refused delete as 204 with no error, and refuses
@@ -270,6 +273,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/media.js`, `workers/video-convert/`, `supabase/functions/media-pass/` | vconvert, canvas, cprod, camp, mediapass, mediapassfn |
 | the Short Links route | qr, shortlinks, run |
 | `workers/db-backup/`, `.github/workflows/db-backup.yml` | dbbackup |
+| `js/demo.js`, `demo/`, the DEMO ACCESS section, `tests/stub2.js` | demo, sql, settings |
 
 **Global > parent > child** (the user, 2026-10-11, the light version): a
 base element (button, field, select, chip) is styled by its own rule and its
@@ -6371,6 +6375,26 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `/admin/` signs in with the emailed link or the code (`#authCode`, 6 to 10
   digits, `verifyOtp` type `email`), or with a passkey (supabase-js 2.117.2 on
   `/admin/` only).
+- The demo (`js/demo.js`, `2026-10-27-demo-access.sql`; the user,
+  2026-10-27: "fake populated data unable to add anything … so i can sell
+  ppl this portal", "Just enter in the email input"): four to eight digits
+  in the sign-in's email box are asked of `demo_pin_ok` (anon, true only
+  while Demo access is on and the PIN right, wrong ones counted as a
+  link's passcode, `link_passcode` kind `demo`); anything else carries on as
+  an address, so the box never says a PIN exists. A right PIN keeps
+  `adspace-demo` in this browser for twelve hours, and the head then loads
+  `demo/seed.js` (a made-up agency, Sample Studio, its six colleagues and 48
+  clients over two years, built on every load relative to today) and
+  `demo/engine.js` (the stand-in, `tests/demo-build.js`) in place of the
+  database, which the page never reaches again. Signed in as the sample
+  director; every write refused (a table's insert, update or delete, a
+  function whose name changes something, an edge function, an upload) with
+  Demo: changes are not saved.; the mark, letterhead, foot and title the
+  sample agency's; a bar over the console (`#demoBar`, the upgrade line's
+  look) with Exit demo, which Sign out does too. Settings, Portal: Demo
+  access (`team.settings`): On / Off and a PIN, 4 to 8 digits, kept as a
+  bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`), filed
+  `team.changed` under Demo access, never the PIN.
   - Passkeys are managed in the account menu.
   - The passkey offer shows once per browser (`adspace-passkey-offer`).
   - A passkey that proves the person already signed in goes through

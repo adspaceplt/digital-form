@@ -89,6 +89,14 @@
       });
     },
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
+    /* Demo access (2026-10-27): on or off, and whether a PIN is held. */
+    demo: function () {
+      return db.rpc('demo_state').then(function (r) {
+        if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
+        var d = r.data || {};
+        return d.on ? 'On · PIN set' : d.pin_set ? 'Off · PIN set' : 'Off';
+      });
+    },
     taxcodes: function () {
       var M = window.ADspaceMoney;
       return biz() && M && M.taxCodes && M.taxCodes(true).then(function (list) {
@@ -170,7 +178,10 @@
             : 'Reminder every ' + plural(num('abroad_remind_hours'), 'hour', 'hours')].filter(Boolean)) },
       biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
         meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-          'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]);
+          'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) },
+      /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
+         that opens the console on sample data (js/demo.js). */
+      biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo') }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
@@ -408,10 +419,46 @@
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
+    if (a === 'demo') { openDemo(); return; }
     if (a === 'depts') { openDepts(btn); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
+  }
+
+  /* ---- Demo access (2026-10-27) ----------------------------------------
+     One sheet: On or Off, and a new PIN (4 to 8 digits; empty keeps the
+     one held). The PIN is never read back: the database keeps its hash. */
+  var DEMO_SAID = { denied: 'This needs Team: Business settings.', 'bad-pin': 'PIN: 4 to 8 digits.',
+    'no-pin': 'Set a PIN before turning demo access on.' };
+  function openDemo() {
+    db.rpc('demo_state').then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { rowSay('demo')(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : DEMO_SAID[d.error] || d.error, 'err'); return; }
+      window.ADspaceConfirm.ask({
+        title: 'Demo access', go: 'Save', wait: true,
+        fields: [{ name: 'on', label: 'Demo access', seg: true, value: d.on ? 'on' : 'off', choices: [['on', 'On'], ['off', 'Off']] },
+          { name: 'pin', label: d.pin_set ? 'New PIN' : 'PIN', type: 'tel', required: !d.pin_set, placeholder: '4 to 8 digits', value: '',
+            note: d.pin_set ? 'Empty keeps the PIN held. Typed in the sign-in\'s email box, it opens the console on sample data.'
+              : 'Typed in the sign-in\'s email box, it opens the console on sample data.' }],
+        check: function (v) {
+          var pin = String(v.pin || '').trim();
+          if (pin && !/^[0-9]{4,8}$/.test(pin)) return DEMO_SAID['bad-pin'];
+          if (v.on === 'on' && !pin && !d.pin_set) return DEMO_SAID['no-pin'];
+          return '';
+        }
+      }, function (v) {
+        return db.rpc('demo_set', { p_on: v.on === 'on', p_pin: String(v.pin || '').trim() || null }).then(function (r2) {
+          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? 'This needs a database update.' : r2.error.message)
+            : r2.data && r2.data.error ? DEMO_SAID[r2.data.error] || r2.data.error : '';
+          if (e) return e;
+          var n = r2.data || {};
+          fillLine('demo', n.on ? 'On · PIN set' : n.pin_set ? 'Off · PIN set' : 'Off');
+          rowSay('demo')('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('demo')('Could not load.', 'err'); });
   }
 
   /* ---- Public holidays (2026-10-14) ------------------------------------
