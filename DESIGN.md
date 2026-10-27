@@ -723,7 +723,8 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   content pieces (`6 content pieces per month`), never contents; no
   contraction or exclamation mark, and no chat words (Hand in, Needs you,
   Let us know) where a client, creator, prospect or supplier reads (the
-  user, 2026-10-27).
+  user, 2026-10-27). In Chinese a creator is 创作者 on every page, never
+  博主 or 达人.
 - Count creators, not slots. rednote is lower case; never Xiaohongshu or
   RedNote. Say Post, never Note.
 - Placeholders: a value a person would type, from one generic set: John Doe

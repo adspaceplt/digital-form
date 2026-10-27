@@ -131,7 +131,7 @@
         social: ['社交媒体管理', '每月内容制作与账号管理'],
         ads: ['广告投放', 'Meta 与 TikTok 广告，按月管理'],
         content: ['内容制作', '图文与视频，按件收费'],
-        koc: ['KOC 或 KOL 合作', '为您的品牌邀约达人'],
+        koc: ['KOC 或 KOL 合作', '为您的品牌邀约创作者'],
         verify: ['账号认证', 'Meta 认证与小红书专业号']
       },
       needNone: '请至少选择一项服务。',
@@ -149,7 +149,7 @@
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n}个月',
       once: '内容制作', onceNote: '一次性，按件收费',
-      koc: 'KOC 达人', kocNone: '不需要', kocN: '{n}位达人', kocCustom: '自定名单（另行报价）',
+      koc: 'KOC 创作者', kocNone: '不需要', kocN: '{n}位创作者', kocCustom: '自定名单（另行报价）',
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',

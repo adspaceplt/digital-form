@@ -158,7 +158,7 @@
       views: '浏览量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
       rateHead: '合作体验', foldHead: '合作详情',
-      rateStar: function (n) { return '5星中的' + n + '星'; },
+      rateStar: function (n) { return n + '星（满分5星）'; },
       rateThanks: '感谢您的评分。',
       payHead: '付款资料', payLine: '请填写您的付款资料。',
       payGo: '填写表单',
@@ -172,8 +172,8 @@
         reviewing: '您的提交正在审阅中。',
         changes: '请按以下说明修改后重新提交。',
         scheduled: '已通过并排期。',
-        posted: '已发布，谢谢。',
-        completed: '已完成，谢谢。'
+        posted: '已发布，感谢您的配合。',
+        completed: '已完成，感谢您的配合。'
       }
     }
   });

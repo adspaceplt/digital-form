@@ -41,7 +41,7 @@
       req: '此项为必填。', badBrn: '请按公司注册文件填写注册号码。',
       badEmail: '请输入有效的邮箱地址。', badPhone: '请输入8至15位数字的手机号码。',
       badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。', tick: '请勾选确认。',
-      doneT: '资料已收到', doneP: '谢谢。您的 ADspace 客户经理将会审阅。',
+      doneT: '资料已收到', doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
       expT: '链接已过期', submittedT: '资料已收到', submittedP: '此表格已提交。'
     }
   });

@@ -36,7 +36,7 @@ Dashboard → project `hwwuigvdfubuymchsvyx` → **Authentication**.
 | Rate Limits | Token verifications per 5 minutes per IP | **15** |
 | URL Configuration | Site URL | `https://digital.adspace.me` |
 | URL Configuration | Redirect URLs | `https://digital.adspace.me/admin/`, `https://digital.adspace.me/client/` |
-| Email Templates → Magic Link | Body | Must print `{{ .Token }}` as well as the link (already done for My performance) |
+| Email Templates → Magic Link, Invite user | Subject and body | As written in `docs/SIGN-IN-EMAILS.md` (the Magic Link must print `{{ .Token }}` as well as the link) |
 
 Supabase may rename these settings. If one is missing, look for it under
 **Attack Protection** or **Rate Limits**.

@@ -94,7 +94,7 @@
       lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
     },
     zh: {
-      kicker: '客户平台', lang: 'EN', signOut: '退出',
+      kicker: '客户平台', lang: 'EN', signOut: '退出登录',
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送验证码',
       sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。请输入验证码，或打开链接。'; },
       code: '邮件中的验证码', codePh: '验证码', signIn: '登录', otherEmail: '使用其他邮箱',
@@ -122,7 +122,7 @@
       meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论', to: '至',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
-      review: '内容审阅', open: '打开', campaign: '博主推广',
+      review: '内容审阅', open: '打开', campaign: '创作者推广',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
