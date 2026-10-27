@@ -6703,3 +6703,17 @@ sentence.
   (SHA-256 of each); the old templates were read first for rollback. The
   function was then replaced by a 410 stub with Verify JWT on, and the user
   revokes the token and deletes the secret.
+
+### 2026-10-27 — The billing gate is right from the first paint
+
+- 2026-10-27 · The user: opening a client, "Billing contact" stood in the
+  red Billing details missing line for a second, then went. The page
+  worked the billing contact out from the client's contacts, which are
+  read after the record is drawn, so every record read the contact as
+  missing until they arrived. `client_billing` (BILLING CONTACT READ WITH
+  THE RECORD) now names a missing billing contact in `billing_missing`,
+  by the rule the move into Active already holds (the contact chosen, else
+  a main contact, live); the record reads it until its contacts arrive,
+  then reads the contacts as before. Hiding the gate until the contacts
+  came was refused: it would have moved the page after its first paint for
+  every client missing billing.
