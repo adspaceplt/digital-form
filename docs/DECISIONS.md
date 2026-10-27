@@ -6675,3 +6675,12 @@ sentence.
   subject as its heading and the message the colleague wrote, word for
   word, with no facts table of its own (the message already states the
   Supplier ID and terms), so what is typed is what goes.
+- The user, the same day: "the ratio and spacings look weird". Measured:
+  the company's lines under the card started 32px left of the card's words
+  (two left edges), the wordmark stood 28px above the heading while the
+  heading stood 12px above the greeting (the greeting read as part of it),
+  the gaps (28, 36, 40, 18, 20) were off the 4 to 32 scale, the code was
+  centred in a left-aligned card and the heading was the phone's 21px at a
+  desk. Now: card 32 (24 on a phone), wordmark 24 above the heading, the
+  heading 16 above the words at 24px (21 on a phone), the code left, the
+  lines under the card on the card's own left edge (`mailfn` holds it).
