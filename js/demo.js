@@ -21,25 +21,48 @@
    way, so a link the demo console hands out opens on the same sample data:
    the client portal signed in as a sample client's main contact, the rest on
    their link as a client or a creator meets it. Signing out of the client
-   portal returns to the console, still in the demo. */
+   portal returns to the console, still in the demo.
+   The audit of 2026-10-27: a demo whose sample data did not load never
+   falls back on the real database (the page reads Unable to load); Sign
+   out in the demo ends it as Exit demo does, never clearing the
+   colleague's own notes and drafts; a sheet's draft kept in the demo is
+   let go when it starts and ends; and a client page loads the demo for its
+   own links alone, every demo key holding a 0 that no real key's alphabet
+   does (the loader in each page's head). */
 (function () {
   'use strict';
   var KEY = 'adspace-demo';
   var on = window.ADSPACE_DEMO;
   var CONSOLE = /^\/admin\//.test(location.pathname);
+  /* A phone keeps a sheet's draft in the tab (js/sheet.js): none crosses
+     between the demo and the real console. */
+  function dropDrafts() {
+    try {
+      Object.keys(sessionStorage).forEach(function (k) { if (k.indexOf('adspace-draft:') === 0) sessionStorage.removeItem(k); });
+    } catch (e) { /* storage refused */ }
+  }
   function leave() {
     try { localStorage.removeItem(KEY); localStorage.removeItem('adspace-logo-ratio'); } catch (e) {}
+    dropDrafts();
   }
   window.ADspaceDemo = {
     on: Boolean(on),
     /* Kept for twelve hours from the sign-in. */
     enter: function () {
       try { localStorage.setItem(KEY, JSON.stringify({ until: Date.now() + 12 * 36e5 })); localStorage.removeItem('adspace-logo-ratio'); } catch (e) { return false; }
+      dropDrafts();
       return true;
     },
     leave: function () { leave(); location.replace('/admin/'); }
   };
-  if (!on) return;
+  if (!on) {
+    /* A demo past its twelve hours ends here, its drafts with it. */
+    try {
+      var was = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (was && !(was.until > Date.now())) leave();
+    } catch (e) { /* storage refused */ }
+    return;
+  }
 
   var NAME = 'Sample Studio';
   var SAID = 'Demo: changes are not saved.';
@@ -132,14 +155,35 @@
     return c;
   }
   var lib = window.supabase;
-  if (!lib || !lib.createClient || !window.__demoSeed) { leave(); return; }
-  var made = lib.createClient;
-  lib.createClient = function () { return guard(made.apply(lib, arguments)); };
-  /* The engine's own client for its test hooks writes through the same door. */
-  if (window.__db) guard(window.__db);
-  /* Every guide already met: the demo opens on the screens, not on tours. */
-  if (window.__signIn && CONSOLE) window.__signIn('alex@example.com');
-  if (window.__signIn && /^\/client\//.test(location.pathname)) window.__signIn('client@example.com');
+  /* The engine sets its own library in place of the real one and then
+     __signIn, so a page holding __signIn holds the sample database. Without
+     it (a file that did not arrive, or stopped part way) the real library
+     is taken away: js/api.js finds none and the page reads Unable to load
+     under the demo's bar, never the real database (audit, 2026-10-27). A
+     refresh tries again; Exit demo ends it. */
+  if (!lib || !lib.createClient || !window.__demoSeed || !window.__signIn || !window.__DB) {
+    window.supabase = undefined;
+  } else {
+    var made = lib.createClient;
+    lib.createClient = function () { return guard(made.apply(lib, arguments)); };
+    /* The engine's own client for its test hooks writes through the same door. */
+    if (window.__db) guard(window.__db);
+    /* Every guide already met: the demo opens on the screens, not on tours. */
+    if (CONSOLE) window.__signIn('alex@example.com');
+    if (/^\/client\//.test(location.pathname)) window.__signIn('client@example.com');
+  }
+  /* Sign out in the demo ends it as Exit demo does: the console's own Sign
+     out would clear this browser's notes, drafts and notification setting,
+     which are the colleague's (audit, 2026-10-27). The client portal's Sign
+     out returns to the console, still in the demo. */
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest && e.target.closest('#signOut, #portalOut');
+    if (!t) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (t.id === 'signOut') window.ADspaceDemo.leave();
+    else location.replace('/admin/');
+  }, true);
 
   function words() {
     if (CONSOLE) document.title = NAME + ' · Demo';

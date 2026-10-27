@@ -27,7 +27,9 @@
   var GONE = 'This namecard is no longer available.';
   function gone() { cover(W.notFound, GONE, true); }
 
-  if (!/^[23456789a-z]{8}$/.test(key)) { gone(); return; }
+  /* A demo key holds a 0, which no real key does (js/demo.js). */
+  var demo = window.ADspaceDemo && window.ADspaceDemo.on;
+  if (!(demo ? /^demo0[a-z0-9]{3}$/ : /^[23456789a-z]{8}$/).test(key)) { gone(); return; }
   if (!db) { cover(W.failTitle, W.failText); return; }
   db.rpc('namecard_get', { p_key: key }).then(function (r) {
     var d = r.data;
