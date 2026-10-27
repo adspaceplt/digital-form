@@ -6612,3 +6612,17 @@ sentence.
   buttons ended at no edge. They now span the whole row (`1 / -1`, a span
   over the flexible track that sizes nothing), ending under the ⋯; in a
   narrow pane they take the row's whole width too.
+
+### 2026-10-27 — The website asks a plan's content option; the language note says what is free
+- The user: the website showed Plan B's "1 graphic and 3 reels or 4 reels"
+  and asked neither, so every website quotation took the first. A plan of
+  two options now asks Contents per month under the plans (the first
+  chosen), sent as `mix`; `quote_website_create` already kept it as a
+  string. "Yes add both" also removed the empty Service lines' second Add
+  service (the heading's stays; Quotations' empty line keeps Build quote).
+- The user: "Your contents are shared across the languages selected, at no
+  extra charge" read as free translation. Meant: the month's contents may
+  be divided between languages (2 in English, 4 in Chinese) at no charge; a
+  content in two languages takes the translation rate. The note and the
+  tick (Make every content bilingual, on the website and in Build quote)
+  now say so, in English and Chinese.
