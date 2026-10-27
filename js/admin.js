@@ -159,6 +159,21 @@
     if (!email) return;
     var b = $('authSend');
     b.disabled = true;
+    /* The demo's PIN (2026-10-27, js/demo.js): four to eight digits in this
+       box are asked of the database first; a right one opens the console on
+       sample data, anything else carries on as any address would, so the
+       box never says a PIN exists. */
+    if (/^[0-9]{4,8}$/.test(email) && window.ADspaceDemo && !window.ADspaceDemo.on) {
+      var onward = function () { sendCode(email, b); };
+      db.rpc('demo_pin_ok', { p_pin: email }).then(function (r) {
+        if (r && r.data === true && window.ADspaceDemo.enter()) { location.replace('/admin/'); return; }
+        onward();
+      }).catch(onward);
+      return;
+    }
+    sendCode(email, b);
+  });
+  function sendCode(email, b) {
     // A fixed URL, not location.href, so it matches the Supabase allow list exactly.
     // Supabase silently falls back to its Site URL for anything not on that list.
     /* The console never makes an account (a colleague is added on the Team
@@ -178,7 +193,7 @@
       msg('authMsg', '');
       authStep(true);
     }, function () { b.disabled = false; msg('authMsg', 'Not sent. Please try again.', 'err'); });
-  });
+  }
   $('authEmail').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') $('authSend').click();
   });

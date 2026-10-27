@@ -6465,7 +6465,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* Every column runs the board's full height, so the whole column is where a
    card lands, not the height of the cards already in it (the user,
    2026-09-28); its cards stay packed at the top. */
-.board { display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.board { position: relative; display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
 .board.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .board.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .board.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
