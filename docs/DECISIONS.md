@@ -6717,3 +6717,18 @@ sentence.
   then reads the contacts as before. Hiding the gate until the contacts
   came was refused: it would have moved the page after its first paint for
   every client missing billing.
+
+### 2026-10-27 — One control height on the quotation website
+
+- 2026-10-27 · The user, on an iPhone: "Are the selections height and
+  spacings inconsistent". Measured at 390 under a finger: the choice cards
+  and steppers stood 48, the selects, the Without ads / With ads segment
+  and Back / Continue 36 (34 at a desk), and the segment and buttons wrote
+  13px against the cards' 16. The spacing was even (8 inside a group, 24
+  between groups). `.shell.qs` now sets `--ctl-h` 48 and the control and
+  field text 16, so every control on the page is the cards' height and
+  size; a stepper's − and + keep 40 inside their row. The phone's field
+  floor (15px, a literal) became `max(15px, var(--field-text))`, so a page
+  that raises its field text is not held at 15; everywhere else it reads
+  15 as before. `tests/quotesite.js` measures the cards, selects and
+  buttons one height and one size at 1280 and 390.
