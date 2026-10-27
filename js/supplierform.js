@@ -37,12 +37,12 @@
   var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   /* The authorisation the Jotform form carried, word for word. */
   var AUTH = [
-    'I / We hereby authorise ADSPACE PLT to credit payments due to me / us to the above account.',
-    'Amounts so credited would constitute valid discharge of obligations due to me / us.',
-    'This authorisation shall continue to be in force until we have expressly revoked it by notice in writing to you.',
-    'In the event of any change to our particulars, I / we shall inform you in writing 30 days in advance before the change, with ADSPACE PLT’s acknowledgement of receiving the notice in writing.',
-    'It is being understood that you may in your absolute discretion determine this arrangement by giving written notice to my / our last address or email contact last known to you.',
-    'I / We hereby declare that all the information provided herein above are true and correct.'
+    'I / We hereby authorise ADSPACE PLT to credit all payments due to me / us to the account above.',
+    'Any amount so credited shall constitute a valid discharge of ADSPACE PLT’s obligations to me / us.',
+    'This authorisation shall remain in force until I / we revoke it by written notice to ADSPACE PLT.',
+    'I / We shall notify ADSPACE PLT in writing at least 30 days before any change to my / our particulars, and such notice takes effect upon ADSPACE PLT’s written acknowledgement of its receipt.',
+    'ADSPACE PLT may, at its absolute discretion, terminate this arrangement by written notice to my / our last known address or email.',
+    'I / We hereby declare that all the information provided above is true and correct.'
   ];
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
 
@@ -85,7 +85,7 @@
         field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
         field('sfBrn', '12-digit SSM BRN', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
-        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC held' : 'XXXXXX-XX-XXXX') + '"')) : '') +
+        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
         field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
         field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
         field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
@@ -98,12 +98,12 @@
         field('sfMobile', 'Mobile / WhatsApp', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Payment details</h2>' +
-        (keepBank ? '<p class="qs-note">Leave the bank account blank to keep the bank details held. A new bank account is approved by ADspace before payments are made to it.</p>' : '') +
+        (keepBank ? '<p class="qs-note">Leave the bank account blank to keep the bank details on file. A new bank account must be approved by ADspace before any payment is made to it.</p>' : '') +
         field('sfTerm', 'Payment term', select('sfTerm', 'payment_term', true, TERMS, 'Choose a term'), 'Subject to approval.') +
         field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
-        field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As the account holder’s name.') +
-        field('sfBank', 'Bank', select('sfBank', 'bank_name', !keepBank, BANKS, keepBank ? 'Keep the bank held' : 'Choose a bank')) +
-        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Leave blank to keep"' : ''))) +
+        field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As shown on the bank account.') +
+        field('sfBank', 'Bank', select('sfBank', 'bank_name', !keepBank, BANKS, keepBank ? 'Keep the bank on file' : 'Choose a bank')) +
+        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Leave blank to keep on file"' : ''))) +
         field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@adspace.me"')) +
         field('sfSwift', 'SWIFT code', input('sfSwift', 'swift', false, 'maxlength="11" autocapitalize="characters" placeholder="Optional"')) +
         field('sfBankAddr', 'Bank address', '<textarea class="input" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
@@ -149,14 +149,14 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    name: 'Enter the name, 2 to 160 characters.', brn: 'Enter the 12-digit BRN, digits only.',
+    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit BRN, digits only.',
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
-    sst_no: 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singapore number, as 07-123 4567.',
-    mobile: 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', address: 'Enter the full billing address.',
+    sst_no: 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singapore number, for example 07-123 4567.',
+    mobile: 'Enter a Malaysian or Singapore mobile number, for example 012-345 6789.', address: 'Enter the full billing address.',
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',
     bank_name: 'Choose a bank.', bank_account: 'Enter the account number, digits only.',
-    swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'The bank address is up to 300 characters.',
+    swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'The bank address may contain up to 300 characters.',
     kind: 'Choose how you are registered.', currency: 'Choose a currency.'
   };
   function check() {

@@ -23,7 +23,7 @@
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Your bookings', zh: '您的合作' }, steps: [
-    { at: '#workList .qrow', text: { en: 'Your bookings, the one that needs you first. Open one for its brief and dates.', zh: '您的合作项目，需要您处理的排在最前。点开即可查看简介与日期。' } },
+    { at: '#workList .qrow', text: { en: 'Your bookings, the most urgent first. Open a booking for its brief and dates.', zh: '您的合作项目，需要您处理的排在最前。点开即可查看简介与日期。' } },
     { at: '#linksEdit', text: { en: 'Keep your profile links up to date.', zh: '请保持您的主页链接为最新。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
@@ -49,7 +49,7 @@
       work: 'Your bookings',
       /* The queue names the one that needs them, so nothing on it has to be
          opened to find out whether it does. */
-      needsYou: 'Needs you',
+      needsYou: 'Action required',
       none: 'No bookings',
       noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
@@ -62,7 +62,7 @@
       changesHead: 'Revision notes',
       changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
-      nextUpWord: 'Next up', handIn: 'Hand in your draft', handInAgain: 'Hand in the revision',
+      nextUpWord: 'Next up', handIn: 'Submit your draft', handInAgain: 'Submit your revision',
       dropTitle: 'Add photos or videos', dropSub: 'Up to 1 GB each',
       directions: 'Directions', call: 'Call', whatsapp: 'WhatsApp',
       captionHint: 'Caption to publish with this post.',

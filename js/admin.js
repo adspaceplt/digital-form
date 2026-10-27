@@ -378,7 +378,7 @@
   });
 
   /* ===== Upgrade mode (js/maintenance.js, 2026-10-03). An admin switches
-     every portal page to one cover, Upgrading in progress, now or from a set
+     every portal page to one cover, Upgrade in progress, now or from a set
      moment in Malaysia time, until switched off or an end set with it
      passes. The admin keeps working under a banner; anybody else signed in
      here meets the cover, with a way to sign out. Turning it off never
@@ -478,7 +478,7 @@
     var today = myDay(new Date());
     window.ADspaceConfirm.ask({
       title: 'Turn on upgrade mode',
-      body: 'Everyone but admins sees Upgrading in progress.',
+      body: 'Everyone but admins sees Upgrade in progress.',
       go: 'Turn on',
       tone: 'warn',
       fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },

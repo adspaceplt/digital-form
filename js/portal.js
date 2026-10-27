@@ -16,8 +16,8 @@
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Your portal', zh: '客户门户' }, steps: [
-    { at: '#cpTabs', text: { en: 'Your services, letters, reports and meetings, a tab each.', zh: '服务、函件、报告与会议，各在一个分页。' } },
-    { at: '#ovRequest', text: { en: 'Request change asks your account manager for an upgrade, a downgrade or new details.', zh: '如需升级、调整服务或更新资料，请点「申请修改」，客户经理会为您跟进。' } }] };
+    { at: '#cpTabs', text: { en: 'Your services, letters, reports and meetings are each on their own tab.', zh: '服务、函件、报告与会议，各在一个分页。' } },
+    { at: '#ovRequest', text: { en: 'Use Request change to ask your account manager for an upgrade, a downgrade or a change of details.', zh: '如需升级、调整服务或更新资料，请点「申请修改」，客户经理会为您跟进。' } }] };
   var db  = API && API.client;
   var MON = window.ADspaceMoney;
   /* The shared list and record primitives: the same `initials` both console
@@ -60,8 +60,8 @@
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send code',
       sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in code and link have been sent to it. Enter the code, or open the link.'; },
       code: 'Code from the email', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
-      codeNeeded: 'Enter the code from the email.', codeWrong: 'That code is wrong or has expired. Send a new one.',
-      codeWait: 'Too many tries. Please wait a few minutes, then send a new code.', codeFail: 'Not signed in. Please try again.',
+      codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
+      codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
       emailNeeded: 'An email is required.',
       signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
@@ -70,7 +70,7 @@
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
-      contact: 'Contact', reach: 'Reach', contacts: 'Contacts',
+      contact: 'Contact', reach: 'Contact details', contacts: 'Contacts',
       mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
       months: function (n) { return n + ' months'; }, from: function (d) { return 'from ' + d; }, fromAlone: function (d) { return 'From ' + d; }, mo: 'months',
@@ -87,7 +87,7 @@
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
-      reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
+      reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'Requested change', downgrade: 'Requested change', cancel: 'Reason (optional)', details: 'Details to update' },
       send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
       tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',

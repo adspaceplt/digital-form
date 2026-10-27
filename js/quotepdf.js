@@ -216,8 +216,8 @@
         return x === 'budget' ? 'an advertising budget above the highest tier on our rate card' : x;
       }).join(', ') + '.');
     }
-    notes.push('Upon your written confirmation of this quotation, or the issue of a PO reference, a Letter of Offer will be issued ' +
-      'and work will begin per the agreed timeline. The Letter of Offer and our Service Terms at go.adspace.me/svc-terms together ' +
+    notes.push('Upon your written confirmation of this quotation, or the issue of a purchase order, a Letter of Offer will be issued ' +
+      'and work will begin in accordance with the agreed timeline. The Letter of Offer and our Service Terms at go.adspace.me/svc-terms together ' +
       'form the binding contract.');
     if (t.month) {
       notes.push((own ? 'The total commitment over the months stated for each line' : 'The total commitment for ' + both(t.term) + ' months') +
