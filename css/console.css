@@ -3302,8 +3302,11 @@ button.vs-row { cursor: pointer; }
    the line under the figure and state, ending at the ⋯'s edge, since three
    on the first line left the reference a word a line. */
 .rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
-.rec-pane:not(.is-narrow) .qt-row.has-acts > .qt-dl { grid-row: 2; grid-column: 1 / span 4; justify-self: end; margin-top: 8px; }
-.is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl act"; }
+/* They run the row's whole width, ending at its right edge under the ⋯:
+   spanning the auto track alone had widened it, opening a gap before the
+   ⋯ and pulling the figure and state off their headings (2026-10-27). */
+.rec-pane:not(.is-narrow) .qt-row.has-acts > .qt-dl { grid-row: 2; grid-column: 1 / -1; justify-self: end; margin-top: 8px; }
+.is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl dl"; }
 .is-narrow:not(.is-tight) .qt-row.has-acts > .qt-dl { grid-area: dl; justify-self: end; margin-top: 8px; }
 .is-tight .qt-row.has-acts > .qt-dl { justify-self: stretch; justify-content: stretch; }
 /* A label never breaks inside its half: where the two do not fit one line, the second takes the row under it (2026-10-23). */

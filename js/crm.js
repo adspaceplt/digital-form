@@ -4560,11 +4560,8 @@
     if (!rows.length && !(showRemovedServices && gone.length)) {
       // The enquiry as typed at intake stands in until a line is added.
       /* Named as the list is (2026-10-22, SL-10); its way out is the head's
-         Add service, offered once on the screen. */
-      box.innerHTML = '<div class="empty has-go"><span>' + (c.deal_note ? esc(c.deal_note) : 'No service lines.') + '</span>' +
-        (mayPart('clients.services', 'work') ? '<button class="btn btn-sm" data-a="add" type="button">' + PLUS_ICON + 'Add service</button>' : '') + '</div>';
-      var ae = box.querySelector('[data-a="add"]');
-      if (ae) ae.addEventListener('click', function () { openService(null); });
+         Add service, offered once on the screen (the user, 2026-10-27). */
+      box.innerHTML = '<div class="empty"><span>' + (c.deal_note ? esc(c.deal_note) : 'No service lines.') + '</span></div>';
     } else {
       var table = document.createElement('div');
       table.className = 'crm-table';

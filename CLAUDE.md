@@ -5404,8 +5404,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   quote line, Build quote; one quotation that can be offered, its Issue
   Letter of Offer (none blue where two can); To quote lines no live letter
   holds, Issue letter, drawn only once a To quote or Confirmed line
-  exists; else none. An empty Quotations or Service lines list carries
-  Build quote or Add service on its line. Build quote (`#qbBox`, as the approved
+  exists; else none. An empty Quotations list carries Build quote on its
+  line; an empty Service lines list reads the enquiry (else No service
+  lines.), its Add service the heading's alone (the user, 2026-10-27). Build quote (`#qbBox`, as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
@@ -5449,7 +5450,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   asked; each plan names its contents, `4 contents per month: 2 graphics
   and 2 reels of up to 60 seconds`, its budget on a line of its own, and
   once a plan is chosen its Additional contents per month are asked under
-  the plans; the user, 2026-10-14), Customise (languages, budget,
+  the plans, after Contents per month where the plan holds two content
+  options (1 graphic and 3 reels, or 4 reels; sent as `mix`, a string; the
+  user, 2026-10-27); the user, 2026-10-14), Customise (languages: each
+  content is in one language, the month's contents divided across those
+  chosen at no charge, Make every content bilingual the translation rate a
+  content, each added language; 2026-10-27; budget,
   commitment; with a plan, Content production lists only the formats its
   additional contents do not),
   what is chosen and typed kept in the tab only while the steps are gone
