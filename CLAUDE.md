@@ -3192,7 +3192,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Creator portal (`creator/`, `js/creator.js`):
   - Signs in with an eight-character code (`creators.access_code`, 31-character
     alphabet), carried in the link and kept in `localStorage`. Reset in the
-    record.
+    record. Typed, it reads as printed, `7K2M-9PQR`: the dash comes by
+    itself after the fourth character and goes with a deletion (`codeShape`;
+    the user, 2026-10-27), and is never sent.
   - `get_creator` sends the creator's own booking only.
     - Never the client's stage, commercial state, amount, other creators or
       the team's notes on the row.
@@ -6401,14 +6403,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   function whose name changes something, an edge function, an upload) with
   Demo: changes are not saved.; the mark, letterhead, foot and title the
   sample agency's; a bar over the console (`#demoBar`, the upgrade line's
-  look) with Exit demo, which Sign out does too. The client pages
+  look) with Client pages (a menu of the client portal, Content Review, the
+  creator selection, a creator's page, Video Scripts and a namecard, each
+  on its sample link in a tab of its own, so nobody needs an address; the
+  user, 2026-10-27) and Exit demo, which Sign out does too. The client pages
   (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`)
   load the same while it stands: the client portal signed in as a sample
   client's main contact (`client@example.com`), the rest on their sample
   links alone, each key holding a 0 that no real key's alphabet holds
   (`demo0r…`, `demo0c…`, `DEMO0…`, `demo0s…`, `demo0…`), so a real link
   opened while the demo stands is the real page; each under the bar edge
-  to edge (`.annbar.demobar`; the namecard has no bar), and signing out of
+  to edge (`.annbar.demobar`; the namecard has no bar); the creator's page
+  opened bare, with no code kept, opens a sample creator holding a booking,
+  and Exit demo lets go of a sample code it kept; signing out of
   the client portal returns to the console. A demo whose sample data did
   not arrive takes the real library away (Unable to load under the bar),
   never the real database; Sign out in the demo is Exit demo, never the

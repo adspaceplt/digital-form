@@ -247,7 +247,7 @@
      would: the code in the field and the invalid line under it (ux-audit
      CREATOR-5, 2026-10-14). */
   function linkWrong(c) {
-    $('codeInput').value = c;
+    $('codeInput').value = c.length > 4 ? c.slice(0, 4) + '-' + c.slice(4) : c;
     $('stateMsg').textContent = t().codeWrong;
     $('stateMsg').className = 'msg err';
   }
@@ -1425,6 +1425,23 @@
   });
   $('codeInput').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') { e.preventDefault(); $('codeGo').click(); }
+  });
+  /* The code reads as it is printed, 7K2M-9PQR: the dash comes by itself
+     once the fourth character is typed and a deletion takes it back
+     (the user, 2026-10-27); tidy() drops it, so the code sent never holds it. */
+  function codeShape(raw, adding) {
+    var c = tidy(raw).slice(0, 8);
+    return c.length > 4 || (adding && c.length === 4) ? c.slice(0, 4) + '-' + c.slice(4) : c;
+  }
+  $('codeInput').addEventListener('input', function (e) {
+    var el = this, adding = !/^delete/.test(e.inputType || '');
+    var pos = el.selectionStart == null ? el.value.length : el.selectionStart;
+    var before = tidy(el.value.slice(0, pos)).length;
+    var v = codeShape(el.value, adding);
+    if (v === el.value) return;
+    el.value = v;
+    var at = Math.min(v.length, before + (before > 4 || (before === 4 && adding) ? 1 : 0));
+    try { el.setSelectionRange(at, at); } catch (x) {}
   });
 
   // ---- Start ----------------------------------------------------------------
