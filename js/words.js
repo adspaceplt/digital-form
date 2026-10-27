@@ -184,7 +184,7 @@
 
     act: {
       save: '保存', cancel: '取消', back: '返回', undo: '撤销',
-      signOut: '退出', open: '打开', download: '下载', more: '更多操作'
+      signOut: '退出登录', open: '打开', download: '下载', more: '更多操作'
     }
 ,
 
