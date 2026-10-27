@@ -6391,7 +6391,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   function whose name changes something, an edge function, an upload) with
   Demo: changes are not saved.; the mark, letterhead, foot and title the
   sample agency's; a bar over the console (`#demoBar`, the upgrade line's
-  look) with Exit demo, which Sign out does too. Settings, Portal: Demo
+  look) with Exit demo, which Sign out does too. The client pages
+  (`/client/`, `/review/`, `/creators/`, `/creator/`, `/script/`, `/card/`)
+  load the same while it stands: the client portal signed in as a sample
+  client's main contact (`client@example.com`), the rest on their sample
+  links (`drv…`, `demo…cmp`, `DEMO…XYZ`, `dsk…`), each under the bar edge
+  to edge (`.annbar.demobar`; the namecard has no bar), and signing out of
+  the client portal returns to the console. Settings, Portal: Demo
   access (`team.settings`): On / Off and a PIN, 4 to 8 digits, kept as a
   bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`), filed
   `team.changed` under Demo access, never the PIN.

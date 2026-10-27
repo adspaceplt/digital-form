@@ -15,6 +15,8 @@
   var ORG = window.ADSPACE_ORG || {};
 
   function esc(s) { return window.ADspaceWords.esc(s); }
+  /* The wordmark's words: ours, or the demo's sample agency (js/demo.js). */
+  function word() { return esc((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace'); }
 
   /* A number as Malaysia and Singapore write it with the country code:
      012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;
@@ -61,7 +63,7 @@
   function vcf(card) {
     var v = function (s) { return String(s || '').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1'); };
     var lines = ['BEGIN:VCARD', 'VERSION:3.0',
-      'N:;' + v(card.name) + ';;;', 'FN:' + v(card.name), 'ORG:ADspace'];
+      'N:;' + v(card.name) + ';;;', 'FN:' + v(card.name), 'ORG:' + v((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace')];
     if (card.designation) lines.push('TITLE:' + v(card.designation));
     if (card.mobile) lines.push('TEL;TYPE=CELL:+' + digits(card.mobile));
     if (ORG.phone) lines.push('TEL;TYPE=WORK:+' + digits(ORG.phone));
@@ -106,16 +108,16 @@
     var wa = card.mobile ? 'https://wa.me/' + digits(card.mobile) : '';
     return '<div class="nc-stage"><div class="nc-flip">' +
       '<section class="nc-face nc-front" aria-label="Card front">' +
-        '<div class="nc-lock"><div class="nc-lock-in"><span class="nc-word">ADspace</span>' +
+        '<div class="nc-lock"><div class="nc-lock-in"><span class="nc-word">' + word() + '</span>' +
           '<span class="nc-tag">advertising | marketing | branding</span></div></div>' +
         '<div class="nc-qr" aria-label="QR code to this card">' +
-          '<span class="nc-word nc-word-sm">ADspace</span>' +
+          '<span class="nc-word nc-word-sm">' + word() + '</span>' +
           '<div class="nc-qrbox" data-nc="qrbox"></div>' +
           '<b class="nc-qrname">' + esc(card.name) + '</b>' +
           '<span class="nc-qrlink" data-nc="qrlink">' + esc(named(card, key)) + '</span></div>' +
       '</section>' +
       '<section class="nc-face nc-back" aria-label="Contact details">' +
-        '<span class="nc-word nc-word-sm">ADspace</span>' +
+        '<span class="nc-word nc-word-sm">' + word() + '</span>' +
         '<div class="nc-who"><b class="nc-name">' + esc(card.name) + '</b>' +
           (card.designation ? '<span class="nc-post">' + esc(card.designation) + '</span>' : '') + '</div>' +
         '<div class="nc-rows" data-nc="rows">' + rows(card) + '</div>' +
