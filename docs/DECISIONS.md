@@ -6732,3 +6732,20 @@ sentence.
   that raises its field text is not held at 15; everywhere else it reads
   15 as before. `tests/quotesite.js` measures the cards, selects and
   buttons one height and one size at 1280 and 390.
+- 2026-10-27 · Superseded the same day. The user: "No as per the updated
+  instructions to trim down smaller to around 34-36px isnt it why do you
+  still follow old instructions". The fix above raised every control to
+  the cards' 48, against the size rule of 2026-10-23 (`--ctl-h` 34 at a
+  desk, 36 under a finger). Cause: the mismatch was read as "match the
+  tallest", and the token was overridden on the page instead of the cards
+  being brought down to it. Now `.shell.qs` sets no height: the language
+  cards and steppers stand `var(--ctl-h)` with the selects, segment and
+  buttons, as does a card holding one line (KOL campaign, the readiness
+  answers), a stepper's − and + the small control (`--ctl-h-sm`), the 16px
+  words kept. Why the checks passed 48: uxaudit's `row-height` compares
+  controls sharing a row and `target` holds a floor, so controls raised
+  together past the token broke neither, and the new quotesite check
+  asked only that they matched each other. uxaudit now fails `ctlh`: any
+  control whose `--ctl-h` or `--ctl-h-sm` reads a figure other than the
+  pointer's two sizes; quotesite asks for 34 at 1280 and 36 at 390. Rule written in `DESIGN.md` §5 Forms: controls made one
+  height come down to the size token, never up to a page's own figure.
