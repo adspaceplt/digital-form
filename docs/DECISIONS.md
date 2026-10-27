@@ -6684,3 +6684,11 @@ sentence.
   desk. Now: card 32 (24 on a phone), wordmark 24 above the heading, the
   heading 16 above the words at 24px (21 on a phone), the code left, the
   lines under the card on the card's own left edge (`mailfn` holds it).
+- 2026-10-27 · The email layout audited against DESIGN.md (the user: "How
+  about button sizes? … auto audit and review"). Found and fixed: the Sign in
+  button 100px wide at 600 (now `.btn`'s 116px minimum at 500, 44px high);
+  the wordmark 112 × 32, larger than the portal bar's 26px mark (now 91 × 26);
+  the letter's words in the soft ink (now full ink, as the design system
+  reads body text); the code box 20px above the next line (now 24). The
+  confidentiality line is the footer's lightest grey, `#8e8e8e` (3:1), at the
+  user's word: it is boilerplate under the card, the one grey below 4.5:1.

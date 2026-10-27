@@ -65,7 +65,7 @@ function paras(body: string): string[] {
 }
 export function layout(o: { heading: string; body: string; foot?: string; preheader?: string }): string {
   const ps = paras(o.body).map((p) =>
-    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#524e47;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
+    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1b1a17;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">' +
     '<meta name="x-apple-disable-message-reformatting"><title>' + esc(o.heading) + '</title>' +
@@ -75,7 +75,7 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
     '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1b1a17;">' +
-    '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="112" style="display:block;width:112px;height:auto;border:0;outline:none;">' +
+    '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">' +
     '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1b1a17;">' + esc(o.heading) + '</h1>' +
     ps +
     (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#6b6760;">' + esc(o.foot) + '</p>' : '') +
@@ -83,7 +83,7 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
     '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#6b6760;">' +
     'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia<br>' +
     '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#6b6760;text-decoration:none;">adspacestudios.com</a>' +
-    '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#6b6760;">This email and any attachments are confidential and may be privileged. ' +
+    '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#8e8e8e;">This email and any attachments are confidential and may be privileged. ' +
     'If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>' +
     '</td></tr></table></td></tr></table></body></html>';
 }
