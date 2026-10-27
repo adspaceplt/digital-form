@@ -375,7 +375,9 @@
     $('waCount').textContent = !all.length ? '' : filtered ? list.length + ' of ' + all.length : plural(all.length, 'message');
     box.innerHTML = '';
     if (!all.length) {
-      S.emptyLine(box, 'No messages.', maySend('message') ? 'New message' : '', function () { compose({ purpose: 'message', opener: $('waNew') }); });
+      /* New message is the bar's; the line offers it no second time
+         (2026-10-27, WA-8). */
+      S.emptyLine(box, 'No messages.');
       return;
     }
     if (!list.length) {
@@ -399,7 +401,14 @@
     var row = document.createElement('div');
     row.className = 'wam-row';
     row.setAttribute('data-id', x.id);
-    var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + '</small>'
+    /* A failed message leads to its recipient, where the number is put
+       right before it is sent again (2026-10-27, WA-10). */
+    var to = s[0] !== 'failed' ? ''
+      : x.to_kind === 'creator' && may('campaigns.creators', 'view') ? 'creator'
+      : x.to_kind === 'contact' && x.client_id && may('clients.contacts', 'view') ? 'contact' : '';
+    var open = to ? ' <button class="linkbtn wam-open" type="button" data-open="' + to + '">' + (to === 'creator' ? 'Open creator' : 'Open contacts') +
+      '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>' : '';
+    var why = s[0] === 'failed' ? '<small class="wam-why">' + esc(reasonOf(x)) + open + '</small>'
       : s[0] === 'unknown' ? '<small class="wam-why is-unknown">' + esc(SAID['wa-unknown']) + '</small>' : '';
     /* A line of parts, each held whole; on a phone what was sent leads it
        and the number, last, leaves first where the line runs out
@@ -419,6 +428,20 @@
       '<span class="wam-by">' + esc(!x.created_by || x.created_by === 'system' ? 'Automatic' : x.created_by) + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[2] + '">' + esc(s[1]) + '</span>' +
         '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
+    Array.prototype.forEach.call(row.querySelectorAll('[data-open]'), function (b) {
+      b.addEventListener('click', function () {
+        var br = bridge();
+        if (b.getAttribute('data-open') === 'creator') {
+          history.replaceState(null, '', '/admin/?s=campaigns&tab=roster');
+          if (br.show) br.show('campaigns');
+          var f = $('rosterSearch');
+          if (f) { f.value = x.to_name || ''; f.dispatchEvent(new Event('input', { bubbles: true })); }
+          return;
+        }
+        history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(x.client_id) + '&tab=account');
+        if (br.show) br.show('clients');
+      });
+    });
     return row;
   }
 

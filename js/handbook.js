@@ -87,6 +87,16 @@
     if (/row-level security|new row violates/i.test(m)) return SAID.denied;
     return m || 'Not saved. Try again.';
   }
+  /* A file that will not open, in the team's words: never the storage's
+     own ("Object not found"), and never a write's rule for a read
+     (2026-10-27, HBK-4). */
+  function openSaid(e) {
+    var m = String((e && (e.message || e.error)) || e || '');
+    if (/not found|does not exist|404/i.test(m)) return 'Not opened. The file is no longer stored; an admin adds it again as a new version.';
+    if (/row-level security|unauthori[sz]ed|permission|denied|403/i.test(m)) return 'Not opened. This account cannot open the file.';
+    if (/fetch|network|load failed|timed? ?out/i.test(m)) return 'Not opened. The connection was lost; try again.';
+    return 'Not opened. Try again.';
+  }
   function rpc(name, args) {
     return db.rpc(name, args).then(function (r) {
       if (r.error) throw r.error;
@@ -250,7 +260,7 @@
     }).catch(function (e) {
       if (btn) btn.disabled = false;
       if (w) w.close();
-      say(m, 'Not opened. ' + said(e), 'err');
+      say(m, openSaid(e), 'err');
     });
   }
 
@@ -374,7 +384,8 @@
   function openVersion(d, opener) {
     st.verFor = d;
     say($('hbVerMsg'), '');
-    $('hbVerTitle').textContent = 'New version';
+    /* The sheet names the file it adds to (2026-10-27, HBK-3). */
+    $('hbVerTitle').textContent = 'New version of ' + (d.title || 'this file');
     $('hbVerFile').value = '';
     $('hbVerNote').value = '';
     window.ADspaceSheet.show($('hbVerSheet'), { opener: opener || null });

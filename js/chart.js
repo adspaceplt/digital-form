@@ -129,7 +129,7 @@
       return '<div class="chart-bars is-inline">' + rows.map(function (r) {
         var part = Math.min(num(r.part), num(r.value));
         return '<div class="cb-row"><span class="cb-label">' + esc(r.label) + '</span>' +
-          '<span class="cb-track"><i class="cb-fill' + toneClass(r.tone) + '" style="width:' + pct(num(r.value) - part, max) + '%"></i>' +
+          '<span class="cb-track"><i class="cb-fill' + toneClass(r.tone) + (num(r.value) - part > 0 ? '' : ' is-zero') + '" style="width:' + pct(num(r.value) - part, max) + '%"></i>' +
             (part ? '<i class="cb-fill cb-part is-err" style="width:' + pct(part, max) + '%"></i>' : '') + '</span>' +
           '<span class="cb-value"><b>' + esc(fmt(r.value, r)) + '</b>' +
             (r.note ? ' · <small' + (r.noteTone ? ' class="is-' + esc(r.noteTone) + '"' : '') + '>' + esc(r.note) + '</small>' : '') + '</span></div>';
@@ -142,7 +142,7 @@
         '<div class="cb-head"><span class="cb-label">' + esc(r.label) +
           (r.note ? ' <small' + (r.noteTone ? ' class="is-' + esc(r.noteTone) + '"' : '') + '>' + esc(r.note) + '</small>' : '') + '</span>' +
           '<span class="cb-value' + toneClass(r.tone === 'warn' || r.tone === 'err' ? r.tone : '') + '">' + esc(fmt(r.value, r)) + '</span></div>' +
-        '<div class="cb-track"><i class="cb-fill' + toneClass(r.tone) + '" style="width:' + pct(r.value, max) + '%"></i>' + mark + '</div>' +
+        '<div class="cb-track"><i class="cb-fill' + toneClass(r.tone) + (num(r.value) > 0 ? '' : ' is-zero') + '" style="width:' + pct(r.value, max) + '%"></i>' + mark + '</div>' +
       '</div>';
     }).join('') + '</div>';
   }

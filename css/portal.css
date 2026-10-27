@@ -1954,6 +1954,7 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 .verify-out span { color: var(--ink-soft); font-size: 14px; }
 :root[data-face="client"] .verify-out span { font-size: 16px; }
 .verify-out .tone { font-size: 11.5px; color: inherit; }
+.verify-out .verify-need { color: var(--err); }
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
@@ -4723,7 +4724,10 @@ body > .shell { width: 100%; }
 .team-who small { font-size: 12px; color: var(--ink-mute); }
 .permchunk > .fsec-h { margin: 0 0 4px; }
 /* The Dashboard's one row stands above the chunks, with no heading (2026-10-11). */
-.permdash > .permsec { border-top: 0; padding-top: 0; }
+.permdash > .permsec { border-top: 0; padding-top: 0; padding-bottom: 0; }
+/* A row with nothing in it takes no room: the Dashboard's block holds no
+   Customise, and an empty line stood 44px over Work (2026-10-27, TEAM-7). */
+.permsec-desc:empty { display: none; }
 .permsec-name { grid-area: name; align-self: center; min-width: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
 .permsec-desc { grid-area: desc; align-self: center; margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
 /* What differs from the section, said while its parts are shut. */
@@ -6598,9 +6602,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* The publish date is a date of its own kind, so it has a colour of its own,
    used nowhere else: the day a post goes out, beside the day work is owed. */
 .cal-chip.is-pub { background: var(--pub-bg); color: var(--pub); }
-.cal-key > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.cal-key-due::before { background: var(--line-soft); box-shadow: inset 0 0 0 1px var(--line); }
-.cal-key-pub::before { background: var(--pub-bg); box-shadow: inset 0 0 0 1px var(--pub); }
+/* The key is the chips themselves in small, each on its own ground with no
+   edge: an outlined square read as a tick box (2026-10-27, WORK-7). */
+.cal-key > span { display: inline-flex; align-items: center; white-space: nowrap; padding: 2px 8px; border-radius: 5px; font-weight: 500; }
+.cal-key-due { background: var(--line-soft); color: var(--ink-soft); }
+.cal-key-pub { background: var(--pub-bg); color: var(--pub); }
 /* Under 480px the bar has no room for the key, so the publish chip names
    itself instead. */
 @media (max-width: 479px) {
@@ -7664,6 +7670,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .chart-bars.is-inline { grid-template-columns: fit-content(40%) minmax(0, 1fr) auto; column-gap: 12px; row-gap: 10px; }
 .chart-bars.is-inline .cb-track { display: flex; margin-top: 0; overflow: hidden; }
 .chart-bars.is-inline .cb-fill:first-child { border-radius: 4px 0 0 4px; min-width: 2px; }
+/* A zero is no bar at all: the 2px floor read as a value (2026-10-27, ANL-4). */
+.chart-bars .cb-fill.is-zero, .chart-bars.is-inline .cb-fill.is-zero:first-child { min-width: 0; }
 .chart-bars.is-inline .cb-fill:last-child { border-radius: 0 4px 4px 0; }
 .chart-bars.is-inline .cb-fill:only-child { border-radius: 4px; }
 .chart-bars.is-inline .cb-value { margin-left: 0; text-align: right; font-weight: 400; color: var(--ink-soft); }

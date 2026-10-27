@@ -10,7 +10,7 @@
  *   3 Customise             extra contents, languages, the advertising
  *                           budget, the commitment, the one-off items
  *   4 Your details          name, work email, WhatsApp, brand, industry,
- *                           consent; Proceed quote makes the quotation
+ *                           consent; View quotation makes the quotation
  *   5 Your quotation        priced by the database (`quote-request`, then
  *                           `quote_website_read` by its key, `?q=` in the
  *                           address), the rates at once; Download; beside
@@ -539,9 +539,12 @@
   }
   function paintQuote() {
     var q = Q, tt = q.totals || {}, st = stageOf(q), gone = st === 'expired';
-    var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'signed' ? ['is-ok', t().signedT] : st === 'letter' ? ['is-ok', t().offer]
-      : st === 'closed' ? ['is-off', t().closed]
-      : gone ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
+    /* The head's chip keeps the quotation's own state (valid, expired,
+       confirmed); the letter and its signing are the stage card's, said
+       once (2026-10-27, QTE-3). */
+    var over = q.valid_until < q.today;
+    var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'closed' ? ['is-off', t().closed]
+      : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
     var lines = (q.lines || []).map(function (l) {
       var d = (l.detail || [])[0];

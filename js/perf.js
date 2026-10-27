@@ -831,7 +831,7 @@
         /* Said as the month opens, not after six scores are typed: Share
            needs an Employee ID (2026-10-20, TEAM-5). */
         if (noId) {
-          line = 'It cannot be shared until ' + name + ' has an Employee ID.';
+          line = 'Set the Employee ID first.';
           if (may('team', 'view')) acts = '<button class="btn btn-sm" id="pvSetId" type="button">Open record' +
             '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>';
         }
@@ -841,7 +841,9 @@
           tick = '<label class="tickline perf-notify"><input type="checkbox" id="pvNotify" checked> <span>Notify ' + esc(name) + '</span></label>';
           /* At the sheet's foot, where the scores end (TEAM-1); the primary
              first, as every action row reads from the right. */
-          st.foot = '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>' +
+          /* Share is not drawn while it would be refused for the Employee
+             ID (2026-10-27, TEAM-5). */
+          st.foot = (noId ? '' : '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Share with ' + esc(name) + '</button>') +
                     '<button class="btn btn-sm" id="pvSave" type="button">Save</button>' + tick +
                     '<div class="msg" id="pvMsg"></div>';
           tick = '';
@@ -1638,7 +1640,7 @@
           '<span class="self-month">' + esc(m.month) + (lead ? ' <span class="chip">Due</span>' : '') + '</span>' +
           (g ? '<span class="self-total">Total <b>' + esc(num(g.total)) + '</b><small> / 100</small></span>' : '') +
           (g ? '<button class="btn btn-sm" data-a="self" type="button" aria-label="Edit ' + esc(m.month) + '">' + PEN_MARK + 'Edit</button>'
-             : '<button class="btn btn-sm' + (lead ? ' btn-primary' : '') + '" data-a="self" type="button">Rate yourself</button>') +
+             : '<button class="btn btn-sm' + (lead ? ' btn-primary' : '') + '" data-a="self" type="button" aria-label="Rate yourself, ' + esc(m.month) + '">Rate yourself</button>') +
         '</div>';
       }).join('') +
       '</div></div>';
@@ -3243,7 +3245,8 @@
           : l.file_url ? '<button class="btn btn-sm btn-icon" type="button" data-i="' + i + '" data-a="open">Open' + OUT + '</button>' : '';
         return '<div class="crm-row ml-row' + (l.void ? ' is-off' : '') + '">' +
           '<span class="init-name"><b>' + esc(l.kind || 'HR letter') + (l.void ? ' <span class="chip is-off">Void</span>' : '') + '</b>' +
-          '<small>' + esc([l.serial, dateWord(l.issued_at)].filter(Boolean).join(' · ')) + '</small></span>' +
+          /* A line of parts wraps between its parts (2026-10-27, MINE-9). */
+          '<small>' + esc([l.serial, dateWord(l.issued_at)].filter(Boolean).map(function (x) { return String(x).replace(/ /g, '\u00a0'); }).join(' · ')) + '</small></span>' +
           '<span class="ml-act">' + act + '</span></div>';
       }).join('') + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-a]'), function (b) {

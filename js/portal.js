@@ -874,7 +874,7 @@
     else {
       var stb = table('<div class="crm-head svc-row csv-row"><span>' + esc(w.service) + '</span><span class="svc-rate">' + esc(w.qtyRate) +
         '</span><span class="svc-rate">' + esc(w.amount) + '</span><span>' + esc(w.state) + '</span><span></span></div>');
-      lines.forEach(function (l) {
+      lines.filter(function (l) { return l.state === 'confirmed'; }).concat(lines.filter(function (l) { return l.state !== 'confirmed'; })).forEach(function (l) {
         var row = document.createElement('div');
         row.className = 'svc-row csv-row';
         var sub = [parts([l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct)]), termWord(l), l.note ? esc(l.note) : '']
@@ -899,8 +899,9 @@
       var quoted = sum('quoted'), confirmed = sum('confirmed');
       var tot = document.createElement('div');
       tot.className = 'csv-total';
-      tot.innerHTML = (quoted ? '<span>' + esc(w.quotedTotal) + '<b>' + esc(money2(quoted)) + '</b></span>' : '') +
-        '<span class="is-total">' + esc(w.confirmedTotal) + '<b>' + esc(money2(confirmed)) + '</b></span>';
+      /* Confirmed first, as the Overview reads them (2026-10-27, POR-3). */
+      tot.innerHTML = '<span class="is-total">' + esc(w.confirmedTotal) + '<b>' + esc(money2(confirmed)) + '</b></span>' +
+        (quoted ? '<span>' + esc(w.quotedTotal) + '<b>' + esc(money2(quoted)) + '</b></span>' : '');
       stb.appendChild(tot);
       sbox.innerHTML = ''; sbox.appendChild(stb);
     }

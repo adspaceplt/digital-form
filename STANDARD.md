@@ -611,6 +611,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - None.
 
 ### Not built, or waiting on the user
+- A supplier's approval email sent by itself on Approve: held until the
+  portal's flows are settled (the user, 2026-10-27, SUP-11); Approve asks
+  and the sheet sends at its Send.
 - Content months derived from a client's Confirmed service lines: declined
   for now (the user, 2026-09-28) while the team's SOPs are refined; months
   stay manual.

@@ -725,6 +725,8 @@
   function send(post, decision, note, wrap, badge, reviewer, copy, done) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
+    var stateLine = wrap.querySelector('.approve-state');
+    if (stateLine) { stateLine.classList.remove('is-err'); stateLine.removeAttribute('role'); }
     /* The press is answered on its button (ux-audit REVIEWPAGE-5): after
        150ms, so a quick answer never flickers, the button keeps its width
        and shows the console's turning ring (js/acts.js) until the answer. */
@@ -765,14 +767,16 @@
           line.querySelector('.approve-refresh').addEventListener('click', function () { location.reload(); });
           return;
         }
-        wrap.querySelector('.approve-state').textContent =
+        /* A refusal reads as one, and a screen reader hears it at once
+           (2026-10-27, RVP-4). */
+        refused(wrap,
           res && res.error === 'note_required'
             ? 'Please describe the required changes.'
             : res && res.error === 'changed'
               ? 'This post was updated after the page opened. Please refresh to review the latest version.'
               : res && res.error === 'locked' ? window.ADspaceWords.lockedLine(W, res.minutes)
               : res && /^too[-_]long$/.test(res.error || '') ? W.tooLong
-              : W.notSent;
+              : W.notSent);
         return;
       }
       post.review = {
@@ -788,8 +792,14 @@
     }).catch(function () {
       settle();
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-      wrap.querySelector('.approve-state').textContent = 'Unable to save. Please check your connection.';
+      refused(wrap, 'Unable to save. Please check your connection.');
     });
+  }
+  function refused(wrap, text) {
+    var line = wrap.querySelector('.approve-state');
+    line.textContent = text;
+    line.classList.add('is-err');
+    line.setAttribute('role', 'alert');
   }
 
   /* Takes the decision block itself rather than the card it usually sits in:

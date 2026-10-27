@@ -468,7 +468,11 @@
     }
     out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) +
       '<p class="msg vs-shot-msg" id="vsShotMsg" role="status"></p></section>';
-    if (s.kind === 'story') {
+    /* A voice-over not yet written is no row to shoot: its clip number and
+       Shot wait for its words (2026-10-27, VS-11). */
+    if (s.kind === 'story' && !String(s.vo || '').trim() && !s.vo_vc && !s.vo_shot_at) {
+      out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4><p class="vs-prose"><span class="mute">Not written</span></p></section>';
+    } else if (s.kind === 'story') {
       var work = may('work');
       out += '<section class="vs-block"><h4 class="fsec-h">Script (read here)</h4>' +
         /* The words read here are one more row in the scenes' own tracks: the

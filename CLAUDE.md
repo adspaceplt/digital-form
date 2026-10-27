@@ -1576,7 +1576,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sequence number throws away a late answer to an older query.
 - A refused read drops its section only. Every read refused is `failLine`
   with Try again, never No matches.
-- Groups run in the rail's order (Creators List after Creator Campaigns; Suppliers by name or Supplier ID from `suppliers_list`, opening `supplier=`; the Handbook's live files by title, opening it filtered; a colleague opens their record, `member=`; `_` is escaped, never a wildcard; 2026-10-22);
+- Groups run in the rail's order (Creators List after Creator Campaigns; Suppliers by name or Supplier ID from `suppliers_list`, opening `supplier=`; the Handbook's live files by title, opening it filtered; a colleague opens their record, `member=`; `_` is escaped, never a wildcard; 2026-10-22; Settings last, a row by its name or its group's from the page's own list (`ADspaceSettings.rows`), opening its group with its control focused, no read; 2026-10-27, SET-9);
   Video Scripts by code or title, opening its record (`script=`); Reports
   by title or white-label brand, opening the report (`report=`). Content
   Review, Video Scripts, Creator Campaigns and Reports also find a record
@@ -2239,9 +2239,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A typed reference (`p_serial`, the `#pickRef` field, placeholder "Numbered
     automatically") spends no number and is refused where taken
     (`serial-taken`) or badly shaped (`serial-shape`).
-  - A client with no Client ID is told at the Reference field, which then
-    asks for one (`#pickRefNote`; the page refuses an empty one), not a refusal
-    to open.
+  - A client with no Client ID is asked for one in the letter sheet
+    (`#pickCode`, `#pickRefNote`), the next AC number a press away
+    (`#pickCodeNext`, Use AC…); the letter is refused until it is set,
+    which Issue writes to the client first (filed from and to) and then
+    numbers the letter from (the user, 2026-10-27, CLI-15).
   - The file name swaps `/` for `-`.
 - Letter content:
   - Only To quote lines.
@@ -2568,7 +2570,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `supplier-mail` takes only where its title names the reference), the
   words filled from the record (`supplier_email_prepare`) and editable,
   Copy the finance email ticked where it differs; Send asks first.
-  Approve asks Send the approval email? (Send email / Not now). An email
+  Approve asks Send the approval email? (Send email / Not now), and the
+  sheet that answer opens sends at its Send with no second question;
+  nothing is sent by itself (the user, 2026-10-27, SUP-11). An email
   is filed before it goes (`supplier_email_begin`, refused `recent` within
   `wa_repeat_hours` unless asked again; `supplier_email_done` by its
   sender, filed `supplier.edited`), listed under Emails on the record
@@ -3978,7 +3982,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `reports` (`social` Accounts report, `ads` Advertising report, both or
     none) and `start_day` (1 to 28; the 16th runs to the 15th,
     `ops_month_span`), ticked and picked in the month sheet (Reports, Starts
-    on), a new month taking both from the client's month before. Each
+    on), a new month taking both, and its Posts planned, from the
+    client's month before (2026-10-27, WORK-3). Each
     report ticked is one live task (`ops_engagement_sync_reports`: the
     everyday workflow, format Report, the month's manager, one date: due
     23:59 MYT `report_due_days` (7) after the month's last day, no first
@@ -4640,7 +4645,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Download, and its ⋯ Restore and Delete (the user, 2026-10-25,
     `2026-10-25-report-versions-restore-delete.sql`): Restore
     (`sm_report_version_restore`, Reports at Work, a draft or published
-    report, asked first; `in-review` otherwise) writes that version's kept
+    report, asked first, over a draft in warn saying its edits are lost
+    with no undo (2026-10-27, RPT-13); `in-review` otherwise) writes that version's kept
     snapshot back over the report's rows and commentary as the draft, a
     published report becoming the next version's draft, the portal keeping
     what it shows until a version is published, filed `report.revised`
@@ -5524,7 +5530,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
   `.rec-ctl`): the mark, the name over the registered name, the state and
-  Request change, which asks which change: Change of details, Upgrade,
+  Request change, which asks which change as a segment (2026-10-27,
+  POR-1): Change of details, Upgrade,
   Downgrade or Cancel, the last three against a confirmed line (`#reqPick`);
   a line's ⋯ asks for that line alone.
 - Under it one tab strip (`#cpTabs`, the view strip, `role="tablist"`, the
@@ -5583,7 +5590,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Pause asks first; Resume asks nothing.
   - Both take `.select('id')`, filed as `shortlink.updated` with the detail.
   - `ADspaceGroup.keep` opens the card the row moves into.
-- No Status column. Paused is a chip beside the slug.
+- No Status column. A paused link stands in the Paused card, which says
+  it once: no chip on the row (2026-10-27, LNK-10).
 - Every colleague's namecard slug is listed under Namecards, between Live and
   Paused (read from `team_members`; Short link, Destination the card's own
   address, Colleague; Inactive or Card off as a chip; Copy and Open, no ⋯:
@@ -6134,7 +6142,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   the number leaving first; WA-4), who sent
   it (Automatic for the queue) and the status over when: Queued, Sending,
   Sent, Delivered, Read, Not confirmed (check the chat before sending again), or Failed with the reason in the team's words
-  (`REASON`, by Meta's code). Above it the month's templates sent by
+  (`REASON`, by Meta's code) and Open contacts (a client contact's
+  Account) or Open creator (the Creators List) where the reader may
+  (2026-10-27, WA-10). An empty month reads No messages. alone, New
+  message being the bar's (WA-8). Above it the month's templates sent by
   category (Utility, Marketing; Authentication where any; a message Meta failed left out). The bar: search
   (name, client, template, a number as typed), Month (a view, the last
   twelve), Type and Status behind Filters, the count, New message (Work).

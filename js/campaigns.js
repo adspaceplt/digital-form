@@ -1558,9 +1558,7 @@
     }).join('');
     $('campLink').value = campaignShare(c);
     $('campOpen').href = campaignUrl(c);
-    var linkOpen = c.state !== 'draft';
-    $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');
-    $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
+
     if (!same) window.ADspaceAdmin.linkLock($('campLinkLock'), 'selection', c.id, Boolean(c.passcode), 'campaigns.campaigns');
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
     /* The pane is read from the address before the address is written: a
@@ -1612,6 +1610,12 @@
   }
 
   function paintCampState(c) {
+    var linkOpen = c.state !== 'draft';
+    $('campLinkState').className = 'tone ' + (linkOpen ? 'is-ok' : 'is-off');
+    $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
+    /* A draft's link opens nothing, so it offers no Copy link; Preview stays
+       for the team (2026-10-27, CMP-20). */
+    $('campCopy').hidden = !linkOpen;
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').className = 'chip ' + W.tone(c.state);
     var move = mayWork() ? publishMove(c.state) : null;
@@ -2551,6 +2555,33 @@
         }, 0);
       });
       $('campNext').appendChild(go);
+    } else if (mayWork() && /still at Pending visit\.$/.test(next)) {
+      /* A past shoot still at Pending visit carries the way to its booking,
+         as a draft to release does (2026-10-27, CMP-19). */
+      var firstPast = live.filter(function (o) { return o.state === 'pending_visit'; })
+        .sort(function (a, b) { return String(a.visit_date || '').localeCompare(String(b.visit_date || '')); })[0];
+      var goPast = document.createElement('button');
+      goPast.type = 'button'; goPast.className = 'btn btn-sm camp-next-go'; goPast.id = 'campNextGo';
+      goPast.innerHTML = 'Open booking' + CHEV;
+      goPast.addEventListener('click', function () {
+        openCards[firstPast.id] = true;
+        if (campPane !== 'creators') { showCampPane('creators'); pushUrl(); }
+        setTimeout(function () {
+          var card = document.querySelector('#creatorList .kcard[data-option="' + firstPast.id + '"]');
+          if (!card) return;
+          var body = card.querySelector('[data-body]');
+          if (body && body.hidden) {
+            body.hidden = false;
+            card.classList.remove('is-folded');
+            var f = card.querySelector('[data-a="fold"]');
+            if (f) f.setAttribute('aria-expanded', 'true');
+          }
+          var at = card.querySelector('[data-a="advance"]') || card;
+          at.scrollIntoView({ block: 'center' });
+          if (at.focus) at.focus({ preventScroll: true });
+        }, 0);
+      });
+      $('campNext').appendChild(goPast);
     }
     paintCampState(c);
     paintSchedule(live);

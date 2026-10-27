@@ -456,6 +456,24 @@
           meta: [HB_CAT[h.category] || ''],
           open: function () { go('/admin/?s=handbook', 'handbook', ['hbFind', h.title]); }
         };
+      } },
+    /* Settings (2026-10-27, SET-9): a row by its name or its group's,
+       read from the page's own list, so nothing is asked of the database;
+       it opens the row's group with its control focused. */
+    { key: 'settings', head: 'Settings', local: true, can: function () { return Boolean(window.ADspaceSettings && window.ADspaceSettings.allowed()); },
+      read: function (q) {
+        var S = window.ADspaceSettings;
+        return Promise.resolve({ rows: (S.rows ? S.rows() : []).filter(function (r) { return has(r.name, q) || has(r.groupName, q); }).slice(0, LIMIT) });
+      },
+      row: function (r) {
+        return {
+          id: 'setting-' + r.id, name: r.name, code: '',
+          meta: [r.groupName],
+          open: function () {
+            go('/admin/?s=settings&tab=' + encodeURIComponent(r.group), 'settings');
+            setTimeout(function () { if (window.ADspaceSettings.focusRow) window.ADspaceSettings.focusRow(r.id); }, 0);
+          }
+        };
       } }
   ];
   function allowed() { return SOURCES.filter(function (s) { return s.can(); }); }
@@ -544,7 +562,11 @@
       if (my !== seq) return;
       box.removeAttribute('aria-busy');
       var failed = answers.filter(function (a) { return a.r.error; });
-      if (failed.length === answers.length) {
+      /* Settings is read from the page, never the database: it never hides
+         that every read failed, unless it found a row itself. */
+      var reads = answers.filter(function (a) { return !a.src.local; });
+      var localRows = answers.some(function (a) { return a.src.local && (a.r.rows || []).length; });
+      if (reads.length && failed.length === reads.length && !localRows) {
         var why = (failed[0].r.error && failed[0].r.error.message) || '';
         status(function (el) { UI.failLine(el, 'Search', why, function () { run(field.value); }); });
         return;

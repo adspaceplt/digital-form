@@ -789,7 +789,7 @@
       var v = shown && list.filter(function (x) { return x.id === shown; })[0] || list[0];
       shown = v ? v.id : null;
       el.querySelector('[data-m="more"]').hidden = !v;
-      body.innerHTML = v ? readHtml(v) : '<div class="softpanel"><div class="emptyline"><b>No analysis written.</b></div></div>';
+      body.innerHTML = v ? readHtml(v) : '<p class="chart-empty">No analysis written.</p>';
     };
     var load = function () {
       UI.skeleton(body, 2);

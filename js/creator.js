@@ -200,7 +200,8 @@
     if (m[3]) h = (h % 12) + (/pm/i.test(m[3]) ? 12 : 0);
     if (h > 23) return x;
     var h12 = (h % 12) || 12;
-    return lang === 'zh' ? (h < 12 ? '上午' : '下午') + h12 + ':' + mi : h12 + ':' + mi + ' ' + (h < 12 ? 'am' : 'pm');
+    /* 2:00pm, as every client page writes a time (2026-10-27, CRE-2). */
+    return lang === 'zh' ? (h < 12 ? '上午' : '下午') + h12 + ':' + mi : h12 + ':' + mi + (h < 12 ? 'am' : 'pm');
   }
   function dayTime(d, tm) { return fmtDate(d) + (tm ? (lang === 'zh' ? ' ' : ', ') + timeWord(tm) : ''); }
 

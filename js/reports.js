@@ -2428,9 +2428,11 @@
             title: 'Restore version ' + v.version_no + '?',
             body: (r.status === 'published'
               ? 'Version ' + next + ' starts as a draft holding version ' + v.version_no + '\'s figures and commentary.'
-              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s.') +
+              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s. Changes made to this draft are lost, with no undo.') +
               (live ? ' The client keeps version ' + live.version_no + ' until a version is published.' : ''),
-            go: 'Restore'
+            /* Over a draft the edits are lost, so the question says so and
+               asks in warn (2026-10-27, RPT-13). */
+            go: 'Restore', tone: r.status === 'published' ? undefined : 'warn'
           }, function () {
             b.disabled = true; say(m, '');
             db.rpc('sm_report_version_restore', { p_version: v.id }).then(function (res) {
@@ -5540,8 +5542,10 @@
     var mine = byTab[hub.tab];
     hub.mine = mine;
     paintBulk();
-    var shown = HUB_BANDS.reduce(function (t, bd) { return t + byTab[bd[0]].length; }, 0);
-    $('rhCount').textContent = !q && !kind && shown === hub.rows.length ? plural(hub.rows.length, 'report') : shown + ' of ' + hub.rows.length;
+    /* The count is the tab's: the reports on show of those the tab holds
+       (2026-10-27, RPT-12: "4 of 5" stood on every tab). */
+    var tabAll = hub.rows.filter(function (r) { return r.status === hub.tab && (hub.tab !== 'published' || q || inPeriod(r, period)); }).length;
+    $('rhCount').textContent = !mine.length ? '' : mine.length === tabAll ? plural(mine.length, 'report') : mine.length + ' of ' + tabAll;
     list.innerHTML = '';
     if (!hub.rows.length) {
       UI.emptyLine(list, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet($('rhNew')); } : null);
