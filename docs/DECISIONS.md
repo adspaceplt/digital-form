@@ -6694,3 +6694,12 @@ sentence.
   reads body text); the code box 20px above the next line (now 24). The
   confidentiality line is the footer's lightest grey, `#8e8e8e` (3:1), at the
   user's word: it is boilerplate under the card, the one grey below 4.5:1.
+- 2026-10-27 · The two sign-in emails set in Supabase Auth by Claude, not
+  pasted (the user, on a phone, could not paste): a personal access token
+  the user stored as the edge secret `SB_MANAGEMENT_TOKEN`, never seen in
+  the chat; a one-time function `auth-templates`, run from the database
+  with the wake secret, read this file from main, wrote the four fields
+  through the Management API (`config/auth`) and read them back equal
+  (SHA-256 of each); the old templates were read first for rollback. The
+  function was then replaced by a 410 stub with Verify JWT on, and the user
+  revokes the token and deletes the secret.
