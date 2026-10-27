@@ -6885,3 +6885,19 @@ sentence.
   it, the title and line on the optical centre of what is left, no foot;
   every outcome's line reads Please contact ADspace. The client pages'
   covers keep their account manager line.
+
+### 2026-10-27 · The quotation website reads the portal's type
+- Reported by the user from an iPhone: /quote/'s buttons, words and title
+  did not match the rest of the portal, and the proportions were off.
+- Cause: `.shell.qs` set `--ctl-text` and `--field-text` to 16px, so every
+  button and field read 16 against the portal's 13 and 14; the title stood
+  at 21 on a phone over a 16px lead, no step of φ; the lead sat apart from
+  its title. `tests/quotesite.js` asserted the 16, so the gate held the
+  fault in place, and uxaudit's `ctlh` read the height tokens alone: the
+  controls were equal to each other, which is all `row-height` measures.
+- Fix: the page takes the tokens (a control's words 13, 14 under a finger;
+  a field's 14, 15), its count stepper the small control; the title 26px
+  (16 × φ) at every width with the lead 8px under it. `ctlh` now also fails
+  a page setting `--ctl-text` or `--field-text` to its own figure, and the
+  suite asserts the tokens.
+

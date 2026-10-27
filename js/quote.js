@@ -391,7 +391,7 @@
 
   // The opening page: what the quotation is for, what is asked and what follows (the user, 2026-10-14).
   function paintIntro() {
-    return '<div class="qs-step qs-intro" data-shown><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p>' +
+    return '<div class="qs-step qs-intro" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(t().introT) + '</h1><p class="qs-lead">' + esc(t().introP) + '</p></div>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(t().introH) + '</h2><ol class="qs-steps">' +
         t().introSteps.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol></section>' +
       '<p class="qs-note">' + esc(t().introNote) + '</p></div>' +
