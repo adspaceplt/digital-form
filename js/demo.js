@@ -140,7 +140,20 @@
       (window.__demoRefused = window.__demoRefused || []).push(name);
       return refusal();
     };
-    if (c.functions) c.functions.invoke = function () { return Promise.resolve({ data: null, error: { message: SAID, code: 'demo' } }); };
+    /* An edge function is refused, but for Bukku's invoices read, which the
+       engine answers with no request sent: the sample agency holds none, so
+       the Dashboard and a client's Billing read as they do for a client
+       with nothing owing (2026-10-29, the gate). */
+    if (c.functions) {
+      var fi = c.functions.invoke;
+      c.functions.invoke = function (name, opts) {
+        if (name === 'bukku-sync' && opts && opts.body && opts.body.action === 'invoices') {
+          if (!window.__bukkuInvoices) window.__bukkuInvoices = [];
+          return fi.call(c.functions, name, opts);
+        }
+        return Promise.resolve({ data: null, error: { message: SAID, code: 'demo' } });
+      };
+    }
     if (c.storage && c.storage.from) {
       var sf = c.storage.from;
       c.storage.from = function (b) {

@@ -7059,3 +7059,24 @@ sentence.
   previews (the audit could not confirm Cloudflare gives Worker requests
   one address); a client's Billing reading the company's whole unpaid
   list (fine at today's size; Bukku's contact filter unconfirmed).
+
+### 2026-10-29 · The day's gate on 1aa85c5: four findings, all Overdue invoices
+- What broke: the full gate (tests c90956d) failed four suites, each on
+  what #813 and #815 added. `cmdbar` crashed on two command bars in
+  Clients (the list's and Overdue invoices' `#odBar`) under its
+  `#sectionClients .cmdbar` locator; `sales` asserted no `#crmViews`, the
+  strip the Sales view once used and Overdue invoices brought back;
+  `demo` read Could not load on the Dashboard and a client's Billing,
+  since the demo refused every edge function, Bukku's invoices read
+  included; `matrix` found the five tallies three over two at 768, 1024
+  and 1440 at 200%.
+- Why: #813 did not grep the suites for the Clients bar and strip it
+  changed (the rule stood), the demo's refusal was written before any
+  read went through an edge function, and the tallies took the shared
+  five-cell rule, whose three over two the walk calls a short last row.
+- Fix: the suites name `#crmBar`; `sales` asserts no Sales tab in the
+  strip; the demo lets `bukku-sync` `invoices` reach its engine, which
+  answers none held (no request leaves the page); the tallies state
+  their own line (`data-narrow` 760): five across, else Overdue a row and
+  the ages four across, two when tight. Rules: the suites' bar by id
+  (CLAUDE.md §1), the demo's one edge read, the tallies (DESIGN.md).
