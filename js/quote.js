@@ -418,7 +418,7 @@
           return pick('radio', 'plan', p.slug, S.plan === p.slug,
             f(t().plan, { p: p.plan }) + ' · ' + (p.platforms === 1 ? t().platOne : f(t().platUpTo, { n: p.platforms })), planLine(p));
         }).join('') + '</div><p class="qs-note">' + esc((S.withAds ? t().budgetSep + ' ' : '') + t().ratesLater) + '</p>') +
-      '<div id="qsExtraBox">' + extrasHtml() + '</div></div>', navFoot());
+      '<div class="qs-xbox" id="qsExtraBox">' + extrasHtml() + '</div></div>', navFoot());
   }
   /* Additional contents sit under the plan they add to (the user,
      2026-10-14: on the next page they read as choosing the plan's own). */

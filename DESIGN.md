@@ -330,6 +330,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `.cr-rec` split the Creators List's record cell, then named `.cr-rec` too.
 - A group that must stay together is one element in the markup, never a hope
   about where a wrap falls.
+- A box a page redraws alone inside a stack of sections (/quote/'s `#qsExtraBox`) gives up its own box (`display: contents`), so each section in it keeps the stack's step and its hairline (2026-10-28).
 - Text a person typed (a caption, a brief, a note, a place) breaks anywhere
   (`overflow-wrap: anywhere`), and a grid holding it states
   `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
