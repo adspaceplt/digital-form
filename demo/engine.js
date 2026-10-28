@@ -2768,7 +2768,8 @@ function cardSlugFree(name, self, email) {
     if (!e) return;
     e.status = status; e.provider_id = provider; e.error = error; e.sent_at = status === 'sent' ? new Date().toISOString() : null;
     var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
-    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: e.client_name,
+    var co = e.client_id ? DB.clients.filter(function (x) { return x.id === e.client_id; })[0] : null;
+    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name,
       detail: 'Overdue reminder ' + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed, not confirmed, to ' : 'not emailed to ') +
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }

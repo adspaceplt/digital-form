@@ -1226,6 +1226,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`Not deleted. The database refused the request.`).
 - Use `.then(ok).catch(bad)`, never `.then(ok, bad)`: `bad` never sees what
   `ok` throws.
+- A function's refusal reaches the page whole: a call wrapper hands back the
+  answer with what came with it (`recent`, `paid`), never the code alone
+  (2026-10-29: a reminder refused `recent` read "Reminded . Not sent again.").
 - A refusal is named in the team's words, never the database's (`SAID`-style
   maps). A missing function reads "This needs a database update".
 - A client page never shows a database message. The console may. A refused
@@ -2710,7 +2713,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   email at the right as it arrives, Edit changing that client's subject
   and message alone, Sent before as a table (When, Channel, Sent by,
   Status). Send asks first (Send again where a client was reminded within
-  `wa_repeat_hours`), then `bukku-sync` `remind` reads each invoice from
+  `wa_repeat_hours`, asked again for that client alone; one reminded by a
+  colleague meanwhile is refused `recent` and asked about at the next
+  Send), then `bukku-sync` `remind` reads each invoice from
   Bukku again (one paid since is left out and named), files it first by
   the service role (`invoice_email_begin`: the contact's lock, `sending`,
   `recent` unless asked again, the billing contact greeted with their

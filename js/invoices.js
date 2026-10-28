@@ -54,6 +54,8 @@
 
   function call(body) {
     return db().functions.invoke('bukku-sync', { body: body }).then(function (r) {
+      /* A refusal in the answer keeps what came with it (recent, paid). */
+      if (r && r.data && r.data.error) return r.data;
       return API.fnRefusal(r).then(function (code) {
         if (code) return { error: code };
         return r.data || { error: 'failed' };
@@ -358,7 +360,7 @@
     var g = rv.groups[rv.on];
     if (!g) { pv.innerHTML = ''; return; }
     var f = filled(g), to = toOf(g), cc = ccOf(g), d = rv.done[g.contact];
-    var paras = String(f.body).replace(/\r/g, '').split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
+    var paras = String(f.body).replace(/\r/g, '').replace(/\{\s*invoices\s*\}/i, '\n\n{invoices}\n\n').split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
     var table = '<div class="inv-mail-t"><div class="r hd"><span>Invoice</span><span>Due</span><span class="n">Amount due</span>' +
       (g.lines.length > 1 ? '<span></span>' : '') + '</div>' +
       g.lines.map(function (l) {
@@ -430,9 +432,9 @@
       body: names.join(', ') + '.' + (recent.length ? ' ' + recent.map(function (g) { return g.name; }).join(', ') +
         (recent.length === 1 ? ' was' : ' were') + ' reminded in the last ' + plural(hours, 'hour', 'hours') + '.' : ''),
       go: recent.length ? 'Send again' : 'Send', tone: recent.length ? 'warn' : undefined
-    }, function () { run(left, recent.length > 0); });
+    }, function () { run(left, recent); });
   }
-  function run(left, again) {
+  function run(left, recent) {
     var go = $('odGo');
     go.disabled = true;
     if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
@@ -452,10 +454,15 @@
       var g = left[i++];
       var ed = rv.edits[g.contact] || {};
       call({ action: 'remind', contact: g.contact, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
-        subject: ed.subject || '', body: ed.body || '', again: again }).then(function (d) {
+        subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         var paid = (d.paid || []).length ? ' Not included, as already paid: ' + d.paid.join(', ') + '.' : '';
         if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', copy to ' + d.cc : '') + '.' + paid };
-        else if (d.error === 'recent') rv.done[g.contact] = { ok: false, text: 'Reminded ' + when(d.recent && d.recent.at) + (d.recent && d.recent.by ? ' by ' + d.recent.by : '') + '. Not sent again.' };
+        else if (d.error === 'recent') {
+          /* Sent meanwhile by somebody else: kept here, so the next Send asks
+             Send again for this client alone. */
+          if (d.recent) rv.rem = [{ contact: g.contact, status: d.recent.status || 'sent', at: d.recent.at, by: d.recent.by, to: d.recent.to }].concat(rv.rem || []);
+          rv.done[g.contact] = { ok: false, text: 'Reminded ' + when(d.recent && d.recent.at) + (d.recent && d.recent.by ? ' by ' + d.recent.by : '') + '. Not sent again.' };
+        }
         else rv.done[g.contact] = { ok: false, text: said(d) + paid };
         paintReview();
         next();

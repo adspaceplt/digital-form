@@ -7001,3 +7001,20 @@ sentence.
   carried both. Found when #815 would not merge. A deploy now waits for
   `main` merged into the branch and the live version compared with
   `main`'s file.
+
+### 2026-10-29 · Overdue reminders: the code review's four
+- Send again sent `again` for every client in the batch once any one of
+  them had been reminded, so a client a colleague reminded after the list
+  was read went again five minutes later; `again` is now each client's.
+- The page's call wrapper kept only the refusal's code, so `recent` read
+  "Reminded . Not sent again." and the next Send never asked; the answer
+  now reaches the page whole, and a `recent` refusal joins the reminders
+  the page holds, so the next Send asks Send again for that client.
+- `{invoices}` typed inside a line (not a paragraph of its own) went out
+  as the bare word with no table; the email and the preview now set it
+  apart wherever it stands.
+- A reminder was filed under the registered name, which no client record
+  reads; it is filed under the client's name
+  (`2026-10-29-overdue-reminder-on-its-client.sql`).
+- Found by the code review asked for on 2026-10-28; `tests/overdue.js`
+  now walks a colleague's reminder landing between the read and the send.
