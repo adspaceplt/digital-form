@@ -3922,7 +3922,9 @@ span.inv-amt { font-weight: 600; }
 .inv-mail-card p { margin: 0; color: #1b1a17; }
 .inv-mail-card h4 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: #1b1a17; }
 .inv-mail-mark { font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 18px; color: #1b1a17; }
-.inv-mail-card .inv-mail-fine { font-size: 11.5px; color: #a19d97; }
+/* The sent email's fine print is #a19d97 (the user's lighter grey); a screen
+   holds 4.5:1, so the preview draws it in the lightest ink that does. */
+.inv-mail-card .inv-mail-fine { font-size: 11.5px; color: #6b6760; }
 .inv-mail-t { background: #f9f9f9; border-radius: 10px; font-size: 12.5px; color: #1b1a17; }
 .inv-mail-t .r { display: grid; grid-template-columns: minmax(0, 1fr) 92px 108px; gap: 8px; padding: 8px 12px; border-top: 1px solid #ececec; align-items: baseline; }
 .inv-mail-t .r:has(> :nth-child(4)) { grid-template-columns: minmax(0, 1fr) 92px 108px 60px; }
