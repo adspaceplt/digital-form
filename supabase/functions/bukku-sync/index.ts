@@ -333,6 +333,17 @@ export function overdueOf(inv: any, today: string): any | null | undefined {
   if (!(amount > 0)) return null;
   return { amount, due: past[0].date, part: { n: terms.indexOf(past[past.length - 1]) + 1, of: terms.length } };
 }
+/* Instalments Bukku sent with no balances of their own, even on the
+   invoice read whole: the whole balance is overdue from the earliest
+   instalment date passed, never taken for paid (review 2026-10-29, 5). */
+export function overdueWhole(inv: any, today: string): any | null {
+  const bal = cents(inv.balance);
+  if (!(bal > 0) || (inv.status && inv.status !== 'ready')) return null;
+  const dates = (Array.isArray(inv.term_items) ? inv.term_items : []).map((t: any) => String((t && t.date) || ''))
+    .filter((d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+  const due = dates[0] || String(inv.date || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(due) && due < today ? { amount: bal, due, part: null } : null;
+}
 /* An unpaid invoice not yet past its date (a client's Billing lists these
    too): its balance, due on its earliest unpaid instalment, else its date. */
 export function dueOf(inv: any): any | null {
@@ -431,7 +442,11 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
       if (want ? !want.has(c) : !mayContact(c)) continue;
       let od = overdueOf(inv, today);
       let src = inv;
-      if (od === undefined) { src = await oneInvoice(Number(inv.id)); od = src ? overdueOf({ ...inv, ...src }, today) : null; }
+      if (od === undefined) {
+        src = await oneInvoice(Number(inv.id));
+        od = src ? overdueOf({ ...inv, ...src }, today) : null;
+        if (od === undefined) od = overdueWhole({ ...inv, ...src }, today);
+      }
       if (!od && want && src) od = dueOf({ ...inv, ...src });
       if (!od) continue;
       const l = lineOf({ ...inv, ...src, contact_email: inv.contact_email, short_link: inv.short_link || src.short_link }, od, today);
@@ -458,7 +473,8 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   for (const id of Array.from(new Set(ids))) {
     const inv = await oneInvoice(id as number);
     if (!inv || Number(inv.contact_id) !== contact) return json({ error: 'bad-request' }, 400, origin);
-    const od = overdueOf(inv, today);
+    let od = overdueOf(inv, today);
+    if (od === undefined) od = overdueWhole(inv, today);
     if (!od) { paid.push(String(inv.number || id)); continue; }
     lines.push(lineOf(inv, od, today));
   }

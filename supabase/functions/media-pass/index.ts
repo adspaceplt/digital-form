@@ -205,6 +205,11 @@ Deno.serve(async (req) => {
       if (!contact || !contact.length) return json({ error: 'not_allowed' }, 403, origin);
       contact.forEach((r: { client_id: string }) => clientFolder(r.client_id));
     } else {
+      /* Active is not enough: a colleague held overseas, or whose access
+         time has passed before the expiry run, is no colleague to the
+         database, so is_team() is asked as the caller (audit 2026-10-29, 6). */
+      const { data: team } = await supa.rpc('is_team');
+      if (team !== true) return json({ error: 'not_team' }, 403, origin);
       folders = null;
     }
   }

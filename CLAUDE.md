@@ -572,7 +572,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku, Overdue reminder), AI (AI usage and limits, AI prices), WhatsApp
   (Templates at WhatsApp Full Access, Sent again: WhatsApp and supplier
-  emails), Documents (Document types, Supplier emails at
+  emails, Website quotations: how many a day are told on WhatsApp), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
   no row drawn is left out. One group at a time (the user, 2026-10-24:
   "the business settings are getting longer … categorize or structure it
@@ -927,7 +927,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   review link its client's `content/{clientId}/`, the selection link that and
   each booking's `content/creator/{optionId}/`, a creator their bookings'
   drafts alone, a client's contact each client they hold access at, a
-  colleague the whole of `content/` (path `/content/`). A client page's pass
+  colleague the whole of `content/` (path `/content/`), only while
+  `is_team()` answers for them as the caller (active is not enough: held
+  overseas, or access passed before the expiry run; audit 2026-10-29). A client page's pass
   takes away a root pass left by an earlier page, and is fresh only for the
   proof it was asked with (`adspace-media-for`). Every pass keeps the folders
   it set (`adspace-media-paths`, this browser) and the next pass takes them
@@ -2706,7 +2708,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   sees every client. An invoice is overdue where its balance stands and
   its due date (its one term, else the invoice's date) is before today
   (MYT); with instalments, the part past its date (`overdueOf`, a term's
-  balances read in full where the list holds none). A card for each age
+  balances read in full where the list holds none, and where even the
+  invoice read whole holds none, the whole balance from the earliest date
+  passed, `overdueWhole`, never taken for paid). A card for each age
   (Over 90, 61 to 90, 31 to 60, 1 to 30 days), totals per currency, never
   added across; each row its last reminder's status (`invoice_reminders`),
   a bounce with Open contacts, Open in Bukku (Bukku's own host alone). At
@@ -5621,8 +5625,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   admin) are told once six hours before the time ends
   (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
   is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
-  link button the key), when the quotation is made; nothing else is sent
-  by itself. On the lead's Services a website quotation reads Ready to
+  link button the key), when the quotation is made, while today's (MYT)
+  website quotations stand under `quote_wa_day` (30, 0 sends none;
+  `quote_wa_allowed`, under one lock; past it the quotation is made and
+  the team told, no message; audit 2026-10-29); nothing else is sent by
+  itself. On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
   WhatsApp composer) and in its ⋯ Mark Do not contact / Clear Do not

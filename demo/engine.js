@@ -2664,6 +2664,8 @@ function cardSlugFree(name, self, email) {
 
     wa_repeat_hours: 24,
 
+    quote_wa_day: 30,
+
     bench_cpr_low: 30, bench_cpr_mid: 48, bench_cpr_high: 78, bench_cpr_top: 125, bench_msg_min: 45, bench_msg_target: 68, bench_msg_max: 110,
     bench_form_min: 25, bench_form_target: 40, bench_form_max: 70, bench_cpm_min: 8.5, bench_cpm_max: 25, bench_cpl_rise: 11,
     bench_reels_share: 40, bench_ad_spend_pct: 83.75, bench_adset_daily: 30,
@@ -2681,7 +2683,7 @@ function cardSlugFree(name, self, email) {
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
-    wa_repeat_hours: ['WhatsApp sent again', ' hours'],
+    wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' a day'],
     health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['A leaver\'s health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics churn alert, a quarter', '%'],
@@ -2813,7 +2815,7 @@ function cardSlugFree(name, self, email) {
           (k === 'meta_checks' && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
-          (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) ||
+          (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
