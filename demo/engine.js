@@ -11292,7 +11292,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 amount: 6000, balance: 6000, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/DeF456',
                 term_items: [{ date: ivAdd(-20), amount: 2000, balance: 2000 }, { date: ivAdd(-5), amount: 2000, balance: 2000 }, { date: ivAdd(25), amount: 2000, balance: 2000 }] },
               { id: 9003, contact_id: 777, contact_name: 'NORTHWIND TRADING', contact_email: 'finance@example.com', number: 'IV-00398', date: ivAdd(-130),
-                amount: 1180, balance: 1180, currency_code: 'SGD', status: 'ready', short_link: '', term_items: [] }];
+                amount: 1180, balance: 1180, currency_code: 'SGD', status: 'ready', short_link: '', term_items: [] },
+              { id: 9004, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00452', date: ivAdd(-5),
+                amount: 2500, balance: 2500, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/GhI789', term_items: [{ date: ivAdd(25), amount: 2500, balance: 2500 }] }];
             var ivCents = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
             var ivOver = function (inv) {
               var bal = ivCents(inv.balance);
@@ -11321,10 +11323,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var mayC = function (c) { return Boolean(links[c]) || sc.all === true; };
               if (bkb.action === 'invoices') {
                 if (window.__bukkuInvFail) return bkR({ error: window.__bukkuInvFail });
+
+                var want = bkb.client ? (sc.links || []).filter(function (l) { return l.client === bkb.client; }).map(function (l) { return Number(l.contact); }) : null;
+                if (want && !want.length) return bkR({ ok: true, today: ivT, send: sc.send === true, all: sc.all === true, linked: false, rows: [], reminders: [] });
+                var ivDue = function (inv) {
+                  if (!(ivCents(inv.balance) > 0) || (inv.status && inv.status !== 'ready')) return null;
+                  var t = (inv.term_items || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })
+                    .filter(function (x) { return x.balance == null || ivCents(x.balance) > 0; });
+                  return { amount: ivCents(inv.balance), due: (t[0] && t[0].date) || inv.date, part: null };
+                };
                 var out = [];
                 ivAll.forEach(function (inv) {
-                  if (!mayC(inv.contact_id)) return;
-                  var od = ivOver(inv); if (!od) return;
+                  if (want ? want.indexOf(inv.contact_id) < 0 : !mayC(inv.contact_id)) return;
+                  var od = ivOver(inv) || (want ? ivDue(inv) : null); if (!od) return;
                   var l = ivLine(inv, od), lk = links[inv.contact_id];
                   if (lk) Object.assign(l, { client: lk.client, client_name: lk.name, client_code: lk.code, client_slug: lk.slug, to: lk.to });
                   out.push(l);

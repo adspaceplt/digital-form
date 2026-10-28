@@ -6963,3 +6963,18 @@ sentence.
   answered only once the view had been shown (its listener was added in
   `show()`); it is wired as the strip is drawn, and the suite presses it
   from the list.
+
+### 2026-10-28 · Overdue invoices: a client's own Billing, and the Dashboard
+- Release 2 of the overdue reminders (the user approved the mockups'
+  release plan): a client's Billing reads Unpaid invoices from Bukku (its
+  linked contacts alone, overdue and not yet due, the instalment named, the
+  reminders sent under it), with Send reminder opening the same Review and
+  send; the Dashboard's Needs attention takes Overdue invoices as a source,
+  a row a client, opening its Billing.
+- The row first carried the client's totals; the Dashboard holds one money
+  figure (Committed monthly value), which `overview` asserts, so the row
+  counts invoices and names no amount.
+- `bukku-sync` `invoices` takes `client`: refused nothing new (the same
+  scope read), Bukku never asked when the client links no contact, and a
+  not-yet-due invoice read by `dueOf` (its earliest unpaid term, else its
+  date).
