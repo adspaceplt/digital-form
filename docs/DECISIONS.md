@@ -6993,3 +6993,11 @@ sentence.
   day behind Malaysia's until 8am, so the page read it 5 days late where
   the suite asked 4. The seed now takes Malaysia's day; the rule on a
   suite's dates names it.
+
+### 2026-10-29 · A deploy from a branch behind main undid another session's
+- `bukku-sync` v12 (the client Billing read) went out from a branch that
+  did not yet hold #814, merged by another session minutes before, so the
+  reminder's resized View PDF button left the live function until v13
+  carried both. Found when #815 would not merge. A deploy now waits for
+  `main` merged into the branch and the live version compared with
+  `main`'s file.
