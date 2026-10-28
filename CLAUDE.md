@@ -109,7 +109,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     fixture too.
   - A suite types a date from today (`todayKey()`, a day ahead), never a
     fixed day of the month: a fixed day is a passed date on any later day
-    (2026-10-28: `work` typed the 27th on the 28th).
+    (2026-10-28: `work` typed the 27th on the 28th). A seed's day is
+    Malaysia's, never `toISOString().slice(0, 10)` (the UTC day, yesterday
+    before 8am here; 2026-10-29: `overview` read a booking 5 days late,
+    not 4, after midnight).
   - A `cut()` of `schema.sql` always ends at the next banner.
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a

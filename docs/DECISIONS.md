@@ -6978,3 +6978,10 @@ sentence.
   scope read), Bukku never asked when the client links no contact, and a
   not-yet-due invoice read by `dueOf` (its earliest unpaid term, else its
   date).
+
+### 2026-10-29 · The Dashboard suite's seed counted days on UTC
+- `overview` failed after midnight in Malaysia on unchanged code: its seed
+  wrote a booking's date as the UTC day (`toISOString().slice(0, 10)`), a
+  day behind Malaysia's until 8am, so the page read it 5 days late where
+  the suite asked 4. The seed now takes Malaysia's day; the rule on a
+  suite's dates names it.
