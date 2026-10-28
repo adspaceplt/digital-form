@@ -7018,3 +7018,22 @@ sentence.
   (`2026-10-29-overdue-reminder-on-its-client.sql`).
 - Found by the code review asked for on 2026-10-28; `tests/overdue.js`
   now walks a colleague's reminder landing between the read and the send.
+
+### 2026-10-29 · The whole-repo audit: small fixes
+- A creator's draft could be approved after the client had asked for
+  changes: `review_draft` took a decision at Changes requested as well as
+  Reviewing (kept on 2026-10-17 so a client could turn a request into an
+  approval, which the selection page never offered), so a tab left open
+  from before the request approved the unrevised draft and the creator was
+  told it was cleared to post. Reviewing alone now, the booking held
+  while it is ruled on.
+- An email whose function stopped between its filing and its close read
+  Sending for ever; `mail_sweep` marks it Not confirmed after ten minutes.
+- The quotation website named a colleague's WhatsApp while their namecard
+  was off; it now needs the card on as well as its mobile shown.
+- New report preselected a month from the device's clock; it reads
+  Malaysia's.
+- The audit's finding that `serial_taken` was open to a signed-in client
+  was wrong: it was revoked by INTERNAL HELPERS STAY INTERNAL, as the live
+  database confirms. Its line that a Singapore lead on the website gets no
+  quotation was stale: a website lead is billed, so quoted, in RM.

@@ -2614,7 +2614,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`supplier_emails_of`) with Resend's word on it (Sent, Delivered,
   Opened, Bounced, Failed, Not confirmed) from its signed webhook
   (`supplier_email_status`, the service role's alone, never stepping
-  back). The two templates (`{contact name}` … `{sender name}`) are
+  back); an email still Sending ten minutes after it was filed (its
+  function stopped) reads Not confirmed (`mail_sweep`, pg_cron
+  `mail-sweep` every fifteen minutes; overdue reminders alike). The two templates (`{contact name}` … `{sender name}`) are
   Settings, Documents: Supplier emails (`#supTplSheet`, Suppliers Full
   Access). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
@@ -3357,6 +3359,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     desk the pair stand 220px each at the card's right edge, Approve last,
     and Open the draft at its own width (2026-10-22, CP-17); a phone keeps
     equal halves.
+  - `review_draft` rules on a draft at Reviewing alone, the booking held
+    while it does (a page left open from before a request for changes
+    cannot approve the unrevised draft; audit 2026-10-29).
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.
 - Client-side decisions write an activity row under the typed name:
@@ -5487,8 +5492,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   rate on the card to the cent (`quote_fx_snap`) and every RM figure in a
   line's words to whole dollars (`quote_fx_out`), the totals marked
   `currency` SGD with the `fx`; the budgets the page sends stay the card's;
-  refused `no-fx` while unset (Build quote says so; a Singapore lead on
-  the website gets no quotation); Build quote, the row, the PDF and the
+  refused `no-fx` while unset (Build quote says so; a website lead is
+  billed in RM, so quoted in RM, until Billing sets S$); Build quote, the row, the PDF and the
   website read S$, and a Letter of Offer takes the S$ lines as they stand.
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
