@@ -29,20 +29,20 @@
     denied: 'This needs Clients: Billing.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
     'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
-    'bukku-unreachable': 'Bukku did not answer. Try again in a few minutes.',
+    'bukku-unreachable': 'Bukku did not respond. Try again in a few minutes.',
     'bukku-refused': 'Bukku refused the request.',
     'mail-not-set-up': 'Email is not set up. Add the Resend key to the portal\'s secrets.',
     'needs-update': 'This needs a database update.',
     'no-email': 'No email address is held for this client. Add one to its billing contact.',
-    'nothing-overdue': 'Nothing is overdue on these invoices any more.',
-    sending: 'A reminder to this client is already going. Read again in a minute.',
+    'nothing-overdue': 'These invoices are no longer overdue.',
+    sending: 'A reminder to this client is being sent. Read again in a minute to see its status.',
     'bad-subject': 'The subject must be 2 to 200 characters.',
     'bad-body': 'The message must be 2 to 5,000 characters.',
     'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
     'too-long': 'The legal note and the disclaimer hold 1,000 characters each.',
     'not-sent': 'Not sent. Resend refused the email.',
     'not-confirmed': 'Not confirmed. Check the record before sending again.',
-    'bad-request': 'Read the invoices again, then try once more.',
+    'bad-request': 'The invoices changed after they were read. Read again, then send.',
     failed: 'The request failed. Try again.'
   };
   function said(d) { return (d && SAID[d.error]) || (d && d.error) || SAID.failed; }
@@ -433,7 +433,7 @@
         go.disabled = false;
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
         var bad = left.filter(function (g) { return !rv.done[g.contact].ok; }).length;
-        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent: each says why.' : 'Sent.';
+        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent. The reason is shown against each client.' : 'Sent.';
         $('odMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
         var firstBad = rv.groups.findIndex ? rv.groups.findIndex(function (g) { return rv.done[g.contact] && !rv.done[g.contact].ok; }) : -1;
         if (firstBad > -1) rv.on = firstBad;
@@ -444,7 +444,7 @@
       var ed = rv.edits[g.contact] || {};
       call({ action: 'remind', contact: g.contact, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
         subject: ed.subject || '', body: ed.body || '', again: again }).then(function (d) {
-        var paid = (d.paid || []).length ? ' Left out as paid: ' + d.paid.join(', ') + '.' : '';
+        var paid = (d.paid || []).length ? ' Not included, as already paid: ' + d.paid.join(', ') + '.' : '';
         if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', copy to ' + d.cc : '') + '.' + paid };
         else if (d.error === 'recent') rv.done[g.contact] = { ok: false, text: 'Reminded ' + when(d.recent && d.recent.at) + (d.recent && d.recent.by ? ' by ' + d.recent.by : '') + '. Not sent again.' };
         else rv.done[g.contact] = { ok: false, text: said(d) + paid };

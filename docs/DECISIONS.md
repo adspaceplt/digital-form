@@ -6963,3 +6963,11 @@ sentence.
   answered only once the view had been shown (its listener was added in
   `show()`); it is wired as the strip is drawn, and the suite presses it
   from the list.
+- 2026-10-28 · Overdue invoices read for tone (the user: "review the newly
+  build section the tone"). The console's refusals were put in plain
+  corporate English (no "already going", "any more", "each says why",
+  "Left out as paid"), and the reminder's one View PDF button took the
+  Sign in button's size (16px at 500, 12px 32px, 116px wide, 44px high)
+  in place of a 15px one of its own. The reminder's words are the user's
+  approved template and were not changed; the points raised on them were
+  put to the user.
