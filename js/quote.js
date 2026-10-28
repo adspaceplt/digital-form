@@ -352,9 +352,9 @@
   }
   function stepper(group, slug, label, n, sub) {
     return '<div class="qs-stepper"><span>' + esc(label) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span><span class="qs-count">' +
-      '<button class="btn qs-pm" type="button" data-step="-1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().fewer + ': ' + label) + '"' + (n ? '' : ' disabled') + '>−</button>' +
+      '<button class="btn btn-sm qs-pm" type="button" data-step="-1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().fewer + ': ' + label) + '"' + (n ? '' : ' disabled') + '>−</button>' +
       '<b aria-live="polite">' + n + '</b>' +
-      '<button class="btn qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().more + ': ' + label) + '">+</button></span></div>';
+      '<button class="btn btn-sm qs-pm" type="button" data-step="1" data-group="' + group + '" data-slug="' + esc(slug) + '" aria-label="' + esc(t().more + ': ' + label) + '">+</button></span></div>';
   }
   function seg(id, label, options, value, quiet) {
     return '<div class="field">' + (quiet ? '' : '<span class="field-label" id="' + id + 'L">' + esc(label) + '</span>') +

@@ -107,6 +107,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     read date literals and `current_date` in MYT (2026-10-21).
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
+  - A suite types a date from today (`todayKey()`, a day ahead), never a
+    fixed day of the month: a fixed day is a passed date on any later day
+    (2026-10-28: `work` typed the 27th on the 28th).
   - A `cut()` of `schema.sql` always ends at the next banner.
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a

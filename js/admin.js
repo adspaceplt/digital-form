@@ -5573,10 +5573,13 @@
      (the bell, search, Waiting for you), so a line says where it will take
      you in the shape the rail already taught (2026-10-08). Read from the
      rail itself: one copy of every glyph. My records lives in the account
-     menu, and the Creators List and My Work answer to their rail rows. */
+     menu, Settings to its mark at the rail's foot (2026-10-28: its search
+     group drew none), and the Creators List and My Work answer to their
+     rail rows. */
   var GLYPH_OF = { ops: 'work', creators: 'campaigns' };
   function sectionGlyph(key) {
     var el = key === 'mine' ? document.querySelector('#myPerf svg')
+      : key === 'settings' ? document.querySelector('#settingsOpen svg')
       : document.querySelector('.navitem[data-section="' + (GLYPH_OF[key] || key) + '"] svg');
     if (!el) return '';
     var g = el.cloneNode(true);
