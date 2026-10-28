@@ -2731,8 +2731,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADspaceInvoices.client`): `invoices` with `client`, the contacts linked
   to that client alone and its invoices not yet due as well (Not due),
   Send reminder while one is overdue at Billing Work (the same Review and
-  send), and its Reminders sent; read on each visit to the pane, a client
-  linked to no Bukku contact reading so. No Bukku branding; WhatsApp
+  send), and its Reminders sent; read on each visit to the pane, drawn
+  only for a client linked to a Bukku contact (Bukku's group above says
+  when it is not). No Bukku branding; WhatsApp
   reminders are not built (the user, 2026-10-28: "dont build the whatsapp
   first").
 
