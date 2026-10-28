@@ -237,13 +237,17 @@
         meta: pin == null ? '' : parts(['US$ ' + pin + ' in', 'US$ ' + pout + ' out a million tokens']) }]);
     /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
        at Full Access; this row opens them there. */
-    var rep2 = num('wa_repeat_hours');
+    var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
     add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
       { id: 'whatsapp', name: 'Templates', kind: 'open', meta: line('whatsapp') },
       /* Sent again (2026-10-14): the same message sent within the window
          asks again before it goes, a supplier's email too (SET2-1). */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and supplier emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]);
+        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and supplier emails', 'Within ' + plural(rep2, 'hour', 'hours')]) },
+      /* Website quotations (2026-10-29): how many a day are sent on
+         WhatsApp, each a message ADspace pays for. */
+      biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
+        meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' a day on WhatsApp' }]);
     add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
       bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') }]);
     return out;

@@ -7037,3 +7037,25 @@ sentence.
   was wrong: it was revoked by INTERNAL HELPERS STAY INTERNAL, as the live
   database confirms. Its line that a Singapore lead on the website gets no
   quotation was stale: a website lead is billed, so quoted, in RM.
+
+### 2026-10-29 · The whole-repo audit: the website's WhatsApp, the media pass, instalments
+- The quotation website queued a paid `quote_ready` WhatsApp for every
+  quotation, to whatever number was typed, held only by Turnstile and five
+  a contact a day. It now sends no more a day than `quote_wa_day` (30, a
+  Business setting under Settings, WhatsApp: Website quotations); past it
+  the quotation is made and the team told, with no message. The setting's
+  writer holds a delete, so its part runs in the SQL Editor.
+- `media-pass` gave a colleague the whole of `content/` on `active`
+  alone, so one held overseas, or whose access had passed before the
+  expiry run, still took a twelve-hour pass; it asks `is_team()` as the
+  caller.
+- An instalment invoice Bukku sent with no instalment balances, even read
+  whole, was left out of Overdue invoices without a word and named
+  already paid on a send; it is overdue whole from its earliest date
+  passed.
+- Left as they stand, with the reason: Resend's webhook answers 200 on an
+  email it cannot match (answering 500 would have Resend retry every
+  sign-in email of the domain for ever); the Short Links Worker's creator
+  previews (the audit could not confirm Cloudflare gives Worker requests
+  one address); a client's Billing reading the company's whole unpaid
+  list (fine at today's size; Bukku's contact filter unconfirmed).

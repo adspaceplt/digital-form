@@ -5609,7 +5609,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -5697,6 +5697,9 @@
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] },
+    /* The quotation website's WhatsApp a day (2026-10-29, the audit's
+       finding 3): past it the quotation is made, the message not sent. */
+    quotewa: { title: 'Website quotations', keys: [['quote_wa_day', 'Sent on WhatsApp a day (0 sends none)', 'cap', '', 'On WhatsApp', per('quotation')]] },
     /* Before this month the portal held clients typed in later, never the
        leads that came to nothing (2026-10-25). */
     /* When a figure reads better or worse, and when churn is an alert
@@ -5709,7 +5712,7 @@
      own short name and format where the Settings page gives them (k[4],
      k[5]), else its label and its kind's unit (2026-10-20, SET-5). */
   var SET_UNIT = { pct: '%', adj: '%', allow: '%', share: '%', hours: ' hours', days: ' days', due: ' days', quote: ' days',
-    week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months', chg: '%', churn: '%' };
+    week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months', chg: '%', churn: '%', cap: ' a day' };
   function setWord(k, v) {
     if (v == null || v === '') return 'not set';
     if (k[5]) return (k[4] ? k[4] + ' ' : '') + k[5](v);
