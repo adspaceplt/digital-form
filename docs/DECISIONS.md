@@ -6955,3 +6955,11 @@ sentence.
   4.5:1 a reading line asks; it is an email's small print, as the user
   chose. mailfn's expectation moved with it.
 - WhatsApp reminders are held (the user: "dont build the whatsapp first").
+- Built first with ids under `inv`: three were the campaign invoice form's
+  (`#invCancel`, `#invMsg`, and `#invView`, a button that form draws), so
+  `getElementById` found the other. uxaudit's walk crashed on the two
+  Cancels before the merge; every id of the view is now `od…`, and the
+  suite fails any id held twice on the console. The strip's press also
+  answered only once the view had been shown (its listener was added in
+  `show()`); it is wired as the strip is drawn, and the suite presses it
+  from the list.

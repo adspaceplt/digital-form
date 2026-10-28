@@ -700,46 +700,46 @@
 
       <!-- Overdue invoices (2026-10-28): Bukku's unpaid invoices past their
            date, a card for each age, ticked and reminded by email. -->
-      <section id="invView" hidden>
-        <div class="cmdbar" id="invBar">
+      <section id="odView" hidden>
+        <div class="cmdbar" id="odBar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-            <input class="input input-sm" id="invFind" type="search" placeholder="Client or invoice" aria-label="Search overdue invoices" autocomplete="off">
+            <input class="input input-sm" id="odFind" type="search" placeholder="Client or invoice" aria-label="Search overdue invoices" autocomplete="off">
           </span>
           <span class="cmdbar-end">
-            <span class="cmdbar-quiet"><span class="cmdbar-count" id="invCount"></span></span>
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="odCount"></span></span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm" id="invRead" type="button">Read again</button>
+              <button class="btn btn-sm" id="odRead" type="button">Read again</button>
             </span>
           </span>
         </div>
-        <div class="tallies" id="invTallies" hidden></div>
-        <div class="bulkbar" id="invBulk" hidden>
-          <label class="tickline bulkbar-all"><input type="checkbox" id="invBulkAll"> <span id="invBulkCount">0 selected</span></label>
+        <div class="tallies" id="odTallies" hidden></div>
+        <div class="bulkbar" id="odBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="odBulkAll"> <span id="odBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm btn-primary" id="invBulkSend" type="button" data-need="clients.billing:work">Send reminders</button>
+            <button class="btn btn-sm btn-primary" id="odBulkSend" type="button" data-need="clients.billing:work">Send reminders</button>
           </span>
-          <button class="btn btn-sm btn-quiet bulkbar-done" id="invBulkDone" type="button">Done</button>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="odBulkDone" type="button">Done</button>
         </div>
-        <div id="invList"></div>
+        <div id="odList"></div>
       </section>
 
       <!-- Review and send: one email a client, each shown as it will arrive. -->
-      <div class="sheet" id="invSheet" hidden>
-        <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="invSheetTitle">
+      <div class="sheet" id="odSheet" hidden>
+        <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="odSheetTitle">
           <div class="sheet-head">
-            <h3 id="invSheetTitle">Send reminders</h3>
-            <button class="iconbtn" id="invSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <h3 id="odSheetTitle">Send reminders</h3>
+            <button class="iconbtn" id="odSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body inv-rv" data-narrow="640">
-            <div class="inv-rv-list" id="invRvList" role="group" aria-label="Clients"></div>
-            <div class="inv-rv-pane" id="invRvPane"></div>
+            <div class="inv-rv-list" id="odRvList" role="group" aria-label="Clients"></div>
+            <div class="inv-rv-pane" id="odRvPane"></div>
           </div>
-          <div class="msg" id="invMsg" role="status"></div>
+          <div class="msg" id="odMsg" role="status"></div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="invGo" type="button">Send</button>
-            <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
-            <span class="lpicksum" id="invRvCount"></span>
+            <button class="btn btn-primary" id="odGo" type="button">Send</button>
+            <button class="btn btn-quiet" id="odCancel" type="button">Cancel</button>
+            <span class="lpicksum" id="odRvCount"></span>
           </div>
         </div>
       </div>

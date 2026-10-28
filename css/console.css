@@ -3864,8 +3864,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    days. Review and send: the clients down the left, the email as it will
    arrive at the right, then what was sent before as a table of four.
    ========================================================================= */
-#invView { display: grid; gap: 12px; }
-#invView > .tallies > .tally { margin-top: 0; }
+#odView { display: grid; gap: 12px; }
+#odView > .tallies > .tally { margin-top: 0; }
 .inv-sum { margin-left: auto; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .inv-row, .crm-head.inv-row {
   display: grid; align-items: center; gap: 0 12px;

@@ -122,25 +122,25 @@
       if (b.getAttribute('data-cv') === 'overdue') { if (!st.on) show(); }
       else if (st.on) { hide(); if (window.ADspaceCRM && window.ADspaceCRM.showList) window.ADspaceCRM.showList(); }
     });
-    $('invFind').addEventListener('input', function () { st.q = this.value.trim().toLowerCase(); paint(); });
-    $('invRead').addEventListener('click', function () { load(true); });
-    $('invBulkAll').addEventListener('change', function () {
+    $('odFind').addEventListener('input', function () { st.q = this.value.trim().toLowerCase(); paint(); });
+    $('odRead').addEventListener('click', function () { load(true); });
+    $('odBulkAll').addEventListener('change', function () {
       var on = this.checked;
       shown().forEach(function (l) { if (on) st.pick[l.id] = true; else delete st.pick[l.id]; });
       paint();
     });
-    $('invBulkDone').addEventListener('click', function () { st.pick = {}; paint(); });
-    $('invBulkSend').addEventListener('click', function () { review(this); });
-    $('invSheetClose').addEventListener('click', function () { $('invCancel').click(); });
-    $('invCancel').addEventListener('click', shutReview);
-    $('invGo').addEventListener('click', sendAll);
+    $('odBulkDone').addEventListener('click', function () { st.pick = {}; paint(); });
+    $('odBulkSend').addEventListener('click', function () { review(this); });
+    $('odSheetClose').addEventListener('click', function () { $('odCancel').click(); });
+    $('odCancel').addEventListener('click', shutReview);
+    $('odGo').addEventListener('click', sendAll);
   }
   function show(quiet) {
     if (!mayView()) return false;
     wire();
     st.on = true;
     $('crmListView').hidden = true;
-    $('invView').hidden = false;
+    $('odView').hidden = false;
     strip(true);
     var A = window.ADspaceAdmin;
     if (!quiet && A && A.setUrl) A.setUrl();
@@ -149,17 +149,17 @@
   }
   function hide() {
     st.on = false;
-    if ($('invView')) $('invView').hidden = true;
+    if ($('odView')) $('odView').hidden = true;
     strip(false);
   }
   function load(again) {
     if (st.loading) return;
-    if (!st.rows || again) UI.skeleton($('invList'), 4);
+    if (!st.rows || again) UI.skeleton($('odList'), 4);
     st.loading = true;
-    $('invRead').disabled = true;
+    $('odRead').disabled = true;
     call({ action: 'invoices' }).then(function (d) {
       st.loading = false;
-      $('invRead').disabled = false;
+      $('odRead').disabled = false;
       if (d.error) { st.err = d; st.rows = null; paint(); return; }
       st.err = null;
       st.rows = d.rows || [];
@@ -179,10 +179,10 @@
     });
   }
   function paint() {
-    var list = $('invList');
+    var list = $('odList');
     if (!st.on || !list) return;
     if (st.err) {
-      $('invTallies').hidden = true; $('invBulk').hidden = true; $('invCount').textContent = '';
+      $('odTallies').hidden = true; $('odBulk').hidden = true; $('odCount').textContent = '';
       UI.failLine(list, 'The overdue invoices', said(st.err), function () { load(true); });
       return;
     }
@@ -190,7 +190,7 @@
     var rows = shown();
     var clients = {};
     rows.forEach(function (l) { clients[l.contact] = true; });
-    $('invCount').textContent = rows.length ? plural(rows.length, 'invoice', 'invoices') + ' · ' + plural(Object.keys(clients).length, 'client', 'clients') : '';
+    $('odCount').textContent = rows.length ? plural(rows.length, 'invoice', 'invoices') + ' · ' + plural(Object.keys(clients).length, 'client', 'clients') : '';
     paintTallies(rows);
     paintBulk(rows);
     list.innerHTML = '';
@@ -215,7 +215,7 @@
     });
   }
   function paintTallies(rows) {
-    var box = $('invTallies');
+    var box = $('odTallies');
     box.hidden = !rows.length;
     if (!rows.length) return;
     var cell = function (name, items, warn) {
@@ -230,14 +230,14 @@
   }
   function paintBulk(rows) {
     var ids = Object.keys(st.pick);
-    var bar = $('invBulk');
+    var bar = $('odBulk');
     bar.hidden = !st.send || !ids.length;
     if (bar.hidden) return;
     var picked = (st.rows || []).filter(function (l) { return st.pick[l.id]; });
     var cl = {};
     picked.forEach(function (l) { cl[l.contact] = true; });
-    $('invBulkCount').textContent = picked.length + ' selected · ' + plural(Object.keys(cl).length, 'client', 'clients');
-    var all = $('invBulkAll');
+    $('odBulkCount').textContent = picked.length + ' selected · ' + plural(Object.keys(cl).length, 'client', 'clients');
+    var all = $('odBulkAll');
     var on = rows.filter(function (l) { return st.pick[l.id]; }).length;
     all.checked = on > 0 && on === rows.length;
     all.indeterminate = on > 0 && on < rows.length;
@@ -289,19 +289,19 @@
     });
     rv.groups.forEach(function (g) { g.lines.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; }); });
     rv.on = 0; rv.edits = {}; rv.done = {}; rv.opener = btn || null;
-    $('invMsg').textContent = ''; $('invMsg').className = 'msg';
-    $('invGo').disabled = false;
+    $('odMsg').textContent = ''; $('odMsg').className = 'msg';
+    $('odGo').disabled = false;
     rpc('invoice_email_template_get').then(function (t) {
-      if (t.error) { $('invMsg').textContent = said(t); $('invMsg').className = 'msg err'; return; }
+      if (t.error) { $('odMsg').textContent = said(t); $('odMsg').className = 'msg err'; return; }
       rv.tpl = t;
       paintReview();
     });
     paintReview();
-    if (window.ADspaceSheet) window.ADspaceSheet.show($('invSheet'), { opener: btn, onClose: afterReview }); else $('invSheet').hidden = false;
+    if (window.ADspaceSheet) window.ADspaceSheet.show($('odSheet'), { opener: btn, onClose: afterReview }); else $('odSheet').hidden = false;
   }
   function shutReview() {
-    if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('invSheet'))) window.ADspaceSheet.close();
-    else { $('invSheet').hidden = true; afterReview(); }
+    if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('odSheet'))) window.ADspaceSheet.close();
+    else { $('odSheet').hidden = true; afterReview(); }
   }
   /* What was sent is read back from Bukku and the record, the ticks let go. */
   function afterReview() {
@@ -335,7 +335,7 @@
   function toOf(g) { return (g.to && g.to.email) || g.email || ''; }
   function ccOf(g) { return g.to && g.to.cc && g.to.cc.toLowerCase() !== toOf(g).toLowerCase() ? g.to.cc : ''; }
   function paintReview() {
-    var list = $('invRvList'), pv = $('invRvPane');
+    var list = $('odRvList'), pv = $('odRvPane');
     list.innerHTML = rv.groups.map(function (g, i) {
       var d = rv.done[g.contact];
       return '<button class="inv-rv-row' + (i === rv.on ? ' is-on' : '') + '" type="button" data-i="' + i + '" aria-pressed="' + (i === rv.on) + '">' +
@@ -385,10 +385,10 @@
     if (ed) ed.addEventListener('click', function () { editOne(g, ed); });
     var left = rv.groups.filter(function (x) { return !(rv.done[x.contact] && rv.done[x.contact].ok); });
     var n = left.length;
-    $('invGo').textContent = n ? 'Send ' + plural(n, 'email', 'emails') : 'Done';
+    $('odGo').textContent = n ? 'Send ' + plural(n, 'email', 'emails') : 'Done';
     var lines = [];
     left.forEach(function (x) { lines = lines.concat(x.lines); });
-    $('invRvCount').textContent = n ? plural(lines.length, 'invoice', 'invoices') + ' · ' + plural(n, 'client', 'clients') + ' · ' + totals(lines).join(' · ') : '';
+    $('odRvCount').textContent = n ? plural(lines.length, 'invoice', 'invoices') + ' · ' + plural(n, 'client', 'clients') + ' · ' + totals(lines).join(' · ') : '';
   }
   function editOne(g, btn) {
     var t = rv.tpl || {}, ed = rv.edits[g.contact] || {}, n = g.lines.length;
@@ -424,7 +424,7 @@
     }, function () { run(left, recent.length > 0); });
   }
   function run(left, again) {
-    var go = $('invGo');
+    var go = $('odGo');
     go.disabled = true;
     if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
     var i = 0;
@@ -433,8 +433,8 @@
         go.disabled = false;
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
         var bad = left.filter(function (g) { return !rv.done[g.contact].ok; }).length;
-        $('invMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent: each says why.' : 'Sent.';
-        $('invMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
+        $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent: each says why.' : 'Sent.';
+        $('odMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
         var firstBad = rv.groups.findIndex ? rv.groups.findIndex(function (g) { return rv.done[g.contact] && !rv.done[g.contact].ok; }) : -1;
         if (firstBad > -1) rv.on = firstBad;
         paintReview();
