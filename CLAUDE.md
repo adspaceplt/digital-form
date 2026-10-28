@@ -99,6 +99,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   - A change to a size token (`--ctl-h`, `--ctl-h-sm`) greps the suites
     for the old figure in the same push: twelve suites still asked 38 or 44
     of controls #740 made 34 and 36 (2026-10-23).
+  - A suite names a section's command bar by its id (`#crmBar`), never
+    `#section… .cmdbar`: a view's own bar beside it breaks every locator
+    (2026-10-29: Overdue invoices' `#odBar` crashed `cmdbar`).
   - A suite that answers the CDN itself answers a video address with a
     playable video (`revise`'s WebM), never a picture: a reel fed a PNG
     fails to decode and draws the missing tile (2026-10-22).
@@ -6483,7 +6486,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `demo/engine.js` (the stand-in, `tests/demo-build.js`) in place of the
   database, which the page never reaches again. Signed in as the sample
   director; every write refused (a table's insert, update or delete, a
-  function whose name changes something, an edge function, an upload) with
+  function whose name changes something, an edge function but Bukku's
+  invoices read, which the engine answers with none held, an upload) with
   Demo: changes are not saved.; the mark, letterhead, foot and title the
   sample agency's; a bar over the console (`#demoBar`, the upgrade line's
   look) with Client pages (a menu of the client portal, Content Review, the

@@ -3866,6 +3866,14 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    ========================================================================= */
 #odView { display: grid; gap: 12px; }
 #odView > .tallies > .tally { margin-top: 0; }
+/* Overdue and its four ages: five across while they fit (the line is the
+   tallies' own, data-narrow 760); else Overdue takes the row and the ages
+   run four across, two across when tight, never three over two
+   (2026-10-29, matrix at 768 and 1024). */
+#odTallies .inv-tally { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+#odTallies.is-narrow .inv-tally { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+#odTallies.is-narrow .inv-tally > .is-total { grid-column: 1 / -1; }
+#odTallies.is-tight .inv-tally { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .inv-sum { margin-left: auto; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .inv-row, .crm-head.inv-row {
   display: grid; align-items: center; gap: 0 12px;

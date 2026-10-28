@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261028a">
-<link rel="stylesheet" href="/css/console.css?v=20261029a">
+<link rel="stylesheet" href="/css/console.css?v=20261029b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -66,7 +66,7 @@
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261015zn"></script>
-<script src="/js/demo.js?v=20261027l"></script>
+<script src="/js/demo.js?v=20261029a"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261027m"></script>
 <script src="/js/clock.js?v=20261012b"></script>
@@ -713,7 +713,7 @@
             </span>
           </span>
         </div>
-        <div class="tallies" id="odTallies" hidden></div>
+        <div class="tallies" id="odTallies" data-narrow="760" hidden></div>
         <div class="bulkbar" id="odBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="odBulkAll"> <span id="odBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
