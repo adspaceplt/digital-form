@@ -6901,3 +6901,15 @@ sentence.
   a page setting `--ctl-text` or `--field-text` to its own figure, and the
   suite asserts the tokens.
 
+### 2026-10-28 · The day's full gate on a820579 (tests aacee0f): PROBLEM (3)
+- uxaudit `target`: /quote/'s stepper − and + stood 30px (32 under a
+  finger) as a `.btn`, whose floor is the full control. #801 drew them small
+  by setting `--ctl-h` to the small figure on `.qs-count`; they are now
+  `.btn-sm`, the small control by name, and look the same.
+- waiting: the search's Settings group (SET-9, 2026-10-27) drew no glyph:
+  `sectionGlyph` reads a section's glyph off its rail row, and Settings is a
+  mark at the rail's foot (`#settingsOpen`), which it now reads.
+- work: the suite typed the 27th of this month as a new post's Draft due;
+  on the 28th the sheet refused a passed date, as it should. No product
+  fault: the suite types dates ahead of today (CLAUDE.md, harness facts).
+
