@@ -6743,6 +6743,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   part (2026-10-16: a half file broke `report-draft` for three minutes),
   its content pasted in the call itself, never a placeholder to fill later
   (2026-10-19: `meet-create` served a placeholder for 50 seconds).
+  Before a deploy, `main` is fetched and merged into the branch, and the
+  live version compared with `main`'s file: sessions run at once, and a
+  deploy from a branch behind `main` takes away what another session
+  deployed (2026-10-29: `bukku-sync` v12 removed #814's button for five
+  minutes).
   The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
   A function that imports `../_shared/` is sent with that file in the same
