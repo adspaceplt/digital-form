@@ -27,9 +27,13 @@ function paras(body: string): string[] {
   return String(body || '').replace(/\r/g, '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 }
 export const BLOCK = /^\{\s*invoices\s*\}$/i;
+/* `{invoices}` set in a line of its own words stands as its own paragraph,
+   so the table is drawn wherever it was typed (review 2026-10-29, 3). */
+const TOKEN = /\{\s*invoices\s*\}/i;
 
 export function layout(o: { heading: string; body: string; foot?: string; preheader?: string; block?: string; fine?: string[] }): string {
-  const ps = paras(o.body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
+  const body = o.block ? String(o.body || '').replace(TOKEN, '\n\n{invoices}\n\n') : o.body;
+  const ps = paras(body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
     '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1b1a17;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
   const fine = (o.fine && o.fine.filter(Boolean).length ? o.fine.filter(Boolean) : [CONFIDENTIAL])
     .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a19d97;">' + esc(t) + '</p>').join('');
