@@ -6913,3 +6913,17 @@ sentence.
   on the 28th the sheet refused a passed date, as it should. No product
   fault: the suite types dates ahead of today (CLAUDE.md, harness facts).
 
+### 2026-10-28 · /quote/: the hairline under the last content option
+- The user, on an iPhone: "U missed this divider". On the plan step a plan
+  of two content options (Plan B) adds Content pieces per month above
+  Additional content pieces per month, both inside `#qsExtraBox`, a plain
+  block redrawn alone on every pick. The step's grid gave the box its 24px
+  step, but the two sections inside it had none between them: the second's
+  hairline sat on the last option's edge, and the first, with no section
+  before it in the box, drew no hairline at all.
+- The box is `display: contents` (`.qs-xbox`), so its sections stand in the
+  step's grid; the hairline rule takes the box's first section too.
+- Missed because quotesite read only whether the extras sat under the plans
+  and uxaudit walked Plan E alone, which holds one content option. quotesite
+  now measures every category's hairline and its 24px step, and uxaudit
+  walks Plan B (`quote plan options`).
