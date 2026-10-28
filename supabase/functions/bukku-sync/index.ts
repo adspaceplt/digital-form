@@ -387,7 +387,7 @@ export function invoiceTable(lines: any[]): string {
     '<tr><td style="' + cell + 'font-weight:600;">Total due</td><td class="hide-sm" style="' + cell + '"></td><td class="hide-sm" style="' + cell + '"></td>' +
     '<td style="' + cell + 'font-weight:600;text-align:right;white-space:nowrap;">' + tot + '</td>' + (many ? '<td style="' + cell + '"></td>' : '') + '</tr></table>';
   const one = !many && lines[0] && lines[0].link
-    ? '<p style="margin:0 0 16px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;background:#0071e3;color:#ffffff;text-decoration:none;font-weight:500;font-size:15px;padding:10px 18px;border-radius:10px;">View PDF</a></p>'
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:' + FONT + ';font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">View PDF</a></td></tr></table>'
     : '';
   return table + one;
 }
