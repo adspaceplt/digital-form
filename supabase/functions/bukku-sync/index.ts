@@ -20,6 +20,29 @@
  *   POST { action: 'link', kind, id, contact } links that contact as Bukku
  *                                             holds it, nothing sent
  *                                             (`bukku_link_only`).
+ *   POST { action: 'invoices' }               the overdue invoices
+ *                                             (2026-10-28): Bukku's unpaid
+ *                                             invoices held to the clients
+ *                                             the colleague sees
+ *                                             (`invoice_scope`), with the
+ *                                             reminders sent; read at the
+ *                                             press, never stored.
+ *   POST { action: 'remind', contact, invoices, cc, subject, body, again }
+ *                                             one reminder to one Bukku
+ *                                             contact: each invoice read
+ *                                             again from Bukku, one paid
+ *                                             since left out and named, the
+ *                                             table, figures and links built
+ *                                             here, filed and closed by the
+ *                                             service role
+ *                                             (`invoice_email_begin`,
+ *                                             `invoice_email_done`), sent
+ *                                             through Resend (_shared/mail.ts)
+ *                                             from MAIL_FINANCE_FROM (unset:
+ *                                             ADspace Finance
+ *                                             <noreply-finance@sc.adspace.me>),
+ *                                             replies to MAIL_FINANCE_REPLY_TO
+ *                                             (unset: einvoice@adspacestudios.com).
  *
  * What is sent is the database's answer as the colleague (`bukku_prepare`),
  * never the page's. An update reads the contact first and changes only the
@@ -33,8 +56,9 @@
  * Secrets: BUKKU_TOKEN (Control Panel › Integrations, API Access),
  *          BUKKU_SUBDOMAIN (the part before .bukku.my), optionally
  *          BUKKU_API (unset: https://api.bukku.my; the staging server for a
- *          test account), plus the platform's SUPABASE_URL and
- *          SUPABASE_ANON_KEY.
+ *          test account), RESEND_API_KEY for a reminder, plus the
+ *          platform's SUPABASE_URL, SUPABASE_ANON_KEY and
+ *          SUPABASE_SERVICE_ROLE_KEY.
  *
  * Verify JWT is off, as every portal function that checks its caller
  * itself: the database answers as the caller. A refusal the person can act
@@ -42,6 +66,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
+import { esc, FONT, layout, resend } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 
@@ -278,6 +303,176 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
 }
 
+
+// ---- Overdue invoices (2026-10-28) -------------------------------------------
+/* Malaysia's day: the one a due date is counted against. */
+export function todayMY(now = Date.now()): string { return new Date(now + 8 * 3600e3).toISOString().slice(0, 10); }
+const cents = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
+const LINK = /^https:\/\/[a-z0-9-]+\.bukku\.my\/[A-Za-z0-9/_-]+$/;
+/* What of an invoice is overdue: the unpaid part of every instalment whose
+   date has passed, else (one date) the balance once its date has passed.
+   Null where nothing is overdue, or where instalments carry no balance of
+   their own (then the invoice is read whole). */
+export function overdueOf(inv: any, today: string): any | null | undefined {
+  const bal = cents(inv.balance);
+  if (!(bal > 0) || (inv.status && inv.status !== 'ready')) return null;
+  const terms = (Array.isArray(inv.term_items) ? inv.term_items : []).filter((t: any) => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date || '')))
+    .slice().sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+  if (terms.length <= 1) {
+    const due = (terms[0] && terms[0].date) || String(inv.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(due) || !(due < today)) return null;
+    return { amount: bal, due, part: null };
+  }
+  if (!terms.every((t: any) => t.balance != null)) return undefined;
+  const past = terms.filter((t: any) => t.date < today && cents(t.balance) > 0);
+  if (!past.length) return null;
+  const amount = cents(Math.min(bal, past.reduce((n: number, t: any) => n + cents(t.balance), 0)));
+  if (!(amount > 0)) return null;
+  return { amount, due: past[0].date, part: { n: terms.indexOf(past[past.length - 1]) + 1, of: terms.length } };
+}
+function lineOf(inv: any, od: any, today: string) {
+  const days = Math.round((Date.parse(today + 'T00:00:00Z') - Date.parse(od.due + 'T00:00:00Z')) / 86400000);
+  const link = String(inv.short_link || '');
+  return { id: Number(inv.id), number: String(inv.number || ''), date: String(inv.date || ''), due: od.due, days,
+    amount: od.amount, balance: cents(inv.balance), total: cents(inv.amount),
+    currency: /^[A-Z]{3}$/.test(String(inv.currency_code || '')) ? String(inv.currency_code) : 'MYR',
+    link: LINK.test(link) ? link : null, part: od.part,
+    contact: Number(inv.contact_id), contact_name: String(inv.contact_name || ''), contact_email: String(inv.contact_email || '') };
+}
+/* Every invoice still owing, a hundred a page: Bukku's Outstanding and
+   Overdue lists together, each once. */
+async function unpaid(): Promise<any[]> {
+  const seen = new Map<number, any>();
+  for (const ps of ['OVERDUE', 'OUTSTANDING']) {
+    for (let page = 1; page <= 50; page++) {
+      const r = await bukku('GET', `/sales/invoices?payment_status=${ps}&status=ready&page=${page}&page_size=100`);
+      const rows = (r && r.transactions) || [];
+      for (const x of rows) if (x && x.id && !seen.has(Number(x.id))) seen.set(Number(x.id), x);
+      const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+      const total = Number(r && r.paging && r.paging.total) || 0;
+      if (!rows.length || page * per >= total || rows.length < per) break;
+    }
+  }
+  return Array.from(seen.values());
+}
+async function oneInvoice(id: number): Promise<any | null> {
+  return bukku('GET', `/sales/invoices/${id}`).then((r) => (r && r.transaction) || null)
+    .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
+}
+const money = (n: number, cur: string) => (cur === 'MYR' ? 'RM ' : cur === 'SGD' ? 'S$ ' : cur + ' ') +
+  cents(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+const day = (d: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || ''); return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : ''; };
+/* The invoices as the email's table: built here from Bukku's figures read at
+   the send, never from a page. One invoice carries one button; several,
+   each row its own View PDF. Totals are kept per currency. */
+export function invoiceTable(lines: any[]): string {
+  const cell = 'padding:10px 12px;border-top:1px solid #ececec;font-size:14px;line-height:1.4;color:#1b1a17;';
+  const head = 'padding:10px 12px;font-size:12px;font-weight:600;color:#6b6760;text-align:left;';
+  const many = lines.length > 1;
+  const rows = lines.map((l) => '<tr><td style="' + cell + '">' + esc(l.number) +
+      (l.part ? '<br><span style="font-size:12px;color:#6b6760;">Instalment ' + l.part.n + ' of ' + l.part.of + '</span>' : '') + '</td>' +
+    '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.date)) + '</td>' +
+    '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.due)) + '</td>' +
+    '<td style="' + cell + 'text-align:right;white-space:nowrap;">' + esc(money(l.amount, l.currency)) + '</td>' +
+    (many ? '<td style="' + cell + 'text-align:right;white-space:nowrap;">' +
+      (l.link ? '<a href="' + esc(l.link) + '" style="color:#0066cc;text-decoration:none;font-weight:500;font-size:13px;">View PDF</a>' : '') + '</td>' : '') +
+    '</tr>').join('');
+  const byCur: Record<string, number> = {};
+  for (const l of lines) byCur[l.currency] = cents((byCur[l.currency] || 0) + l.amount);
+  const tot = Object.keys(byCur).sort().map((c) => money(byCur[c], c)).join('<br>');
+  const table = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;background:#f9f9f9;border-radius:10px;border-collapse:separate;font-family:' + FONT + ';">' +
+    '<tr><th style="' + head + '">Invoice</th><th class="hide-sm" style="' + head + '">Issued</th><th class="hide-sm" style="' + head + '">Due</th>' +
+    '<th style="' + head + 'text-align:right;">Amount due</th>' + (many ? '<th style="' + head + '"></th>' : '') + '</tr>' + rows +
+    '<tr><td style="' + cell + 'font-weight:600;">Total due</td><td class="hide-sm" style="' + cell + '"></td><td class="hide-sm" style="' + cell + '"></td>' +
+    '<td style="' + cell + 'font-weight:600;text-align:right;white-space:nowrap;">' + tot + '</td>' + (many ? '<td style="' + cell + '"></td>' : '') + '</tr></table>';
+  const one = !many && lines[0] && lines[0].link
+    ? '<p style="margin:0 0 16px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;background:#0071e3;color:#ffffff;text-decoration:none;font-weight:500;font-size:15px;padding:10px 18px;border-radius:10px;">View PDF</a></p>'
+    : '';
+  return table + one;
+}
+const FIN_FROM = () => secret('MAIL_FINANCE_FROM') || 'ADspace Finance <noreply-finance@sc.adspace.me>';
+const FIN_REPLY = () => secret('MAIL_FINANCE_REPLY_TO') || 'einvoice@adspacestudios.com';
+
+async function invoiceAction(action: string, body: Record<string, any>, db: any, origin: string | null): Promise<Response> {
+  const sc = await db.rpc('invoice_scope');
+  if (sc.error) return json({ error: 'needs-update' }, 200, origin);
+  const scope = sc.data || {};
+  if (scope.error) return json({ error: scope.error }, 200, origin);
+  const links = new Map<number, any>();
+  for (const l of scope.links || []) links.set(Number(l.contact), l);
+  const today = todayMY();
+  const mayContact = (c: number) => links.has(c) || scope.all === true;
+
+  if (action === 'invoices') {
+    const all = await unpaid();
+    const out: any[] = [];
+    for (const inv of all) {
+      const c = Number(inv.contact_id);
+      if (!mayContact(c)) continue;
+      let od = overdueOf(inv, today);
+      let src = inv;
+      if (od === undefined) { src = await oneInvoice(Number(inv.id)); od = src ? overdueOf({ ...inv, ...src }, today) : null; }
+      if (!od) continue;
+      const l = lineOf({ ...inv, ...src, contact_email: inv.contact_email, short_link: inv.short_link || src.short_link }, od, today);
+      const link = links.get(c);
+      if (link) Object.assign(l, { client: link.client, client_name: link.name, client_code: link.code, client_slug: link.slug, to: link.to });
+      else l.contact_email = l.contact_email || '';
+      out.push(l);
+    }
+    out.sort((a, b) => b.days - a.days || a.number.localeCompare(b.number));
+    const contacts = Array.from(new Set(out.map((l) => l.contact)));
+    const rem = contacts.length ? await db.rpc('invoice_reminders', { p_contacts: contacts }) : { data: { rows: [] } };
+    return json({ ok: true, today, send: scope.send === true, all: scope.all === true, rows: out,
+      reminders: (rem.data && rem.data.rows) || [] }, 200, origin);
+  }
+
+  // action === 'remind'
+  if (scope.send !== true) return json({ error: 'denied' }, 200, origin);
+  if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
+  const contact = Number(body.contact);
+  const ids = Array.isArray(body.invoices) ? body.invoices.map(Number).filter((n: number) => n > 0) : [];
+  if (!(contact > 0) || !ids.length || ids.length > 50) return json({ error: 'bad-request' }, 400, origin);
+  if (!mayContact(contact)) return json({ error: 'denied' }, 200, origin);
+  const lines: any[] = [], paid: string[] = [];
+  for (const id of Array.from(new Set(ids))) {
+    const inv = await oneInvoice(id as number);
+    if (!inv || Number(inv.contact_id) !== contact) return json({ error: 'bad-request' }, 400, origin);
+    const od = overdueOf(inv, today);
+    if (!od) { paid.push(String(inv.number || id)); continue; }
+    lines.push(lineOf(inv, od, today));
+  }
+  if (!lines.length) return json({ error: 'nothing-overdue', paid }, 200, origin);
+  lines.sort((a, b) => a.due.localeCompare(b.due) || a.number.localeCompare(b.number));
+  const link = links.get(contact);
+  const bc = await bukku('GET', `/contacts/${contact}`).then((r) => (r && r.contact) || null).catch(() => null);
+  const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const begun = await svc.rpc('invoice_email_begin', {
+    p_actor: scope.me && scope.me.id, p_client: link ? link.client : null, p_contact: contact,
+    p_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
+    p_email: String((bc && bc.email) || lines[0].contact_email || ''),
+    p_invoices: lines.map((l) => ({ id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency,
+      link: l.link, part: l.part })),
+    p_cc: body.cc !== false, p_subject: String(body.subject || ''), p_body: String(body.body || ''), p_again: body.again === true });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = begun.data || {};
+  if (b.error) return json({ ...b, paid }, 200, origin);
+  const heading = String(b.subject || '').split(/\s+·\s+/)[0].trim() || 'Payment reminder';
+  const html = layout({ heading, body: String(b.body || ''), preheader: String(b.subject || ''), block: invoiceTable(lines),
+    fine: [String(b.legal || ''), String(b.disclaimer || '')] });
+  const text = String(b.body || '').replace(/\{\s*invoices\s*\}/i, lines.map((l) => l.number + '  ' + money(l.amount, l.currency) +
+    '  due ' + day(l.due) + (l.link ? '  ' + l.link : '')).join('\n'));
+  const msg: Record<string, unknown> = { from: FIN_FROM(), to: [String(b.to || '')], reply_to: FIN_REPLY(),
+    subject: String(b.subject || ''), html, text };
+  if (b.cc) msg.cc = [String(b.cc)];
+  const sent = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
+  const done = await svc.rpc('invoice_email_done', { p_id: b.id, p_status: sent.status, p_provider: sent.provider || null, p_error: sent.error || null });
+  if (done.error) console.error('bukku-sync: reminder not closed', done.error.message);
+  if (sent.status !== 'sent') console.error('bukku-sync: reminder', sent.status, sent.error);
+  return json(sent.status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null, paid }
+    : { error: sent.status === 'unknown' ? 'not-confirmed' : 'not-sent', paid }, 200, origin);
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -325,6 +520,8 @@ Deno.serve(async (req) => {
       }).filter((t: any) => t.code && /^[A-Za-z0-9._ -]{1,30}$/.test(t.code) && t.rate != null && t.rate >= 0 && t.rate <= 100);
       return json({ ok: true, codes: list }, 200, origin);
     }
+
+    if (action === 'invoices' || action === 'remind') return await invoiceAction(action, body, db, origin);
 
     const kind = String(body.kind || ''), id = String(body.id || '');
     if (!['client', 'supplier'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);

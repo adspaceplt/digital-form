@@ -3853,3 +3853,106 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .wam-tplline.is-utility .wam-tplname { max-width: calc(100% - 4.4em); }
 .wam-tplline.is-service .wam-tplname { max-width: calc(100% - 4.6em); }
 .wam-tplline.is-marketing .wam-tplname { max-width: calc(100% - 5.9em); }
+
+/* =========================================================================
+   OVERDUE INVOICES (2026-10-28, js/invoices.js): Clients' second view, Bukku's
+   unpaid invoices past their date, a card for each age. A row is the tick
+   (for whoever may send), the client over the invoice, the overdue amount
+   (of the balance where only an instalment is late), the due date, the days
+   in the late ink and the last reminder's status with Open in Bukku. On a
+   narrow list: the tick, who over the invoice, and the amount over the
+   days. Review and send: the clients down the left, the email as it will
+   arrive at the right, then what was sent before as a table of four.
+   ========================================================================= */
+#odView { display: grid; gap: 12px; }
+#odView > .tallies > .tally { margin-top: 0; }
+.inv-sum { margin-left: auto; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inv-row, .crm-head.inv-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1.6fr) 130px 110px 84px minmax(0, 1.2fr);
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.can-pick .inv-row, .can-pick .crm-head.inv-row { grid-template-columns: 24px minmax(0, 1.6fr) 130px 110px 84px minmax(0, 1.2fr); }
+.inv-row:last-child { border-bottom: 0; }
+label.inv-row { cursor: pointer; }
+@media (hover: hover) { label.inv-row:hover { background: var(--sunk); } }
+.inv-row.is-picked { background: var(--line-soft); }
+.inv-tick { display: flex; align-items: center; }
+.inv-who { display: grid; gap: 2px; min-width: 0; }
+.inv-who b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-who small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-amt { display: grid; justify-items: end; text-align: right; font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+span.inv-amt { font-weight: 600; }
+.inv-amt small { font-weight: 400; font-size: 12px; color: var(--ink-mute); }
+.inv-due { font-size: 13.5px; white-space: nowrap; }
+.inv-days { font-size: 13.5px; color: var(--err); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.crm-head .inv-days { color: inherit; }
+.inv-last { display: grid; gap: 2px; justify-items: start; min-width: 0; font-size: 13px; }
+.inv-last .linkbtn { font-size: 12.5px; }
+.inv-last .linkbtn svg { width: 13px; height: 13px; margin-left: 4px; }
+.is-narrow .crm-head.inv-row { display: none; }
+.is-narrow .inv-row, .is-narrow .can-pick .inv-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who amt" "last days";
+  align-items: start; gap: 4px 12px; padding: 12px 15px;
+}
+.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". last days"; }
+.is-narrow .inv-row > .inv-tick { grid-area: tick; padding-top: 2px; }
+.is-narrow .inv-row > .inv-who { grid-area: who; }
+.is-narrow .inv-row > .inv-amt { grid-area: amt; }
+.is-narrow .inv-row > .inv-due { display: none; }
+.is-narrow .inv-row > .inv-days { grid-area: days; justify-self: end; }
+.is-narrow .inv-row > .inv-last { grid-area: last; }
+
+.sheet-card.formsheet.inv-sheet { width: min(880px, 100%); }
+.sheet-body.inv-rv { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 0; padding: 0; }
+.inv-rv-list { display: grid; align-content: start; gap: 2px; padding: 8px; border-right: 1px solid var(--line-soft); }
+.inv-rv-row { display: grid; gap: 4px; justify-items: start; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: none; color: inherit; font: inherit; border-radius: var(--radius-sm); cursor: pointer; }
+.inv-rv-row b { font-weight: 600; font-size: 14px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inv-rv-row small { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.inv-rv-row.is-on { background: var(--line-soft); }
+@media (hover: hover) { .inv-rv-row:not(.is-on):hover { background: var(--sunk); } }
+.inv-rv-pane { display: grid; gap: 14px; align-content: start; padding: 16px 20px; min-width: 0; }
+.inv-rv-head { display: flex; align-items: flex-start; gap: 12px; }
+.inv-rv-head .ovfacts { flex: 1; min-width: 0; }
+.inv-rv-head .ovfacts dd { overflow-wrap: anywhere; }
+.inv-rv-pane .err-ink { color: var(--err); }
+.inv-mail { background: #f4f4f2; border-radius: var(--radius); padding: 14px; }
+.inv-mail-card { background: #fff; color: #1b1a17; border-radius: 12px; padding: 20px 22px; display: grid; gap: 10px; font-size: 13.5px; line-height: 1.55; }
+.inv-mail-card p { margin: 0; color: #1b1a17; }
+.inv-mail-card h4 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: #1b1a17; }
+.inv-mail-mark { font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 18px; color: #1b1a17; }
+/* The sent email's fine print is #a19d97 (the user's lighter grey); a screen
+   holds 4.5:1, so the preview draws it in the lightest ink that does. */
+.inv-mail-card .inv-mail-fine { font-size: 11.5px; color: #6b6760; }
+.inv-mail-t { background: #f9f9f9; border-radius: 10px; font-size: 12.5px; color: #1b1a17; }
+.inv-mail-t .r { display: grid; grid-template-columns: minmax(0, 1fr) 92px 108px; gap: 8px; padding: 8px 12px; border-top: 1px solid #ececec; align-items: baseline; }
+.inv-mail-t .r:has(> :nth-child(4)) { grid-template-columns: minmax(0, 1fr) 92px 108px 60px; }
+.inv-mail-t .r.hd { border-top: 0; font-size: 12px; font-weight: 600; color: #6b6760; }
+.inv-mail-t .r.tot { font-weight: 600; }
+.inv-mail-t .r small { display: block; font-size: 11.5px; color: #6b6760; }
+.inv-mail-t .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.inv-mail-t .lk { color: #0066cc; font-weight: 500; text-align: right; white-space: nowrap; }
+.inv-mail-btn { justify-self: start; background: #0071e3; color: #fff; border-radius: 10px; padding: 8px 16px; font-weight: 500; }
+.inv-log { display: grid; gap: 8px; }
+.inv-log .fsec-h { margin: 0; }
+.inv-log-t .r { display: grid; grid-template-columns: 136px 84px minmax(0, 1fr) 128px; gap: 12px; align-items: baseline; padding: 7px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.inv-log-t .r.hd { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.inv-log-t .w { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.inv-log-t .c { color: var(--ink-soft); }
+.inv-log-t .b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-body.inv-rv.is-narrow { grid-template-columns: minmax(0, 1fr); padding: 0 24px 18px; }
+.is-narrow.inv-rv .inv-rv-list { border-right: 0; border-bottom: 1px solid var(--line-soft); padding: 0 0 8px; }
+.is-narrow.inv-rv .inv-rv-pane { padding: 14px 0 0; }
+.is-narrow.inv-rv .inv-mail { padding: 8px; }
+.is-narrow.inv-rv .inv-mail-card { padding: 16px; }
+.is-narrow.inv-rv .inv-rv-head { flex-wrap: wrap; }
+.is-narrow.inv-rv .inv-rv-head .ovfacts { flex-basis: 100%; }
+.is-narrow.inv-rv .inv-mail-t .r { grid-template-columns: minmax(0, 1fr) 100px; }
+.is-narrow.inv-rv .inv-mail-t .r:has(> :nth-child(4)) { grid-template-columns: minmax(0, 1fr) 100px 56px; }
+.is-narrow.inv-rv .inv-mail-t .r > :nth-child(2) { display: none; }
+.is-narrow.inv-rv .inv-log-t .r { grid-template-columns: minmax(0, 1fr) auto; }
+.is-narrow.inv-rv .inv-log-t .r.hd, .is-narrow.inv-rv .inv-log-t .c { display: none; }
+.is-narrow.inv-rv .inv-log-t .w { grid-column: 1; grid-row: 1; }
+.is-narrow.inv-rv .inv-log-t .r > :last-child { grid-column: 2; grid-row: 1; justify-self: end; }
+.is-narrow.inv-rv .inv-log-t .b { grid-column: 1; color: var(--ink-mute); }

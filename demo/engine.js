@@ -264,6 +264,9 @@
     supplier_form_read: 'p_key',
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
+    invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
+    invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
+    invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
     supplier_email_prepare: 'p_supplier p_purpose p_document', supplier_email_begin: 'p_supplier p_purpose p_document p_cc p_subject p_body p_again',
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
     get_scripts: 'p_token',
@@ -2697,6 +2700,78 @@ function cardSlugFree(name, self, email) {
     });
   }
 
+  function invTemplateSeed() {
+    return { id: 1, subject_one: 'Payment reminder · Invoice {invoice no}', subject_many: 'Payment reminder · {count} overdue invoices',
+      body: 'Dear {contact name},\n\nThis is a reminder that payment of {total} for {client} is now overdue.\n\n{invoices}\n\nWe would be grateful if payment could be arranged at your earliest convenience. If payment has already been made, please disregard this email.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
+      legal: 'Legal note: All services rendered will be invoiced accordingly unless a written cancellation is provided and acknowledged in advance. All invoices must be settled promptly to avoid overdue interest charges.',
+      disclaimer: 'This email and any attachment are private and confidential and intended solely for the addressee. If you have received it in error, please notify einvoice@adspacestudios.com and delete it. Any use, copying or disclosure by anyone else is not permitted.',
+      updated_at: '2026-10-28T00:00:00Z', updated_by: null };
+  }
+  function invRecipient(cid) {
+    var c = DB.clients.filter(function (x) { return x.id === cid; })[0];
+    if (!c) return null;
+    var ks = (DB.client_contacts || []).filter(function (x) { return x.client_id === c.id && !x.archived_at && (x.id === c.bill_contact_id || x.is_primary); })
+      .sort(function (a, b) { return (b.id === c.bill_contact_id) - (a.id === c.bill_contact_id); });
+    var k = ks[0] || {};
+    var t = function (v) { return String(v || '').trim(); };
+    var nm = [t(k.salutation), t(k.name)].filter(Boolean).join(' ');
+    var fe = t(c.finance_email);
+    return { name: nm || null, email: t(k.email) || null, cc: fe && fe.toLowerCase() !== t(k.email).toLowerCase() ? fe : null,
+      company: t(c.legal_name) || c.name };
+  }
+  function invScopeAll() {
+    var m = opsMe(); if (!m) return false;
+    var a = opsAccess(m); if (a.admin) return true;
+    var role = DB.team_roles.filter(function (x) { return x.slug === m.role; })[0];
+    return (m.client_scope || (role && role.client_scope) || 'all') !== 'own';
+  }
+  function invMoney(n, c) { return (c === 'MYR' ? 'RM\u00a0' : c === 'SGD' ? 'S$\u00a0' : c + '\u00a0') + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  function invBegin(actor, cid, contact, name, email, invoices, cc, subject, body, again) {
+    var me = DB.team_members.filter(function (x) { return x.id === actor && x.active !== false; })[0];
+    if (!me) return { error: 'denied' };
+    DB.invoice_emails = DB.invoice_emails || [];
+    DB.invoice_email_template = DB.invoice_email_template || [invTemplateSeed()];
+    var now = Date.now();
+    var mine = DB.invoice_emails.filter(function (e) { return Number(e.bukku_contact) === contact; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
+    if (mine.some(function (e) { return e.status === 'sending' && now - Date.parse(e.created_at) < 6e5; })) return { error: 'sending' };
+    var hours = appSet('wa_repeat_hours', appToday()); if (hours == null) hours = 24;
+    if (hours > 0 && !again) {
+      var r = mine.filter(function (e) { return e.status !== 'failed' && now - Date.parse(e.created_at) < hours * 36e5; })[0];
+      if (r) { var rb = DB.team_members.filter(function (x) { return x.id === r.sent_by; })[0]; return { error: 'recent', recent: { at: r.created_at, to: r.to_email, by: rb ? rb.name : null } }; }
+    }
+    var rcp = cid ? invRecipient(cid) : null;
+    var to = (rcp && rcp.email) || String(email || '').trim() || null;
+    if (!to || !/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(to)) return { error: 'no-email' };
+    var ccTo = cc && rcp && rcp.cc && rcp.cc.toLowerCase() !== to.toLowerCase() ? rcp.cc : null;
+    var co = (rcp && rcp.company) || String(name || '').trim() || 'Client';
+    var who = (rcp && rcp.name) || co;
+    var n = invoices.length, nos = invoices.map(function (x) { return x.number; });
+    var by = {};
+    invoices.forEach(function (x) { by[x.currency] = (by[x.currency] || 0) + Number(x.amount); });
+    var vals = { 'contact name': who, client: co, 'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1], count: String(n),
+      total: Object.keys(by).sort().map(function (c) { return invMoney(by[c], c); }).join(' and '), 'sign off': rcp && rcp.name ? 'Yours sincerely' : 'Yours faithfully' };
+    var fill = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
+    var t = DB.invoice_email_template[0];
+    var s = fill(String(subject || '').trim() || (n === 1 ? t.subject_one : t.subject_many)).replace(/\s+/g, ' ').trim();
+    var b = fill(String(body || '').trim() || t.body).replace(/\r/g, '').trim();
+    if (s.length < 2 || s.length > 200) return { error: 'bad-subject' };
+    if (b.length < 2 || b.length > 5000) return { error: 'bad-body' };
+    if (!/\{\s*invoices\s*\}/i.test(b)) return { error: 'no-invoices' };
+    var row = { id: nid('ie'), client_id: cid, bukku_contact: contact, client_name: co, invoices: invoices, to_email: to, cc_email: ccTo,
+      subject: s, body: b, sent_by: me.id, created_at: new Date().toISOString(), status: 'sending' };
+    DB.invoice_emails.push(row);
+    return { ok: true, id: row.id, to: to, cc: ccTo, subject: s, body: b, legal: t.legal, disclaimer: t.disclaimer };
+  }
+  function invDone(id, status, provider, error) {
+    var e = (DB.invoice_emails || []).filter(function (x) { return x.id === id && x.status === 'sending'; })[0];
+    if (!e) return;
+    e.status = status; e.provider_id = provider; e.error = error; e.sent_at = status === 'sent' ? new Date().toISOString() : null;
+    var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
+    DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: e.client_name,
+      detail: 'Overdue reminder ' + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed, not confirmed, to ' : 'not emailed to ') +
+        e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
+  }
   function billMarket(c) { return c && String(c.market || "").toUpperCase() === "SG" && c.bill_sgd ? "SG" : "MY"; }
   function appSet(key, at) {
     appDb();
@@ -9662,6 +9737,77 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (/^invoice_/.test(name)) {
+      var ivOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var ivNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return ivNo(window.__refuseRpc[name]);
+      if (name === 'invoice_email_begin' || name === 'invoice_email_done' || name === 'invoice_recipient' || name === 'invoice_money')
+        return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
+      var ivMe = opsMe();
+      DB.invoice_emails = DB.invoice_emails || [];
+      DB.invoice_email_template = DB.invoice_email_template || [invTemplateSeed()];
+      if (name === 'invoice_email_template_get') {
+        if (!ivMe || !(opsAllowed('clients.billing', 'view') || opsGranted('team.settings', 'view'))) return ivNo('denied');
+        var tg = DB.invoice_email_template[0];
+        var tby = tg.updated_by ? DB.team_members.filter(function (m) { return m.id === tg.updated_by; })[0] : null;
+        return ivOk({ subject_one: tg.subject_one, subject_many: tg.subject_many, body: tg.body, legal: tg.legal, disclaimer: tg.disclaimer,
+          updated_at: tg.updated_at, updated_by: tby ? tby.name : null });
+      }
+      if (name === 'invoice_email_template_save') {
+        if (!ivMe || !opsGranted('team.settings', 'work')) return ivNo('denied');
+        var sq = function (v) { return String(v || '').replace(/\s+/g, ' ').trim(); };
+        var v1 = sq(args.p_subject_one), vn = sq(args.p_subject_many), vb = String(args.p_body || '').replace(/\r/g, '').trim(),
+          vl = sq(args.p_legal), vd = sq(args.p_disclaimer);
+        if (v1.length < 2 || v1.length > 200 || vn.length < 2 || vn.length > 200) return ivNo('bad-subject');
+        if (vb.length < 2 || vb.length > 5000) return ivNo('bad-body');
+        if (!/\{\s*invoices\s*\}/i.test(vb)) return ivNo('no-invoices');
+        if (vl.length > 1000 || vd.length > 1000) return ivNo('too-long');
+        var ts = DB.invoice_email_template[0], moved = [];
+        if (ts.subject_one !== v1) moved.push('Subject, one invoice: ' + ts.subject_one + ' → ' + v1);
+        if (ts.subject_many !== vn) moved.push('Subject, several invoices: ' + ts.subject_many + ' → ' + vn);
+        if (ts.body !== vb) moved.push('Message');
+        if (ts.legal !== vl) moved.push('Legal note');
+        if (ts.disclaimer !== vd) moved.push('Disclaimer');
+        if (!moved.length) return ivOk();
+        Object.assign(ts, { subject_one: v1, subject_many: vn, body: vb, legal: vl, disclaimer: vd, updated_at: new Date().toISOString(), updated_by: ivMe.id });
+        DB.activity_log.unshift({ id: nid('al'), actor: ivMe.name, action: 'team.changed', subject: 'Overdue reminder', detail: moved.join(' · '), created_at: new Date().toISOString() });
+        return ivOk();
+      }
+      if (!ivMe || !opsAllowed('clients.billing', 'view')) return ivNo('denied');
+      var ivAll = invScopeAll();
+      var ivSeen = function (cid) {
+        var c = DB.clients.filter(function (x) { return x.id === cid; })[0];
+        return Boolean(c) && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
+      };
+      if (name === 'invoice_scope') {
+        var byC = {};
+        (DB.bukku_links || []).forEach(function (b) {
+          var cid = b.kind === 'client' ? b.record_id : ((DB.suppliers || []).filter(function (x) { return x.id === b.record_id; })[0] || {}).client_id;
+          if (!cid) return;
+          var k = Number(b.contact_id);
+          if (!byC[k] || (b.kind === 'client' && byC[k].pref === 1)) byC[k] = { cid: cid, pref: b.kind === 'client' ? 0 : 1 };
+        });
+        var links = Object.keys(byC).map(Number).filter(function (k) { return ivSeen(byC[k].cid); }).map(function (k) {
+          var c = DB.clients.filter(function (x) { return x.id === byC[k].cid; })[0];
+          return { contact: k, client: c.id, name: c.name, code: c.client_code || null, slug: c.slug, stage: c.stage, to: invRecipient(c.id) };
+        }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+        return ivOk({ me: { id: ivMe.id, name: ivMe.name }, all: ivAll, send: opsAllowed('clients.billing', 'work'), links: links });
+      }
+      if (name === 'invoice_reminders') {
+        var want = (args.p_contacts || []).map(Number);
+        var rows = DB.invoice_emails.filter(function (e) {
+          return want.indexOf(Number(e.bukku_contact)) > -1 && (e.client_id ? ivSeen(e.client_id) : ivAll);
+        }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }).slice(0, 500).map(function (e) {
+          var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
+          return { id: e.id, contact: e.bukku_contact, client: e.client_id, invoices: e.invoices, to: e.to_email, cc: e.cc_email, subject: e.subject,
+            status: e.status, error: e.error || null, at: e.created_at, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
+            bounced_at: e.bounced_at || null, by: m ? m.name : null };
+        });
+        return ivOk({ rows: JSON.parse(JSON.stringify(rows)) });
+      }
+      return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
+    }
+
     if (/^bukku_/.test(name)) {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
@@ -11135,6 +11281,87 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var held = window.__bukkuContacts = window.__bukkuContacts || [
             { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '202201012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];
+
+          if (bkb.action === 'invoices' || bkb.action === 'remind') {
+            var ivT = appToday();
+            var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
+            var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || [
+              { id: 9001, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00412', date: ivAdd(-75),
+                amount: 4320, balance: 4320, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/AbC123', term_items: [{ date: ivAdd(-45), amount: 4320, balance: 4320 }] },
+              { id: 9002, contact_id: 501, contact_name: 'SAMPLE CLIENT SDN BHD', contact_email: 'accounts@example.com', number: 'IV-00431', date: ivAdd(-40),
+                amount: 6000, balance: 6000, currency_code: 'MYR', status: 'ready', short_link: 'https://adspace.bukku.my/p/DeF456',
+                term_items: [{ date: ivAdd(-20), amount: 2000, balance: 2000 }, { date: ivAdd(-5), amount: 2000, balance: 2000 }, { date: ivAdd(25), amount: 2000, balance: 2000 }] },
+              { id: 9003, contact_id: 777, contact_name: 'NORTHWIND TRADING', contact_email: 'finance@example.com', number: 'IV-00398', date: ivAdd(-130),
+                amount: 1180, balance: 1180, currency_code: 'SGD', status: 'ready', short_link: '', term_items: [] }];
+            var ivCents = function (n) { return Math.round((Number(n) || 0) * 100) / 100; };
+            var ivOver = function (inv) {
+              var bal = ivCents(inv.balance);
+              if (!(bal > 0) || (inv.status && inv.status !== 'ready')) return null;
+              var terms = (inv.term_items || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+              if (terms.length <= 1) {
+                var due = (terms[0] && terms[0].date) || inv.date;
+                return due < ivT ? { amount: bal, due: due, part: null } : null;
+              }
+              var past = terms.filter(function (t) { return t.date < ivT && ivCents(t.balance) > 0; });
+              if (!past.length) return null;
+              var amt = ivCents(Math.min(bal, past.reduce(function (n, t) { return n + ivCents(t.balance); }, 0)));
+              return { amount: amt, due: past[0].date, part: { n: terms.indexOf(past[past.length - 1]) + 1, of: terms.length } };
+            };
+            var ivLine = function (inv, od) {
+              return { id: inv.id, number: inv.number, date: inv.date, due: od.due, days: Math.round((Date.parse(ivT) - Date.parse(od.due)) / 864e5),
+                amount: od.amount, balance: ivCents(inv.balance), total: ivCents(inv.amount), currency: inv.currency_code || 'MYR',
+                link: /^https:\/\/[a-z0-9-]+\.bukku\.my\//.test(inv.short_link || '') ? inv.short_link : null, part: od.part,
+                contact: inv.contact_id, contact_name: inv.contact_name, contact_email: inv.contact_email || '' };
+            };
+            return rpc('invoice_scope', {}).then(function (sr) {
+              var sc = sr.data || {};
+              if (sc.error) return bkR({ error: sc.error });
+              var links = {};
+              (sc.links || []).forEach(function (l) { links[l.contact] = l; });
+              var mayC = function (c) { return Boolean(links[c]) || sc.all === true; };
+              if (bkb.action === 'invoices') {
+                if (window.__bukkuInvFail) return bkR({ error: window.__bukkuInvFail });
+                var out = [];
+                ivAll.forEach(function (inv) {
+                  if (!mayC(inv.contact_id)) return;
+                  var od = ivOver(inv); if (!od) return;
+                  var l = ivLine(inv, od), lk = links[inv.contact_id];
+                  if (lk) Object.assign(l, { client: lk.client, client_name: lk.name, client_code: lk.code, client_slug: lk.slug, to: lk.to });
+                  out.push(l);
+                });
+                out.sort(function (a, b) { return b.days - a.days || (a.number < b.number ? -1 : 1); });
+                var cs = out.map(function (l) { return l.contact; }).filter(function (c, i, a) { return a.indexOf(c) === i; });
+                return rpc('invoice_reminders', { p_contacts: cs }).then(function (rr) {
+                  return { data: { ok: true, today: ivT, send: sc.send === true, all: sc.all === true, rows: out, reminders: (rr.data && rr.data.rows) || [] }, error: null };
+                });
+              }
+              window.__invAsked = JSON.parse(JSON.stringify(bkb));
+              if (sc.send !== true) return bkR({ error: 'denied' });
+              if (window.__mailOff) return bkR({ error: 'mail-not-set-up' });
+              var contact = Number(bkb.contact), ids = (bkb.invoices || []).map(Number);
+              if (!(contact > 0) || !ids.length || ids.length > 50) return bkR({ error: 'bad-request' });
+              if (!mayC(contact)) return bkR({ error: 'denied' });
+              var lines = [], paid = [];
+              for (var q = 0; q < ids.length; q++) {
+                var inv = ivAll.filter(function (x) { return x.id === ids[q]; })[0];
+                if (!inv || inv.contact_id !== contact) return bkR({ error: 'bad-request' });
+                var od = (window.__invPaid || []).indexOf(inv.id) > -1 ? null : ivOver(inv);
+                if (!od) { paid.push(inv.number); continue; }
+                lines.push(ivLine(inv, od));
+              }
+              if (!lines.length) return bkR({ error: 'nothing-overdue', paid: paid });
+              lines.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+              var b = invBegin(sc.me && sc.me.id, links[contact] ? links[contact].client : null, contact, lines[0].contact_name, lines[0].contact_email,
+                lines.map(function (l) { return { id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency, link: l.link, part: l.part }; }),
+                bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true);
+              if (b.error) return bkR(Object.assign(b, { paid: paid }));
+              var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
+              invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);
+              window.__invSent = (window.__invSent || []).concat([{ to: b.to, cc: b.cc, subject: b.subject, body: b.body, invoices: lines.map(function (l) { return l.number; }) }]);
+              persist();
+              return bkR(st2 === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null, paid: paid } : { error: st2 === 'unknown' ? 'not-confirmed' : 'not-sent', paid: paid });
+            });
+          }
 
           if (bkb.action === 'taxes') {
             return rpc('bukku_config', {}).then(function (r) {

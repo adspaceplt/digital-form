@@ -89,6 +89,8 @@
       });
     },
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
+    /* Overdue reminder (2026-10-28): who last changed the words. */
+    overdue: function () { return window.ADspaceInvoices && window.ADspaceInvoices.templateLine(); },
     /* Demo access (2026-10-27): on or off, and whether a PIN is held. */
     demo: function () {
       return db.rpc('demo_state').then(function (r) {
@@ -225,7 +227,10 @@
          line may carry, read from Bukku or added by hand. */
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes') },
       /* Bukku (2026-10-18): the contact fields that hold our IDs. */
-      biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') }]);
+      biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') },
+      /* Overdue reminder (2026-10-28): the email an overdue invoice is
+         reminded with, sent from Clients' Overdue invoices. */
+      biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') }]);
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
@@ -423,6 +428,7 @@
     if (a === 'depts') { openDepts(btn); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
+    if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
   }
 

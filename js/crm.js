@@ -1140,6 +1140,10 @@
     });
     gateTabs();
     $('crmListView').hidden = true;
+    /* A record stands alone: Clients' view strip and the overdue invoices
+       give way to it (2026-10-28). */
+    if (window.ADspaceInvoices) window.ADspaceInvoices.hide();
+    $('crmViewsBox').hidden = true;
     $('crmWork').hidden = false;
     $('crmClientName').textContent = c.name || '';
     var w = stageWord(c.stage || 'lead');
@@ -6706,6 +6710,8 @@
       /* The checklist open keeps its place through a refresh (OVW-12). */
       var ck = window.ADspaceChecklists && state.client && window.ADspaceChecklists.kind(state.client.id);
       if (o.tab && ck && (TABS[pane] || TABS[GROUP_OF[pane]] || []).indexOf('checklists') > -1) o.list = ck;
+      /* Clients' second view, the overdue invoices (2026-10-28). */
+      if (!o.client && window.ADspaceInvoices && window.ADspaceInvoices.on()) o.view = 'overdue';
       return o;
     },
     byKey: clientByKey,
@@ -6732,8 +6738,13 @@
         return;
       }
       if (state.client) { openClient(state.client, true); return; }
+      if (params.get('view') === 'overdue' && window.ADspaceInvoices && window.ADspaceInvoices.may()) {
+        $('crmWork').hidden = true;
+        if (window.ADspaceInvoices.show(true)) return;
+      }
       showList();
     },
+    showList: function () { showList(); },
     // What the other sections may offer work to. They ask here rather than
     // keeping a list of their own.
     active: function (then) {
@@ -6751,6 +6762,7 @@
 
   function showList() {
     $('crmWork').hidden = true;
+    if (window.ADspaceInvoices) window.ADspaceInvoices.hide();
     $('crmListView').hidden = false;
     setUrl();
     loadClients(function () { loadDue(); restoreScroll(); });
