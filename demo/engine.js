@@ -9068,7 +9068,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             attention: wq.contact && wq.contact.name, status: woffer ? 'offer' : wsh.status, stage: wstage,
             details_key: wstage === 'billing' ? wform.access_key : null, portal: wportal,
             proceed_at: wq.proceed_at || null, proceed_due: wq.proceed_due || null,
-            rep: wrep ? { name: wrep.name, title: wrep.designation || null, whatsapp: wrep.card_mobile !== false && wrep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(wrep.mobile) : null } : null,
+            rep: wrep ? { name: wrep.name, title: wrep.designation || null, whatsapp: wrep.card_on !== false && wrep.card_mobile !== false && wrep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(wrep.mobile) : null } : null,
             today: qtToday })));
         }
         if (wq.proceed_at) return qtOk({ ok: true, again: true, at: wq.proceed_at, due: wq.proceed_due });
@@ -10921,11 +10921,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       var oo = DB.campaign_options.filter(function (x) { return x.id === args.p_option; })[0];
       if (!oo) return Promise.resolve({ data: { error: 'not-found' }, error: null });
-      if (['reviewing', 'changes'].indexOf(oo.state) < 0) {
-        return Promise.resolve({ data: { error: 'not-reviewing' }, error: null });
-      }
 
-      if (oo.state === 'changes' && (oo.changes_by || 'client') === 'team') {
+      if (oo.state !== 'reviewing') {
         return Promise.resolve({ data: { error: 'not-reviewing' }, error: null });
       }
       var n = oo.revision_round || 0;

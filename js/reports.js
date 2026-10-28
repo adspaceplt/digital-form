@@ -426,7 +426,7 @@
       var brand = who.brand;
       var draw = function (list, override, wl) {
         months = list;
-        var today = ymd(new Date()), pick = '', keep = sel.value;
+        var today = ADspaceClock.today(), pick = '', keep = sel.value;
         /* A month that already holds this client's report of the kind (for
            the same brand) reads where it stands and is not offered again
            (the user, 2026-10-11: a published report was taken for gone and
