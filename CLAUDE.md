@@ -266,6 +266,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -566,7 +567,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   client's and a supplier's link alike, Analytics), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
-  Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
+  Money (Tax and terms, Tax codes, Bukku, Overdue reminder), AI (AI usage and limits, AI prices), WhatsApp
   (Templates at WhatsApp Full Access, Sent again: WhatsApp and supplier
   emails), Documents (Document types, Supplier emails at
   Suppliers Full Access); a group with
@@ -2685,6 +2686,46 @@ Each line is a rule that broke once. Its reason is in the archive.
   `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
   `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
+- Overdue invoices (`js/invoices.js`, `2026-10-28-overdue-invoice-reminders.sql`;
+  the user, 2026-10-28: "pull those overdues data from bukku and inside
+  Portal and selectively send by users", Bukku's own reminder "fully bukku
+  labeled"): Clients' second view (`#crmViews`, Clients / Overdue invoices,
+  `view=overdue`), at Clients: Billing View. `bukku-sync` `invoices` reads
+  Bukku's Outstanding and Overdue lists (every page, each invoice once)
+  when the view opens and on Read again, never stored and never polled,
+  held by `invoice_scope()` (as the colleague) to the Bukku contacts linked
+  to a client they see, one linked to no client only for a colleague who
+  sees every client. An invoice is overdue where its balance stands and
+  its due date (its one term, else the invoice's date) is before today
+  (MYT); with instalments, the part past its date (`overdueOf`, a term's
+  balances read in full where the list holds none). A card for each age
+  (Over 90, 61 to 90, 31 to 60, 1 to 30 days), totals per currency, never
+  added across; each row its last reminder's status (`invoice_reminders`),
+  a bounce with Open contacts, Open in Bukku (Bukku's own host alone). At
+  Clients: Billing Work the rows are ticks: Send reminders opens Review and
+  send (`#invSheet`): one email a client, the clients at the left, the
+  email at the right as it arrives, Edit changing that client's subject
+  and message alone, Sent before as a table (When, Channel, Sent by,
+  Status). Send asks first (Send again where a client was reminded within
+  `wa_repeat_hours`), then `bukku-sync` `remind` reads each invoice from
+  Bukku again (one paid since is left out and named), files it first by
+  the service role (`invoice_email_begin`: the contact's lock, `sending`,
+  `recent` unless asked again, the billing contact greeted with their
+  salutation else the main contact, sincerely to a name and faithfully to
+  a company, the finance email copied where ticked), builds the table where
+  `{invoices}` stands (a View PDF a row for several, one button for one,
+  from Bukku's share link), sends through Resend from `ADspace Finance
+  <noreply-finance@sc.adspace.me>` (`MAIL_FINANCE_FROM`), replies to
+  einvoice@adspacestudios.com (`MAIL_FINANCE_REPLY_TO`), and closes it
+  (`invoice_email_done`, filed `client.edited` on the client). A page never
+  files or names a figure: begin and done are the service role's alone.
+  The words are Settings, Money: Overdue reminder (`invoice_email_template`,
+  `team.settings`; two subjects, the message holding `{invoices}`, the
+  legal note and the disclaimer, in the lighter grey). Resend's word
+  reaches it through `supplier_email_status`. `invoice_emails` and the
+  template have RLS on, no policy, no grant. No Bukku branding; WhatsApp
+  reminders are not built (the user, 2026-10-28: "dont build the whatsapp
+  first").
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
@@ -6693,7 +6734,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   The connector turns a `\u` escape into its character, so a function file
   writes such characters as themselves, keeping the read-back byte for byte.
   A function that imports `../_shared/` is sent with that file in the same
-  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; every function a
+  call (`wa-send`, `supplier-mail`: `_shared/pdfref.ts`; `supplier-mail`,
+  `bukku-sync`: `_shared/mail.ts`, the one email layout and Resend send; every function a
   browser calls: `_shared/cors.ts`, the one list of origins and the one
   answer's headers, `tests/mailfn.js`), and both read back.
 - The report lists what the user does by hand: a dashboard setting.

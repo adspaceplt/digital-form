@@ -6927,3 +6927,31 @@ sentence.
   and uxaudit walked Plan E alone, which holds one content option. quotesite
   now measures every category's hairline and its 24px step, and uxaudit
   walks Plan B (`quote plan options`).
+
+### 2026-10-28 · Overdue invoices: read from Bukku, reminded by email from the portal
+- The user chased overdue invoices through a Claude page (Treasury), a
+  Jotform letter and the Resend connector, "too complex"; Bukku's own
+  reminder is "fully bukku labeled ... unprofessional". Asked: "pull those
+  overdues data from bukku and inside Portal and selectively send by
+  users", the new template, replies to einvoice@, overdue first, sent
+  before as a log, the legal note lighter, the disclaimer kept, one View
+  PDF a row for two invoices and one button for one, the invoices pulled
+  from Bukku ("I wont upload anywhere for a double job").
+- Mockups v1 to v7 approved, then a review's nine points applied before
+  building: the list held to the colleague's clients by the server, totals
+  per currency, the table and links built by the server from Bukku's own
+  figures, instalments read as the part past its date, a lock so two
+  presses send once, one log, no {days overdue} (it ages in an inbox), a
+  bounce offering Open contacts.
+- Point 6 (one log with supplier emails) is half kept: a reminder has its
+  own table (`invoice_emails`), since widening `supplier_emails`' check
+  needs a `drop constraint` the connector holds; Resend's webhook reaches
+  both through the one `supplier_email_status`, and the layout and the send
+  are one file (`_shared/mail.ts`) for both functions.
+- Bukku is read when the view opens and on Read again, never polled and
+  never stored: the figures are always Bukku's as of that read, and the
+  send reads each invoice again.
+- The fine print moved to #a19d97 (the user: "go lighter grey"), below the
+  4.5:1 a reading line asks; it is an email's small print, as the user
+  chose. mailfn's expectation moved with it.
+- WhatsApp reminders are held (the user: "dont build the whatsapp first").

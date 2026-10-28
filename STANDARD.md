@@ -611,6 +611,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - None.
 
 ### Not built, or waiting on the user
+- Overdue reminders on WhatsApp (a template of our own, sent by hand beside
+  the email): mocked up and approved, held (the user, 2026-10-28: "dont
+  build the whatsapp first"). The email reminders are built.
 - A supplier's approval email sent by itself on Approve: held until the
   portal's flows are settled (the user, 2026-10-27, SUP-11); Approve asks
   and the sheet sends at its Send.

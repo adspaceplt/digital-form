@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261028a">
-<link rel="stylesheet" href="/css/console.css?v=20261027l">
+<link rel="stylesheet" href="/css/console.css?v=20261028b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -554,6 +554,14 @@
 
     <div class="console-body" id="sectionClients" hidden>
 
+      <!-- Clients' two views (2026-10-28): the list, and the overdue
+           invoices read from Bukku (js/invoices.js), drawn for Clients:
+           Billing at View. -->
+      <div class="actstrip perf-views" id="crmViewsBox" hidden><span class="cmdbar-views actviews" id="crmViews" role="group" aria-label="View">
+        <button class="acttab btn-sm is-on" data-cv="list" type="button" aria-pressed="true">Clients</button>
+        <button class="acttab btn-sm" data-cv="overdue" type="button" aria-pressed="false">Overdue invoices</button>
+      </span></div>
+
       <section id="crmListView">
         <!-- The bar above already names the section, so the row carries the
              controls rather than repeating the word. Search, filters and the
@@ -689,6 +697,52 @@
         <div class="msg" id="crmBulkMsg"></div>
         <div id="crmList"></div>
       </section>
+
+      <!-- Overdue invoices (2026-10-28): Bukku's unpaid invoices past their
+           date, a card for each age, ticked and reminded by email. -->
+      <section id="invView" hidden>
+        <div class="cmdbar" id="invBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="invFind" type="search" placeholder="Client or invoice" aria-label="Search overdue invoices" autocomplete="off">
+          </span>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="invCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm" id="invRead" type="button">Read again</button>
+            </span>
+          </span>
+        </div>
+        <div class="tallies" id="invTallies" hidden></div>
+        <div class="bulkbar" id="invBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="invBulkAll"> <span id="invBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm btn-primary" id="invBulkSend" type="button" data-need="clients.billing:work">Send reminders</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="invBulkDone" type="button">Done</button>
+        </div>
+        <div id="invList"></div>
+      </section>
+
+      <!-- Review and send: one email a client, each shown as it will arrive. -->
+      <div class="sheet" id="invSheet" hidden>
+        <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="invSheetTitle">
+          <div class="sheet-head">
+            <h3 id="invSheetTitle">Send reminders</h3>
+            <button class="iconbtn" id="invSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body inv-rv" data-narrow="640">
+            <div class="inv-rv-list" id="invRvList" role="group" aria-label="Clients"></div>
+            <div class="inv-rv-pane" id="invRvPane"></div>
+          </div>
+          <div class="msg" id="invMsg" role="status"></div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="invGo" type="button">Send</button>
+            <button class="btn btn-quiet" id="invCancel" type="button">Cancel</button>
+            <span class="lpicksum" id="invRvCount"></span>
+          </div>
+        </div>
+      </div>
 
       <!-- ---- One client ----
            Top to bottom: who they are, how we invoice them, what we know about
@@ -5744,11 +5798,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/register.js?v=20261027b"></script>
 <script src="/js/suppliers.js?v=20261027k"></script>
 <script src="/js/bukku.js?v=20261026f"></script>
+<script src="/js/invoices.js?v=20261028b"></script>
 <script src="/js/engage.js?v=20261026f"></script>
 <script src="/js/quotes.js?v=20261027a"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261027k"></script>
+<script src="/js/crm.js?v=20261028b"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5763,6 +5818,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261027d"></script>
 <script src="/js/overview.js?v=20261026f"></script>
 <script src="/js/analytics.js?v=20261027d"></script>
-<script src="/js/settings.js?v=20261027h"></script>
+<script src="/js/settings.js?v=20261028b"></script>
 </body>
 </html>
