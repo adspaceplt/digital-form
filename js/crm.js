@@ -1330,6 +1330,8 @@
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (group === 'calls' && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
+    /* The client's unpaid invoices from Bukku (2026-10-28), read once a visit. */
+    if (parts.indexOf('billing') > -1 && window.ADspaceInvoices && state.client) window.ADspaceInvoices.client($('odClient'), state.client, visit);
     /* The checklists are read on every visit and on a record opened on
        them (2026-10-15). */
     /* An address naming the other checklist opens it, even on a record

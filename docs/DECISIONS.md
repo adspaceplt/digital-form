@@ -6971,3 +6971,25 @@ sentence.
   in place of a 15px one of its own. The reminder's words are the user's
   approved template and were not changed; the points raised on them were
   put to the user.
+
+### 2026-10-28 · Overdue invoices: a client's own Billing, and the Dashboard
+- Release 2 of the overdue reminders (the user approved the mockups'
+  release plan): a client's Billing reads Unpaid invoices from Bukku (its
+  linked contacts alone, overdue and not yet due, the instalment named, the
+  reminders sent under it), with Send reminder opening the same Review and
+  send; the Dashboard's Needs attention takes Overdue invoices as a source,
+  a row a client, opening its Billing.
+- The row first carried the client's totals; the Dashboard holds one money
+  figure (Committed monthly value), which `overview` asserts, so the row
+  counts invoices and names no amount.
+- `bukku-sync` `invoices` takes `client`: refused nothing new (the same
+  scope read), Bukku never asked when the client links no contact, and a
+  not-yet-due invoice read by `dueOf` (its earliest unpaid term, else its
+  date).
+
+### 2026-10-29 · The Dashboard suite's seed counted days on UTC
+- `overview` failed after midnight in Malaysia on unchanged code: its seed
+  wrote a booking's date as the UTC day (`toISOString().slice(0, 10)`), a
+  day behind Malaysia's until 8am, so the page read it 5 days late where
+  the suite asked 4. The seed now takes Malaysia's day; the rule on a
+  suite's dates names it.

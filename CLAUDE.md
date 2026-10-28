@@ -109,7 +109,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     fixture too.
   - A suite types a date from today (`todayKey()`, a day ahead), never a
     fixed day of the month: a fixed day is a passed date on any later day
-    (2026-10-28: `work` typed the 27th on the 28th).
+    (2026-10-28: `work` typed the 27th on the 28th). A seed's day is
+    Malaysia's, never `toISOString().slice(0, 10)` (the UTC day, yesterday
+    before 8am here; 2026-10-29: `overview` read a booking 5 days late,
+    not 4, after midnight).
   - A `cut()` of `schema.sql` always ends at the next banner.
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
@@ -266,7 +269,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
-| `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, then `ui` |
+| `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -2723,7 +2726,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.settings`; two subjects, the message holding `{invoices}`, the
   legal note and the disclaimer, in the lighter grey). Resend's word
   reaches it through `supplier_email_status`. `invoice_emails` and the
-  template have RLS on, no policy, no grant. No Bukku branding; WhatsApp
+  template have RLS on, no policy, no grant. A client's Billing (the
+  user, 2026-10-28) holds Unpaid invoices (`#odClient`,
+  `ADspaceInvoices.client`): `invoices` with `client`, the contacts linked
+  to that client alone and its invoices not yet due as well (Not due),
+  Send reminder while one is overdue at Billing Work (the same Review and
+  send), and its Reminders sent; read on each visit to the pane, drawn
+  only for a client linked to a Bukku contact (Bukku's group above says
+  when it is not). No Bukku branding; WhatsApp
   reminders are not built (the user, 2026-10-28: "dont build the whatsapp
   first").
 
@@ -3404,7 +3414,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
-    letters, last month's reviews), its head a strip of the sources
+    letters, last month's reviews, overdue invoices at Clients: Billing
+    Full Access, a row a client opening its Billing, counted and never an
+    amount), its head a strip of the sources
     holding rows (`#ovwSrcs`, the view strip at the card's width: All, then
     each source's short word and count, red where it holds late work; a
     tab narrows the list to it; one source draws no strip and the head

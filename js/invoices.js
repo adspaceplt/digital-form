@@ -12,6 +12,11 @@
  *   ADspaceInvoices.on()           — whether it is on screen
  *   ADspaceInvoices.show(quiet)    — draws it (Clients' view strip)
  *   ADspaceInvoices.hide()         — gives the list back
+ *   ADspaceInvoices.client(host, client, again) — a client's Unpaid
+ *                                    invoices on its Billing: those past
+ *                                    their date and those not yet due, with
+ *                                    the reminders sent; Send reminder opens
+ *                                    the same Review and send
  *   ADspaceInvoices.openTemplate(btn, say) — Settings' Overdue reminder
  *   ADspaceInvoices.templateLine() — Settings' value line
  */
@@ -96,7 +101,7 @@
     }
     return null;
   }
-  function sentTo(contact) { return st.rem.filter(function (e) { return Number(e.contact) === Number(contact); }); }
+  function sentTo(contact) { return (rv.rem || []).filter(function (e) { return Number(e.contact) === Number(contact); }); }
 
   /* ---- The view --------------------------------------------------------- */
   function mayView() { return may('clients.billing', 'view') && Boolean(window.ADspaceAPI && API.client); }
@@ -130,7 +135,9 @@
       paint();
     });
     $('odBulkDone').addEventListener('click', function () { st.pick = {}; paint(); });
-    $('odBulkSend').addEventListener('click', function () { review(this); });
+    $('odBulkSend').addEventListener('click', function () {
+      review(this, (st.rows || []).filter(function (l) { return st.pick[l.id]; }), function () { st.pick = {}; load(true); }, st.rem);
+    });
     $('odSheetClose').addEventListener('click', function () { $('odCancel').click(); });
     $('odCancel').addEventListener('click', shutReview);
     $('odGo').addEventListener('click', sendAll);
@@ -277,10 +284,13 @@
   }
 
   /* ---- Review and send -------------------------------------------------- */
-  var rv = { groups: [], on: 0, tpl: null, edits: {}, opener: null, done: {} };
-  function review(btn) {
-    var picked = (st.rows || []).filter(function (l) { return st.pick[l.id]; });
-    if (!picked.length) return;
+  var rv = { groups: [], on: 0, tpl: null, edits: {}, opener: null, done: {}, after: null, rem: [] };
+  /* The sheet the Overdue invoices bar and a client's Billing both open:
+     `after` reads again what a send changed. */
+  function review(btn, picked, after, rem) {
+    if (!picked || !picked.length) return;
+    rv.after = after || null;
+    rv.rem = rem || [];
     var by = {};
     rv.groups = [];
     picked.forEach(function (l) {
@@ -303,12 +313,11 @@
     if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('odSheet'))) window.ADspaceSheet.close();
     else { $('odSheet').hidden = true; afterReview(); }
   }
-  /* What was sent is read back from Bukku and the record, the ticks let go. */
+  /* What was sent is read back from Bukku and the record. */
   function afterReview() {
     if (!Object.keys(rv.done).length) return;
     rv.done = {};
-    st.pick = {};
-    load(true);
+    if (rv.after) rv.after();
   }
   /* The words a client's email will carry, filled as the server fills
      them: {contact name}, {client}, {invoice no}, {count}, {total} and
@@ -455,6 +464,85 @@
     next();
   }
 
+  /* ---- A client's Billing: its unpaid invoices ----------------------- */
+  /* Read from Bukku when Billing is shown and once a visit, never stored:
+     the client's Bukku contacts alone, overdue first then by due date, each
+     with its last reminder; then every reminder sent, as a table. A client
+     linked to no Bukku contact draws nothing. */
+  var cg = { host: null, client: null, d: null, busy: false };
+  function clientGroup(host, client, again) {
+    if (!host || !client) return;
+    if (!mayView()) { host.hidden = true; return; }
+    if (cg.client === client.id && cg.host === host && !again && (cg.d || cg.busy)) return;
+    cg.host = host; cg.client = client.id; cg.d = null; cg.busy = true;
+    host.hidden = false;
+    host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4></div>';
+    var body = document.createElement('div');
+    host.appendChild(body);
+    UI.skeleton(body, 2);
+    call({ action: 'invoices', client: client.id }).then(function (d) {
+      if (cg.client !== client.id) return;
+      cg.busy = false;
+      if (d.error) {
+        UI.failLine(body, 'The unpaid invoices', said(d), function () { clientGroup(host, client, true); });
+        return;
+      }
+      if (d.linked === false) { host.hidden = true; host.innerHTML = ''; return; }
+      cg.d = d;
+      paintClient(host, client, d);
+    });
+  }
+  function paintClient(host, client, d) {
+    var rows = d.rows || [], rem = d.reminders || [];
+    var late = rows.filter(function (l) { return l.days > 0; });
+    var lastFor = function (id) {
+      for (var i = 0; i < rem.length; i++) if ((rem[i].invoices || []).some(function (x) { return Number(x.id) === Number(id); })) return rem[i];
+      return null;
+    };
+    host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4>' +
+      (d.send && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
+      (rows.length ? '<div class="od-mini">' + rows.map(function (l) {
+        var e = lastFor(l.id), s = e ? statusOf(e) : null;
+        return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · Instalment ' + l.part.n + ' of ' + l.part.of : '') + '</b>' +
+          '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
+          '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
+          '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span></div>';
+      }).join('') + '</div>' : '<p class="muted od-none">No unpaid invoices.</p>') +
+      (rem.length ? '<h4 class="fsec-h od-sent-h">Reminders sent</h4><div class="inv-log-t od-log">' +
+        '<div class="r hd"><span>When</span><span>Invoices</span><span>Sent by</span><span>Status</span></div>' +
+        rem.slice(0, 10).map(function (e) {
+          var s = statusOf(e);
+          return '<div class="r"><span class="w">' + esc(when(e.at)) + '</span><span class="c">' + esc((e.invoices || []).map(function (x) { return x.number; }).join(', ')) + '</span>' +
+            '<span class="b">' + esc(e.by || 'Not known') + '</span><span><span class="chip-state chip ' + s[1] + '">' + esc(s[0]) + '</span></span></div>';
+        }).join('') + '</div>' : '');
+    var b = host.querySelector('[data-a="remind"]');
+    if (b) b.addEventListener('click', function () {
+      review(b, late.slice(), function () { clientGroup(host, client, true); }, rem);
+    });
+  }
+
+  /* ---- The Dashboard's Needs attention ------------------------------- */
+  /* Every client owing past its date, once: the worst invoice's days and
+     the count, never an amount (the Dashboard's one money figure is
+     Committed monthly value). Bukku not connected owes nothing. */
+  function overdue() {
+    return call({ action: 'invoices' }).then(function (d) {
+      if (d.error === 'bukku-not-set-up') return [];
+      if (d.error) throw new Error(said(d));
+      var by = {}, out = [];
+      (d.rows || []).forEach(function (l) {
+        var g = by[l.contact];
+        if (!g) { g = by[l.contact] = { client: l.client || null, slug: l.client_slug || null, name: nameOf(l), lines: [], days: 0 }; out.push(g); }
+        g.lines.push(l);
+        if (l.days > g.days) g.days = l.days;
+      });
+      return out.map(function (g) {
+        return { client: g.client, slug: g.slug, name: g.name, days: g.days,
+          meta: plural(g.lines.length, 'overdue invoice', 'overdue invoices') };
+      });
+    });
+  }
+
   /* ---- Settings: Overdue reminder --------------------------------------- */
   function templateLine() {
     return rpc('invoice_email_template_get').then(function (t) {
@@ -492,6 +580,8 @@
     show: show,
     hide: hide,
     strip: strip,
+    client: clientGroup,
+    overdue: overdue,
     openTemplate: openTemplate,
     templateLine: templateLine
   };

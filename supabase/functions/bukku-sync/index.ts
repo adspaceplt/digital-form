@@ -20,13 +20,16 @@
  *   POST { action: 'link', kind, id, contact } links that contact as Bukku
  *                                             holds it, nothing sent
  *                                             (`bukku_link_only`).
- *   POST { action: 'invoices' }               the overdue invoices
+ *   POST { action: 'invoices', client? }      the overdue invoices
  *                                             (2026-10-28): Bukku's unpaid
  *                                             invoices held to the clients
  *                                             the colleague sees
  *                                             (`invoice_scope`), with the
  *                                             reminders sent; read at the
- *                                             press, never stored.
+ *                                             press, never stored. With a
+ *                                             client, that client's unpaid
+ *                                             invoices, those not yet due
+ *                                             too (its Billing).
  *   POST { action: 'remind', contact, invoices, cc, subject, body, again }
  *                                             one reminder to one Bukku
  *                                             contact: each invoice read
@@ -330,6 +333,17 @@ export function overdueOf(inv: any, today: string): any | null | undefined {
   if (!(amount > 0)) return null;
   return { amount, due: past[0].date, part: { n: terms.indexOf(past[past.length - 1]) + 1, of: terms.length } };
 }
+/* An unpaid invoice not yet past its date (a client's Billing lists these
+   too): its balance, due on its earliest unpaid instalment, else its date. */
+export function dueOf(inv: any): any | null {
+  const bal = cents(inv.balance);
+  if (!(bal > 0) || (inv.status && inv.status !== 'ready')) return null;
+  const terms = (Array.isArray(inv.term_items) ? inv.term_items : []).filter((t: any) => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date || '')))
+    .slice().sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+  const open = terms.filter((t: any) => t.balance == null || cents(t.balance) > 0);
+  const due = (open[0] && open[0].date) || (terms[0] && terms[0].date) || String(inv.date || '');
+  return /^\d{4}-\d{2}-\d{2}$/.test(due) ? { amount: bal, due, part: null } : null;
+}
 function lineOf(inv: any, od: any, today: string) {
   const days = Math.round((Date.parse(today + 'T00:00:00Z') - Date.parse(od.due + 'T00:00:00Z')) / 86400000);
   const link = String(inv.short_link || '');
@@ -405,14 +419,20 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const mayContact = (c: number) => links.has(c) || scope.all === true;
 
   if (action === 'invoices') {
+    /* One client's (its Billing, 2026-10-28): the Bukku contacts linked to
+       it alone, and its unpaid invoices not yet due as well. */
+    const forClient = /^[0-9a-f-]{36}$/i.test(String(body.client || '')) ? String(body.client) : null;
+    const want = forClient ? new Set(Array.from(links.values()).filter((l) => l.client === forClient).map((l) => Number(l.contact))) : null;
+    if (want && !want.size) return json({ ok: true, today, send: scope.send === true, all: scope.all === true, linked: false, rows: [], reminders: [] }, 200, origin);
     const all = await unpaid();
     const out: any[] = [];
     for (const inv of all) {
       const c = Number(inv.contact_id);
-      if (!mayContact(c)) continue;
+      if (want ? !want.has(c) : !mayContact(c)) continue;
       let od = overdueOf(inv, today);
       let src = inv;
       if (od === undefined) { src = await oneInvoice(Number(inv.id)); od = src ? overdueOf({ ...inv, ...src }, today) : null; }
+      if (!od && want && src) od = dueOf({ ...inv, ...src });
       if (!od) continue;
       const l = lineOf({ ...inv, ...src, contact_email: inv.contact_email, short_link: inv.short_link || src.short_link }, od, today);
       const link = links.get(c);

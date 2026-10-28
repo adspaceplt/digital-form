@@ -484,6 +484,23 @@
         });
       });
     } },
+    /* Overdue invoices (2026-10-28): read from Bukku once a visit, a row a
+       client opening its Billing (a contact linked to no client, Clients'
+       Overdue invoices), never an amount. Bukku not connected lists
+       nothing. */
+    { key: 'invoices', word: 'Invoices', title: 'Overdue invoices',
+      can: function () { return may('clients.billing', 'manage') && !!window.ADspaceInvoices; }, load: function () {
+      var owners = canClients() ? R.clients().catch(function () { return []; }) : Promise.resolve([]);
+      return Promise.all([once('invoices', function () { return window.ADspaceInvoices.overdue(); }), owners]).then(function (a) {
+        var who = {};
+        a[1].forEach(function (c) { who[c.id] = c.owner || ''; });
+        return a[0].map(function (g) {
+          return { name: g.name, meta: g.meta, tag: 'Client', who: (g.client && who[g.client]) || '', client: g.client, late: true, days: g.days,
+                   since: daysWord(g.days) + ' late', section: 'clients',
+                   url: g.client ? clientUrl({ slug: g.slug, id: g.client }, 'billing') : '/admin/?s=clients&view=overdue' };
+        });
+      });
+    } },
     { key: 'reviews', word: 'Reviews', title: function () { return 'Reviews for ' + lastMonth().word; }, can: function () { return may('team.performance'); }, load: function () {
       var P = window.ADspacePerf, words = (P && P.status) || {};
       return R.reviews().then(function (list) {
