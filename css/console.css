@@ -2578,8 +2578,9 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .pg-grp { margin: 16px 0 4px; }
 .pg-grp:first-child { margin-top: 4px; }
 .pg-row { grid-template-columns: minmax(0, 1fr) 190px auto; }
-.pg-row .dtrow-name { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
-.pg-row .dtrow-name > b, .pg-row .dtrow-name > small { grid-column: 2; }
+.pg-row .dtrow-name { display: grid; grid-template-columns: minmax(0, 1fr); }
+.pg-row.is-picking .dtrow-name { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.pg-row.is-picking .dtrow-name > b, .pg-row.is-picking .dtrow-name > small { grid-column: 2; }
 .pg-row .dtrow-name > small { font-size: 12px; }
 .pg-row .pg-tick { grid-row: 1 / span 2; margin: 0; }
 .pg-state { display: grid; gap: 2px; }
