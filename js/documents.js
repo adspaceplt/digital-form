@@ -762,7 +762,7 @@
 
       // Our Ref / Date / To / Attn, the colons in one column. The contact is
       // addressed with their salutation where one is held (2026-10-14).
-      var who = ((b.contact_salutation ? b.contact_salutation + ' ' : '') + (b.contact || '')).trim();
+      var who = ADspaceWords.person(b.contact_salutation, b.contact);
       var refs = [
         ['Our Ref', doc.number], ['Date', letterDate(doc.issued_at)],
         ['To', legalName.toUpperCase()],

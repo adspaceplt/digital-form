@@ -2096,7 +2096,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     name where it opens on a salutation (never Tan, a surname too; Tan Sri,
     Puan Sri, Dato' Sri, Datin Sri and Datuk Sri kept whole), else the
     name's first word
-    (`2026-10-15-whatsapp-greeting-and-counts.sql`).
+    (`2026-10-15-whatsapp-greeting-and-counts.sql`). A name after its
+    salutation says one salutation: one the name opens on gives way to the
+    one set (`ADspaceWords.person` on every page, `contact_named` in SQL,
+    `2026-10-29-salutation-said-once.sql`; 2026-10-29: Mrs Ms Agnes Ang).
   - WhatsApp: a username field with `@` prefilled (letters, digits, `.` and `_`;
     a pasted `wa.me/@name` taken whole). `client_contacts.whatsapp` holds
     `@name` or the number: the field opens on the stored number where it is
@@ -2691,7 +2694,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   country; a line break a comma), and an address or a billing person Bukku
   already holds however set out (the same letters and digits; every word of
   ours in Bukku's name) is kept; the person goes with the contact's
-  salutation (`bukku_prepare` `salutation`), put before a name Bukku keeps;
+  salutation (`bukku_prepare` `salutation`), put before a name Bukku keeps,
+  in place of a salutation Bukku's name opens on, never both;
   a person or address added ticks default billing alone, never default
   shipping; a supplier's payment term is set as Bukku's own term of the same
   days where Bukku holds one (the user, 2026-10-19). Link only (`#bkLink`,
@@ -2741,7 +2745,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `recent` unless asked again, the billing contact greeted with their
   salutation else the main contact, sincerely to a name and faithfully to
   a company, the finance email copied where ticked), builds the table where
-  `{invoices}` stands (a View PDF a row for several, one button for one,
+  `{invoices}` stands (a View PDF a row for several, one small button for one,
   from Bukku's share link), sends through Resend from `ADspace Finance
   <noreply-finance@sc.adspace.me>` (`MAIL_FINANCE_FROM`), replies to
   einvoice@adspacestudios.com (`MAIL_FINANCE_REPLY_TO`), and closes it
