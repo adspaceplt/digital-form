@@ -7172,3 +7172,17 @@ sentence.
   read one rule, `ADspaceWords.person` and `contact_named`
   (`2026-10-29-salutation-said-once.sql`), so a name typed with its own
   salutation never doubles either.
+
+### 2026-10-29 · The reminder's View PDF button is a small button
+- What broke: the overdue reminder's one View PDF button was drawn at the
+  sign-in email's size (16px, 12px by 32px of padding), which the user
+  read as "damn huge" beside the 13px table it follows.
+- The fix: the email and the Review and send preview draw it as the
+  console's small button (13px, 7px by 14px, the 8px corner), blue.
+
+### 2026-10-29 · Two suites still opened Settings' old groups
+- What broke: Settings R1 moved Overdue reminder and Supplier emails into
+  Templates, but `overdue` and `suppliers` still opened them under Money
+  and Documents, and timed out on a hidden row. Neither ran in R1's gate.
+- The rule already standing was missed: a control moved is grepped by its
+  id across the suites first (`data-row="overdue"`, `data-row="suptpl"`).

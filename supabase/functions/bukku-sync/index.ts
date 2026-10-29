@@ -430,7 +430,7 @@ export function invoiceTable(lines: any[]): string {
     '<tr><td style="' + cell + 'font-weight:600;">Total due</td><td class="hide-sm" style="' + cell + '"></td><td class="hide-sm" style="' + cell + '"></td>' +
     '<td style="' + cell + 'font-weight:600;text-align:right;white-space:nowrap;">' + tot + '</td>' + (many ? '<td style="' + cell + '"></td>' : '') + '</tr></table>';
   const one = !many && lines[0] && lines[0].link
-    ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:' + FONT + ';font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">View PDF</a></td></tr></table>'
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;"><a href="' + esc(lines[0].link) + '" style="display:inline-block;padding:7px 14px;text-align:center;font-family:' + FONT + ';font-size:13px;line-height:16px;font-weight:500;color:#ffffff;text-decoration:none;">View PDF</a></td></tr></table>'
     : '';
   return table + one;
 }

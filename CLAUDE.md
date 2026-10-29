@@ -2745,7 +2745,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `recent` unless asked again, the billing contact greeted with their
   salutation else the main contact, sincerely to a name and faithfully to
   a company, the finance email copied where ticked), builds the table where
-  `{invoices}` stands (a View PDF a row for several, one button for one,
+  `{invoices}` stands (a View PDF a row for several, one small button for one,
   from Bukku's share link), sends through Resend from `ADspace Finance
   <noreply-finance@sc.adspace.me>` (`MAIL_FINANCE_FROM`), replies to
   einvoice@adspacestudios.com (`MAIL_FINANCE_REPLY_TO`), and closes it
