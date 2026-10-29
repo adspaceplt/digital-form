@@ -7427,3 +7427,28 @@ read and set every page for a tab served before.
   an entity just saved or added opens so the change stays in sight (the
   suite caught an edit invisible in a shut row). `tests/entities.js`.
 
+
+### 2026-10-29 · Primary, never main; the new pages' words read as a letter
+- **Reported:** "Client section > button Make main for main entity why not
+  use Make primary. Who says make main so weird. Could you also check other
+  new portals and update the tone".
+- **Why:** the billing entities (#830 to #838) took the stored key's word,
+  `is_main`, onto the screen (Make main, Main billing entity, · Main), and
+  the contacts already read Main contact. A review of every word the day's
+  releases added found more lines written as notes to ourselves: "The main
+  entity is not removed. Make another main first.", "Items quoted on
+  request alone make no quotation.", "The page is covered; nothing it holds
+  changes.", "Put back.", and on /quote/ "ADspace reviews your request and
+  sends your quotation", "chat with ADspace", "Enter your brand.", "Tick
+  the consent to continue.", "This page shows your quotation once it is
+  sent.".
+- **Changed:** Primary everywhere a person reads it (Primary contact,
+  Primary billing entity, Make primary, Make primary contact, · Primary on
+  the Bill to and letter pickers, Primary contact set in the Activity
+  record, the client portal's contact chip, WhatsApp's recipient list); the
+  database files Primary billing entity changed
+  (`2026-10-29-primary-billing-entity.sql`); the lines above rewritten as
+  a corporate letter writes them; Undo answers Undone. Stored keys
+  (`is_primary`, `is_main`, `data-ea="main"`) unchanged. The rule is in
+  DESIGN.md §6. `entities`, `entitysql`, `crm`, `portal`, `whatsapp`,
+  `menus` and `quotesite` read the new words.

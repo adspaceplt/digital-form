@@ -713,7 +713,7 @@
     if (L.length < 2) { wrap.hidden = true; return; }
     var was = $('docBillTo').value;
     $('docBillTo').innerHTML = L.map(function (x) {
-      return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') + (x.main ? ' · Main' : '')) + '</option>';
+      return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') + (x.main ? ' · Primary' : '')) + '</option>';
     }).join('');
     if (was && L.some(function (x) { return x.id === was; })) $('docBillTo').value = was;
     wrap.hidden = false;

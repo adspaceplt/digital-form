@@ -597,7 +597,7 @@
         number: k.number, username: k.username, primary: k.is_primary,
         /* On a phone the label keeps what tells two apart, Main contact
            left to the number shown under it (2026-10-20, WA-3). */
-        label: k.name + ' · ' + k.client + (k.is_primary && !narrow ? ' · Main contact' : '') });
+        label: k.name + ' · ' + k.client + (k.is_primary && !narrow ? ' · Primary contact' : '') });
     });
     (d.creators || []).forEach(function (k) {
       if (forClient(o)) return;

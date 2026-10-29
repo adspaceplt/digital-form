@@ -766,7 +766,7 @@
           out.ok.forEach(function (x) { back[x.c.id] = x.was; });
           setOwners(out.ok.map(function (x) { return x.c; }), function (c) { return back[c.id]; }, function (res) {
             paintList();
-            msg('crmBulkMsg', res.bad.length ? res.bad.length + ' not put back.' : 'Put back.', res.bad.length ? 'warn' : 'ok');
+            msg('crmBulkMsg', res.bad.length ? res.bad.length + ' could not be undone.' : 'Undone.', res.bad.length ? 'warn' : 'ok');
           });
         }, $('crmBulk'));
       });
@@ -1613,7 +1613,7 @@
       return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
-    var rows = [['Main contact', '<b>' + esc(ADspaceWords.person(m.salutation, m.name)) + '</b>' +
+    var rows = [['Primary contact', '<b>' + esc(ADspaceWords.person(m.salutation, m.name)) + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     var mUser = waHandle(m.whatsapp);
     if (m.phone) {
@@ -2554,7 +2554,7 @@
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
     paintBillRead(c);
     var main = mainContact(), pick = billContact(c);
-    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc(ADspaceWords.person(main.salutation, main.name)) : 'None') + '</option>' +
+    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Primary contact · ' + esc(ADspaceWords.person(main.salutation, main.name)) : 'None') + '</option>' +
       (state.contacts || []).filter(function (ct) { return !ct.archived_at && !(main && ct.id === main.id); }).map(function (ct) {
         return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id && !(main && pick.id === main.id) ? ' selected' : '') + '>' +
           esc(ADspaceWords.person(ct.salutation, ct.name)) + '</option>';
@@ -2595,7 +2595,7 @@
     if (mainEnt && mainEnt.brands.length) company.push(['Also bills', entBrands(mainEnt)]);
     box.innerHTML =
       readGroup('Company', company).replace('<h4 class="fsec-h">Company</h4>',
-        '<h4 class="fsec-h">' + (several ? 'Main billing entity' : 'Company') + '</h4>') +
+        '<h4 class="fsec-h">' + (several ? 'Primary billing entity' : 'Company') + '</h4>') +
       readGroup('Registration and tax', [
         ['Business registration no.', t('company_no'), true],
         ['Old registration no.', t('company_no_old')],
@@ -2604,7 +2604,7 @@
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
-        ['Billing contact', pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
+        ['Billing contact', pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Primary contact</span>' : '') : '', true],
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]) +
@@ -2650,8 +2650,8 @@
     var k = e.bill_contact;
     if (!k) {
       var main = mainContact();
-      return e.brands.length || e.hidden ? 'Main contact of each client'
-        : main ? esc(ADspaceWords.person(main.salutation, main.name)) + ' <span class="muted">· Main contact</span>' : '';
+      return e.brands.length || e.hidden ? 'Primary contact of each client'
+        : main ? esc(ADspaceWords.person(main.salutation, main.name)) + ' <span class="muted">· Primary contact</span>' : '';
     }
     return esc(ADspaceWords.person(k.salutation, k.name)) + (k.client_id !== state.client.id && k.client ? ' <span class="muted">· ' + esc(k.client) + '</span>' : '');
   }
@@ -2690,7 +2690,7 @@
         var menu = work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-ent-menu aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden>' +
           '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="edit">Edit</button>' +
-          '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="main">Make main</button>' +
+          '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="main">Make primary</button>' +
           '<button class="kmenu-item" type="button" role="menuitem" data-g="6" data-ea="remove">Remove</button></div></span>' : '';
         var facts = readGroup('', rows).replace(/<h4 class="fsec-h"><\/h4>/, '');
         return '<section class="ent ent-fold' + (shut ? '' : ' is-open') + '" data-ent="' + esc(e.id) + '">' +
@@ -2703,11 +2703,11 @@
   }
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
-    'denied': 'Not allowed.', 'not-found': 'This entity no longer bills this client. Read again.',
+    'denied': 'Not allowed.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
     'taken': 'This entity already bills this client.', 'no-name': 'Enter the company name as registered.',
     'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This changed since it was opened, and has been read again.',
-    'main': 'The main entity is not removed. Make another main first.'
+    'main': 'The primary billing entity cannot be removed. Make another entity primary first.'
   };
   function entSaid(r) {
     if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
@@ -2763,7 +2763,7 @@
         if (r.error || (r.data && r.data.error)) { msg('crmBillNote', entSaid(r), 'err'); return; }
         var was = r.data.was;
         entReload(function () {
-          if (was) entUndo('Main billing entity changed.', function () {
+          if (was) entUndo('Primary billing entity changed.', function () {
             db.rpc('client_entity_main', { p_client: cid, p_entity: was }).then(function (u) {
               if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
               entReload();
@@ -2827,7 +2827,7 @@
       var d = r.data || {};
       if (d.error === 'brn-taken' && d.entity) {
         window.ADspaceConfirm.ask({
-          title: 'Registration no. already held', go: 'Add that entity', wait: true,
+          title: 'Registration no. already on record', go: 'Add that entity', wait: true,
           body: d.entity.legal_name + ' holds this business registration no. Add it to ' + state.client.name + ' instead?'
         }, function () {
           return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
@@ -4107,7 +4107,7 @@
          the live thing is the sign-in: main contact is a designation, so it
          reads neutral and the accent is spent once. */
       '<span class="svc-name"><span class="ct-top"><b>' + esc(ADspaceWords.person(ct.salutation, ct.name)) + '</b>' +
-        (removed ? '<span class="tone is-off">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
+        (removed ? '<span class="tone is-off">Removed</span>' : ct.is_primary ? '<span class="tone">Primary contact</span>' : '') +
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
@@ -4125,7 +4125,7 @@
                 [{ a: 'del', label: 'Delete', need: 'clients.contacts:manage' }]])
             : ADspaceMenu.items([[],
                 [{ a: 'edit', label: 'Edit', need: 'clients.contacts:work' },
-                 !ct.is_primary && { a: 'primary', label: 'Make main contact' }],
+                 !ct.is_primary && { a: 'primary', label: 'Make primary contact' }],
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' }],
                 [],
                 [ct.portal_access ? { a: 'unportal', label: 'Revoke portal access' } : { a: 'portal', label: 'Enable portal access' }],
@@ -4324,7 +4324,7 @@
       var done = function (swapped) {
         log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
           editingContact ? changed(editingContact, Object.assign({}, row, { is_primary: swapped ? true : Boolean(editingContact.is_primary) }), [['salutation', 'Salutation'], ['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
-            ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
+            ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Primary contact']]) : (row.role || ''));
         var fromForm = !editingContact && state.dfContact;
         shutContact();
         if (!swapped && swap) msg('crmWorkMsg', 'Saved. The main contact was not changed: the database refused the request.', 'err');
@@ -5940,7 +5940,7 @@
       if (L.length < 2) { box.hidden = true; return; }
       $('pickBillTo').innerHTML = L.map(function (x) {
         return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') +
-          (x.main ? ' · Main' : x.missing && x.missing.length ? ' · Incomplete' : '')) + '</option>';
+          (x.main ? ' · Primary' : x.missing && x.missing.length ? ' · Incomplete' : '')) + '</option>';
       }).join('');
       if (keep && L.some(function (x) { return x.id === keep; })) $('pickBillTo').value = keep;
       box.hidden = false;
