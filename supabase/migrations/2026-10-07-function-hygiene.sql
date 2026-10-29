@@ -44,7 +44,7 @@ declare
     'announcement_now', 'app_settings_read', 'confirm_selection_with', 'creator_add_file',
     'creator_may_upload', 'creator_post_save', 'creator_rate', 'creator_remove_file',
     'creator_set_profiles', 'creator_submit', 'get_campaign', 'get_creator',
-    'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state',
+    'get_review_feed', 'link_moved', 'link_resolve', 'maintenance_state', 'page_states',
     'get_scripts', 'namecard_get', 'page_pulse', 'post_link_ok', 'post_platform_key',
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'public_holidays_between',

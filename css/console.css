@@ -2572,6 +2572,24 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .hol-year { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .hol-year .field-label { margin: 0; }
 .hol-acts { display: flex; align-items: center; gap: 4px; }
+/* Page availability (2026-10-29): a page a row, its state over when, Edit
+   at the right; a group heading over each group; a tick before the name
+   while several are chosen. */
+.pg-grp { margin: 16px 0 4px; }
+.pg-grp:first-child { margin-top: 4px; }
+.pg-row { grid-template-columns: minmax(0, 1fr) 190px auto; }
+.pg-row .dtrow-name { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.pg-row .dtrow-name > b, .pg-row .dtrow-name > small { grid-column: 2; }
+.pg-row .dtrow-name > small { font-size: 12px; }
+.pg-row .pg-tick { grid-row: 1 / span 2; margin: 0; }
+.pg-state { display: grid; gap: 2px; }
+.pg-state small { font-size: 12px; color: var(--ink-mute); }
+.sheet-card.is-tight .pg-row, .is-tight .pg-row { grid-template-columns: minmax(0, 1fr) auto; }
+.is-tight .pg-row .pg-state { grid-column: 1; grid-row: 2; }
+@media (max-width: 640px) {
+  .pg-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .pg-row .pg-state { grid-column: 1; grid-row: 2; }
+}
 /* Overseas access (2026-10-24): the cover's request form, left aligned in
    the cover's column. */
 .abroad-past { margin-top: 8px; }

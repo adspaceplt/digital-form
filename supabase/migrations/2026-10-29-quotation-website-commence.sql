@@ -143,12 +143,6 @@ begin
     insert into public.activity_log (actor, action, subject, detail)
     values ('Website', 'client.added', v_c.name, 'Website · ' || coalesce(v_sal || ' ', '') || v_name);
     v_new := true;
-  elsif v_start is not null and v_c.commence is distinct from v_start then
-    -- A lead asking again says when it plans to start now.
-    update public.clients set commence = v_start where id = v_c.id;
-    insert into public.activity_log (actor, action, subject, detail)
-    values ('Website', 'client.edited', v_c.name, 'Urgency to commence: ' ||
-      coalesce(public.quote_commence_word(v_c.commence), 'not set') || ' → ' || public.quote_commence_word(v_start));
   end if;
 
   v_r := public.quotation_make(v_c.id, v_sel, v_idem, 'website', null,
@@ -159,6 +153,14 @@ begin
     return v_r;
   end if;
   select * into v_q from public.quotations where id = (v_r->>'id')::uuid;
+  -- A lead asking again says when it plans to start now, once its
+  -- quotation is made (a refused one changes nothing).
+  if not v_new and v_start is not null and v_c.commence is distinct from v_start then
+    update public.clients set commence = v_start where id = v_c.id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('Website', 'client.edited', v_c.name, 'Urgency to commence: ' ||
+      coalesce(public.quote_commence_word(v_c.commence), 'not set') || ' → ' || public.quote_commence_word(v_start));
+  end if;
   -- Whether the prospect is told on WhatsApp is known before the team is,
   -- so a quotation past the day's cap says so in the team's notice (review
   -- 2026-10-29, 17: the 31st of the day read as the 1st).

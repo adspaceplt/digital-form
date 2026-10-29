@@ -24,7 +24,7 @@
     denied: 'This needs Clients: Quotations at Manage.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a rate. Items quoted on request alone make no quotation.', 'bad-extra': 'Additional content pieces are whole numbers.',
+    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a rate. Items quoted on request alone make no quotation.', revised: 'A revision of this quotation stands. Send the revision instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
@@ -63,12 +63,16 @@
     /* A later quotation made from this one revises it; the prospect's link
        shows that one (2026-10-26). */
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
+    /* A website quotation waits for the team before the prospect sees the
+       price (2026-10-29). */
+    if (awaiting(q)) return ['Awaiting review', 'is-warn', q.reply_due ? 'Send by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.reply_due)).replace(/ \d{4}$/, '') : ''];
     var today = window.ADspaceClock.today();
     if (q.valid_until < today) return ['Expired', 'is-off'];
     if (q.status === 'requested') return ['Letter of Offer requested', 'is-warn'];
     if (q.proceed_at) return ['Ready to proceed', 'is-warn', 'Contact by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.proceed_due)).replace(/ \d{4}$/, '')];
     return ['Valid until ' + window.ADspaceClock.date(q.valid_until).replace(/ \d{4}$/, ''), 'is-live'];
   }
+  function awaiting(q) { return q.source === 'website' && !q.released_at && !q._revised && !q.removed_at && q.status !== 'not_proceeding'; }
   /* A quotation that can still become a Letter of Offer: valid, or the
      client has asked for the letter (2026-10-22, QT-M1). */
   function offerable(q, live) {
@@ -95,7 +99,7 @@
     return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-off' + incl : 'One-off total'] : ['—', ''];
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
-    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at';
+    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -161,6 +165,7 @@
           var acts = [];
           /* A website quotation is revised from its row: Build quote on a
              copy, linked as its revision, then sent (2026-10-26). */
+          if (maySet && awaiting(q)) acts.push('<button class="btn btn-sm" data-a="send" type="button">Send quotation</button>');
           if (maySet && !q.removed_at && q.source === 'website' && !q._revised && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
@@ -171,7 +176,7 @@
             items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Make a copy</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
-            if (WA() && WA().may('quotation') && q.status !== 'not_proceeding') {
+            if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
               items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa hidden type="button" role="menuitem">Send on WhatsApp</button>');
             }
             if (q.source === 'website') {
@@ -260,6 +265,26 @@
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
         onSent: function (d, line) { ctx.msg('qtMsg', line, 'ok'); } });
+      return;
+    }
+    if (a === 'send') {
+      /* The team sends a website quotation (2026-10-29): the prospect's link
+         shows its price from now, valid from today, and the quotation-ready
+         WhatsApp goes. */
+      var who = (q.contact && q.contact.name) || q.brand;
+      window.ADspaceConfirm.ask({ title: 'Send quotation?',
+        body: q.ref + ' is shown to ' + who + ' on the quotation link and sent on WhatsApp. It is valid for ' +
+          (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
+        go: 'Send' }, function () {
+        if (btn) btn.disabled = true;
+        ctx.db.rpc('quotation_send', { p_id: q.id }).then(function (r) {
+          var d = r.data || {};
+          if (btn) btn.disabled = false;
+          if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+          var line = q.ref + ' sent' + (d.whatsapp ? ' on WhatsApp' : '') + '. Valid until ' + window.ADspaceClock.date(d.valid_until) + '.';
+          ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
+        }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
+      });
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }

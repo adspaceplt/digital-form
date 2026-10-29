@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261029q">
-<link rel="stylesheet" href="/css/console.css?v=20261029p">
+<link rel="stylesheet" href="/css/portal.css?v=20261029v">
+<link rel="stylesheet" href="/css/console.css?v=20261029v">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -61,14 +61,14 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261029s"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261029v"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261015zn"></script>
 <script src="/js/demo.js?v=20261029m"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261029e"></script>
+<script src="/js/words.js?v=20261029v"></script>
 <script src="/js/clock.js?v=20261012b"></script>
 <script src="/js/icons.js?v=20261022s"></script>
 <script src="/js/copy.js?v=20261001a"></script>
@@ -88,10 +88,10 @@
 <script src="/js/chart.js?v=20261029m"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261023j"></script>
-<script src="/js/maintenance.js?v=20261027a"></script>
+<script src="/js/maintenance.js?v=20261029v"></script>
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261026f"></script>
-<script src="/js/whatsapp.js?v=20261029a"></script>
+<script src="/js/whatsapp.js?v=20261029t"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -5389,6 +5389,27 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- Page availability (2026-10-29): Upgrade mode a page at a time. -->
+<div class="sheet" id="pgSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pgHead">
+    <div class="sheet-head">
+      <h3 id="pgHead">Page availability</h3>
+      <button class="iconbtn" id="pgClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="pgMsg" role="status"></p>
+      <div class="tax-bar"><span class="tax-count" id="pgCount"></span>
+        <span class="tax-acts"><button class="btn btn-sm btn-primary" id="pgSetMany" type="button" hidden>Set availability</button>
+          <button class="btn btn-sm" id="pgSelect" type="button">Select</button></span></div>
+      <div id="pgList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="pgCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <div class="sheet" id="taxSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taxHead">
     <div class="sheet-head">
@@ -5787,7 +5808,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261029m"></script>
+<script src="/js/admin.js?v=20261029v"></script>
 <script src="/js/documents.js?v=20261029q"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
@@ -5797,10 +5818,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261029f"></script>
 <script src="/js/invoices.js?v=20261029m"></script>
 <script src="/js/engage.js?v=20261026f"></script>
-<script src="/js/quotes.js?v=20261029r"></script>
+<script src="/js/quotes.js?v=20261029u"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261029s"></script>
+<script src="/js/crm.js?v=20261029t"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5815,6 +5836,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261029p"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261029m"></script>
-<script src="/js/settings.js?v=20261029d"></script>
+<script src="/js/settings.js?v=20261029v"></script>
 </body>
 </html>

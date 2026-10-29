@@ -572,7 +572,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
+  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -649,40 +649,57 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
-- Upgrade mode (`js/maintenance.js`, `2026-10-03-maintenance-mode.sql`) is
-  a cover, never a lock: the database keeps answering.
-  - One row in `app_flags` (RLS on, no policy, no grant):
-    `maintenance_state()` (anon) answers `on` (covering now), `set` (switched
-    on, maybe waiting on its start), the note and the window;
-    `maintenance_set(p_on, p_note, p_starts, p_ends)` is `allowed('admin')`,
-    refuses an end not after the start and now (`bad-window`), and files
-    `team.changed` under subject Portal ("Upgrade mode: off → on · from … ·
-    until … · note", Malaysia time).
+- Page availability (`js/maintenance.js`, `2026-10-29-page-availability.sql`;
+  Upgrade mode a page at a time since 2026-10-29, the user: "Upgrade for
+  /client page, Temporarily Unavailable for /admin, or selectively") is a
+  cover, never a lock: the database keeps answering, but the quotation
+  website covered makes nothing (`quote_website_create` `unavailable`).
+  - A row of `app_flags` a page (`page:{key}`: admin, client, review,
+    script, details, creators, creator, quote, supplier, verify; RLS on, no
+    policy, no grant), its `kind` (`upgrade` Upgrade in progress, `paused`
+    Temporarily unavailable), window, note, Chinese note and whether its
+    cover offers Chat on WhatsApp. `page_states()` (anon) answers every page
+    set, the console's note to the team alone; `page_set(p_pages, p_kind,
+    p_note, p_note_zh, p_starts, p_ends, p_whatsapp)` (`team.upgrade`;
+    `bad-page`, `bad-kind`, `bad-window`) sets several at once, filed
+    `team.changed` under Portal ("Page availability: Client portal: Available
+    → Temporarily unavailable · until … · note", Malaysia time);
+    `page_states_all()` reads them for Settings. `maintenance_state` and
+    `maintenance_set`, for a page served before, read and set every page.
   - Every portal page loads it after `api.js` but `/`, the 404 and `/card/`,
     so the front door, short links and every colleague's namecard (a
-    printed QR's page) stay up. A client page covers itself under
-    its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrade in
-    progress / 系统升级中 (`W.maintTitle`; `maintText` The portal will be available again shortly. / 系统将于稍后恢复使用。; `maintBack` Expected
-    back by {end}), following the 中文 switch. Every open page, the console
-    included, asks again every minute while on screen and on every return
-    (`ADspaceMaintenance.often`), and at a set start or end: switched on, it
-    covers itself; switched off, a covered page reloads (to its latest
-    version). A read that fails (`ask(true)` answers null) changes nothing.
+    printed QR's page) stay up; a page reads its own row by its address. A
+    client page covers itself under its own bar (`.maint-cover`, z-index 39;
+    the rest `inert`): Upgrade in progress / 系统升级中 (`W.maintTitle`;
+    `maintText` The portal will be available again shortly. / 系统将于稍后恢复使用。;
+    `maintBack` Expected back by {end}), or Temporarily unavailable / 暂时无法使用
+    (`W.pausedTitle`, `pausedText`, Chat on WhatsApp where set), its note in
+    the page's language, following the 中文 switch. A quotation link already
+    sent (`/quote/?q=`) keeps opening while the website is only paused. Every
+    open page, the console included, asks again every minute while on screen
+    and on every return (`ADspaceMaintenance.often`), and at a set start or
+    end: covered, it covers itself; uncovered, a covered page reloads (to its
+    latest version). A read that fails (`ask(true)` answers null) changes
+    nothing.
   - An open page's minute is one request (`page_pulse(p_audience, p_bell)`,
     `2026-10-09-one-check-a-minute.sql`, anon too): upgrade mode, the
     announcements and the bell, each as its own function answers it; a part
     joins with `often(key, take, alone, opts)`, and on a database without the
     function every part asks alone (every request is a line Supabase logs and
     meters; `tests/upgrade.js`, `tests/smsql.js` §9ze).
-  - The console covers itself for anybody but an admin (the whole screen,
+  - The console's row covers it for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
-    dot, Turn off).
-    The switch is the Settings page's Upgrade mode (`button.switch`, its
-    value Off / On until … / Starts … under the name, `team.upgrade`): on asks for Starts, Ends (each a date beside
+    dot, Console: Upgrade in progress until …, Turn off ending the
+    console's alone). Settings, Portal: Page availability (`team.upgrade`,
+    All pages available or n pages covered) opens `#pgSheet`: the ten pages
+    by group (Team, Clients, Creators, Public), each its state over when and
+    Edit; Select ticks several, Set availability asking once for all. The
+    question asks Availability (a segment), Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
-    is today's) and a note, refusing in the sheet a window that does not end
-    after its start and now; off never
-    asks.
+    is today's), a note, a 中文 note and Show Chat on WhatsApp (not the
+    console's), saying under the choice what it does to that page, refusing
+    in the sheet a window that does not end after its start and now; Undo
+    puts each page back.
 - Announcements (`js/announce.js`, `2026-10-07-announcements.sql`,
   `2026-10-07-announcements-several.sql`): one bar under the top bar, the
   team's on the console (laid like `.upgradebar`) and the clients' on every
@@ -5684,8 +5701,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   quotation holds at least one priced line: items quoted on request alone
   (a KOL campaign, a custom creator list) are refused on the page before
   the details are asked and by `quotation_make` (`nothing-priced`, no lead
-  made; `2026-10-29-quotation-needs-a-priced-line.sql`). The
-  rates show at once, with Download (the A4 PDF); the website asks no
+  made; `2026-10-29-quotation-needs-a-priced-line.sql`). The price waits
+  for the team (the user, 2026-10-29, Option 1;
+  `2026-10-29-website-quotation-reviewed.sql`): a website quotation is
+  kept with `reply_due` (`quote_reply_days` working days) and the leads
+  team told Quotation to review; until a colleague sends it
+  (`quotations.released_at`) the link reads Being reviewed, Request
+  received and the day it will be sent on WhatsApp, and `quote_website_read`
+  answers stage `review` with no lines, totals, version or validity
+  (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
+  Awaiting review · Send by {day}, Send quotation the pane's one blue
+  (asked; `quotation_send`, Clients: Quotations at Work, the client in
+  scope: valid from that day, the `quote_ready` WhatsApp queued, filed),
+  Adjust and send beside it, no Send on WhatsApp; the managers are told
+  six hours before the reply is owed while it waits (`quote_proceed_remind`).
+  Once sent, the rates show, with Download (the A4 PDF); the website asks no
   billing and never a Letter of Offer, which the team sends after a
   conversation, the billing through the Details form
   (`2026-10-26-quotation-website-follow-up.sql`; the user, 2026-10-26).
@@ -5722,11 +5752,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   admin) are told once six hours before the time ends
   (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
   is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
-  link button the key), when the quotation is made, while today's (MYT)
-  website quotations stand under `quote_wa_day` (30, 0 sends none;
-  `quote_wa_allowed`, under one lock; past it the quotation is made and
-  the team told, no message; audit 2026-10-29); nothing else is sent by
-  itself. On the lead's Services a website quotation reads Ready to
+  link button the key), when a colleague sends the quotation; nothing is
+  sent by itself (`quote_wa_day` now limits nothing). On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
   WhatsApp composer) and in its ⋯ Mark Do not contact / Clear Do not

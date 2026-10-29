@@ -9,7 +9,7 @@
     meta_links: 'id client_id brand_id ad_accounts page instagram updated_at updated_by',
     sm_report_audits: 'id report_id version_no read_at by_id by_name outcome print diffs note',
     announcements: 'id audience tone body_en body_zh link starts_at ends_at ended_at created_by created_at updated_by updated_at',
-    app_flags: 'key on_now note starts_at ends_at set_by set_at',
+    app_flags: 'key on_now note starts_at ends_at set_by set_at kind note_zh whatsapp',
     app_settings: 'key from_date value set_by set_at',
     app_secrets: 'key value updated_at',
     batches: 'id client_id title note published created_at published_at period',
@@ -30,7 +30,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -216,6 +216,7 @@
     share_link_preview: 'p_kind p_key',
     maintenance_set: 'p_note p_starts p_ends p_on',
     maintenance_state: '',
+    page_states: '', page_states_all: '', page_set: 'p_pages p_kind p_note p_note_zh p_starts p_ends p_whatsapp',
     demo_state: '',
     demo_set: 'p_on p_pin',
     demo_pin_ok: 'p_pin',
@@ -542,6 +543,7 @@
     quote_proceed: 'p_key p_start p_decider',
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
+    quotation_send: 'p_id',
     rate_card_publish: 'p_version p_valid_until p_note',
     rate_card_text_save: 'p_key p_value',
     team_notices_list: '',
@@ -7526,10 +7528,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (puRef) return Promise.resolve({ data: null, error: { message: puRef } });
       var puArgs = args || {};
       var puAud = ['team', 'clients'].indexOf(puArgs.p_audience) >= 0 ? puArgs.p_audience : null;
-      return Promise.all([rpc('maintenance_state', {}), puAud ? rpc('announcement_now', { p_audience: puAud }) : null]).then(function (rs) {
+      return Promise.all([rpc('maintenance_state', {}), puAud ? rpc('announcement_now', { p_audience: puAud }) : null, rpc('page_states', {})]).then(function (rs) {
         var bad = rs.filter(function (r) { return r && r.error; })[0];
         if (bad) return { data: null, error: bad.error };
-        var out = { maintenance: rs[0].data };
+        var out = { maintenance: rs[0].data, pages: rs[2].data };
         if (puAud) out.announcements = rs[1].data || [];
 
         var seenMe = puArgs.p_audience === 'team' && opsMe();
@@ -8991,6 +8993,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qtMe = opsMe();
       var qtCard = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); })[0];
       var qtNow = new Date(), qtToday = new Date(qtNow.getTime() + 8 * 3600e3).toISOString().slice(0, 10);
+
+      var qtReplyBy = function () {
+        var days = Number(appSet('quote_reply_days', qtToday) || 2), due = new Date(qtNow.getTime());
+        var hol = (DB.public_holidays || []).map(function (h) { return h.day; });
+        while (days > 0) {
+          due = new Date(due.getTime() + 864e5);
+          var dd = new Date(due.getTime() + 8 * 3600e3);
+          if (dd.getUTCDay() !== 0 && dd.getUTCDay() !== 6 && hol.indexOf(dd.toISOString().slice(0, 10)) < 0) days--;
+        }
+        return due;
+      };
       var qtLog = function (subject, d) { DB.activity_log.unshift({ id: nid('al'), actor: qtMe.name, action: 'client.quotation', subject: subject, detail: d, created_at: new Date().toISOString() }); };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
@@ -9167,6 +9180,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!window.__quoteFn) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_website_create' } });
         var wc = args.p_contact || {}, widem = String(args.p_idem || '').trim();
         if (!widem) return qtOk({ error: 'bad-request' });
+
+        var wpq = (DB.app_flags || []).filter(function (x) { return x.key === 'page:quote'; })[0];
+        if (wpq && wpq.on_now && (!wpq.starts_at || Date.parse(wpq.starts_at) <= Date.now()) && (!wpq.ends_at || Date.parse(wpq.ends_at) > Date.now())) return qtOk({ error: 'unavailable' });
         var wAgain = DB.quotations.filter(function (q) { return q.idem === widem && q.source === 'website' && String((q.contact || {}).email || '').toLowerCase() === String(wc.email || '').trim().toLowerCase(); })[0];
         if (wAgain) return qtOk({ ok: true, ref: wAgain.ref, key: wAgain.access_key, again: true });
         var wn = String(wc.name || '').replace(/\s+/g, ' ').trim(), we = String(wc.email || '').trim().toLowerCase();
@@ -9237,13 +9253,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           selection: wsel, lines: wp.lines, totals: Object.assign({}, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
           contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
-          idem: widem, removed_at: null, removed_by: null };
+          idem: widem, removed_at: null, removed_by: null,
+
+          released_at: null, released_by: null, reply_due: qtReplyBy().toISOString() };
         DB.quotations.push(wrow);
         DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.quotation', subject: wcl.name,
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
-        qtTell(wcl.id, 'quote.website', 'Quotation made on the website · ' + wcl.name,
+        qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
           wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn +
-          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : ''), wrow.id);
+          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : '') + ' · send by', wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
@@ -9272,6 +9290,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 String(k.email || '').trim().toLowerCase() === String((wq.contact || {}).email || '').trim().toLowerCase(); });
             } else wstage = wdoc.signed_at ? 'signed' : 'letter';
           } else if (wq.status === 'not_proceeding' || wsh.status === 'not_proceeding') wstage = 'closed';
+          else if (wsh.source === 'website' && !wsh.released_at) wstage = 'review';
           else if (wsh.valid_until < qtToday) wstage = 'expired';
           else if (!wbilled && wqc && new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
             !DB.quotations.some(function (o) { return o.client_id === wq.client_id && o.id !== wq.id && o.issued_at < wq.issued_at; })) {
@@ -9282,8 +9301,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           } else if (wbilled && wq.proceed_at) wstage = 'billing_sent';
           if (!wstage) wstage = wq.proceed_at ? 'ready' : 'quote';
           return qtOk(JSON.parse(JSON.stringify({ ref: wsh.ref, first_ref: wq.ref, revised: wsh.id !== wq.id,
-            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wqc && wqc.market === 'SG' ? 'SG' : 'MY', version: wsh.version,
-            issued_at: wsh.issued_at, valid_until: wsh.valid_until, lines: wsh.lines, totals: wsh.totals, selection: wq.selection,
+            brand: (wq.contact && wq.contact.brand) || wq.brand, market: wqc && wqc.market === 'SG' ? 'SG' : 'MY',
+            version: wstage === 'review' ? null : wsh.version, issued_at: wsh.issued_at,
+            valid_until: wstage === 'review' ? null : wsh.valid_until, lines: wstage === 'review' ? null : wsh.lines,
+            totals: wstage === 'review' ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
             attention: wq.contact && wq.contact.name, status: woffer ? 'offer' : wsh.status, stage: wstage,
             details_key: wstage === 'billing' ? wform.access_key : null, portal: wportal,
             proceed_at: wq.proceed_at || null, proceed_due: wq.proceed_due || null,
@@ -9295,15 +9316,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wps = wq, wpn;
         while ((wpn = DB.quotations.filter(function (x) { return x.replaces === wps.id && !x.removed_at; })[0])) wps = wpn;
         if (wq.status === 'not_proceeding' || wps.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+        if (wps.source === 'website' && !wps.released_at) return qtOk({ error: 'not-sent' });
         if (['month', 'quarter'].indexOf(args.p_start) < 0 || ['yes', 'others'].indexOf(args.p_decider) < 0) return qtOk({ error: 'bad-answer' });
         if (wps.valid_until < qtToday) return qtOk({ error: 'expired' });
-        var wdays = Number(appSet('quote_reply_days', qtToday) || 2), wdue = new Date(qtNow.getTime());
-        var whol = (DB.public_holidays || []).map(function (h) { return h.day; });
-        while (wdays > 0) {
-          wdue = new Date(wdue.getTime() + 864e5);
-          var wday = new Date(wdue.getTime() + 8 * 3600e3), wdk = wday.toISOString().slice(0, 10);
-          if (wday.getUTCDay() !== 0 && wday.getUTCDay() !== 6 && whol.indexOf(wdk) < 0) wdays--;
-        }
+        var wdue = qtReplyBy();
         var wwords = (args.p_start === 'month' ? 'starts within a month' : 'starts in 1 to 3 months') + ' · ' + (args.p_decider === 'yes' ? 'decision maker' : 'others involved');
         wq.proceed_at = qtNow.toISOString(); wq.proceed_due = wdue.toISOString(); wq.proceed_start = args.p_start; wq.proceed_decider = args.p_decider;
         var wwho = wq.contact && String(wq.contact.name || '').trim();
@@ -9360,6 +9376,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
         qq.replaces = qold.id;
         qtLog(qq.brand, qq.ref + ' revises ' + qold.ref);
         return qtOk({ ok: true });
+      }
+      if (name === 'quotation_send') {
+        if (qq.removed_at) return qtOk({ error: 'not-found' });
+        if (qq.source !== 'website') return qtOk({ error: 'bad-quotation' });
+        if (qq.released_at) return qtOk({ ok: true, again: true, valid_until: qq.valid_until });
+        if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+        if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
+        var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
+        qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
+        var qsWa = /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
+        if (qsWa) (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quotation', ref_id: qq.id, client_id: qq.client_id,
+          to_number: String(qq.contact.whatsapp).replace(/[^0-9]/g, ''), button: qq.access_key, status: 'queued', created_at: qtNow.toISOString() });
+        qtLog(qq.brand, qq.ref + ' sent to the prospect' + (qsWa ? ' on WhatsApp' : '') + ' · valid until ' + qq.valid_until);
+        return qtOk({ ok: true, valid_until: qq.valid_until, whatsapp: qsWa });
       }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;
@@ -9543,37 +9573,92 @@ function opsCodeRange(cid, period, ty, src, seq) {
       window.__persist();
       return Promise.resolve({ data: dmState(), error: null });
     }
-    if (name === 'maintenance_state' || name === 'maintenance_set') {
+
+    if (name === 'maintenance_state' || name === 'maintenance_set' || /^page_(states|states_all|set)$/.test(name)) {
       var mtNow = Date.now();
-      var mtState = function () {
-        var f = (DB.app_flags || []).filter(function (x) { return x.key === 'maintenance'; })[0];
-        if (!f) return { on: false, set: false };
-        var st = f.starts_at ? Date.parse(f.starts_at) : null, en = f.ends_at ? Date.parse(f.ends_at) : null;
-        return { on: !!f.on_now && (st == null || st <= mtNow) && (en == null || en > mtNow),
-                 set: !!f.on_now && (en == null || en > mtNow), note: f.note || null,
-                 since: f.starts_at || f.set_at, starts_at: f.starts_at || null, ends_at: f.ends_at || null };
+      var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'];
+      var PG_NAME = { admin: 'Console', client: 'Client portal', review: 'Content Review', script: 'Video Scripts', details: 'Details form',
+        creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document' };
+      var pgRow = function (k) {
+        var rows = DB.app_flags || [];
+        var f = rows.filter(function (x) { return x.key === 'page:' + k; })[0];
+        if (!f && !rows.some(function (x) { return /^page:/.test(x.key); })) {
+          var m = rows.filter(function (x) { return x.key === 'maintenance'; })[0];
+          if (m) f = Object.assign({}, m, { key: 'page:' + k, kind: 'upgrade' });
+        }
+        return f || null;
       };
+      var pgSet = function (f) { return !!f && !!f.on_now && (!f.ends_at || Date.parse(f.ends_at) > mtNow); };
+      var pgOne = function (k, team) {
+        var f = pgRow(k);
+        if (!pgSet(f)) return null;
+        return { on: !f.starts_at || Date.parse(f.starts_at) <= mtNow, set: true, kind: f.kind || 'upgrade',
+          note: k !== 'admin' || team ? (f.note || null) : null, note_zh: f.note_zh || null, starts_at: f.starts_at || null,
+          ends_at: f.ends_at || null, whatsapp: !!f.whatsapp };
+      };
+      var pgStates = function () {
+        var team = !!opsMe(), out = {};
+        PG_KEYS.forEach(function (k) { var x = pgOne(k, team); if (x) out[k] = x; });
+        return out;
+      };
+      var pgAll = function () {
+        return PG_KEYS.map(function (k) {
+          var f = pgRow(k), set = pgSet(f);
+          return { key: k, name: PG_NAME[k], set: set, on: set && (!f.starts_at || Date.parse(f.starts_at) <= mtNow),
+            kind: (f && f.kind) || 'upgrade', note: f && f.note || null, note_zh: f && f.note_zh || null, whatsapp: !!(f && f.whatsapp),
+            starts_at: f && f.starts_at || null, ends_at: f && f.ends_at || null, set_by: f && f.set_by || null, set_at: f && f.set_at || null };
+        });
+      };
+      var mtState = function () {
+        var st = pgStates(), keys = Object.keys(st);
+        if (keys.length !== PG_KEYS.length) return { on: false, set: false };
+        var c = st.client;
+        return { on: keys.every(function (k) { return st[k].on; }), set: true, note: c.note, since: c.starts_at, starts_at: c.starts_at, ends_at: c.ends_at };
+      };
+      var refused = window.__refuseRpc && window.__refuseRpc[name];
       if (name === 'maintenance_state') {
-        var mtRef = window.__refuseRpc && window.__refuseRpc.maintenance_state;
-        if (mtRef) return Promise.resolve({ data: null, error: { message: mtRef, code: 'XX000' } });
+        if (refused) return Promise.resolve({ data: null, error: { message: refused, code: 'XX000' } });
         return Promise.resolve({ data: mtState(), error: null });
       }
-      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
-      var mtOn = !!args.p_on;
-      var mtS = args.p_starts ? Date.parse(args.p_starts) : null, mtE = args.p_ends ? Date.parse(args.p_ends) : null;
-      if (mtOn && mtE != null && mtE <= Math.max(mtS == null ? mtNow : mtS, mtNow)) {
-        return Promise.resolve({ data: { error: 'bad-window' }, error: null });
+      if (name === 'page_states') {
+        if (refused) return Promise.resolve({ data: null, error: { message: refused, code: 'XX000' } });
+        if (window.__noPages) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.page_states without parameters in the schema cache' } });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify(pgStates())), error: null });
       }
-      var mtWas = mtState().set;
-      var mtNote = String(args.p_note || '').trim() || null;
-      DB.app_flags = [{ key: 'maintenance', on_now: mtOn, note: mtOn ? mtNote : null,
-        starts_at: mtOn && mtS != null && mtS > mtNow ? new Date(mtS).toISOString() : null,
-        ends_at: mtOn && mtE != null ? new Date(mtE).toISOString() : null, set_by: whoNow(), set_at: new Date(mtNow).toISOString() }];
+      if (name === 'page_states_all') {
+        if (!opsGranted('team.upgrade', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify(pgAll())), error: null });
+      }
+      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var pa = name === 'maintenance_set'
+        ? { p_pages: PG_KEYS.slice(), p_kind: args.p_on ? 'upgrade' : 'none', p_note: args.p_note, p_starts: args.p_starts, p_ends: args.p_ends }
+        : args;
+      var pages = Array.isArray(pa.p_pages) ? pa.p_pages : [];
+      if (!pages.length || pages.some(function (k) { return PG_KEYS.indexOf(k) < 0; })) return Promise.resolve({ data: { error: 'bad-page' }, error: null });
+      var kind = pa.p_kind || 'none';
+      if (['none', 'upgrade', 'paused'].indexOf(kind) < 0) return Promise.resolve({ data: { error: 'bad-kind' }, error: null });
+      var on = kind !== 'none';
+      var mtS = pa.p_starts ? Date.parse(pa.p_starts) : null, mtE = pa.p_ends ? Date.parse(pa.p_ends) : null;
+      if (on && mtE != null && mtE <= Math.max(mtS == null ? mtNow : mtS, mtNow)) return Promise.resolve({ data: { error: 'bad-window' }, error: null });
+
+      if (!(DB.app_flags || []).some(function (x) { return /^page:/.test(x.key); })) {
+        var legacy = PG_KEYS.map(function (k) { return pgRow(k); }).filter(Boolean);
+        DB.app_flags = (DB.app_flags || []).concat(legacy);
+      }
+      var word = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
+      var note = String(pa.p_note || '').trim() || null, zh = String(pa.p_note_zh || '').trim() || null, bits = [];
+      pages.filter(function (k, i, a) { return a.indexOf(k) === i; }).forEach(function (k) {
+        var f = pgRow(k), was = pgSet(f) ? word[f.kind || 'upgrade'] : 'Available';
+        DB.app_flags = DB.app_flags.filter(function (x) { return x.key !== 'page:' + k; });
+        DB.app_flags.push({ key: 'page:' + k, on_now: on, note: on ? note : null, note_zh: on ? zh : null, kind: on ? kind : null,
+          starts_at: on && mtS != null && mtS > mtNow ? new Date(mtS).toISOString() : null, ends_at: on && mtE != null ? new Date(mtE).toISOString() : null,
+          whatsapp: on && !!pa.p_whatsapp, set_by: whoNow(), set_at: new Date(mtNow).toISOString() });
+        bits.push(PG_NAME[k] + ': ' + was + ' → ' + (on ? word[kind] : 'Available'));
+      });
       DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Portal',
-        detail: 'Upgrade mode: ' + (mtWas ? 'on' : 'off') + ' → ' + (mtOn ? 'on' : 'off') + (mtOn && mtNote ? ' · ' + mtNote : ''),
-        created_at: new Date(mtNow).toISOString() });
+        detail: 'Page availability: ' + bits.join(', ') + (on && note ? ' · ' + note : ''), created_at: new Date(mtNow).toISOString() });
       persist();
-      return Promise.resolve({ data: mtState(), error: null });
+      return Promise.resolve({ data: name === 'maintenance_set' ? mtState() : { ok: true, pages: JSON.parse(JSON.stringify(pgAll())) }, error: null });
     }
 
     if (/^wa_/.test(name)) {

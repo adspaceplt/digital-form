@@ -87,6 +87,8 @@
       startQ: 'When would you like to start?', starts: [['month', 'Within a month'], ['quarter', 'In 1 to 3 months']],
       decQ: 'Are you the decision maker?', decs: [['yes', 'Yes'], ['others', 'Others will be involved in the decision']],
       propAsk: 'Proceed with this quotation', propAsking: 'Sending…', propNeed: 'Answer both questions to proceed.',
+      reviewing: 'Being reviewed', reviewT: 'Request received', reviewP: 'ADspace is reviewing your quotation and will send it to you on WhatsApp by {d}.',
+      reviewNote: 'This page shows your quotation once it is sent.',
       propDone: 'Request received', propBy: 'Our team will contact you by {d} to finalise the details.',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
@@ -108,7 +110,7 @@
         captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'A valid Malaysian or Singaporean WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
-        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation is closed. Please request a new quotation.',
+        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation is closed. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'nothing-priced': 'A KOL campaign and a custom creator list are quoted on request. Add a service with a listed rate, or chat with ADspace on WhatsApp.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
@@ -172,6 +174,8 @@
       startQ: '您希望何时开始？', starts: [['month', '一个月内'], ['quarter', '一至三个月内']],
       decQ: '您是否为决策人？', decs: [['yes', '是'], ['others', '需与他人商议']],
       propAsk: '确认此报价', propAsking: '提交中…', propNeed: '请回答以上两个问题。',
+      reviewing: '审核中', reviewT: '已收到您的请求', reviewP: 'ADspace 正在审核您的报价，将于 {d} 前通过 WhatsApp 发送给您。',
+      reviewNote: '报价发送后，此页面将显示报价详情。',
       propDone: '已收到您的确认', propBy: '我们的团队将于 {d} 前与您联系，确认细节。',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
@@ -193,7 +197,7 @@
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
-        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。',
+        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
@@ -579,6 +583,19 @@
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
+  /* A website quotation the team has not sent yet (2026-10-29, the user:
+     "the price shouldnt send out straight"): the database sends no line or
+     figure, so the page says it was received and when it will be sent. */
+  function paintReview() {
+    var q = Q, w = t();
+    var side = q.rep ? repHtml(q) : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
+    return '<div class="qs-quote" data-shown><section class="qs-main">' +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(w.quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span>' +
+        '<span class="qs-status"><span class="chip-state is-warn">' + esc(w.reviewing) + '</span></span></div>' +
+      done(w.reviewT, q.reply_due ? f(w.reviewP, { d: day(q.reply_due) }) : '') +
+      '<div class="qs-notes"><span>' + esc(w.reviewNote) + '</span></div>' +
+      '</section><aside class="qs-side" id="qsSide">' + side + '</aside></div>';
+  }
   /* The advertising budget the quotation's fees manage each month: the
      budget chosen past the plan's cover, else the plan's own cover as the
      card read beside this quotation states it (the same version alone).
@@ -673,7 +690,7 @@
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if (paint.lost) { cover(t().lostT, t().lostP, true); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
-    if (Q) { root().innerHTML = paintQuote(); decorate(); return; }
+    if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
       S = blank();
       try { sessionStorage.removeItem(KEEP); } catch (e) {}

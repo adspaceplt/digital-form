@@ -7328,3 +7328,34 @@ and to) and names it in the team's notice. The database accepts it absent,
 so a tab opened before the release still makes its quotation. Ready to
 proceed's own question (Within a month, In 1 to 3 months) is left as the
 user approved it on 2026-10-26.
+
+### 2026-10-29 · A website quotation waits for the team before the prospect sees the price
+The user, after two empty website quotations the same morning: "the price
+shouldnt send out straight", then Option 1 of three (the team approves
+first; the price on the page with no WhatsApp; as it was). What broke: the
+website showed the rates and sent the `quote_ready` WhatsApp the moment a
+quotation was priced, with nobody at ADspace having read it. The fix: the
+quotation is kept with a reply owed in working days; the link reads Being
+reviewed with the day it will be sent, and the database sends no line or
+figure while it waits; Send quotation on the lead's Services (or Adjust and
+send, the team's revision) releases it, valid from that day, and queues the
+WhatsApp. Website quotations made before count as sent. This reverses the
+2026-10-26 line "shows the rates at once"; the 2026-10-13 canvas had asked
+for an approval before validity, which this restores. The daily WhatsApp
+cap (`quote_wa_day`) now limits nothing, every send being a colleague's.
+
+### 2026-10-29 · Page availability: Upgrade mode a page at a time
+The user, after two empty website quotations: "Do you have any like upgrade
+kind of page to temporarily not available page for the quote?", then "can
+revamp the upgrade be for each page basis? … start Upgrade for /client page,
+start Temporarily Unavailable for /admin, or selectively", and "Ok good build
+all" on the mockup. Upgrade mode had one row for the whole portal, so pausing
+the quotation website meant covering every client page; it was switched on at
+12:14 MYT that day for that reason. Each page is now its own row with a kind
+(Upgrade in progress, or Temporarily unavailable with an optional Chat on
+WhatsApp), set one at a time or several together from Settings; the
+quotation website covered makes nothing in the database too, and a link
+already sent keeps opening while it is only paused. The Upgrade mode standing
+when the migration first runs becomes every page's, and the old functions
+read and set every page for a tab served before.
+
