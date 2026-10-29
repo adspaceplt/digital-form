@@ -163,6 +163,7 @@
       proceededBy: function (who, when) { return 'Confirmed by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
       reviewThanks: 'Thank you. Your response has been received, and our team will follow up.',
+      draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
       selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
@@ -265,6 +266,7 @@
       proceededBy: function (who, when) { return '已由' + who + '确认' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
       reviewThanks: '谢谢，我们已收到您的回复，团队将跟进处理。',
+      draftMoved: '页面打开后此草稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
@@ -1022,6 +1024,10 @@
         p_note: text || null, p_reviewer: name, p_passcode: passcode
       }).then(function (r) {
         var d = (r && r.data) || {};
+        /* The draft is no longer with the client (sent back to the creator
+           meanwhile): the page is read again, never asked the same answer
+           (review 2026-10-29, 18). */
+        if (d.error === 'not-reviewing') { say(t().draftMoved, true); load(); return; }
         if ((r && r.error) || d.error) {
           lock(false);
           say(d.error === 'closed' ? t().closedText

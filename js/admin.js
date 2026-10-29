@@ -23,7 +23,19 @@
       });
     }
   } catch (e) {}
-  if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
+  if (!API.configured || !db) {
+    /* A demo whose sample data did not arrive: Unable to load, with the
+       way out on the page itself, never the setup note (review 2026-10-29,
+       8: a colleague was left with neither sign-in nor Exit demo). */
+    if (window.ADspaceDemo && window.ADspaceDemo.failed) {
+      var nc = $('notConfigured');
+      nc.innerHTML = '<h3>Unable to load</h3><p class="hint">The sample data did not load. Refresh the page, or exit the demo.</p>' +
+        '<div class="row acts"><button class="btn btn-sm" type="button" id="demoFailExit">Exit demo</button></div>';
+      $('demoFailExit').addEventListener('click', function () { window.ADspaceDemo.leave(); });
+    }
+    $('notConfigured').hidden = false;
+    return;
+  }
 
   /* One dropdown in plain language beats two dropdowns of jargon. */
   var PLACEMENTS = [

@@ -46,6 +46,9 @@
       localStorage.removeItem(KEY); localStorage.removeItem('adspace-logo-ratio');
       /* A sample creator's code kept by the creator's page goes with it. */
       if (/^DEMO0/.test(localStorage.getItem('adspace-creator') || '')) localStorage.removeItem('adspace-creator');
+      /* The client pages' guides the demo marked met are offered again. */
+      JSON.parse(localStorage.getItem('adspace-demo-guides') || '[]').forEach(function (k) { localStorage.removeItem('adspace-guide:' + k); });
+      localStorage.removeItem('adspace-demo-guides');
     } catch (e) {}
     dropDrafts();
   }
@@ -93,7 +96,8 @@
   cfg.turnstileSiteKey = '';
   var org = window.ADSPACE_ORG || {};
   org.name = 'SAMPLE STUDIO SDN BHD';
-  org.regno = '202001000001';
+  /* A number no company can hold (review 2026-10-29, 9). */
+  org.regno = '000000000001';
   org.sst = '';
   org.address = '1 Jalan Contoh\n81100 Johor Bahru\nJohor, Malaysia';
   org.email = 'hello@example.com';
@@ -201,6 +205,9 @@
      refresh tries again; Exit demo ends it. */
   if (!lib || !lib.createClient || !window.__demoSeed || !window.__signIn || !window.__DB) {
     window.supabase = undefined;
+    /* The console reads this to say Unable to load with Exit demo on its
+       signed-out page, where the bar cannot stand (review 2026-10-29, 8). */
+    window.ADspaceDemo.failed = true;
   } else {
     var made = lib.createClient;
     lib.createClient = function () { return guard(made.apply(lib, arguments)); };
@@ -225,6 +232,22 @@
      out would clear this browser's notes, drafts and notification setting,
      which are the colleague's (audit, 2026-10-27). The client portal's Sign
      out returns to the console, still in the demo. */
+  /* The sample people's numbers and profiles are made up, but a number or
+     a handle may be somebody's: a chat, a call or a profile is never opened
+     from the demo (review 2026-10-29, 9). */
+  var PERSON = /^(tel:|sms:|https?:\/\/(wa\.me|api\.whatsapp\.com|(www\.)?(instagram|facebook|tiktok|xiaohongshu)\.com)\b)/i;
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest && e.target.closest('a[href]');
+    if (!a || !PERSON.test(a.getAttribute('href') || '')) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var line = document.querySelector('#demoBar .upgradebar-text, #demoBar .annbar-text');
+    if (line && !line.getAttribute('data-was')) {
+      line.setAttribute('data-was', line.innerHTML);
+      line.innerHTML = '<b>Demo</b> · Chats, calls and profiles are not opened.';
+      setTimeout(function () { line.innerHTML = line.getAttribute('data-was'); line.removeAttribute('data-was'); }, 4000);
+    }
+  }, true);
   document.addEventListener('click', function (e) {
     var t = e.target && e.target.closest && e.target.closest('#signOut, #portalOut');
     if (!t) return;
