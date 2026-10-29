@@ -7127,3 +7127,14 @@ sentence.
   code where no unlock stands (a wrong code refused in place), then opens
   the one sheet on its part; an unlock that ran out asks again rather than
   showing a dead end. The padlock stays on Team › Performance alone.
+
+### 2026-10-29 · Content Review keeps the access code alone
+- Asked: release 3 of the approved settings consolidation: the handles and
+  logo edited on Brand alone; Content Review's client settings keep the
+  review link's access code.
+- Before: Content Review's Client settings and the client's Brand both
+  edited the handles and the logo, so each had to re-read the other's
+  writes (2026-09-26: "why do i have to update both sides").
+- Now: the head's ⋯ reads Access code, a sheet of that one field. The
+  head still shows the handles and logo, read again on opening a client.
+  An unchanged Save says No change. in the mute ink and writes nothing.

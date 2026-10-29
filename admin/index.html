@@ -81,7 +81,7 @@
 <script src="/js/form.js?v=20261023i"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261024n"></script>
+<script src="/js/menu.js?v=20261029a"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261023e"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -1604,7 +1604,7 @@
           <div class="kmenu-wrap" id="wsMenuWrap">
             <button class="kmenu-btn" id="wsMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
             <div class="kmenu" id="wsMenu" hidden role="menu">
-              <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Client settings</button>
+              <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Access code</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-g="5" data-need="review.settings:work">Reset link</button>
               <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove from Content Review</button>
             </div>
@@ -1828,66 +1828,23 @@
     </div>
   </div>
 
-  <!-- A client's settings: the handles and logo the mockups print, and the
-       access code. One sheet, one Save (2026-09-28). -->
+  <!-- The review link's access code (2026-10-29): the one setting Content
+       Review keeps of a client; the handles and the logo are edited on the
+       client's Brand alone, which the mockups read. -->
   <div class="sheet" id="crSettingsSheet" hidden>
     <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crSettingsTitle" tabindex="-1">
       <div class="sheet-head">
-        <h3 id="crSettingsTitle">Client settings</h3>
+        <h3 id="crSettingsTitle">Access code</h3>
         <button class="iconbtn" id="crSettingsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       </div>
       <div class="sheet-body" id="advancedBody">
-
-
-        <section class="fsec">
-          <h4 class="fsec-h">Account handles</h4>
-          <div class="row fgrid" id="handleRow">
-            <div>
-              <label class="field-label" for="eIg">Instagram</label>
-              <input class="input" id="eIg" placeholder="@adspace.advertising">
-            </div>
-            <div>
-              <label class="field-label" for="eFb">Facebook page</label>
-              <input class="input" id="eFb" placeholder="ADspace Advertising">
-            </div>
-            <div>
-              <label class="field-label" for="eTt">TikTok</label>
-              <input class="input" id="eTt" placeholder="@adspace.advertising">
-            </div>
-            <div>
-              <label class="field-label" for="eXhs">rednote name</label>
-              <input class="input" id="eXhs" placeholder="ADspace">
-            </div>
+        <div class="row">
+          <div>
+            <label class="field-label" for="ePass">Access code</label>
+            <input class="input" id="ePass" placeholder="None" autocomplete="off" spellcheck="false" autocapitalize="off">
           </div>
-          <div class="msg" id="handleMsg"></div>
-        </section>
-
-        <section class="fsec">
-          <h4 class="fsec-h">Logo and access code</h4>
-          <div class="row">
-            <div>
-              <label class="field-label" for="eLogo">Logo</label>
-              <div class="logorow">
-                <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
-                  <img id="logoPreviewImg" alt="" hidden>
-                </span>
-                <textarea class="input" id="eLogo" placeholder="https://adspace.me/logo.png" rows="1" data-oneline inputmode="url" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
-                <button class="btn btn-sm" id="eLogoUp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
-                <input id="eLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft>
-              </div>
-            </div>
-          </div>
-          <!-- The logo's address takes the row's whole width, so it reads as
-               one line beside its picture and Upload (2026-10-08). -->
-          <div class="row">
-            <div>
-              <label class="field-label" for="ePass">Access code</label>
-              <input class="input" id="ePass" placeholder="None">
-            </div>
-          </div>
-          <div class="msg" id="logoNote"></div>
-          <div class="msg" id="profileMsg"></div>
-        </section>
+        </div>
+        <div class="msg" id="profileMsg"></div>
       </div>
       <div class="sheet-foot">
         <button class="btn btn-primary" id="crSettingsSave" data-need="review.settings:work" type="button">Save</button>
@@ -5805,7 +5762,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261029b"></script>
+<script src="/js/admin.js?v=20261029c"></script>
 <script src="/js/documents.js?v=20261027a"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
