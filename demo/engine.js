@@ -2804,6 +2804,45 @@ function cardSlugFree(name, self, email) {
     return { name: nm || null, email: t(k.email) || null, cc: fe && fe.toLowerCase() !== t(k.email).toLowerCase() ? fe : null,
       company: t(c.legal_name) || c.name };
   }
+
+  function entHome(eid) {
+    var ls = (DB.client_entities || []).filter(function (l) { return l.entity_id === eid; })
+      .sort(function (a, b) { return (b.is_main ? 1 : 0) - (a.is_main ? 1 : 0) || (a.added_at < b.added_at ? -1 : a.added_at > b.added_at ? 1 : 0); });
+    return ls[0] ? ls[0].client_id : null;
+  }
+  function mainEnt(cid) { var l = (DB.client_entities || []).filter(function (x) { return x.client_id === cid && x.is_main; })[0]; return l ? l.entity_id : null; }
+  function entContact(eid) {
+    var e = (DB.billing_entities || []).filter(function (x) { return x.id === eid; })[0];
+    if (!e) return null;
+    var home = entHome(eid);
+    var ks = (DB.client_contacts || []).filter(function (k) { return !k.archived_at && (k.id === e.bill_contact_id || (k.client_id === home && k.is_primary)); })
+      .sort(function (a, b) { return (b.id === e.bill_contact_id) - (a.id === e.bill_contact_id); });
+    return ks[0] || null;
+  }
+  function entRecipient(eid) {
+    var e = (DB.billing_entities || []).filter(function (x) { return x.id === eid; })[0];
+    if (!e) return null;
+    var k = entContact(eid) || {};
+    var t = function (v) { return String(v || '').trim(); };
+    var nm = [t(k.salutation), t(k.name)].filter(Boolean).join(' ');
+    var fe = t(e.finance_email);
+    var home = DB.clients.filter(function (x) { return x.id === entHome(eid); })[0];
+    return { name: nm || null, email: t(k.email) || null, cc: fe && fe.toLowerCase() !== t(k.email).toLowerCase() ? fe : null,
+      company: t(e.legal_name) || (home ? home.name : null) };
+  }
+  function contactEntity(contact) {
+    var ls = DB.bukku_links || [];
+    var el = ls.filter(function (l) { return l.kind === 'entity' && Number(l.contact_id) === Number(contact); })[0];
+    if (el) return el.record_id;
+    var cl = ls.filter(function (l) { return l.kind === 'client' && Number(l.contact_id) === Number(contact); })[0];
+    return cl ? mainEnt(cl.record_id) : null;
+  }
+  function recipientFor(cid, contact) {
+    var ent = contactEntity(contact), r = invRecipient(cid);
+    if (ent && (DB.client_entities || []).some(function (l) { return l.client_id === cid && l.entity_id === ent; }) &&
+        (ent !== mainEnt(cid) || !(r && r.email))) return entRecipient(ent);
+    return r;
+  }
   function invScopeAll() {
     var m = opsMe(); if (!m) return false;
     var a = opsAccess(m); if (a.admin) return true;
@@ -2825,7 +2864,7 @@ function cardSlugFree(name, self, email) {
       var r = mine.filter(function (e) { return e.status !== 'failed' && now - Date.parse(e.created_at) < hours * 36e5; })[0];
       if (r) { var rb = DB.team_members.filter(function (x) { return x.id === r.sent_by; })[0]; return { error: 'recent', recent: { at: r.created_at, to: r.to_email, by: rb ? rb.name : null } }; }
     }
-    var rcp = cid ? invRecipient(cid) : null;
+    var rcp = cid ? recipientFor(cid, contact) : null;
     var to = (rcp && rcp.email) || String(email || '').trim() || null;
     if (!to || !/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(to)) return { error: 'no-email' };
     var ccTo = cc && rcp && rcp.cc && rcp.cc.toLowerCase() !== to.toLowerCase() ? rcp.cc : null;
@@ -10113,17 +10152,28 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return Boolean(c) && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
       };
       if (name === 'invoice_scope') {
-        var byC = {};
+
+        var cands = {};
+        var addC = function (k, cid, pref, rnk) { (cands[k] = cands[k] || []).push({ cid: cid, pref: pref, rnk: rnk }); };
         (DB.bukku_links || []).forEach(function (b) {
-          var cid = b.kind === 'client' ? b.record_id : ((DB.suppliers || []).filter(function (x) { return x.id === b.record_id; })[0] || {}).client_id;
-          if (!cid) return;
-          var k = Number(b.contact_id);
-          if (!byC[k] || (b.kind === 'client' && byC[k].pref === 1)) byC[k] = { cid: cid, pref: b.kind === 'client' ? 0 : 1 };
+          var k = Number(b.contact_id), own = null, pref, ent;
+          if (b.kind === 'client') { own = b.record_id; pref = 0; ent = mainEnt(own); }
+          else if (b.kind === 'supplier') { own = ((DB.suppliers || []).filter(function (x) { return x.id === b.record_id; })[0] || {}).client_id || null; if (!own) return; pref = 1; ent = mainEnt(own); }
+          else if (b.kind === 'entity') { pref = 2; ent = b.record_id; }
+          else return;
+          if (own) addC(k, own, pref, 0);
+          if (ent) (DB.client_entities || []).forEach(function (l) { if (l.entity_id === ent) addC(k, l.client_id, pref, l.is_main ? 1 : 2); });
         });
-        var links = Object.keys(byC).map(Number).filter(function (k) { return ivSeen(byC[k].cid); }).map(function (k) {
-          var c = DB.clients.filter(function (x) { return x.id === byC[k].cid; })[0];
-          return { contact: k, client: c.id, name: c.name, code: c.client_code || null, slug: c.slug, stage: c.stage, to: invRecipient(c.id) };
-        }).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+        var cName = function (cid) { return ((DB.clients.filter(function (x) { return x.id === cid; })[0]) || {}).name || ''; };
+        var links = Object.keys(cands).map(Number).map(function (k) {
+          var seen = cands[k].filter(function (x) { return ivSeen(x.cid); });
+          if (!seen.length) return null;
+          seen.sort(function (a, b) { return a.pref - b.pref || a.rnk - b.rnk || (cName(a.cid) < cName(b.cid) ? -1 : cName(a.cid) > cName(b.cid) ? 1 : 0); });
+          var c = DB.clients.filter(function (x) { return x.id === seen[0].cid; })[0];
+          var all = seen.map(function (x) { return x.cid; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+          var to = recipientFor(c.id, k);
+          return { contact: k, client: c.id, name: c.name, code: c.client_code || null, slug: c.slug, stage: c.stage, clients: all, to: to, company: to ? to.company : null };
+        }).filter(Boolean).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
         return ivOk({ me: { id: ivMe.id, name: ivMe.name }, all: ivAll, send: opsAllowed('clients.billing', 'work'), links: links });
       }
       if (name === 'invoice_reminders') {
@@ -10148,8 +10198,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.bukku_settings = DB.bukku_settings || (window.__bukkuFieldsSet === false ? {} : { field_client: 11, field_supplier: 12 });
       DB.bukku_links = DB.bukku_links || [];
       var bkMe = opsMe();
-      var bkMay = function (k, lv) { return bkMe && (k === 'client' ? opsAllowed('clients.billing', lv) : k === 'supplier' ? opsAllowed('suppliers', lv) : false); };
+      var bkSeen = function (cid) { var c = DB.clients.filter(function (x) { return x.id === cid; })[0]; return Boolean(c) && scopeRowOk(c.stage, c.owner, 'view', c.sales_by); };
+      var bkMay = function (k, lv, id) {
+        if (!bkMe) return false;
+        if (k === 'client') return opsAllowed('clients.billing', lv);
+        if (k === 'supplier') return opsAllowed('suppliers', lv);
+        if (k === 'entity') return opsAllowed('clients.billing', lv) && (id == null || (DB.client_entities || []).some(function (l) { return l.entity_id === id && bkSeen(l.client_id); }));
+        return false;
+      };
       var bkPrint = function (k, id) {
+        if (k === 'entity') {
+          var be = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0];
+          var bh = be && DB.clients.filter(function (x) { return x.id === entHome(id); })[0];
+          return be ? JSON.stringify([be.legal_name, be.company_no, be.billing_address, bh ? bh.client_code : null, be.finance_email]) : null;
+        }
         var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
         return r ? JSON.stringify(k === 'client' ? [r.legal_name, r.company_no, r.billing_address, r.client_code, r.finance_email] : [r.name, r.brn, r.address, r.code, r.email]) : null;
       };
@@ -10164,13 +10226,45 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return bkOk();
       }
       var bkLink = DB.bukku_links.filter(function (x) { return x.kind === args.p_kind && x.record_id === args.p_id; })[0];
+
+      var bkShared = function (k, id) {
+        if (k === 'client') {
+          var me0 = mainEnt(id), el = me0 && DB.bukku_links.filter(function (x) { return x.kind === 'entity' && x.record_id === me0; })[0];
+          var en = el && (DB.billing_entities || []).filter(function (x) { return x.id === me0; })[0];
+          return el ? { contact_id: el.contact_id, code: el.code, via: (en && en.legal_name) || 'Billing entity' } : null;
+        }
+        if (k === 'entity') {
+          var hits = (DB.client_entities || []).filter(function (l) { return l.entity_id === id && l.is_main; }).map(function (l) {
+            var cl = DB.bukku_links.filter(function (x) { return x.kind === 'client' && x.record_id === l.client_id; })[0];
+            var c = DB.clients.filter(function (x) { return x.id === l.client_id; })[0];
+            return cl && c ? { contact_id: cl.contact_id, code: cl.code, via: c.name } : null;
+          }).filter(Boolean).sort(function (a, b) { return a.via < b.via ? -1 : 1; });
+          return hits[0] || null;
+        }
+        return null;
+      };
       if (name === 'bukku_link_get') {
-        if (!bkMay(args.p_kind, 'view')) return bkNo('denied');
-        if (!bkLink) return bkOk();
+        if (!bkMay(args.p_kind, 'view', args.p_id)) return bkNo('denied');
+        if (!bkLink) { var sh = bkShared(args.p_kind, args.p_id); return bkOk(sh ? { contact_id: sh.contact_id, code: sh.code, via: sh.via, changed: false } : {}); }
         return bkOk({ contact_id: bkLink.contact_id, code: bkLink.code, sent_at: bkLink.sent_at, sent_by: bkLink.sent_by, changed: bkLink.hash !== bkPrint(args.p_kind, args.p_id) });
       }
-      if (!bkMay(args.p_kind, 'work')) return bkNo('denied');
+      if (!bkMay(args.p_kind, 'work', args.p_id)) return bkNo('denied');
       if (name === 'bukku_prepare') {
+        if (args.p_kind === 'entity') {
+          var pe = (DB.billing_entities || []).filter(function (x) { return x.id === args.p_id; })[0];
+          if (!pe) return bkNo('not-found');
+          var ph = DB.clients.filter(function (x) { return x.id === entHome(pe.id); })[0] || {};
+          var pk = entContact(pe.id) || {};
+          var pmiss = [];
+          if (!pe.legal_name) pmiss.push('Registered name');
+          if (!ph.client_code) pmiss.push('Client ID');
+          if (pmiss.length) return bkNo('incomplete', { missing: pmiss });
+          var psh = bkLink ? null : bkShared('entity', pe.id);
+          return bkOk({ kind: 'entity', id: pe.id, legal_name: String(pe.legal_name).toUpperCase(), other_name: ph.name, reg_no: (pe.company_no || '').replace(/[^0-9A-Za-z]/g, '') || null,
+            address: pe.billing_address || null, email: pe.finance_email || pk.email || null, currency: billMarket(ph) === 'SG' ? 'SGD' : 'MYR', our_id: ph.client_code,
+            field_id: DB.bukku_settings.field_client || null, type: 'customer', salutation: pk.salutation || null, person: pk.name || null,
+            contact_id: bkLink ? bkLink.contact_id : psh ? psh.contact_id : null });
+        }
         if (args.p_kind === 'client') {
           var bc = DB.clients.filter(function (x) { return x.id === args.p_id; })[0];
           if (!bc) return bkNo('not-found');
@@ -10180,7 +10274,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (miss.length) return bkNo('incomplete', { missing: miss });
           return bkOk({ kind: 'client', id: bc.id, legal_name: String(bc.legal_name).toUpperCase(), other_name: bc.name, reg_no: (bc.company_no || '').replace(/[^0-9A-Za-z]/g, '') || null,
             address: bc.billing_address || null, email: bc.finance_email || null, currency: billMarket(bc) === 'SG' ? 'SGD' : 'MYR', our_id: bc.client_code, field_id: DB.bukku_settings.field_client || null, type: 'customer',
-            contact_id: bkLink ? bkLink.contact_id : null });
+            contact_id: bkLink ? bkLink.contact_id : (bkShared('client', bc.id) || {}).contact_id || null });
         }
         var bs = (DB.suppliers || []).filter(function (x) { return x.id === args.p_id; })[0];
         if (!bs) return bkNo('not-found');
@@ -10199,13 +10293,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (Number(l.contact_id) !== Number(c) || (l.kind === k && l.record_id === id)) return false;
           if (k === 'supplier' && l.kind === 'client' && sp && sp.client_id === l.record_id) return false;
           if (k === 'client' && l.kind === 'supplier' && (DB.suppliers || []).some(function (x) { return x.id === l.record_id && x.client_id === id; })) return false;
+          if (k === 'client' && l.kind === 'entity' && l.record_id === mainEnt(id)) return false;
+          if (k === 'entity' && l.kind === 'client' && mainEnt(l.record_id) === id) return false;
           return true;
         });
+      };
+
+      var bkFile = function (k, id, detail, at) {
+        if (k === 'entity') {
+          var fe = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0];
+          (DB.client_entities || []).filter(function (l) { return l.entity_id === id; }).forEach(function (l) {
+            var fc = DB.clients.filter(function (x) { return x.id === l.client_id; })[0];
+            if (fc) DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'client.billing', subject: fc.name,
+              detail: ((fe && fe.legal_name) || 'Billing entity') + ' · ' + detail, created_at: at });
+          });
+          return;
+        }
+        var fr = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
+        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: k === 'client' ? 'client.edited' : 'supplier.edited',
+          subject: fr ? (k === 'client' ? fr.name : (fr.name || fr.code)) : 'Bukku', detail: detail, created_at: at });
       };
 
       if (name === 'bukku_unlink' || name === 'bukku_unlink_undo') {
         DB.bukku_links_gone = DB.bukku_links_gone || [];
         var bkNameOf = function (k, id) {
+          if (k === 'entity') { var ne = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0]; return ne ? (ne.legal_name || 'Billing entity') : null; }
           var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
           return r ? (k === 'client' ? r.name : (r.name || r.code)) : null;
         };
@@ -10221,27 +10333,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
               (cid && l.kind === 'supplier' && (DB.suppliers || []).some(function (s) { return s.id === l.record_id && s.client_id === cid; })));
           });
           if (!pair.length) return bkNo('not-linked');
-          if (pair.some(function (l) { return !bkMay(l.kind, 'work'); })) return bkNo('denied');
+          if (pair.some(function (l) { return !bkMay(l.kind, 'work', l.record_id); })) return bkNo('denied');
           var stamp = new Date().toISOString();
           pair.forEach(function (l) {
             DB.bukku_links_gone.push(Object.assign({}, l, { gone_at: stamp }));
             DB.bukku_links.splice(DB.bukku_links.indexOf(l), 1);
-            DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: l.kind === 'client' ? 'client.edited' : 'supplier.edited',
-              subject: bkNameOf(l.kind, l.record_id), detail: 'Unlinked from Bukku · ' + (l.code || l.contact_id), created_at: stamp });
+            bkFile(l.kind, l.record_id, 'Unlinked from Bukku · ' + (l.code || l.contact_id), stamp);
           });
           return bkOk({ stamp: stamp, records: pair.length });
         }
         var gone = DB.bukku_links_gone.filter(function (g) { return g.gone_at === args.p_stamp; });
         if (!gone.some(function (g) { return g.kind === args.p_kind && g.record_id === args.p_id; })) return bkNo('not-found');
-        if (gone.some(function (g) { return !bkMay(g.kind, 'work'); })) return bkNo('denied');
+        if (gone.some(function (g) { return !bkMay(g.kind, 'work', g.record_id); })) return bkNo('denied');
         if (gone.some(function (g) { return DB.bukku_links.some(function (l) { return l.kind === g.kind && l.record_id === g.record_id; }); })) return bkNo('moved');
         if (gone.some(function (g) { return bkTaken(g.kind, g.record_id, g.contact_id); })) return bkNo('taken');
         gone.forEach(function (g) {
           var back = Object.assign({}, g); delete back.gone_at;
           DB.bukku_links.push(back);
           DB.bukku_links_gone.splice(DB.bukku_links_gone.indexOf(g), 1);
-          DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: g.kind === 'client' ? 'client.edited' : 'supplier.edited',
-            subject: bkNameOf(g.kind, g.record_id), detail: 'Linked to Bukku again · ' + (g.code || g.contact_id), created_at: new Date().toISOString() });
+          bkFile(g.kind, g.record_id, 'Linked to Bukku again · ' + (g.code || g.contact_id), new Date().toISOString());
         });
         return bkOk({ records: gone.length });
       }
@@ -10257,8 +10367,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         put(args.p_kind, args.p_id, bkPrint(args.p_kind, args.p_id));
         var bsl = args.p_kind === 'supplier' ? (DB.suppliers || []).filter(function (x) { return x.id === args.p_id; })[0] : null;
         if (bsl && bsl.client_id) put('client', bsl.client_id, null);
-        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: args.p_kind === 'client' ? 'client.edited' : 'supplier.edited',
-          subject: 'Bukku', detail: (name === 'bukku_link_only' ? 'Linked to Bukku, nothing sent · ' : 'Sent to Bukku · ') + args.p_code, created_at: new Date().toISOString() });
+        bkFile(args.p_kind, args.p_id, (name === 'bukku_link_only' ? 'Linked to Bukku, nothing sent · ' : 'Sent to Bukku · ') + args.p_code, new Date().toISOString());
         return bkOk();
       }
     }
@@ -11724,7 +11833,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
               if (bkb.action === 'invoices') {
                 if (window.__bukkuInvFail) return bkR({ error: window.__bukkuInvFail });
 
-                var want = bkb.client ? (sc.links || []).filter(function (l) { return l.client === bkb.client; }).map(function (l) { return Number(l.contact); }) : null;
+                var bills = function (l, cid) { return l.client === cid || (l.clients || []).indexOf(cid) > -1; };
+                var want = bkb.client ? (sc.links || []).filter(function (l) { return bills(l, bkb.client); }).map(function (l) { return Number(l.contact); }) : null;
                 if (want && !want.length) return bkR({ ok: true, today: ivT, send: sc.send === true, all: sc.all === true, linked: false, rows: [], reminders: [] });
                 var ivDue = function (inv) {
                   if (!(ivCents(inv.balance) > 0) || (inv.status && inv.status !== 'ready')) return null;
@@ -11737,7 +11847,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   if (want ? want.indexOf(inv.contact_id) < 0 : !mayC(inv.contact_id)) return;
                   var od = ivOver(inv) || (want ? ivDue(inv) : null); if (!od) return;
                   var l = ivLine(inv, od), lk = links[inv.contact_id];
-                  if (lk) Object.assign(l, { client: lk.client, client_name: lk.name, client_code: lk.code, client_slug: lk.slug, to: lk.to });
+                  if (lk) Object.assign(l, { client: lk.client, client_name: lk.name, client_code: lk.code, client_slug: lk.slug, to: lk.to, company: lk.company || null });
                   out.push(l);
                 });
                 out.sort(function (a, b) { return b.days - a.days || (a.number < b.number ? -1 : 1); });
@@ -11762,7 +11872,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               }
               if (!lines.length) return bkR({ error: 'nothing-overdue', paid: paid });
               lines.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
-              var b = invBegin(sc.me && sc.me.id, links[contact] ? links[contact].client : null, contact, lines[0].contact_name, lines[0].contact_email,
+              var lc = links[contact];
+              var from = lc && bkb.client && (lc.client === bkb.client || (lc.clients || []).indexOf(bkb.client) > -1) ? bkb.client : null;
+              var b = invBegin(sc.me && sc.me.id, from || (lc ? lc.client : null), contact, lines[0].contact_name, lines[0].contact_email,
                 lines.map(function (l) { return { id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency, link: l.link, part: l.part }; }),
                 bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));

@@ -324,7 +324,7 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
     ['Billing person', person(c), person(next)],
     ['Billing address', addr(c), addr(next)],
     ['Payment term', termName(c.default_term_id), termName(next.default_term_id)],
-    [p.kind === 'client' ? 'Client ID' : 'Supplier ID', idOf(c), idOf(next)],
+    [p.kind === 'supplier' ? 'Supplier ID' : 'Client ID', idOf(c), idOf(next)],
     ['Type', (c.types || []).map((t: string) => T[t] || t).join(', '), (next.types || []).map((t: string) => T[t] || t).join(', ')]
   ];
   return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
@@ -531,6 +531,12 @@ export function invoiceTable(lines: any[]): string {
 const FIN_FROM = () => secret('MAIL_FINANCE_FROM') || 'ADspace Finance <noreply-finance@sc.adspace.me>';
 const FIN_REPLY = () => secret('MAIL_FINANCE_REPLY_TO') || 'einvoice@adspacestudios.com';
 
+/* A contact counts for a client where it is the client's own, or its
+   company bills that client (`clients`, BUKKU BY ENTITY). */
+export function billsFor(link: any, client: string): boolean {
+  return !!link && (link.client === client || (Array.isArray(link.clients) && link.clients.includes(client)));
+}
+
 async function invoiceAction(action: string, body: Record<string, any>, db: any, origin: string | null): Promise<Response> {
   const sc = await db.rpc('invoice_scope');
   if (sc.error) return json({ error: 'needs-update' }, 200, origin);
@@ -544,8 +550,10 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   if (action === 'invoices') {
     /* One client's (its Billing, 2026-10-28): the Bukku contacts linked to
        it alone, and its unpaid invoices not yet due as well. */
+    /* Every company billing it (2026-10-29, Bukku by entity): a contact
+       counts for each client its company bills (`clients`). */
     const forClient = /^[0-9a-f-]{36}$/i.test(String(body.client || '')) ? String(body.client) : null;
-    const want = forClient ? new Set(Array.from(links.values()).filter((l) => l.client === forClient).map((l) => Number(l.contact))) : null;
+    const want = forClient ? new Set(Array.from(links.values()).filter((l) => billsFor(l, forClient)).map((l) => Number(l.contact))) : null;
     if (want && !want.size) return json({ ok: true, today, send: scope.send === true, all: scope.all === true, linked: false, rows: [], reminders: [] }, 200, origin);
     /* A colleague who sees no linked client and not every contact reads
        nothing from Bukku (review 2026-10-29, 12). */
@@ -572,7 +580,8 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
       if (!od) continue;
       const l = lineOf({ ...inv, ...src, contact_email: inv.contact_email, short_link: inv.short_link || src.short_link }, od, today);
       const link = links.get(c);
-      if (link) Object.assign(l, { client: link.client, client_name: link.name, client_code: link.code, client_slug: link.slug, to: link.to });
+      if (link) Object.assign(l, { client: link.client, client_name: link.name, client_code: link.code, client_slug: link.slug, to: link.to,
+        company: link.company || null });
       else l.contact_email = l.contact_email || '';
       out.push(l);
     }
@@ -613,10 +622,13 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   if (!lines.length) return json({ error: 'nothing-overdue', ...left }, 200, origin);
   lines.sort((a, b) => a.due.localeCompare(b.due) || a.number.localeCompare(b.number));
   const link = links.get(contact);
+  /* Filed under the client it was sent from, where that client's company
+     it is; else the one the contact is filed under. */
+  const fromClient = link && /^[0-9a-f-]{36}$/i.test(String(body.client || '')) && billsFor(link, String(body.client)) ? String(body.client) : null;
   const bc = await bukku('GET', `/contacts/${contact}`).then((r) => (r && r.contact) || null).catch(() => null);
   const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const begun = await svc.rpc('invoice_email_begin', {
-    p_actor: scope.me && scope.me.id, p_client: link ? link.client : null, p_contact: contact,
+    p_actor: scope.me && scope.me.id, p_client: fromClient || (link ? link.client : null), p_contact: contact,
     p_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
     p_email: String((bc && bc.email) || lines[0].contact_email || ''),
     p_invoices: lines.map((l) => ({ id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency,
@@ -693,7 +705,7 @@ Deno.serve(async (req) => {
     if (action === 'contacts' || action === 'contact') return await contactsAction(action, body, db, origin);
 
     const kind = String(body.kind || ''), id = String(body.id || '');
-    if (!['client', 'supplier'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
+    if (!['client', 'supplier', 'entity'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
     const p = prep.data as Prep;
