@@ -69,11 +69,40 @@
      to one column where two still cut (separate pills either way). It is
      measured with the track unwrapped every time, so a wider sheet puts it
      back on one line. */
+  function textWidth(b) {
+    var sp = document.createElement('span');
+    sp.textContent = b.textContent;
+    sp.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;font:inherit;letter-spacing:inherit';
+    b.appendChild(sp);
+    var w = sp.getBoundingClientRect().width;
+    b.removeChild(sp);
+    return w;
+  }
   function fit(seg) {
     if (!seg || !seg.clientWidth) return;
-    seg.classList.remove('is-wrap', 'is-stack');
-    var cutAt = function () { return Array.prototype.some.call(seg.children, function (b) { return b.scrollWidth > b.clientWidth + 1; }); };
+    seg.classList.remove('is-wrap', 'is-stack', 'is-auto');
+    /* A button cutting its words with an ellipsis reports no overflow of its
+       own (Chromium, 2026-10-29: "Unavaila…" read as fitting), so the words
+       are measured, against the room inside the padding. */
+    var cutAt = function () {
+      return Array.prototype.some.call(seg.children, function (b) {
+        if (b.scrollWidth > b.clientWidth + 1) return true;
+        var cs = getComputedStyle(b), px = function (k) { return parseFloat(cs[k]) || 0; };
+        /* An option sized to its words and never shrunk (the small segment)
+           cannot clip them. */
+        if (cs.flexShrink === '0' && cs.flexBasis === 'auto') return false;
+        var room = b.getBoundingClientRect().width - px('borderLeftWidth') - px('borderRightWidth') - px('paddingLeft') - px('paddingRight');
+        /* Half a pixel of slack: the browser clips a word that fits by less. */
+        return textWidth(b) > room - 0.5;
+      });
+    };
     if (!cutAt()) return;
+    /* First each option takes the room its words need and the rest is shared,
+       so a short word gives way to a long one on the same row (2026-10-29:
+       Available, Upgrading, Unavailable at 390); only then do they wrap. */
+    seg.classList.add('is-auto');
+    if (!cutAt()) return;
+    seg.classList.remove('is-auto');
     seg.classList.add('is-wrap');
     if (cutAt()) seg.classList.add('is-stack');
   }

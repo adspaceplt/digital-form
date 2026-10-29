@@ -7359,3 +7359,21 @@ already sent keeps opening while it is only paused. The Upgrade mode standing
 when the migration first runs becomes every page's, and the old functions
 read and set every page for a tab served before.
 
+### 2026-10-29 — /quote/'s Start button read Planned commencement; segments clipped their words
+- **What broke.** The quotation website's opening page showed its Start button
+  as "Planned commencement". The new field's label had been given the word
+  table's existing key `start`, which the button also reads. The opening page
+  also still promised the quotation "instantly", which the review step made
+  untrue. Separately, the Page availability question on a 390 phone read
+  "Unavaila…": a segment checks whether its words fit by a button's
+  `scrollWidth`, and Chromium reports no overflow on a button clipping its
+  words with an ellipsis, so the segment never wrapped.
+- **Found by** the user on an iPhone (two screenshots).
+- **Fixed.** The field has its own key; the opening page says ADspace reviews
+  the request and sends the quotation on WhatsApp; `quotesite` asserts the
+  Start button's words. Segments measure their words against the room inside
+  the padding with half a pixel of slack, give each option room by its words
+  (`is-auto`) before wrapping, and never judge an option sized to its words.
+  Page availability's choice reads Available, Upgrading, Unavailable on one
+  row; its list rows put the state beside the name, and in Select a press
+  anywhere on a row ticks it (`upgrade` measures all three at 440, 390, 320).

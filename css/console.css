@@ -2578,17 +2578,29 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .pg-grp { margin: 16px 0 4px; }
 .pg-grp:first-child { margin-top: 4px; }
 .pg-row { grid-template-columns: minmax(0, 1fr) 190px auto; }
-.pg-row .dtrow-name { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
-.pg-row .dtrow-name > b, .pg-row .dtrow-name > small { grid-column: 2; }
+.pg-row .dtrow-name { display: grid; grid-template-columns: minmax(0, 1fr); }
+.pg-row.is-picking .dtrow-name { grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
+.pg-row.is-picking .dtrow-name > b, .pg-row.is-picking .dtrow-name > small { grid-column: 2; }
 .pg-row .dtrow-name > small { font-size: 12px; }
 .pg-row .pg-tick { grid-row: 1 / span 2; margin: 0; }
 .pg-state { display: grid; gap: 2px; }
 .pg-state small { font-size: 12px; color: var(--ink-mute); }
-.sheet-card.is-tight .pg-row, .is-tight .pg-row { grid-template-columns: minmax(0, 1fr) auto; }
-.is-tight .pg-row .pg-state { grid-column: 1; grid-row: 2; }
+.pg-row.is-picking { cursor: pointer; }
+/* A narrow sheet is the phone's list row: the name over its address at the
+   left, the state over when at the right, Edit under it (2026-10-29: the
+   state on its own line read as a third row). */
+.sheet-card.is-tight .pg-row, .is-tight .pg-row {
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name state" "name acts";
+  align-items: start; row-gap: 4px;
+}
+.is-tight .pg-row .dtrow-name { grid-area: name; }
+.is-tight .pg-row .pg-state { grid-area: state; justify-items: end; text-align: right; }
+.is-tight .pg-row .hol-acts { grid-area: acts; justify-self: end; }
 @media (max-width: 640px) {
-  .pg-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .pg-row .pg-state { grid-column: 1; grid-row: 2; }
+  .pg-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name state" "name acts"; align-items: start; row-gap: 4px; }
+  .pg-row .dtrow-name { grid-area: name; }
+  .pg-row .pg-state { grid-area: state; justify-items: end; text-align: right; }
+  .pg-row .hol-acts { grid-area: acts; justify-self: end; }
 }
 /* Overseas access (2026-10-24): the cover's request form, left aligned in
    the cover's column. */

@@ -1439,6 +1439,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .seg-opt:disabled { opacity: .45; cursor: default; }
 /* A segment whose words do not fit one line: two columns, an odd last option
    across both (js/form.js decides by measuring, never by a count). */
+.seg.is-auto > .seg-opt { flex: 1 1 auto; }
 .seg.is-wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .seg.is-wrap > .seg-opt:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .seg-opt:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 1px; }
