@@ -1724,7 +1724,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Intake: Brand name (the trading name; the registered name belongs to Billing),
   Source, Salutation (the contact sheet's own list; 2026-10-14), Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
   Industry, Market, Urgency to commence (`clients.commence`, blank until
-  asked). After intake the enquiry is edited like any other fact, and a person
+  asked; Within 3 months, 3 to 6 months, More than 6 months). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
   fixed: the colleague keying a lead holds it. Sales by (`crmSalesBy`, More
   details) is the colleague keying a new lead, changed only at Clients Full
@@ -5664,7 +5664,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   what is chosen and typed kept in the tab only while the steps are gone
   through (a refresh keeps the place) and cleared whenever the opening page
   shows (the user, 2026-10-14: "dont cache my record"), Your details (salutation, optional, from the contact sheet's list, kept on the lead's contact (`2026-10-14-quote-website-salutation.sql`); name, work email, a Malaysia or
-  Singapore WhatsApp number, brand, industry, consent; a free email is
+  Singapore WhatsApp number, brand, industry, Planned commencement
+  (required on the page: Within 3 months, 3 to 6 months, More than 6 months;
+  kept as the lead's Urgency to commence, moved on a lead asking again and
+  named in the team's notice; no price reads it;
+  `2026-10-29-quotation-website-commence.sql`), consent; a free email is
   advised against, never refused), then the quotation priced by
   `quote_price` through `quote-request` (Turnstile, every request refused
   while the secret `TURNSTILE_SECRET` is unset; Verify JWT off), which calls

@@ -7315,3 +7315,16 @@ request alone (a KOL campaign, a custom creator list) before the details are
 asked, pointing to WhatsApp, and `quotation_make` refuses `nothing-priced`
 for every source, so the website's new lead rolls back with it.
 `tests/quotesite.js` walks the refusal, `tests/sql.js` the function.
+
+### 2026-10-29 · The quotation website asks when the prospect plans to start
+The user: "its missing one thing which is the urgency to commence. It will
+not affect the rates ... mainly for internal planning so we would know the
+new leads or prospects schedule", with the team's own three answers (Within
+3 months, 3 to 6 months, More than 6 months later). Your details asks
+Planned commencement, required on the page; `quote_website_create` keeps it
+as the lead's `clients.commence` (the console's Urgency to commence, whose
+words now read as the team's), moves it on a lead asking again (filed from
+and to) and names it in the team's notice. The database accepts it absent,
+so a tab opened before the release still makes its quotation. Ready to
+proceed's own question (Within a month, In 1 to 3 months) is left as the
+user approved it on 2026-10-26.
