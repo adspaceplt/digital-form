@@ -27,7 +27,10 @@
   var FULL = ['suppliers', 'whatsapp', 'services'];
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
   function full(k) { return Boolean(bridge.may && bridge.may(k, 'manage')); }
-  function allowed() { return KEYS.some(may) || FULL.some(full); }
+  /* Performance (2026-10-29): management at View reads the figures, behind
+     the master code; only its admins change them (the sheet says so). */
+  function perfMay() { return Boolean(bridge.may && bridge.may('team.performance', 'view')) && Boolean(window.ADspacePerf && window.ADspacePerf.openSettings); }
+  function allowed() { return KEYS.some(may) || FULL.some(full) || perfMay(); }
   function say(text, tone) {
     var m = $('settingsMsg');
     if (!m) return;
@@ -261,6 +264,12 @@
          WhatsApp, each a message ADspace pays for. */
       biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
         meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' a day on WhatsApp' }]);
+    /* Performance (the user, 2026-10-29: "approve all"): the figures each of
+       Performance's views is worked out with, one row a view, each opening
+       the one sheet on its part behind the master code. */
+    add('performance', 'Performance', perfMay() ? window.ADspacePerf.VIEWS.map(function (v) {
+      return { id: 'perf-' + v[0], name: v[1], kind: 'open', meta: PERF_META[v[0]] };
+    }) : []);
     /* Templates (the user, 2026-10-29: "approve all"): every wording the
        portal sends or fills, each edited here alone. */
     add('templates', 'Templates', [
@@ -275,6 +284,9 @@
     return out;
   }
 
+  /* What each Performance part holds, as its sheet heads them. */
+  var PERF_META = { months: 'Grades, issue points, queries, reminders', quarters: 'Prizes, flexible hours',
+    company: 'Bonus pool, company trip, shares', commission: 'Score needed' };
   var reread = '';
   /* What a press said, kept on its row through a repaint (audit SET-2). */
   var said = null;
@@ -456,6 +468,7 @@
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
+    if (a.indexOf('perf-') === 0) { if (window.ADspacePerf && window.ADspacePerf.openSettings) window.ADspacePerf.openSettings(a.slice(5), btn); return; }
     if (a === 'tasktpl') { if (window.ADspaceOps && window.ADspaceOps.openTemplates) window.ADspaceOps.openTemplates(btn); return; }
     if (a === 'wording') { if (window.ADspaceCRM && window.ADspaceCRM.openWording) window.ADspaceCRM.openWording(btn); return; }
   }

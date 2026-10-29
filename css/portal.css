@@ -6750,8 +6750,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tabline { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; min-width: 0; }
 .tabline:not(:has(> :not([hidden]))) { display: none; }
 .perf-tools[hidden] { display: none; }
-.perf-tools > .perf-seticon { color: var(--ink); }
-@media (hover: hover) { .perf-tools > .perf-seticon:hover { background: var(--tonal); } }
 .perf-views > .perf-tools.is-in-views { order: 2; margin-left: auto; }
 .perf-lockicon.is-open { color: var(--ink); }
 .perf-lockicon[hidden] { display: none; }

@@ -7116,3 +7116,14 @@ sentence.
   preview file reports which), and greets "Sir or Madam" where no one is
   named, the page's preview alike. The sign-in emails take `#a19d97`,
   set in Supabase Auth from docs/SIGN-IN-EMAILS.md.
+
+### 2026-10-29 · Performance settings in Settings
+- Asked: release 2 of the approved settings consolidation: Performance
+  settings become a Settings group, the same people, the master code still
+  asked, only performance admins saving; the gear on Team › Performance
+  removed.
+- Now: Settings' Performance group holds Months, Quarters, Bonus and trip
+  and Commission, drawn at `team.performance` View. A row asks the master
+  code where no unlock stands (a wrong code refused in place), then opens
+  the one sheet on its part; an unlock that ran out asks again rather than
+  showing a dead end. The padlock stays on Team › Performance alone.

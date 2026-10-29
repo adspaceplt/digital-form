@@ -566,7 +566,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`, `ops.workflows`, or Suppliers, WhatsApp or Services at
+  `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
@@ -575,7 +575,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
   (Sent again: WhatsApp and supplier
-  emails, Website quotations: how many a day are told on WhatsApp), Templates (the user,
+  emails, Website quotations: how many a day are told on WhatsApp), Performance
+  (Months, Quarters, Bonus and trip, Commission at `team.performance` View,
+  behind the master code; 2026-10-29), Templates (the user,
   2026-10-29: every template in one place: WhatsApp templates at WhatsApp
   Full Access, Supplier emails at Suppliers Full Access, Overdue reminder,
   Document types, Task templates at `ops.workflows`, Rate card wording at
@@ -4281,11 +4283,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A dispute window from release of the month's `dispute_days` setting
     (7; 3 before 2026-10-01; a month keeps the window it was given), item
     by item. Every Performance figure is edited in Performance settings,
-    an admin's: one gear beside the padlock (`#perfSetIcon`, while unlocked;
-    on a phone the pair closes the Performance view row, `placeTools`, so
-    the Team tabs stay whole), the sheet in four parts matching the views
-    (`#rwSView`: Months, Quarters, Bonus and trip, Commission), opening on
-    the view in front, each label the rule in plain words (`RW_SET`).
+    an admin's: Settings' Performance group (2026-10-29; the gear beside
+    the padlock is gone), one row a part (Months, Quarters, Bonus and trip,
+    Commission), for `team.performance` at View, each asking the master
+    code where no unlock stands (`ADspacePerf.openSettings(view, opener)`;
+    an unlock run out asks again) and opening the sheet on that part
+    (`#rwSView`), each label the rule in plain words (`RW_SET`). On a phone
+    the padlock closes the Performance view row (`placeTools`), so the
+    Team tabs stay whole.
   - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
     the day the numbers were reported to the member. The sheet prefills
     today while none is set; release fills it where empty; management corrects it until final (in or after the month, never
@@ -4500,7 +4505,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     and trip gates, the pool's share of profit, months at B, units by grade,
     the commission floor), each from a quarter on and read as at the
     quarter, month, half or deal month (`perf_setting`). Reward settings
-    (the gear's sheet, `#rwSetSheet`): management reads, `team.perfadmin`
+    (`#rwSetSheet`, from Settings): management reads, `team.perfadmin`
     changes them from a quarter on (`perf_settings_set`), never into a
     quarter or half already confirmed (`confirmed`); each change is filed
     from and to (`settings_set`), and every calculation says the rules it
