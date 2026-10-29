@@ -217,7 +217,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
 | Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
-| `supabase/schema.sql` or a migration | `sql` and `policies`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
+| `supabase/schema.sql` or a migration | `sql` and `policies`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`, `meetmsgsql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Once the day's requests are merged | `all` on main, `ui` included; its findings are the next batch |
 
@@ -272,6 +272,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
 | `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
@@ -580,7 +581,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   behind the master code; 2026-10-29), Templates (the user,
   2026-10-29: every template in one place: WhatsApp templates at WhatsApp
   Full Access, Supplier emails at Suppliers Full Access, Overdue reminder,
-  Document types, Task templates at `ops.workflows`, Rate card wording at
+  Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access); each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
   Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
@@ -4245,7 +4246,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     refuses to clear is said (`not-saved`), never answered deleted
     (2026-10-22, BE-8).
   - Not connected is not a failure of the save.
-  - `clientMessage()` is the one bilingual template.
+  - `clientMessage()` fills the one bilingual template, the team's words
+    (`meeting_message_template`, `2026-10-29-meeting-message.sql`; Settings,
+    Templates, Meeting message at `team.settings`; `meeting_message_save`
+    refuses words without {date}, `no-date`, filed under Meeting message):
+    {meeting}, {date}, {time}, {month}, {channel}, {link}, a line whose
+    field has no value left out and a heading left empty with it; read once
+    a visit, the seed's words standing in until it answers, Show and Copy
+    filling it again at the press.
 - The client portal shows meetings read-only (`portal_meetings`), never a task.
 - Deletes:
   - `ops_delete_task` (Manage; the number typed back; a reason; an

@@ -98,6 +98,7 @@
     s3_sweeps: 'id ran_at mode prefix listed listed_bytes young young_bytes kept kept_bytes would_delete would_delete_bytes deleted deleted_bytes failed note sample',
     services: 'slug category name rate unit position active note detail min_months spec sku',
     rate_card_text: 'key label page position value updated_at updated_by',
+    meeting_message_template: 'id body updated_at updated_by',
     rate_card_versions: 'id version valid_until note snapshot published_at published_by',
     sm_report_ads: 'id report_id position name objective result_label audience starts_on ends_on spend results reach impressions ctr cpr cpr_basis age hook_rate hold_rate avg_play retention thumb_data remark created_at ad_ids ad_account platform ad_error purchase_value',
     sm_report_platforms: 'id report_id platform account_name handle group_key group_label position metrics followers_start followers_end growth_override growth_reason er_basis metric_notes summary worked improve actions created_at platform_name',
@@ -264,6 +265,7 @@
     supplier_form_read: 'p_key',
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
+    meeting_message_get: '', meeting_message_save: 'p_body',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
@@ -2702,6 +2704,7 @@ function cardSlugFree(name, self, email) {
     });
   }
 
+  var MEETING_MESSAGE = 'Meeting Schedule {meeting}\n\nDate \u65e5\u671f: {date}\nTime \u65f6\u95f4: {time}\n\nMeeting Agenda \u6458\u8981:\n\u2022  {month} Content Discussion\n\nChannel \u6e20\u9053:\n{channel}\nLink: {link}';
   function invTemplateSeed() {
     return { id: 1, subject_one: 'Payment reminder · Invoice {invoice no}', subject_many: 'Payment reminder · {count} overdue invoices',
       body: 'Dear {contact name},\n\nThis is a reminder that payment of {total} due from {client} is now overdue.\n\n{invoices}\n\nWe would be grateful if payment could be arranged at your earliest convenience. If payment has already been made, please disregard this email.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
@@ -9740,6 +9743,28 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (name === 'meeting_message_get' || name === 'meeting_message_save') {
+      var mmMe = opsMe();
+      var mmNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return mmNo(window.__refuseRpc[name]);
+      DB.meeting_message_template = DB.meeting_message_template || [{ id: 1, body: MEETING_MESSAGE, updated_at: null, updated_by: null }];
+      var mm = DB.meeting_message_template[0];
+      if (!mmMe) return mmNo('denied');
+      if (name === 'meeting_message_get') {
+        var mby = mm.updated_by ? DB.team_members.filter(function (m) { return m.id === mm.updated_by; })[0] : null;
+        return Promise.resolve({ data: { ok: true, body: mm.body, updated_at: mm.updated_at, updated_by: mby ? mby.name : null }, error: null });
+      }
+      if (!opsGranted('team.settings', 'work')) return mmNo('denied');
+      var mb = String(args.p_body || '').replace(/\r/g, '').trim();
+      if (mb.length < 2 || mb.length > 3000) return mmNo('bad-body');
+      if (!/\{\s*date\s*\}/i.test(mb)) return mmNo('no-date');
+      if (mb !== mm.body) {
+        Object.assign(mm, { body: mb, updated_at: new Date().toISOString(), updated_by: mmMe.id });
+        DB.activity_log.unshift({ id: nid('al'), actor: mmMe.name, action: 'team.changed', subject: 'Meeting message', detail: 'Message', created_at: new Date().toISOString() });
+        persist();
+      }
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (/^invoice_/.test(name)) {
       var ivOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var ivNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };

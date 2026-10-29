@@ -7142,3 +7142,15 @@ sentence.
 - Now: the head's ⋯ reads Access code, a sheet of that one field. The
   head still shows the handles and logo, read again on opening a client.
   An unchanged Save says No change. in the mute ink and writes nothing.
+
+### 2026-10-29 · The meeting message is the team's words
+- Asked: release 4 of the approved settings consolidation ("build item 5
+  too"): the Google Meet message sent to clients made editable.
+- Before: the message a month's card copies for the client was typed into
+  js/ops.js; a changed word needed a release.
+- Now: `meeting_message_template` holds it, seeded with the same words;
+  Settings, Templates, Meeting message edits it (`team.settings`), {date}
+  required. The card fills {meeting}, {date}, {time}, {month}, {channel}
+  and {link}; a line whose field is empty leaves, as the channel and link
+  lines did. It is read once a visit; Show and Copy fill it at the press,
+  so a card drawn before the read answered still copies the team's words.
