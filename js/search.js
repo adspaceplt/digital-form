@@ -216,13 +216,23 @@
         /* The registered name is a Billing column the table withholds
            (2026-09-28), so a client is found by its name and its code. */
         var direct = clientRows(q).then(function (r) { return r.error ? r : { rows: (r.rows || []).slice(0, LIMIT) }; });
-        if (!may('clients.contacts')) return direct;
-        var people = read(db.from('client_contacts')
+        var none = Promise.resolve({ rows: [] });
+        var people = !may('clients.contacts') ? none : read(db.from('client_contacts')
           .select('name, email, phone, client_id, clients(id, slug, name, client_code, stage)')
           .is('archived_at', null).or(any(['name', 'email', 'phone'], q)).order('name').limit(LIMIT));
-        /* A client found by its name leads; one found through a contact
-           follows, once, saying which contact. */
-        return Promise.all([direct, people]).then(function (r) {
+        /* A billing entity by its registered name or registration no.
+           (2026-10-29), each client it bills, opening its Billing. A
+           database without the function finds none. */
+        var ents = !may('clients.billing') ? none : db.rpc('billing_entities_find', { p_q: q }).then(function (r) {
+          var rows = [];
+          ((r.data && r.data.entities) || []).forEach(function (e) {
+            e.brands.forEach(function (b) { rows.push({ id: b.id, slug: b.slug, name: b.name, client_code: b.code, bill: e }); });
+          });
+          return { rows: rows };
+        }).catch(function () { return { rows: [] }; });
+        /* A client found by its name leads; one found through a contact or
+           a billing entity follows, once, saying which. */
+        return Promise.all([direct, people, ents]).then(function (r) {
           if (r[0].error && r[1].error) return { error: r[0].error };
           var seen = {}, out = [];
           (r[0].rows || []).forEach(function (c) { seen[c.id] = 1; out.push(c); });
@@ -232,16 +242,21 @@
             seen[c.id] = 1;
             out.push(Object.assign({}, c, { via: p }));
           });
+          (r[2].rows || []).forEach(function (c) {
+            if (seen[c.id]) return;
+            seen[c.id] = 1;
+            out.push(c);
+          });
           return { rows: out.slice(0, LIMIT) };
         });
       },
       row: function (c) {
-        var via = c.via;
+        var via = c.via, bill = c.bill;
         return {
           id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
-          meta: via ? [via.name, via.email || via.phone] : [stageOf(c.stage)],
+          meta: via ? [via.name, via.email || via.phone] : bill ? ['Billed by ' + bill.legal_name, bill.company_no] : [stageOf(c.stage)],
           open: function () {
-            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : ''), 'clients');
+            go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill ? '&tab=billing' : ''), 'clients');
           }
         };
       } },

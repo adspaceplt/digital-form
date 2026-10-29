@@ -3752,6 +3752,20 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    shaded band at the foot of the details it sends, the contact's code and
    state over Last sent, Send to Bukku and its ⋯ at the right edge; under a
    narrow pane the acts take their own line. */
+/* Billing entities (2026-10-29): the other entities stand in Billing's own
+   stack of groups; Add entity's choices are shaded rows, the chosen one in
+   ink's ring, as /quote/'s picks. */
+.ent-list { display: contents; }
+.ent-list > .readgroup:first-child { border-top: 1px solid var(--line-soft); padding-top: 16px; }
+.ent-none { margin: 0; font-size: 13px; }
+.readgroup.ent .readgroup-head .fsec-h { min-width: 0; overflow-wrap: anywhere; }
+.ent-picks { display: grid; gap: 8px; margin-top: 12px; }
+.ent-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px;
+  background: var(--sunk); border-radius: var(--radius-sm); cursor: pointer; }
+.ent-pick input { margin: 3px 0 0; accent-color: var(--ink); }
+.ent-pick:has(input:checked) { box-shadow: inset 0 0 0 1.5px var(--ink); }
+.ent-pick b { display: block; font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
+.ent-pick small { display: block; color: var(--ink-mute); font-size: 12.5px; overflow-wrap: anywhere; }
 .readgroup.bk-band { border-top: 0; margin-top: 4px; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm);
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
 .bk-band > .bk-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }

@@ -1330,6 +1330,9 @@
     /* A visit reads the calls again: a colleague may have logged one since. */
     if (group === 'calls' && visit) loadTouches();
     if (parts.indexOf('billing') > -1) loadDetForm();
+    /* The billing entities are read again on a visit: one may have been
+       added from another client it bills (2026-10-29). */
+    if (parts.indexOf('billing') > -1 && visit && state.client && !state.entLoading) { state.entFor = null; loadEntities(); }
     /* The client's unpaid invoices from Bukku (2026-10-28), read once a visit. */
     if (parts.indexOf('billing') > -1 && window.ADspaceInvoices && state.client) window.ADspaceInvoices.client($('odClient'), state.client, visit);
     /* The checklists are read on every visit and on a record opened on
@@ -2583,8 +2586,16 @@
     if (!box) return;
     var pick = billContact(c);
     var t = function (k) { return c[k] ? esc(c[k]) : ''; };
+    /* Billing entities (2026-10-29): the main entity is the client's own
+       billing; the others follow the Bukku band, each its own group. */
+    var ents = state.entFor === c.id ? state.entities : null;
+    var mainEnt = ents && ents.filter(function (e) { return e.main; })[0];
+    var several = !!(ents && ents.length > 1);
+    var company = [['Registered name', t('legal_name'), true]];
+    if (mainEnt && mainEnt.brands.length) company.push(['Also bills', entBrands(mainEnt)]);
     box.innerHTML =
-      readGroup('Company', [['Registered name', t('legal_name'), true]]) +
+      readGroup('Company', company).replace('<h4 class="fsec-h">Company</h4>',
+        '<h4 class="fsec-h">Company' + (several ? ' <span class="chip">Main</span>' : '') + '</h4>') +
       readGroup('Registration and tax', [
         ['Business registration no.', t('company_no'), true],
         ['Old registration no.', t('company_no_old')],
@@ -2597,10 +2608,291 @@
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]) +
-      '<section class="readgroup bk-group" id="crmBukku" hidden></section>';
+      '<section class="readgroup bk-group" id="crmBukku" hidden></section>' +
+      '<div class="ent-list" id="crmEntities"></div>';
     /* Bukku (2026-10-18): the contact this client is in Bukku, sent by hand. */
     if (window.ADspaceBukku && maySeeBilling()) window.ADspaceBukku.group($('crmBukku'), 'client', c.id);
+    paintEntities();
+    if (state.entFor !== c.id && !state.entLoading) loadEntities();
   }
+
+  /* ---- Billing entities (2026-10-29; the user: "one client several
+     entities, however allow to set the main"). A brand (the client) is
+     billed by one registered company or several, one main; a company may
+     bill several brands. The main entity is the client's billing columns,
+     both ways, so Billing's own sheet edits it; the others are read here
+     and edited through `client_entity_save`. */
+  function loadEntities() {
+    var c = state.client;
+    if (!c || !maySeeBilling()) return;
+    state.entLoading = true;
+    db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
+      state.entLoading = false;
+      if (!state.client || state.client.id !== c.id) return;
+      var d = r.data || {};
+      /* Refused, failed, or a database without the function: Billing reads
+         as the one entity it holds, as before. */
+      state.entFor = c.id;
+      state.entities = r.error || d.error ? null : (d.entities || []);
+      /* A failed read is said, never drawn as none (`state.js`). */
+      state.entFail = r.error && !/function|schema cache/i.test(r.error.message || '') ? r.error.message : '';
+      paintBillRead(state.client);
+    }).catch(function (x) { state.entLoading = false; state.entFor = c.id; state.entities = null; state.entFail = (x && x.message) || String(x); paintBillRead(state.client); });
+  }
+  function entBrands(e) {
+    var go = e.brands.map(function (b) {
+      return '<button class="linkbtn" type="button" data-ent-brand="' + esc(b.slug || b.id) + '">' + esc(b.name) + '</button>';
+    });
+    if (e.hidden) go.push('<span class="muted">' + e.hidden + ' more</span>');
+    return go.join(' ');
+  }
+  function entContact(e) {
+    var k = e.bill_contact;
+    if (!k) {
+      var main = mainContact();
+      return e.brands.length || e.hidden ? 'Main contact of each client'
+        : main ? esc(ADspaceWords.person(main.salutation, main.name)) + ' <span class="muted">· Main contact</span>' : '';
+    }
+    return esc(ADspaceWords.person(k.salutation, k.name)) + (k.client_id !== state.client.id && k.client ? ' <span class="muted">· ' + esc(k.client) + '</span>' : '');
+  }
+  function paintEntities() {
+    var box = $('crmEntities');
+    if (!box) return;
+    var L = state.entFor === (state.client && state.client.id) ? state.entities : null;
+    var work = mayPart('clients.billing', 'work');
+    if (!L && state.entFail && state.entFor === (state.client && state.client.id)) {
+      failLine(box, 'Other billing entities', state.entFail, function () { state.entFor = null; loadEntities(); });
+      return;
+    }
+    if (!L) { box.innerHTML = ''; return; }
+    var others = L.filter(function (e) { return !e.main; });
+    if (!others.length && !work) { box.innerHTML = ''; return; }
+    var t = function (v) { return v ? esc(v) : ''; };
+    box.innerHTML = '<section class="readgroup">' +
+      '<div class="readgroup-head"><h4 class="fsec-h">Other billing entities</h4>' +
+      (work ? '<button class="btn btn-sm" id="crmEntAdd" type="button" data-need="clients.billing:work">Add entity</button>' : '') + '</div>' +
+      (others.length ? '' : '<p class="muted ent-none">None.</p>') + '</section>' +
+      others.map(function (e) {
+        var rows = [['Business registration no.', t(e.company_no), true]];
+        if (e.company_no_old) rows.push(['Old registration no.', t(e.company_no_old)]);
+        rows = rows.concat([['TIN', t(e.tin)], ['SST registration no.', t(e.sst_no)],
+          ['Billing contact', entContact(e)], ['Finance email', t(e.finance_email)],
+          ['Billing address', t(e.billing_address), true, true]]);
+        if (e.brands.length || e.hidden) rows.push(['Also bills', entBrands(e)]);
+        var menu = work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-ent-menu aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" hidden>' +
+          '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="edit">Edit</button>' +
+          '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="main">Make main</button>' +
+          '<button class="kmenu-item" type="button" role="menuitem" data-g="6" data-ea="remove">Remove</button></div></span>' : '';
+        return readGroup(e.legal_name || 'Billing entity', rows)
+          .replace('<section class="readgroup">', '<section class="readgroup ent" data-ent="' + esc(e.id) + '">')
+          .replace(/<h4 class="fsec-h">([\s\S]*?)<\/h4>/, '<div class="readgroup-head"><h4 class="fsec-h">$1</h4>' + menu + '</div>');
+      }).join('');
+    if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
+  }
+  function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
+  var ENT_SAID = {
+    'denied': 'Not allowed.', 'not-found': 'This entity no longer bills this client. Read again.',
+    'taken': 'This entity already bills this client.', 'no-name': 'Enter the company name as registered.',
+    'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
+    'stale': 'Not saved. This changed since it was opened, and has been read again.',
+    'main': 'The main entity is not removed. Make another main first.'
+  };
+  function entSaid(r) {
+    if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
+    return ENT_SAID[r.data && r.data.error] || (r.data && r.data.error) || 'Not saved.';
+  }
+  /* The record's billing read again, then the pane: Make main moves the
+     client's own billing columns. */
+  function entReload(then) {
+    state.entFor = null;
+    API.withBilling([state.client]).then(function () {
+      paintBilling(state.client);
+      if (then) then();
+    });
+  }
+  function entUndo(text, undo) {
+    var host = $('crmBillRead');
+    if (host) window.ADspaceAdmin.undoHere(text, undo, host);
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('[data-ent-menu], [data-ea], [data-ent-brand], #crmEntAdd');
+    if (!t) return;
+    if (t.id === 'crmEntAdd') { openEntAdd(t); return; }
+    if (t.hasAttribute('data-ent-brand')) {
+      /* The other brand opens on its Billing, as an address would. */
+      var key = t.getAttribute('data-ent-brand');
+      history.pushState(null, '', '/admin/?s=clients&client=' + encodeURIComponent(key) + '&tab=billing');
+      clientByKey(key, function (c) { if (c) { window.scrollTo(0, 0); openClient(c, true); } });
+      return;
+    }
+    e.stopPropagation();
+    if (t.hasAttribute('data-ent-menu')) {
+      var m = t.parentNode.querySelector('.kmenu'), open = m.hidden;
+      document.querySelectorAll('#crmEntities .kmenu').forEach(function (x) { x.hidden = true; });
+      m.hidden = !open; t.setAttribute('aria-expanded', String(open));
+      if (open && window.ADspaceMenu) window.ADspaceMenu.place(t, m);
+      return;
+    }
+    var sec = t.closest('[data-ent]'), ent = sec && entOf(sec.getAttribute('data-ent'));
+    var btn = sec && sec.querySelector('[data-ent-menu]');
+    t.closest('.kmenu').hidden = true; if (btn) btn.setAttribute('aria-expanded', 'false');
+    if (!ent) return;
+    var a = t.getAttribute('data-ea'), cid = state.client.id;
+    if (a === 'edit') { openEntity(ent, btn); return; }
+    if (a === 'main') {
+      db.rpc('client_entity_main', { p_client: cid, p_entity: ent.id }).then(function (r) {
+        if (r.error || (r.data && r.data.error)) { msg('crmBillNote', entSaid(r), 'err'); return; }
+        var was = r.data.was;
+        entReload(function () {
+          if (was) entUndo('Main billing entity changed.', function () {
+            db.rpc('client_entity_main', { p_client: cid, p_entity: was }).then(function (u) {
+              if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
+              entReload();
+            });
+          });
+        });
+      });
+      return;
+    }
+    if (a === 'remove') {
+      db.rpc('client_entity_remove', { p_client: cid, p_entity: ent.id }).then(function (r) {
+        if (r.error || (r.data && r.data.error)) { msg('crmBillNote', entSaid(r), 'err'); return; }
+        entReload(function () {
+          entUndo('Billing entity removed.', function () {
+            db.rpc('client_entity_add', { p_client: cid, p_entity: ent.id, p_values: null }).then(function (u) {
+              if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
+              entReload();
+            });
+          });
+        });
+      });
+    }
+  });
+
+  /* Edit and New use Billing's own sheet, with what belongs to the client
+     alone (SST on quotes, the currency, the details form) left out. */
+  function openEntity(ent, opener) {
+    state.detUse = null; state.toActive = null; state.toLetter = null;
+    state.entEdit = { id: ent ? ent.id : null, updated_at: ent ? ent.updated_at : null };
+    var c = state.client;
+    BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = ent ? (ent[f[1]] || '') : ''; });
+    paintBilling(c);
+    if (ent && ent.bill_contact_id && ent.bill_contact && ent.bill_contact.client_id !== c.id) {
+      $('crmBillContact').insertAdjacentHTML('beforeend', '<option value="' + esc(ent.bill_contact_id) + '">' +
+        esc(ADspaceWords.person(ent.bill_contact.salutation, ent.bill_contact.name)) + ' · ' + esc(ent.bill_contact.client || '') + '</option>');
+    }
+    $('crmBillContact').value = ent && ent.bill_contact_id ? ent.bill_contact_id : '';
+    $('crmBillTitle').textContent = ent ? 'Billing entity' : 'New billing entity';
+    entSheetMode(true);
+    msg('crmBillMsg', ''); msg('crmBillNote', '');
+    openSheet('crmBillSheet', opener || $('crmEntAdd'));
+  }
+  function entSheetMode(on) {
+    $('crmBillAsk').hidden = true;
+    $('crmSstApplies').closest('.tickline').hidden = on;
+    if (on) $('crmBillInRow').hidden = true;
+    if (!on) $('crmBillTitle').textContent = 'Billing details';
+  }
+  function entSave() {
+    var ed = state.entEdit, cid = state.client.id, vals = {};
+    BILLING.forEach(function (f) { vals[f[1]] = val(f[0]) || null; });
+    if (vals.legal_name) vals.legal_name = vals.legal_name.toUpperCase();
+    if (!vals.legal_name) { msg('crmBillMsg', 'Enter the company name as registered.', 'err'); $('crmLegalName').focus(); return; }
+    if (vals.finance_email && !ADspaceWords.emailOk(vals.finance_email)) {
+      msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
+    }
+    var b = $('crmBillSave'); b.disabled = true;
+    var done = function (r) {
+      b.disabled = false;
+      var d = r.data || {};
+      if (d.error === 'brn-taken' && d.entity) {
+        window.ADspaceConfirm.ask({
+          title: 'Registration no. already held', go: 'Add that entity', wait: true,
+          body: d.entity.legal_name + ' holds this business registration no. Add it to ' + state.client.name + ' instead?'
+        }, function () {
+          return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
+            if (u.error || (u.data && u.data.error)) return entSaid(u);
+            entClose(); entReload(); msg('crmBillNote', 'Added.', 'ok');
+            return '';
+          });
+        });
+        return;
+      }
+      if (d.error === 'stale') { state.entFor = null; loadEntities(); }
+      if (r.error || d.error) { msg('crmBillMsg', entSaid(r), 'err'); return; }
+      entClose(); entReload(); msg('crmBillNote', ed.id ? 'Saved.' : 'Added.', 'ok');
+    };
+    var call = ed.id
+      ? db.rpc('client_entity_save', { p_client: cid, p_entity: ed.id, p_values: vals, p_expected: ed.updated_at })
+      : db.rpc('client_entity_add', { p_client: cid, p_entity: null, p_values: vals });
+    call.then(done).catch(function (x) { b.disabled = false; msg('crmBillMsg', (x && x.message) || String(x), 'err'); });
+  }
+  function entClose() {
+    state.entEdit = null;
+    if (window.ADspaceSheet) window.ADspaceSheet.clean();
+    shutSheet('crmBillSheet');
+    entSheetMode(false);
+    fillBilling(state.client);
+  }
+
+  /* Add entity: one held already, found by name or registration no., or a
+     new one through the sheet above. */
+  var entFindSeq = 0, entFindTimer = null;
+  function openEntAdd(opener) {
+    $('entAddFind').value = '';
+    $('entAddList').innerHTML = entPickNew();
+    msg('entAddMsg', '');
+    openSheet('entAddSheet', opener);
+  }
+  function entPickNew() {
+    return '<label class="ent-pick"><input type="radio" name="entPick" value="new" checked>' +
+      '<span><b>New entity</b><small>Registered name, registration no., address and billing contact</small></span></label>';
+  }
+  $('entAddFind').addEventListener('input', function () {
+    var q = this.value.trim(), seq = ++entFindSeq;
+    clearTimeout(entFindTimer);
+    if (q.length < 2) { $('entAddList').innerHTML = entPickNew(); return; }
+    entFindTimer = setTimeout(function () {
+      db.rpc('billing_entities_find', { p_q: q }).then(function (r) {
+        if (seq !== entFindSeq) return;
+        if (r.error || (r.data && r.data.error)) { msg('entAddMsg', entSaid(r), 'err'); return; }
+        msg('entAddMsg', '');
+        var mine = (state.entities || []).map(function (e) { return e.id; });
+        var found = ((r.data || {}).entities || []).filter(function (e) { return mine.indexOf(e.id) < 0; });
+        $('entAddList').innerHTML = found.map(function (e) {
+          var bills = e.brands.map(function (b) { return b.name; });
+          if (e.hidden) bills.push(e.hidden + ' more');
+          return '<label class="ent-pick"><input type="radio" name="entPick" value="' + esc(e.id) + '">' +
+            '<span><b>' + esc(e.legal_name || '') + '</b><small>' + esc([e.company_no].concat(bills.length ? ['Bills ' + bills.join(', ')] : []).filter(Boolean).join(' · ')) + '</small></span></label>';
+        }).join('') + entPickNew();
+        var first = $('entAddList').querySelector('input');
+        if (first) first.checked = true;
+      });
+    }, 200);
+  });
+  $('entAddGo').addEventListener('click', function () {
+    var pick = $('entAddList').querySelector('input:checked');
+    var v = pick ? pick.value : 'new', cid = state.client.id, b = this;
+    if (v === 'new') { shutSheet('entAddSheet'); openEntity(null, $('crmEntAdd')); return; }
+    b.disabled = true;
+    db.rpc('client_entity_add', { p_client: cid, p_entity: v, p_values: null }).then(function (r) {
+      b.disabled = false;
+      if (r.error || (r.data && r.data.error)) { msg('entAddMsg', entSaid(r), 'err'); return; }
+      if (window.ADspaceSheet) window.ADspaceSheet.clean();
+      shutSheet('entAddSheet');
+      entReload(function () {
+        entUndo('Billing entity added.', function () {
+          db.rpc('client_entity_remove', { p_client: cid, p_entity: v }).then(function (u) {
+            if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
+            entReload();
+          });
+        });
+      });
+    }).catch(function (x) { b.disabled = false; msg('entAddMsg', (x && x.message) || String(x), 'err'); });
+  });
+  $('entAddCancel').addEventListener('click', function () { shutSheet('entAddSheet'); });
+  sheetClose('entAddClose', 'entAddCancel');
   /* The sheet's fields are the record's values whenever it opens, so a Cancel
      leaves nothing half typed behind for the next Edit. */
   function fillBilling(c) {
@@ -2638,6 +2930,8 @@
     state.detUse = null;
     state.toActive = null;
     state.toLetter = null;
+    state.entEdit = null;
+    entSheetMode(false);
     fillBilling(state.client);
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
@@ -2646,6 +2940,7 @@
   }
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
   $('crmBillCancel').addEventListener('click', function () {
+    if (state.entEdit) { state.entEdit = null; shutSheet('crmBillSheet'); entSheetMode(false); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', ''); return; }
     state.detUse = null;
     state.toActive = null; state.toLetter = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
@@ -3470,6 +3765,7 @@
   });
 
   $('crmBillSave').addEventListener('click', function () {
+    if (state.entEdit) { entSave(); return; }
     var was = Object.assign({}, state.client);
     /* The main contact held by id reads as following the main contact. */
     if (mainContact() && was.bill_contact_id === mainContact().id) was.bill_contact_id = null;

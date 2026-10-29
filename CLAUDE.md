@@ -272,6 +272,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`) | entities, entitysql, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
 | `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
@@ -1843,6 +1844,32 @@ Each line is a rule that broke once. Its reason is in the archive.
     (chosen, else a live main contact) stands (`active-needs-billing`,
     `2026-10-19-clients-audit-fixes.sql`); a client already Active keeps
     its place.
+  - Billing entities (`2026-10-29-billing-entities.sql`, SQL Editor; the
+    user, 2026-10-29: "one client several entities, however allow to set
+    the main"; a company may bill several brands): `billing_entities` and
+    `client_entities` (RLS on, no policy, no grant), one main a client. The
+    main entity is the client's billing columns, kept equal both ways by
+    trigger (`clients_entity_sync` carries only what a write changed;
+    `billing_entity_put` carries an entity to every brand it is the main
+    of, a billing contact only to the brand it belongs to), so every reader
+    of a client's billing reads its main entity unchanged. Billing reads the
+    main as before (Main by Company where there are others, Also bills
+    naming each other brand, opening its Billing), then Other billing
+    entities (`#crmEntities`: Add entity, each a read group, its ⋯ Edit,
+    Make main, Remove), read on each visit (`client_entities_list`); Add
+    entity (`#entAddSheet`) finds one held by name or BRN digits
+    (`billing_entities_find`, ten, only those billing a client the reader
+    sees, or none) or opens Billing's sheet as New billing entity (no SST
+    on quotes, no currency, no details form); Clients: Billing at Work, the
+    client in scope (`client_entity_add`, `_save` with `p_expected`,
+    `_main`, `_remove`: `no-name`, `bad-email`, `bad-contact`, `stale`,
+    `taken`, `main`); a BRN held is never made twice (`brn-taken`, the
+    question offering that entity), two clients holding one BRN before
+    stay two, merged by hand; Make main and Remove (never the main) offer
+    Undo where they happened. Filed `client.billing` naming fields alone.
+    Console search finds a client by an entity billing it (Billed by …,
+    opening Billing). Letters, quotations, Bukku and reminders still bill
+    the main entity: Bill to and Bukku by entity are the next release.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Request from client (the user, 2026-10-29; Details form until then, a supplier's Request from supplier) makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
