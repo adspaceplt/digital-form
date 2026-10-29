@@ -50,7 +50,22 @@
     'bad-request': 'The invoices changed after they were read. Read again, then send.',
     failed: 'The request failed. Try again.'
   };
-  function said(d) { return (d && SAID[d.error]) || (d && d.error) || SAID.failed; }
+  SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
+  function said(d) { return (d && SAID[d.error]) || SAID.failed; }
+  /* The instalments a line covers, as the email names them. */
+  function partWord(p) {
+    if (!p || !p.of) return '';
+    var from = Number(p.from || p.n), to = Number(p.to || p.n);
+    return from === to ? 'Instalment ' + to + ' of ' + p.of : 'Instalments ' + from + ' to ' + to + ' of ' + p.of;
+  }
+  /* What a send left out, each for what it is (review 2026-10-29). */
+  function leftOut(d) {
+    var parts = [];
+    if ((d.paid || []).length) parts.push('already paid: ' + d.paid.join(', '));
+    if ((d.voided || []).length) parts.push('voided in Bukku: ' + d.voided.join(', '));
+    if ((d.not_due || []).length) parts.push('not yet due: ' + d.not_due.join(', '));
+    return parts.length ? ' Not included, as ' + parts.join('; ') + '.' : '';
+  }
 
   function call(body) {
     return db().functions.invoke('bukku-sync', { body: body }).then(function (r) {
@@ -256,7 +271,7 @@
     var row = document.createElement(st.send ? 'label' : 'div');
     row.className = 'inv-row' + (st.pick[l.id] ? ' is-picked' : '');
     var e = lastOf(l.id), s = e ? statusOf(e) : null;
-    var meta = esc(l.number) + (l.part ? ' · Instalment ' + l.part.n + ' of ' + l.part.of : '') +
+    var meta = esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') +
       (l.client ? '' : ' · Not linked to a client');
     row.innerHTML = (st.send ? '<span class="inv-tick"><input type="checkbox"' + (st.pick[l.id] ? ' checked' : '') +
         ' aria-label="' + esc(l.number + ', ' + nameOf(l)) + '"></span>' : '') +
@@ -317,6 +332,9 @@
   }
   /* What was sent is read back from Bukku and the record. */
   function afterReview() {
+    /* Shut while sending: the next email is not sent, and the list is read
+       again once the one on its way answers (review 2026-10-29, 6). */
+    if (rv.run) { rv.run = null; rv.shut = true; return; }
     if (!Object.keys(rv.done).length) return;
     rv.done = {};
     if (rv.after) rv.after();
@@ -364,7 +382,7 @@
     var table = '<div class="inv-mail-t"><div class="r hd"><span>Invoice</span><span>Due</span><span class="n">Amount due</span>' +
       (g.lines.length > 1 ? '<span></span>' : '') + '</div>' +
       g.lines.map(function (l) {
-        return '<div class="r"><span>' + esc(l.number) + (l.part ? '<small>Instalment ' + l.part.n + ' of ' + l.part.of + '</small>' : '') + '</span>' +
+        return '<div class="r"><span>' + esc(l.number) + (l.part ? '<small>' + esc(partWord(l.part)) + '</small>' : '') + '</span>' +
           '<span>' + esc(day(l.due)) + '</span><span class="n">' + esc(money(l.amount, l.currency)) + '</span>' +
           (g.lines.length > 1 ? '<span class="lk">View PDF</span>' : '') + '</div>';
       }).join('') +
@@ -438,12 +456,20 @@
     var go = $('odGo');
     go.disabled = true;
     if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
-    var i = 0;
+    var i = 0, token = {};
+    rv.run = token; rv.shut = false;
     var next = function () {
-      if (i >= left.length) {
+      if (rv.run !== token) {
         go.disabled = false;
         if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
-        var bad = left.filter(function (g) { return !rv.done[g.contact].ok; }).length;
+        if (rv.shut) { rv.shut = false; rv.done = {}; if (rv.after) rv.after(); }
+        return;
+      }
+      if (i >= left.length) {
+        rv.run = null;
+        go.disabled = false;
+        if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false);
+        var bad = left.filter(function (g) { return !(rv.done[g.contact] && rv.done[g.contact].ok); }).length;
         $('odMsg').textContent = bad ? plural(left.length - bad, 'email', 'emails') + ' sent. ' + bad + ' not sent. The reason is shown against each client.' : 'Sent.';
         $('odMsg').className = 'msg ' + (bad ? 'warn' : 'ok');
         var firstBad = rv.groups.findIndex ? rv.groups.findIndex(function (g) { return rv.done[g.contact] && !rv.done[g.contact].ok; }) : -1;
@@ -455,7 +481,8 @@
       var ed = rv.edits[g.contact] || {};
       call({ action: 'remind', contact: g.contact, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
-        var paid = (d.paid || []).length ? ' Not included, as already paid: ' + d.paid.join(', ') + '.' : '';
+        if (rv.run !== token) { next(); return; }
+        var paid = leftOut(d);
         if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', copy to ' + d.cc : '') + '.' + paid };
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
@@ -510,7 +537,7 @@
       (d.send && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
       (rows.length ? '<div class="od-mini">' + rows.map(function (l) {
         var e = lastFor(l.id), s = e ? statusOf(e) : null;
-        return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · Instalment ' + l.part.n + ' of ' + l.part.of : '') + '</b>' +
+        return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
           '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
           '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
           '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span></div>';

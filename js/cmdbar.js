@@ -253,7 +253,7 @@
     var buttons = Array.prototype.filter.call(acts.children, function (el) { return el.tagName === 'BUTTON'; });
     if (!buttons.length) return;
     /* A rare or administrative act the page declares (`data-rare`:
-       Document types, Compare groups, Bulk import) is behind the bar's ⋯ at
+       Compare groups, Bulk import) is behind the bar's ⋯ at
        every width, never a button beside the primary (the menu standard,
        rule 1; SHELL-5, 2026-10-22). */
     var rare = buttons.filter(function (b) { return b.hasAttribute('data-rare'); });

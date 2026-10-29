@@ -117,12 +117,12 @@
       owner: who(OWNERS[i % OWNERS.length]), sales_by: 'd4', sst_applies: true, created_at: at(born), stage_since: log[log.length - 1].at,
       stage_log: log, stage_reason: reason, stage_note: note, review_hidden: stage !== 'active', active: true,
       updated_at: log[log.length - 1].at, commence: null, website: 'https://example.com',
-      handle_ig: slug.replace(/-/g, '.'), handle_fb: slug.replace(/-/g, ''), logo_url: null };
+      handle_ig: slug.replace(/-/g, '.') + '.sample', handle_fb: slug.replace(/-/g, '') + 'sample', logo_url: null };
     if (activeOnce) {
       code++;
       c.client_code = 'AC' + code;
       c.legal_name = b[0].toUpperCase().replace(/&/g, 'AND').replace(/[^A-Z0-9 ]/g, '') + ' SDN BHD';
-      c.company_no = '2020010' + String(10000 + i * 37).slice(-5);
+      c.company_no = '0000000' + String(10000 + i * 37).slice(-5);
       c.billing_address = (10 + i) + ' Jalan Contoh ' + (i % 7 + 1) + ', 81100 Johor Bahru, Johor';
       c.finance_email = 'accounts@example.com';
     }
@@ -303,7 +303,7 @@
       active: true, access_code: 'DEMO0' + 'ABCDEF'.charAt(i) + 'XY', created_at: ago(300 - i * 20) };
   });
   DB.creator_profiles = DB.creators.map(function (k, i) {
-    var h = k.name.toLowerCase().replace(/ /g, '.');
+    var h = k.name.toLowerCase().replace(/ /g, '.') + '.sample';
     return { id: 'dcp' + i, creator_id: k.id, platform: i % 2 ? 'xhs' : 'instagram', url: i % 2 ? 'https://www.xiaohongshu.com/user/profile/demo' + i : 'https://instagram.com/' + h, handle: i % 2 ? null : h };
   });
   DB.campaigns = [
@@ -356,7 +356,7 @@
       value: 'All rates are quoted in Ringgit Malaysia (RM) and exclude the applicable 8% Service Tax (SST).\nThis rate card is valid until {valid until}.' }];
 
   DB.suppliers = [
-    { id: 'dsu1', code: 'AS001', name: 'BRIGHT PRINT SDN BHD', kind: 'company', brn: '202101012345', tin: 'C12345678090', phone: '07-123 4567',
+    { id: 'dsu1', code: 'AS001', name: 'BRIGHT PRINT SDN BHD', kind: 'company', brn: '000000012345', tin: 'C00000000010', phone: '07-123 4567',
       address: '12 Jalan Contoh, 81100 Johor Bahru, Johor', contact_name: 'John Doe', designation: 'Director', email: 'email@example.com',
       mobile: '012-345 6789', payment_term: 'NET 30', currency: 'MYR', payee_name: 'BRIGHT PRINT SDN BHD', status: 'active',
       created_at: ago(200), updated_at: ago(100), approved_at: ago(199), approved_by: 'd0' },

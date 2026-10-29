@@ -129,13 +129,24 @@ const SHARE_KIND = {
 };
 const LETTER_KIND = { v: 'script', c: 'campaign', p: 'creator' };
 
-async function sharePreview(env, kind, key) {
+/* The visitor's own address, passed on beside the relay secret (the
+   database's `ip_relay_secret`, kept on the Worker as IP_RELAY_SECRET), so a
+   creator's code is counted against whoever asked, never against this
+   Worker's one address (review 2026-10-29, 16: five bad lookups switched
+   every creator preview off). Without the secret nothing is passed on. */
+function relayHeaders(env, request) {
+  const ip = request && (request.headers.get('cf-connecting-ip') || '');
+  return env.IP_RELAY_SECRET && ip ? { 'x-adspace-relay': env.IP_RELAY_SECRET, 'x-adspace-ip': ip } : {};
+}
+
+async function sharePreview(env, kind, key, request) {
   const r = await fetch(env.SUPABASE_URL.replace(/\/+$/, '') + '/rest/v1/rpc/share_link_preview', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
       apikey: env.SUPABASE_ANON_KEY,
-      authorization: 'Bearer ' + env.SUPABASE_ANON_KEY
+      authorization: 'Bearer ' + env.SUPABASE_ANON_KEY,
+      ...relayHeaders(env, request)
     },
     body: JSON.stringify({ p_kind: kind, p_key: key }),
     signal: AbortSignal.timeout(4000)
@@ -150,7 +161,7 @@ async function sharePreview(env, kind, key) {
    before its 302. Only a kind the database named is kept; the two kinds'
    keys never overlap, and a key reset since reads as nothing on its page. */
 const WHICH_TTL = 86400;
-async function whichOf(env, key) {
+async function whichOf(env, key, request) {
   const store = typeof caches !== 'undefined' && caches.default ? caches.default : null;
   const slot = 'https://links.cache/which/' + encodeURIComponent(key);
   if (store) {
@@ -160,7 +171,7 @@ async function whichOf(env, key) {
     } catch (e) { console.error('which cache read failed: ' + e.message); }
   }
   let w = {};
-  try { w = await sharePreview(env, 'which', key); }
+  try { w = await sharePreview(env, 'which', key, request); }
   catch (e) { console.error('share_link_preview which failed: ' + e.message); return ''; }
   const kind = w.kind === 'script' || w.kind === 'campaign' ? w.kind : '';
   if (store && kind) {
@@ -179,14 +190,14 @@ async function share(request, env, letter, key) {
     /* A selection key, else a Video Scripts link sent before 2026-10-15. A
        failed read sends it to the selection page, which says so if it is
        not one. */
-    kind = (await whichOf(env, key)) === 'script' ? 'script' : 'campaign';
+    kind = (await whichOf(env, key, request)) === 'script' ? 'script' : 'campaign';
   }
   const k = SHARE_KIND[kind];
   const base = (env.PORTAL_URL || 'https://digital.adspace.me').replace(/\/+$/, '');
   const to = base + k.path + encodeURIComponent(key);
   if (!PREVIEWER.test(request.headers.get('user-agent') || '')) return goTo(to);
   let d = {};
-  try { d = await sharePreview(env, k.kind, key); }
+  try { d = await sharePreview(env, k.kind, key, request); }
   catch (e) { console.error('share_link_preview failed: ' + e.message); }
   const lead = [d.title, d.brand].filter(Boolean).join(' ');
   return previewPage(lead ? lead + ' - ' + k.name : k.name, k.line, to);

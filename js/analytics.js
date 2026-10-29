@@ -826,7 +826,10 @@
   }
   function write(btn, cl, el, msg, load) {
     if (!AI) return;
-    var key = 'adspace-analytics-notes', was = '';
+    /* Kept a colleague apart, so the demo's sample director never reads a
+       real colleague's notes in this browser, and Sign out clears them. */
+    var me = bridge.me && bridge.me();
+    var key = 'adspace-analytics-notes:' + ((me && me.id) || 'anon'), was = '';
     try { was = localStorage.getItem(key) || ''; } catch (e) {}
     db.rpc('ai_analytics_left').then(function (r) {
       var d = r.data || {};
