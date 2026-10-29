@@ -1441,6 +1441,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    across both (js/form.js decides by measuring, never by a count). */
 .seg.is-wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .seg.is-wrap > .seg-opt:last-child:nth-child(odd) { grid-column: 1 / -1; }
+/* A segment that leads with its usual state (`data-seg-lead`: Available,
+   then the two covers) gives that option the whole row, the others the
+   row under it (the user, 2026-10-29). */
+.seg.is-wrap.is-lead > .seg-opt:last-child:nth-child(odd) { grid-column: auto; }
+.seg.is-wrap.is-lead > .seg-opt:first-child { grid-column: 1 / -1; }
 .seg-opt:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 1px; }
 .seg.is-disabled { opacity: .6; }
 /* The select behind a segment stays in the page for every script that reads

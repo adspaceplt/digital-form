@@ -860,7 +860,7 @@
     var cur = one && one.set ? one : null;
     window.ADspaceConfirm.ask({
       title: one ? one.name : 'Set availability · ' + plural(keys.length, 'page', 'pages'), go: 'Save', wait: true,
-      fields: [{ name: 'kind', label: 'Availability', seg: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
+      fields: [{ name: 'kind', label: 'Availability', seg: true, lead: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
                  choices: [['none', 'Available'], ['upgrade', 'Upgrade in progress'], ['paused', 'Temporarily unavailable']] },
                { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: cur && !cur.on ? pgDay(cur.starts_at) : '' },
                { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: cur && !cur.on ? pgTime(cur.starts_at) : '' },
