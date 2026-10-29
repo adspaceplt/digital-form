@@ -7303,3 +7303,15 @@ sheet's right edge, its longest name widening it; `.lpickref .select` now
 holds it to the column. The stand-in first refused the suites' short entity
 ids by shape; it now holds the shape loosely and the link exactly, as the
 live function holds a uuid.
+
+### 2026-10-29 · A quotation needs a priced line
+The user: "I have a ghosted entry just sent in through quotation. Did u not
+block the entries until all inputs are filled". Every detail had been typed;
+the gap was the selection. The website's Customise step let a KOL campaign
+alone through, which is quoted on request, so `quote_price` gave no line and
+`quotation_make` still wrote ADP/QT2610-A01 with no line and no figure and
+made a lead for it. The page now refuses a selection of items quoted on
+request alone (a KOL campaign, a custom creator list) before the details are
+asked, pointing to WhatsApp, and `quotation_make` refuses `nothing-priced`
+for every source, so the website's new lead rolls back with it.
+`tests/quotesite.js` walks the refusal, `tests/sql.js` the function.

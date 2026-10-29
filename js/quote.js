@@ -52,6 +52,7 @@
         verify: ['Account verification', 'Meta Verified and rednote Professional']
       },
       needNone: 'Select at least one service.',
+      reqOnly: 'A KOL campaign and a custom creator list are quoted on request. Add a service with a listed rate, or chat with ADspace on WhatsApp.',
       planT: 'Platforms and plan', platsH: 'Platforms', planH: 'Plan', noAds: 'Without ads', withAds: 'With ads',
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
       contents: '{n} content pieces per month', mixOr: ' or ', mixAnd: ' and ',
@@ -108,7 +109,7 @@
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation is closed. Please request a new quotation.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
-        empty: 'Select at least one service.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
+        empty: 'Select at least one service.', 'nothing-priced': 'A KOL campaign and a custom creator list are quoted on request. Add a service with a listed rate, or chat with ADspace on WhatsApp.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
       },
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
@@ -135,6 +136,7 @@
         verify: ['账号认证', 'Meta 认证与小红书专业号']
       },
       needNone: '请至少选择一项服务。',
+      reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台', platUpTo: '最多{n}个平台',
       contents: '每月{n}条内容', mixOr: '，或 ', mixAnd: '、',
@@ -191,7 +193,7 @@
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。',
         expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
-        empty: '请至少选择一项服务。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
+        empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
       },
       lostT: '找不到报价', lostP: '请检查链接，或重新报价。',
@@ -708,9 +710,16 @@
     if (S.step === 'custom') {
       var sel = selection();
       if (!sel.plan && !adsAsked() && !(sel.once || []).length) { say('qsMsg', t().needNone); return; }
+      /* A KOL campaign and a custom creator list are quoted on request: one
+         of them alone makes no quotation (2026-10-29: one went through with no
+         line and no figure). */
+      if (!sel.plan && !adsAsked() && (sel.once || []).every(onRequest)) { say('qsMsg', t().reqOnly); return; }
     }
     if (S.step === 'details') { make(); return; }
     go(a[i + 1]);
+  }
+  function onRequest(o) {
+    return o.slug === CAT.kol || CAT.koc.some(function (k) { return k.slug === o.slug && !k.creators; });
   }
   function readDetails() {
     var c = S.contact;

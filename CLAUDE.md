@@ -5676,7 +5676,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   counted under a lock on each, only the selection keys the price reads
   kept, the number read as `wa_number` reads it (`quote_website_number`;
   `2026-10-15-quote-website-guards.sql`, audit S1, S2, I2). No rate is
-  shown before the quotation (`quote_catalogue`, anon, holds none). The
+  shown before the quotation (`quote_catalogue`, anon, holds none). A
+  quotation holds at least one priced line: items quoted on request alone
+  (a KOL campaign, a custom creator list) are refused on the page before
+  the details are asked and by `quotation_make` (`nothing-priced`, no lead
+  made; `2026-10-29-quotation-needs-a-priced-line.sql`). The
   rates show at once, with Download (the A4 PDF); the website asks no
   billing and never a Letter of Offer, which the team sends after a
   conversation, the billing through the Details form
