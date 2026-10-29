@@ -7080,3 +7080,19 @@ sentence.
   their own line (`data-narrow` 760): five across, else Overdue a row and
   the ages four across, two when tight. Rules: the suites' bar by id
   (CLAUDE.md §1), the demo's one edge read, the tallies (DESIGN.md).
+
+### 2026-10-29 · Overdue reminders: the wording a creditor writes, every email's fine print
+- What: the review of the Overdue invoices section put five points to the
+  user, who chose all five ("1-5"). The reminder read "payment of {total}
+  for {client}", as if ADspace owed it; a company with no named contact
+  was greeted by its registered name over "Yours faithfully"; the legal
+  note threatened overdue interest that no agreement states; the
+  disclaimer differed from every other portal email's confidentiality
+  line; the sign-in emails' fine print was `#8e8e8e` while every other
+  email's is `#a19d97` (the user, 2026-10-28: "go lighter grey").
+- Fix: OVERDUE REMINDER WORDING writes "due from {client}", "settled in
+  accordance with the agreed payment terms" and the standing
+  confidentiality line, each only where the seed's words still stand (a
+  preview file reports which), and greets "Sir or Madam" where no one is
+  named, the page's preview alike. The sign-in emails take `#a19d97`,
+  set in Supabase Auth from docs/SIGN-IN-EMAILS.md.

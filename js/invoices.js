@@ -331,7 +331,7 @@
     var nos = g.lines.map(function (l) { return l.number; });
     var who = (g.to && g.to.name) || null;
     var v = {
-      'contact name': who || (g.to && g.to.company) || g.name,
+      'contact name': who || 'Sir or Madam',
       client: (g.to && g.to.company) || g.name,
       'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1],
       count: String(n),
