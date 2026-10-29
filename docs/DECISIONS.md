@@ -7398,3 +7398,17 @@ read and set every page for a tab served before.
   of Offer sheet with Bill to, and Page availability (list, Select and its
   question), so these screens are measured every day.
 
+### 2026-10-29 — Add entity found nothing for a brand billed under another name
+- **What broke.** Add entity searched the portal's billing entities by the
+  registered name as one phrase. S P Setia (Johor) is billed as KESAS
+  KENANGAN SDN. BHD., so "Setia" found nothing, and a company kept in Bukku
+  as a customer but not yet in the portal ("Setia City") could not be found
+  at all: the sheet never asked Bukku.
+- **Found by** the user on an iPhone ("Cant even find or lookup even though
+  contact records for client type are there").
+- **Fixed.** The search reads every word typed against the registered name
+  and the names and Client IDs of the brands it bills
+  (`2026-10-29-entity-found-by-brands.sql`), and lists Bukku's customers
+  under In Bukku (`bukku-sync` `contacts`); one picked fills New billing
+  entity from Bukku, saved only by its Save. `entities`, `entitysql` and
+  `bukkufn` hold each.

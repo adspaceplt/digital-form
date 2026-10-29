@@ -3804,6 +3804,9 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .ent-pick:has(input:checked) { box-shadow: inset 0 0 0 1.5px var(--ink); }
 .ent-pick b { display: block; font-weight: 600; font-size: 13.5px; overflow-wrap: anywhere; }
 .ent-pick small { display: block; color: var(--ink-mute); font-size: 12.5px; overflow-wrap: anywhere; }
+.ent-picks-h { margin: 8px 0 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ent-picks-h:first-child { margin-top: 0; }
+.ent-picks-note { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .readgroup.bk-band { border-top: 0; margin-top: 4px; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm);
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
 .bk-band > .bk-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
