@@ -3748,6 +3748,20 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* Bukku (js/bukku.js, 2026-10-18): the send sheet's contacts as ticks, one
    a line, and what changes as a three-track table; on a narrow sheet a field
    over its two values. */
+/* The record's Bukku band (2026-10-29: the group read as bolted on): one
+   shaded band at the foot of the details it sends, the contact's code and
+   state over Last sent, Send to Bukku and its ⋯ at the right edge; under a
+   narrow pane the acts take their own line. */
+.readgroup.bk-band { border-top: 0; margin-top: 4px; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
+.bk-band > .bk-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.bk-band .bk-t { font-size: 13px; font-weight: 600; }
+.bk-band .bk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
+.bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }
+.is-tight .readgroup.bk-band { grid-template-columns: minmax(0, 1fr); }
+.is-tight .bk-band > .bk-acts { grid-column: 1; grid-row: auto; margin-top: 8px; }
 .bk-cand { display: flex; align-items: center; }
 .bk-cand b { font-weight: 600; }
 .bk-note { margin: 8px 0 0; font-size: 13px; }

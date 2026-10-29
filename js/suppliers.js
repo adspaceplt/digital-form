@@ -300,7 +300,7 @@
     var update = f && f.purpose === 'update';
     if (f && f.state === 'submitted') {
       var held = update && f.bank_changed && !payWork();
-      return formHead(update ? 'Details update' : 'Details form', work && !held
+      return formHead(update ? 'Details update' : 'Request from supplier', work && !held
           ? '<button class="btn btn-sm btn-primary" type="button" data-s="use">' + (update ? 'Use changes' : 'Use details') + '</button>' : '') +
         /* The received day is the head's; the state says what waits. */
         '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in' : 'Waiting to be taken in') + '</dd></div>' +
@@ -312,10 +312,10 @@
        read as "confusing"): what it is, until when, the link itself. */
     if (f && f.state === 'open' && (update || s.status === 'pending')) {
       var url = f.key ? linkOf(f.key) : '';
-      return formHead(update ? 'Details update form' : 'Details form', work ? formMenu('<button class="kmenu-item" data-g="5" type="button" data-s="reset" role="menuitem">Reset link</button><button class="kmenu-item" data-g="5" type="button" data-s="close" role="menuitem">Close link</button>') : '') +
+      return formHead(update ? 'Details update form' : 'Request from supplier', work ? formMenu('<button class="kmenu-item" data-g="5" type="button" data-s="reset" role="menuitem">Reset link</button><button class="kmenu-item" data-g="5" type="button" data-s="close" role="menuitem">Close link</button>') : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
-          '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Details form link') + '" value="' + esc(url) + '">' +
+          '<input class="input readfield" id="supLink" readonly aria-label="' + (update ? 'Details update form link' : 'Request from supplier link') + '" value="' + esc(url) + '">' +
           '<button class="btn btn-icon" type="button" data-s="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
           '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
           '</div></div>' : '');
@@ -329,7 +329,7 @@
     }
     if (s.status !== 'pending') return '';
     if (!work && !f) return '';
-    return formHead('Details form', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
+    return formHead('Request from supplier', work ? '<button class="btn btn-sm" type="button" data-s="link">Create link</button>' : '') +
       '<dl class="ovfacts"><div><dt>State</dt><dd>' + (!f ? 'Not sent' : f.state === 'used'
         ? 'Received ' + esc(day(f.submitted_at)) + ', taken in' : 'Link expired ' + esc(day(f.expires_at))) + '</dd></div></dl>';
   }

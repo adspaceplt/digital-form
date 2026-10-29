@@ -2673,20 +2673,20 @@
       var d = r.data || {};
       if (r.error || d.error) {
         box.hidden = false;
-        failLine(box, 'Details form', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), loadDetForm);
+        failLine(box, 'Request from client', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), loadDetForm);
         return;
       }
       state.detForm = d.form || null;
       paintDetForm();
     }).catch(function (e) {
       if (!state.client || state.client.id !== id) return;
-      box.hidden = false; failLine(box, 'Details form', (e && e.message) || String(e), loadDetForm);
+      box.hidden = false; failLine(box, 'Request from client', (e && e.message) || String(e), loadDetForm);
     });
   }
   function paintDetForm() {
     var box = $('crmDetForm'), f = state.detForm, work = mayPart('clients.billing', 'work');
     if (!box) return;
-    var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Details form</h4>' + (act || '') + '</div>'; };
+    var head = function (act) { return '<div class="readgroup-head"><h4 class="fsec-h">Request from client</h4>' + (act || '') + '</div>'; };
     var day = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) : String(iso).slice(0, 10); };
     var make = work ? '<button class="btn btn-sm" type="button" data-df="make">Create link</button>' : '';
     if (!f || f.state === 'used' || f.state === 'expired') {
@@ -2703,7 +2703,7 @@
           '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="reset" role="menuitem">Reset link</button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
-          '<input class="input readfield" id="crmDfLink" readonly aria-label="Details form link" value="' + esc(url) + '">' +
+          '<input class="input readfield" id="crmDfLink" readonly aria-label="Request from client link" value="' + esc(url) + '">' +
           '<button class="btn btn-icon" type="button" data-df="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
           '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
           '</div></div>' : '') + '<div class="msg" id="crmDfMsg"></div>';
@@ -2754,8 +2754,8 @@
     state.detUse = f.id;
     var ct = dfContactOf(f.answers), main = mainContact(), who = dfWho(f.answers);
     if (ct) { $('crmBillContact').value = main && ct.id === main.id ? '' : ct.id; $('crmBillContact').dispatchEvent(new Event('input', { bubbles: true })); }
-    msg('crmBillMsg', ct || !who ? 'Filled from the details form. Review, then Save.'
-      : 'Filled from the details form. ' + who + ' is not in Contacts: after Save, use Add as contact on the details form.', ct || !who ? 'ok' : 'warn');
+    msg('crmBillMsg', ct || !who ? 'Filled from the client\'s answers. Review, then Save.'
+      : 'Filled from the client\'s answers. ' + who + ' is not in Contacts: after Save, use Add as contact under Request from client.', ct || !who ? 'ok' : 'warn');
   }
   /* The Active gate's Billing sheet offers the details form (2026-10-15,
      audit CLI-6): what the team would type, the client can send. */
@@ -2766,8 +2766,8 @@
     var day = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) : String(iso).slice(0, 10); };
     var words, act;
     if (f && f.answers && f.state !== 'used') { words = 'The client sent these on ' + day(f.submitted_at) + '.'; act = ['use', 'Use details']; }
-    else if (f && f.state === 'open' && f.key) { words = 'The details form is open until ' + day(f.expires_at) + '.'; act = ['copy', 'Copy link']; }
-    else { words = 'The client can fill these in on the details form.'; act = ['make', 'Create link']; }
+    else if (f && f.state === 'open' && f.key) { words = 'The request is open until ' + day(f.expires_at) + '.'; act = ['copy', 'Copy link']; }
+    else { words = 'Ask the client to fill these in.'; act = ['make', 'Create link']; }
     box.innerHTML = '<span>' + esc(words) + '</span><button class="btn btn-sm" type="button" data-ba="' + act[0] + '">' + esc(act[1]) + '</button>';
     box.hidden = false;
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);

@@ -199,7 +199,7 @@
     /^(Edit|Rename|Make a copy|New version|Take|Take lead|Offer to the team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change content month|Access code|Pair with video|Select|Select .+|Make main contact|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat on a schedule|Reissue|Replace|Add tasks|Import from .+|Pictures from Meta|Move to .+|Review profile|Bulk import)$/,
     /^(Send on WhatsApp|Request feedback on WhatsApp|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email)$/,
     /^(Mark .+|Remove VIC|Verify signed letter|Confirm internally|Confirm for client|Revert confirmation|Clear ad error)$/,
-    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Not proceeding|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Revoke portal access|Enable portal access|Extend access|End access|Set access expiry|Withdraw confirmation)$/,
+    /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Not proceeding|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Revoke portal access|Enable portal access|Extend access|End access|Set access expiry|Withdraw confirmation|Unlink)$/,
     /^(Remove|Remove from .+|Void|Delete)$/
   ];
   function groupOf(label) {

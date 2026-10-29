@@ -7244,3 +7244,23 @@ sentence.
      every chart watched for good after it was redrawn.
   20. Malaysia's today in `bukku-sync` had no test across 4pm UTC: added,
      with the voided invoice now named voided, never paid.
+### 2026-10-29 · The Bukku band and Unlink
+- What was reported: a client linked to the wrong Bukku contact could not
+  be unlinked ("a dead end"), and the Bukku group read as "simply added":
+  a bare code, Last sent and Since then as three fact rows, then Unpaid
+  invoices under it.
+- Why: Bukku Phase 1 built Send and Link only; nothing took a link away,
+  against "Every action needs a way back".
+- The fix: one band at the foot of the billing it sends (code, state, Last
+  sent, Send to Bukku, ⋯ Unlink); Unlink asks, lets go of the link alone and
+  offers Undo where it happened, restoring it as it stood. A supplier that
+  is also its client's Bukku contact is unlinked with it.
+- Also: Details form reads Request from client (Request from supplier on a
+  supplier), the user's word, 2026-10-29. Billing entities (one brand,
+  several companies, and the reverse) are next, from the approved mockup.
+
+### 2026-10-29 · crm still read the old words
+- What broke: the gate's `crm` asked the Billing sheet's line for "details
+  form" after it read Ask the client to fill these in.
+- The rule already standing was missed again: words taken off a screen are
+  grepped across the suites first (`grep -rn "details form" tests/`).
