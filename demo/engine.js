@@ -258,7 +258,7 @@
     supplier_link: 'p_id p_reset',
     supplier_link_close: 'p_id',
     bukku_config: '', bukku_config_set: 'p_client p_supplier', bukku_link_get: 'p_kind p_id',
-    bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code',
+    bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     supplier_save: 'p_id p_values p_form',
     supplier_set_status: 'p_id p_status',
     supplier_delete: 'p_id p_name',
@@ -9897,6 +9897,49 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return true;
         });
       };
+
+      if (name === 'bukku_unlink' || name === 'bukku_unlink_undo') {
+        DB.bukku_links_gone = DB.bukku_links_gone || [];
+        var bkNameOf = function (k, id) {
+          var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
+          return r ? (k === 'client' ? r.name : (r.name || r.code)) : null;
+        };
+        if (!bkNameOf(args.p_kind, args.p_id)) return bkNo('not-found');
+        if (name === 'bukku_unlink') {
+          var bsp = args.p_kind === 'supplier' ? (DB.suppliers || []).filter(function (x) { return x.id === args.p_id; })[0] : null;
+          var cid = args.p_kind === 'client' ? args.p_id : bsp && bsp.client_id;
+          var cl0 = cid ? DB.bukku_links.filter(function (x) { return x.kind === 'client' && x.record_id === cid; })[0] : null;
+          var ctc = bkLink ? bkLink.contact_id : (args.p_kind === 'supplier' && cl0 ? cl0.contact_id : null);
+          var pair = ctc == null ? [] : DB.bukku_links.filter(function (l) {
+            return Number(l.contact_id) === Number(ctc) && ((l.kind === args.p_kind && l.record_id === args.p_id) ||
+              (cid && l.kind === 'client' && l.record_id === cid) ||
+              (cid && l.kind === 'supplier' && (DB.suppliers || []).some(function (s) { return s.id === l.record_id && s.client_id === cid; })));
+          });
+          if (!pair.length) return bkNo('not-linked');
+          if (pair.some(function (l) { return !bkMay(l.kind, 'work'); })) return bkNo('denied');
+          var stamp = new Date().toISOString();
+          pair.forEach(function (l) {
+            DB.bukku_links_gone.push(Object.assign({}, l, { gone_at: stamp }));
+            DB.bukku_links.splice(DB.bukku_links.indexOf(l), 1);
+            DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: l.kind === 'client' ? 'client.edited' : 'supplier.edited',
+              subject: bkNameOf(l.kind, l.record_id), detail: 'Unlinked from Bukku · ' + (l.code || l.contact_id), created_at: stamp });
+          });
+          return bkOk({ stamp: stamp, records: pair.length });
+        }
+        var gone = DB.bukku_links_gone.filter(function (g) { return g.gone_at === args.p_stamp; });
+        if (!gone.some(function (g) { return g.kind === args.p_kind && g.record_id === args.p_id; })) return bkNo('not-found');
+        if (gone.some(function (g) { return !bkMay(g.kind, 'work'); })) return bkNo('denied');
+        if (gone.some(function (g) { return DB.bukku_links.some(function (l) { return l.kind === g.kind && l.record_id === g.record_id; }); })) return bkNo('moved');
+        if (gone.some(function (g) { return bkTaken(g.kind, g.record_id, g.contact_id); })) return bkNo('taken');
+        gone.forEach(function (g) {
+          var back = Object.assign({}, g); delete back.gone_at;
+          DB.bukku_links.push(back);
+          DB.bukku_links_gone.splice(DB.bukku_links_gone.indexOf(g), 1);
+          DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: g.kind === 'client' ? 'client.edited' : 'supplier.edited',
+            subject: bkNameOf(g.kind, g.record_id), detail: 'Linked to Bukku again · ' + (g.code || g.contact_id), created_at: new Date().toISOString() });
+        });
+        return bkOk({ records: gone.length });
+      }
       if (name === 'bukku_contact_check') return Promise.resolve({ data: bkTaken(args.p_kind, args.p_id, args.p_contact) ? { error: 'taken' } : { ok: true }, error: null });
       if ((name === 'bukku_linked' || name === 'bukku_link_only') && bkTaken(args.p_kind, args.p_id, args.p_contact))
         return Promise.resolve({ data: { error: 'taken' }, error: null });

@@ -1843,7 +1843,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-19-clients-audit-fixes.sql`); a client already Active keeps
     its place.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
-    the user, 2026-10-14): Billing's Details form makes a link
+    the user, 2026-10-14): Billing's Request from client (the user, 2026-10-29; Details form until then, a supplier's Request from supplier) makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
     ⋯ Reset link, asked) to `/details/?k=` with no sign-in, open
     `details_form_days` (14, Settings: Clients, Details form). The client's page reads the
@@ -2708,7 +2708,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   The link is filed by `bukku_linked` (`bukku_links`, `bukku_settings`: RLS
   on, no policy, no grant; filed `client.edited` / `supplier.edited` Sent
   to Bukku · code); a supplier linked to a client is that client's contact.
-  Since then reads Details changed once a sent field moves (`bukku_print`).
+  The record shows it as one shaded band at the foot of what it sends
+  (`.bk-band`; the user, 2026-10-29: the group "looks incomplete"): Bukku,
+  the contact's code and its state (Up to date, Details changed once a sent
+  field moves (`bukku_print`), Not linked), Last sent under it, Send to
+  Bukku and a ⋯ of Unlink at the right edge. Unlink (`bukku_unlink`, the
+  record's Work level, asked first) lets go of the link alone, nothing
+  changed in Bukku, a supplier and its own client together (one contact),
+  kept in `bukku_links_gone` (RLS on, no policy, no grant) for Undo where it
+  happened (`bukku_unlink_undo`: as it stood, `moved` once linked again),
+  each filed Unlinked from Bukku / Linked to Bukku again
+  (`2026-10-29-bukku-unlink.sql`, the SQL Editor's); Send to Bukku then
+  offers the matching contacts again.
   One Bukku contact is one record's, a supplier and its own client sharing
   one: `bukku-sync` sends a linked record to its own contact alone and asks
   `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
