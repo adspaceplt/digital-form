@@ -4068,7 +4068,7 @@
      task, or a repeat, fills the task from its family in the database
      (`ops_create_task`), so this sheet only edits the families
      (the user, 2026-09-28). */
-  var tplRows = [], tplVars = [];
+  var tplRows = [], tplVars = [], tplWfs = [];
   /* The rate card's formats, from the one list the New task sheet carries. */
   function fmtList() {
     return Array.prototype.filter.call(($('ntFormat') || { options: [] }).options, function (o) { return o.value; })
@@ -4083,11 +4083,15 @@
     if (!may('ops.workflows', 'work')) return;
     Promise.all([
       db.from('ops_task_templates').select('*').order('name'),
-      db.from('ops_template_variants').select('template_id, format, estimate_minutes')
+      db.from('ops_template_variants').select('template_id, format, estimate_minutes'),
+      db.from('ops_workflows').select('id, key')
     ]).then(function (r) {
-      var bad = r[0].error || r[1].error;
+      var bad = r[0].error || r[1].error || r[2].error;
       tplRows = (!r[0].error && r[0].data) || [];
       tplVars = (!r[1].error && r[1].data) || [];
+      /* Read here, not from My Work's catalogue: Settings opens the
+         templates before My Work has been visited (review 2026-10-29, 2). */
+      tplWfs = (!r[2].error && r[2].data) || [];
       paintTplList();
       msg('tplMsg', bad ? bad.message : '', bad ? 'err' : '');
       sheet('tplSheet', true);
@@ -4174,7 +4178,9 @@
     var name = String($('teName').value || '').trim();
     if (!name) { msg('teMsg', 'A name is required.', 'err'); $('teName').focus(); return; }
     var x = tplEditing || {};
-    var wf = (state.workflows || []).filter(function (f) { return f.id === x.workflow_id; })[0];
+    var wf = tplWfs.filter(function (f) { return f.id === x.workflow_id; })[0];
+    /* A template keeps its own workflow; only a new one starts on content. */
+    if (tplEditing && !wf) { msg('teMsg', 'Could not load the workflows. Close and open Templates again.', 'err'); return; }
     var wfKey = wf ? wf.key : 'content';
     var btn = $('teGo');
     btn.disabled = true;
@@ -6582,6 +6588,7 @@
       if (then) then(r.error ? { error: 'db', message: r.error.message } : d || {});
     }).catch(function (e) { if (then) then({ error: 'db', message: (e && e.message) || '' }); });
   }
+  var MEET_FIELDS = ['meeting', 'date', 'time', 'month', 'channel', 'link'];
   function fillMessage(body, v) {
     var WORD = /\{\s*([a-z]+)\s*\}/gi;
     var lines = String(body).split('\n').filter(function (l) {
@@ -6627,7 +6634,16 @@
         title: 'Meeting message', go: 'Save', wait: true,
         body: 'Fields: {meeting}, {date}, {time}, {month}, {channel}, {link}. A line whose field has no value is left out.',
         fields: [{ name: 'body', label: 'Message', rows: 12, value: meetMsg.body || MEET_MSG }],
-        check: function (v) { return /\{\s*date\s*\}/i.test(String(v.body || '')) ? '' : MEET_SAID['no-date']; }
+        check: function (v) {
+          var text = String(v.body || '');
+          if (!/\{\s*date\s*\}/i.test(text)) return MEET_SAID['no-date'];
+          /* A field the message cannot fill would reach the client as typed
+             ({client}, a misspelt {chanel}; review 2026-10-29, 10). */
+          var odd = (text.match(/\{\s*([^{}]*?)\s*\}/g) || []).filter(function (m) {
+            return MEET_FIELDS.indexOf(m.replace(/[{}\s]/g, '').toLowerCase()) < 0;
+          })[0];
+          return odd ? 'Unknown field ' + odd + '. Use {meeting}, {date}, {time}, {month}, {channel} or {link}.' : '';
+        }
       }, function (v) {
         return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
           if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;

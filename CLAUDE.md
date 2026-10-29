@@ -536,7 +536,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   a press bringing the words back; the room the page keeps clear never
   changes. Where a phone's page stands upright and narrower than its
   screen (the iPhone Duo's front screen, Safari's controls in a column at
-  its right; `ADSPACE_TABSIDE` in the head script, `:root.tabbar-side`),
+  its right; `ADSPACE_TABSIDE` in the head script, `:root.tabbar-side`,
+  measured on the layout's width and never while pinched in),
   the bar stands upright at the right edge, its tabs glyphs alone named for
   a screen reader, the page keeping its column clear (`--tabbar-room`),
   More and every panel opening beside it, never drawn in, a finger drawn
@@ -2738,8 +2739,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   its due date (its one term, else the invoice's date) is before today
   (MYT); with instalments, the part past its date (`overdueOf`, a term's
   balances read in full where the list holds none, and where even the
-  invoice read whole holds none, the whole balance from the earliest date
-  passed, `overdueWhole`, never taken for paid). A card for each age
+  invoice read whole holds none, what is paid set against the terms'
+  amounts in date order, else the whole balance from the earliest date
+  passed, `overdueWhole`, never taken for paid), named by the terms it
+  covers (Instalment 2 of 3, Instalments 1 to 2 of 3; `partWord`). One
+  client's Billing asks Bukku for its contacts alone, and a colleague
+  seeing no linked client asks nothing (2026-10-29). A card for each age
   (Over 90, 61 to 90, 31 to 60, 1 to 30 days), totals per currency, never
   added across; each row its last reminder's status (`invoice_reminders`),
   a bounce with Open contacts, Open in Bukku (Bukku's own host alone). At
@@ -2751,17 +2756,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   `wa_repeat_hours`, asked again for that client alone; one reminded by a
   colleague meanwhile is refused `recent` and asked about at the next
   Send), then `bukku-sync` `remind` reads each invoice from
-  Bukku again (one paid since is left out and named), files it first by
+  Bukku again, five at a time (one paid, voided or not yet due since is
+  left out and named as such), files it first by
   the service role (`invoice_email_begin`: the contact's lock, `sending`,
   `recent` unless asked again, the billing contact greeted with their
   salutation else the main contact, sincerely to a name and faithfully to
-  a company, the finance email copied where ticked), builds the table where
+  a company, the finance email copied where ticked; an invoice number of 1
+  to 60 characters with no control character), builds the table where
   `{invoices}` stands (a View PDF a row for several, one small button for one,
   from Bukku's share link), sends through Resend from `ADspace Finance
   <noreply-finance@sc.adspace.me>` (`MAIL_FINANCE_FROM`), replies to
   einvoice@adspacestudios.com (`MAIL_FINANCE_REPLY_TO`), and closes it
   (`invoice_email_done`, filed `client.edited` on the client). A page never
   files or names a figure: begin and done are the service role's alone.
+  Shut while sending, Review and send sends no further email and reads the
+  list again once the one on its way answers.
   The words are Settings, Money: Overdue reminder (`invoice_email_template`,
   `team.settings`; two subjects, the message holding `{invoices}`, the
   legal note and the disclaimer, in the lighter grey). Resend's word
@@ -3594,7 +3603,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   forecast's credibility, three to five actions and caveats, and Version n
   · period · Written by AI for {name}. Read before using. Write with AI
   asks first (what it reads, n left today, notes kept in this browser
-  under `adspace-analytics-notes`) and sends the figures this page worked
+  under `adspace-analytics-notes:{colleague id}`) and sends the figures this page worked
   out for the period on show (`figuresOf`: both tabs, the period before,
   the verdicts, the months, the forecast, `leads_complete_from` the setting
   `analytics_from`)
@@ -4264,7 +4273,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `clientMessage()` fills the one bilingual template, the team's words
     (`meeting_message_template`, `2026-10-29-meeting-message.sql`; Settings,
     Templates, Meeting message at `team.settings`; `meeting_message_save`
-    refuses words without {date}, `no-date`, filed under Meeting message):
+    refuses words without {date}, `no-date`, filed under Meeting message;
+    the sheet refuses a field it cannot fill, naming it, 2026-10-29):
     {meeting}, {date}, {time}, {month}, {channel}, {link}, a line whose
     field has no value left out and a heading left empty with it; read once
     a visit, the seed's words standing in until it answers, Show and Copy
@@ -6547,12 +6557,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   opened bare, with no code kept, opens a sample creator holding a booking,
   and Exit demo lets go of a sample code it kept; signing out of
   the client portal returns to the console. A demo whose sample data did
-  not arrive takes the real library away (Unable to load under the bar),
-  never the real database; Sign out in the demo is Exit demo, never the
+  not arrive takes the real library away, never the real database: a client
+  page reads Unable to load under the bar, the console Unable to load with
+  Exit demo on its signed-out page; Sign out in the demo is Exit demo, never the
   console's clearing of the colleague's notes and drafts; a sheet's draft
-  is let go as the demo starts and ends (audit, 2026-10-27). Settings, Portal: Demo
+  is let go as the demo starts and ends (audit, 2026-10-27). The sample data
+  holds no registration a company could hold (zeros) and no real handle
+  (`.sample`), and the demo opens no chat, call or profile (wa.me, `tel:`,
+  Instagram, Facebook, TikTok, rednote), saying so in its bar; the client
+  pages' guides it marks met are listed (`adspace-demo-guides`) and offered
+  again on Exit demo (2026-10-29). Settings, Portal: Demo
   access (`team.settings`): On / Off and a PIN, 4 to 8 digits, kept as a
-  bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`), filed
+  bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`; a new PIN
+  clears the demo's wrong tries and locks), filed
   `team.changed` under Demo access, never the PIN.
   - Passkeys are managed in the account menu.
   - The passkey offer shows once per browser (`adspace-passkey-offer`).
@@ -6672,7 +6689,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   counted; wrong ones are counted per link and caller address
   (`link_tries`, `request_ip()`: the address Cloudflare saw,
   `cf-connecting-ip`, else the last X-Forwarded-For entry, never the first,
-  which the caller writes; `media-pass` and `sign-download` pass their
+  which the caller writes, an IPv6 address read as its /64
+  (`2026-10-29-review-fixes.sql`); `media-pass`, `sign-download` and the
+  links Worker (its `IP_RELAY_SECRET`, a creator's preview) pass their
   caller's on as `x-adspace-ip` beside `x-adspace-relay`, the
   `ip_relay_secret` in `app_secrets`, the only way it is taken;
   `2026-10-18-a-callers-address-is-cloudflares.sql`), five within

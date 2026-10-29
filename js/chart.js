@@ -209,7 +209,11 @@
     if (!el) return;
     if (!window.ResizeObserver) { requestAnimationFrame(function () { fitLabels(el); }); return; }
     if (!thinObs) thinObs = new window.ResizeObserver(function (rs) {
-      for (var i = 0; i < rs.length; i++) fitLabels(rs[i].target);
+      for (var i = 0; i < rs.length; i++) {
+        /* A chart redrawn leaves its old columns behind: let them go. */
+        if (!rs[i].target.isConnected) { thinObs.unobserve(rs[i].target); continue; }
+        fitLabels(rs[i].target);
+      }
     });
     thinObs.observe(el);
   }

@@ -7187,6 +7187,63 @@ sentence.
 - The rule already standing was missed: a control moved is grepped by its
   id across the suites first (`data-row="overdue"`, `data-row="suptpl"`).
 
+### 2026-10-29 · The review of #797 to #826, nineteen fixes
+- How it was found: a review of every release after #796 (thirty, by
+  several sessions), asked for by the user ("ponytail review … newly added
+  since last changes"), then "ok fix all". The salutation said twice (5)
+  had been fixed by #827 meanwhile.
+- What broke, and the fix:
+  1. Analytics' notes for Write with AI sat under one key with no
+     colleague in it, so the demo's director read and could overwrite a
+     real colleague's notes in the same browser, and Sign out never cleared
+     them: keyed `adspace-analytics-notes:{colleague id}`.
+  2. Task templates opened from Settings (#822) read their workflow from
+     My Work's catalogue, empty unless My Work had been visited, so a save
+     moved Reels and Report onto the content workflow: the sheet reads the
+     workflows itself and a template keeps its own; `families` checks it.
+  3. An instalment invoice whose terms carried no balance of their own was
+     owed whole from its first date, the paid part and the terms not yet
+     due included: what is paid is set against the terms' amounts in date
+     order.
+  4. An overdue line named the last instalment passed beside the first
+     one's date: it names the terms it covers (Instalments 1 to 2 of 3).
+  6. Shutting Review and send mid-send let the rest go out, then crashed on
+     the cleared state: no further email is sent once it is shut.
+  7. `request_ip()` read an IPv6 caller's whole address, so a guesser
+     changing address inside its /64 met no lock: an IPv6 address is its
+     /64.
+  8. A demo whose sample data did not arrive left the console on the
+     setup note with no Exit demo: Unable to load with Exit demo.
+  9. The sample data held registration numbers and handles real companies
+     and people may hold: zeros and `.sample`; the demo opens no chat,
+     call or profile.
+  10. The meeting message took a field it cannot fill ({client}) and sent
+     it to the client as typed: the sheet refuses it, naming it.
+  11. An invoice number holding # or brackets refused every reminder to its
+     client, the refusal reading as its code: any number of 1 to 60
+     characters, and the refusal in words.
+  12. A client's Billing read the company's whole unpaid list from Bukku,
+     one invoice after another: it asks for the client's contacts, reads
+     invoices five at a time, and a colleague seeing no linked client asks
+     nothing.
+  13. The iPhone Duo's upright bar could switch on for any iPhone pinched
+     in: measured on the layout's width, never while pinched.
+  14. A demo PIN locked by wrong tries stayed locked when a new PIN was set:
+     a new PIN clears them.
+  15. The demo marked the real client pages' guides met in the browser for
+     good: the keys it set are taken back on Exit demo.
+  16. A creator link's preview was counted against the links Worker's one
+     address: the Worker passes the visitor's on beside the relay secret
+     (live once `IP_RELAY_SECRET` is set on the Worker).
+  17. A website quotation past the day's WhatsApp cap told the team as any
+     other: the notice ends Not sent on WhatsApp (daily limit).
+  18. A draft sent back while the selection page stood open read Not sent
+     on every Approve: the page is read again and says the draft moved.
+  19. Leftovers: a duplicated refusal word in Suppliers, Content Review's
+     settings still signing a logo upload, five menu words no ⋯ holds, and
+     every chart watched for good after it was redrawn.
+  20. Malaysia's today in `bukku-sync` had no test across 4pm UTC: added,
+     with the voided invoice now named voided, never paid.
 ### 2026-10-29 · The Bukku band and Unlink
 - What was reported: a client linked to the wrong Bukku contact could not
   be unlinked ("a dead end"), and the Bukku group read as "simply added":

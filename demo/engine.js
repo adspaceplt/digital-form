@@ -621,9 +621,15 @@
     'team.health', 'reports.entry', 'reports.text', 'reports.check'];
   function guidesFresh() { try { return !!window.__guidesFresh || sessionStorage.getItem('adspace-guides-fresh') === '1'; } catch (e) { return false; } }
   try {
+
+    var demoSet = [];
     if (!guidesFresh()) ['client', 'review', 'creators', 'creator', 'script'].forEach(function (k) {
-      if (!localStorage.getItem('adspace-guide:' + k)) localStorage.setItem('adspace-guide:' + k, '1');
+      if (!localStorage.getItem('adspace-guide:' + k)) { localStorage.setItem('adspace-guide:' + k, '1'); demoSet.push(k); }
     });
+    if (window.ADSPACE_DEMO && demoSet.length) {
+      var had = JSON.parse(localStorage.getItem('adspace-demo-guides') || '[]');
+      localStorage.setItem('adspace-demo-guides', JSON.stringify(had.concat(demoSet)));
+    }
   } catch (e) {}
 
   function pkFail() {
@@ -11347,7 +11353,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
           if (window.__bukkuOff) return bkR({ error: 'bukku-not-set-up' });
           var held = window.__bukkuContacts = window.__bukkuContacts || [
-            { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '202201012345', types: ['customer'], fields: [] },
+            { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '000000012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];
 
           if (bkb.action === 'invoices' || bkb.action === 'remind') {

@@ -42,7 +42,7 @@
     'bad-sst_no': 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
     'bad-mobile': 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email address.', 'bad-finance_email': 'Enter a valid email address.',
-    'bad-finance_email': 'Enter a valid finance email.', 'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
+    'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
     'bad-swift': 'Enter the SWIFT code, 8 or 11 letters or digits.', 'bad-bank_address': 'The bank address is up to 300 characters.',
     'incomplete': 'Approve once the details, the payment term and the bank account are saved.',

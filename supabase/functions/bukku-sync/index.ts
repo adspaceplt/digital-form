@@ -349,17 +349,49 @@ export function overdueOf(inv: any, today: string): any | null | undefined {
   if (!past.length) return null;
   const amount = cents(Math.min(bal, past.reduce((n: number, t: any) => n + cents(t.balance), 0)));
   if (!(amount > 0)) return null;
-  return { amount, due: past[0].date, part: { n: terms.indexOf(past[past.length - 1]) + 1, of: terms.length } };
+  return { amount, due: past[0].date, part: partOf(terms, past[0], past[past.length - 1]) };
+}
+/* The instalments a line covers, first to last: "Instalment 2 of 3", or
+   "Instalments 1 to 2 of 3" where several have passed (review 2026-10-29,
+   4: the last one's number stood beside the first one's date). `n` is the
+   last, as an open page before this read it. */
+function partOf(terms: any[], first: any, last: any) {
+  const from = terms.indexOf(first) + 1, to = terms.indexOf(last) + 1;
+  return { n: to, from, to, of: terms.length };
+}
+export function partWord(p: any): string {
+  if (!p || !p.of) return '';
+  const from = Number(p.from || p.n), to = Number(p.to || p.n);
+  return from === to ? 'Instalment ' + to + ' of ' + p.of : 'Instalments ' + from + ' to ' + to + ' of ' + p.of;
 }
 /* Instalments Bukku sent with no balances of their own, even on the
-   invoice read whole: the whole balance is overdue from the earliest
-   instalment date passed, never taken for paid (review 2026-10-29, 5). */
+   invoice read whole, never taken for paid (review 2026-10-29, 5). Where
+   each carries its amount, what is paid (the invoice less its balance) is
+   set against them in date order: overdue is what the instalments passed
+   ask beyond it, due on the first one not covered (review 2026-10-29, 3:
+   RM 1,000 in two read as all overdue from the first date). Without
+   amounts, the whole balance from the earliest date passed. */
 export function overdueWhole(inv: any, today: string): any | null {
   const bal = cents(inv.balance);
   if (!(bal > 0) || (inv.status && inv.status !== 'ready')) return null;
-  const dates = (Array.isArray(inv.term_items) ? inv.term_items : []).map((t: any) => String((t && t.date) || ''))
-    .filter((d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
-  const due = dates[0] || String(inv.date || '');
+  const terms = (Array.isArray(inv.term_items) ? inv.term_items : []).filter((t: any) => t && /^\d{4}-\d{2}-\d{2}$/.test(String(t.date || '')))
+    .slice().sort((a: any, b: any) => String(a.date).localeCompare(String(b.date)));
+  const total = cents(inv.amount);
+  if (terms.length > 1 && total >= bal && terms.every((t: any) => t.amount != null && Number.isFinite(Number(t.amount)))) {
+    let left = cents(total - bal), first: any = null, last: any = null, owed = 0;
+    for (const t of terms) {
+      const amt = cents(t.amount);
+      const open = cents(Math.max(0, amt - left));
+      left = cents(Math.max(0, left - amt));
+      if (!(open > 0)) continue;
+      if (!(t.date < today)) break;
+      if (!first) first = t;
+      last = t; owed = cents(owed + open);
+    }
+    if (!first) return null;
+    return { amount: cents(Math.min(bal, owed)), due: first.date, part: partOf(terms, first, last) };
+  }
+  const due = (terms[0] && terms[0].date) || String(inv.date || '');
   return /^\d{4}-\d{2}-\d{2}$/.test(due) && due < today ? { amount: bal, due, part: null } : null;
 }
 /* An unpaid invoice not yet past its date (a client's Billing lists these
@@ -383,12 +415,16 @@ function lineOf(inv: any, od: any, today: string) {
     contact: Number(inv.contact_id), contact_name: String(inv.contact_name || ''), contact_email: String(inv.contact_email || '') };
 }
 /* Every invoice still owing, a hundred a page: Bukku's Outstanding and
-   Overdue lists together, each once. */
-async function unpaid(): Promise<any[]> {
+   Overdue lists together, each once. One client's Billing asks for its own
+   contacts alone (review 2026-10-29, 12); every row is still held to the
+   contacts asked for by the caller, so a filter Bukku did not apply costs
+   time, never a wrong row. */
+async function unpaid(contacts?: number[]): Promise<any[]> {
   const seen = new Map<number, any>();
-  for (const ps of ['OVERDUE', 'OUTSTANDING']) {
+  const by = contacts && contacts.length && contacts.length <= 5 ? contacts.map((c) => `&contact_id=${c}`) : [''];
+  for (const who of by) for (const ps of ['OVERDUE', 'OUTSTANDING']) {
     for (let page = 1; page <= 50; page++) {
-      const r = await bukku('GET', `/sales/invoices?payment_status=${ps}&status=ready&page=${page}&page_size=100`);
+      const r = await bukku('GET', `/sales/invoices?payment_status=${ps}&status=ready&page=${page}&page_size=100${who}`);
       const rows = (r && r.transactions) || [];
       for (const x of rows) if (x && x.id && !seen.has(Number(x.id))) seen.set(Number(x.id), x);
       const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
@@ -402,6 +438,12 @@ async function oneInvoice(id: number): Promise<any | null> {
   return bukku('GET', `/sales/invoices/${id}`).then((r) => (r && r.transaction) || null)
     .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
 }
+/* Several invoices read whole, five at a time, in the order asked. */
+async function manyInvoices(ids: number[]): Promise<(any | null)[]> {
+  const out: (any | null)[] = [];
+  for (let i = 0; i < ids.length; i += 5) out.push(...await Promise.all(ids.slice(i, i + 5).map((id) => oneInvoice(id))));
+  return out;
+}
 const money = (n: number, cur: string) => (cur === 'MYR' ? 'RM ' : cur === 'SGD' ? 'S$ ' : cur + ' ') +
   cents(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -414,7 +456,7 @@ export function invoiceTable(lines: any[]): string {
   const head = 'padding:10px 12px;font-size:12px;font-weight:600;color:#6b6760;text-align:left;';
   const many = lines.length > 1;
   const rows = lines.map((l) => '<tr><td style="' + cell + '">' + esc(l.number) +
-      (l.part ? '<br><span style="font-size:12px;color:#6b6760;">Instalment ' + l.part.n + ' of ' + l.part.of + '</span>' : '') + '</td>' +
+      (l.part ? '<br><span style="font-size:12px;color:#6b6760;">' + esc(partWord(l.part)) + '</span>' : '') + '</td>' +
     '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.date)) + '</td>' +
     '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.due)) + '</td>' +
     '<td style="' + cell + 'text-align:right;white-space:nowrap;">' + esc(money(l.amount, l.currency)) + '</td>' +
@@ -453,15 +495,24 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     const forClient = /^[0-9a-f-]{36}$/i.test(String(body.client || '')) ? String(body.client) : null;
     const want = forClient ? new Set(Array.from(links.values()).filter((l) => l.client === forClient).map((l) => Number(l.contact))) : null;
     if (want && !want.size) return json({ ok: true, today, send: scope.send === true, all: scope.all === true, linked: false, rows: [], reminders: [] }, 200, origin);
-    const all = await unpaid();
-    const out: any[] = [];
-    for (const inv of all) {
+    /* A colleague who sees no linked client and not every contact reads
+       nothing from Bukku (review 2026-10-29, 12). */
+    if (!want && !links.size && scope.all !== true) return json({ ok: true, today, send: scope.send === true, all: false, rows: [], reminders: [] }, 200, origin);
+    const all = (await unpaid(want ? Array.from(want) : undefined)).filter((inv) => {
       const c = Number(inv.contact_id);
-      if (want ? !want.has(c) : !mayContact(c)) continue;
-      let od = overdueOf(inv, today);
+      return want ? want.has(c) : mayContact(c);
+    });
+    const first = all.map((inv) => overdueOf(inv, today));
+    const whole = await manyInvoices(all.filter((_, i) => first[i] === undefined).map((inv) => Number(inv.id)));
+    const out: any[] = [];
+    let w = 0;
+    for (let i = 0; i < all.length; i++) {
+      const inv = all[i];
+      const c = Number(inv.contact_id);
+      let od = first[i];
       let src = inv;
       if (od === undefined) {
-        src = await oneInvoice(Number(inv.id));
+        src = whole[w++];
         od = src ? overdueOf({ ...inv, ...src }, today) : null;
         if (od === undefined) od = overdueWhole({ ...inv, ...src }, today);
       }
@@ -487,16 +538,27 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const ids = Array.isArray(body.invoices) ? body.invoices.map(Number).filter((n: number) => n > 0) : [];
   if (!(contact > 0) || !ids.length || ids.length > 50) return json({ error: 'bad-request' }, 400, origin);
   if (!mayContact(contact)) return json({ error: 'denied' }, 200, origin);
-  const lines: any[] = [], paid: string[] = [];
-  for (const id of Array.from(new Set(ids))) {
-    const inv = await oneInvoice(id as number);
+  /* What is left out is said for what it is: paid, voided in Bukku, or
+     not yet due (review 2026-10-29, 6: a voided invoice read as paid). */
+  const lines: any[] = [], paid: string[] = [], voided: string[] = [], notDue: string[] = [];
+  const uniq = Array.from(new Set(ids)) as number[];
+  const read = await manyInvoices(uniq);
+  for (let i = 0; i < uniq.length; i++) {
+    const inv = read[i], id = uniq[i];
     if (!inv || Number(inv.contact_id) !== contact) return json({ error: 'bad-request' }, 400, origin);
     let od = overdueOf(inv, today);
     if (od === undefined) od = overdueWhole(inv, today);
-    if (!od) { paid.push(String(inv.number || id)); continue; }
+    if (!od) {
+      const no = String(inv.number || id);
+      if (inv.status && inv.status !== 'ready') voided.push(no);
+      else if (!(cents(inv.balance) > 0)) paid.push(no);
+      else notDue.push(no);
+      continue;
+    }
     lines.push(lineOf(inv, od, today));
   }
-  if (!lines.length) return json({ error: 'nothing-overdue', paid }, 200, origin);
+  const left = { paid, voided, not_due: notDue };
+  if (!lines.length) return json({ error: 'nothing-overdue', ...left }, 200, origin);
   lines.sort((a, b) => a.due.localeCompare(b.due) || a.number.localeCompare(b.number));
   const link = links.get(contact);
   const bc = await bukku('GET', `/contacts/${contact}`).then((r) => (r && r.contact) || null).catch(() => null);
@@ -510,7 +572,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     p_cc: body.cc !== false, p_subject: String(body.subject || ''), p_body: String(body.body || ''), p_again: body.again === true });
   if (begun.error) return json({ error: 'needs-update' }, 200, origin);
   const b = begun.data || {};
-  if (b.error) return json({ ...b, paid }, 200, origin);
+  if (b.error) return json({ ...b, ...left }, 200, origin);
   const heading = String(b.subject || '').split(/\s+·\s+/)[0].trim() || 'Payment reminder';
   const html = layout({ heading, body: String(b.body || ''), preheader: String(b.subject || ''), block: invoiceTable(lines),
     fine: [String(b.legal || ''), String(b.disclaimer || '')] });
@@ -523,8 +585,8 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const done = await svc.rpc('invoice_email_done', { p_id: b.id, p_status: sent.status, p_provider: sent.provider || null, p_error: sent.error || null });
   if (done.error) console.error('bukku-sync: reminder not closed', done.error.message);
   if (sent.status !== 'sent') console.error('bukku-sync: reminder', sent.status, sent.error);
-  return json(sent.status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null, paid }
-    : { error: sent.status === 'unknown' ? 'not-confirmed' : 'not-sent', paid }, 200, origin);
+  return json(sent.status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null, ...left }
+    : { error: sent.status === 'unknown' ? 'not-confirmed' : 'not-sent', ...left }, 200, origin);
 }
 
 Deno.serve(async (req) => {

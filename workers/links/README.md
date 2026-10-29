@@ -28,6 +28,15 @@ Plain text vars on the Worker, not secrets, because none of them is one:
 - `SUPABASE_ANON_KEY` — the public key, the same one `js/config.js` carries
 - `HOME_URL` — where the bare host sends somebody, `https://adspacestudios.com`
 
+One secret, optional: `IP_RELAY_SECRET`, the database's `ip_relay_secret`
+(read it in the SQL Editor: `select value from app_secrets where key =
+'ip_relay_secret'`; add it under Settings > Variables as a Secret, never in
+the repo or a chat). With it the Worker passes a visitor's address on when
+it asks for a creator link's preview, so wrong codes are counted against
+that visitor; without it they are counted against the Worker's own
+address, and five in 15 minutes switch every creator preview to its plain
+title for a while (2026-10-29).
+
 There is no service role key here, and that is the point. See the comment at
 the top of `worker.js`: `link_resolve` answers one exact slug with one
 destination, so the public key is enough and nothing that can write ever
