@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261029a">
-<link rel="stylesheet" href="/css/console.css?v=20261029f">
+<link rel="stylesheet" href="/css/console.css?v=20261029g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -61,7 +61,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261027j"><\/script><script src="/demo/engine.js?v=20261029f"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261027j"><\/script><script src="/demo/engine.js?v=20261029g"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -81,7 +81,7 @@
 <script src="/js/form.js?v=20261023i"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261029f"></script>
+<script src="/js/menu.js?v=20261029g"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261023e"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -1012,6 +1012,27 @@
             <div class="sheet-foot">
               <button class="btn btn-primary" id="crmBillSave" data-need="clients.billing:work" type="button">Save</button>
               <button class="btn btn-quiet" id="crmBillCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <!-- Add entity (2026-10-29): a billing entity already held, found by
+             its registered name or registration no., or a new one in
+             Billing's own sheet. -->
+        <div class="sheet" id="entAddSheet" hidden>
+          <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="entAddTitle">
+            <div class="sheet-head">
+              <h3 id="entAddTitle">Add entity</h3>
+              <button class="iconbtn" id="entAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body">
+              <label class="field-label" for="entAddFind">Find an entity already held</label>
+              <input class="input" id="entAddFind" type="search" autocomplete="off" data-nodraft placeholder="Name or registration no.">
+              <div class="ent-picks" id="entAddList" role="radiogroup" aria-label="Entity"></div>
+              <div class="msg" id="entAddMsg"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="entAddGo" data-need="clients.billing:work" type="button">Add</button>
+              <button class="btn btn-quiet" id="entAddCancel" type="button">Cancel</button>
             </div>
           </div>
         </div>
@@ -5775,7 +5796,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261027a"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261029f"></script>
+<script src="/js/crm.js?v=20261029g"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5787,7 +5808,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20261029b"></script>
 <script src="/js/perf.js?v=20261029a"></script>
 <script src="/js/health.js?v=20261027b"></script>
-<script src="/js/search.js?v=20261027d"></script>
+<script src="/js/search.js?v=20261029g"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261027d"></script>
 <script src="/js/settings.js?v=20261029d"></script>

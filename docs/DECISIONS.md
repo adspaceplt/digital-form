@@ -7207,3 +7207,20 @@ sentence.
   form" after it read Ask the client to fill these in.
 - The rule already standing was missed again: words taken off a screen are
   grepped across the suites first (`grep -rn "details form" tests/`).
+
+### 2026-10-29 · Billing entities
+- What was asked: listed clients are billed through several companies of
+  their group, and one company may own several brands, each a client of
+  its own. "One client several entities, however allow to set the main";
+  each entity its own billing contact; two clients holding one BRN stay
+  two, merged by hand.
+- The design: a billing entity is a registered company; a client (the
+  brand) links one or several, one main. The main entity IS the client's
+  billing columns, kept equal both ways by trigger, so letters, the Active
+  gate, Bukku, the details form and reminders read it unchanged; the
+  others are read and edited through their own functions. A write on the
+  client carries only what it changed, so one brand's sheet never wipes
+  another brand's choice of billing contact (the first run of the suite
+  caught exactly that).
+- Next: Bill to on letters, quotations and their PDFs, Bukku by entity,
+  reminders by entity.
