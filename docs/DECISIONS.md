@@ -7344,3 +7344,18 @@ WhatsApp. Website quotations made before count as sent. This reverses the
 for an approval before validity, which this restores. The daily WhatsApp
 cap (`quote_wa_day`) now limits nothing, every send being a colleague's.
 
+### 2026-10-29 · Page availability: Upgrade mode a page at a time
+The user, after two empty website quotations: "Do you have any like upgrade
+kind of page to temporarily not available page for the quote?", then "can
+revamp the upgrade be for each page basis? … start Upgrade for /client page,
+start Temporarily Unavailable for /admin, or selectively", and "Ok good build
+all" on the mockup. Upgrade mode had one row for the whole portal, so pausing
+the quotation website meant covering every client page; it was switched on at
+12:14 MYT that day for that reason. Each page is now its own row with a kind
+(Upgrade in progress, or Temporarily unavailable with an optional Chat on
+WhatsApp), set one at a time or several together from Settings; the
+quotation website covered makes nothing in the database too, and a link
+already sent keeps opening while it is only paused. The Upgrade mode standing
+when the migration first runs becomes every page's, and the old functions
+read and set every page for a tab served before.
+

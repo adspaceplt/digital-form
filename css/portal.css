@@ -8511,6 +8511,7 @@ body.is-maint { overflow: hidden; }
 .maint-cover .maint-back { margin-top: 8px; }
 .maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }
 .maint-cover .maint-out { margin-top: 20px; }
+.maint-cover .maint-chat { margin-top: 20px; }
 /* A neutral band led by its amber dot (2026-10-07). */
 .upgradebar > :first-child::before, .annbar-text.is-important::before {
   content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;

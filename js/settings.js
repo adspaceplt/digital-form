@@ -85,6 +85,15 @@
     m.textContent = text;
   }
   var READ = {
+    /* Page availability (2026-10-29): which pages are covered. */
+    pages: function () {
+      return readPg().then(function (rows) {
+        var on = rows.filter(function (p) { return p.set; });
+        if (!on.length) return 'All pages available';
+        return parts([plural(on.length, 'page', 'pages') + ' covered',
+          on.length <= 3 ? on.map(function (p) { return p.name; }).join(', ') : '']);
+      });
+    },
     /* What the Departments row holds, from the list (2026-10-23). */
     depts: function () {
       return db.rpc('departments_list').then(function (r) {
@@ -184,13 +193,12 @@
      sheet of figures) or Open (a list in a sheet). `meta` says the value as
      it stands, where there is one. A group with no row drawn is left out. */
   function groups() {
-    var up = bridge.upgradeState ? bridge.upgradeState() : { on: false, set: false };
     var biz = may('team.settings');
     var out = [];
     function add(key, name, rows) { rows = rows.filter(Boolean); if (rows.length) out.push({ key: key, name: name, rows: rows }); }
     add('portal', 'Portal', [
-      may('team.upgrade') && { id: 'upgrade', name: 'Upgrade mode', kind: 'switch', on: Boolean(up.set),
-        meta: up.on ? 'On' + (up.ends_at ? ' until ' + when(up.ends_at) : '') : up.set ? 'Starts ' + when(up.starts_at) : 'Off' },
+      /* Page availability (2026-10-29): Upgrade mode a page at a time. */
+      may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages') },
       may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce') },
       may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice') },
       biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta() },
@@ -458,7 +466,7 @@
       bridge.editSettings({ title: sp.title, keys: sp.keys.map(function (k) { return [k[0], k[1], k[2], k[3], k[4], k[5]]; }), msg: rowSay(a), done: paint }, btn);
       return;
     }
-    if (a === 'upgrade') { if (bridge.upgradeToggle) bridge.upgradeToggle(btn); return; }
+    if (a === 'pages') { openPages(btn); return; }
     if (a === 'announce') { if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage(btn); return; }
     if (a === 'notice') { if (window.ADspaceNotice) window.ADspaceNotice.manage(btn); return; }
     if (a === 'meta') { flipMeta(btn); return; }
@@ -760,6 +768,146 @@
     });
   }
 
+  /* ---- Page availability (2026-10-29) ------------------------------------
+     Upgrade mode a page at a time (the user, 2026-10-29: "Upgrade for
+     /client page, Temporarily Unavailable for /admin, or selectively"):
+     each page Available, Upgrade in progress or Temporarily unavailable,
+     with its window and note; several set at once through Select. The
+     front door, the 404 and namecards are never covered. */
+  var pg = { rows: null, err: null, picking: false, picked: {} };
+  var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
+    ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify']]];
+  var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
+  var PG_SAID = { denied: 'This needs Team: Upgrade mode.', 'bad-window': 'Choose an end after the start, and later than now.',
+    'bad-page': 'Choose a page.', 'bad-kind': 'Choose the availability.' };
+  function pgMsg(text, tone) { var m = $('pgMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function readPg() {
+    return db.rpc('page_states_all').then(function (r) {
+      if (r.error || (r.data && r.data.error)) throw r.error || new Error(PG_SAID[r.data.error] || r.data.error);
+      pg.rows = r.data || []; pg.err = null;
+      return pg.rows;
+    });
+  }
+  function pgOf(k) { return (pg.rows || []).filter(function (p) { return p.key === k; })[0]; }
+  function pgState(p) {
+    if (!p.set) return ['is-ok', 'Available', ''];
+    var w = p.on ? (p.ends_at ? 'Until ' + when(p.ends_at) : 'No end set')
+      : 'From ' + when(p.starts_at) + (p.ends_at ? ' to ' + when(p.ends_at) : '');
+    return [p.kind === 'paused' ? 'is-off' : 'is-warn', PG_WORD[p.kind] || PG_WORD.upgrade, w];
+  }
+  function pgFoot() {
+    var n = Object.keys(pg.picked).length, on = (pg.rows || []).filter(function (p) { return p.set; }).length;
+    $('pgCount').textContent = pg.picking ? n + ' selected' : pg.rows ? plural(pg.rows.length, 'page', 'pages') + ' · ' + on + ' covered' : '';
+    $('pgSelect').textContent = pg.picking ? 'Done' : 'Select';
+    $('pgSelect').hidden = !pg.rows;
+    // Set availability is drawn once a page is ticked, never greyed (MENU-12).
+    $('pgSetMany').hidden = !pg.picking || !n;
+  }
+  function paintPg() {
+    var box = $('pgList');
+    if (!box) return;
+    if (pg.err) { window.ADspaceState.failLine(box, 'Page availability', (pg.err && pg.err.message) || '', function () { readPg().then(paintPg, function (e) { pg.err = e; paintPg(); }); }); return; }
+    if (!pg.rows) { window.ADspaceState.skeleton(box, 4); return; }
+    pgFoot();
+    box.innerHTML = PG_GROUPS.map(function (g) {
+      return '<h4 class="fsec-h pg-grp">' + esc(g[0]) + '</h4>' + g[1].map(function (k) {
+        var p = pgOf(k);
+        if (!p) return '';
+        var st = pgState(p);
+        return '<div class="dtrow pg-row" data-key="' + esc(k) + '">' +
+          '<span class="dtrow-name">' + (pg.picking ? '<input type="checkbox" class="pg-tick" aria-label="' + esc(p.name) + '"' + (pg.picked[k] ? ' checked' : '') + '>' : '') +
+            '<b>' + esc(p.name) + '</b><small class="mono">/' + esc(k) + '/</small></span>' +
+          '<span class="pg-state"><span class="chip-state ' + st[0] + '">' + esc(st[1]) + '</span>' + (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
+          (pg.picking ? '' : '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-p="edit" aria-label="Edit ' + esc(p.name) + '">' + PEN + 'Edit</button></span>') +
+          '</div>';
+      }).join('');
+    }).join('');
+  }
+  function openPages(opener) {
+    pgMsg(''); pg.picking = false; pg.picked = {};
+    paintPg();
+    window.ADspaceSheet.show($('pgSheet'), { opener: opener });
+    readPg().then(paintPg, function (e) { pg.err = e; paintPg(); });
+  }
+  /* What setting the page does, said under the choice. */
+  function pgNote(keys) {
+    if (keys.indexOf('quote') >= 0) return 'New quotations are refused while the quotation website is covered. Links already sent keep opening while it is Temporarily unavailable.';
+    if (keys.indexOf('admin') >= 0) return 'Admins keep working under a bar; everyone else sees the cover.';
+    return 'The page is covered; nothing it holds changes.';
+  }
+  function pgDay(iso) { return iso ? window.ADspaceClock.day(iso) : ''; }
+  function pgTime(iso) {
+    if (!iso) return '';
+    var p = window.ADspaceClock.parts(iso);
+    return (p.h < 10 ? '0' : '') + p.h + ':' + (p.mi < 10 ? '0' : '') + p.mi;
+  }
+  function pgArgs(p) {
+    return { p_pages: [p.key], p_kind: p.set ? p.kind : 'none', p_note: p.note || null, p_note_zh: p.note_zh || null,
+      p_starts: p.set && !p.on ? p.starts_at : null, p_ends: p.set ? p.ends_at : null, p_whatsapp: !!p.whatsapp };
+  }
+  function pgSave(args, then) {
+    return db.rpc('page_set', args).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : PG_SAID[d.error] || d.error);
+      pg.rows = d.pages || pg.rows;
+      if (bridge.upgradeRead) bridge.upgradeRead();
+      return then ? then() : null;
+    });
+  }
+  function pgAsk(keys, opener) {
+    var one = keys.length === 1 ? pgOf(keys[0]) : null;
+    var today = pgDay(new Date().toISOString());
+    var cur = one && one.set ? one : null;
+    window.ADspaceConfirm.ask({
+      title: one ? one.name : 'Set availability · ' + plural(keys.length, 'page', 'pages'), go: 'Save', wait: true,
+      fields: [{ name: 'kind', label: 'Availability', seg: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
+                 choices: [['none', 'Available'], ['upgrade', 'Upgrade in progress'], ['paused', 'Temporarily unavailable']] },
+               { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: cur && !cur.on ? pgDay(cur.starts_at) : '' },
+               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: cur && !cur.on ? pgTime(cur.starts_at) : '' },
+               { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true, value: cur ? pgDay(cur.ends_at) : '' },
+               { name: 'etime', label: 'End time', type: 'time', required: false, half: true, hint: 'Optional', value: cur ? pgTime(cur.ends_at) : '' },
+               { name: 'note', label: 'Note to visitors', placeholder: 'Optional', required: false, value: cur ? cur.note || '' : '' },
+               { name: 'note_zh', label: '中文 note', placeholder: 'Optional', required: false, value: cur ? cur.note_zh || '' : '' }]
+        .concat(keys.length === 1 && keys[0] === 'admin' ? [] : [{ name: 'whatsapp', label: 'Show Chat on WhatsApp', tick: true, value: cur && cur.whatsapp ? 'on' : '' }]),
+      check: function (v) { return v.kind === 'none' ? '' : bridge.upgradeWindow(v).bad; }
+    }, function (v) {
+      var w = bridge.upgradeWindow(v), was = keys.map(pgOf).filter(Boolean).map(pgArgs);
+      var args = { p_pages: keys, p_kind: v.kind, p_note: v.kind === 'none' ? null : v.note || null, p_note_zh: v.kind === 'none' ? null : v.note_zh || null,
+        p_starts: v.kind === 'none' ? null : w.starts, p_ends: v.kind === 'none' ? null : w.ends, p_whatsapp: v.kind !== 'none' && v.whatsapp === 'on' };
+      return pgSave(args).then(function () {
+        pg.picking = false; pg.picked = {};
+        paintPg();
+        pgMsg('Saved.', 'ok');
+        fillLine('pages', null); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); });
+        bridge.undoHere('Saved.', function () {
+          was.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve())
+            .then(function () { paintPg(); pgMsg('Put back.', 'ok'); READ.pages().then(function (t) { fillLine('pages', t); }); })
+            .catch(function (e) { pgMsg(e.message || String(e)); });
+        }, $('pgMsg'));
+        return '';
+      }).catch(function (e) { return e.message || String(e); });
+    });
+  }
+  var pgWired = false;
+  function wirePg() {
+    if (pgWired || !$('pgSheet')) return;
+    pgWired = true;
+    $('pgCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('pgClose').addEventListener('click', function () { $('pgCancel').click(); });
+    $('pgSelect').addEventListener('click', function () { pg.picking = !pg.picking; pg.picked = {}; pgMsg(''); paintPg(); });
+    $('pgSetMany').addEventListener('click', function () { pgAsk(Object.keys(pg.picked), this); });
+    $('pgList').addEventListener('change', function (e) {
+      var t = e.target.closest('.pg-tick'); if (!t) return;
+      var k = t.closest('.pg-row').getAttribute('data-key');
+      if (t.checked) pg.picked[k] = true; else delete pg.picked[k];
+      pgFoot();
+    });
+    $('pgList').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-p="edit"]'); if (!b) return;
+      pgMsg(''); pgAsk([b.closest('.pg-row').getAttribute('data-key')], b);
+    });
+  }
+
   /* ---- Tax codes (2026-10-22) --------------------------------------------
      The codes a service line or a quotation line may carry: read from
      Bukku, so the letter and the Bukku invoice name the same code, or added
@@ -1007,6 +1155,7 @@
   }
   wireHol();
   wireDeps();
+  wirePg();
   /* A press outside a list's ⋯ shuts it: one listener for every list. */
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#holList .team-act')) holShut();
@@ -1078,6 +1227,7 @@
     var b = document.querySelector('#setList .stg-row[data-row="' + id + '"] [data-a]');
     if (b) b.focus();
   }
-  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow };
+  window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint,
+    pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow };
   if (bridge.settingsReady) bridge.settingsReady();
 })();

@@ -110,7 +110,7 @@
         captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'A valid Malaysian or Singaporean WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
-        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation is closed. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.',
+        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation is closed. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'nothing-priced': 'A KOL campaign and a custom creator list are quoted on request. Add a service with a listed rate, or chat with ADspace on WhatsApp.', 'no-card': 'Quotations are unavailable at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
@@ -197,7 +197,7 @@
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
-        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。',
+        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已结束，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'

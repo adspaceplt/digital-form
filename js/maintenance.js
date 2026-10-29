@@ -1,4 +1,6 @@
-/* Upgrade mode (2026-10-03): one copy, loaded by every portal page but the
+/* Upgrade mode (2026-10-03), a page at a time since 2026-10-29 (Page
+ * availability: Upgrade in progress or Temporarily unavailable, each page's
+ * own row from `page_states()`): one copy, loaded by every portal page but the
  * front door and the 404. It asks `maintenance_state()` once on load; while
  * it is on, a client-facing page is one cover in the page's language, and
  * the console hands the answer to js/admin.js, which covers it for everyone
@@ -23,6 +25,22 @@
 (function () {
   var API = window.ADspaceAPI;
   var off = { on: false, set: false };
+  /* Page availability (2026-10-29): each page reads its own row
+     (`page_states`), by the first part of its address; a database before
+     answers the whole portal (`maintenance_state`). */
+  var PAGE = (function () {
+    var m = /^\/([a-z-]+)/.exec(location.pathname), k = m ? m[1] : '';
+    return k === 'supplier-details' ? 'supplier'
+      : ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'].indexOf(k) >= 0 ? k : null;
+  })();
+  /* A quotation link already sent keeps opening while the quotation
+     website is only paused: the builder alone is covered. */
+  function mine(all) {
+    var d = all && PAGE ? all[PAGE] : null;
+    if (!d || !(d.on || d.set)) return off;
+    if (PAGE === 'quote' && d.kind === 'paused' && /[?&]q=/.test(location.search)) return off;
+    return d;
+  }
   var DAY = 864e5;
   var EVERY = 60000;
 
@@ -50,12 +68,16 @@
     if (!box || !shown) return;
     var W = window.ADspaceWords || {};
     var set = (zh() ? W.zh : W.en) || {};
+    var paused = shown.kind === 'paused';
     var back = shown.ends_at ? (set.maintBack || 'Expected back by {when}.').replace('{when}', when(shown.ends_at)) : '';
+    var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
+    var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
     box.querySelector('.cover-panel').innerHTML =
-      '<h2 id="maintTitle">' + esc(set.maintTitle || 'Upgrade in progress') + '</h2>' +
-      '<p>' + esc(set.maintText || 'The portal will be available again shortly.') + '</p>' +
+      '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
+      '<p>' + esc(paused ? set.pausedText || 'This page is not available at the moment.' : set.maintText || 'The portal will be available again shortly.') + '</p>' +
       (back ? '<p class="maint-back">' + esc(back) + '</p>' : '') +
-      (shown.note ? '<p class="maint-note">' + esc(shown.note) + '</p>' : '') +
+      (note ? '<p class="maint-note">' + esc(note) + '</p>' : '') +
+      (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
       (shown.out ? '<button class="btn btn-sm maint-out" type="button" id="maintOut">Sign out</button>' : '');
     var out = document.getElementById('maintOut');
     if (out) out.addEventListener('click', shown.out);
@@ -115,15 +137,25 @@
     return ms > 0 && ms < DAY ? setTimeout(fn, ms + 1000) : null;
   }
 
+  var legacy = false;
+  function askWhole(failed) {
+    return Promise.resolve(API.client.rpc('maintenance_state')).then(function (r) {
+      if (!r || r.error) return failed;
+      var d = r.data;
+      return d && (d.on || d.set) ? d : off;
+    }).catch(function () { return failed; });
+  }
   function ask(strict) {
     var failed = strict ? null : off;
-    return (API && API.client && API.client.rpc)
-      ? Promise.resolve(API.client.rpc('maintenance_state')).then(function (r) {
-          if (!r || r.error) return failed;
-          var d = r.data;
-          return d && (d.on || d.set) ? d : off;
-        }).catch(function () { return failed; })
-      : Promise.resolve(failed);
+    if (!(API && API.client && API.client.rpc)) return Promise.resolve(failed);
+    if (legacy || !PAGE) return askWhole(failed);
+    return Promise.resolve(API.client.rpc('page_states')).then(function (r) {
+      if (r && r.error && /PGRST202|page_states|schema cache/i.test(String(r.error.code || '') + ' ' + String(r.error.message || ''))) {
+        legacy = true; return askWhole(failed);
+      }
+      if (!r || r.error) return failed;
+      return mine(r.data || {});
+    }).catch(function () { return failed; });
   }
 
   function norm(d) { return d && (d.on || d.set) ? d : off; }
@@ -152,7 +184,8 @@
       var d = r && r.data;
       if (!d) return;
       parts.forEach(function (p) {
-        if (Object.prototype.hasOwnProperty.call(d, p.key)) p.take(p.key === 'maintenance' ? norm(d[p.key]) : d[p.key]);
+        if (p.key === 'maintenance') { p.take(d.pages && PAGE && !legacy ? mine(d.pages) : norm(d.maintenance)); return; }
+        if (Object.prototype.hasOwnProperty.call(d, p.key)) p.take(d[p.key]);
       });
     }).catch(function () {});
   }
@@ -183,5 +216,5 @@
     often('maintenance', settle, again);
   }
 
-  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch, often: often };
+  window.ADspaceMaintenance = { ready: ready, ask: ask, cover: cover, when: when, watch: watch, often: often, page: PAGE };
 })();

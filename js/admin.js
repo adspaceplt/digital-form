@@ -442,13 +442,15 @@
       bar.classList.remove('is-err');
       $('upgradeOff').hidden = false;
       bar.hidden = !(admin && upgrade.set);
+      /* The console's own row of Page availability (2026-10-29). */
+      var word = upgrade.kind === 'paused' ? 'Temporarily unavailable' : 'Upgrade in progress';
       var w = !M ? '' : upgrade.on
-        ? 'Upgrade mode is on' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the upgrade screen.'
-        : 'Upgrade mode starts ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' and ends ' + M.when(upgrade.ends_at) : '') + '.';
+        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the cover.'
+        : 'Console: ' + word + ' from ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.when(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
     if (M && upgrade.on && !admin && me) {
-      M.cover({ note: upgrade.note, ends_at: upgrade.ends_at, out: function () { $('signOut').click(); } });
+      M.cover({ kind: upgrade.kind, note: upgrade.note, note_zh: upgrade.note_zh, ends_at: upgrade.ends_at, out: function () { $('signOut').click(); } });
     } else if (document.getElementById('maintCover') && !upgrade.on) {
       location.reload();
       return;
@@ -468,8 +470,10 @@
       function (d) { if (meLoaded && me && d) paintUpgrade(d); },
       function () { if (meLoaded) readUpgrade(); });
   }
+  /* Turn off on the bar ends the console's cover alone (Page availability,
+     2026-10-29); the other pages are Settings' Page availability. */
   function setUpgrade(args, done) {
-    db.rpc('maintenance_set', args).then(function (r) {
+    db.rpc('page_set', args).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
         done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
@@ -478,12 +482,13 @@
         return;
       }
       done('');
-      paintUpgrade(d);
+      readUpgrade();
+      if (window.ADspaceSettings && window.ADspaceSettings.pagesChanged) window.ADspaceSettings.pagesChanged(d.pages);
     }).catch(function () { done('Not saved. Check the connection and try again.'); });
   }
   function upgradeOff(btn) {
     if (btn) btn.disabled = true;
-    setUpgrade({ p_on: false, p_note: null, p_starts: null, p_ends: null }, function (err) {
+    setUpgrade({ p_pages: ['admin'], p_kind: 'none' }, function (err) {
       if (btn) btn.disabled = false;
       upgradeSay(err);
     });
@@ -499,28 +504,6 @@
     var ends = myMoment(v.eday || (v.etime ? today : ''), v.etime, '23:59');
     var bad = ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date());
     return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
-  }
-  /* The switch on the Settings page (2026-10-10): off at the press, on
-     through its question. */
-  function upgradeToggle(btn) {
-    upgradeSay('');
-    if (upgrade.set) { upgradeOff(btn); return; }
-    var today = myDay(new Date());
-    window.ADspaceConfirm.ask({
-      title: 'Turn on upgrade mode',
-      body: 'Everyone but admins sees Upgrade in progress.',
-      go: 'Turn on',
-      tone: 'warn',
-      fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },
-               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional' },
-               { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true },
-               { name: 'etime', label: 'End time', type: 'time', required: false, half: true, hint: 'Optional' },
-               { name: 'note', label: 'Note on the cover', placeholder: 'Optional', required: false }],
-      check: function (v) { return upgradeWindow(v).bad; }
-    }, function (v) {
-      var w = upgradeWindow(v);
-      setUpgrade({ p_on: true, p_note: v.note || null, p_starts: w.starts, p_ends: w.ends }, upgradeSay);
-    });
   }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
   /* Signing out ends a performance unlock at once rather than leaving it to
@@ -5918,7 +5901,7 @@
     /* ===== end console search ===== */
     may: may,
     upgradeState: function () { return upgrade; },
-    upgradeToggle: upgradeToggle,
+    upgradeWindow: upgradeWindow, upgradeRead: function () { readUpgrade(); },
     parts: PARTS
   };
 
