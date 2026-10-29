@@ -34,8 +34,6 @@
  * A field may be `tick: true` (a checkbox with its label, answering 'on' or
  * '', never required), and a field of two to four `choices` may be
  * `seg: true` (the segment, js/form.js), as a choice of two reads.
- * `lead: true` gives its first option the whole row where the segment
- * wraps (the usual state over the others).
  *
  * `onYes` is called with the field's value where there is one and with `true`
  * where there is not. Cancel calls nothing: walking away is not a decision.
@@ -359,7 +357,6 @@
       elFields.appendChild(wrap);
       if (f.choices && f.seg && window.ADspaceForm && ADspaceForm.segment) {
         input.setAttribute('data-seg', '');
-        if (f.lead) input.setAttribute('data-seg-lead', '');
         ADspaceForm.segment(input);
       }
       /* An empty time field says what it wants: Safari otherwise draws the

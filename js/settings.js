@@ -814,12 +814,15 @@
         var p = pgOf(k);
         if (!p) return '';
         var st = pgState(p);
-        return '<div class="dtrow pg-row" data-key="' + esc(k) + '">' +
+        /* While several are chosen the whole row is the tick's label, so a
+           press anywhere on it ticks it (2026-10-29). */
+        var tag = pg.picking ? 'label' : 'div';
+        return '<' + tag + ' class="dtrow pg-row' + (pg.picking ? ' is-picking' : '') + '" data-key="' + esc(k) + '">' +
           '<span class="dtrow-name">' + (pg.picking ? '<input type="checkbox" class="pg-tick" aria-label="' + esc(p.name) + '"' + (pg.picked[k] ? ' checked' : '') + '>' : '') +
             '<b>' + esc(p.name) + '</b><small class="mono">/' + esc(k) + '/</small></span>' +
           '<span class="pg-state"><span class="chip-state ' + st[0] + '">' + esc(st[1]) + '</span>' + (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
           (pg.picking ? '' : '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-p="edit" aria-label="Edit ' + esc(p.name) + '">' + PEN + 'Edit</button></span>') +
-          '</div>';
+          '</' + tag + '>';
       }).join('');
     }).join('');
   }
@@ -860,8 +863,8 @@
     var cur = one && one.set ? one : null;
     window.ADspaceConfirm.ask({
       title: one ? one.name : 'Set availability · ' + plural(keys.length, 'page', 'pages'), go: 'Save', wait: true,
-      fields: [{ name: 'kind', label: 'Availability', seg: true, lead: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
-                 choices: [['none', 'Available'], ['upgrade', 'Upgrade in progress'], ['paused', 'Temporarily unavailable']] },
+      fields: [{ name: 'kind', label: 'Availability', seg: true, value: cur ? cur.kind : 'none', note: pgNote(keys),
+                 choices: [['none', 'Available'], ['upgrade', 'Upgrading'], ['paused', 'Unavailable']] },
                { name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true, value: cur && !cur.on ? pgDay(cur.starts_at) : '' },
                { name: 'stime', label: 'Start time', type: 'time', required: false, half: true, hint: 'Optional', value: cur && !cur.on ? pgTime(cur.starts_at) : '' },
                { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true, value: cur ? pgDay(cur.ends_at) : '' },

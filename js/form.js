@@ -111,8 +111,7 @@
     var seg = document.createElement('div');
     /* A small select beside a small button is a small segment (32px, 38
        under a finger), the height of the button it sits with. */
-    seg.className = 'seg' + (sel.classList.contains('select-sm') ? ' is-sm' : '') +
-      (sel.hasAttribute('data-seg-lead') ? ' is-lead' : '');
+    seg.className = 'seg' + (sel.classList.contains('select-sm') ? ' is-sm' : '');
     seg.id = 'seg' + (++ID);
     seg.setAttribute('role', 'radiogroup');
     var l = labelOf(sel);
