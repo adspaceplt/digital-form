@@ -55,7 +55,7 @@ const PURPOSES: Record<string, {
   review: { field: 'batchId', sections: ['review.sets'], kind: 'batch', level: 'work',
     clientOf: async (a, id) => { const r = await one(a.from('batches').select('client_id').eq('id', id).maybeSingle());
       return r ? { client: String(r.client_id) } : null; } },
-  // A client's logo, from its Brand or its Content Review settings.
+  // A client's logo, from its Brand (Content Review's sheet keeps the access code alone).
   logo: { field: 'clientId', sections: ['clients'], kind: 'client', level: 'work',
     clientOf: async (a, id) => { const r = await one(a.from('clients').select('id').eq('id', id).maybeSingle());
       return r ? { client: String(r.id) } : null; } },
