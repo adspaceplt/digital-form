@@ -5699,7 +5699,7 @@
             undoBar(plural(out.ok.length, 'report') + ' marked as sent.', $('rhBulk'), function () {
               eachOf(out.ok.map(function (x) { return x.r; }), function (r) {
                 return db.rpc('sm_report_sent', { p_id: r.id, p_on: before[r.id] }).then(function (res) { var d = res.data || {}; return res.error || d.error ? said(res.error || d) : null; });
-              }).then(function (back) { rereadHub().then(function () { say($('rhBulkMsg'), back.bad.length ? badWord(back).trim() : 'Put back.', back.bad.length ? 'warn' : 'ok'); }); });
+              }).then(function (back) { rereadHub().then(function () { say($('rhBulkMsg'), back.bad.length ? badWord(back).trim() : 'Undone.', back.bad.length ? 'warn' : 'ok'); }); });
             });
           });
         });

@@ -365,6 +365,10 @@ added to all three in the same push.
   grepped by its id or words across the suites, and each suite that reads
   it is changed in the same push (2026-10-21: six pressed a Publish #691
   hid, myhr read a line #693 moved, uxaudit a month #693 took off a row).
+- Before a push, every word the diff puts in front of a person is drafted
+  and checked by DESIGN.md §6, How copy is drafted, and `tests/words.js`
+  passes (a word the user rejects is added to it in the same push); copy is
+  never left for the user to review (2026-10-29).
 - A word table holds one key a word: a new field's label takes a key of
   its own, grepped in the table first (2026-10-29: /quote/'s Planned
   commencement took `start`, and the opening page's Start button read it).
