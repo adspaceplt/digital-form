@@ -1877,10 +1877,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     `billing_entity_put` carries an entity to every brand it is the main
     of, a billing contact only to the brand it belongs to), so every reader
     of a client's billing reads its main entity unchanged. Billing reads the
-    main as before (Main by Company where there are others, Also bills
-    naming each other brand, opening its Billing), then Other billing
-    entities (`#crmEntities`: Add entity, each a read group, its ⋯ Edit,
-    Make main, Remove), read on each visit (`client_entities_list`); Add
+    main as before (headed Main billing entity where there are others,
+    Also bills naming each other brand, opening its Billing), then Other
+    billing entities (`#crmEntities`: its count and Add entity, each one
+    row shut by default, its name over its registration no. and billing
+    contact, a press opening its facts in place, remembered under
+    `client-entities`, one just saved or added open; its ⋯ Edit, Make
+    main, Remove; the user, 2026-10-29: "how long is this"), read on each visit (`client_entities_list`); Add
     entity (`#entAddSheet`, Find a company) finds one held, every word
     typed in its registered name or the name or Client ID of a brand it
     bills, or its BRN digits (`billing_entities_find`, ten, only those

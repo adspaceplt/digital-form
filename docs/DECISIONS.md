@@ -7412,3 +7412,18 @@ read and set every page for a tab served before.
   under In Bukku (`bukku-sync` `contacts`); one picked fills New billing
   entity from Bukku, saved only by its Save. `entities`, `entitysql` and
   `bukkufn` hold each.
+
+### 2026-10-29 · Other billing entities fold to one row each
+- **Reported:** S P Setia's Billing pane with four other entities drawn
+  whole, every fact of every company open: "U see how long is this when
+  it has multiple entities and not clear enough".
+- **Why:** each entity was a full read group of six to nine facts, so the
+  pane grew by a screen an entity and the main entity's own heading
+  (Company, with a Main chip) read like one of them.
+- **Changed:** the main is headed Main billing entity once there are
+  others; Other billing entities carries its count; each other entity is
+  one row (name over registration no. and billing contact) opening its
+  facts in place, the Brand analysis fold's look, remembered per client;
+  an entity just saved or added opens so the change stays in sight (the
+  suite caught an edit invisible in a shut row). `tests/entities.js`.
+

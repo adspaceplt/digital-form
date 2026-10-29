@@ -2595,7 +2595,7 @@
     if (mainEnt && mainEnt.brands.length) company.push(['Also bills', entBrands(mainEnt)]);
     box.innerHTML =
       readGroup('Company', company).replace('<h4 class="fsec-h">Company</h4>',
-        '<h4 class="fsec-h">Company' + (several ? ' <span class="chip">Main</span>' : '') + '</h4>') +
+        '<h4 class="fsec-h">' + (several ? 'Main billing entity' : 'Company') + '</h4>') +
       readGroup('Registration and tax', [
         ['Business registration no.', t('company_no'), true],
         ['Old registration no.', t('company_no_old')],
@@ -2668,25 +2668,36 @@
     var others = L.filter(function (e) { return !e.main; });
     if (!others.length && !work) { box.innerHTML = ''; return; }
     var t = function (v) { return v ? esc(v) : ''; };
-    box.innerHTML = '<section class="readgroup">' +
-      '<div class="readgroup-head"><h4 class="fsec-h">Other billing entities</h4>' +
+    var GRP = window.ADspaceGroup, cid = state.client.id;
+    /* Each other entity is one row (the user, 2026-10-29: Billing read too
+       long with several): its registered name over its registration no.
+       and billing contact, folded shut and remembered for this client;
+       open, the facts it holds (an empty optional one left out). */
+    box.innerHTML = '<section class="readgroup ent-head">' +
+      '<div class="readgroup-head"><h4 class="fsec-h">Other billing entities' + (others.length ? ' <span class="tab-n">' + others.length + '</span>' : '') + '</h4>' +
       (work ? '<button class="btn btn-sm" id="crmEntAdd" type="button" data-need="clients.billing:work">Add entity</button>' : '') + '</div>' +
       (others.length ? '' : '<p class="muted ent-none">None.</p>') + '</section>' +
       others.map(function (e) {
         var rows = [['Business registration no.', t(e.company_no), true]];
-        if (e.company_no_old) rows.push(['Old registration no.', t(e.company_no_old)]);
-        rows = rows.concat([['TIN', t(e.tin)], ['SST registration no.', t(e.sst_no)],
-          ['Billing contact', entContact(e)], ['Finance email', t(e.finance_email)],
-          ['Billing address', t(e.billing_address), true, true]]);
+        [['Old registration no.', t(e.company_no_old)], ['TIN', t(e.tin)], ['SST registration no.', t(e.sst_no)],
+          ['Billing contact', entContact(e)], ['Finance email', t(e.finance_email)]].forEach(function (r) { if (r[1]) rows.push(r); });
+        rows.push(['Billing address', t(e.billing_address), true, true]);
         if (e.brands.length || e.hidden) rows.push(['Also bills', entBrands(e)]);
+        var k = e.bill_contact;
+        var sum = [e.company_no, k ? ADspaceWords.person(k.salutation, k.name) : ''].filter(Boolean).join(' · ');
+        var shut = GRP ? GRP.shut('client-entities', cid + ':' + e.id, true) : true;
+        var id = 'entf-' + e.id;
         var menu = work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-ent-menu aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden>' +
           '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="edit">Edit</button>' +
           '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-ea="main">Make main</button>' +
           '<button class="kmenu-item" type="button" role="menuitem" data-g="6" data-ea="remove">Remove</button></div></span>' : '';
-        return readGroup(e.legal_name || 'Billing entity', rows)
-          .replace('<section class="readgroup">', '<section class="readgroup ent" data-ent="' + esc(e.id) + '">')
-          .replace(/<h4 class="fsec-h">([\s\S]*?)<\/h4>/, '<div class="readgroup-head"><h4 class="fsec-h">$1</h4>' + menu + '</div>');
+        var facts = readGroup('', rows).replace(/<h4 class="fsec-h"><\/h4>/, '');
+        return '<section class="ent ent-fold' + (shut ? '' : ' is-open') + '" data-ent="' + esc(e.id) + '">' +
+          '<div class="ent-fold-row"><button class="ba-fold-head ent-fold-head" type="button" data-ent-fold aria-expanded="' + String(!shut) + '" aria-controls="' + id + '">' +
+            '<span class="ba-fold-t"><span class="fsec-h">' + esc(e.legal_name || 'Billing entity') + '</span>' +
+            (sum ? '<span class="ba-fold-sum ent-fold-sum">' + esc(sum) + '</span>' : '') + '</span>' + BA_CHEV + '</button>' + menu + '</div>' +
+          '<div class="ba-fold-body" id="' + id + '"><div class="ba-fold-in">' + facts + '</div></div></section>';
       }).join('');
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
   }
@@ -2716,9 +2727,16 @@
     if (host) window.ADspaceAdmin.undoHere(text, undo, host);
   }
   document.addEventListener('click', function (e) {
-    var t = e.target.closest && e.target.closest('[data-ent-menu], [data-ea], [data-ent-brand], #crmEntAdd');
+    var t = e.target.closest && e.target.closest('[data-ent-menu], [data-ea], [data-ent-brand], [data-ent-fold], #crmEntAdd');
     if (!t) return;
     if (t.id === 'crmEntAdd') { openEntAdd(t); return; }
+    if (t.hasAttribute('data-ent-fold')) {
+      var fold = t.closest('.ent-fold'), open = !fold.classList.contains('is-open');
+      fold.classList.toggle('is-open', open);
+      t.setAttribute('aria-expanded', String(open));
+      if (window.ADspaceGroup && state.client) window.ADspaceGroup.keep('client-entities', state.client.id + ':' + fold.getAttribute('data-ent'), !open);
+      return;
+    }
     if (t.hasAttribute('data-ent-brand')) {
       /* The other brand opens on its Billing, as an address would. */
       var key = t.getAttribute('data-ent-brand');
@@ -2814,6 +2832,7 @@
         }, function () {
           return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
             if (u.error || (u.data && u.data.error)) return entSaid(u);
+            entKeepOpen(d.entity.id);
             entClose(); entReload(); msg('crmBillNote', 'Added.', 'ok');
             return '';
           });
@@ -2822,12 +2841,17 @@
       }
       if (d.error === 'stale') { state.entFor = null; loadEntities(); }
       if (r.error || d.error) { msg('crmBillMsg', entSaid(r), 'err'); return; }
+      entKeepOpen(ed.id || d.id);
       entClose(); entReload(); msg('crmBillNote', ed.id ? 'Saved.' : 'Added.', 'ok');
     };
     var call = ed.id
       ? db.rpc('client_entity_save', { p_client: cid, p_entity: ed.id, p_values: vals, p_expected: ed.updated_at })
       : db.rpc('client_entity_add', { p_client: cid, p_entity: null, p_values: vals });
     call.then(done).catch(function (x) { b.disabled = false; msg('crmBillMsg', (x && x.message) || String(x), 'err'); });
+  }
+  /* The entity just saved or added reads open, so the change stays in sight. */
+  function entKeepOpen(id) {
+    if (id && window.ADspaceGroup && state.client) window.ADspaceGroup.keep('client-entities', state.client.id + ':' + id, false);
   }
   function entClose() {
     state.entEdit = null;
