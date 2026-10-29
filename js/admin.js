@@ -3007,20 +3007,17 @@
     $('openLink').href = reviewUrl(c);
     openDrawer(false);
     fillProfile(c);
-    /* The handles and the logo are the client record's too (Brand profile
-       edits the same columns), and the row in this list was read when the
-       list was, so a logo changed on the record since then would show here
-       stale and a save would write the old one back (reported 2026-09-26:
-       "why do i have to update both sides"). The row is read again on open,
-       and a field somebody has already changed is left as they typed it. */
-    var before = { ig: c.handle_ig, fb: c.handle_fb, tt: c.handle_tiktok, xhs: c.handle_xhs, logo: c.logo_url, pass: c.passcode };
+    /* The handles and the logo are the client's Brand alone (2026-10-29);
+       the head shows them as the record holds them now, so the row is read
+       again on open, and an access code somebody has already changed is
+       left as they typed it. */
+    var before = { pass: c.passcode };
     db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
       if (!r || r.error || !r.data || state.client !== c) return;
       Object.assign(c, r.data);
       fillProfile(c, before);
       paintHead(c);
     }, function () {});
-    msg('handleMsg', '');
     msg('profileMsg', '');
     linkLock($('wsLinkLock'), 'review', c.id, Boolean(c.passcode), 'review.settings');
     setUrl();
@@ -3028,19 +3025,12 @@
     if (!pendingScroll) window.scrollTo(0, 0);
   }
 
-  /* The profile fields from the row. With `was`, a field is only refilled
-     while it still holds what it was filled with, so a fresh read never
-     throws away what somebody has typed. */
+  /* The access code from the row. With `was`, it is only refilled while it
+     still holds what it was filled with, so a fresh read never throws away
+     what somebody has typed. */
   function fillProfile(c, was) {
-    var map = [['eIg', 'handle_ig', 'ig'], ['eFb', 'handle_fb', 'fb'], ['eTt', 'handle_tiktok', 'tt'],
-               ['eXhs', 'handle_xhs', 'xhs'], ['eLogo', 'logo_url', 'logo'], ['ePass', 'passcode', 'pass']];
-    map.forEach(function (m) {
-      var el = $(m[0]);
-      if (!el) return;
-      if (was && el.value !== (was[m[2]] || '')) return;
-      el.value = c[m[1]] || '';
-    });
-    paintLogo();
+    var el = $('ePass');
+    if (el && !(was && el.value !== (was.pass || ''))) el.value = c.passcode || '';
     paintLock();
   }
 
@@ -3058,34 +3048,31 @@
     window.scrollTo(0, 0);
   }
 
-  /* The client's settings are a sheet from the head's ⋯ (2026-09-28), where
-     they were a fold that opened forms in the middle of the page. */
+  /* The access code is a sheet from the head's ⋯ (2026-09-28; the handles
+     and logo left it for Brand, 2026-10-29). */
   function openDrawer(open) {
     var sh = $('crSettingsSheet');
-    if (open) { msg('handleMsg', ''); msg('profileMsg', ''); window.ADspaceSheet.show(sh, { opener: $('wsMenuBtn') }); }
+    if (open) { msg('profileMsg', ''); window.ADspaceSheet.show(sh, { opener: $('wsMenuBtn') }); }
     else if (window.ADspaceSheet.isOpen(sh)) window.ADspaceSheet.close();
   }
 
   $('advancedToggle').addEventListener('click', function () { shutWsMenu(); openDrawer(true); });
   $('crSettingsCancel').addEventListener('click', function () { openDrawer(false); });
   $('crSettingsClose').addEventListener('click', function () { openDrawer(false); });
-  /* One Save for both groups; the sheet shuts once both have saved, and a
-     refusal keeps it open with the refusal under its group. */
+  /* Save shuts the sheet once saved; a refusal keeps it open, said under
+     the field. */
   $('crSettingsSave').addEventListener('click', function () {
-    var btn = this, left = 2, ok = true;
+    var btn = this;
     btn.disabled = true;
-    var one = function (fine) {
-      ok = ok && fine;
-      if (--left) return;
+    saveProfile(function (fine, said) {
       btn.disabled = false;
-      if (!ok) return;
+      if (!fine) return;
       openDrawer(false);
-      msg('wsMsg', 'Saved.', 'ok');
-    };
-    saveHandles(one); saveProfile(one);
+      msg('wsMsg', said || 'Saved.', said === 'No change.' ? '' : 'ok');
+    });
   });
 
-  /* The head's ⋯: Client settings, Reset link, Remove. */
+  /* The head's ⋯: Access code, Reset link, Remove. */
   function shutWsMenu() {
     $('wsMenu').hidden = true;
     $('wsMenuBtn').setAttribute('aria-expanded', 'false');
@@ -3129,68 +3116,6 @@
     ].filter(Boolean).join(' · ');
   }
 
-  function saveHandles(done) {
-    db.from('clients').update({
-      handle_ig:     $('eIg').value.trim() || null,
-      handle_fb:     $('eFb').value.trim() || null,
-      handle_tiktok: $('eTt').value.trim() || null,
-      handle_xhs:    $('eXhs').value.trim() || null
-    }).eq('id', state.client.id).select('id').then(function (r) {
-      if (r.error) { msg('handleMsg', r.error.message, 'err'); done(false); return; }
-      if (!(r.data || []).length) { msg('handleMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
-      logAction('client.handles', state.client.name,
-        ['ig', 'fb', 'tiktok', 'xhs'].map(function (k) {
-          var v = $({ ig: 'eIg', fb: 'eFb', tiktok: 'eTt', xhs: 'eXhs' }[k]).value.trim();
-          return v ? k + '=' + v : '';
-        }).filter(Boolean).join(', '));
-      state.client.handle_ig = $('eIg').value.trim() || null;
-      state.client.handle_fb = $('eFb').value.trim() || null;
-      state.client.handle_tiktok = $('eTt').value.trim() || null;
-      state.client.handle_xhs = $('eXhs').value.trim() || null;
-      paintHead(state.client);
-      msg('handleMsg', 'Saved.', 'ok');
-      done(true);
-    });
-  }
-
-  /* Shows the address as a circle, the way every platform will, and says so
-     when the file is not square. Nothing is ever skewed: a wide mark either
-     loses its ends to a crop or sits small inside the circle, and neither is
-     what the client's real profile looks like. The fix is a square file, so
-     the tool asks for one here rather than letting a mockup deliver the news. */
-  var logoTimer = null;
-  function paintLogo() {
-    var url = $('eLogo').value.trim();
-    var box = $('logoPreview');
-    var img = $('logoPreviewImg');
-    box.classList.toggle('is-empty', !url);
-    if (!url) { img.hidden = true; img.removeAttribute('src'); msg('logoNote', ''); return; }
-    if (!/^https:\/\//i.test(url)) { img.hidden = true; msg('logoNote', ''); return; }
-
-    var probe = new Image();
-    probe.onload = function () {
-      img.src = url;
-      img.hidden = false;
-      var w = probe.naturalWidth, h = probe.naturalHeight;
-      var square = w && h && Math.abs(w - h) / Math.max(w, h) < 0.02;
-      if (square) {
-        msg('logoNote', w + ' x ' + h + '. Square, so it fills the circle exactly.', 'ok');
-      } else {
-        msg('logoNote', w + ' x ' + h + '. Not square; it will appear small inside the circle. Use a square version.', 'warn');
-      }
-    };
-    probe.onerror = function () {
-      img.hidden = true;
-      msg('logoNote', 'No image could be loaded from that address.', 'err');
-    };
-    probe.src = url;
-  }
-
-  $('eLogo').addEventListener('input', function () {
-    clearTimeout(logoTimer);
-    logoTimer = setTimeout(paintLogo, 400);
-  });
-
   /* Whether the link needs a code is worth seeing without opening the drawer. */
   function paintLock() {
     $('wsLock').hidden = !state.client.passcode;
@@ -3198,16 +3123,9 @@
 
   var PASS_SHORT = 'The access code needs at least 6 characters.';
 
-  /* Logo and access code were set once at creation and then stuck. Both are
-     editable here, and clearing either field removes it. */
+  /* The access code is edited here, and clearing the field removes it. */
   function saveProfile(done) {
-    var logo = $('eLogo').value.trim();
     var pass = $('ePass').value.trim();
-    if (logo && !/^https:\/\//i.test(logo)) {
-      msg('profileMsg', 'The logo address needs to start with https://', 'err');
-      done(false);
-      return;
-    }
     /* A new code is six characters at least; one already set keeps working
        until it is changed (passcode_long_enough). */
     if (pass && pass !== (state.client.passcode || '') && pass.length < 6) {
@@ -3217,7 +3135,8 @@
       return;
     }
     var had = Boolean(state.client.passcode);
-    db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
+    if ((pass || null) === (state.client.passcode || null)) { done(true, 'No change.'); return; }
+    db.from('clients').update({ passcode: pass || null })
       .eq('id', state.client.id).select('id').then(function (r) {
         if (r.error) {
           msg('profileMsg', /passcode-short/.test(r.error.message || '') ? PASS_SHORT : r.error.message, 'err');
@@ -3226,20 +3145,10 @@
         }
         if (!(r.data || []).length) { msg('profileMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
         logAction('client.profile', state.client.name,
-          [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
-           !had && pass ? 'access code added' : had && !pass ? 'access code removed'
-             : pass && pass !== state.client.passcode ? 'access code updated' : ''].filter(Boolean).join(', ') || 'no change');
-        state.client.logo_url = logo || null;
+          !had && pass ? 'access code added' : had && !pass ? 'access code removed' : 'access code updated');
         state.client.passcode = pass || null;
         paintLock();
-        var note = !had && pass ? 'Access code added.'
-                 : had && !pass ? 'Access code removed.'
-                 : had && pass  ? 'Access code updated.'
-                 : 'Saved.';
-        msg('profileMsg', note, 'ok');
-        if (!had && !pass) msg('profileMsg', logo ? 'Logo saved.' : 'Saved.', 'ok');
-        paintHead(state.client);
-        done(true);
+        done(true, !had ? 'Access code added.' : !pass ? 'Access code removed.' : 'Access code updated.');
       });
   }
 
@@ -4642,7 +4551,6 @@
       });
     });
   }
-  wireLogoUpload('eLogoUp', 'eLogoFile', 'eLogo', 'logoNote', function () { return state.client; });
 
   window.__hasFastStart = hasFastStart;   // used by the test harness
 

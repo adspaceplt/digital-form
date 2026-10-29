@@ -2074,14 +2074,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_notifications_vic`), the bell and the push alike. No priority is
   set by it.
 - One set of handles and one logo per client:
-  - Brand and Content Review settings both edit `handle_*` and `logo_url`;
-    each logo field has Upload (`wireLogoUpload`): the picture is drawn down
+  - Brand alone edits `handle_*` and `logo_url` (Content Review's sheet
+    keeps the access code alone, 2026-10-29); its logo field has Upload
+    (`wireLogoUpload`): the picture is drawn down
     to 800px in its own format and stored under the client's folder by
     `sign-upload`, so the address never expires as a Facebook picture's does.
   - `social_*` is backfilled by `handle_of()` (a bare handle, or a URL's last
     segment; nothing where that segment is a route) and never written.
   - `profileUrl()` derives the links.
-  - Both screens re-read the row on open, keeping any field already changed.
+  - Content Review re-reads the row on opening a client, so its head shows
+    the handles and logo as Brand left them.
 - Contacts:
   - A table, with `.plink` reach links.
   - Salutation (`client_contacts.salutation`, `2026-10-09-contact-salutation.sql`;
@@ -2905,9 +2907,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   right edge, the three filled tonal buttons. Below 860 it is one scroll: the
   post whole, then its copy and the decision; each post opens at its top.
 - Console:
-  - The client is a record: the mark, name and handles, and one ⋯ (Client
-    settings as a sheet with one Save, Reset link, Remove from Content
-    Review), the review link under it as every record's client link
+  - The client is a record: the mark, name and handles, and one ⋯ (Access
+    code as a sheet with one Save, the handles and logo Brand's alone since
+    2026-10-29, Reset link, Remove from Content Review), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
     address and Copy link the review page's own link, Preview the page;
     a published set's head adds Copy link (`#copySetLink`, beside
@@ -6656,7 +6658,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   of the last lock ending (`strikes`, `struck_until`; the right code and
   Clear start the steps again; `2026-10-18-passcode-locks-lengthen.sql`);
   a new or changed access code is six characters at least (trigger
-  `passcode_long_enough`, `passcode-short`; Client settings says so before
+  `passcode_long_enough`, `passcode-short`; Access code says so before
   it saves), one set before keeping its place; the link's own count (`link_attempts`, 100 within an hour)
   locks it for an hour for every address but one that opened it in the
   last 30 days; each answered `locked` with its minutes (`link_locked`),
