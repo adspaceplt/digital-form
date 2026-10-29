@@ -2611,7 +2611,7 @@
       '<section class="readgroup bk-group" id="crmBukku" hidden></section>' +
       '<div class="ent-list" id="crmEntities"></div>';
     /* Bukku (2026-10-18): the contact this client is in Bukku, sent by hand. */
-    if (window.ADspaceBukku && maySeeBilling()) window.ADspaceBukku.group($('crmBukku'), 'client', c.id);
+    if (window.ADspaceBukku && maySeeBilling()) window.ADspaceBukku.group($('crmBukku'), 'client', c.id, { after: invoicesAgain });
     paintEntities();
     if (state.entFor !== c.id && !state.entLoading) loadEntities();
   }
@@ -2697,9 +2697,20 @@
           '<div class="ent-fold-row"><button class="ba-fold-head ent-fold-head" type="button" data-ent-fold aria-expanded="' + String(!shut) + '" aria-controls="' + id + '">' +
             '<span class="ba-fold-t"><span class="fsec-h">' + esc(e.legal_name || 'Billing entity') + '</span>' +
             (sum ? '<span class="ba-fold-sum ent-fold-sum">' + esc(sum) + '</span>' : '') + '</span>' + BA_CHEV + '</button>' + menu + '</div>' +
-          '<div class="ba-fold-body" id="' + id + '"><div class="ba-fold-in">' + facts + '</div></div></section>';
+          '<div class="ba-fold-body" id="' + id + '"><div class="ba-fold-in">' + facts +
+            '<div class="readgroup bk-group ent-bk" data-ent-bk hidden></div></div></div></section>';
       }).join('');
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
+    Array.prototype.forEach.call(box.querySelectorAll('.ent-fold.is-open'), entBand);
+  }
+  /* Each entity is its own Bukku contact (2026-10-29: a brand's unpaid
+     invoices read every company billing it): its band, read as it opens. */
+  function invoicesAgain() { if (window.ADspaceInvoices && state.client) window.ADspaceInvoices.client($('odClient'), state.client, true); }
+  function entBand(fold) {
+    var host = fold && fold.querySelector('[data-ent-bk]');
+    if (!host || host.getAttribute('data-read') || !window.ADspaceBukku || !maySeeBilling()) return;
+    host.setAttribute('data-read', '1');
+    window.ADspaceBukku.group(host, 'entity', fold.getAttribute('data-ent'), { can: mayPart('clients.billing', 'work'), after: invoicesAgain });
   }
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
@@ -2735,6 +2746,7 @@
       fold.classList.toggle('is-open', open);
       t.setAttribute('aria-expanded', String(open));
       if (window.ADspaceGroup && state.client) window.ADspaceGroup.keep('client-entities', state.client.id + ':' + fold.getAttribute('data-ent'), !open);
+      if (open) entBand(fold);
       return;
     }
     if (t.hasAttribute('data-ent-brand')) {

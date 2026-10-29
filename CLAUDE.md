@@ -1914,8 +1914,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `bad-entity`; its name, BRN and address held, `entity-incomplete`) and
     prints its registered name, numbers, address and billing contact,
     keeping `bill_to.entity_id`; none chosen is the main as before. A
-    quotation prints no billing. Bukku and reminders still bill the main
-    entity: Bukku by entity is the next release.
+    quotation prints no billing. Each entity is its own Bukku contact
+    (Bukku, below), and a brand's unpaid invoices and reminders cover every
+    entity billing it (Overdue invoices, below).
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Request from client (the user, 2026-10-29; Details form until then, a supplier's Request from supplier) makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
@@ -2798,6 +2799,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   one: `bukku-sync` sends a linked record to its own contact alone and asks
   `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
   `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
+  Bukku by entity (`2026-10-29-bukku-by-entity.sql`, the SQL Editor's; the
+  user, 2026-10-29: one brand billed by several companies): a Bukku contact
+  is a company, so `bukku_links` takes the kind `entity`; an entity's fold
+  on Billing holds its own band (`.ent-bk`, read as it opens), Send to
+  Bukku, Link only and Unlink at Clients: Billing Work on a client it bills
+  that the colleague sees (`bukku_may`); what goes is the entity's
+  registered name, numbers, address, finance email and billing contact
+  (else its brand's primary contact), with the Client ID and market of the
+  brand it is filed under (`entity_home_client`: the brand it is the
+  primary of, else the first to add it); each step filed `client.billing`
+  on every brand it bills, the company named (`bukku_file_entity`). A brand
+  and its primary entity are one company and may hold one contact; any
+  other two records may not (`bukku_contact_taken`); a record with no link
+  of its own reads its company's, said as Linked through (`bukku_shared`).
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 - Overdue invoices (`js/invoices.js`, `2026-10-28-overdue-invoice-reminders.sql`;
   the user, 2026-10-28: "pull those overdues data from bukku and inside
@@ -2807,7 +2822,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Bukku's Outstanding and Overdue lists (every page, each invoice once)
   when the view opens and on Read again, never stored and never polled,
   held by `invoice_scope()` (as the colleague) to the Bukku contacts linked
-  to a client they see, one linked to no client only for a colleague who
+  to a client they see (a contact linked to a billing entity bills every
+  brand the entity bills: `clients`, its company `company`, its recipient
+  the entity's billing contact and finance email, `invoice_recipient_for`;
+  2026-10-29), one linked to no client only for a colleague who
   sees every client. An invoice is overdue where its balance stands and
   its due date (its one term, else the invoice's date) is before today
   (MYT); with instalments, the part past its date (`overdueOf`, a term's
@@ -2850,8 +2868,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   reaches it through `supplier_email_status`. `invoice_emails` and the
   template have RLS on, no policy, no grant. A client's Billing (the
   user, 2026-10-28) holds Unpaid invoices (`#odClient`,
-  `ADspaceInvoices.client`): `invoices` with `client`, the contacts linked
-  to that client alone and its invoices not yet due as well (Not due),
+  `ADspaceInvoices.client`): `invoices` with `client`, the contacts of
+  every company billing that client (its own, its entities') alone, each
+  company under its name where there are several (`.od-co`; the user,
+  2026-10-29: "All related entities should be shown as well"), and its
+  invoices not yet due as well (Not due); a reminder sent there is filed on
+  that client and addressed to the company it is for,
   Send reminder while one is overdue at Billing Work (the same Review and
   send), and its Reminders sent; read on each visit to the pane, drawn
   only for a client linked to a Bukku contact (Bukku's group above says

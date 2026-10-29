@@ -9,6 +9,7 @@
  * same contact, typed Customer and Supplier.
  *
  *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku band, Unlink in its ⋯
+ *                                               (kind client, supplier or entity; opts.after on a link's change)
  *   ADspaceBukku.send(kind, id, btn, done)    — the Send to Bukku sheet
  *   ADspaceBukku.openConfig(btn, say)         — Settings' Bukku sheet
  *   ADspaceBukku.configLine()                 — Settings' Bukku value line
@@ -22,10 +23,10 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function day(iso) { return iso && window.ADspaceClock ? window.ADspaceClock.date(iso) : ''; }
   function may(k, l) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(k, l)); }
-  function mayWork(kind) { return kind === 'client' ? may('clients.billing', 'work') : may('suppliers', 'work'); }
+  function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : may('clients.billing', 'work'); }
 
   var SAID = {
-    denied: 'This needs Clients: Billing (a client) or Suppliers (a supplier) at Manage.',
+    denied: 'This needs Clients: Billing (a client or a billing entity) or Suppliers (a supplier) at Manage.',
     'not-found': 'That record is no longer there.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
@@ -89,15 +90,21 @@
       if (d.error) { host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b></div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
       var gap = work && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
       var linked = Boolean(d.contact_id);
+      /* A brand and its main entity are one company, one Bukku contact
+         (2026-10-29): one holding no link of its own reads the other's,
+         said as Linked through, its Unlink the other's alone. */
+      var via = linked && d.via ? d.via : '';
       var state = !linked ? '<span class="chip-state is-off">Not linked</span>'
+        : via ? '<span class="chip-state is-ok">Linked</span>'
         : d.changed ? '<span class="chip-state is-warn">Details changed</span>' : '<span class="chip-state is-ok">Up to date</span>';
       /* Words alone, as Send email and Create link are: no act of the
          table carries an arrow (2026-10-20, SUP-8). */
       var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' : '') +
-        (work && linked ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
       host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? '<span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' : '') + state + '</div>' +
-        (linked ? '<p class="bk-sub">Last sent ' + esc(day(d.sent_at)) + (d.sent_by ? ' by ' + esc(d.sent_by) : '') + '</p>' : '') +
+        (via ? '<p class="bk-sub">Linked through ' + esc(via) + '</p>'
+          : linked ? '<p class="bk-sub">Last sent ' + esc(day(d.sent_at)) + (d.sent_by ? ' by ' + esc(d.sent_by) : '') + '</p>' : '') +
         (acts ? '<div class="bk-acts">' + acts + '</div>' : '') +
         (gap ? '<p class="msg warn bk-gap">' + esc(gap) + '</p>' : '') +
         (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '') +
@@ -111,6 +118,7 @@
       if (b) b.addEventListener('click', function () {
         send(kind, id, b, function (r) {
           group(host, kind, id, Object.assign({}, opts, { said: r && r.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
+          if (opts.after) opts.after();
         });
       });
       var mb = host.querySelector('[data-bk="menu"]');
@@ -136,15 +144,17 @@
     var code = d.code || String(d.contact_id);
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
-      body: 'This ' + (kind === 'client' ? 'client' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
-        'Send to Bukku then offers the matching contacts again. A supplier that is also a client shares one Bukku contact, so both are unlinked.'
+      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+        'Send to Bukku then offers the matching contacts again.' + (kind === 'entity' ? '' : ' A supplier that is also a client shares one Bukku contact, so both are unlinked.')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
         if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Read it again.' : said(r);
         group(host, kind, id, opts);
+        if (opts.after) opts.after();
         if (A && A.undoHere) A.undoHere('Unlinked from Bukku.', function () {
           rpc('bukku_unlink_undo', { p_kind: kind, p_id: id, p_stamp: r.stamp }).then(function (x) {
             group(host, kind, id, Object.assign({}, opts, { said: x.error ? (x.error === 'moved' ? 'Not restored. It was linked again meanwhile.' : said(x)) : 'Linked to Bukku again.' }));
+            if (!x.error && opts.after) opts.after();
           });
         }, host);
         return '';

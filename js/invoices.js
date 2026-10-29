@@ -104,6 +104,17 @@
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'] };
   function statusOf(e) { return STATUS[e.status] || [e.status, '']; }
   function nameOf(l) { return l.client_name || l.contact_name || 'Bukku contact'; }
+  /* The company an invoice is billed to (2026-10-29, Bukku by entity): a
+     client billed by several companies has a Bukku contact for each. */
+  function companyOf(l) { return l.company || l.contact_name || ''; }
+  /* The clients billed by more than one company in these rows: there the
+     company is named on each row. */
+  function several(rows) {
+    var by = {}, out = {};
+    rows.forEach(function (l) { var k = l.client || ''; (by[k] = by[k] || {})[l.contact] = true; });
+    Object.keys(by).forEach(function (k) { if (k && Object.keys(by[k]).length > 1) out[k] = true; });
+    return out;
+  }
   function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
 
   /* ---- State ------------------------------------------------------------ */
@@ -212,6 +223,7 @@
     }
     if (!st.rows) return;
     var rows = shown();
+    st.many = several(st.rows || []);
     var clients = {};
     rows.forEach(function (l) { clients[l.contact] = true; });
     $('odCount').textContent = rows.length ? plural(rows.length, 'invoice', 'invoices') + ' · ' + plural(Object.keys(clients).length, 'client', 'clients') : '';
@@ -272,7 +284,7 @@
     row.className = 'inv-row' + (st.pick[l.id] ? ' is-picked' : '');
     var e = lastOf(l.id), s = e ? statusOf(e) : null;
     var meta = esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') +
-      (l.client ? '' : ' · Not linked to a client');
+      (l.client ? (st.many && st.many[l.client] && companyOf(l) ? ' · ' + esc(companyOf(l)) : '') : ' · Not linked to a client');
     row.innerHTML = (st.send ? '<span class="inv-tick"><input type="checkbox"' + (st.pick[l.id] ? ' checked' : '') +
         ' aria-label="' + esc(l.number + ', ' + nameOf(l)) + '"></span>' : '') +
       '<span class="inv-who"><b>' + esc(nameOf(l)) + '</b><small>' + meta + '</small></span>' +
@@ -304,14 +316,20 @@
   var rv = { groups: [], on: 0, tpl: null, edits: {}, opener: null, done: {}, after: null, rem: [] };
   /* The sheet the Overdue invoices bar and a client's Billing both open:
      `after` reads again what a send changed. */
-  function review(btn, picked, after, rem) {
+  function review(btn, picked, after, rem, from) {
     if (!picked || !picked.length) return;
     rv.after = after || null;
     rv.rem = rem || [];
-    var by = {};
+    var by = {}, many = several(picked);
     rv.groups = [];
+    /* One email a company; one sent from a client's Billing is filed under
+       that client (`from`). */
     picked.forEach(function (l) {
-      if (!by[l.contact]) { by[l.contact] = { contact: l.contact, name: nameOf(l), lines: [], to: l.to || null, email: l.contact_email, client: l.client, cc: true }; rv.groups.push(by[l.contact]); }
+      if (!by[l.contact]) {
+        by[l.contact] = { contact: l.contact, name: (from || many[l.client]) && companyOf(l) ? companyOf(l) : nameOf(l), lines: [],
+          to: l.to || null, email: l.contact_email, client: from || l.client, cc: true };
+        rv.groups.push(by[l.contact]);
+      }
       by[l.contact].lines.push(l);
     });
     rv.groups.forEach(function (g) { g.lines.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; }); });
@@ -479,7 +497,7 @@
       }
       var g = left[i++];
       var ed = rv.edits[g.contact] || {};
-      call({ action: 'remind', contact: g.contact, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
+      call({ action: 'remind', contact: g.contact, client: g.client || null, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
@@ -533,15 +551,25 @@
       for (var i = 0; i < rem.length; i++) if ((rem[i].invoices || []).some(function (x) { return Number(x.id) === Number(id); })) return rem[i];
       return null;
     };
+    /* Every company billing the client, each under its own name where
+       there are several (2026-10-29; the user: "All related entities
+       should be shown as well"), the most overdue first. */
+    var cos = [];
+    rows.forEach(function (l) { if (cos.indexOf(l.contact) < 0) cos.push(l.contact); });
+    var rowHtml = function (l) {
+      var e = lastFor(l.id), s = e ? statusOf(e) : null;
+      return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
+        '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
+        '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
+        '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span></div>';
+    };
+    var body = cos.length > 1 ? cos.map(function (k) {
+      var mine = rows.filter(function (l) { return l.contact === k; });
+      return '<p class="od-co">' + esc(companyOf(mine[0]) || 'Bukku contact') + '</p><div class="od-mini">' + mine.map(rowHtml).join('') + '</div>';
+    }).join('') : '<div class="od-mini">' + rows.map(rowHtml).join('') + '</div>';
     host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4>' +
       (d.send && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
-      (rows.length ? '<div class="od-mini">' + rows.map(function (l) {
-        var e = lastFor(l.id), s = e ? statusOf(e) : null;
-        return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
-          '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
-          '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
-          '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span></div>';
-      }).join('') + '</div>' : '<p class="muted od-none">No unpaid invoices.</p>') +
+      (rows.length ? body : '<p class="muted od-none">No unpaid invoices.</p>') +
       (rem.length ? '<h4 class="fsec-h od-sent-h">Reminders sent</h4><div class="inv-log-t od-log">' +
         '<div class="r hd"><span>When</span><span>Invoices</span><span>Sent by</span><span>Status</span></div>' +
         rem.slice(0, 10).map(function (e) {
@@ -551,7 +579,7 @@
         }).join('') + '</div>' : '');
     var b = host.querySelector('[data-a="remind"]');
     if (b) b.addEventListener('click', function () {
-      review(b, late.slice(), function () { clientGroup(host, client, true); }, rem);
+      review(b, late.slice(), function () { clientGroup(host, client, true); }, rem, client.id);
     });
   }
 
