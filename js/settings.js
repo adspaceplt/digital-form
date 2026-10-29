@@ -146,6 +146,8 @@
         return plural(((r.data && r.data.rows) || []).length, 'template', 'templates');
       });
     },
+    /* The meeting message (2026-10-29): who last changed its words. */
+    meetmsg: function () { return window.ADspaceOps && window.ADspaceOps.meetMessageLine && window.ADspaceOps.meetMessageLine(); },
     /* Task templates (2026-10-29): the families, and how many fill a task. */
     tasktpl: function () {
       return db.from('ops_task_templates').select('id, active').then(function (r) {
@@ -278,6 +280,9 @@
       /* The email an overdue invoice is reminded with, sent from Clients'
          Overdue invoices (2026-10-28). */
       biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
+      /* The content meeting's message to the client, copied from a month's
+         card (2026-10-29). */
+      biz && window.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg') },
       may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
       window.ADspaceOps && may('ops.workflows') && { id: 'tasktpl', name: 'Task templates', kind: 'open', meta: line('tasktpl') },
       window.ADspaceCRM && window.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate card wording', kind: 'open', meta: line('wording') }]);
@@ -469,6 +474,7 @@
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
     if (a.indexOf('perf-') === 0) { if (window.ADspacePerf && window.ADspacePerf.openSettings) window.ADspacePerf.openSettings(a.slice(5), btn); return; }
+    if (a === 'meetmsg') { if (window.ADspaceOps && window.ADspaceOps.openMeetMessage) window.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); return; }
     if (a === 'tasktpl') { if (window.ADspaceOps && window.ADspaceOps.openTemplates) window.ADspaceOps.openTemplates(btn); return; }
     if (a === 'wording') { if (window.ADspaceCRM && window.ADspaceCRM.openWording) window.ADspaceCRM.openWording(btn); return; }
   }

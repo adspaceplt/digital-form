@@ -6566,25 +6566,78 @@
      month: the date, the time it starts and ends, the content month it is
      about, where it is held and the link. Written here and nowhere else, so
      the card and the task step copy the same words. */
+  /* The message is the team's words (Settings, Templates, Meeting message;
+     2026-10-29, `meeting_message_template`), read once a visit; these, the
+     migration's seed, stand in until it answers or where the database has
+     none. A line whose word in braces has no value is left out, and so is
+     a heading left with nothing under it. */
+  var MEET_MSG = 'Meeting Schedule {meeting}\n\nDate \u65e5\u671f: {date}\nTime \u65f6\u95f4: {time}\n\n' +
+    'Meeting Agenda \u6458\u8981:\n\u2022  {month} Content Discussion\n\nChannel \u6e20\u9053:\n{channel}\nLink: {link}';
+  var meetMsg = { body: null, asked: false, by: null, at: null };
+  function readMeetMsg(then) {
+    meetMsg.asked = true;
+    return db.rpc('meeting_message_get').then(function (r) {
+      var d = r && r.data;
+      if (!r.error && d && d.ok && d.body) { meetMsg.body = d.body; meetMsg.by = d.updated_by || null; meetMsg.at = d.updated_at || null; }
+      if (then) then(r.error ? { error: 'db', message: r.error.message } : d || {});
+    }).catch(function (e) { if (then) then({ error: 'db', message: (e && e.message) || '' }); });
+  }
+  function fillMessage(body, v) {
+    var WORD = /\{\s*([a-z]+)\s*\}/gi;
+    var lines = String(body).split('\n').filter(function (l) {
+      var empty = false;
+      l.replace(WORD, function (m, k) { k = k.toLowerCase(); if (Object.prototype.hasOwnProperty.call(v, k) && !v[k]) empty = true; return m; });
+      return !empty;
+    }).map(function (l) {
+      return l.replace(WORD, function (m, k) { k = k.toLowerCase(); return Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m; });
+    });
+    var kept = lines.filter(function (l, i) { return !(/:\s*$/.test(l) && (i === lines.length - 1 || !lines[i + 1].trim())); });
+    return kept.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
   function clientMessage(e) {
     if (!e || !e.meeting_at || e.meeting_na) return '';
+    if (!meetMsg.asked) readMeetMsg();
     var at = new Date(e.meeting_at);
     var end = new Date(at.getTime() + (Number(e.meeting_minutes) || 30) * 60000);
     var online = e.meeting_channel !== 'onsite';
-    var lines = [
-      'Meeting Schedule ' + (online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae'),
-      '',
-      'Date \u65e5\u671f: ' + CK.day(at).split('-').reverse().join('/'),
-      'Time \u65f6\u95f4: ' + clock(at) + ' \u2013 ' + clock(end),
-      '',
-      'Meeting Agenda \u6458\u8981:',
-      '\u2022  ' + monthWord(e.period) + ' Content Discussion'
-    ];
-    if (e.meeting_channel) {
-      lines.push('', 'Channel \u6e20\u9053:', CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel));
-      if (e.meeting_link) lines.push('Link: ' + e.meeting_link);
-    }
-    return lines.join('\n');
+    return fillMessage(meetMsg.body || MEET_MSG, {
+      meeting: online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae',
+      date: CK.day(at).split('-').reverse().join('/'),
+      time: clock(at) + ' \u2013 ' + clock(end),
+      month: monthWord(e.period),
+      channel: e.meeting_channel ? CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel) : '',
+      link: e.meeting_channel && e.meeting_link ? e.meeting_link : ''
+    });
+  }
+  /* Settings, Templates: Meeting message (`team.settings`). */
+  var MEET_SAID = { denied: 'This needs Team: Business settings.', 'bad-body': 'The message is 2 to 3,000 characters.',
+    'no-date': 'The message needs {date}.' };
+  function meetMessageLine() {
+    return new Promise(function (ok, no) {
+      readMeetMsg(function (d) {
+        if (d.error) { no(new Error(d.error)); return; }
+        ok(meetMsg.by ? 'Changed ' + CK.date(meetMsg.at) + ' by ' + meetMsg.by : 'Standard wording');
+      });
+    });
+  }
+  function openMeetMessage(btn, say) {
+    readMeetMsg(function (d) {
+      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? 'This needs a database update.' : MEET_SAID[d.error] || d.error, 'err'); return; }
+      window.ADspaceConfirm.ask({
+        title: 'Meeting message', go: 'Save', wait: true,
+        body: 'Fields: {meeting}, {date}, {time}, {month}, {channel}, {link}. A line whose field has no value is left out.',
+        fields: [{ name: 'body', label: 'Message', rows: 12, value: meetMsg.body || MEET_MSG }],
+        check: function (v) { return /\{\s*date\s*\}/i.test(String(v.body || '')) ? '' : MEET_SAID['no-date']; }
+      }, function (v) {
+        return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
+          if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+          if (r.data && r.data.error) return MEET_SAID[r.data.error] || r.data.error;
+          meetMsg.body = String(v.body || '').replace(/\r/g, '').trim();
+          if (say) say('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    });
   }
   /* The content meeting as it is drawn on the month's card and in a task's
      next step: when and where, the link once there is one, the button that
@@ -6672,6 +6725,8 @@
     var sh = root.querySelector('[data-a="msgshow"]');
     var pre = root.querySelector('.eng-meetmsg-text');
     if (sh && pre) sh.addEventListener('click', function () {
+      /* The team's words may have arrived after the card was drawn. */
+      if (pre.hidden) pre.textContent = clientMessage(e);
       pre.hidden = !pre.hidden;
       sh.textContent = pre.hidden ? 'Show' : 'Hide';
       sh.setAttribute('aria-expanded', String(!pre.hidden));
@@ -8313,6 +8368,9 @@
     enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
     /* Task templates, from Settings' Templates group (2026-10-29). */
     openTemplates: function () { openTpl(); },
+    /* Settings, Templates: Meeting message (2026-10-29). */
+    openMeetMessage: openMeetMessage,
+    meetMessageLine: meetMessageLine,
     /* Add task, from anywhere: the tab bar's My Work held down. */
     add: function () { if (may('ops', 'work')) openQuick(); },
     reload: function () { if (state.task) readTask(state.task.id); },
