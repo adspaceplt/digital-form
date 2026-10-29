@@ -9,7 +9,7 @@
     meta_links: 'id client_id brand_id ad_accounts page instagram updated_at updated_by',
     sm_report_audits: 'id report_id version_no read_at by_id by_name outcome print diffs note',
     announcements: 'id audience tone body_en body_zh link starts_at ends_at ended_at created_by created_at updated_by updated_at',
-    app_flags: 'key on_now note starts_at ends_at set_by set_at',
+    app_flags: 'key on_now note starts_at ends_at set_by set_at kind note_zh whatsapp',
     app_settings: 'key from_date value set_by set_at',
     app_secrets: 'key value updated_at',
     batches: 'id client_id title note published created_at published_at period',
@@ -216,6 +216,7 @@
     share_link_preview: 'p_kind p_key',
     maintenance_set: 'p_note p_starts p_ends p_on',
     maintenance_state: '',
+    page_states: '', page_states_all: '', page_set: 'p_pages p_kind p_note p_note_zh p_starts p_ends p_whatsapp',
     demo_state: '',
     demo_set: 'p_on p_pin',
     demo_pin_ok: 'p_pin',
@@ -7527,10 +7528,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (puRef) return Promise.resolve({ data: null, error: { message: puRef } });
       var puArgs = args || {};
       var puAud = ['team', 'clients'].indexOf(puArgs.p_audience) >= 0 ? puArgs.p_audience : null;
-      return Promise.all([rpc('maintenance_state', {}), puAud ? rpc('announcement_now', { p_audience: puAud }) : null]).then(function (rs) {
+      return Promise.all([rpc('maintenance_state', {}), puAud ? rpc('announcement_now', { p_audience: puAud }) : null, rpc('page_states', {})]).then(function (rs) {
         var bad = rs.filter(function (r) { return r && r.error; })[0];
         if (bad) return { data: null, error: bad.error };
-        var out = { maintenance: rs[0].data };
+        var out = { maintenance: rs[0].data, pages: rs[2].data };
         if (puAud) out.announcements = rs[1].data || [];
 
         var seenMe = puArgs.p_audience === 'team' && opsMe();
@@ -9179,6 +9180,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!window.__quoteFn) return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_website_create' } });
         var wc = args.p_contact || {}, widem = String(args.p_idem || '').trim();
         if (!widem) return qtOk({ error: 'bad-request' });
+
+        var wpq = (DB.app_flags || []).filter(function (x) { return x.key === 'page:quote'; })[0];
+        if (wpq && wpq.on_now && (!wpq.starts_at || Date.parse(wpq.starts_at) <= Date.now()) && (!wpq.ends_at || Date.parse(wpq.ends_at) > Date.now())) return qtOk({ error: 'unavailable' });
         var wAgain = DB.quotations.filter(function (q) { return q.idem === widem && q.source === 'website' && String((q.contact || {}).email || '').toLowerCase() === String(wc.email || '').trim().toLowerCase(); })[0];
         if (wAgain) return qtOk({ ok: true, ref: wAgain.ref, key: wAgain.access_key, again: true });
         var wn = String(wc.name || '').replace(/\s+/g, ' ').trim(), we = String(wc.email || '').trim().toLowerCase();
@@ -9569,37 +9573,92 @@ function opsCodeRange(cid, period, ty, src, seq) {
       window.__persist();
       return Promise.resolve({ data: dmState(), error: null });
     }
-    if (name === 'maintenance_state' || name === 'maintenance_set') {
+
+    if (name === 'maintenance_state' || name === 'maintenance_set' || /^page_(states|states_all|set)$/.test(name)) {
       var mtNow = Date.now();
-      var mtState = function () {
-        var f = (DB.app_flags || []).filter(function (x) { return x.key === 'maintenance'; })[0];
-        if (!f) return { on: false, set: false };
-        var st = f.starts_at ? Date.parse(f.starts_at) : null, en = f.ends_at ? Date.parse(f.ends_at) : null;
-        return { on: !!f.on_now && (st == null || st <= mtNow) && (en == null || en > mtNow),
-                 set: !!f.on_now && (en == null || en > mtNow), note: f.note || null,
-                 since: f.starts_at || f.set_at, starts_at: f.starts_at || null, ends_at: f.ends_at || null };
+      var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'];
+      var PG_NAME = { admin: 'Console', client: 'Client portal', review: 'Content Review', script: 'Video Scripts', details: 'Details form',
+        creators: 'Creator selection', creator: 'Creator page', quote: 'Quotation website', supplier: 'Supplier form', verify: 'Verify a document' };
+      var pgRow = function (k) {
+        var rows = DB.app_flags || [];
+        var f = rows.filter(function (x) { return x.key === 'page:' + k; })[0];
+        if (!f && !rows.some(function (x) { return /^page:/.test(x.key); })) {
+          var m = rows.filter(function (x) { return x.key === 'maintenance'; })[0];
+          if (m) f = Object.assign({}, m, { key: 'page:' + k, kind: 'upgrade' });
+        }
+        return f || null;
       };
+      var pgSet = function (f) { return !!f && !!f.on_now && (!f.ends_at || Date.parse(f.ends_at) > mtNow); };
+      var pgOne = function (k, team) {
+        var f = pgRow(k);
+        if (!pgSet(f)) return null;
+        return { on: !f.starts_at || Date.parse(f.starts_at) <= mtNow, set: true, kind: f.kind || 'upgrade',
+          note: k !== 'admin' || team ? (f.note || null) : null, note_zh: f.note_zh || null, starts_at: f.starts_at || null,
+          ends_at: f.ends_at || null, whatsapp: !!f.whatsapp };
+      };
+      var pgStates = function () {
+        var team = !!opsMe(), out = {};
+        PG_KEYS.forEach(function (k) { var x = pgOne(k, team); if (x) out[k] = x; });
+        return out;
+      };
+      var pgAll = function () {
+        return PG_KEYS.map(function (k) {
+          var f = pgRow(k), set = pgSet(f);
+          return { key: k, name: PG_NAME[k], set: set, on: set && (!f.starts_at || Date.parse(f.starts_at) <= mtNow),
+            kind: (f && f.kind) || 'upgrade', note: f && f.note || null, note_zh: f && f.note_zh || null, whatsapp: !!(f && f.whatsapp),
+            starts_at: f && f.starts_at || null, ends_at: f && f.ends_at || null, set_by: f && f.set_by || null, set_at: f && f.set_at || null };
+        });
+      };
+      var mtState = function () {
+        var st = pgStates(), keys = Object.keys(st);
+        if (keys.length !== PG_KEYS.length) return { on: false, set: false };
+        var c = st.client;
+        return { on: keys.every(function (k) { return st[k].on; }), set: true, note: c.note, since: c.starts_at, starts_at: c.starts_at, ends_at: c.ends_at };
+      };
+      var refused = window.__refuseRpc && window.__refuseRpc[name];
       if (name === 'maintenance_state') {
-        var mtRef = window.__refuseRpc && window.__refuseRpc.maintenance_state;
-        if (mtRef) return Promise.resolve({ data: null, error: { message: mtRef, code: 'XX000' } });
+        if (refused) return Promise.resolve({ data: null, error: { message: refused, code: 'XX000' } });
         return Promise.resolve({ data: mtState(), error: null });
       }
-      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
-      var mtOn = !!args.p_on;
-      var mtS = args.p_starts ? Date.parse(args.p_starts) : null, mtE = args.p_ends ? Date.parse(args.p_ends) : null;
-      if (mtOn && mtE != null && mtE <= Math.max(mtS == null ? mtNow : mtS, mtNow)) {
-        return Promise.resolve({ data: { error: 'bad-window' }, error: null });
+      if (name === 'page_states') {
+        if (refused) return Promise.resolve({ data: null, error: { message: refused, code: 'XX000' } });
+        if (window.__noPages) return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.page_states without parameters in the schema cache' } });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify(pgStates())), error: null });
       }
-      var mtWas = mtState().set;
-      var mtNote = String(args.p_note || '').trim() || null;
-      DB.app_flags = [{ key: 'maintenance', on_now: mtOn, note: mtOn ? mtNote : null,
-        starts_at: mtOn && mtS != null && mtS > mtNow ? new Date(mtS).toISOString() : null,
-        ends_at: mtOn && mtE != null ? new Date(mtE).toISOString() : null, set_by: whoNow(), set_at: new Date(mtNow).toISOString() }];
+      if (name === 'page_states_all') {
+        if (!opsGranted('team.upgrade', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify(pgAll())), error: null });
+      }
+      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var pa = name === 'maintenance_set'
+        ? { p_pages: PG_KEYS.slice(), p_kind: args.p_on ? 'upgrade' : 'none', p_note: args.p_note, p_starts: args.p_starts, p_ends: args.p_ends }
+        : args;
+      var pages = Array.isArray(pa.p_pages) ? pa.p_pages : [];
+      if (!pages.length || pages.some(function (k) { return PG_KEYS.indexOf(k) < 0; })) return Promise.resolve({ data: { error: 'bad-page' }, error: null });
+      var kind = pa.p_kind || 'none';
+      if (['none', 'upgrade', 'paused'].indexOf(kind) < 0) return Promise.resolve({ data: { error: 'bad-kind' }, error: null });
+      var on = kind !== 'none';
+      var mtS = pa.p_starts ? Date.parse(pa.p_starts) : null, mtE = pa.p_ends ? Date.parse(pa.p_ends) : null;
+      if (on && mtE != null && mtE <= Math.max(mtS == null ? mtNow : mtS, mtNow)) return Promise.resolve({ data: { error: 'bad-window' }, error: null });
+
+      if (!(DB.app_flags || []).some(function (x) { return /^page:/.test(x.key); })) {
+        var legacy = PG_KEYS.map(function (k) { return pgRow(k); }).filter(Boolean);
+        DB.app_flags = (DB.app_flags || []).concat(legacy);
+      }
+      var word = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
+      var note = String(pa.p_note || '').trim() || null, zh = String(pa.p_note_zh || '').trim() || null, bits = [];
+      pages.filter(function (k, i, a) { return a.indexOf(k) === i; }).forEach(function (k) {
+        var f = pgRow(k), was = pgSet(f) ? word[f.kind || 'upgrade'] : 'Available';
+        DB.app_flags = DB.app_flags.filter(function (x) { return x.key !== 'page:' + k; });
+        DB.app_flags.push({ key: 'page:' + k, on_now: on, note: on ? note : null, note_zh: on ? zh : null, kind: on ? kind : null,
+          starts_at: on && mtS != null && mtS > mtNow ? new Date(mtS).toISOString() : null, ends_at: on && mtE != null ? new Date(mtE).toISOString() : null,
+          whatsapp: on && !!pa.p_whatsapp, set_by: whoNow(), set_at: new Date(mtNow).toISOString() });
+        bits.push(PG_NAME[k] + ': ' + was + ' → ' + (on ? word[kind] : 'Available'));
+      });
       DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Portal',
-        detail: 'Upgrade mode: ' + (mtWas ? 'on' : 'off') + ' → ' + (mtOn ? 'on' : 'off') + (mtOn && mtNote ? ' · ' + mtNote : ''),
-        created_at: new Date(mtNow).toISOString() });
+        detail: 'Page availability: ' + bits.join(', ') + (on && note ? ' · ' + note : ''), created_at: new Date(mtNow).toISOString() });
       persist();
-      return Promise.resolve({ data: mtState(), error: null });
+      return Promise.resolve({ data: name === 'maintenance_set' ? mtState() : { ok: true, pages: JSON.parse(JSON.stringify(pgAll())) }, error: null });
     }
 
     if (/^wa_/.test(name)) {

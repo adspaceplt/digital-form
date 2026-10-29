@@ -281,8 +281,8 @@
           var d = r.data || {};
           if (btn) btn.disabled = false;
           if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
-          ctx.reload();
-          ctx.msg('qtMsg', q.ref + ' sent' + (d.whatsapp ? ' on WhatsApp' : '') + '. Valid until ' + window.ADspaceClock.date(d.valid_until) + '.', 'ok');
+          var line = q.ref + ' sent' + (d.whatsapp ? ' on WhatsApp' : '') + '. Valid until ' + window.ADspaceClock.date(d.valid_until) + '.';
+          ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
         }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
       });
       return;
