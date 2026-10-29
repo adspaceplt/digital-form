@@ -7452,3 +7452,26 @@ read and set every page for a tab served before.
   (`is_primary`, `is_main`, `data-ea="main"`) unchanged. The rule is in
   DESIGN.md §6. `entities`, `entitysql`, `crm`, `portal`, `whatsapp`,
   `menus` and `quotesite` read the new words.
+
+### 2026-10-29 · Bukku by entity: a brand's unpaid invoices cover every company billing it
+- **Reported:** "When four different entities are added in, the unpaid
+  invoices overdue are not shown. It only shows the primary which is
+  incorrect. All related entities should be shown as well. The linking
+  with bukku entities mainly for consolidation of one brand into different
+  of their company entitites", and "on mobile Client and Overdue Invoices
+  tab are not equal.. seriously".
+- **Why:** a Bukku contact is a company, but `bukku_links` held a client
+  or a supplier alone, so only the primary entity (the client's own
+  billing columns) could be a Bukku contact, and a client's Unpaid
+  invoices read that one contact. The view strip shared what was spare
+  (`flex: 1 0 auto`), so the longer word took the wider tab.
+- **Changed:** `bukku_links` takes the kind `entity`
+  (`2026-10-29-bukku-by-entity.sql`, the SQL Editor's: a check constraint
+  and `bukku_unlink`); each other entity's fold holds its own Bukku band;
+  a brand and its primary entity may share one contact, any other two may
+  not; `invoice_scope()` names for each contact every client its company
+  bills, the company and the entity's own recipient; `bukku-sync` reads a
+  client's invoices from every one of its companies' contacts and files a
+  reminder on the client it was sent from; Billing heads each company's
+  invoices by its name. Two views in a strip are equal halves on a phone.
+  `entitysql`, `bukkusql` and `entities` hold each.

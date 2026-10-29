@@ -3835,6 +3835,10 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }
 .is-tight .readgroup.bk-band { grid-template-columns: minmax(0, 1fr); }
 .is-tight .bk-band > .bk-acts { grid-column: 1; grid-row: auto; margin-top: 8px; }
+/* A band holding the ⋯ alone keeps it at the right of its first line on a
+   phone, never on a line of its own (2026-10-29). */
+.is-tight .readgroup.bk-band:not(:has(> .bk-acts .btn)) { grid-template-columns: minmax(0, 1fr) auto; }
+.is-tight .bk-band:not(:has(> .bk-acts .btn)) > .bk-acts { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
 .bk-cand { display: flex; align-items: center; }
 .bk-cand b { font-weight: 600; }
 .bk-note { margin: 8px 0 0; font-size: 13px; }
