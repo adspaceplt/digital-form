@@ -1844,7 +1844,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Billing required before Active:
   - registered company name (capitals);
   - BRN;
-  - billing contact (a select over Contacts: Main contact · {name} first,
+  - billing contact (a select over Contacts: Primary contact · {name} first,
     held empty so it follows the main contact, which `issue_letter` answers
     the same way; another contact chosen stays, and trigger
     `client_contacts_bill_follows` lets go of one that stops being the main
@@ -1877,13 +1877,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     `billing_entity_put` carries an entity to every brand it is the main
     of, a billing contact only to the brand it belongs to), so every reader
     of a client's billing reads its main entity unchanged. Billing reads the
-    main as before (headed Main billing entity where there are others,
+    main as before (headed Primary billing entity where there are others,
     Also bills naming each other brand, opening its Billing), then Other
     billing entities (`#crmEntities`: its count and Add entity, each one
     row shut by default, its name over its registration no. and billing
     contact, a press opening its facts in place, remembered under
     `client-entities`, one just saved or added open; its ⋯ Edit, Make
-    main, Remove; the user, 2026-10-29: "how long is this"), read on each visit (`client_entities_list`); Add
+    primary, Remove; the user, 2026-10-29: "how long is this"), read on each visit (`client_entities_list`); Add
     entity (`#entAddSheet`, Find a company) finds one held, every word
     typed in its registered name or the name or Client ID of a brand it
     bills, or its BRN digits (`billing_entities_find`, ten, only those
@@ -1900,7 +1900,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `_main`, `_remove`: `no-name`, `bad-email`, `bad-contact`, `stale`,
     `taken`, `main`); a BRN held is never made twice (`brn-taken`, the
     question offering that entity), two clients holding one BRN before
-    stay two, merged by hand; Make main and Remove (never the main) offer
+    stay two, merged by hand; Make primary and Remove (never the primary) offer
     Undo where they happened. Filed `client.billing` naming fields alone.
     Console search finds a client by an entity billing it (Billed by …,
     opening Billing). Bill to (`2026-10-29-bill-to.sql`): with two
@@ -5820,7 +5820,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   press file one request; `portal_request` is the same with no key.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
-- A contact reads its name with Main contact at the right of the line, the
+- A contact reads its name with Primary contact at the right of the line, the
   role under it, then the reach chips; who signs in is said once, under
   Portal access. A past meeting is Completed (已完成), a future one Upcoming.
 

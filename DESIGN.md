@@ -241,7 +241,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
 | An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
 | A value only read | `.readfield` (the field's height, no box) |
-| A client billed by several companies (billing entities) | Billing's read groups for the main entity (its first heading Main billing entity once there are others; Also bills as `.linkbtn`s), the Bukku band, then Other billing entities as a read group (its count as a `.tab-n`, Add entity `.btn-sm` at the right, None. while empty) and a fold an entity (`.ent-fold`, a `--line-soft` hairline over each: the registered name in the `fsec-h` face over its registration no. and billing contact in 12.5 mute, the chevron and a ⋯ of Edit, Make main and Remove at the right edge; open, its facts under it and the summary gone); Add entity a `.formsheet` whose search answers as shaded radio rows (`.ent-pick`, the chosen ringed in ink) under 12/600 mute group labels (`.ent-picks-h`: In the portal, In Bukku, Not listed), New entity last |
+| A client billed by several companies (billing entities) | Billing's read groups for the main entity (its first heading Primary billing entity once there are others; Also bills as `.linkbtn`s), the Bukku band, then Other billing entities as a read group (its count as a `.tab-n`, Add entity `.btn-sm` at the right, None. while empty) and a fold an entity (`.ent-fold`, a `--line-soft` hairline over each: the registered name in the `fsec-h` face over its registration no. and billing contact in 12.5 mute, the chevron and a ⋯ of Edit, Make primary and Remove at the right edge; open, its facts under it and the summary gone); Add entity a `.formsheet` whose search answers as shaded radio rows (`.ent-pick`, the chosen ringed in ink) under 12/600 mute group labels (`.ent-picks-h`: In the portal, In Bukku, Not listed), New entity last |
 | A record's link to another system (Bukku) | `.readgroup.bk-band` at the foot of the details it sends: a `--sunk` band, the system's name at 600, the code in the token face, its state as `.chip-state`, Last sent in 12.5 mute under it; the send as a `.btn-sm` and a ⋯ (Unlink) at the right edge, on their own line when the pane is tight |
 | A read group with its own act (Brand: Meta) | `.readgroup` > `.readgroup-head` (the `fsec-h` title, then a `.btn-sm` with its glyph at the right edge) over its `dl.ovfacts`; its sheet holds a ticked list (`.meta-accs`, its own scroll past 40dvh) and the selects |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
@@ -540,7 +540,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
    is a `.btn-sm` on the row or head.
 9. Words: verb first, one to three words, no object the context gives; the
    same act the same word everywhere (Reset link, Void, Issue Letter of
-   Offer, Make main contact); never a mood (Mark not signed).
+   Offer, Make primary contact, Make primary); never a mood (Mark not signed).
 10. One look: every item 13.5px, weight 400, ink (a `<b>` inside carries no
     weight); one width at a desk (320px) and one on a phone; `role="menu"`
     and `role="menuitem"`; every item written by `ADspaceMenu.items(groups)`
@@ -698,6 +698,15 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     grades Needs support and Improvement plan; the recovery path.
   - My Work: Assigned to, Content task, Posts, For, Month, Format, Due date,
     Draft due, Post date, Checklists.
+- The first of several is primary, never main (the user, 2026-10-29: "who
+  says make main so weird"): Primary contact, Primary billing entity, Make
+  primary; the stored keys (`is_primary`, `is_main`) never move. A word a
+  corporate reader would not write in a letter is not on a screen.
+- A step the reader waits on is said as what will happen (ADspace will
+  review your request and send your quotation), an Undo answers Undone.
+  (never Put back.), and a line names the thing as its reader knows it (the
+  notice page, never the cover; Refresh the page, never Read again where no
+  Read again button stands) (2026-10-29).
 - Words are the ones people already use at work, never a legal, police or
   system word (the user, 2026-10-05: "why use evidence. Sounds like some
   criminals"). Only the words change; stored keys never move.

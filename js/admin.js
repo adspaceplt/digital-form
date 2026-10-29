@@ -2580,7 +2580,7 @@
     'client.touch_restored': ['Call/visit restored', 'is-ok', 'clients'],
     'client.action_done':    ['Action done', 'is-ok', 'clients'],
     'client.action_reopened':['Action reopened', 'is-warn', 'clients'],
-    'contact.primary':       ['Main contact set', '', 'clients'],
+    'contact.primary':       ['Primary contact set', '', 'clients'],
     'contact.removed':       ['Contact removed', 'is-danger', 'clients'],
     'set.deleted':           ['Content set deleted', 'is-danger', 'review'],
     'post.deleted':          ['Post deleted', 'is-danger', 'review'],

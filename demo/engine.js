@@ -7719,7 +7719,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (was) was.is_main = false;
         link0.is_main = true;
         entPut(ent.id, cid0);
-        enFile(cid0, 'Main billing entity changed');
+        enFile(cid0, 'Primary billing entity changed');
         return enAns({ ok: true, was: was ? was.entity_id : null });
       }
       if (name === 'client_entity_remove') {
