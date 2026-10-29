@@ -365,6 +365,9 @@ added to all three in the same push.
   grepped by its id or words across the suites, and each suite that reads
   it is changed in the same push (2026-10-21: six pressed a Publish #691
   hid, myhr read a line #693 moved, uxaudit a month #693 took off a row).
+- A word table holds one key a word: a new field's label takes a key of
+  its own, grepped in the table first (2026-10-29: /quote/'s Planned
+  commencement took `start`, and the opening page's Start button read it).
 - A function removed is first grepped by name across the suites with no
   cap on the output: a suite that cuts a script at `'  function name('`
   uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).
@@ -1138,7 +1141,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/form.js` owns forms.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
-    first placement and resize).
+    first placement and resize). One whose words do not fit equal columns
+    first gives each option the room its words need (`is-auto`), then wraps;
+    the words are measured with half a pixel of slack, never by a button's
+    `scrollWidth`, which Chromium reports unclipped under an ellipsis
+    (2026-10-29: Unavaila… read as fitting).
   - `details.fmore` (its line from `data-none`/`data-some`/`data-on`, a
     tick's off state from `data-off`; a field not on show, or inside
     `data-nosum`, stays off the line).
