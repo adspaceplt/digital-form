@@ -253,6 +253,17 @@
     return out;
   };
 
+  /* A contact's name after its salutation, the salutation said once
+     (2026-10-29): one the name already opens on gives way to the one set,
+     never both (Mrs Ms Agnes Ang); two-word titles whole, never Tan. As
+     `contact_named` reads it in SQL. */
+  var SAL_LEAD = /^(dato'? sri|datin sri|datuk sri|tan sri|puan sri|mrs|mr|ms|miss|mdm|madam|dr|prof|dato'?|datin|datuk|tun|tuan|puan|encik|cik)\.?\s+/i;
+  W.person = function (sal, name) {
+    var s = String(sal == null ? '' : sal).trim(), n = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+    if (!s) return n;
+    return (s + ' ' + n.replace(SAL_LEAD, '')).trim();
+  };
+
   /* The one escape of every client page (CP-9, 2026-10-22): `&`, `<`, `>`
      and both quotes, a missing value read as nothing. */
   W.esc = function (s) {

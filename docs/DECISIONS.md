@@ -7154,3 +7154,21 @@ sentence.
   and {link}; a line whose field is empty leaves, as the channel and link
   lines did. It is read once a visit; Show and Copy fill it at the press,
   so a card drawn before the read answered still copies the team's words.
+
+### 2026-10-29 · A salutation is said once
+- What broke: Send to Bukku read Billing person Ms Agnes Ang → Mrs Ms Agnes
+  Ang. Bukku held the name with its own salutation in the first name; the
+  rule of 2026-10-19 kept a name Bukku holds in full and put ours before
+  it whenever Bukku's lacked that word, so a different salutation was
+  doubled rather than replaced.
+- How it was found: the user, on a live client's Send to Bukku sheet.
+- The fix: `bukku-sync` replaces a salutation Bukku's name opens on
+  (the contact sheet's list, two-word titles whole, never Tan) with ours,
+  and keeps it where it is the same. The user asked for every other
+  salutation checked: the pages joined a salutation and a name in nine
+  places by hand, and SQL in `invoice_recipient` and `contact_greeting`
+  (which said only the same salutation once). Live, no contact's name
+  opened on a salutation (0 of 30), so nothing else showed it; all now
+  read one rule, `ADspaceWords.person` and `contact_named`
+  (`2026-10-29-salutation-said-once.sql`), so a name typed with its own
+  salutation never doubles either.

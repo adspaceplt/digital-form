@@ -196,6 +196,16 @@ const addressLine = (a: any) => a ? [a.street, [a.postcode, a.city].filter(Boole
   a.country_code === 'SG' ? 'Singapore' : a.country_code === 'MY' ? 'Malaysia' : a.country_code].filter(Boolean).join(', ') : '';
 /* A name's words, a salutation's dots dropped. */
 const nameWords = (v: unknown) => String(v ?? '').toUpperCase().replace(/[.]/g, '').split(/\s+/).filter(Boolean);
+/* The salutations a name may open on, the longest first (the contact
+   sheet's list; never Tan, a surname too). */
+const SALS = ["Dato' Sri", 'Datin Sri', 'Datuk Sri', 'Tan Sri', 'Puan Sri', 'Mr', 'Ms', 'Mrs', 'Miss', 'Mdm', 'Madam', 'Dr',
+  'Prof', "Dato'", 'Dato', 'Datin', 'Datuk', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'].map(nameWords);
+/* How many of a name's first words are a salutation (0 for none). */
+const salLead = (words: string[]) => {
+  const s = SALS.filter((x) => x.length <= words.length && x.every((w, i) => words[i] === w))
+    .sort((a, b) => b.length - a.length)[0];
+  return s ? s.length : 0;
+};
 
 // ---- What the portal holds, set over what Bukku holds -------------------------
 type Prep = Record<string, any>;
@@ -246,7 +256,8 @@ function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
     is_default_billing: !!x.is_default_billing, is_default_shipping: !!x.is_default_shipping }));
   /* With its salutation (2026-10-19); a name Bukku already holds in full
      (every word of ours in Bukku's) is kept, the salutation put before it
-     where Bukku's lacks it. */
+     where Bukku's lacks it, and in place of another it opens on
+     (2026-10-29: Ms Agnes Ang read Mrs Ms Agnes Ang). */
   if (p.person) {
     const sal = String(p.salutation || '').trim();
     const named = (sal ? sal + ' ' : '') + String(p.person);
@@ -254,7 +265,14 @@ function merged(p: Prep, cur: any | null, code: string, term?: any | null) {
     if (bp) {
       const theirs = nameWords([bp.first_name, bp.last_name].filter(Boolean).join(' '));
       if (nameWords(p.person).every((w) => theirs.includes(w))) {
-        if (sal && !nameWords(sal).every((w) => theirs.includes(w))) bp.first_name = (sal + ' ' + (bp.first_name || '')).trim().slice(0, 50);
+        const lead = salLead(theirs), first = String(bp.first_name || '').trim().split(/\s+/).filter(Boolean);
+        const same = lead && nameWords(sal).join(' ') === theirs.slice(0, lead).join(' ');
+        if (sal && !same) {
+          // Bukku's own salutation sits in its first name; a name split otherwise is set whole.
+          if (lead && first.length >= lead) bp.first_name = [sal].concat(first.slice(lead)).join(' ').slice(0, 50);
+          else if (lead) { bp.first_name = named.slice(0, 50); bp.last_name = null; }
+          else bp.first_name = (sal + ' ' + (bp.first_name || '')).trim().slice(0, 50);
+        }
       } else { bp.first_name = named.slice(0, 50); bp.last_name = null; }
     }
     else persons.push({ first_name: named.slice(0, 50), last_name: null, is_default_billing: true, is_default_shipping: false });

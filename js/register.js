@@ -742,7 +742,7 @@
         $('docAddr').value = c.billing_address || ''; seeded.addr = $('docAddr').value;
       }
       var main = issuing.contact || {};
-      $('docAttn').value = ((main.salutation ? main.salutation + ' ' : '') + (main.name || '')).trim();
+      $('docAttn').value = ADspaceWords.person(main.salutation, main.name);
       $('docAttnRole').value = main.role || '';
       vars['client'] = c.legal_name || c.name;
       vars['first name'] = firstName(main.name);

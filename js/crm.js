@@ -1610,7 +1610,7 @@
       return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
-    var rows = [['Main contact', '<b>' + esc((m.salutation ? m.salutation + ' ' : '') + (m.name || '')) + '</b>' +
+    var rows = [['Main contact', '<b>' + esc(ADspaceWords.person(m.salutation, m.name)) + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     var mUser = waHandle(m.whatsapp);
     if (m.phone) {
@@ -2551,10 +2551,10 @@
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
     paintBillRead(c);
     var main = mainContact(), pick = billContact(c);
-    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc((main.salutation ? main.salutation + ' ' : '') + main.name) : 'None') + '</option>' +
+    $('crmBillContact').innerHTML = '<option value="">' + (main ? 'Main contact · ' + esc(ADspaceWords.person(main.salutation, main.name)) : 'None') + '</option>' +
       (state.contacts || []).filter(function (ct) { return !ct.archived_at && !(main && ct.id === main.id); }).map(function (ct) {
         return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id && !(main && pick.id === main.id) ? ' selected' : '') + '>' +
-          esc((ct.salutation ? ct.salutation + ' ' : '') + ct.name) + '</option>';
+          esc(ADspaceWords.person(ct.salutation, ct.name)) + '</option>';
       }).join('');
     var live = (state.contacts || []).some(function (ct) { return !ct.archived_at; });
     $('crmBillAddContact').hidden = live || !mayPart('clients.contacts', 'work');
@@ -2593,7 +2593,7 @@
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
-        ['Billing contact', pick ? esc((pick.salutation ? pick.salutation + ' ' : '') + pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
+        ['Billing contact', pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]) +
@@ -2732,7 +2732,7 @@
   /* The billing contact the client sent (2026-10-16; the user: the full
      name sent on the form was nowhere in the portal): found among the
      client's contacts by email, else by the number's last nine digits. */
-  function dfWho(a) { return ((a.contact_salutation ? a.contact_salutation + ' ' : '') + (a.contact_name || '')).trim(); }
+  function dfWho(a) { return ADspaceWords.person(a.contact_salutation, a.contact_name); }
   function dfContactOf(a) {
     var em = String(a.contact_email || '').trim().toLowerCase(), ph = String(a.contact_phone || '').replace(/\D/g, '').slice(-9);
     return (state.contacts || []).filter(function (ct) {
@@ -3736,7 +3736,7 @@
          as every card head reads. Green is the live state, and on this row
          the live thing is the sign-in: main contact is a designation, so it
          reads neutral and the accent is spent once. */
-      '<span class="svc-name"><span class="ct-top"><b>' + esc((ct.salutation ? ct.salutation + ' ' : '') + ct.name) + '</b>' +
+      '<span class="svc-name"><span class="ct-top"><b>' + esc(ADspaceWords.person(ct.salutation, ct.name)) + '</b>' +
         (removed ? '<span class="tone is-off">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
@@ -4517,7 +4517,7 @@
       attention: (function () {
         var m = (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
                 (state.contacts || []).filter(function (x) { return !x.archived_at; })[0];
-        return m ? ((m.salutation ? m.salutation + ' ' : '') + (m.name || '')).trim() : '';
+        return m ? ADspaceWords.person(m.salutation, m.name) : '';
       })(),
       reload: function (done) { loadQuotes(done); },
       painted: paintDeal,

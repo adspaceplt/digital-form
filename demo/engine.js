@@ -9388,7 +9388,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var waGreet = function (k) {
         var n = String(k.name || '').trim().replace(/\s+/g, ' '), sl = String(k.salutation || '').trim();
-        if (sl) return sl + ' ' + (n.toLowerCase().indexOf(sl.toLowerCase() + ' ') === 0 ? n.slice(sl.length + 1) : n);
+        if (sl) return (sl + ' ' + n.replace(/^(dato'? sri|datin sri|datuk sri|tan sri|puan sri|mrs|mr|ms|miss|mdm|madam|dr|prof|dato'?|datin|datuk|tun|tuan|puan|encik|cik)\.?\s+/i, '')).trim();
         if (/^(tan sri|puan sri|dato'? sri|datin sri|datuk sri) /i.test(n)) return n;
         if (/^(mr|ms|mrs|mdm|dr|prof|dato'?|datin|datuk|puan|tun|tuan|encik|cik|madam|miss)\.?$/i.test(n.split(' ')[0]) && n.indexOf(' ') > 0) return n;
         return n.split(' ')[0];
