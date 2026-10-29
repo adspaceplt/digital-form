@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261028a">
+<link rel="stylesheet" href="/css/portal.css?v=20261029a">
 <link rel="stylesheet" href="/css/console.css?v=20261029b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
@@ -3541,12 +3541,10 @@
              it never reads as a third tab (the user, 2026-09-27): shut while
              the master code is needed, open while the reviews are unlocked,
              and pressing the open one locks them at once. -->
-        <!-- Every Performance figure is set from the gear beside it (the user,
-             2026-10-07): one control for the whole of Performance, drawn
-             while the reviews are unlocked. On a phone the pair closes the
-             Performance view row instead (js/perf.js placeTools). -->
+        <!-- Every Performance figure is set from Settings' Performance group
+             (2026-10-29; the gear that sat here is gone). On a phone the
+             padlock closes the Performance view row (js/perf.js placeTools). -->
         <span class="perf-tools" id="perfTools" hidden>
-          <button class="iconbtn perf-lockicon perf-seticon" id="perfSetIcon" type="button" aria-label="Performance settings" title="Performance settings" data-need="team.performance:work" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></button>
           <button class="iconbtn perf-lockicon" id="perfLockBtn" type="button"></button>
         </span>
       </div>
@@ -5830,11 +5828,11 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261027d"></script>
 <script src="/js/ops.js?v=20261029a"></script>
-<script src="/js/perf.js?v=20261027d"></script>
+<script src="/js/perf.js?v=20261029a"></script>
 <script src="/js/health.js?v=20261027b"></script>
 <script src="/js/search.js?v=20261027d"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261027d"></script>
-<script src="/js/settings.js?v=20261029b"></script>
+<script src="/js/settings.js?v=20261029c"></script>
 </body>
 </html>

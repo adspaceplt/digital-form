@@ -319,7 +319,6 @@
     b.classList.toggle('is-open', open);
     b.setAttribute('aria-label', open ? 'Unlocked. Lock performance reviews' : 'Locked');
     b.title = open ? 'Lock' : 'Locked';
-    $('perfSetIcon').hidden = !open;
   }
   function showLock(why) {
     padlock(false);
@@ -2757,8 +2756,30 @@
       sec.hidden = sec.getAttribute('data-view') !== rwSet.view;
     });
   }
-  function openSettings(opener) {
-    rwSet.view = st.pv === 'initiatives' ? 'months' : st.pv;
+  /* Settings' Performance group is its one door (2026-10-29, the user:
+     every setting in one place): each row opens the sheet on its part,
+     behind the master code; the gear beside the padlock is gone. */
+  var CODE_GONE = { 'code-needed': 1, expired: 1 };
+  function askCode(then) {
+    window.ADspaceConfirm.ask({ title: 'Performance settings', body: 'Unlocks performance for 15 minutes.', go: 'Unlock', wait: true,
+      field: { label: 'Master code', type: 'password', need: 'Enter the master code.' } }, function (v) {
+      return new Promise(function (done) {
+        call('perf_unlock', { p_code: v }, function (d) {
+          if (d.error) { done(said(d)); return; }
+          keepToken(d.token);
+          done('');
+          setTimeout(then, 0);
+        });
+      });
+    });
+  }
+  function settingsFrom(view, opener) {
+    token = token || readToken();
+    if (!token) { askCode(function () { openSettings(opener, view); }); return; }
+    openSettings(opener, view);
+  }
+  function openSettings(opener, view) {
+    rwSet.view = view || (st.pv === 'initiatives' ? 'months' : st.pv) || 'months';
     if ($('rwSView').value !== rwSet.view) $('rwSView').value = rwSet.view;
     msg('rwSMsg', '');
     $('rwSFields').innerHTML = '';
@@ -2766,7 +2787,9 @@
     $('rwSSave').hidden = true;
     window.ADspaceSheet.show($('rwSetSheet'), { opener: opener });
     call('perf_settings_read', { p_token: token }, function (d) {
-      if (d.error) { UI.failLine($('rwSFields'), 'Performance settings', rwSaid(d), function () { openSettings(opener); }); return; }
+      /* The 15 minutes ran out: the code is asked again, never a dead end. */
+      if (d.error && CODE_GONE[d.error]) { keepToken(null); window.ADspaceSheet.close(); askCode(function () { openSettings(opener, rwSet.view); }); return; }
+      if (d.error) { UI.failLine($('rwSFields'), 'Performance settings', rwSaid(d), function () { openSettings(opener, rwSet.view); }); return; }
       rwSet.data = d;
       var qs = setQuarters();
       var want = st.q && qs.indexOf(st.q) > -1 ? st.q : qs[0];
@@ -2776,7 +2799,6 @@
       paintSettings();
     });
   }
-  $('perfSetIcon').addEventListener('click', function () { openSettings(this); });
   $('rwSView').addEventListener('change', function () { if (this.value !== rwSet.view) showSetView(this.value); });
   $('rwSFrom').addEventListener('change', function () { rwSet.from = this.value; msg('rwSMsg', ''); paintSettings(); });
   $('rwSClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
@@ -3568,6 +3590,9 @@
        15 minutes, whichever page took it. */
     token: function () { return token || readToken(); },
     keepToken: function (t) { keepToken(t); },
+    /* Settings' Performance rows (2026-10-29): the sheet on one part. */
+    openSettings: settingsFrom,
+    VIEWS: RW_VIEWS,
     said: said,
     urlState: function () {
       if (st.tab === 'groups') return { tab: 'groups' };
