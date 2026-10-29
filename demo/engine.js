@@ -9204,6 +9204,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qtCard) return qtOk({ error: 'no-card' });
         var wp = qtPrice(qtTax(qtCard.snapshot, null), wsel);
         if (wp.error) return qtOk(wp);
+        if (!(wp.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var wcl = DB.clients.filter(function (c) {
           return ['lead', 'contacted', 'proposal'].indexOf(c.stage) >= 0 && (DB.client_contacts || []).some(function (k) {
             return k.client_id === c.id && !k.archived_at && String(k.email || '').toLowerCase() === we && wnum8(k.whatsapp) === ww; });
@@ -9325,6 +9326,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qcFx === 0) return qtOk({ error: 'no-fx' });
         var qpr = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), qcFx);
         if (qpr.error) return qtOk(qpr);
+        if (!(qpr.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var qz = (String(qc.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var qhead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + qz;
         var qn = DB.quotations.filter(function (q) { return q.ref.indexOf(qhead) === 0; }).length + 1;
