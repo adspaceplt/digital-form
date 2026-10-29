@@ -1717,7 +1717,7 @@
     whatsapp: { name: 'WhatsApp', steps: [
       { at: '#waNew', text: 'New message sends a template Meta approved to a client contact or a creator.' },
       { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal sent: Sent, Delivered, Read, or Failed with the reason.' },
-      { at: '#waTabs', text: 'Templates sets which approved template each purpose sends, and turns it on or off.' }] },
+      { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent or not confirmed in the last seven days.' }] },
     review: { name: 'Content Review', steps: [
       { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
       { at: '#crFind', text: 'Find a client by name.' }] },
@@ -1759,8 +1759,7 @@
       { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
       { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
       { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
-    'whatsapp.templates': { name: 'Templates', steps: [
-      { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent in the last seven days.' },
+    'whatsapp.templates': { name: 'WhatsApp templates', within: '#waTplSheet', steps: [
       { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
       { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. Off, it sends nothing and its button leaves the records.' }] },
     'whatsapp.compose': { name: 'New message', within: '#waCompose', steps: [
@@ -1804,8 +1803,8 @@
   function guideKey() {
     if (shownSheet('railSheet')) return 'arrange';
     if (shownSheet('waCompose')) return 'whatsapp.compose';
+    if (shownSheet('waTplSheet')) return 'whatsapp.templates';
     var q = new URLSearchParams(location.search);
-    if (section === 'whatsapp') return q.get('tab') === 'templates' ? 'whatsapp.templates' : 'whatsapp';
     if (section === 'mine' && q.get('view') === 'health') {
       return document.querySelector('#mineHealthBox [data-a="agree"]') ? 'mine.health' : 'mine.checkin';
     }

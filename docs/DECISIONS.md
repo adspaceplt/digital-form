@@ -7081,6 +7081,26 @@ sentence.
   the ages four across, two when tight. Rules: the suites' bar by id
   (CLAUDE.md §1), the demo's one edge read, the tallies (DESIGN.md).
 
+### 2026-10-29 · One place for every setting: Settings' Templates group
+- Asked: the user approved the settings consolidation ("approve all,
+  build item 5 too"). Release 1 of 5: a Templates group and one place for
+  each setting.
+- Before: six settings had a second door. WhatsApp templates were a tab
+  of the WhatsApp section, opened from Settings by moving the page there.
+  Document types sat behind the Documents bar's ⋯. Task templates, Task
+  numbering and Due dates sat in My Work's ⋯. Tax and terms sat on the
+  Services bar. The rate card's wording was a Services tab. Two doors
+  meant two answers to "where is it set", and two sets of tests.
+- Now: Settings holds them alone. Templates (WhatsApp templates, Supplier
+  emails, Overdue reminder, Document types, Task templates, Rate card
+  wording) replaces the Documents group. WhatsApp keeps Messages, the
+  queue heading them at Full Access. The wording is still published with
+  the card on Services, whose review reads changed blocks without a pen.
+  Settings opens to `ops.workflows` and Services at Full Access too. Older
+  addresses (`tab=templates`, `tab=words`) land on the section.
+- The wording's sheet moved out of `#sectionServices`: a sheet inside a
+  hidden section is never drawn, so it could not open from Settings.
+
 ### 2026-10-29 · Overdue reminders: the wording a creditor writes, every email's fine print
 - What: the review of the Overdue invoices section put five points to the
   user, who chose all five ("1-5"). The reminder read "payment of {total}

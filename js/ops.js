@@ -7514,18 +7514,8 @@
         if (!it) return;
         shutWorkMore();
         var a = it.getAttribute('data-a');
-        if (a === 'template') openTpl();
         if (a === 'select') setSelecting(!state.selecting);
-        if (a === 'numbering') openNumbering();
         if (a === 'newmonth' && cw.client) openEng(null, cw.client);
-        /* When a month's report is due, and how far a client's request for
-           changes moves a task's due date: an admin's settings (2026-10-05,
-           2026-10-06). */
-        if (a === 'reportdue') {
-          /* The Settings page's own sheet (2026-10-22, SET2-4): one list. */
-          var dueSheet = window.ADspaceAdmin.SETTING_SHEETS.due;
-          window.ADspaceAdmin.editSettings({ title: dueSheet.title, msg: 'workMsg', keys: dueSheet.keys }, $('workMoreBtn'));
-        }
       });
     }
     // Several at once
@@ -8005,16 +7995,12 @@
     state.waitDue = true;
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
-    /* The bar's ⋯ holds the templates (Workflows at Work), Select tasks
-       (Manage) and, for an admin, the next number. It is drawn only where
-       one of them is offered, never as an empty menu. */
+    /* The bar's ⋯ holds Select tasks (Manage); the templates, the next
+       number and the due dates are Settings' alone (2026-10-29). It is
+       drawn only where something in it is offered, never as an empty menu. */
     var more = $('workMoreWrap');
-    state.moreAny = may('ops.workflows', 'work') || may('ops', 'manage') || may('ops.numbering', 'work') || may('team.settings', 'work');
+    state.moreAny = may('ops', 'manage');
     if (more) more.hidden = !state.moreAny;
-    var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
-    if (num) num.hidden = !may('ops.numbering', 'work');
-    var due = $('workMore') && $('workMore').querySelector('[data-a="reportdue"]');
-    if (due) due.hidden = !may('team.settings', 'work');
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     ['list', 'board', 'calendar'].forEach(function (k) {
       var b = document.querySelector('#workViews [data-view="' + k + '"]');
@@ -8325,6 +8311,8 @@
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
     enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
+    /* Task templates, from Settings' Templates group (2026-10-29). */
+    openTemplates: function () { openTpl(); },
     /* Add task, from anywhere: the tab bar's My Work held down. */
     add: function () { if (may('ops', 'work')) openQuick(); },
     reload: function () { if (state.task) readTask(state.task.id); },

@@ -5708,7 +5708,6 @@
     var t = new URLSearchParams(location.search).get('tab');
     svcTab = SVC_TABS.some(function (x) { return x[0] === t; }) ? t : 'card';
     $('svcAdd').hidden = !maySvc();
-    $('svcTax').hidden = !window.ADspaceAdmin.may('team.settings', 'work');
     shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
@@ -5731,7 +5730,9 @@
      (rate_card_publish); a quote, a client's line and the export read the
      version, never the draft (the user, 2026-10-13: "every version changed
      would proceed proper updates to the site and export"). */
-  var SVC_TABS = [['card', 'Rate card'], ['words', 'Wording'], ['versions', 'Versions']];
+  /* The card's words are edited from Settings' Templates (2026-10-29):
+     an older `tab=words` address opens the card. */
+  var SVC_TABS = [['card', 'Rate card'], ['versions', 'Versions']];
   var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, words: {}, n: 0 };
   /* Review n changes (2026-10-22, SVC2-M1): the card shows only what the
      draft holds that the live version does not. */
@@ -5790,7 +5791,6 @@
       if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
     }
     $('svcList').hidden = svcTab !== 'card';
-    $('svcWords').hidden = svcTab !== 'words';
     $('svcVersions').hidden = svcTab !== 'versions';
     diffNow = svcDiff();
     if (!live || !diffNow.n) svcReview = false;
@@ -5803,7 +5803,6 @@
     $('svcAdd').hidden = !maySvc() || svcTab !== 'card';
     paintLiveLine();
     if (svcTab === 'card') paintCatalog();
-    if (svcTab === 'words') paintWords();
     if (svcTab === 'versions') paintVersions();
   }
   if ($('svcTabs')) {
@@ -5952,8 +5951,9 @@
   }
 
   /* A block of the card's words as a row: its name, Changed where the draft
-     moved it, the first line, its pen. */
-  function wordRow(b, d) {
+     moved it, the first line, its pen (none where only read: the changes
+     reviewed on Services). */
+  function wordRow(b, d, ro) {
     var row = document.createElement('div');
     row.className = 'svc-row cat-row rcw-row';
     /* The label's column list and the row's pipes are how the card
@@ -5964,15 +5964,36 @@
       '<small>' + (first ? esc(first) : '<span class="muted">Not set</span>') + '</small></span>' +
       /* Edit is the row's one act, its pen on the row, never a ⋯ of
          one item (2026-10-20, SVC-1). */
-      '<span class="team-act">' + (maySvc()
+      '<span class="team-act">' + (maySvc() && !ro
         ? '<button class="kmenu-btn rcw-edit" data-a="edit" type="button" aria-label="Edit ' + esc(named) + '">' + PEN + '</button>'
         : '') + '</span>';
-    if (maySvc()) row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
+    if (maySvc() && !ro) row.querySelector('[data-a="edit"]').addEventListener('click', function () { editWords(b); });
     return row;
   }
-  /* The card's own words, a block a key, grouped by the page they print on. */
+  /* The card's own words, a block a key, grouped by the page they print on:
+     Settings' Rate card wording sheet (2026-10-29). */
+  var wording = { opener: null };
+  function openWording(opener) {
+    if (!maySvc() || !$('rcwListSheet')) return;
+    wording.opener = opener || wording.opener || null;
+    liveRead = false;
+    loadLive(function () {
+      db.from('rate_card_text').select('key, label, page, position, value').order('position').then(function (r) {
+        if (r.error) {
+          $('rcwList').innerHTML = '';
+          msg('rcwListMsg', /relation|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message, 'err');
+        } else {
+          svcText = r.data || [];
+          diffNow = svcDiff();
+          msg('rcwListMsg', '');
+          paintWords();
+        }
+        openSheet('rcwListSheet', wording.opener);
+      });
+    });
+  }
   function paintWords() {
-    var box = $('svcWords');
+    var box = $('rcwList');
     box.innerHTML = '';
     var GRP = window.ADspaceGroup;
     var d = diffNow;
@@ -5994,6 +6015,13 @@
         }
       }));
     });
+  }
+  /* Out of the editor, back to the list it was opened from. */
+  function backToWords(said) {
+    shutSheet('rcwBox');
+    paintWords();
+    msg('rcwListMsg', said || '', said ? 'ok' : '');
+    openSheet('rcwListSheet', wording.opener);
   }
   /* A block of the card's words, edited as the card prints it: a list point
      by point (numbered, each its own field, moved up or removed), a table a
@@ -6032,6 +6060,7 @@
     if (window.ADspaceActs && window.ADspaceActs.mark) window.ADspaceActs.mark(add);
     msg('rcwMsg', '', '');
     rcwNumber();
+    shutSheet('rcwListSheet');
     openSheet('rcwBox');
   }
   function rcwRow(line) {
@@ -6091,7 +6120,7 @@
   function rcwSave() {
     var b = rcw.b, v = rcwValue(), btn = $('rcwSave');
     if (!v) { msg('rcwMsg', 'Words are required.', 'err'); var f = $('rcwRows').querySelector('textarea'); if (f) f.focus(); return; }
-    if (v === String(b.value || '').trim()) { shutSheet('rcwBox'); return; }
+    if (v === String(b.value || '').trim()) { backToWords(); return; }
     btn.disabled = true;
     db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
       btn.disabled = false;
@@ -6101,9 +6130,8 @@
       if (no) { msg('rcwMsg', no, 'err'); return; }
       b.value = v;
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
-      shutSheet('rcwBox');
-      paintServicesPage();
-      msg('svcListMsg', 'Saved.', 'ok');
+      diffNow = svcDiff();
+      backToWords('Saved.');
     }).catch(function () { btn.disabled = false; msg('rcwMsg', 'Not saved. Please try again.', 'err'); });
   }
   (function () {
@@ -6113,8 +6141,9 @@
       var f = row.querySelector('textarea'); if (f) f.focus();
     });
     $('rcwSave').addEventListener('click', rcwSave);
-    $('rcwCancel').addEventListener('click', function () { shutSheet('rcwBox'); });
+    $('rcwCancel').addEventListener('click', function () { backToWords(); });
     sheetClose('rcwClose', 'rcwCancel');
+    $('rcwListClose').addEventListener('click', function () { shutSheet('rcwListSheet'); });
   })();
 
   /* Every version published, newest first; the live one marked. */
@@ -6429,7 +6458,7 @@
         route: 'services', key: 'review-words', name: 'Wording', count: blocks.length, shut: false,
         table: function () {
           var table = GRP.table('svc-row cat-row rcw-row', ['Wording', '']);
-          blocks.forEach(function (b) { table.appendChild(wordRow(b, d)); });
+          blocks.forEach(function (b) { table.appendChild(wordRow(b, d, true)); });
           return table;
         }
       }));
@@ -6625,13 +6654,6 @@
   }
   $('svcAdd').addEventListener('click', function () { openSvc(null); });
   $('svcCardPdf').addEventListener('click', function () { cardPdf(this); });
-  /* SST and the term percentages a quote is prefilled from, an admin's,
-     from a day on (2026-10-05). Follow-up limits moved to the Settings
-     page's Clients group (2026-10-11). */
-  $('svcTax').addEventListener('click', function () {
-    var taxSheet = window.ADspaceAdmin.SETTING_SHEETS.tax;
-    window.ADspaceAdmin.editSettings({ title: taxSheet.title, msg: 'svcListMsg', keys: taxSheet.keys }, this);
-  });
   $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {
     var name = val('svcName');
@@ -6704,6 +6726,8 @@
 
   window.ADspaceCRM = {
     sourceWord: sourceWord,
+    /* The rate card's wording, from Settings' Templates (2026-10-29). */
+    openWording: openWording,
     urlState: function () {
       var o = { client: keyOf(state.client) };
       /* Overview is the default, so it stays out of the address: a link to a
