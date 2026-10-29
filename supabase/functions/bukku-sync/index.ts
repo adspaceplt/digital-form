@@ -20,6 +20,12 @@
  *   POST { action: 'link', kind, id, contact } links that contact as Bukku
  *                                             holds it, nothing sent
  *                                             (`bukku_link_only`).
+ *   POST { action: 'contacts', q }            Bukku's customers matching
+ *                                             every word typed (name) or the
+ *                                             registration no., for Add
+ *                                             entity (2026-10-29).
+ *   POST { action: 'contact', contact }       one of them read whole, to
+ *                                             fill New billing entity.
  *   POST { action: 'invoices', client? }      the overdue invoices
  *                                             (2026-10-28): Bukku's unpaid
  *                                             invoices held to the clients
@@ -324,6 +330,52 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
 }
 
+
+// ---- A billing entity started from Bukku (2026-10-29) ------------------------
+/* Add entity's second list (the user, 2026-10-29: "Cant even find or
+   lookup"): Bukku's customers whose name or registration no. holds every
+   word typed, and one picked read whole to fill New billing entity. Read
+   only, nothing written in Bukku or the portal. Held as the overdue
+   invoices are (`invoice_scope`): Clients: Billing at Work, a contact
+   linked to a client the colleague sees, any other only for a colleague
+   who sees every client. */
+async function contactsAction(action: string, body: Record<string, any>, db: any, origin: string | null): Promise<Response> {
+  const sc = await db.rpc('invoice_scope');
+  if (sc.error) return json({ error: 'needs-update' }, 200, origin);
+  const scope = sc.data || {};
+  if (scope.error) return json({ error: scope.error }, 200, origin);
+  if (scope.send !== true) return json({ error: 'denied' }, 200, origin);
+  const linked = new Set<number>((scope.links || []).map((l: any) => Number(l.contact)));
+  const may = (id: number) => scope.all === true || linked.has(id);
+  const customer = (c: any) => (c.types || []).includes('customer') && !c.is_archived;
+
+  if (action === 'contact') {
+    const id = Number(body.contact);
+    if (!(id > 0) || !may(id)) return json({ error: 'denied' }, 200, origin);
+    const c = await bukku('GET', `/contacts/${id}`).then((r) => r && r.contact)
+      .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
+    if (!c) return json({ error: 'bukku-gone' }, 200, origin);
+    const addr = (c.addresses || []).find((a: any) => a.is_default_billing) || (c.addresses || [])[0];
+    const s = (v: unknown) => { const x = String(v ?? '').trim(); return x || null; };
+    return json({ ok: true, entity: {
+      legal_name: s(c.legal_name), company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
+      tin: s(c.tax_id_no), sst_no: s(c.sst_reg_no), finance_email: s(c.email),
+      billing_address: s(addressLine(addr)) } }, 200, origin);
+  }
+
+  const q = String(body.q || '').trim().slice(0, 80);
+  const want = words(q).split(' ').filter(Boolean), reg = digits(q);
+  if (q.length < 2 || (!want.length && reg.length < 4)) return json({ ok: true, contacts: [] }, 200, origin);
+  if (scope.all !== true && !linked.size) return json({ ok: true, contacts: [] }, 200, origin);
+  const hit = (c: any) => {
+    const name = words(c.legal_name) + ' ' + words(c.other_name);
+    return (want.length && want.every((w) => name.includes(w))) || (reg.length >= 4 && digits(c.reg_no).includes(reg));
+  };
+  const found = (await allContacts()).filter((c) => customer(c) && may(Number(c.id)) && hit(c))
+    .sort((a, b) => String(a.legal_name).localeCompare(String(b.legal_name))).slice(0, 8)
+    .map((c) => ({ id: c.id, code: c.contact_code, name: c.legal_name, other: c.other_name || null, reg_no: c.reg_no || null }));
+  return json({ ok: true, contacts: found }, 200, origin);
+}
 
 // ---- Overdue invoices (2026-10-28) -------------------------------------------
 /* Malaysia's day: the one a due date is counted against. */
@@ -638,6 +690,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'invoices' || action === 'remind') return await invoiceAction(action, body, db, origin);
+    if (action === 'contacts' || action === 'contact') return await contactsAction(action, body, db, origin);
 
     const kind = String(body.kind || ''), id = String(body.id || '');
     if (!['client', 'supplier'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);

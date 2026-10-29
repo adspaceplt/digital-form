@@ -7611,10 +7611,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'billing_entities_find') {
         if (!enMay(null, 'view')) return enAns({ error: 'denied' });
         var q = String(args.p_q || '').trim(); if (q.length < 2) return enAns({ entities: [] });
-        var ql = q.toLowerCase(), qd = enDigits(q);
+        var qw = q.toLowerCase().split(/\s+/).filter(Boolean), qd = enDigits(q);
         return enAns({ entities: DB.billing_entities.filter(function (e) {
-          var hit = String(e.legal_name || '').toLowerCase().indexOf(ql) > -1 || (qd.length >= 4 && enDigits(e.company_no).indexOf(qd) > -1);
           var ls = enLinks(e.id);
+
+          var names = [String(e.legal_name || '')].concat(ls.filter(function (l) { return scopeSeen(l.client_id, 'view'); })
+            .map(function (l) { var c = DB.clients.filter(function (x) { return x.id === l.client_id; })[0]; return c ? c.name + ' ' + (c.client_code || '') : ''; }))
+            .join(' \n ').toLowerCase().split(' \n ');
+          var hit = qw.every(function (w) { return names.some(function (n) { return n.indexOf(w) > -1; }); }) ||
+            (qd.length >= 4 && enDigits(e.company_no).indexOf(qd) > -1);
           return hit && (!ls.length || ls.some(function (l) { return scopeSeen(l.client_id, 'view'); }));
         }).sort(function (a, b) { return String(a.legal_name).localeCompare(String(b.legal_name)); }).slice(0, 10)
           .map(function (e) { return enJson(e, null); }) });
@@ -11650,6 +11655,33 @@ function opsCodeRange(cid, period, ty, src, seq) {
             { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '000000012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];
 
+          if (bkb.action === 'contacts' || bkb.action === 'contact') {
+            return rpc('invoice_scope', {}).then(function (sr) {
+              var sc = sr.data || {};
+              if (sc.error) return bkR({ error: sc.error });
+              if (sc.send !== true) return bkR({ error: 'denied' });
+              var lk = (sc.links || []).map(function (l) { return Number(l.contact); });
+              var mayK = function (id) { return sc.all === true || lk.indexOf(Number(id)) > -1; };
+              var wd = function (v) { return String(v == null ? '' : v).toUpperCase().replace(/\b(SDN|BHD|BERHAD|PLT|PTE|LTD|ENTERPRISE|TRADING|THE)\b/g, ' ').replace(/[^A-Z0-9]+/g, ' ').trim(); };
+              var dg = function (v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); };
+              if (bkb.action === 'contact') {
+                var k = held.filter(function (x) { return x.id === Number(bkb.contact); })[0];
+                if (!mayK(bkb.contact)) return bkR({ error: 'denied' });
+                if (!k) return bkR({ error: 'bukku-gone' });
+                var ad = (k.addresses || []).filter(function (a) { return a.is_default_billing; })[0] || (k.addresses || [])[0];
+                return bkR({ ok: true, entity: { legal_name: k.legal_name || null, company_no: k.reg_no || null, company_no_old: k.old_reg_no || null,
+                  tin: k.tax_id_no || null, sst_no: k.sst_reg_no || null, finance_email: k.email || null,
+                  billing_address: ad ? [ad.street, [ad.postcode, ad.city].filter(Boolean).join(' '), ad.state, ad.country_code === 'SG' ? 'Singapore' : 'Malaysia'].filter(Boolean).join(', ') : null } });
+              }
+              var q = String(bkb.q || '').trim(), ws = wd(q).split(' ').filter(Boolean), rg = dg(q);
+              if (q.length < 2 || (sc.all !== true && !lk.length)) return bkR({ ok: true, contacts: [] });
+              return bkR({ ok: true, contacts: held.filter(function (x) {
+                var nm = wd(x.legal_name) + ' ' + wd(x.other_name);
+                return (x.types || []).indexOf('customer') > -1 && !x.is_archived && mayK(x.id) &&
+                  ((ws.length && ws.every(function (w) { return nm.indexOf(w) > -1; })) || (rg.length >= 4 && dg(x.reg_no).indexOf(rg) > -1));
+              }).slice(0, 8).map(function (x) { return { id: x.id, code: x.contact_code, name: x.legal_name, other: x.other_name || null, reg_no: x.reg_no || null }; }) });
+            });
+          }
           if (bkb.action === 'invoices' || bkb.action === 'remind') {
             var ivT = appToday();
             var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };

@@ -1881,9 +1881,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     naming each other brand, opening its Billing), then Other billing
     entities (`#crmEntities`: Add entity, each a read group, its ⋯ Edit,
     Make main, Remove), read on each visit (`client_entities_list`); Add
-    entity (`#entAddSheet`) finds one held by name or BRN digits
-    (`billing_entities_find`, ten, only those billing a client the reader
-    sees, or none) or opens Billing's sheet as New billing entity (no SST
+    entity (`#entAddSheet`, Find a company) finds one held, every word
+    typed in its registered name or the name or Client ID of a brand it
+    bills, or its BRN digits (`billing_entities_find`, ten, only those
+    billing a client the reader sees, or none; In the portal), a customer
+    Bukku holds by every word of its name or its registration no.
+    (`bukku-sync` `contacts`, eight, held as Overdue invoices are, at
+    Billing Work; In Bukku, one the portal holds by BRN left out; Bukku
+    not connected is left out, Bukku failing said in one line), whose
+    `contact` read starts New billing entity with its details (Filled from
+    Bukku (code)., nothing written until Save, no link made), or opens
+    Billing's sheet as New billing entity (no SST
     on quotes, no currency, no details form); Clients: Billing at Work, the
     client in scope (`client_entity_add`, `_save` with `p_expected`,
     `_main`, `_remove`: `no-name`, `bad-email`, `bad-contact`, `stale`,
