@@ -2704,9 +2704,9 @@ function cardSlugFree(name, self, email) {
 
   function invTemplateSeed() {
     return { id: 1, subject_one: 'Payment reminder · Invoice {invoice no}', subject_many: 'Payment reminder · {count} overdue invoices',
-      body: 'Dear {contact name},\n\nThis is a reminder that payment of {total} for {client} is now overdue.\n\n{invoices}\n\nWe would be grateful if payment could be arranged at your earliest convenience. If payment has already been made, please disregard this email.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
-      legal: 'Legal note: All services rendered will be invoiced accordingly unless a written cancellation is provided and acknowledged in advance. All invoices must be settled promptly to avoid overdue interest charges.',
-      disclaimer: 'This email and any attachment are private and confidential and intended solely for the addressee. If you have received it in error, please notify einvoice@adspacestudios.com and delete it. Any use, copying or disclosure by anyone else is not permitted.',
+      body: 'Dear {contact name},\n\nThis is a reminder that payment of {total} due from {client} is now overdue.\n\n{invoices}\n\nWe would be grateful if payment could be arranged at your earliest convenience. If payment has already been made, please disregard this email.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
+      legal: 'Legal note: All services rendered will be invoiced accordingly unless a written cancellation is provided and acknowledged in advance. All invoices are to be settled in accordance with the agreed payment terms.',
+      disclaimer: 'This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.',
       updated_at: '2026-10-28T00:00:00Z', updated_by: null };
   }
   function invRecipient(cid) {
@@ -2747,7 +2747,7 @@ function cardSlugFree(name, self, email) {
     if (!to || !/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(to)) return { error: 'no-email' };
     var ccTo = cc && rcp && rcp.cc && rcp.cc.toLowerCase() !== to.toLowerCase() ? rcp.cc : null;
     var co = (rcp && rcp.company) || String(name || '').trim() || 'Client';
-    var who = (rcp && rcp.name) || co;
+    var who = (rcp && rcp.name) || 'Sir or Madam';
     var n = invoices.length, nos = invoices.map(function (x) { return x.number; });
     var by = {};
     invoices.forEach(function (x) { by[x.currency] = (by[x.currency] || 0) + Number(x.amount); });
