@@ -693,6 +693,37 @@
         seed({ target: { id: 'docContact' } });
       }).catch(function () {});
   }
+  /* Bill to (2026-10-29): the client's billing entities, read once a
+     client is chosen; drawn where it holds more than one, the main first. */
+  function billTo(c) {
+    var wrap = $('docBillWrap');
+    if (!wrap) return;
+    if (!c) { wrap.hidden = true; return; }
+    if (issuing.entFor !== c.id) {
+      issuing.entFor = c.id; issuing.entities = null; wrap.hidden = true;
+      db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
+        if (!issuing || issuing.entFor !== c.id) return;
+        var d = r.data || {};
+        issuing.entities = r.error || d.error ? [] : (d.entities || []);
+        billTo(c);
+      }).catch(function () {});
+      return;
+    }
+    var L = issuing.entities || [];
+    if (L.length < 2) { wrap.hidden = true; return; }
+    var was = $('docBillTo').value;
+    $('docBillTo').innerHTML = L.map(function (x) {
+      return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') + (x.main ? ' · Main' : '')) + '</option>';
+    }).join('');
+    if (was && L.some(function (x) { return x.id === was; })) $('docBillTo').value = was;
+    wrap.hidden = false;
+  }
+  function billEnt(c) {
+    if (!c || !issuing || issuing.entFor !== c.id || $('docBillWrap').hidden) return null;
+    var be = (issuing.entities || []).filter(function (x) { return x.id === $('docBillTo').value; })[0];
+    return be && !be.main ? be : null;
+  }
+
   function seed(e) {
     var t = typeById($('docKind').value);
     if (!t) return;
@@ -704,7 +735,7 @@
     /* The registered name and address follow the client chosen, and are the
        person's to change for a letter to another entity: a new client puts
        them back, a new kind keeps what was typed over them. */
-    var moved = !e || (e.target && (e.target.id === 'docClient' || e.target.id === 'docSupplier'));
+    var moved = !e || (e.target && (e.target.id === 'docClient' || e.target.id === 'docSupplier' || e.target.id === 'docBillTo'));
     var hr = t.family === 'hr', quote = t.family === 'quote_cover', sup = t.family === 'supplier';
     $('docClientWrap').hidden = hr || sup || Boolean(issuing.client);
     $('docMemberWrap').hidden = !hr;
@@ -734,14 +765,19 @@
       vars['supplier'] = sp.name;
       vars['first name'] = firstName(sp.contact_name);
     }
+    billTo(hr || sup || quote ? null : c);
     if (!hr && c) {
+      /* The billing entity chosen (2026-10-29) is the letter's addressee,
+         else the client's own billing. */
+      var be = billEnt(c);
+      var bill = be ? { legal_name: be.legal_name, billing_address: be.billing_address } : c;
       if (moved || !$('docTo').value.trim() || $('docTo').value === seeded.to) {
-        $('docTo').value = c.legal_name || c.name || ''; seeded.to = $('docTo').value;
+        $('docTo').value = bill.legal_name || c.name || ''; seeded.to = $('docTo').value;
       }
       if (moved || !$('docAddr').value.trim() || $('docAddr').value === seeded.addr) {
-        $('docAddr').value = c.billing_address || ''; seeded.addr = $('docAddr').value;
+        $('docAddr').value = bill.billing_address || ''; seeded.addr = $('docAddr').value;
       }
-      var main = issuing.contact || {};
+      var main = (be && be.bill_contact) || issuing.contact || {};
       $('docAttn').value = ADspaceWords.person(main.salutation, main.name);
       $('docAttnRole').value = main.role || '';
       vars['client'] = c.legal_name || c.name;
@@ -1567,6 +1603,7 @@
       seed(e); readContact();
     });
     if ($('docMember')) $('docMember').addEventListener('change', seed);
+    if ($('docBillTo')) $('docBillTo').addEventListener('change', seed);
     if ($('docSupplier')) $('docSupplier').addEventListener('change', seed);
     if ($('regAddKind')) $('regAddKind').addEventListener('change', function () { this.value = nameOf(this.value); });
     if ($('regAddClient')) $('regAddClient').addEventListener('change', function () {

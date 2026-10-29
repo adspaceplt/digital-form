@@ -2750,6 +2750,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .qc-hold { margin: 0 0 10px; }
 
 .lpickref .input { width: 100%; }
+.lpickref .select { max-width: 100%; min-width: 0; }
 .lpickref input.input { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 640px) {
   .lpickrow input { grid-area: tick; }

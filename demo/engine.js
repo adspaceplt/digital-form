@@ -2140,6 +2140,17 @@ function cardSlugFree(name, self, email) {
       if (Math.abs(Number(now.total) - Number(a.p_total)) > 0.01) return { error: 'stale', total: now.total };
     }
 
+    var bEnt = null, bEid = (a.p_deal || {}).entity;
+    if (bEid) {
+      if (!/^[0-9a-z-]+$/i.test(String(bEid))) return { error: 'bad-entity' };
+      entSeed();
+      bEnt = (DB.client_entities || []).some(function (l) { return l.client_id === a.p_client && l.entity_id === bEid; }) &&
+        (DB.billing_entities || []).filter(function (e) { return e.id === bEid; })[0];
+      if (!bEnt) return { error: 'bad-entity' };
+      if (!String(bEnt.legal_name || '').trim() || !String(bEnt.company_no || '').trim() || !String(bEnt.billing_address || '').trim())
+        return { error: 'entity-incomplete' };
+    }
+
     var prior = null;
     if (a.p_replaces) {
       prior = DB.client_documents.filter(function (d) {
@@ -2207,6 +2218,13 @@ function cardSlugFree(name, self, email) {
         !(DB.client_contacts || []).some(function (k) { return k.client_id === cl.id && !k.archived_at && (k.id === cl.bill_contact_id || k.is_primary); })) {
       return { __raise: 'needs-billing' };
     }
+    if (bEnt) {
+      var bek = bEnt.bill_contact_id && DB.client_contacts.filter(function (x) { return x.id === bEnt.bill_contact_id && !x.archived_at; })[0];
+      Object.assign(doc.bill_to, { legal_name: bEnt.legal_name || '', address: bEnt.billing_address || '', regno: bEnt.company_no || '',
+        regno_old: bEnt.company_no_old || '', tin: bEnt.tin || '', sst_no: bEnt.sst_no || '', finance_email: bEnt.finance_email || '' });
+      if (bek) Object.assign(doc.bill_to, { contact: bek.name || '', contact_role: bek.role || '', contact_salutation: bek.salutation || '', phone: bek.phone || '', email: bek.email || '' });
+    }
+    doc.bill_to.entity_id = bEnt ? bEnt.id : null;
     DB.client_documents.push(doc);
     ids.forEach(function (id) {
       DB.client_document_services.push({ document_id: doc.id, service_id: id, created_at: new Date().toISOString() });
