@@ -88,6 +88,9 @@
       return Array.prototype.some.call(seg.children, function (b) {
         if (b.scrollWidth > b.clientWidth + 1) return true;
         var cs = getComputedStyle(b), px = function (k) { return parseFloat(cs[k]) || 0; };
+        /* An option sized to its words and never shrunk (the small segment)
+           cannot clip them. */
+        if (cs.flexShrink === '0' && cs.flexBasis === 'auto') return false;
         var room = b.getBoundingClientRect().width - px('borderLeftWidth') - px('borderRightWidth') - px('paddingLeft') - px('paddingRight');
         /* Half a pixel of slack: the browser clips a word that fits by less. */
         return textWidth(b) > room - 0.5;
