@@ -3796,7 +3796,20 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .ent-list { display: contents; }
 .ent-list > .readgroup:first-child { border-top: 1px solid var(--line-soft); padding-top: 16px; }
 .ent-none { margin: 0; font-size: 13px; }
-.readgroup.ent .readgroup-head .fsec-h { min-width: 0; overflow-wrap: anywhere; }
+/* An entity is one row folded shut (2026-10-29): the registered name over
+   its registration no. and billing contact, the chevron, then its ⋯; open,
+   the facts under it. The fold is Brand analysis's (`.ba-fold-*`). */
+.ent-fold { border-top: 1px solid var(--line-soft); }
+.ent-head + .ent-fold { margin-top: 4px; }
+.ent-fold-row { display: flex; align-items: center; gap: 4px; }
+.ent-fold-row > .ent-fold-head { flex: 1 1 auto; min-width: 0; }
+.ent-fold-head .fsec-h { overflow-wrap: anywhere; }
+.ent-fold.is-open .ent-fold-sum { display: none; }
+.ent-fold.is-open .ba-fold-body { grid-template-rows: 1fr; opacity: 1; }
+.ent-fold.is-open .ba-fold-chev { transform: rotate(90deg); }
+.ent-fold:not(.is-open) .ba-fold-body { visibility: hidden; }
+.ent-fold.is-open .ba-fold-in { padding-bottom: 12px; }
+.ent-fold .readgroup { border-top: 0; padding: 0; margin: 0; }
 .ent-picks { display: grid; gap: 8px; margin-top: 12px; }
 .ent-pick { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: start; padding: 10px 12px;
   background: var(--sunk); border-radius: var(--radius-sm); cursor: pointer; }
