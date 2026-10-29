@@ -7115,7 +7115,11 @@ sentence.
   confidentiality line, each only where the seed's words still stand (a
   preview file reports which), and greets "Sir or Madam" where no one is
   named, the page's preview alike. The sign-in emails take `#a19d97`,
-  set in Supabase Auth from docs/SIGN-IN-EMAILS.md.
+  set in Supabase Auth from docs/SIGN-IN-EMAILS.md: on 2026-10-29 the
+  one-time `auth-templates` ran once more with the user's new token (a dry
+  run first, then the write; both bodies read back equal by SHA-256), was
+  replaced again by its 410 stub with Verify JWT on, and the user revokes
+  the token and deletes `SB_MANAGEMENT_TOKEN`.
 
 ### 2026-10-29 · Performance settings in Settings
 - Asked: release 2 of the approved settings consolidation: Performance
