@@ -5684,8 +5684,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   quotation holds at least one priced line: items quoted on request alone
   (a KOL campaign, a custom creator list) are refused on the page before
   the details are asked and by `quotation_make` (`nothing-priced`, no lead
-  made; `2026-10-29-quotation-needs-a-priced-line.sql`). The
-  rates show at once, with Download (the A4 PDF); the website asks no
+  made; `2026-10-29-quotation-needs-a-priced-line.sql`). The price waits
+  for the team (the user, 2026-10-29, Option 1;
+  `2026-10-29-website-quotation-reviewed.sql`): a website quotation is
+  kept with `reply_due` (`quote_reply_days` working days) and the leads
+  team told Quotation to review; until a colleague sends it
+  (`quotations.released_at`) the link reads Being reviewed, Request
+  received and the day it will be sent on WhatsApp, and `quote_website_read`
+  answers stage `review` with no lines, totals, version or validity
+  (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
+  Awaiting review · Send by {day}, Send quotation the pane's one blue
+  (asked; `quotation_send`, Clients: Quotations at Work, the client in
+  scope: valid from that day, the `quote_ready` WhatsApp queued, filed),
+  Adjust and send beside it, no Send on WhatsApp; the managers are told
+  six hours before the reply is owed while it waits (`quote_proceed_remind`).
+  Once sent, the rates show, with Download (the A4 PDF); the website asks no
   billing and never a Letter of Offer, which the team sends after a
   conversation, the billing through the Details form
   (`2026-10-26-quotation-website-follow-up.sql`; the user, 2026-10-26).
@@ -5722,11 +5735,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   admin) are told once six hours before the time ends
   (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
   is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
-  link button the key), when the quotation is made, while today's (MYT)
-  website quotations stand under `quote_wa_day` (30, 0 sends none;
-  `quote_wa_allowed`, under one lock; past it the quotation is made and
-  the team told, no message; audit 2026-10-29); nothing else is sent by
-  itself. On the lead's Services a website quotation reads Ready to
+  link button the key), when a colleague sends the quotation; nothing is
+  sent by itself (`quote_wa_day` now limits nothing). On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
   WhatsApp composer) and in its ⋯ Mark Do not contact / Clear Do not

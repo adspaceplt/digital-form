@@ -38,7 +38,7 @@
     approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.'],
     quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
     offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.'],
-    quote_ready: ['Quotation ready', 'Sent by the portal when the quotation website makes a quotation, to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
+    quote_ready: ['Quotation ready', 'Sent by the portal when a colleague sends a website quotation (Send quotation), to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
   };
   /* A purpose whose message carries a record's PDF as its Document header. */
   var DOC = { report: 1, quotation: 1, offer: 1 };

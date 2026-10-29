@@ -4801,11 +4801,15 @@
     cover.hidden = !letterable;
     var build = $('qtBuild');
     var offers = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="offer"]'));
+    var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"]'));
     var blue = null;
-    if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
+    /* A website quotation waiting for the team comes first (2026-10-29). */
+    if (sends.length === 1) blue = sends[0];
+    else if (sends.length) blue = null;
+    else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
     else if (offers.length === 1) blue = offers[0];
     else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
-    [build, cover].concat(offers).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    [build, cover].concat(offers, sends).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteCtx() {
     return { client: state.client, db: db, may: mayPart, msg: msg, services: state.services || [], live: liveMap(),
