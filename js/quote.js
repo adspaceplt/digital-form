@@ -87,7 +87,7 @@
       startQ: 'When would you like to start?', starts: [['month', 'Within a month'], ['quarter', 'In 1 to 3 months']],
       decQ: 'Are you the decision maker?', decs: [['yes', 'Yes'], ['others', 'Others will be involved in the decision']],
       propAsk: 'Proceed with this quotation', propAsking: 'Sending…', propNeed: 'Answer both questions to proceed.',
-      reviewing: 'Being reviewed', reviewT: 'Request received', reviewP: 'ADspace is reviewing your quotation and will send it to you on WhatsApp by {d}.',
+      reviewT: 'Request received', reviewP: 'ADspace is reviewing your quotation and will send it to you on WhatsApp by {d}.',
       reviewNote: 'This page shows your quotation once it is sent.',
       propDone: 'Request received', propBy: 'Our team will contact you by {d} to finalise the details.',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
@@ -174,7 +174,7 @@
       startQ: '您希望何时开始？', starts: [['month', '一个月内'], ['quarter', '一至三个月内']],
       decQ: '您是否为决策人？', decs: [['yes', '是'], ['others', '需与他人商议']],
       propAsk: '确认此报价', propAsking: '提交中…', propNeed: '请回答以上两个问题。',
-      reviewing: '审核中', reviewT: '已收到您的请求', reviewP: 'ADspace 正在审核您的报价，将于 {d} 前通过 WhatsApp 发送给您。',
+      reviewT: '已收到您的请求', reviewP: 'ADspace 正在审核您的报价，将于 {d} 前通过 WhatsApp 发送给您。',
       reviewNote: '报价发送后，此页面将显示报价详情。',
       propDone: '已收到您的确认', propBy: '我们的团队将于 {d} 前与您联系，确认细节。',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
@@ -589,12 +589,15 @@
   function paintReview() {
     var q = Q, w = t();
     var side = q.rep ? repHtml(q) : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
-    return '<div class="qs-quote" data-shown><section class="qs-main">' +
-      '<div class="qs-head"><h1 class="qs-title">' + esc(w.quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span>' +
-        '<span class="qs-status"><span class="chip-state is-warn">' + esc(w.reviewing) + '</span></span></div>' +
+    /* One column and one statement of where it stands: Request received with
+       the day, the way to chat under it (2026-10-29, audit QTE-1, QTE-2: a
+       Being reviewed chip said it again, and at a desk a card held one
+       button beside empty space). */
+    return '<div class="qs-quote is-single" data-shown><section class="qs-main">' +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(w.quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
       done(w.reviewT, q.reply_due ? f(w.reviewP, { d: day(q.reply_due) }) : '') +
       '<div class="qs-notes"><span>' + esc(w.reviewNote) + '</span></div>' +
-      '</section><aside class="qs-side" id="qsSide">' + side + '</aside></div>';
+      '<div class="qs-review-act" id="qsSide">' + side + '</div></section></div>';
   }
   /* The advertising budget the quotation's fees manage each month: the
      budget chosen past the plan's cover, else the plan's own cover as the

@@ -7377,3 +7377,24 @@ read and set every page for a tab served before.
   Page availability's choice reads Available, Upgrading, Unavailable on one
   row; its list rows put the state beside the name, and in Select a press
   anywhere on a row ticks it (`upgrade` measures all three at 440, 390, 320).
+
+### 2026-10-29 — The audit of the day's builds: a lead's head too wide, the letter's Issue broken, no tick for all
+- **What broke.** The audit of #811 to #835 found a lead nobody holds put
+  Take lead beside Log call, the stage and the ⋯ on a phone's record head,
+  widening the page to 425px at 390 (since 2026-10-07, never walked: every
+  seeded lead had a person in charge). The Letter of Offer sheet's commit
+  broke onto two lines in a phone's half. Page availability's Select had no
+  tick for all, so making ten covered pages available took 14 presses. A
+  quotation row's buttons were laid three ways on a phone; Bill to cut a long
+  registered name with no ellipsis; the Being reviewed page said its state
+  twice and held one button in a card beside empty space at a desk.
+- **Found by** `/ux-audit changed` (the user asked for it after two layout
+  faults reached them on an iPhone the same day).
+- **Fixed.** Take lead takes the head's control column on a line of its own
+  on a narrow pane; the sheet's commit reads Issue; the Select bar's count is
+  the tick for all; every quotation row's buttons run the row in a tight
+  pane; a select's value ends in an ellipsis; the review page is one column
+  with Request received alone. The walk now opens an unheld lead, the Letter
+  of Offer sheet with Bill to, and Page availability (list, Select and its
+  question), so these screens are measured every day.
+

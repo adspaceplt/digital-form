@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261029y">
-<link rel="stylesheet" href="/css/console.css?v=20261029y">
+<link rel="stylesheet" href="/css/portal.css?v=20261029zb">
+<link rel="stylesheet" href="/css/console.css?v=20261029zb">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1408,7 +1408,7 @@
             <div class="sheet-body" id="pickBody"></div>
             <div class="sheet-foot">
               <span class="lpicksum" id="pickSum"></span>
-              <button class="btn btn-primary" id="pickGo" type="button">Issue Letter of Offer</button>
+              <button class="btn btn-primary" id="pickGo" type="button">Issue</button>
               <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="pickMsg"></div>
@@ -5400,7 +5400,7 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="sheet-body">
       <p class="msg" id="pgMsg" role="status"></p>
-      <div class="tax-bar"><span class="tax-count" id="pgCount"></span>
+      <div class="tax-bar"><label class="tickline bulkbar-all" id="pgAllLine" hidden><input type="checkbox" id="pgAll"> <span id="pgAllCount">0 selected</span></label><span class="tax-count" id="pgCount"></span>
         <span class="tax-acts"><button class="btn btn-sm btn-primary" id="pgSetMany" type="button" hidden>Set availability</button>
           <button class="btn btn-sm" id="pgSelect" type="button">Select</button></span></div>
       <div id="pgList"></div>
@@ -5821,7 +5821,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261029u"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261029t"></script>
+<script src="/js/crm.js?v=20261029zb"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5836,6 +5836,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261029p"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261029m"></script>
-<script src="/js/settings.js?v=20261029x"></script>
+<script src="/js/settings.js?v=20261029zb"></script>
 </body>
 </html>
