@@ -9187,6 +9187,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         var wsal = String(wc.salutation || '').trim() || null;
         if (wsal && ['Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', "Dato'", 'Datin', 'Datuk', "Dato' Sri", 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'].indexOf(wsal) < 0) return qtOk({ error: 'bad-salutation' });
+
+        var wstart = String(wc.commence || '').trim() || null;
+        if (wstart && ['1_3', '3_6', '6_plus'].indexOf(wstart) < 0) return qtOk({ error: 'bad-commence' });
         if (wc.consent !== true) return qtOk({ error: 'consent' });
         var wsel0 = args.p_sel;
         if (!wsel0 || typeof wsel0 !== 'object' || Array.isArray(wsel0) || (Array.isArray(wsel0.once) && wsel0.once.length > 20) ||
@@ -9213,12 +9216,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var wbase = wb.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'client', wslug = wbase, wk = 1;
           while (DB.clients.some(function (c) { return String(c.slug || '').toLowerCase() === wslug; })) { wk++; wslug = wbase + '-' + wk; }
           wcl = { id: nid('cl'), name: wb, stage: 'lead', industry: wi, source: 'website', market: /^65/.test(ww) ? 'SG' : 'MY', slug: wslug,
-            deal_note: 'Quotation requested on the website.', owner: null, access_token: Math.random().toString(36).slice(2, 10),
+            deal_note: 'Quotation requested on the website.', commence: wstart, owner: null, access_token: Math.random().toString(36).slice(2, 10),
             created_at: new Date().toISOString(), stage_since: new Date().toISOString(), stage_log: [] };
           DB.clients.unshift(wcl);
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
             is_primary: true, created_at: new Date().toISOString(), archived_at: null });
           DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
+        } else if (wstart && wcl.commence !== wstart) {
+          var wsw = { '1_3': 'Within 3 months', '3_6': '3 to 6 months', '6_plus': 'More than 6 months' };
+          DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.edited', subject: wcl.name,
+            detail: 'Urgency to commence: ' + (wsw[wcl.commence] || 'not set') + ' → ' + wsw[wstart], created_at: new Date().toISOString() });
+          wcl.commence = wstart; wcl.updated_at = new Date().toISOString();
         }
         var wz = (String(wcl.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var whead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + wz;
@@ -9234,7 +9242,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.quotation', subject: wcl.name,
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         qtTell(wcl.id, 'quote.website', 'Quotation made on the website · ' + wcl.name,
-          wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn, wrow.id);
+          wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn +
+          (wstart ? ' · Starts ' + { '1_3': 'within 3 months', '3_6': '3 to 6 months', '6_plus': 'more than 6 months' }[wstart] : ''), wrow.id);
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 

@@ -858,7 +858,7 @@
      rough answer and a date nobody has agreed is a false precision. No dash in
      the words: "1 to 3 months", as the copy rules have it everywhere else. */
   var COMMENCE = [
-    ['1_3', '1 to 3 months'], ['3_6', '3 to 6 months'], ['6_plus', '6 months or more']
+    ['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']
   ];
   function commenceWord(v) {
     var m = COMMENCE.filter(function (x) { return x[0] === v; })[0];
