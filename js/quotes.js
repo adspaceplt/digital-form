@@ -24,7 +24,7 @@
     denied: 'This needs Clients: Quotations at Manage.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
     'no-platform': 'Choose at least one platform.',
-    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a rate. Items quoted on request alone make no quotation.', revised: 'A revision of this quotation stands. Send the revision instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
+    empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',

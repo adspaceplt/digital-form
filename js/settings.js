@@ -842,9 +842,9 @@
   }
   /* What setting the page does, said under the choice. */
   function pgNote(keys) {
-    if (keys.indexOf('quote') >= 0) return 'New quotations are refused while the quotation website is covered. Links already sent keep opening while it is Temporarily unavailable.';
-    if (keys.indexOf('admin') >= 0) return 'Admins keep working under a bar; everyone else sees the cover.';
-    return 'The page is covered; nothing it holds changes.';
+    if (keys.indexOf('quote') >= 0) return 'No new quotations can be requested during this period. Quotation links already sent still open while the website is Temporarily unavailable.';
+    if (keys.indexOf('admin') >= 0) return 'Admins continue to work under a notice bar; every other colleague sees the notice page.';
+    return 'Visitors see the notice page in its place. Nothing on the page is changed.';
   }
   function pgDay(iso) { return iso ? window.ADspaceClock.day(iso) : ''; }
   function pgTime(iso) {
@@ -892,7 +892,7 @@
         fillLine('pages', null); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); });
         bridge.undoHere('Saved.', function () {
           was.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve())
-            .then(function () { paintPg(); pgMsg('Put back.', 'ok'); READ.pages().then(function (t) { fillLine('pages', t); }); })
+            .then(function () { paintPg(); pgMsg('Undone.', 'ok'); READ.pages().then(function (t) { fillLine('pages', t); }); })
             .catch(function (e) { pgMsg(e.message || String(e)); });
         }, $('pgMsg'));
         return '';

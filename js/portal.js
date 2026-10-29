@@ -72,7 +72,7 @@
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
       contact: 'Contact', reach: 'Contact details', contacts: 'Contacts',
-      mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
+      mainContact: 'Primary contact', portal: 'Portal', noContacts: 'No contacts.',
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
       months: function (n) { return n + ' months'; }, from: function (d) { return 'from ' + d; }, fromAlone: function (d) { return 'From ' + d; }, mo: 'months',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
