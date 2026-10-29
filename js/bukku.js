@@ -8,7 +8,7 @@
  * the Settings page (Money, Bukku). A supplier linked to a client is the
  * same contact, typed Customer and Supplier.
  *
- *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku group
+ *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku band, Unlink in its ⋯
  *   ADspaceBukku.send(kind, id, btn, done)    — the Send to Bukku sheet
  *   ADspaceBukku.openConfig(btn, say)         — Settings' Bukku sheet
  *   ADspaceBukku.configLine()                 — Settings' Bukku value line
@@ -36,6 +36,7 @@
     linked: 'This record is already linked to a contact in Bukku. Read the sheet again.',
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
+    moved: 'Not restored. It was linked again meanwhile.',
     'needs-update': 'This needs a database update.',
     'bad-value': 'Choose a field from the list.',
     failed: 'The request failed. Try again.'
@@ -62,53 +63,93 @@
     }, function () { return { error: 'failed' }; });
   }
 
-  /* ---- The record's group ------------------------------------------------
-     Contact (the code and Bukku's name for it, else Not sent), Last sent,
-     and whether the portal's details changed since; Send to Bukku at the
-     head's right edge for whoever may send. */
+  /* ---- The record's band -------------------------------------------------
+     One shaded band at the foot of the details it sends (2026-10-29; the
+     user: the group "looks incomplete … simply added"): Bukku, the contact's
+     code and its state (Up to date, Details changed, Not linked), Last sent
+     under it, and at the right edge Send to Bukku and a ⋯ holding Unlink.
+     Unlink lets go of the link alone, nothing changed in Bukku, with Undo
+     where it happened, so a record linked to the wrong contact is never a
+     dead end. */
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   function group(host, kind, id, opts) {
     if (!host) return;
     opts = opts || {};
-    var act = mayWork(kind) && opts.can !== false
-      /* Words alone, as Send email and Create link are: no act of the
-         table carries an arrow (2026-10-20, SUP-8). */
-      ? '<button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' : '';
-    var head = '<div class="readgroup-head"><h4 class="fsec-h">Bukku</h4>' + act + '</div>';
-    host.innerHTML = head + '<p class="muted">Loading.</p>';
+    var work = mayWork(kind) && opts.can !== false;
+    host.classList.add('bk-band');
+    host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="muted">Loading.</span></div>';
     /* What the record lacks is read up front: a record that cannot be sent
        draws no Send, and says what is missing in one line (2026-10-20,
        BKU-1). */
     Promise.all([rpc('bukku_link_get', { p_kind: kind, p_id: id }),
-      act ? rpc('bukku_prepare', { p_kind: kind, p_id: id }) : Promise.resolve({})]).then(function (both) {
+      work ? rpc('bukku_prepare', { p_kind: kind, p_id: id }) : Promise.resolve({})]).then(function (both) {
       var d = both[0], pre = both[1] || {};
       if (d.error === 'denied') { host.hidden = true; return; }
       host.hidden = false;
-      var gap = act && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
-      if (gap) head = '<div class="readgroup-head"><h4 class="fsec-h">Bukku</h4></div>';
-      if (d.error) { host.innerHTML = head + '<p class="msg err">' + esc(said(d)) + '</p>'; wire(); return; }
-      var rows = d.contact_id
-        ? [['Contact', esc(d.code || String(d.contact_id))],
-           ['Last sent', esc(day(d.sent_at)) + (d.sent_by ? ' <span class="muted">· ' + esc(d.sent_by) + '</span>' : '')],
-           ['Since then', d.changed ? 'Details changed' : 'No change']]
-        : [['Contact', 'Not sent']];
-      host.innerHTML = head + '<dl class="ovfacts">' + rows.map(function (r) {
-        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + r[1] + '</dd></div>';
-      }).join('') + '</dl>' + (gap ? '<p class="msg warn bk-gap">' + esc(gap) + '</p>' : '') +
+      if (d.error) { host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b></div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
+      var gap = work && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
+      var linked = Boolean(d.contact_id);
+      var state = !linked ? '<span class="chip-state is-off">Not linked</span>'
+        : d.changed ? '<span class="chip-state is-warn">Details changed</span>' : '<span class="chip-state is-ok">Up to date</span>';
+      /* Words alone, as Send email and Create link are: no act of the
+         table carries an arrow (2026-10-20, SUP-8). */
+      var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' : '') +
+        (work && linked ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
+      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? '<span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' : '') + state + '</div>' +
+        (linked ? '<p class="bk-sub">Last sent ' + esc(day(d.sent_at)) + (d.sent_by ? ' by ' + esc(d.sent_by) : '') + '</p>' : '') +
+        (acts ? '<div class="bk-acts">' + acts + '</div>' : '') +
+        (gap ? '<p class="msg warn bk-gap">' + esc(gap) + '</p>' : '') +
         (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '') +
         (opts.said ? '<p class="msg ok bk-said" role="status">' + esc(opts.said) + '</p>' : '');
       opts.said = '';
-      wire();
+      wire(d);
     });
-    function wire() {
+    function wire(d) {
       var b = host.querySelector('[data-bk="send"]');
-      /* The outcome is said in the group it changed (2026-10-20, BKU-3). */
+      /* The outcome is said in the band it changed (2026-10-20, BKU-3). */
       if (b) b.addEventListener('click', function () {
-        send(kind, id, b, function (d) {
-          group(host, kind, id, Object.assign({}, opts, { said: d && d.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
+        send(kind, id, b, function (r) {
+          group(host, kind, id, Object.assign({}, opts, { said: r && r.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
         });
+      });
+      var mb = host.querySelector('[data-bk="menu"]');
+      if (mb) mb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var m = mb.parentNode.querySelector('.kmenu'), open = m.hidden;
+        m.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, m);
+      });
+      var u = host.querySelector('[data-bk="unlink"]');
+      if (u) u.addEventListener('click', function (e) {
+        e.stopPropagation();
+        u.closest('.kmenu').hidden = true; mb.setAttribute('aria-expanded', 'false');
+        unlink(host, kind, id, d, opts, mb);
       });
       if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(host);
     }
+  }
+  /* Unlink asks first: what goes, that Bukku keeps the contact, and that
+     a supplier that is also a client goes with it (one Bukku contact). */
+  function unlink(host, kind, id, d, opts, opener) {
+    var A = window.ADspaceAdmin;
+    var code = d.code || String(d.contact_id);
+    window.ADspaceConfirm.ask({
+      title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
+      body: 'This ' + (kind === 'client' ? 'client' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+        'Send to Bukku then offers the matching contacts again. A supplier that is also a client shares one Bukku contact, so both are unlinked.'
+    }, function () {
+      return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
+        if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Read it again.' : said(r);
+        group(host, kind, id, opts);
+        if (A && A.undoHere) A.undoHere('Unlinked from Bukku.', function () {
+          rpc('bukku_unlink_undo', { p_kind: kind, p_id: id, p_stamp: r.stamp }).then(function (x) {
+            group(host, kind, id, Object.assign({}, opts, { said: x.error ? (x.error === 'moved' ? 'Not restored. It was linked again meanwhile.' : said(x)) : 'Linked to Bukku again.' }));
+          });
+        }, host);
+        return '';
+      });
+    });
   }
 
   /* ---- Send to Bukku -----------------------------------------------------
