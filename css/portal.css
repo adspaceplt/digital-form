@@ -436,6 +436,9 @@ a { color: inherit; }
      everywhere): something picked, not typed, so it wears the buttons'
      shade and no outline; an outline is left to what is typed into. */
   border-color: transparent; background-color: var(--tonal);
+  /* A value longer than the box (a registered name, Bill to) ends in an
+     ellipsis, never a word cut at the edge (2026-10-29, audit REG-1). */
+  text-overflow: ellipsis;
 }
 @media (hover: hover) { .select:not([disabled]):not(.tdetail):hover { background-color: var(--tonal-hover); } }
 .select:focus { border-color: transparent; box-shadow: none; }
@@ -9274,6 +9277,10 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-acts { display: flex; gap: 8px; }
 .qs-acts > .btn { flex: 1 1 0; }
 .qs-notes { display: grid; gap: 2px; font-size: 13px; color: var(--ink-mute); }
+/* The review page's way to chat stands under its note at its own width at a
+   desk and runs the column on a phone, as a client form's lone act does. */
+.qs-review-act { justify-self: start; }
+@media (max-width: 640px) { .qs-review-act { justify-self: stretch; display: grid; } }
 /* Beside the quotation (under it on a phone): a proposal to ask for, else
    the colleague who took the lead (2026-10-26). */
 .qs-side { display: grid; gap: 12px; align-content: start; align-self: start; background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; }
@@ -9295,6 +9302,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-rep-who small { font-size: 14px; color: var(--ink-mute); }
 @media (min-width: 900px) {
   .qs-quote { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 32px; }
+  .qs-quote.is-single { grid-template-columns: minmax(0, 1fr); max-width: 560px; }
 }
 @media (max-width: 640px) {
   .shell.qs { padding-top: 16px; }

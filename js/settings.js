@@ -797,7 +797,15 @@
   }
   function pgFoot() {
     var n = Object.keys(pg.picked).length, on = (pg.rows || []).filter(function (p) { return p.set; }).length;
-    $('pgCount').textContent = pg.picking ? n + ' selected' : pg.rows ? plural(pg.rows.length, 'page', 'pages') + ' · ' + on + ' covered' : '';
+    /* While several are chosen the count is the tick for all ten (DESIGN.md
+       §4 Several records at once; 2026-10-29, audit SET-1). */
+    var all = (pg.rows || []).length;
+    $('pgCount').hidden = !!pg.picking;
+    $('pgCount').textContent = pg.picking ? '' : pg.rows ? plural(all, 'page', 'pages') + ' · ' + on + ' covered' : '';
+    $('pgAllLine').hidden = !pg.picking;
+    $('pgAllCount').textContent = n + ' selected';
+    $('pgAll').checked = !!all && n === all;
+    $('pgAll').indeterminate = n > 0 && n < all;
     $('pgSelect').textContent = pg.picking ? 'Done' : 'Select';
     $('pgSelect').hidden = !pg.rows;
     // Set availability is drawn once a page is ticked, never greyed (MENU-12).
@@ -899,6 +907,12 @@
     $('pgClose').addEventListener('click', function () { $('pgCancel').click(); });
     $('pgSelect').addEventListener('click', function () { pg.picking = !pg.picking; pg.picked = {}; pgMsg(''); paintPg(); });
     $('pgSetMany').addEventListener('click', function () { pgAsk(Object.keys(pg.picked), this); });
+    $('pgAll').addEventListener('change', function () {
+      var on = this.checked;
+      pg.picked = {};
+      if (on) (pg.rows || []).forEach(function (p) { pg.picked[p.key] = true; });
+      paintPg();
+    });
     $('pgList').addEventListener('change', function (e) {
       var t = e.target.closest('.pg-tick'); if (!t) return;
       var k = t.closest('.pg-row').getAttribute('data-key');

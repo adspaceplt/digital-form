@@ -696,7 +696,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     console's alone). Settings, Portal: Page availability (`team.upgrade`,
     All pages available or n pages covered) opens `#pgSheet`: the ten pages
     by group (Team, Clients, Creators, Public), each its state over when and
-    Edit; Select ticks several, Set availability asking once for all. The
+    Edit; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The
     question asks Availability (a segment), Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's), a note, a 中文 note and Show Chat on WhatsApp (not the
@@ -5713,8 +5713,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-29-website-quotation-reviewed.sql`): a website quotation is
   kept with `reply_due` (`quote_reply_days` working days) and the leads
   team told Quotation to review; until a colleague sends it
-  (`quotations.released_at`) the link reads Being reviewed, Request
-  received and the day it will be sent on WhatsApp, and `quote_website_read`
+  (`quotations.released_at`) the link reads Request received and the day
+  it will be sent on WhatsApp, in one column, and `quote_website_read`
   answers stage `review` with no lines, totals, version or validity
   (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
   Awaiting review · Send by {day}, Send quotation the pane's one blue

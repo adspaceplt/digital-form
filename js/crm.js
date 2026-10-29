@@ -5930,7 +5930,7 @@
   function pickClosed() {
     picking = null;
     $('pickGo').disabled = false;
-    $('pickGo').textContent = 'Issue Letter of Offer';
+    $('pickGo').textContent = 'Issue';
   }
   function shutPick() {
     if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
@@ -6021,7 +6021,7 @@
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;
-        go.textContent = 'Issue Letter of Offer';
+        go.textContent = 'Issue';
         /* The services or the quotation they came from changed while the
            sheet was open (or the quotations failed to load, so the page
            priced them without their rate): both are read again and the sheet
