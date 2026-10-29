@@ -566,17 +566,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   the gear, `is-on` while the page is open; 2026-10-11), offered to
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
-  `ops.numbering`, or Suppliers or WhatsApp at Full Access (2026-10-22,
-  SET2-11); its address falls back for anyone else. Eight groups
+  `ops.numbering`, `ops.workflows`, or Suppliers, WhatsApp or Services at
+  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
   (Upgrade mode, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
-  Money (Tax and terms, Tax codes, Bukku, Overdue reminder), AI (AI usage and limits, AI prices), WhatsApp
-  (Templates at WhatsApp Full Access, Sent again: WhatsApp and supplier
-  emails, Website quotations: how many a day are told on WhatsApp), Documents (Document types, Supplier emails at
-  Suppliers Full Access); a group with
+  Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
+  (Sent again: WhatsApp and supplier
+  emails, Website quotations: how many a day are told on WhatsApp), Templates (the user,
+  2026-10-29: every template in one place: WhatsApp templates at WhatsApp
+  Full Access, Supplier emails at Suppliers Full Access, Overdue reminder,
+  Document types, Task templates at `ops.workflows`, Rate card wording at
+  Services Full Access); each setting has this one place: no Tax and terms
+  on the Services bar, no Templates, Task numbering or Due dates in My
+  Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
+  no Wording tab in Services; a group with
   no row drawn is left out. One group at a time (the user, 2026-10-24:
   "the business settings are getting longer … categorize or structure it
   into a proper settings page"): at a desk the groups run down the left,
@@ -1092,8 +1098,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     actions keeps its first and puts the rest there once it has three (the
     Performance Months bar); a button marked `data-rare` (with its `data-g`)
     is behind the ⋯ at every width, the ⋯ drawn at a desk for it alone and
-    taking the focus back from what the item opens (Document types, Compare
-    groups, Bulk import; SHELL-5, 2026-10-22); each item carries its button's
+    taking the focus back from what the item opens (Compare groups, Bulk
+    import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
   - The Filters sheet focuses its card, never a select (a focused select wears
@@ -1335,9 +1341,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and Withdraw on it; each untouched figure shows the value in force on the
   From day, and only a figure differing from it is sent, so one typed back
   to the figure before a planned change withdraws it (2026-10-20, SET-1)):
-  Follow-up limits (the Settings page alone), Tax and terms (the Services
-  bar; `ADspaceAdmin.TAX_KEYS`, eight figures in three sections), Due dates
-  (My Work's ⋯: report and revision days), `team.settings`. Every sheet is
+  Follow-up limits, Tax and terms (`ADspaceAdmin.TAX_KEYS`, eight figures
+  in three sections), Due dates (report and revision days), each the
+  Settings page's alone (2026-10-29), `team.settings`. Every sheet is
   `ADspaceAdmin.SETTING_SHEETS`, read by the Settings rows and every other
   door alike, so it asks and says the same from each (2026-10-22, SET2-4);
   it opens on its first figure at a desk and on its card under a finger
@@ -2470,7 +2476,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
     close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit: Document types
-    behind the bar's ⋯ (`data-rare`), `register.types`
+    in Settings' Templates alone (2026-10-29), `register.types`
     (`2026-10-07-document-types.sql`). `#dtSheet` lists them by group, as
     My Work's Templates; `#dtEditSheet` edits one: Group (fixed once made),
     Name (unique), an HR letter's Reference code (required, its own among
@@ -3808,9 +3814,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     colleague who set it, else its task's owner, with that colleague's own
     access (`request.jwt.claims`). A rule neither can make waits.
   - Neither function, nor the trigger's, is callable from a browser.
-- The bar's ⋯ holds Templates (`ops.workflows` Work: edits families and makes
-  no task), Select tasks (Manage: a sticky bar with Reassign and
-  Delete) and Task numbering (`ops.numbering`); it is drawn only where one applies.
+- The bar's ⋯ holds Select tasks (Manage: a sticky bar with Reassign and
+  Delete), and New month on a phone's Months; it is drawn only where one
+  applies. Task templates (`ops.workflows` Work: edits families and makes
+  no task, `ADspaceOps.openTemplates`), Task numbering (`ops.numbering`)
+  and Due dates are Settings' alone (2026-10-29).
 - A template is a family (`ops_template_variants`): one checklist and the rate
   card formats it serves, each with its own hours; a format belongs to one
   family (`format-taken`, naming it). A task's format fills it from its family
@@ -5428,10 +5436,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   export are priced from the live version, never the draft; with none
   published, the card as it stands. The page: one command bar holding the
   search (Rate card alone), the version line (Live v.{n} · valid until,
-  Review n changes, Publish) and the acts (Download, Tax and terms,
+  Review n changes, Publish) and the acts (Download,
   Add service on Rate card alone; on a phone the line under the marks where
   a search stands, else beside the ⋯; the user, 2026-10-14), then Rate card,
-  Wording, Versions (`tab=`); a line or block the draft changed reads
+  Versions (`tab=`; an older `tab=words` opens the card); the wording is
+  edited from Settings' Templates, Rate card wording (`#rcwListSheet`,
+  `ADspaceCRM.openWording`, 2026-10-29), each block's pen opening
+  `#rcwBox` and its Save or Cancel back to the list, and still published
+  with the card here; a line or block the draft changed reads
   Changed (or New). A line the live version still offers is not deleted.
   Review n changes (`#svcReview`, a tonal toggle, `aria-pressed`; equal
   halves with Publish on a phone; the user, 2026-10-22: "approve") shows
@@ -6263,8 +6275,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   category (Utility, Marketing; Authentication where any; a message Meta failed left out). The bar: search
   (name, client, template, a number as typed), Month (a view, the last
   twelve), Type and Status behind Filters, the count, New message (Work).
-- Templates (`tab=templates`, Full Access): the queue (waiting, sending, not
-  sent and not confirmed in 7 days, `wa_messages` `queue`), then one template a purpose (`wa_templates`: `report`,
+- At Full Access the queue (waiting, sending, not sent and not confirmed
+  in 7 days, `wa_messages` `queue`; `#waQueue`) heads the messages. The
+  templates are Settings' Templates, WhatsApp templates (`#waTplSheet`,
+  `ADspaceWhatsApp.manage`; 2026-10-29: the section's Templates tab gone,
+  an older `tab=templates` reads the messages): one template a purpose (`wa_templates`: `report`,
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
   variables, On): Edit chooses from Meta's approved list read through
   `wa-send` (never typed; the report's needs a Document header and no other
@@ -6276,9 +6291,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record
-  button is not drawn. The account menu holds no WhatsApp item; Settings'
-  WhatsApp card (Templates, drawn at WhatsApp Full Access) opens this tab
-  (`ADspaceWhatsApp.manage`), never a second copy.
+  button is not drawn. The account menu holds no WhatsApp item.
 - The composer (`ADspaceWhatsApp.compose`, `#waCompose`), one sheet every
   record shares: To (`wa_recipients`: client contacts named with their
   client, active creators; never a colleague; one with no number listed

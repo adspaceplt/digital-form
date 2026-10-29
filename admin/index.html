@@ -91,7 +91,7 @@
 <script src="/js/maintenance.js?v=20261027a"></script>
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261026f"></script>
-<script src="/js/whatsapp.js?v=20261027d"></script>
+<script src="/js/whatsapp.js?v=20261029a"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -2503,10 +2503,10 @@
               <span class="cmdbar-count" id="workCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <!-- Everything the bar does besides adding work, behind one ⋯ at
-                   every width: the templates, choosing several tasks to act
-                   on, and, for an admin, the next task number. Many pieces
-                   and their repeat are made in the New sheet itself. -->
+              <!-- Choosing several tasks to act on, behind one ⋯ at every
+                   width (New month too on a phone's Months). The templates,
+                   the task numbering and the due dates are Settings' alone
+                   (2026-10-29). -->
               <span class="kmenu-wrap work-more" id="workMoreWrap" hidden>
                 <button class="kmenu-btn btn-sm work-more-btn" id="workMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
@@ -2514,9 +2514,6 @@
                 <div class="kmenu" id="workMore" hidden role="menu">
                   <button class="kmenu-item" data-g="2" data-a="newmonth" type="button" role="menuitem" data-need="ops:work" hidden>New month</button>
                   <button class="kmenu-item" data-g="2" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
-                  <button class="kmenu-item" data-g="2" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
-                  <button class="kmenu-item" data-g="2" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
-                  <button class="kmenu-item" data-g="2" data-a="reportdue" type="button" role="menuitem" hidden>Due dates</button>
                 </div>
               </span>
               <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
@@ -3495,7 +3492,6 @@
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm" id="regAdd" type="button" data-g="2" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
-            <button class="btn btn-sm" id="regTypes" type="button" data-need="register.types:work" data-rare data-g="2" hidden>Document types</button>
             <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           </span>
         </span>
@@ -4139,16 +4135,10 @@
     <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
          sent, with what Meta reports of it (Sent, Delivered, Read, Failed
          and why), the month's count by category above the list, and New
-         message. At Full Access, Templates: each purpose's template chosen
-         from Meta's approved list, its switch, and the queue. -->
-    <div class="console-body" id="sectionWhatsApp" data-swipe="waTabs" hidden>
-      <div class="tabline">
-        <div class="tabrow" id="waTabs" role="tablist" aria-label="WhatsApp" hidden>
-          <button class="tab is-on" id="waTabMessages" data-tab="messages" type="button" role="tab" aria-selected="true" aria-controls="waMessagesPane">Messages</button>
-          <button class="tab" id="waTabTemplates" data-tab="templates" type="button" role="tab" aria-selected="false" aria-controls="waTemplatesPane" tabindex="-1">Templates</button>
-        </div>
-      </div>
-      <div id="waMessagesPane" role="tabpanel" aria-labelledby="waTabMessages">
+         message. At Full Access the queue heads the list; the templates
+         are Settings' (#waTplSheet, 2026-10-29). -->
+    <div class="console-body" id="sectionWhatsApp" hidden>
+      <div id="waMessagesPane">
         <div class="cmdbar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -4165,13 +4155,60 @@
           </span>
         </div>
         <div class="msg" id="waListMsg" role="status"></div>
+        <div class="tally wam-heads" id="waQueue" hidden></div>
         <div class="tally wam-heads" id="waHeads" hidden></div>
         <div id="waList" data-narrow="760"></div>
       </div>
-      <div id="waTemplatesPane" role="tabpanel" aria-labelledby="waTabTemplates" hidden>
-        <div class="msg" id="waTplMsg" role="status"></div>
-        <div class="tally wam-heads" id="waQueue" hidden></div>
-        <div id="waTplList" data-narrow="560"></div>
+    </div>
+
+    <!-- Rate card wording (Settings, Templates; 2026-10-29): the card's
+         words a block a row by the page they print on, each its pen; still
+         published with the card on Services. -->
+    <div class="sheet" id="rcwListSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwListTitle">
+        <div class="sheet-head">
+          <h3 id="rcwListTitle">Rate card wording</h3>
+          <button class="iconbtn" id="rcwListClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="msg" id="rcwListMsg" role="status"></div>
+          <div id="rcwList"></div>
+        </div>
+      </div>
+    </div>
+    <!-- A block of the rate card's words (2026-10-13): a list edited point
+         by point, a table a row at a time under its columns, never one box
+         of lines (the user: "so ugly and untidy unstructured"). -->
+    <div class="sheet" id="rcwBox" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwTitle">
+        <div class="sheet-head">
+          <h3 id="rcwTitle">Wording</h3>
+          <button class="iconbtn" id="rcwClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="rcw-head" id="rcwHead" hidden></div>
+          <div class="rcw-rows" id="rcwRows"></div>
+          <div class="rcw-add"><button class="btn btn-sm" id="rcwAdd" type="button">Add point</button></div>
+          <div class="msg" id="rcwMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="rcwSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="rcwCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- WhatsApp templates (Settings, Templates; 2026-10-29): each purpose's
+         template chosen from Meta's approved list, and its switch. -->
+    <div class="sheet" id="waTplSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="waTplHead">
+        <div class="sheet-head">
+          <h3 id="waTplHead">WhatsApp templates</h3>
+          <button class="iconbtn" id="waTplClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="msg" id="waTplMsg" role="status"></div>
+          <div id="waTplList" data-narrow="560"></div>
+        </div>
       </div>
     </div>
 
@@ -4712,7 +4749,6 @@
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm" id="svcCardPdf" type="button" hidden>Download</button>
-            <button class="btn btn-sm" id="svcTax" type="button" hidden>Tax and terms</button>
             <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
           </span>
         </span>
@@ -4834,27 +4870,6 @@
           </div>
         </div>
       </div>
-      <!-- A block of the rate card's words (2026-10-13): a list edited point
-           by point, a table a row at a time under its columns, never one box
-           of lines (the user: "so ugly and untidy unstructured"). -->
-      <div class="sheet" id="rcwBox" hidden>
-        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rcwTitle">
-          <div class="sheet-head">
-            <h3 id="rcwTitle">Wording</h3>
-            <button class="iconbtn" id="rcwClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
-          </div>
-          <div class="sheet-body">
-            <div class="rcw-head" id="rcwHead" hidden></div>
-            <div class="rcw-rows" id="rcwRows"></div>
-            <div class="rcw-add"><button class="btn btn-sm" id="rcwAdd" type="button">Add point</button></div>
-            <div class="msg" id="rcwMsg"></div>
-          </div>
-          <div class="sheet-foot">
-            <button class="btn btn-primary" id="rcwSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="rcwCancel" type="button">Cancel</button>
-          </div>
-        </div>
-      </div>
       <!-- Rate card versions (2026-10-13): the card is edited as a draft and
            goes live as a numbered version; the line says which is live and
            what is not yet published. -->
@@ -4862,7 +4877,6 @@
       <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate card views" hidden></nav>
       <div class="msg" id="svcListMsg"></div>
       <div id="svcList" role="tabpanel"></div>
-      <div id="svcWords" role="tabpanel" hidden></div>
       <div id="svcVersions" role="tabpanel" hidden></div>
     </div>
 
@@ -5793,12 +5807,12 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261029a"></script>
+<script src="/js/admin.js?v=20261029b"></script>
 <script src="/js/documents.js?v=20261027a"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
 <script src="/js/reports.js?v=20261029a"></script>
-<script src="/js/register.js?v=20261027b"></script>
+<script src="/js/register.js?v=20261029a"></script>
 <script src="/js/suppliers.js?v=20261027k"></script>
 <script src="/js/bukku.js?v=20261026f"></script>
 <script src="/js/invoices.js?v=20261029b"></script>
@@ -5806,7 +5820,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261027a"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261029a"></script>
+<script src="/js/crm.js?v=20261029b"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5815,12 +5829,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261027d"></script>
-<script src="/js/ops.js?v=20261027d"></script>
+<script src="/js/ops.js?v=20261029a"></script>
 <script src="/js/perf.js?v=20261027d"></script>
 <script src="/js/health.js?v=20261027b"></script>
 <script src="/js/search.js?v=20261027d"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261027d"></script>
-<script src="/js/settings.js?v=20261029a"></script>
+<script src="/js/settings.js?v=20261029b"></script>
 </body>
 </html>

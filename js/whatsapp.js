@@ -226,7 +226,7 @@
   /* ======================================================================
      THE SECTION
      ====================================================================== */
-  var st = { tab: 'messages', month: monthNow(), data: null, loading: false, wired: false };
+  var st = { month: monthNow(), data: null, loading: false, wired: false };
 
   function statusOf(x) {
     var key = x.state === 'queued' ? 'queued' : x.state === 'sending' ? 'sending' : x.state === 'failed' ? 'failed'
@@ -281,42 +281,16 @@
       el.addEventListener('change', repaint(el));
     });
     $('waNew').addEventListener('click', function () { compose({ purpose: 'message', opener: this }); });
-    Array.prototype.forEach.call($('waTabs').querySelectorAll('.tab'), function (b) {
-      b.addEventListener('click', function () { showTab(b.getAttribute('data-tab'), true); });
-    });
-    $('waTabs').addEventListener('keydown', function (e) {
-      var keys = { ArrowRight: 1, ArrowLeft: -1 };
-      if (!keys[e.key]) return;
-      var tabs = Array.prototype.filter.call($('waTabs').querySelectorAll('.tab'), function (t) { return !t.hidden; });
-      var i = tabs.indexOf(document.activeElement);
-      var next = tabs[(i + keys[e.key] + tabs.length) % tabs.length];
-      if (next) { e.preventDefault(); showTab(next.getAttribute('data-tab'), true); next.focus(); }
-    });
   }
 
+  /* The section is the messages alone; each purpose's template is chosen
+     in Settings, Templates (2026-10-29, the user: every template in one
+     place). An address from before (`tab=templates`) reads the messages. */
   function enter() {
     wire();
-    var q = new URLSearchParams(location.search);
-    var full = may('whatsapp', 'manage');
-    $('waTabs').hidden = !full;
     $('waNew').hidden = !maySend('message');
-    showTab(full && q.get('tab') === 'templates' ? 'templates' : 'messages', false);
+    if (st.data) paintList();
     load();
-  }
-  function showTab(tab, pushed) {
-    if (tab === 'templates' && !may('whatsapp', 'manage')) tab = 'messages';
-    st.tab = tab;
-    Array.prototype.forEach.call($('waTabs').querySelectorAll('.tab'), function (b) {
-      var on = b.getAttribute('data-tab') === tab;
-      b.classList.toggle('is-on', on);
-      b.setAttribute('aria-selected', String(on));
-      b.tabIndex = on ? 0 : -1;
-    });
-    $('waMessagesPane').hidden = tab !== 'messages';
-    $('waTemplatesPane').hidden = tab !== 'templates';
-    if (pushed && bridge().setUrl) bridge().setUrl();
-    if (tab === 'templates') paintTemplates();
-    else if (st.data) paintList();
   }
 
   function load() {
@@ -329,12 +303,13 @@
       st.loading = false;
       st.data = d;
       paintList();
-      if (st.tab === 'templates') paintQueue();
+      paintQueue();
     }).catch(function (e) {
       if (month !== st.month) return;
       st.loading = false;
       st.data = null;
       $('waHeads').hidden = true;
+      $('waQueue').hidden = true;
       $('waCount').textContent = '';
       if (S && S.failLine) S.failLine(box, 'The messages', said(e), load);
     });
@@ -445,11 +420,11 @@
     return row;
   }
 
-  /* ---- Templates and the queue (Full Access) -------------------------------- */
+  /* ---- The queue, over the messages at Full Access ------------------------- */
   function paintQueue() {
     var q = ((st.data || {}).queue) || {};
     var box = $('waQueue');
-    if (!st.data) { box.hidden = true; return; }
+    if (!st.data || !may('whatsapp', 'manage')) { box.hidden = true; return; }
     /* Not confirmed (sent in the last seven days, as Not sent counts, and
        labelled so, the days kept on one line; 2026-10-18) beside Not sent (2026-10-17): either wants a
        colleague to look, the first before anything is sent again. */
@@ -460,10 +435,10 @@
     }).join('');
     box.hidden = false;
   }
+  /* ---- Templates (Settings, Templates; Full Access) ------------------------- */
   function paintTemplates() {
     var box = $('waTplList'), S = window.ADspaceState, G = window.ADspaceGroup;
     say($('waTplMsg'), '');
-    if (st.data) paintQueue(); else { $('waQueue').hidden = true; }
     if (S && S.skeleton) S.skeleton(box, 2);
     known = null;
     Promise.all([read(), metaTemplates()]).then(function (got) {
@@ -1037,17 +1012,23 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireComposer);
   else wireComposer();
 
-  /* Settings' WhatsApp card (2026-10-10) opens the section's Templates:
-     one copy of the templates, where WhatsApp is worked. */
-  function manage() {
-    history.pushState(null, '', '/admin/?s=whatsapp&tab=templates');
-    if (bridge().show) bridge().show('whatsapp');
+  /* Settings, Templates: WhatsApp templates opens the one list of them
+     (2026-10-29, the user: every template in one place). */
+  var tplWired = false;
+  function manage(opener) {
+    if (!tplWired) {
+      tplWired = true;
+      var shut = function () { window.ADspaceSheet.close(); };
+      $('waTplClose').addEventListener('click', shut);
+    }
+    window.ADspaceSheet.show($('waTplSheet'), { opener: opener || null });
+    paintTemplates();
   }
 
   window.ADspaceWhatsApp = {
     enter: enter,
     manage: manage,
-    urlState: function () { return { tab: st.tab === 'templates' ? 'templates' : '' }; },
+    urlState: function () { return {}; },
     compose: function (o) { wireComposer(); compose(o); },
     may: maySend,
     on: on,

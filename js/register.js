@@ -199,7 +199,6 @@
     if (vl) vl.textContent = location.host + '/verify';
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
-    if ($('regTypes')) $('regTypes').hidden = !may('register.types', 'work');
     load();
   }
 
@@ -1252,7 +1251,10 @@
     var box = $('dtList');
     msg('dtMsg', said || '', said ? 'ok' : '');
     UI.skeleton(box, 4);
-    window.ADspaceSheet.show($('dtSheet'), { opener: opener || $('regTypes') });
+    /* Opened from Settings, Templates alone (2026-10-29, the user: every
+       template in one place); the type's own sheet hands back to it. */
+    if (opener) dt.opener = opener;
+    window.ADspaceSheet.show($('dtSheet'), { opener: dt.opener || null });
     readTypes(function (err) {
       if (err) { UI.failLine(box, 'Document types', (err && err.message) || '', function () { openTypes(opener); }); return; }
       paintTypes();
@@ -1343,7 +1345,7 @@
   }
   function shutTypeEdit(said) {
     dt.editing = null;
-    openTypes($('regTypes'), said);
+    openTypes(dt.opener, said);
   }
   function saveType() {
     var t = dt.editing, fam = dtFamily(), btn = $('dtSave');
@@ -1595,7 +1597,6 @@
     });
     ['docLangZh', 'docLangMs'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', langBodies); });
     /* Document types: the list, one type, the way back to the list. */
-    on('regTypes', function () { openTypes(this); });
     on('dtNew', function () { openTypeEdit(null, this); });
     on('dtCancel', function () { window.ADspaceSheet.close(); });
     on('dtClose', function () { $('dtCancel').click(); });

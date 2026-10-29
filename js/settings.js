@@ -3,8 +3,9 @@
    switches, and AI usage hid under Reports while it covers every section.
    One page at the rail's foot, above the Activity record, holds what changes
    the portal for everybody: upgrade mode, announcements and notices; the
-   business figures; Meta checks; WhatsApp's templates; AI usage and limits; document types and
-   task numbering. Each row is drawn only for a colleague holding its granted
+   business figures; Meta checks; AI usage and limits; task numbering; and,
+   since 2026-10-29, every template (WhatsApp, emails, document types, task
+   templates, the rate card's wording) in one Templates group. Each row is drawn only for a colleague holding its granted
    part, and each opens the one sheet that already edits it (one copy of
    every mechanism). The account menu keeps what is the person's own.
    Since 2026-10-11: eight groups, each a card under its heading on one
@@ -19,11 +20,14 @@
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
   /* Every part a row of this page answers to. The route is offered to a
-     colleague holding any of them, or Suppliers or WhatsApp at Full Access
-     (Supplier emails, Templates) (`ADspaceSettings.allowed`). */
-  var KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering'];
+     colleague holding any of them, or Suppliers, WhatsApp or Services at
+     Full Access (Supplier emails, WhatsApp templates, Rate card wording)
+     (`ADspaceSettings.allowed`). */
+  var KEYS = ['team.upgrade', 'team.announce', 'team.notice', 'team.settings', 'reports.ai', 'register.types', 'ops.numbering', 'ops.workflows'];
+  var FULL = ['suppliers', 'whatsapp', 'services'];
   function may(k) { return Boolean(bridge.may && bridge.may(k, 'work')); }
-  function allowed() { return KEYS.some(may) || Boolean(bridge.may && (bridge.may('suppliers', 'manage') || bridge.may('whatsapp', 'manage'))); }
+  function full(k) { return Boolean(bridge.may && bridge.may(k, 'manage')); }
+  function allowed() { return KEYS.some(may) || FULL.some(full); }
   function say(text, tone) {
     var m = $('settingsMsg');
     if (!m) return;
@@ -139,6 +143,21 @@
         return plural(((r.data && r.data.rows) || []).length, 'template', 'templates');
       });
     },
+    /* Task templates (2026-10-29): the families, and how many fill a task. */
+    tasktpl: function () {
+      return db.from('ops_task_templates').select('id, active').then(function (r) {
+        if (r.error) throw r.error;
+        var all = r.data || [], on = all.filter(function (t) { return t.active !== false; }).length;
+        return parts([plural(all.length, 'template', 'templates'), on + ' active']);
+      });
+    },
+    /* Rate card wording (2026-10-29): its blocks, published with the card. */
+    wording: function () {
+      return db.from('rate_card_text').select('key').then(function (r) {
+        if (r.error) throw r.error;
+        return parts([plural((r.data || []).length, 'block', 'blocks'), 'published with the rate card']);
+      });
+    },
     types: function () {
       return db.from('doc_types').select('id, active').then(function (r) {
         if (r.error) throw r.error;
@@ -227,19 +246,13 @@
          line may carry, read from Bukku or added by hand. */
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes') },
       /* Bukku (2026-10-18): the contact fields that hold our IDs. */
-      biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') },
-      /* Overdue reminder (2026-10-28): the email an overdue invoice is
-         reminded with, sent from Clients' Overdue invoices. */
-      biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') }]);
+      biz && window.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku') }]);
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
         meta: pin == null ? '' : parts(['US$ ' + pin + ' in', 'US$ ' + pout + ' out a million tokens']) }]);
-    /* WhatsApp (2026-10-10): its templates are set in the WhatsApp section
-       at Full Access; this row opens them there. */
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
-    add('whatsapp', 'WhatsApp', [window.ADspaceWhatsApp && bridge.may && bridge.may('whatsapp', 'manage') &&
-      { id: 'whatsapp', name: 'Templates', kind: 'open', meta: line('whatsapp') },
+    add('whatsapp', 'WhatsApp', [
       /* Sent again (2026-10-14): the same message sent within the window
          asks again before it goes, a supplier's email too (SET2-1). */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
@@ -248,8 +261,17 @@
          WhatsApp, each a message ADspace pays for. */
       biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
         meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' a day on WhatsApp' }]);
-    add('documents', 'Documents', [may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
-      bridge.may && bridge.may('suppliers', 'manage') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') }]);
+    /* Templates (the user, 2026-10-29: "approve all"): every wording the
+       portal sends or fills, each edited here alone. */
+    add('templates', 'Templates', [
+      window.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp') },
+      full('suppliers') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') },
+      /* The email an overdue invoice is reminded with, sent from Clients'
+         Overdue invoices (2026-10-28). */
+      biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
+      may('register.types') && { id: 'types', name: 'Document types', kind: 'open', meta: line('types') },
+      window.ADspaceOps && may('ops.workflows') && { id: 'tasktpl', name: 'Task templates', kind: 'open', meta: line('tasktpl') },
+      window.ADspaceCRM && window.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate card wording', kind: 'open', meta: line('wording') }]);
     return out;
   }
 
@@ -434,6 +456,8 @@
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
+    if (a === 'tasktpl') { if (window.ADspaceOps && window.ADspaceOps.openTemplates) window.ADspaceOps.openTemplates(btn); return; }
+    if (a === 'wording') { if (window.ADspaceCRM && window.ADspaceCRM.openWording) window.ADspaceCRM.openWording(btn); return; }
   }
 
   /* ---- Demo access (2026-10-27) ----------------------------------------
