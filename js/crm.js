@@ -5764,6 +5764,12 @@
     var e = eligible();
     picking = { replaces: null };
     $('pickBody').innerHTML =
+      /* Bill to (2026-10-29): which billing entity the letter bills, drawn
+         where the client holds more than one; the main is the default. */
+      '<div class="lpickref" id="pickBillBox" hidden>' +
+        '<label class="field-label" for="pickBillTo">Bill to</label>' +
+        '<select class="select" id="pickBillTo"></select>' +
+      '</div>' +
       pickBlock('To quote', e.open, true, '') +
       pickBlock('Already on a live letter', e.held, false,
         'Void that letter, or issue a replacement from its ⋯, before quoting these again.') +
@@ -5843,11 +5849,37 @@
     if (!window.ADspaceSheet.isOpen($('pickSheet'))) {
       window.ADspaceSheet.show($('pickSheet'), { opener: document.activeElement, onClose: pickClosed });
     }
+    pickBillTo();
+  }
+
+  /* The Bill to choice: the client's entities, main first, read with the
+     record (`client_entities_list`) or asked for here. */
+  function pickBillTo(keep) {
+    var c = state.client, box = $('pickBillBox');
+    if (!box || !c) return;
+    var paint = function () {
+      var L = state.entFor === c.id ? (state.entities || []) : [];
+      if (L.length < 2) { box.hidden = true; return; }
+      $('pickBillTo').innerHTML = L.map(function (x) {
+        return '<option value="' + esc(x.id) + '">' + esc((x.legal_name || 'Billing entity') +
+          (x.main ? ' · Main' : x.missing && x.missing.length ? ' · Incomplete' : '')) + '</option>';
+      }).join('');
+      if (keep && L.some(function (x) { return x.id === keep; })) $('pickBillTo').value = keep;
+      box.hidden = false;
+    };
+    if (state.entFor === c.id) { paint(); return; }
+    db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
+      if (!state.client || state.client.id !== c.id) return;
+      var d = r.data || {};
+      if (!r.error && !d.error) { state.entFor = c.id; state.entities = d.entities || []; }
+      paint();
+    }).catch(function () {});
   }
 
   function pickAgain(ids, said) {
     var ref = $('pickRef') ? $('pickRef').value : '';
     var terms = $('pickTerms') ? $('pickTerms').value : '';
+    var bill = $('pickBillTo') && !$('pickBillBox').hidden ? $('pickBillTo').value : '';
     var id = state.client && state.client.id;
     loadServices(function () {
       var reopen = function () {
@@ -5855,6 +5887,7 @@
         openPick(ids);
         if ($('pickRef')) $('pickRef').value = ref;
         if ($('pickTerms')) $('pickTerms').value = terms;
+        if (bill) pickBillTo(bill);
         msg('pickMsg', said, 'warn');
       };
       if (window.ADspaceQuotes && mayPart('clients.quotes', 'view')) loadQuotes(reopen, true); else reopen();
@@ -5965,9 +5998,19 @@
     var go = $('pickGo');
     go.disabled = true;
     go.textContent = 'Issuing…';
+    /* A billing entity other than the main is named; the main is the
+       client's own billing, sent as before. */
+    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
+      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
+    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
+      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
+      $('pickBillTo').focus();
+      return;
+    }
     var deal = {
       owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
+      entity: billEnt && !billEnt.main ? billEnt.id : null
     };
     DOCS.issue('offer', c, rows, deal,
       { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),

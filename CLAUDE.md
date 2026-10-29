@@ -272,7 +272,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
-| Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`) | entities, entitysql, crm, billgate, bukku, search, sql, then `ui` |
+| Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
 | `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
@@ -1868,8 +1868,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     stay two, merged by hand; Make main and Remove (never the main) offer
     Undo where they happened. Filed `client.billing` naming fields alone.
     Console search finds a client by an entity billing it (Billed by …,
-    opening Billing). Letters, quotations, Bukku and reminders still bill
-    the main entity: Bill to and Bukku by entity are the next release.
+    opening Billing). Bill to (`2026-10-29-bill-to.sql`): with two
+    entities or more, the Letter of Offer sheet (`#pickBillTo`) and a
+    client letter's Issue (`#docBillTo`) ask which, the main first and
+    chosen; `issue_letter` takes `p_deal.entity` (an entity of that client,
+    `bad-entity`; its name, BRN and address held, `entity-incomplete`) and
+    prints its registered name, numbers, address and billing contact,
+    keeping `bill_to.entity_id`; none chosen is the main as before. A
+    quotation prints no billing. Bukku and reminders still bill the main
+    entity: Bukku by entity is the next release.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Request from client (the user, 2026-10-29; Details form until then, a supplier's Request from supplier) makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the

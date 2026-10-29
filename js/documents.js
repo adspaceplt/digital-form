@@ -329,7 +329,8 @@
       p_idem: opts.idem || idemKey(),
       p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
       p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true },
+                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true,
+                entity: deal.entity || null },
       p_replaces: opts.replaces || null,
       p_renewal: Boolean(opts.renewal),
       p_serial: serial || null
@@ -357,6 +358,8 @@
 
   /* The database answers in one word; the console says what it means. */
   var ISSUE_WORD = {
+    'bad-entity': 'That billing entity no longer bills this client. Close the sheet and open it again.',
+    'entity-incomplete': 'The billing entity needs its registered name, registration no. and billing address. Complete it on Billing first.',
     'not-allowed': 'You do not have permission to issue a letter.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
     'needs-billing': 'Add the registered company name, business registration no., billing address and a billing contact on Billing before issuing a Letter of Offer.',

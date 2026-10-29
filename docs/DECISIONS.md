@@ -7289,3 +7289,17 @@ sentence.
   entity's registered name at Clients: Billing View (Billed by …), so both
   expectations moved with the behaviour; the clients table is still never
   asked for the name.
+
+### 2026-10-29 · Bill to: a letter bills the entity chosen
+The user asked for E3 of the billing entities plan: a Letter of Offer and a
+client letter name the company they bill. With two entities or more, both
+sheets ask Bill to, the main first and chosen. `issue_letter` keeps its
+signature and reads `p_deal.entity`, held to the client's own entities and
+refusing one missing its name, registration no. or address; the snapshot
+keeps `bill_to.entity_id`, so a letter redrawn later bills as it went out.
+A quotation prints no billing, so it has nothing to choose. Bukku by entity
+waits for its own release. On a phone the Bill to select first ran past the
+sheet's right edge, its longest name widening it; `.lpickref .select` now
+holds it to the column. The stand-in first refused the suites' short entity
+ids by shape; it now holds the shape loosely and the link exactly, as the
+live function holds a uuid.
