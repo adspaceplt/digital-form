@@ -37,10 +37,10 @@
     en: {
       lang: '中文', step: 'Step {n} of {m}', cont: 'Continue', back: 'Back',
       introT: 'Get your quotation',
-      introP: 'Select the services your brand requires and receive your quotation instantly.',
+      introP: 'Select the services your brand requires and request your quotation.',
       introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
-        'Provide your contact details to receive the quotation immediately.', 'Proceed with the quotation when you are ready, and our team will contact you.'],
+        'Provide your contact details. ADspace reviews your request and sends your quotation on WhatsApp.', 'Proceed with the quotation when you are ready, and our team will contact you.'],
       introNote: 'This takes approximately three minutes.',
       start: 'Start',
       needT: 'What do you need?',
@@ -71,11 +71,11 @@
       kol: 'KOL campaign (quoted on request)', verify: 'Account verification',
       detailsT: 'Your details', salutation: 'Salutation', name: 'Name', email: 'Work email', wa: 'WhatsApp number',
       waHint: 'Malaysian or Singaporean number', brand: 'Brand', industry: 'Industry', optional: 'Optional',
-      start: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
+      commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
       waBad: 'A valid Malaysian or Singaporean WhatsApp number is required.',
-      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand.', start: 'Select when you plan to commence.', consent: 'Tick the consent to continue.' },
+      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand.', commence: 'Select when you plan to commence.', consent: 'Tick the consent to continue.' },
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
@@ -125,9 +125,9 @@
     zh: {
       lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
       introT: '获取报价',
-      introP: '选择品牌所需的服务，即可即时获得报价。',
+      introP: '选择品牌所需的服务，即可申请报价。',
       introH: '流程说明',
-      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，即可获得报价。', '准备好后确认报价，我们的团队将与您联系。'],
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace审核后将通过 WhatsApp 发送报价。', '准备好后确认报价，我们的团队将与您联系。'],
       introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
@@ -158,11 +158,11 @@
       kol: 'KOL 合作（另行报价）', verify: '账号认证',
       detailsT: '您的资料', salutation: '称谓', name: '姓名', email: '工作邮箱', wa: 'WhatsApp 号码',
       waHint: '马来西亚或新加坡号码', brand: '品牌', industry: '行业', optional: '选填',
-      start: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后']],
+      commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后']],
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
       waBad: '请填写有效的马来西亚或新加坡 WhatsApp 号码。',
-      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', start: '请选择计划开始时间。', consent: '请勾选同意后继续。' },
+      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', consent: '请勾选同意后继续。' },
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价 ({c})', sub: '小计 ({c})', onReq: '另行报价',
@@ -506,7 +506,7 @@
       field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
       field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
         INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '"' + (c.industry === i ? ' selected' : '') + '>' + esc(t().ind[i]) + '</option>'; }).join('') + '</select>') +
-      field('qsStart', t().start, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
+      field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
         t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + (c.commence === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
       '<span class="msg" id="qsConsentMsg"></span><div class="qs-cf" data-cf></div></form>', navFoot());
@@ -759,7 +759,7 @@
     else if (FREE.test(c.email)) say('qsEmailMsg', t().freeMail, 'warn');
     if (!waOk(waDigits(c.whatsapp))) bad('qsWa', t().waBad);
     if (c.brand.length < 2) bad('qsBrand', t().req.brand);
-    if (!c.commence) bad('qsStart', t().req.start);
+    if (!c.commence) bad('qsStart', t().req.commence);
     if (!c.consent) bad('qsConsent', t().req.consent);
     if (first) first.focus();
     return !first;
