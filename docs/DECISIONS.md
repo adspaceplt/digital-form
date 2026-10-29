@@ -7452,3 +7452,22 @@ read and set every page for a tab served before.
   (`is_primary`, `is_main`, `data-ea="main"`) unchanged. The rule is in
   DESIGN.md §6. `entities`, `entitysql`, `crm`, `portal`, `whatsapp`,
   `menus` and `quotesite` read the new words.
+
+### 2026-10-29 · How copy is drafted, written down
+- **Asked:** "write down how you make changes or how you draft your tone
+  and let md knows so it wont need me to repeatedly check for the tone n
+  copy". The user had caught the tone by hand three times in two days
+  (the overdue reminder, the sign-in emails, Make main).
+- **Why it kept happening:** §6 held the rules of the result (formal,
+  one word a thing) but no method a draft passes through, and nothing
+  failed when a rejected word came back; each fix was a word, never the
+  way of writing it.
+- **Changed:** DESIGN.md §6 How copy is drafted, nine steps every new word
+  passes before a screenshot (who reads it, as a letter would say it, never
+  the system's word, the reader's tense, a refusal with its next step, one
+  word a thing, nothing said twice, Chinese written not translated, a
+  rejected word retired in `tests/words.js`); CLAUDE.md requires it and
+  `words` to pass before a push. `tests/words.js` now refuses Make main,
+  Main contact, Main billing entity, Put back., chat with ADspace and make
+  no quotation, and reads the /quote/, /details/ and /supplier/ pages too.
+  Reports' bulk Undo, missed on 2026-10-29, answers Undone.

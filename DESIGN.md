@@ -766,6 +766,47 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   - "Access code / Enter the access code provided.";
   - "Unable to load / Please refresh…".
 
+### How copy is drafted (the user, 2026-10-29: "write down how you draft your tone … so it wont need me to repeatedly check")
+Every word a change puts in front of a person (a label, a button, a menu
+item, a message, a refusal, an empty line, a cover, an email, a WhatsApp
+template, a PDF line) is drafted and checked this way before it is
+screenshotted, and the push names any line it could not settle.
+1. **Who reads it.** A colleague in the console: plain, short, the team's
+   working words. A client, prospect, creator or supplier (client pages,
+   /quote/, /details/, /supplier/, emails, PDFs, WhatsApp): a formal
+   Malaysian business letter, full sentences, Please where it asks
+   something of them, no contraction, no exclamation, no chat word.
+2. **Say it as a letter would.** Read the line aloud as if it were in a
+   signed letter or on a bank's website. A word that would not be written
+   there is not written here: Primary, never main; Undone., never Put back.;
+   Refresh the page, never Read again (unless a Read again button stands
+   beside it).
+3. **Never the system's word.** A stored key, a column, a function, an
+   internal term (`is_main`, cover, covered, slot, row, flag, payload,
+   scope, stale) never reaches a screen; say what the reader sees or does.
+4. **The reader's tense.** What has happened: past (Sent., Saved.). What
+   will happen: future (ADspace will review your request and send your
+   quotation). An instruction: the imperative with its object (Enter your
+   brand name., Choose a colleague.). Never the present tense for a step the
+   reader waits on.
+5. **A refusal says what to do next.** What failed, in the reader's words,
+   then the one act that resolves it: "The primary billing entity cannot be
+   removed. Make another entity primary first." Never a bare "Not allowed."
+   where a next step exists, never the database's words, never blame.
+6. **One word per thing, one thing per word.** Before a new noun or verb,
+   grep `js/words.js`, this section's vocabulary and the screen it joins;
+   use the word already in use. A new word for an existing thing is
+   refused; a word that names two things is split.
+7. **Nothing said twice, nothing that explains itself.** The heading and
+   the control are the explanation; a line under them adds a fact or is
+   deleted.
+8. **Chinese is written, not translated** (§6 above): the same check in
+   Chinese, a 中文 version for every client-facing English line, read by
+   its own rules.
+9. **Retire it for good.** A word the user rejects joins
+   `tests/words.js` (RETIRED, with the word to use) in the same push, so it
+   can never return, and its rule joins this section.
+
 ## 7. Architecture
 - The Dashboard sits alone above the two chunks, with no label, drawn only for
   a group that manages a section (`CLAUDE.md`).
