@@ -7224,3 +7224,11 @@ sentence.
   caught exactly that).
 - Next: Bill to on letters, quotations and their PDFs, Bukku by entity,
   reminders by entity.
+
+### 2026-10-29 · Two suites held Billing's old shape
+- `crm` read Billing's group headings as exactly three and Bukku, and
+  `search` held that a registered name never finds a client. Billing
+  entities add Other billing entities after Bukku, and find a client by its
+  entity's registered name at Clients: Billing View (Billed by …), so both
+  expectations moved with the behaviour; the clients table is still never
+  asked for the name.
