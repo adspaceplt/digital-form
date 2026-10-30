@@ -2817,9 +2817,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   Billing from Bukku (`2026-10-30-billing-from-bukku.sql`; the user,
   2026-10-29: "we dont need two sides update", option A approved
   2026-10-30): once a client or a billing entity is linked and held, Bukku
-  holds its billing and the portal's columns are its copy. A link is held
+  holds its billing and the portal's columns are its copy. An unlinked
+  client or entity offers Link to Bukku (the user, 2026-10-30: "use link
+  bukku instead of send to bukku"): its sheet links the contact chosen as
+  Bukku holds it, nothing sent (Link, how the details differ shown), or
+  makes New contact in Bukku (Create in Bukku). A link is held
   by Send to Bukku, or at its first read where every detail that differs
-  is empty in the portal; one made by Link only, or standing before, whose
+  is empty in the portal; one made by Link, or standing before, whose
   details differ reads Differs from Bukku, field by field, with Send to
   Bukku and Use Bukku's (asked; `bukku-sync` `hold`), nothing replaced
   until one is chosen. The band then leads Billing (`opts.lead`): Linked,
