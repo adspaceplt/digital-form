@@ -377,7 +377,9 @@ begin
          finance_email = case when p_values ? 'finance_email' and ('finance_email' = any(v_changed) or nullif(btrim(coalesce(e.finance_email, '')), '') is null) then nullif(lower(btrim(coalesce(p_values->>'finance_email', ''))), '') else e.finance_email end,
          billing_address = case when p_values ? 'billing_address' and ('billing_address' = any(v_changed) or nullif(btrim(coalesce(e.billing_address, '')), '') is null) then nullif(btrim(coalesce(p_values->>'billing_address', '')), '') else e.billing_address end,
          bill_contact_id = case when v_bc_set then v_bc else e.bill_contact_id end,
-         updated_at = clock_timestamp()
+         updated_at = case when cardinality(v_changed) > 0 or v_new
+                             or (v_bc_set and v_bc is distinct from e.bill_contact_id)
+                           then clock_timestamp() else e.updated_at end
    where e.id = v_ent;
   -- A client's first entity, made here, is carried to the client's own
   -- columns (audit 2026-10-30: the update changed nothing, so the mirror
