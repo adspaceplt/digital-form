@@ -272,6 +272,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
 | `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
@@ -2813,6 +2814,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   and its primary entity are one company and may hold one contact; any
   other two records may not (`bukku_contact_taken`); a record with no link
   of its own reads its company's, said as Linked through (`bukku_shared`).
+  Billing from Bukku (`2026-10-30-billing-from-bukku.sql`; the user,
+  2026-10-29: "we dont need two sides update", option A approved
+  2026-10-30): once a client or a billing entity is linked and held, Bukku
+  holds its billing and the portal's columns are its copy. A link is held
+  by Send to Bukku, or at its first read where every detail that differs
+  is empty in the portal; one made by Link only, or standing before, whose
+  details differ reads Differs from Bukku, field by field, with Send to
+  Bukku and Use Bukku's (asked; `bukku-sync` `hold`), nothing replaced
+  until one is chosen. The band then leads Billing (`opts.lead`): Linked,
+  Read {day, time}, Refresh and the ⋯'s Unlink, no Send and no Details
+  changed; Billing is read once a visit to the record (`bukku-sync` `read`,
+  one read at a time a record), a change made in Bukku taken in and said
+  once on the band (Changed in Bukku since the last read), filed by Bukku;
+  Bukku's billing person not in Contacts is said with Add as contact.
+  Edit's Save reads Save to Bukku and sends only what changed
+  (`bukku-sync` `save`, `bukku_prepare_with` as the caller, every other
+  Bukku detail kept as Bukku holds it), refused `stale` where Bukku moved
+  since the read (read in, the sheet kept), Undo where it happened writing
+  the earlier values back; SST on quotes and Bill in stay the portal's.
+  Bukku not answering reads Not read with the copy's time and draws no
+  Edit; Use details from the client's form fills the same sheet and saves
+  to Bukku. `bukku_take` (the service role's) writes the copy to the
+  record's primary entity (to the brand through `billing_entity_mirror`)
+  and files `client.billing` naming the fields (Read from Bukku by Bukku,
+  Saved to Bukku, Took Bukku's details); every held link is read again at
+  00:30 MYT (pg_cron `bukku-read-nightly`, the wake secret, 100 seconds a
+  run, the oldest read first). An entity is the same inside its fold.
+  Suppliers keep Send to Bukku as before.
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 - Overdue invoices (`js/invoices.js`, `2026-10-28-overdue-invoice-reminders.sql`;
   the user, 2026-10-28: "pull those overdues data from bukku and inside

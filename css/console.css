@@ -3833,6 +3833,11 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
 .bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }
+/* Billing from Bukku (2026-10-30): what differs, field by field, under the band's line. */
+.bk-band > .bk-diff { grid-column: 1 / -1; margin-top: 10px; }
+.bk-diff .bk-tr { border-top-color: var(--line); }
+/* Narrow, the field heads its row and Portal and Bukku stand over the two values. */
+.is-narrow .bk-diff .bk-th > span:first-child, .is-tight .bk-diff .bk-th > span:first-child { display: none; }
 .is-tight .readgroup.bk-band { grid-template-columns: minmax(0, 1fr); }
 .is-tight .bk-band > .bk-acts { grid-column: 1; grid-row: auto; margin-top: 8px; }
 /* A band holding the ⋯ alone keeps it at the right of its first line on a

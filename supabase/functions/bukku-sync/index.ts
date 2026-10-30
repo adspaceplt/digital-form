@@ -20,6 +20,23 @@
  *   POST { action: 'link', kind, id, contact } links that contact as Bukku
  *                                             holds it, nothing sent
  *                                             (`bukku_link_only`).
+ *   POST { action: 'read', kind, id }         a linked client's or billing
+ *                                             entity's billing read from
+ *                                             Bukku into the portal
+ *                                             (2026-10-30, BILLING FROM
+ *                                             BUKKU): taken where the link
+ *                                             is held, else what differs.
+ *   POST { action: 'hold', kind, id }         Use Bukku's: the same, taken
+ *                                             and held (Work).
+ *   POST { action: 'save', kind, id, values, expected }
+ *                                             the Billing sheet's changes
+ *                                             saved straight to Bukku, then
+ *                                             read back into the portal;
+ *                                             refused `stale` where Bukku
+ *                                             moved since it was read.
+ *   POST { action: 'nightly' }                every held link read again
+ *                                             (pg_cron at 00:30 MYT, with
+ *                                             the wake secret).
  *   POST { action: 'contacts', q }            Bukku's customers matching
  *                                             every word typed (name) or the
  *                                             registration no., for Add
@@ -330,6 +347,147 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
 }
 
+
+// ---- Billing from Bukku (2026-10-30) ---------------------------------------
+/* Once linked, Bukku holds a client's or an entity's billing (the user,
+   2026-10-29: "we dont need two sides update"). What Bukku holds of a
+   contact, read as the portal's billing: the default billing address and
+   person, the registered name in capitals. */
+export function valuesOf(c: any) {
+  const s = (v: unknown) => { const x = String(v ?? '').replace(/\s+/g, ' ').trim(); return x || null; };
+  const ba = (c.addresses || []).find((a: any) => a.is_default_billing) || null;
+  const bp = (c.contact_persons || []).find((x: any) => x.is_default_billing) || null;
+  const name = s(c.legal_name), mail = s(c.email);
+  return { legal_name: name ? name.toUpperCase() : null, company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
+    tin: s(c.tax_id_no), sst_no: s(c.sst_reg_no), finance_email: mail ? mail.toLowerCase() : null,
+    billing_address: s(addressLine(ba)), person: s(bp ? [bp.first_name, bp.last_name].filter(Boolean).join(' ') : '') };
+}
+const BILL = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
+/* The fields in which the portal and Bukku differ, each read as Bukku sets
+   it out: an address in its parts, a registration no. by its letters and
+   digits, a person with or without the salutation Bukku keeps. */
+export function differs(portal: any, bk: any, country: string): string[] {
+  const out: string[] = [];
+  const bare = (v: unknown) => { const w = nameWords(v); return w.slice(salLead(w)).join(' '); };
+  for (const f of BILL) {
+    const a = String(portal[f] ?? '').trim(), b = String(bk[f] ?? '').trim();
+    let same: boolean;
+    if (!a || !b) same = !a && !b;
+    else if (f === 'billing_address') same = sameAddress(addressOf(a, country), addressOf(b, country));
+    else if (f === 'company_no') same = digits(a) === digits(b);
+    else if (f === 'person') same = nameWords(a).join(' ') === nameWords(b).join(' ') || bare(a) === bare(b);
+    else if (f === 'finance_email') same = a.toLowerCase() === b.toLowerCase();
+    else same = a.replace(/\s+/g, ' ').toUpperCase() === b.replace(/\s+/g, ' ').toUpperCase();
+    if (!same) out.push(f);
+  }
+  return out;
+}
+/* A read's print: a save is refused where Bukku moved since. */
+export async function hashOf(v: Record<string, unknown>): Promise<string> {
+  const text = JSON.stringify(BILL.map((f) => v[f] ?? null));
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+const svcDb = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+async function contactOf(id: number): Promise<any | null> {
+  return bukku('GET', `/contacts/${id}`).then((r) => (r && r.contact) || null)
+    .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
+}
+/* Bukku's details into the record (`bukku_take`, the service role's). */
+async function take(actor: unknown, kind: string, id: string, vals: any, hash: string, changed: string[], mode: string) {
+  const t = await svcDb().rpc('bukku_take', { p_actor: actor || null, p_kind: kind, p_id: id, p_values: vals, p_hash: hash,
+    p_changed: changed, p_mode: mode });
+  if (t.error) { console.error('bukku-sync: not taken', kind, id, t.error.message); return { error: 'not-filed' }; }
+  return t.data || { error: 'not-filed' };
+}
+
+async function billingAction(action: string, kind: string, id: string, body: Record<string, any>, db: any, origin: string | null): Promise<Response> {
+  const may = await db.rpc('bukku_read_may', { p_kind: kind, p_id: id, p_level: action === 'read' ? 'view' : 'work' });
+  if (may.error) return json({ error: 'needs-update' }, 200, origin);
+  const d = may.data || {};
+  if (d.error) return json({ error: d.error }, 200, origin);
+  if (!d.linked) return json({ ok: true, linked: false }, 200, origin);
+  const portal = d.portal || {}, country = portal.country === 'SG' ? 'SG' : 'MY';
+
+  if (action === 'save') {
+    if (!d.held) return json({ error: 'not-held' }, 200, origin);
+    const values = body.values && typeof body.values === 'object' && !Array.isArray(body.values) ? body.values : null;
+    if (!values || !Object.keys(values).length) return json({ error: 'bad-request' }, 400, origin);
+    const pw = await db.rpc('bukku_prepare_with', { p_kind: kind, p_id: id, p_values: values });
+    if (pw.error) return json({ error: 'needs-update' }, 200, origin);
+    const p = pw.data as Prep;
+    if (!p || p.error) return json(p || { error: 'bad-request' }, 200, origin);
+    const cur = await contactOf(Number(d.contact_id));
+    if (!cur) return json({ error: 'bukku-gone' }, 200, origin);
+    const before = valuesOf(cur);
+    /* Changed in Bukku since the sheet was opened: read in, nothing sent. */
+    if (!body.expected || await hashOf(before) !== String(body.expected)) {
+      const ch = differs(portal, before, country);
+      const t = await take(d.me, kind, id, before, await hashOf(before), ch, 'read');
+      return json({ error: 'stale', changed: ch, values: before, hash: await hashOf(before), person_in: t.person_in }, 200, origin);
+    }
+    /* Only what the sheet changed goes; every other detail is Bukku's own. */
+    const has = (k: string) => Object.prototype.hasOwnProperty.call(values, k);
+    const p2: Prep = Object.assign({}, p, {
+      legal_name: has('legal_name') ? p.legal_name : cur.legal_name,
+      reg_no: has('company_no') ? p.reg_no : cur.reg_no, reg_no_type: has('company_no') ? p.reg_no_type : cur.reg_no_type,
+      old_reg_no: has('company_no_old') ? p.old_reg_no : cur.old_reg_no, tax_id_no: has('tin') ? p.tax_id_no : cur.tax_id_no,
+      sst_reg_no: has('sst_no') ? p.sst_reg_no : cur.sst_reg_no, email: has('finance_email') ? p.email : cur.email,
+      address: has('billing_address') ? p.address : null, person: has('bill_contact_id') ? p.person : null,
+      salutation: has('bill_contact_id') ? p.salutation : null, phone_no: cur.phone_no, other_name: cur.other_name
+    });
+    const next = merged(p2, cur, cur.contact_code);
+    for (const k of (Array.isArray(p.clear) ? p.clear : [])) delete next[k];
+    if (Array.isArray(p.clear) && p.clear.includes('reg_no')) delete next.reg_no_type;
+    const r = await bukku('PUT', `/contacts/${cur.id}`, next);
+    const saved = r && r.contact;
+    if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'No contact came back.' }, 200, origin);
+    const after = valuesOf(saved), hash = await hashOf(after);
+    const ch = differs(portal, after, country);
+    const t = await take(d.me, kind, id, after, hash, ch, 'save');
+    if (t.error) return json({ error: t.error }, 200, origin);
+    return json({ ok: true, held: true, code: saved.contact_code || d.code, values: after, hash, changed: ch, person_in: t.person_in }, 200, origin);
+  }
+
+  // read, hold
+  const cur = await contactOf(Number(d.contact_id));
+  if (!cur) return json({ error: 'bukku-gone', code: d.code }, 200, origin);
+  const vals = valuesOf(cur), hash = await hashOf(vals);
+  const ch = differs(portal, vals, country);
+  const t = await take(d.me, kind, id, vals, hash, ch, action === 'hold' ? 'hold' : 'read');
+  if (t.error) return json({ error: t.error }, 200, origin);
+  return json({ ok: true, linked: true, held: t.held === true, code: cur.contact_code || d.code, read_at: new Date().toISOString(), hash,
+    values: vals, changed: t.held ? ch : [], person_in: t.person_in,
+    differs: t.held ? [] : ch.map((f) => ({ field: f, portal: portal[f] ?? null, bukku: (vals as any)[f] ?? null })) }, 200, origin);
+}
+
+/* Every held link read again (pg_cron at 00:30 MYT), the oldest read
+   first, until 100 seconds have gone; the rest wait for the next night. */
+async function nightly(req: Request, origin: string | null): Promise<Response> {
+  const svc = svcDb();
+  const ok = await svc.rpc('wake_secret_ok', { p_given: req.headers.get('x-adspace-wake') || '' });
+  if (ok.error || ok.data !== true) return json({ error: 'unauthorised' }, 401, origin);
+  const list = await svc.rpc('bukku_held_links');
+  if (list.error) return json({ error: 'needs-update' }, 200, origin);
+  const rows = (list.data || []) as any[];
+  const until = Date.now() + 100000;
+  let read = 0, failed = 0;
+  for (const l of rows) {
+    if (Date.now() > until) break;
+    try {
+      const cur = await contactOf(Number(l.contact_id));
+      if (!cur) { failed++; continue; }
+      const vals = valuesOf(cur), portal = l.portal || {};
+      const t = await take(null, l.kind, l.id, vals, await hashOf(vals), differs(portal, vals, portal.country === 'SG' ? 'SG' : 'MY'), 'read');
+      if (t.error) failed++; else read++;
+    } catch (e) {
+      failed++;
+      console.error('bukku-sync: nightly', l.kind, l.id, String((e as Error).message || e));
+      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
+    }
+  }
+  return json({ ok: true, read, failed, left: rows.length - read - failed }, 200, origin);
+}
 
 // ---- A billing entity started from Bukku (2026-10-29) ------------------------
 /* Add entity's second list (the user, 2026-10-29: "Cant even find or
@@ -661,6 +819,10 @@ Deno.serve(async (req) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const action = String(body.action || '');
+  if (action === 'nightly') {
+    try { return await nightly(req, origin); }
+    catch (e) { console.error('bukku-sync: nightly failed', String((e as Error).message || e)); return json({ error: 'failed' }, 200, origin); }
+  }
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
 
@@ -702,6 +864,11 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'invoices' || action === 'remind') return await invoiceAction(action, body, db, origin);
+    if (action === 'read' || action === 'hold' || action === 'save') {
+      const k = String(body.kind || ''), rid = String(body.id || '');
+      if (!['client', 'entity'].includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);
+      return await billingAction(action, k, rid, body, db, origin);
+    }
     if (action === 'contacts' || action === 'contact') return await contactsAction(action, body, db, origin);
 
     const kind = String(body.kind || ''), id = String(body.id || '');
@@ -775,6 +942,16 @@ Deno.serve(async (req) => {
       if (l.error || (l.data && l.data.error)) {
         console.error('bukku-sync: sent but not filed', kind, id, saved.id, l.error ? l.error.message : l.data.error);
         return json({ error: 'not-filed', contact: saved.id, code: saved.contact_code }, 200, origin);
+      }
+      /* What was sent is what Bukku holds: a client's or an entity's link
+         is held from here, the portal taking Bukku's read back. */
+      if (kind !== 'supplier') {
+        const m = await db.rpc('bukku_read_may', { p_kind: kind, p_id: id, p_level: 'work' });
+        const md = (m.data || {}) as any;
+        if (!m.error && md.linked) {
+          const after = valuesOf(saved), pr = md.portal || {};
+          await take(md.me, kind, id, after, await hashOf(after), differs(pr, after, pr.country === 'SG' ? 'SG' : 'MY'), 'hold');
+        }
       }
       return json({ ok: true, contact: saved.id, code: saved.contact_code || code, created: !cur }, 200, origin);
     }

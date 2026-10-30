@@ -2610,8 +2610,14 @@
       ]) +
       '<section class="readgroup bk-group" id="crmBukku" hidden></section>' +
       '<div class="ent-list" id="crmEntities"></div>';
-    /* Bukku (2026-10-18): the contact this client is in Bukku, sent by hand. */
-    if (window.ADspaceBukku && maySeeBilling()) window.ADspaceBukku.group($('crmBukku'), 'client', c.id, { after: invoicesAgain });
+    /* Bukku (2026-10-18): the contact this client is in Bukku. Once linked
+       and held (2026-10-30, BILLING FROM BUKKU) the details above are
+       Bukku's, read once a visit to the record; the band leads Billing. */
+    if (window.ADspaceBukku && maySeeBilling()) {
+      if (state.bkFor !== c.id) { window.ADspaceBukku.fresh('client', c.id); state.bkFor = c.id; }
+      window.ADspaceBukku.group($('crmBukku'), 'client', c.id, { lead: true, after: function () { invoicesAgain(); bkEdit(); }, read: bkRead, addContact: bkAddContact });
+    }
+    bkEdit();
     paintEntities();
     if (state.entFor !== c.id && !state.entLoading) loadEntities();
   }
@@ -2706,11 +2712,64 @@
   /* Each entity is its own Bukku contact (2026-10-29: a brand's unpaid
      invoices read every company billing it): its band, read as it opens. */
   function invoicesAgain() { if (window.ADspaceInvoices && state.client) window.ADspaceInvoices.client($('odClient'), state.client, true); }
+  /* Billing from Bukku (2026-10-30): a read that changed the details paints
+     them again; Edit waits while Bukku is not answering, and saves to Bukku
+     while Bukku holds them. */
+  function bkState() { return window.ADspaceBukku && state.client ? window.ADspaceBukku.state('client', state.client.id) : 'none'; }
+  function bkEdit() {
+    var down = bkState() === 'down' || bkState() === 'reading';
+    if ($('crmBillEdit')) $('crmBillEdit').hidden = down;
+  }
+  function bkRead(x) {
+    bkEdit();
+    if (!state.client || x.error) return;
+    if ((x.changed || []).length) API.withBilling([state.client]).then(function () { paintBilling(state.client); });
+  }
+  function bkAddContact(name) {
+    showPane('contacts'); pushUrl();
+    openContact(null);
+    var w = String(name || '').trim(), sal = '';
+    Array.prototype.forEach.call($('ctSalutation').options, function (o) {
+      if (o.value && !sal && (w + ' ').indexOf(o.value + ' ') === 0) sal = o.value;
+    });
+    $('ctSalutation').value = sal;
+    $('ctName').value = sal ? w.slice(sal.length).trim() : w;
+    $('ctRole').value = 'Billing';
+    $('ctPrimary').checked = false;
+  }
+  /* The Billing sheet's Bukku fields saved to Bukku (only what changed),
+     then SST on quotes and Bill in to the portal. Answers as the table's
+     update does, so the Save below reads on as before. */
+  var BK_FIELDS = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'bill_contact_id', 'finance_email', 'billing_address'];
+  function bkWrite(kind, rid, patch, was) {
+    var vals = {}, port = {}, n = 0;
+    Object.keys(patch).forEach(function (k) {
+      var same = String(patch[k] == null ? '' : patch[k]) === String(was[k] == null ? '' : was[k]);
+      if (BK_FIELDS.indexOf(k) > -1) { if (!same) { vals[k] = patch[k] == null ? '' : patch[k]; n++; } }
+      else if (!same) port[k] = patch[k];
+    });
+    var first = n ? window.ADspaceBukku.save(kind, rid, vals) : Promise.resolve({ ok: true });
+    return first.then(function (x) {
+      if (x.error) {
+        if (x.error === 'stale') API.withBilling([state.client]).then(function () { paintBilling(state.client); });
+        return { error: { message: x.said || 'Not saved.' } };
+      }
+      if (x.values) {
+        /* Bukku's answer is what the record now holds. */
+        BK_FIELDS.forEach(function (k) { if (k !== 'bill_contact_id' && k in x.values) patch[k] = x.values[k]; });
+      }
+      if (!Object.keys(port).length) return { data: [{ id: rid }], bukku: n };
+      return db.from('clients').update(port).eq('id', rid).select('id').then(function (r) { r.bukku = n; return r; });
+    });
+  }
   function entBand(fold) {
     var host = fold && fold.querySelector('[data-ent-bk]');
     if (!host || host.getAttribute('data-read') || !window.ADspaceBukku || !maySeeBilling()) return;
     host.setAttribute('data-read', '1');
-    window.ADspaceBukku.group(host, 'entity', fold.getAttribute('data-ent'), { can: mayPart('clients.billing', 'work'), after: invoicesAgain });
+    var eid = fold.getAttribute('data-ent');
+    window.ADspaceBukku.group(host, 'entity', eid, { can: mayPart('clients.billing', 'work'), after: invoicesAgain,
+      read: function (x) { if (!x.error && (x.changed || []).length) entReload(); },
+      addContact: bkAddContact });
   }
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
@@ -2816,6 +2875,7 @@
     $('crmBillContact').value = ent && ent.bill_contact_id ? ent.bill_contact_id : '';
     $('crmBillTitle').textContent = ent ? 'Billing entity' : 'New billing entity';
     entSheetMode(true);
+    $('crmBillSave').textContent = ent && window.ADspaceBukku && window.ADspaceBukku.held('entity', ent.id) ? 'Save to Bukku' : 'Save';
     msg('crmBillMsg', pre && pre.from ? 'Filled from Bukku (' + pre.from + ').' : ''); msg('crmBillNote', '');
     openSheet('crmBillSheet', opener || $('crmEntAdd'));
   }
@@ -2834,6 +2894,17 @@
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
     }
     var b = $('crmBillSave'); b.disabled = true;
+    /* An entity Bukku holds saves to Bukku (2026-10-30). */
+    if (ed.id && window.ADspaceBukku && window.ADspaceBukku.held('entity', ed.id)) {
+      var ent0 = entOf(ed.id) || {};
+      bkWrite('entity', ed.id, vals, ent0).then(function (r) {
+        b.disabled = false;
+        if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
+        entKeepOpen(ed.id);
+        entClose(); entReload(); msg('crmBillNote', r.bukku ? 'Saved to Bukku.' : 'Saved.', 'ok');
+      });
+      return;
+    }
     var done = function (r) {
       b.disabled = false;
       var d = r.data || {};
@@ -3022,8 +3093,10 @@
     paintBilling(state.client);
     msg('crmBillMsg', ''); msg('crmBillNote', '');
     if ($('crmBillAsk')) $('crmBillAsk').hidden = true;
+    $('crmBillSave').textContent = bkHeld() ? 'Save to Bukku' : 'Save';
     openSheet('crmBillSheet', opener || $('crmBillEdit'));
   }
+  function bkHeld() { return Boolean(window.ADspaceBukku && state.client && window.ADspaceBukku.held('client', state.client.id)); }
   $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
   $('crmBillCancel').addEventListener('click', function () {
     if (state.entEdit) { state.entEdit = null; shutSheet('crmBillSheet'); entSheetMode(false); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', ''); return; }
@@ -3888,7 +3961,18 @@
         return;
       }
     }
-    db.from('clients').update(patch).eq('id', state.client.id).select('id').then(function (r) {
+    /* Bukku holds this client's billing: the change is saved to Bukku and
+       filed there (`bukku_take`); a state still being read saves nothing. */
+    var bs = bkState(), toBukku = bkHeld();
+    if (!toBukku && (bs === 'reading' || bs === 'down')) {
+      msg('crmBillMsg', bs === 'reading' ? 'Bukku is being read. Try again in a moment.' : 'Bukku did not answer, so nothing can be saved. Try again in a few minutes.', 'err');
+      return;
+    }
+    $('crmBillSave').disabled = true;
+    Promise.resolve(toBukku ? bkWrite('client', state.client.id, patch, was) : db.from('clients').update(patch).eq('id', state.client.id).select('id')).catch(function (x) {
+      return { error: { message: (x && x.message) || String(x) } };
+    }).then(function (r) {
+      $('crmBillSave').disabled = false;
       if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
@@ -3901,8 +3985,14 @@
       if ('bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd) {
         what = [what, 'Bill in: ' + (was.bill_sgd ? 'S$' : 'RM') + ' → ' + (patch.bill_sgd ? 'S$' : 'RM')].filter(Boolean).join(' · ');
       }
-      log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
+      /* A save to Bukku is filed by Bukku's own take; SST on quotes and Bill in by the page. */
+      if (!toBukku) log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
         .filter(Boolean).join(' · '));
+      else if ('sst_applies' in patch && patch.sst_applies !== was.sst_applies || 'bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd) {
+        log('client.billing', state.client.name, [changed(was, patch, [['sst_applies', 'SST applies']], { names: true }),
+          'bill_sgd' in patch && patch.bill_sgd !== was.bill_sgd ? 'Bill in: ' + (was.bill_sgd ? 'S$' : 'RM') + ' → ' + (patch.bill_sgd ? 'S$' : 'RM') : '']
+          .filter(Boolean).join(' · '));
+      }
       if (gate && still.length) { paintBilling(state.client); held(still); return; }
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
       shutSheet('crmBillSheet');
@@ -3915,10 +4005,24 @@
       var goLetter = state.toLetter && state.toLetter.id === state.client.id && !still.length ? state.toLetter : null;
       state.toActive = null; state.toLetter = null;
       openClient(state.client);
+      var savedWord = toBukku && r.bukku ? 'Saved to Bukku.' : 'Saved.';
       msg('crmBillNote', still.length
-        ? 'Saved. Required before Active: ' + still.join(', ') + '.'
-        : 'Saved.',
+        ? savedWord + ' Required before Active: ' + still.join(', ') + '.'
+        : savedWord,
         still.length ? 'warn' : 'ok');
+      /* The way back: the earlier details written to Bukku again. */
+      if (toBukku && r.bukku && !gate) {
+        var back = {}, cid2 = state.client.id;
+        BK_FIELDS.forEach(function (k) { if (k in patch && String(patch[k] == null ? '' : patch[k]) !== String(was[k] == null ? '' : was[k])) back[k] = was[k]; });
+        window.ADspaceAdmin.undoHere('Saved to Bukku.', function () {
+          if (!state.client || state.client.id !== cid2) return;
+          var now = Object.assign({}, state.client);
+          bkWrite('client', cid2, Object.assign({}, back), now).then(function (u) {
+            if (u.error) { msg('crmBillNote', u.error.message, 'err'); return; }
+            API.withBilling([state.client]).then(function () { paintBilling(state.client); msg('crmBillNote', 'Undone.', 'ok'); });
+          });
+        }, $('crmBillRead'));
+      }
       /* Active was asked for and billing is now complete: the move goes on
          the way the stage select takes it, the head brought back into view
          (2026-10-20, CLI-6). */
