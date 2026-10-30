@@ -7747,6 +7747,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return DB.billing_entities.filter(function (e) { return e.id !== except && enDigits(e.company_no) === d; })[0] || null;
       };
       var cid0 = args.p_client;
+
+      var enReached = function (e) {
+        var ls = enLinks(e.id);
+        if (ls.length) return ls.some(function (l) { return scopeSeen(l.client_id, 'view'); });
+        return invScopeAll() || (!!e.orphan_of && scopeSeen(e.orphan_of, 'view'));
+      };
       if (name === 'billing_entities_find') {
         if (!enMay(null, 'view')) return enAns({ error: 'denied' });
         var q = String(args.p_q || '').trim(); if (q.length < 2) return enAns({ entities: [] });
@@ -7759,7 +7765,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             .join(' \n ').toLowerCase().split(' \n ');
           var hit = qw.every(function (w) { return names.some(function (n) { return n.indexOf(w) > -1; }); }) ||
             (qd.length >= 4 && enDigits(e.company_no).indexOf(qd) > -1);
-          return hit && (!ls.length || ls.some(function (l) { return scopeSeen(l.client_id, 'view'); }));
+          return hit && enReached(e);
         }).sort(function (a, b) { return String(a.legal_name).localeCompare(String(b.legal_name)); }).slice(0, 10)
           .map(function (e) { return enJson(e, null); }) });
       }
@@ -7776,8 +7782,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var eid = args.p_entity, made = false;
         if (eid) {
           if (!enOf(eid)) return enAns({ error: 'not-found' });
-          var ls0 = enLinks(eid);
-          if (ls0.length && !ls0.some(function (l) { return scopeSeen(l.client_id, 'view'); })) return enAns({ error: 'denied' });
+          if (!enReached(enOf(eid))) return enAns({ error: 'denied' });
           if (link0) return enAns({ error: 'taken' });
         } else {
           var v = enClean(args.p_values); if (v.error) return enAns(v);
@@ -7789,12 +7794,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var isMain = !DB.client_entities.some(function (l) { return l.client_id === cid0 && l.is_main; });
         DB.client_entities.push({ client_id: cid0, entity_id: eid, is_main: isMain, added_at: new Date().toISOString(), added_by: enMe.id || null });
         if (isMain) entPut(eid, cid0);
+        if (enOf(eid).orphan_of) enOf(eid).orphan_of = null;
         enFile(cid0, (made ? 'Billing entity added' : 'Billing entity added, already held') + (isMain ? ' · main' : ''));
         return enAns({ ok: true, id: eid, main: isMain });
       }
       if (!link0) return enAns({ error: 'not-found' });
       var ent = enOf(args.p_entity);
       if (name === 'client_entity_save') {
+
+        if ((DB.bukku_links || []).some(function (l) { return l.kind === 'entity' && l.record_id === ent.id && l.held_at; })) return enAns({ error: 'held' });
         if (args.p_expected && ent.updated_at !== args.p_expected) return enAns({ error: 'stale', entity: enJson(ent, cid0) });
         var sv = enClean(args.p_values); if (sv.error) return enAns(sv);
         if (sv.bill_contact_id && sv.bill_contact_id !== ent.bill_contact_id && !(DB.client_contacts || []).some(function (t) {
@@ -7825,6 +7833,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'client_entity_remove') {
         if (link0.is_main) return enAns({ error: 'main' });
         DB.client_entities.splice(DB.client_entities.indexOf(link0), 1);
+        if (!enLinks(ent.id).length) ent.orphan_of = cid0;
         enFile(cid0, 'Billing entity removed');
         return enAns({ ok: true });
       }
@@ -9421,6 +9430,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var wrep = wqc && String(wqc.owner || '').trim() && DB.team_members.filter(function (m) {
             return m.active && !m.system && !m.removed_at && m.name === wqc.owner; })[0];
 
+          var wUnsent = wsh.source === 'website' && !wsh.released_at;
           var wlines = DB.client_services.filter(function (l) { return l.quotation_id === wsh.id; }).map(function (l) { return l.id; });
           var wdoc = (DB.client_documents || []).filter(function (d) {
             return d.kind === 'offer' && !d.voided_at && !d.superseded_by && (d.lines || []).some(function (x) { return wlines.indexOf(x.service_id) >= 0; });
@@ -9446,9 +9456,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!wstage) wstage = wq.proceed_at ? 'ready' : 'quote';
           return qtOk(JSON.parse(JSON.stringify({ ref: wsh.ref, first_ref: wq.ref, revised: wsh.id !== wq.id,
             brand: (wq.contact && wq.contact.brand) || wq.brand, market: wqc && wqc.market === 'SG' ? 'SG' : 'MY',
-            version: wstage === 'review' ? null : wsh.version, issued_at: wsh.issued_at,
-            valid_until: wstage === 'review' ? null : wsh.valid_until, lines: wstage === 'review' ? null : wsh.lines,
-            totals: wstage === 'review' ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
+            version: wUnsent ? null : wsh.version, issued_at: wsh.issued_at,
+            valid_until: wUnsent ? null : wsh.valid_until, lines: wUnsent ? null : wsh.lines,
+            totals: wUnsent ? null : wsh.totals, reply_due: wstage === 'review' ? wsh.reply_due : null, selection: wq.selection,
             attention: wq.contact && wq.contact.name, status: woffer ? 'offer' : wsh.status, stage: wstage,
             details_key: wstage === 'billing' ? wform.access_key : null, portal: wportal,
             proceed_at: wq.proceed_at || null, proceed_due: wq.proceed_due || null,
@@ -9527,9 +9537,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.released_at) return qtOk({ ok: true, again: true, valid_until: qq.valid_until });
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
+        if (qq.no_contact_at) return qtOk({ error: 'no-contact' });
         var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
-        var qsWa = /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
+
+        var qsT = (DB.wa_templates || []).filter(function (t) { return t.purpose === 'quote_ready'; })[0] || (window.__waTemplates || {}).quote_ready;
+        var qsWa = !!(qsT && qsT.active && qsT.name) && /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
         if (qsWa) (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quotation', ref_id: qq.id, client_id: qq.client_id,
           to_number: String(qq.contact.whatsapp).replace(/[^0-9]/g, ''), button: qq.access_key, status: 'queued', created_at: qtNow.toISOString() });
         qtLog(qq.brand, qq.ref + ' sent to the prospect' + (qsWa ? ' on WhatsApp' : '') + ' · valid until ' + qq.valid_until);
@@ -9762,7 +9775,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var f = pgRow(k);
         if (!pgSet(f)) return null;
         return { on: !f.starts_at || Date.parse(f.starts_at) <= mtNow, set: true, kind: f.kind || 'upgrade',
-          note: k !== 'admin' || team ? (f.note || null) : null, note_zh: f.note_zh || null, starts_at: f.starts_at || null,
+          note: k !== 'admin' || team ? (f.note || null) : null, note_zh: k !== 'admin' || team ? (f.note_zh || null) : null, starts_at: f.starts_at || null,
           ends_at: f.ends_at || null, whatsapp: !!f.whatsapp };
       };
       var pgStates = function () {

@@ -177,7 +177,9 @@
           var acts = [];
           /* A website quotation is revised from its row: Build quote on a
              copy, linked as its revision, then sent (2026-10-26). */
-          if (maySet && awaiting(q)) acts.push('<button class="btn btn-sm" data-a="send" type="button">Send quotation</button>');
+          /* Not drawn for a prospect marked Do not contact, which quotation_send
+             refuses (audit 2026-10-30). */
+          if (maySet && awaiting(q) && !q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" type="button">Send quotation</button>');
           if (maySet && !q.removed_at && q.source === 'website' && !q._revised && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }

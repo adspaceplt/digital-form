@@ -670,7 +670,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     policy, no grant), its `kind` (`upgrade` Upgrade in progress, `paused`
     Temporarily unavailable), window, note, Chinese note and whether its
     cover offers Chat on WhatsApp. `page_states()` (anon) answers every page
-    set, the console's note to the team alone; `page_set(p_pages, p_kind,
+    set, the console's notes (English and 中文) to the team alone; `page_set(p_pages, p_kind,
     p_note, p_note_zh, p_starts, p_ends, p_whatsapp)` (`team.upgrade`;
     `bad-page`, `bad-kind`, `bad-window`) sets several at once, filed
     `team.changed` under Portal ("Page availability: Client portal: Available
@@ -1915,7 +1915,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     said on the line, Link to Bukku on its band; Clients: Billing at Work, the
     client in scope (`client_entity_add`, `_save` with `p_expected`,
     `_main`, `_remove`: `no-name`, `bad-email`, `bad-contact`, `stale`,
-    `taken`, `main`); a BRN held is never made twice (`brn-taken`, the
+    `taken`, `main`, `held`: an entity Bukku holds is saved to Bukku, never
+    by the portal; the page then reads its band); an entity removed from
+    its last client stays reachable to that client's team alone
+    (`billing_entities.orphan_of`, `billing_entity_reached`), so Add entity
+    finds it again; a BRN held is never made twice (`brn-taken`, the
     question offering that entity), two clients holding one BRN before
     stay two, merged by hand; Make primary and Remove (never the primary) offer
     Undo where they happened. Filed `client.billing` naming fields alone.
@@ -2855,7 +2859,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   the earlier values back; SST on quotes and Bill in stay the portal's.
   Bukku not answering reads Not read with the copy's time and draws no
   Edit; Use details from the client's form fills the same sheet and saves
-  to Bukku. `bukku_take` (the service role's) writes the copy to the
+  to Bukku. `bukku_take` (the service role's) writes only the fields that
+  differ (a registration no. Bukku sets out otherwise is the same one),
+  stamps the row, and writes the copy to the
   record's primary entity (to the brand through `billing_entity_mirror`)
   and files `client.billing` naming the fields (Read from Bukku by Bukku,
   Saved to Bukku, Took Bukku's details); every held link is read again at
@@ -5087,7 +5093,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     ad set and result type: its copies, age bands and days are gathered into
     it; two result types (Post engagements, Interactions) are never added
     together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
-    result types is refused. The row keeps its Ad IDs and the Account ID
+    result types is refused, and a row that would match two of the report's
+    rows is left out and listed as unclear, never written to the first. The row keeps its Ad IDs and the Account ID
     (`ad_ids`, `ad_account`) as the team's reference: the row and the Edit
     sheet's foot (left of Cancel) name how many (`2 Ad IDs`, a `.linkbtn`)
     and open them over the page (`#rpIdsPop`, a `.popcard` through
@@ -5804,11 +5811,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   team told Quotation to review; until a colleague sends it
   (`quotations.released_at`) the link reads Request received and the day
   it will be sent on WhatsApp, in one column, and `quote_website_read`
-  answers stage `review` with no lines, totals, version or validity
-  (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
+  answers no lines, totals, version or validity while it is unsent,
+  whatever its stage (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
   Awaiting review · Send by {day}, Send quotation the pane's one blue
   (asked; `quotation_send`, Clients: Quotations at Work, the client in
-  scope: valid from that day, the `quote_ready` WhatsApp queued, filed),
+  scope: valid from that day, the `quote_ready` WhatsApp queued only
+  while its template is on and filed as sent on WhatsApp only then;
+  refused `no-contact` while marked Do not contact; filed),
   Adjust and send beside it, no Send on WhatsApp; the managers are told
   six hours before the reply is owed while it waits (`quote_proceed_remind`).
   Once sent, the rates show, with Download (the A4 PDF); the website asks no

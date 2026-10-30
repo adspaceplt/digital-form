@@ -2777,7 +2777,9 @@
     'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This changed since it was opened, and has been read again.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
-    'needs-update': 'This needs a database update.'
+    'needs-update': 'This needs a database update.',
+    'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
+    'brn-taken': 'An entity with this registration no. is already held. Add that entity instead.'
   };
   function entSaid(r) {
     if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
@@ -2922,6 +2924,13 @@
             return '';
           });
         });
+        return;
+      }
+      if (d.error === 'held' && ed.id) {
+        /* Bukku took the entity meanwhile: its band reads Bukku, and the
+           next Edit saves there. */
+        entKeepOpen(ed.id); entClose(); entReload();
+        msg('crmBillNote', entSaid(r), 'warn');
         return;
       }
       if (d.error === 'stale') { state.entFor = null; loadEntities(); }

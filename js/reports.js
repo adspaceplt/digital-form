@@ -5060,6 +5060,11 @@
     var read = function () {
       var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre, fromMeta: !!pre });
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
+      /* A row more than one ad here matches (one name in two ad accounts,
+         the paste naming neither) is left out, never added as a third
+         (audit 2026-10-30). */
+      out.unclear = out.unclear.concat(out.fresh.filter(function (r0) { return r0._many; }));
+      out.fresh = out.fresh.filter(function (r0) { return !r0._many; });
       if (!platTouched && out.platform !== plat()) {
         $('rpPAPlat').value = out.platform;
         if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint($('rpPAPlat'));

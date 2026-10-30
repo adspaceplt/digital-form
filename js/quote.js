@@ -583,6 +583,12 @@
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
+  function paintBare() {
+    var q = Q;
+    return '<div class="qs-quote is-single" data-shown><section class="qs-main">' +
+      '<div class="qs-head"><h1 class="qs-title">' + esc(t().quoteT) + '</h1><span class="qs-meta">' + esc(q.ref + ' · ' + q.brand) + '</span></div>' +
+      '<div class="qs-review-act" id="qsSide">' + sideHtml(q) + '</div></section></div>';
+  }
   /* A website quotation the team has not sent yet (2026-10-29, the user:
      "the price shouldnt send out straight"): the database sends no line or
      figure, so the page says it was received and when it will be sent. */
@@ -693,7 +699,9 @@
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if (paint.lost) { cover(t().lostT, t().lostP, true); return; }
     if (!CAT && !Q) { if (paint.off) cover(t().offT, t().offP); return; }
-    if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : paintQuote(); decorate(); return; }
+    /* A quotation the team never sent holds back its price at every stage
+       (audit 2026-10-30): closed, it reads its stage alone. */
+    if (Q) { root().innerHTML = stageOf(Q) === 'review' ? paintReview() : !Q.lines ? paintBare() : paintQuote(); decorate(); return; }
     if (S.step === 'intro') {
       S = blank();
       try { sessionStorage.removeItem(KEEP); } catch (e) {}

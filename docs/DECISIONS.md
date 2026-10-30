@@ -7662,3 +7662,36 @@ read and set every page for a tab served before.
   the template is on. The stand-in now holds Quotation ready among the
   WhatsApp templates as the live table does, so the WhatsApp suite counts
   eight.
+
+## 2026-10-30 · Audit of the builds since 2026-10-29, fixed
+- **Asked:** the user, 2026-10-30: run the audit, fix, then the full gate.
+- **Quotations:** an unsent website quotation whose lead had moved on
+  (a letter, Not proceeding) answered its lines and totals to the link,
+  since the price was withheld only at stage `review`; it is now withheld
+  while unsent, whatever the stage. Send quotation filed "on WhatsApp"
+  with the template off, and sent a quotation marked Do not contact; it
+  now queues only with the template on and refuses `no-contact`. Two
+  colleagues revising and sending one quotation at once could both win;
+  `quotation_replace` now locks the quotation it revises. The console's
+  Chinese note on Page availability reached any visitor; it is the team's
+  alone, as the English one was.
+- **Billing:** a portal save on an entity Bukku held went through and was
+  overwritten by the next read; it is refused `held`, and the page reads
+  the band. An entity removed from its last client could be found by
+  nobody; it now stays with that client's team (`orphan_of`). A read from
+  Bukku wrote every field each night, moving `updated_at` and reformatting
+  a registration no.; it writes only what differs. A finance email cleared
+  in the portal left Bukku's; it falls back to the billing contact's. A
+  first entity made by a read did not reach its brand's own columns; it
+  does now. Two Add entity presses on one client at once could both make
+  an entity; the client row is locked.
+- **Pages:** one refused read in search hid the clients found by entity;
+  a client letter's {client} and {first name} read the brand, not the
+  billing entity; an ambiguous ad import row wrote to the first match; the
+  Overdue count counted an unlinked contact's invoices as no client; a
+  refused page availability save said nothing.
+- **Mistake noted:** the stand-in queued `quote_ready` with its template
+  off, more generous than the database; it now refuses as the database
+  does, and the quotation website suite turns the template on.
+- **Deferred:** a billing contact shared by an entity across brands, and
+  merging `bukku_linked` with `bukku_link_only`: design questions, not bugs.

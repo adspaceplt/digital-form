@@ -660,7 +660,10 @@
       if (sp) { vars['supplier'] = sp.name; vars['first name'] = firstName(sp.contact_name); }
     } else {
       var c = (issuing && issuing.client) || clientOf($('docClient').value);
-      if (c) { vars['client'] = c.legal_name || c.name; vars['first name'] = firstName(((issuing && issuing.contact) || {}).name); }
+      /* The billing entity chosen fills both, as the Attn line reads it
+         (audit 2026-10-30). */
+      var be = c && billEnt(c);
+      if (c) { vars['client'] = (be && be.legal_name) || c.legal_name || c.name; vars['first name'] = firstName((((be && be.bill_contact) || (issuing && issuing.contact)) || {}).name); }
     }
     return addFieldVars(vars, t);
   }
@@ -780,7 +783,7 @@
       var main = (be && be.bill_contact) || issuing.contact || {};
       $('docAttn').value = ADspaceWords.person(main.salutation, main.name);
       $('docAttnRole').value = main.role || '';
-      vars['client'] = c.legal_name || c.name;
+      vars['client'] = bill.legal_name || c.legal_name || c.name;
       vars['first name'] = firstName(main.name);
     }
     if (hr && m) {
