@@ -5090,7 +5090,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     and open them over the page (`#rpIdsPop`, a `.popcard` through
     `ADspaceMenu.pop`, above a sheet, Escape first): each a copy control,
     Copy all, Open in Ads Manager; never the IDs in a line under the name. A
-    later paste is matched by them first; never printed in the PDF. A table's total row gives the figures once.
+    later paste is matched by them first, and never to a row of another ad
+    account (`sameAccount`: a creative of one name in two accounts is two
+    rows, each under its account's name in the console, `Ad account ending
+    4321`, never in the PDF; the user, 2026-10-30); never printed in the PDF. A table's total row gives the figures once.
     The export's first row (no ad name) is the account's own reach,
     impressions and amount spent for the period, reach counted once: it
     fills Step 1 where empty, and a typed figure is kept (the sheet says so).
