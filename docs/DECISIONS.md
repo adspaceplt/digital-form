@@ -7519,3 +7519,20 @@ read and set every page for a tab served before.
   band on Reading Bukku. (the repaint's band started no read and the
   first painted a detached one); one read a record now serves every band
   drawn while it runs.
+### 2026-10-30 · A client record's read groups stand on white cards
+- **Reported:** "Don't you think that white card contrast with the
+  background to show the company or entity section would be better? And
+  then it's like the key dates on the right … blends together with the
+  background"; and of a contact's chips at a desk: "This looks like weird
+  and incorrect inappropriate ui used".
+- **Why:** Billing and Brand were the only panes of a client record whose
+  facts sat on the grey page, level with the rail, while Overview,
+  Contacts, Services, Calls and Engagements (and the colleague's and the
+  supplier's records) stood on white. A contact's chips took the phone's
+  equal-width rule in any pane under 640, so at a desk, beside the rail,
+  they stretched into outlined slabs that read as fields.
+- **Changed:** `#crmPanes .pane-form > .readgroups` is a white card, the
+  groups inside a hairline apart, an empty one not drawn; Billing's other
+  entities moved into a card of their own. The equal-width contact chips
+  are `is-tight` alone (a phone's width), so a desk's pane keeps each chip
+  its own width as the Overview's contact details do.
