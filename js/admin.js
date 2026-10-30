@@ -1752,8 +1752,8 @@
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
       { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
-      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' },
-      { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' }] },
+      { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' },
+      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' }] },
     'whatsapp.templates': { name: 'WhatsApp templates', within: '#waTplSheet', steps: [
       { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
       { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. Off, it sends nothing and its button leaves the records.' }] },
