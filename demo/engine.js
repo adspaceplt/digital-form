@@ -545,6 +545,7 @@
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
     quotation_send: 'p_id',
+    quotation_resend: 'p_id p_again',
     rate_card_publish: 'p_version p_valid_until p_note',
     rate_card_text_save: 'p_key p_value',
     team_notices_list: '',
@@ -9534,6 +9535,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
         qtLog(qq.brand, qq.ref + ' sent to the prospect' + (qsWa ? ' on WhatsApp' : '') + ' · valid until ' + qq.valid_until);
         return qtOk({ ok: true, valid_until: qq.valid_until, whatsapp: qsWa });
       }
+
+      if (name === 'quotation_resend') {
+        if (qq.removed_at) return qtOk({ error: 'not-found' });
+        if (qq.source !== 'website' || !qq.access_key) return qtOk({ error: 'bad-quotation' });
+        if (!qq.released_at) return qtOk({ error: 'not-sent' });
+        if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+        if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
+        if (qq.valid_until && qq.valid_until < qtToday) return qtOk({ error: 'expired' });
+        if (qq.no_contact_at) return qtOk({ error: 'no-contact' });
+        var qrT = (DB.wa_templates || []).filter(function (t) { return t.purpose === 'quote_ready'; })[0] || (window.__waTemplates || {}).quote_ready;
+        if (!qrT || !qrT.active || !qrT.name) return qtOk({ error: 'wa-off' });
+        var qrNum = String((qq.contact || {}).whatsapp || '').replace(/[^0-9]/g, '');
+        if (!/^(60|65)[0-9]{8,10}$/.test(qrNum)) return qtOk({ error: 'no-number' });
+        var qrH = Number(appSet('wa_repeat_hours', qtToday));
+        if (!(qrH >= 0)) qrH = 24;
+        if (qrH > 0 && !args.p_again) {
+          var qrO = (DB.wa_outbox || []).filter(function (o) { return o.template === 'quote_ready' && o.ref_id === qq.id && o.status !== 'failed' && o.state !== 'failed' &&
+            Date.parse(o.created_at) > Date.now() - qrH * 3600e3; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+          if (qrO) return qtOk({ error: 'recent', recent: { at: qrO.created_at, by: qrO.created_by && qrO.created_by !== 'system' ? qrO.created_by : null } });
+        }
+        (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quote_ready', ref_id: qq.id, client_id: qq.client_id,
+          to_number: qrNum, button: qq.access_key, status: 'queued', created_by: qtMe.name, created_at: qtNow.toISOString() });
+        qtLog(qq.brand, qq.ref + ' sent again to the prospect on WhatsApp');
+        return qtOk({ ok: true });
+      }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;
         if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' marked Not proceeding'; }
@@ -9809,7 +9835,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (window.__refuseRpc && window.__refuseRpc[name]) return waNo(window.__refuseRpc[name]);
       var waMe = opsMe();
       if (!waMe) return waNo('denied');
-      if (!DB.wa_templates) DB.wa_templates = ['report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer'].map(function (pp) {
+      if (!DB.wa_templates) DB.wa_templates = ['report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready'].map(function (pp) {
         return Object.assign({ purpose: pp, name: '', lang: 'en', params: 0, category: '', active: false, set_by: null, set_at: null },
           (window.__waTemplates || {})[pp] || {});
       });
