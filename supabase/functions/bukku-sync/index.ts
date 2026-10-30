@@ -365,7 +365,9 @@ export function valuesOf(c: any) {
 const BILL = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
 /* The fields in which the portal and Bukku differ, each read as Bukku sets
    it out: an address in its parts, a registration no. by its letters and
-   digits, a person with or without the salutation Bukku keeps. */
+   digits, a person with or without the salutation Bukku keeps, and a
+   person whose every word Bukku's name holds (Angel against Angel Lim:
+   Send keeps Bukku's whole name, 2026-10-30). */
 export function differs(portal: any, bk: any, country: string): string[] {
   const out: string[] = [];
   const bare = (v: unknown) => { const w = nameWords(v); return w.slice(salLead(w)).join(' '); };
@@ -375,7 +377,11 @@ export function differs(portal: any, bk: any, country: string): string[] {
     if (!a || !b) same = !a && !b;
     else if (f === 'billing_address') same = sameAddress(addressOf(a, country), addressOf(b, country));
     else if (f === 'company_no') same = digits(a) === digits(b);
-    else if (f === 'person') same = nameWords(a).join(' ') === nameWords(b).join(' ') || bare(a) === bare(b);
+    else if (f === 'person') {
+      const ours = nameWords(a), theirs = nameWords(b).slice(salLead(nameWords(b)));
+      same = ours.join(' ') === nameWords(b).join(' ') || bare(a) === bare(b) ||
+        (ours.slice(salLead(ours)).length > 0 && ours.slice(salLead(ours)).every((w) => theirs.includes(w)));
+    }
     else if (f === 'finance_email') same = a.toLowerCase() === b.toLowerCase();
     else same = a.replace(/\s+/g, ' ').toUpperCase() === b.replace(/\s+/g, ' ').toUpperCase();
     if (!same) out.push(f);

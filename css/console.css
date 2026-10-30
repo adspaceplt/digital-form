@@ -3849,6 +3849,10 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
 .bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }
+/* What Bukku names that Contacts lacks, its act at the line's right edge (2026-10-30). */
+.bk-band > .bk-person { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 8px 0 0; }
+.bk-band > .bk-person > .msg { flex: 1 1 220px; margin: 0; }
+.bk-band > .bk-person > .btn { flex: 0 0 auto; margin-left: auto; }
 /* Billing from Bukku (2026-10-30): what differs, field by field, under the band's line. */
 .bk-band > .bk-diff { grid-column: 1 / -1; margin-top: 10px; }
 .bk-diff .bk-tr { border-top-color: var(--line); }

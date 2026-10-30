@@ -2831,7 +2831,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   changed; Billing is read once a visit to the record (`bukku-sync` `read`,
   one read at a time a record), a change made in Bukku taken in and said
   once on the band (Changed in Bukku since the last read), filed by Bukku;
-  Bukku's billing person not in Contacts is said with Add as contact.
+  Bukku's billing person is the contact whose name, or every word of whose
+  name, Bukku's holds (Angel in Ms Angel Lim; the only such contact,
+  `bukku_person_contact`, `2026-10-30-bukku-person-by-its-words.sql`), as
+  Send to Bukku keeps Bukku's whole name; one not in Contacts is said on
+  the band with Add as contact, a `.btn-sm` at the line's right edge.
   Edit's Save reads Save to Bukku and sends only what changed
   (`bukku-sync` `save`, `bukku_prepare_with` as the caller, every other
   Bukku detail kept as Bukku holds it), refused `stale` where Bukku moved

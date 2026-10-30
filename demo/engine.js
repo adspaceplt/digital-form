@@ -2859,9 +2859,14 @@ function cardSlugFree(name, self, email) {
     var p = w(person);
     if (!p) return null;
     var clients = k === 'client' ? [id] : (DB.client_entities || []).filter(function (l) { return l.entity_id === id; }).map(function (l) { return l.client_id; });
-    return (DB.client_contacts || []).filter(function (t) {
-      return !t.archived_at && clients.indexOf(t.client_id) > -1 && (w(t.name) === p || w(bkNamed(t)) === p);
-    }).sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0); })[0] || null;
+    var live = (DB.client_contacts || []).filter(function (t) { return !t.archived_at && clients.indexOf(t.client_id) > -1; });
+    var byPrimary = function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0); };
+    var same = live.filter(function (t) { return w(t.name) === p || w(bkNamed(t)) === p; }).sort(byPrimary);
+    if (same.length) return same[0];
+
+    var pw = p.split(' ');
+    var part = live.filter(function (t) { var tw = w(t.name).split(' ').filter(Boolean); return tw.length && tw.every(function (x) { return pw.indexOf(x) > -1; }); });
+    return part.length === 1 ? part[0] : null;
   }
   function bkTake(actorName, k, id, vals, hash, changed, mode) {
     var l = bkLinkRow(k, id);
@@ -12059,7 +12064,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
             a = String(a == null ? '' : a).trim(); b = String(b == null ? '' : b).trim();
             if (!a || !b) return !a && !b;
             var al = function (v) { return v.toUpperCase().replace(f === 'billing_address' ? /,?\s*(MALAYSIA|SINGAPORE)\s*$/ : /$^/, '').replace(/[^A-Z0-9]/g, ''); };
-            if (f === 'person') { var sal = /^(MR|MS|MRS|MDM|DR|PROF|DATO|DATIN|DATUK|TUAN|PUAN|ENCIK|CIK|MISS|MADAM)\b\.?\s*/; return al(a.toUpperCase().replace(sal, '')) === al(b.toUpperCase().replace(sal, '')); }
+            if (f === 'person') {
+              var sal = /^(MR|MS|MRS|MDM|DR|PROF|DATO|DATIN|DATUK|TUAN|PUAN|ENCIK|CIK|MISS|MADAM)\b\.?\s*/;
+              var ws = function (v) { return v.toUpperCase().replace(sal, '').replace(/[^A-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean); };
+              var ow = ws(a), tw = ws(b);
+              return ow.join(' ') === tw.join(' ') || (ow.length > 0 && ow.every(function (x) { return tw.indexOf(x) > -1; }));
+            }
             return al(a) === al(b);
           };
           var bkDiff = function (p, v) { return BK_ORDER.filter(function (f) { return !bkSame(f, p[f], v[f]); }); };
