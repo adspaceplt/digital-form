@@ -2776,7 +2776,8 @@
     'taken': 'This entity already bills this client.', 'no-name': 'Enter the company name as registered.',
     'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This changed since it was opened, and has been read again.',
-    'main': 'The primary billing entity cannot be removed. Make another entity primary first.'
+    'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
+    'needs-update': 'This needs a database update.'
   };
   function entSaid(r) {
     if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
@@ -2860,12 +2861,11 @@
 
   /* Edit and New use Billing's own sheet, with what belongs to the client
      alone (SST on quotes, the currency, the details form) left out. */
-  function openEntity(ent, opener, pre) {
+  function openEntity(ent, opener) {
     state.detUse = null; state.toActive = null; state.toLetter = null;
     state.entEdit = { id: ent ? ent.id : null, updated_at: ent ? ent.updated_at : null };
     var c = state.client;
-    /* A new one may start from a Bukku contact's details (`pre`). */
-    BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = ent ? (ent[f[1]] || '') : ((pre && pre[f[1]]) || ''); });
+    BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = ent ? (ent[f[1]] || '') : ''; });
     paintBilling(c);
     if (ent && ent.bill_contact_id && ent.bill_contact && ent.bill_contact.client_id !== c.id) {
       $('crmBillContact').insertAdjacentHTML('beforeend', '<option value="' + esc(ent.bill_contact_id) + '">' +
@@ -2874,8 +2874,11 @@
     $('crmBillContact').value = ent && ent.bill_contact_id ? ent.bill_contact_id : '';
     $('crmBillTitle').textContent = ent ? 'Billing entity' : 'New billing entity';
     entSheetMode(true);
-    $('crmBillSave').textContent = ent && window.ADspaceBukku && window.ADspaceBukku.held('entity', ent.id) ? 'Save to Bukku' : 'Save';
-    msg('crmBillMsg', pre && pre.from ? 'Filled from Bukku (' + pre.from + ').' : ''); msg('crmBillNote', '');
+    /* A new one is made in Bukku too, where Bukku answered the Add entity
+       sheet (2026-10-30). */
+    $('crmBillSave').textContent = ent ? (window.ADspaceBukku && window.ADspaceBukku.held('entity', ent.id) ? 'Save to Bukku' : 'Save')
+      : (entFound.bukkuOn ? 'Create in Bukku' : 'Save');
+    msg('crmBillMsg', ''); msg('crmBillNote', '');
     openSheet('crmBillSheet', opener || $('crmEntAdd'));
   }
   function entSheetMode(on) {
@@ -2924,7 +2927,20 @@
       if (d.error === 'stale') { state.entFor = null; loadEntities(); }
       if (r.error || d.error) { msg('crmBillMsg', entSaid(r), 'err'); return; }
       entKeepOpen(ed.id || d.id);
-      entClose(); entReload(); msg('crmBillNote', ed.id ? 'Saved.' : 'Added.', 'ok');
+      if (ed.id || !entFound.bukkuOn) { entClose(); entReload(); msg('crmBillNote', ed.id ? 'Saved.' : 'Added.', 'ok'); return; }
+      /* Made in Bukku as well, or linked to the customer Bukku holds of its
+         registration no.; a refusal leaves the entity added, Link to Bukku
+         on its band. */
+      b.disabled = true;
+      entBukku({ action: 'send', kind: 'entity', id: d.id, contact: null, guard: true }).then(function (k) {
+        b.disabled = false;
+        if (window.ADspaceBukku) window.ADspaceBukku.fresh('entity', d.id);
+        entClose();
+        entReload();
+        if (k.error) { msg('crmBillNote', 'Added. Not created in Bukku: ' + (window.ADspaceBukku ? window.ADspaceBukku.said(k) : k.error), 'warn'); return; }
+        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this registration no.'
+          : 'Added and created in Bukku as ' + k.code + '.', 'ok');
+      });
     };
     var call = ed.id
       ? db.rpc('client_entity_save', { p_client: cid, p_entity: ed.id, p_values: vals, p_expected: ed.updated_at })
@@ -2944,22 +2960,48 @@
   }
 
   /* Add entity: one held already, found by its name, a brand it bills or
-     its registration no.; a customer Bukku holds (2026-10-29: the user
-     looked for one there), which starts New billing entity with its
-     details; or a new one through the sheet above. */
-  var entFindSeq = 0, entFindTimer = null, entFound = { held: [], bukku: null, note: '' };
+     its registration no.; or a customer Bukku holds, added and linked in
+     one press (2026-10-30; the user: "just add and pull from Bukku"); or a
+     new one through the sheet above, made in Bukku as well. Bukku's
+     customers are read once as the sheet opens and found on the page. */
+  var entFindSeq = 0, entFindTimer = null, entFound = { held: [], bukku: [], all: null, note: '', bukkuOn: false };
+  var entDigits = function (v) { return String(v || '').replace(/\D/g, ''); };
+  var entWords = function (v) {
+    return String(v == null ? '' : v).toUpperCase().replace(/\b(SDN|BHD|BERHAD|PLT|PTE|LTD|ENTERPRISE|TRADING|THE)\b/g, ' ')
+      .replace(/[^A-Z0-9]+/g, ' ').trim();
+  };
   function openEntAdd(opener) {
     $('entAddFind').value = '';
-    entFound = { held: [], bukku: null, note: '' };
+    entFound = { held: [], bukku: [], all: null, note: '', bukkuOn: false };
     $('entAddList').innerHTML = entPickNew();
     msg('entAddMsg', '');
     openSheet('entAddSheet', opener);
+    /* Not connected, or not the reader's to read, Bukku is left out. */
+    if (!mayPart('clients.billing', 'work')) return;
+    var seq = entFindSeq;
+    entBukku({ action: 'contacts' }).then(function (d) {
+      if (seq !== entFindSeq || !$('entAddSheet') || $('entAddSheet').hidden) return;
+      var quiet = ['bukku-not-set-up', 'denied', 'needs-update'];
+      entFound.all = d.error ? [] : (d.contacts || []);
+      entFound.bukkuOn = !d.error;
+      entFound.note = d.error && quiet.indexOf(d.error) < 0 ? 'Bukku could not be read. Close and open this again to retry.' : '';
+      entBukkuFind();
+      if (entFound.note || $('entAddFind').value.trim().length >= 2) entPaint();
+    });
   }
   function entPickNew() {
     return '<label class="ent-pick"><input type="radio" name="entPick" value="new" checked>' +
       '<span><b>New entity</b><small>Registered name, registration no., address and billing contact</small></span></label>';
   }
-  var entDigits = function (v) { return String(v || '').replace(/\D/g, ''); };
+  /* Bukku's customers holding every word typed, or the registration no. */
+  function entBukkuFind() {
+    var q = $('entAddFind').value.trim(), want = entWords(q).split(' ').filter(Boolean), reg = q.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+    entFound.bukku = q.length < 2 || !entFound.all ? [] : entFound.all.filter(function (k) {
+      var name = entWords(k.name) + ' ' + entWords(k.other);
+      return (want.length && want.every(function (w) { return name.indexOf(w) > -1; })) ||
+        (reg.length >= 4 && String(k.reg_no || '').replace(/[^0-9A-Za-z]/g, '').toUpperCase().indexOf(reg) > -1);
+    }).slice(0, 8);
+  }
   function entPaint() {
     /* The first found is chosen, unless the person chose one that is still listed. */
     var keep = entFound.picked || '';
@@ -2973,8 +3015,8 @@
        no.) is offered once, as the portal's. */
     var known = entFound.held.concat(state.entities || []).map(function (e) { return entDigits(e.company_no); }).filter(Boolean);
     var bk = (entFound.bukku || []).filter(function (k) { return !k.reg_no || known.indexOf(entDigits(k.reg_no)) < 0; }).map(function (k) {
-      return '<label class="ent-pick"><input type="radio" name="entPick" value="bk:' + esc(String(k.id)) + '" data-code="' + esc(k.code || '') + '">' +
-        '<span><b>' + esc(k.name || '') + '</b><small>' + esc([k.reg_no, k.other, k.code].filter(Boolean).join(' · ')) + '</small></span></label>';
+      return '<label class="ent-pick"><input type="radio" name="entPick" value="bk:' + esc(String(k.id)) + '">' +
+        '<span><b>' + esc(k.name || '') + '</b><small>' + esc([k.reg_no, k.other, k.code, k.held ? 'Linked in the portal' : ''].filter(Boolean).join(' · ')) + '</small></span></label>';
     }).join('');
     $('entAddList').innerHTML = (held ? '<p class="ent-picks-h">In the portal</p>' + held : '') +
       (bk ? '<p class="ent-picks-h">In Bukku</p>' + bk : '') +
@@ -2987,14 +3029,18 @@
   $('entAddList').addEventListener('change', function (e) { if (e.target.name === 'entPick') entFound.picked = e.target.value; });
   function entBukku(body) {
     return db.functions.invoke('bukku-sync', { body: body }).then(function (r) {
-      return API.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+      return API.fnRefusal(r).then(function (code) {
+        return code ? { error: code, message: r.data && r.data.message, missing: r.data && r.data.missing } : (r.data || { error: 'failed' });
+      });
     }).catch(function () { return { error: 'failed' }; });
   }
   $('entAddFind').addEventListener('input', function () {
     var q = this.value.trim(), seq = ++entFindSeq;
     clearTimeout(entFindTimer);
-    if (q.length < 2) { entFound = { held: [], bukku: null, note: '' }; $('entAddList').innerHTML = entPickNew(); return; }
-    entFound.picked = ''; entFound.bukku = null; entFound.note = '';
+    entFound.picked = ''; entFound.held = [];
+    entBukkuFind();
+    entPaint();
+    if (q.length < 2) return;
     entFindTimer = setTimeout(function () {
       db.rpc('billing_entities_find', { p_q: q }).then(function (r) {
         if (seq !== entFindSeq) return;
@@ -3004,47 +3050,48 @@
         entFound.held = ((r.data || {}).entities || []).filter(function (e) { return mine.indexOf(e.id) < 0; });
         entPaint();
       });
-      /* Bukku answers slower: its group joins the list when it comes. Not
-         connected, or not the reader's to read, it is left out. */
-      if (!mayPart('clients.billing', 'work')) return;
-      entBukku({ action: 'contacts', q: q }).then(function (d) {
-        if (seq !== entFindSeq) return;
-        var quiet = ['bukku-not-set-up', 'denied', 'needs-update'];
-        entFound.bukku = d.error ? [] : (d.contacts || []);
-        entFound.note = d.error && quiet.indexOf(d.error) < 0 ? 'Bukku could not be read. Type again to retry.' : '';
-        entPaint();
-      });
     }, 250);
   });
+  /* Added: the way back where it happened; the primary has none, as
+     Remove refuses it. */
+  function entAdded(cid, id, main, said) {
+    if (window.ADspaceSheet) window.ADspaceSheet.clean();
+    shutSheet('entAddSheet');
+    entKeepOpen(id);
+    entReload(function () {
+      if (main) { msg('crmBillNote', said, 'ok'); return; }
+      entUndo(said, function () {
+        db.rpc('client_entity_remove', { p_client: cid, p_entity: id }).then(function (u) {
+          if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
+          entReload();
+        });
+      });
+    });
+  }
   $('entAddGo').addEventListener('click', function () {
     var pick = $('entAddList').querySelector('input:checked');
     var v = pick ? pick.value : 'new', cid = state.client.id, b = this;
     if (v === 'new') { shutSheet('entAddSheet'); openEntity(null, $('crmEntAdd')); return; }
+    b.disabled = true;
     if (v.indexOf('bk:') === 0) {
-      var code = pick.getAttribute('data-code') || '';
-      b.disabled = true;
-      entBukku({ action: 'contact', contact: Number(v.slice(3)) }).then(function (d) {
+      entBukku({ action: 'adopt', client: cid, contact: Number(v.slice(3)) }).then(function (d) {
         b.disabled = false;
-        if (d.error || !d.entity) { msg('entAddMsg', d.error === 'bukku-gone' ? 'That contact is no longer in Bukku.' : 'Bukku could not be read. Try again.', 'err'); return; }
-        shutSheet('entAddSheet');
-        openEntity(null, $('crmEntAdd'), Object.assign({ from: code }, d.entity));
+        if (d.error || !d.id) {
+          msg('entAddMsg', d.error === 'bukku-gone' ? 'That customer is no longer in Bukku.'
+            : d.error === 'taken' && !d.held ? 'That Bukku contact is already linked to another record.'
+            : window.ADspaceBukku && ['bukku-token', 'bukku-unreachable', 'bukku-refused', 'bukku-not-set-up'].indexOf(d.error) > -1 ? window.ADspaceBukku.said(d)
+            : entSaid({ data: d }), 'err');
+          return;
+        }
+        if (window.ADspaceBukku) window.ADspaceBukku.fresh('entity', d.id);
+        entAdded(cid, d.id, d.main, d.held ? 'Billing entity added.' : 'Billing entity added from Bukku.');
       });
       return;
     }
-    b.disabled = true;
     db.rpc('client_entity_add', { p_client: cid, p_entity: v, p_values: null }).then(function (r) {
       b.disabled = false;
       if (r.error || (r.data && r.data.error)) { msg('entAddMsg', entSaid(r), 'err'); return; }
-      if (window.ADspaceSheet) window.ADspaceSheet.clean();
-      shutSheet('entAddSheet');
-      entReload(function () {
-        entUndo('Billing entity added.', function () {
-          db.rpc('client_entity_remove', { p_client: cid, p_entity: v }).then(function (u) {
-            if (u.error || (u.data && u.data.error)) { msg('crmBillNote', entSaid(u), 'err'); return; }
-            entReload();
-          });
-        });
-      });
+      entAdded(cid, v, r.data && r.data.main, 'Billing entity added.');
     }).catch(function (x) { b.disabled = false; msg('entAddMsg', (x && x.message) || String(x), 'err'); });
   });
   $('entAddCancel').addEventListener('click', function () { shutSheet('entAddSheet'); });

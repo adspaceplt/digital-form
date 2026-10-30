@@ -3845,7 +3845,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; }
 .bk-band > .bk-l { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
 .bk-band .bk-t { font-size: 13px; font-weight: 600; }
-.bk-band .bk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.bk-band .bk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 400; }
 .bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
 .bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }

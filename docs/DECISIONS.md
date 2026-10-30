@@ -7572,3 +7572,25 @@ read and set every page for a tab served before.
 - **Mistake noted:** a matching rule changed in one direction (the send)
   must change in every reader of it (the read, the take, the stand-in).
 
+
+### 2026-10-30 · A Bukku customer is added as a billing entity in one press; the Bukku code copies
+- **Reported:** Add entity took three steps to bring in a company Bukku
+  already holds: pick it in Bukku, which only filled New billing entity,
+  Save, then Link to Bukku on its band ("feels weird … just add and pull
+  from Bukku"). The user then asked that the Bukku contact's code
+  (C-B0023) copy at a press.
+- **Why:** the sheet's Bukku list was written as a prefill, from before
+  Bukku held billing; it also read Bukku on every key typed, offered a
+  contact the portal already linked as if new, and New entity made the
+  company in the portal alone.
+- **Now:** `bukku-sync` `adopt` reads the contact and calls
+  `client_entity_from_bukku` as the colleague: the entity made from
+  Bukku's details and linked in one transaction, then held. A contact the
+  portal already links adds that entity. New entity's Save reads Create
+  in Bukku and makes it there, or links the customer Bukku holds of its
+  registration no. The list is read once as the sheet opens. The
+  `contact` action, the prefill and Filled from Bukku are gone. The band's
+  code is a `.serial-copy`.
+- **Mistake noted:** a stand-in function routed through a block whose
+  first act is a generic permission check is refused before its own
+  handler: a function added to such a block goes above that check.
