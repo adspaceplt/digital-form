@@ -7555,3 +7555,20 @@ read and set every page for a tab served before.
   Bukku's; New contact reads Create in Bukku and sends. Link and send and
   Link only are gone from a client's sheet. A supplier keeps Send to
   Bukku.
+
+### 2026-10-30 · Bukku's billing person is matched by its words; Add as contact is a button
+- **Reported:** the linked band read "Bukku's billing person, Ms Angel Lim,
+  is not in Contacts." while Contacts held Ms Angel ("it says not same
+  person"), and its Add as contact was a quiet word at the end of the
+  sentence ("very not obvious").
+- **Why:** `bukku_person_contact` and `bukku-sync`'s `differs` matched a
+  person only on the same words, while Send to Bukku already kept a name
+  Bukku holds in full (every word of ours in Bukku's). The read and the
+  send disagreed. Add as contact was a `.linkbtn` inside the warn line.
+- **Now:** the same words first, else the one contact every word of whose
+  name Bukku's holds (two such is nobody); `differs` reads such a person as
+  the same. Add as contact is a `.btn-sm` with its plus at the line's
+  right edge (`.bk-person`), its own line under the words on a phone.
+- **Mistake noted:** a matching rule changed in one direction (the send)
+  must change in every reader of it (the read, the take, the stand-in).
+
