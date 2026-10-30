@@ -5860,7 +5860,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A website quotation's ⋯ Preview (`quotes.js`, any reader of it; the
   user, 2026-10-30) opens `/quote/?q={key}&preview=1`: the prospect's page
   as they see it under one bar (`#qsPreviewBar`, `.annbar.previewbar`:
-  Preview: the page as the prospect sees it. Nothing can be sent from it.),
+  Preview: the page as the prospect sees it. Nothing can be sent from it.;
+  its × hides it, a refused press bringing it back),
   Proceed, a new quotation, Change selection and the billing form refusing
   in place (Not available in preview.), page-side; reading the link writes
   nothing. Once the quotation is sent, Copy link beside it gives the

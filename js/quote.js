@@ -836,12 +836,18 @@
     if (!top) return;
     var b = document.createElement('div');
     b.className = 'annbar previewbar'; b.id = 'qsPreviewBar';
+    /* Its × hides it, so the page reads exactly as the prospect's; a
+       refused press brings it back to say so (the user, 2026-10-30, A). */
     b.innerHTML = '<p class="annbar-text">Preview: the page as the prospect sees it. Nothing can be sent from it.</p>' +
-      '<span class="annbar-acts"><span class="msg" id="qsPreviewMsg" role="status"></span></span>';
+      '<span class="msg" id="qsPreviewMsg" role="status"></span><span class="annbar-acts">' +
+      '<button class="iconbtn annbar-x" id="qsPreviewHide" type="button" aria-label="Hide">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>';
     top.parentNode.insertBefore(b, top.nextSibling);
+    $('qsPreviewHide').addEventListener('click', function () { b.hidden = true; });
   }
   function previewRefuse(e) {
     e.preventDefault(); e.stopPropagation();
+    if ($('qsPreviewBar')) $('qsPreviewBar').hidden = false;
     say('qsPreviewMsg', 'Not available in preview.');
   }
   if (PREVIEW) {
