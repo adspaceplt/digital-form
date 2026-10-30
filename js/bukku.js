@@ -16,7 +16,7 @@
  *   ADspaceBukku.state(kind, id)              — reading, held, differs, down or none
  *   ADspaceBukku.save(kind, id, values)       — the Billing sheet's changes saved straight to Bukku
  *   ADspaceBukku.fresh(kind, id)              — read again at the next band (a record opened afresh)
- *   ADspaceBukku.send(kind, id, btn, done)    — the Send to Bukku sheet
+ *   ADspaceBukku.send(kind, id, btn, done)    — the Link to Bukku sheet (a supplier's Send to Bukku)
  *   ADspaceBukku.openConfig(btn, say)         — Settings' Bukku sheet
  *   ADspaceBukku.configLine()                 — Settings' Bukku value line
  */
@@ -138,7 +138,11 @@
         : d.changed ? '<span class="chip-state is-warn">Details changed</span>' : '<span class="chip-state is-ok">Up to date</span>';
       /* Words alone, as Send email and Create link are: no act of the
          table carries an arrow (2026-10-20, SUP-8). */
-      var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' : '') +
+      /* A client or billing entity not yet linked is linked to the contact
+         Bukku holds (2026-10-30, the user: "use link bukku instead of send
+         to bukku"); Bukku then holds its billing. A supplier still sends. */
+      var linkFirst = !linked && kind !== 'supplier';
+      var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
       host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? '<span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' : '') + state + '</div>' +
@@ -275,7 +279,7 @@
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
       body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
-        'Send to Bukku then offers the matching contacts again.' + (kind === 'entity' ? '' : ' A supplier that is also a client shares one Bukku contact, so both are unlinked.')
+        (kind === 'supplier' ? 'Send to Bukku' : 'Link to Bukku') + ' then offers the matching contacts again.' + (kind === 'entity' ? '' : ' A supplier that is also a client shares one Bukku contact, so both are unlinked.')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
         if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);
@@ -308,7 +312,7 @@
       '<button class="iconbtn" type="button" data-a="x" aria-label="Close">' + X + '</button></div>' +
       '<div class="sheet-body">' +
         '<section class="fsec"><h4 class="fsec-h" id="bkPickH">Contact in Bukku</h4><div id="bkPick" role="radiogroup" aria-labelledby="bkPickH"></div></section>' +
-        '<section class="fsec"><h4 class="fsec-h">What changes</h4><div id="bkRows"></div></section>' +
+        '<section class="fsec"><h4 class="fsec-h" id="bkRowsH">What changes</h4><div id="bkRows"></div></section>' +
         '<div class="msg" id="bkMsg" role="status"></div>' +
       '</div>' +
       '<div class="sheet-foot">' +
@@ -319,7 +323,7 @@
     document.body.appendChild(sheet);
     sheet.querySelector('[data-a="x"]').addEventListener('click', shut);
     $('bkCancel').addEventListener('click', shut);
-    $('bkGo').addEventListener('click', function () { go('send'); });
+    $('bkGo').addEventListener('click', function () { go(cur && cur.mode === 'link' && cur.contact ? 'link' : 'send'); });
     /* Link only (2026-10-19): the contact Bukku holds, linked as it stands. */
     $('bkLink').addEventListener('click', function () { go('link'); });
     $('bkPick').addEventListener('change', function (e) {
@@ -333,7 +337,8 @@
 
   function send(kind, id, btn, done) {
     build();
-    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0 };
+    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, mode: kind === 'supplier' ? 'send' : 'link' };
+    $('bkTitle').textContent = cur.mode === 'link' ? 'Link to Bukku' : 'Send to Bukku';
     $('bkPick').innerHTML = '<p class="muted">Reading Bukku.</p>';
     $('bkRows').innerHTML = '';
     $('bkGo').disabled = true; $('bkGo').textContent = 'Send';
@@ -344,6 +349,7 @@
       if (cur !== me) return;
       if (d.error) { $('bkPick').innerHTML = ''; say(said(d), 'err'); return; }
       if (d.linked) {
+        me.mode = 'send'; $('bkTitle').textContent = 'Send to Bukku';
         me.linked = d.linked; me.contact = String(d.linked.id);
         $('bkPick').innerHTML = '<p class="readfield">' + esc(d.linked.code) + ' · ' + esc(d.linked.name) + '</p>';
       } else {
@@ -363,17 +369,22 @@
   function preview() {
     var me = cur, seq = ++me.seq;
     $('bkGo').disabled = true;
-    $('bkGo').textContent = me.linked || !me.contact ? 'Send' : 'Link and send';
-    $('bkLink').hidden = !!me.linked || !me.contact; $('bkLink').disabled = true;
+    /* Linking: an existing contact is linked as Bukku holds it, nothing
+       sent, and the record then reads Bukku (what differs waits on a side
+       chosen on the band); New contact is made in Bukku from the portal. */
+    var linking = me.mode === 'link' && !!me.contact;
+    $('bkGo').textContent = linking ? 'Link' : me.mode === 'link' ? 'Create in Bukku' : me.linked || !me.contact ? 'Send' : 'Link and send';
+    $('bkLink').hidden = me.mode === 'link' || !!me.linked || !me.contact; $('bkLink').disabled = true;
+    $('bkRowsH').textContent = linking ? 'How the details differ' : 'What changes';
     $('bkRows').innerHTML = '<p class="muted">Reading.</p>';
     say('');
     call({ action: 'preview', kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {
       if (cur !== me || seq !== me.seq) return;
       if (d.error) { $('bkRows').innerHTML = ''; say(said(d), 'err'); return; }
       var rows = (d.rows || []).filter(function (r) { return !r.same; });
-      $('bkRows').innerHTML = !rows.length ? '<p class="muted">Nothing changes.</p>'
+      $('bkRows').innerHTML = !rows.length ? '<p class="muted">' + (linking ? 'The details match.' : 'Nothing changes.') + '</p>'
         : '<div class="bk-table" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
-            '<span role="columnheader">' + (me.contact ? 'In Bukku' : 'Now') + '</span><span role="columnheader">After</span></div>' +
+            '<span role="columnheader">' + (me.contact ? 'In Bukku' : 'Now') + '</span><span role="columnheader">' + (linking ? 'In the portal' : 'After') + '</span></div>' +
           rows.map(function (r) {
             return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + esc(r.field) + '</span>' +
               '<span role="cell" class="bk-now">' + (r.now ? esc(r.now) : '<span class="muted">—</span>') + '</span>' +

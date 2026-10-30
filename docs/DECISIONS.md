@@ -7536,3 +7536,22 @@ read and set every page for a tab served before.
   entities moved into a card of their own. The equal-width contact chips
   are `is-tight` alone (a phone's width), so a desk's pane keeps each chip
   its own width as the Overview's contact details do.
+
+
+### 2026-10-30 · An unlinked client links to Bukku rather than sending to it
+- **Reported:** the user, from a phone screenshot of a billing entity's
+  band reading Not linked with Send to Bukku: "Can u use link bukku
+  instead of send to bukku".
+- **Why:** since Billing from Bukku, Bukku holds a linked record's
+  billing, so the first step is to point the record at the contact Bukku
+  already holds, not to push the portal's copy over it. Send to Bukku as
+  the only way in wrote the portal's details into Bukku before anyone
+  had seen how they differed.
+- **Changed:** the band of an unlinked client or billing entity offers
+  Link to Bukku. Its sheet (Link to Bukku) offers the same contacts; an
+  existing one is linked as Bukku holds it, nothing sent (Link, with How
+  the details differ: In Bukku beside In the portal), after which the
+  band reads Linked, or Differs from Bukku with Send to Bukku and Use
+  Bukku's; New contact reads Create in Bukku and sends. Link and send and
+  Link only are gone from a client's sheet. A supplier keeps Send to
+  Bukku.
