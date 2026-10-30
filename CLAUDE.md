@@ -5865,8 +5865,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   Proceed, a new quotation, Change selection and the billing form refusing
   in place (Not available in preview.), page-side; reading the link writes
   nothing. Once the quotation is sent, Copy link beside it gives the
-  prospect's own link (no `preview`) to send again by hand
-  (`tests/quotesite.js`).
+  prospect's own link (no `preview`) to send again by hand, and Resend on
+  WhatsApp (drawn while the `quote_ready` template is on) queues the
+  quotation-ready message again (`quotation_resend(p_id, p_again)`,
+  `2026-10-30-quotation-resend.sql`: Clients: Quotations at Work, the client
+  in scope; `not-sent`, `expired`, `revised`, `not-proceeding`,
+  `no-contact`, `wa-off`, `no-number`; within `wa_repeat_hours` `recent`
+  with when and by whom, asked again in warn; filed under the colleague)
+  (`tests/quotesite.js`, `tests/sql.js`).
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,

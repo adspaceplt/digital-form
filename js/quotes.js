@@ -30,6 +30,9 @@
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Make a copy to quote again.',
+    'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Clear it first.',
+    'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
+    'no-number': 'No WhatsApp number is held for this prospect.',
     'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
   };
   function said(e) {
@@ -188,6 +191,13 @@
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
               items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa hidden type="button" role="menuitem">Send on WhatsApp</button>');
             }
+            /* The quotation-ready WhatsApp again, its link button the
+               prospect's own (2026-10-30): a website quotation the team has
+               sent, still valid, drawn once its template is on. */
+            if (q.source === 'website' && q.access_key && !awaiting(q) && !q._revised && !q.no_contact_at && q.status !== 'not_proceeding' &&
+                !(q.valid_until && q.valid_until < window.ADspaceClock.today())) {
+              items.push('<button class="kmenu-item" data-g="3" data-a="resend" data-wa-ready hidden type="button" role="menuitem">Resend on WhatsApp</button>');
+            }
             if (q.source === 'website') {
               items.push(q.no_contact_at
                 ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Clear Do not contact</button>'
@@ -225,6 +235,12 @@
     if (ctx.painted) ctx.painted();
     var g = $('qtGone');
     if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });
+    if (host.querySelector('[data-wa-ready]') && WA()) {
+      WA().on('quote_ready').then(function (yes) {
+        if (!yes) return;
+        Array.prototype.forEach.call(host.querySelectorAll('[data-wa-ready]'), function (it) { it.hidden = false; });
+      });
+    }
     if (host.querySelector('[data-wa]')) {
       WA().on('quotation').then(function (yes) {
         if (!yes) return;
@@ -296,6 +312,28 @@
           ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
         }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
       });
+      return;
+    }
+    if (a === 'resend') {
+      var to = (q.contact && q.contact.name) || q.brand;
+      var go = function (again) {
+        if (btn) btn.disabled = true;
+        ctx.db.rpc('quotation_resend', { p_id: q.id, p_again: !!again }).then(function (r) {
+          var d = r.data || {};
+          if (btn) btn.disabled = false;
+          if (d.error === 'recent') {
+            var rc = d.recent || {}, at = rc.at ? window.ADspaceClock.date(rc.at) + ', ' + window.ADspaceClock.clock(rc.at) : '';
+            window.ADspaceConfirm.ask({ title: 'Sent recently', tone: 'warn',
+              body: q.ref + ' was sent to ' + to + ' on WhatsApp' + (rc.by ? ' by ' + rc.by : ' automatically') + (at ? ' on ' + at : '') + '.',
+              go: 'Send again' }, function () { go(true); });
+            return;
+          }
+          if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+          ctx.msg('qtMsg', q.ref + ' sent again on WhatsApp.', 'ok');
+        }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
+      };
+      window.ADspaceConfirm.ask({ title: 'Resend on WhatsApp?',
+        body: 'The Quotation ready message, with the link to ' + q.ref + ', is sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }

@@ -7650,3 +7650,15 @@ read and set every page for a tab served before.
   prospect's.
 - **Not built:** previewing the priced page before Send quotation (it
   needs the database to answer a colleague the figures it withholds).
+
+## 2026-10-30 · Resend on WhatsApp for a website quotation
+- **Asked:** the user, 2026-10-30: "if prospects missed the link how do we
+  send them to proceed", then "build the resend on WhatsApp too".
+- **Changed:** `quotation_resend` queues the quotation-ready WhatsApp
+  again, its button the prospect's own link, for a website quotation the
+  team has sent and that is still valid. Within the repeat hours it answers
+  Sent recently (when, and who, or automatically), and the console asks
+  Send again in warn. It sits in the quotation's ⋯ under Send, drawn while
+  the template is on. The stand-in now holds Quotation ready among the
+  WhatsApp templates as the live table does, so the WhatsApp suite counts
+  eight.
