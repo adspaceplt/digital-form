@@ -261,7 +261,7 @@
     bukku_config: '', bukku_config_set: 'p_client p_supplier', bukku_link_get: 'p_kind p_id',
     bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     bukku_read_may: 'p_kind p_id p_level', bukku_prepare_with: 'p_kind p_id p_values',
-    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_remove: 'p_client p_entity',
+    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_contact: 'p_client p_entity p_contact p_every', client_entity_remove: 'p_client p_entity',
     supplier_save: 'p_id p_values p_form',
     supplier_set_status: 'p_id p_status',
     supplier_delete: 'p_id p_name',
@@ -778,7 +778,10 @@
       if (!c) return;
       ENT_COLS.forEach(function (k) {
         if (k === 'bill_contact_id') {
-          c[k] = e[k] && (DB.client_contacts || []).some(function (t) { return t.id === e[k] && t.client_id === c.id; }) ? e[k] : null;
+
+          var mine = function (id) { return !!id && (DB.client_contacts || []).some(function (t) { return t.id === id && t.client_id === c.id && !t.archived_at; }); };
+          c[k] = mine(l.bill_contact_id) ? l.bill_contact_id
+            : e[k] && (DB.client_contacts || []).some(function (t) { return t.id === e[k] && t.client_id === c.id; }) ? e[k] : null;
         } else c[k] = entNull(e[k]);
       });
     });
@@ -813,6 +816,13 @@
     if (!main) { entSeed(); return; }
     var e = DB.billing_entities.filter(function (x) { return x.id === main.entity_id; })[0];
     if (!e) return;
+
+    if (moved.indexOf('bill_contact_id') > -1) {
+      var shared = DB.client_entities.some(function (l) { return l.entity_id === e.id && l.client_id !== c.id; });
+      main.bill_contact_id = shared ? entNull(c.bill_contact_id) : null;
+      if (shared) moved = moved.filter(function (k) { return k !== 'bill_contact_id'; });
+    }
+    if (!moved.length) return;
     moved.forEach(function (k) { e[k] = entNull(c[k]); });
     e.updated_at = entNow(e.updated_at);
     entPut(e.id);
@@ -2223,7 +2233,7 @@ function cardSlugFree(name, self, email) {
       return { __raise: 'needs-billing' };
     }
     if (bEnt) {
-      var bek = bEnt.bill_contact_id && DB.client_contacts.filter(function (x) { return x.id === bEnt.bill_contact_id && !x.archived_at; })[0];
+      var bek = entContactFor(bEnt.id, cl.id);
       Object.assign(doc.bill_to, { legal_name: bEnt.legal_name || '', address: bEnt.billing_address || '', regno: bEnt.company_no || '',
         regno_old: bEnt.company_no_old || '', tin: bEnt.tin || '', sst_no: bEnt.sst_no || '', finance_email: bEnt.finance_email || '' });
       if (bek) Object.assign(doc.bill_to, { contact: bek.name || '', contact_role: bek.role || '', contact_salutation: bek.salutation || '', phone: bek.phone || '', email: bek.email || '' });
@@ -2799,7 +2809,7 @@ function cardSlugFree(name, self, email) {
     if (!c) return null;
     var ks = (DB.client_contacts || []).filter(function (x) { return x.client_id === c.id && !x.archived_at && (x.id === c.bill_contact_id || x.is_primary); })
       .sort(function (a, b) { return (b.id === c.bill_contact_id) - (a.id === c.bill_contact_id); });
-    var k = ks[0] || {};
+    var k = (mainEnt(c.id) && entContactFor(mainEnt(c.id), c.id)) || ks[0] || {};
     var t = function (v) { return String(v || '').trim(); };
     var nm = [t(k.salutation), t(k.name)].filter(Boolean).join(' ');
     var fe = t(c.finance_email);
@@ -2813,6 +2823,15 @@ function cardSlugFree(name, self, email) {
     return ls[0] ? ls[0].client_id : null;
   }
   function mainEnt(cid) { var l = (DB.client_entities || []).filter(function (x) { return x.client_id === cid && x.is_main; })[0]; return l ? l.entity_id : null; }
+
+  function entContactFor(eid, cid) {
+    var e = (DB.billing_entities || []).filter(function (x) { return x.id === eid; })[0];
+    if (!e) return null;
+    var l = (DB.client_entities || []).filter(function (x) { return x.entity_id === eid && x.client_id === cid; })[0] || {};
+    var live = function (id) { return id && (DB.client_contacts || []).filter(function (k) { return k.id === id && !k.archived_at; })[0]; };
+    return live(l.bill_contact_id) || live(e.bill_contact_id) ||
+      (DB.client_contacts || []).filter(function (k) { return k.client_id === cid && k.is_primary && !k.archived_at; })[0] || null;
+  }
   function entContact(eid) {
     var e = (DB.billing_entities || []).filter(function (x) { return x.id === eid; })[0];
     if (!e) return null;
@@ -2919,14 +2938,14 @@ function cardSlugFree(name, self, email) {
     persist();
     return { ok: true, held: true, changed: ch, person_in: Boolean(hit) || !vals.person };
   }
-  function entRecipient(eid) {
+  function entRecipient(eid, cid) {
     var e = (DB.billing_entities || []).filter(function (x) { return x.id === eid; })[0];
     if (!e) return null;
-    var k = entContact(eid) || {};
+    var k = (cid ? entContactFor(eid, cid) : entContact(eid)) || {};
     var t = function (v) { return String(v || '').trim(); };
     var nm = [t(k.salutation), t(k.name)].filter(Boolean).join(' ');
     var fe = t(e.finance_email);
-    var home = DB.clients.filter(function (x) { return x.id === entHome(eid); })[0];
+    var home = DB.clients.filter(function (x) { return x.id === (cid || entHome(eid)); })[0];
     return { name: nm || null, email: t(k.email) || null, cc: fe && fe.toLowerCase() !== t(k.email).toLowerCase() ? fe : null,
       company: t(e.legal_name) || (home ? home.name : null) };
   }
@@ -2940,7 +2959,7 @@ function cardSlugFree(name, self, email) {
   function recipientFor(cid, contact) {
     var ent = contactEntity(contact), r = invRecipient(cid);
     if (ent && (DB.client_entities || []).some(function (l) { return l.client_id === cid && l.entity_id === ent; }) &&
-        (ent !== mainEnt(cid) || !(r && r.email))) return entRecipient(ent);
+        (ent !== mainEnt(cid) || !(r && r.email))) return entRecipient(ent, cid);
     return r;
   }
   function invScopeAll() {
@@ -7699,7 +7718,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
     }
 
-    if (name === 'client_entities_list' || name === 'billing_entities_find' || /^client_entity_(add|save|main|remove)$/.test(name)) {
+    if (name === 'client_entities_list' || name === 'billing_entities_find' || /^client_entity_(add|save|main|remove|contact)$/.test(name)) {
       args = args || {};
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
       entSeed();
@@ -7721,6 +7740,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { id: b.id, name: b.name, slug: b.slug, code: b.client_code || null }; })
             .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); }),
           hidden: others.length - seen.length };
+
+        o.own_contact_id = link ? entNull(link.bill_contact_id) : null;
+        var ek = cid ? entContactFor(e.id, cid) : null, ekc = ek && DB.clients.filter(function (x) { return x.id === ek.client_id; })[0];
+        o.contact = ek ? { id: ek.id, name: ek.name, salutation: ek.salutation || null, client_id: ek.client_id, client: ekc ? ekc.name : null } : null;
         ENT_COLS.forEach(function (f) { o[f] = entNull(e[f]); });
         return JSON.parse(JSON.stringify(o));
       };
@@ -7819,6 +7842,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
         ent.updated_at = entNow(ent.updated_at);
         entPut(ent.id);
         enFile(cid0, 'Billing entity edited: ' + mv.map(function (f) { return WORD[f]; }).join(', '));
+        return enAns({ ok: true, updated_at: ent.updated_at });
+      }
+
+      if (name === 'client_entity_contact') {
+        var pc = entNull(args.p_contact), every = args.p_every === true;
+        if (pc && !(DB.client_contacts || []).some(function (t) {
+              return t.id === pc && !t.archived_at && (t.client_id === cid0 || (every && enLinks(ent.id).some(function (l) { return l.client_id === t.client_id; }))); }))
+          return enAns({ error: 'bad-contact' });
+        if (every) {
+          if (entNull(ent.bill_contact_id) === pc && !link0.bill_contact_id) return enAns({ ok: true, updated_at: ent.updated_at });
+          if (entNull(ent.bill_contact_id) !== pc && (DB.bukku_links || []).some(function (l) { return l.kind === 'entity' && l.record_id === ent.id && l.held_at; }))
+            return enAns({ error: 'held' });
+          link0.bill_contact_id = null;
+          if (entNull(ent.bill_contact_id) !== pc) { ent.bill_contact_id = pc; ent.updated_at = entNow(ent.updated_at); entPut(ent.id); }
+        } else {
+          if (entNull(link0.bill_contact_id) === pc) return enAns({ ok: true, updated_at: ent.updated_at });
+          link0.bill_contact_id = pc;
+        }
+        entPut(ent.id, cid0);
+        enFile(cid0, 'Billing entity edited: ' + (every ? 'Shared billing contact' : 'Billing contact'));
         return enAns({ ok: true, updated_at: ent.updated_at });
       }
       if (name === 'client_entity_main') {

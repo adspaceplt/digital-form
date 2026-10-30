@@ -1002,7 +1002,9 @@
                   <div><label class="field-label" for="crmBillContact">Billing contact</label>
                     <select class="select" id="crmBillContact" aria-required="true"></select>
                     <!-- A client with no contact is offered one here (2026-10-20, CLI-8). -->
-                    <button class="linkbtn bill-addct" id="crmBillAddContact" type="button" hidden>Add contact</button></div>
+                    <button class="linkbtn bill-addct" id="crmBillAddContact" type="button" hidden>Add contact</button>
+                    <!-- Shared by every brand the company bills, or this brand's own (2026-10-31). -->
+                    <label class="tickline bill-shared" id="crmBillSharedRow" hidden><input type="checkbox" id="crmBillShared"> <span>Use for every brand this company bills</span></label></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
                     <input class="input" id="crmFinanceEmail" autocomplete="off" type="email" placeholder="accounts@adspace.me"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Company billing address</label>
@@ -5823,7 +5825,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261030e"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261030e"></script>
+<script src="/js/crm.js?v=20261031"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261027k"></script>
 <script src="/js/namecard.js?v=20261027i"></script>

@@ -2539,6 +2539,7 @@
      the contacts arrive, since the contact is one of them. */
   function paintBilling(c) {
     var missing = billingMissing(c);
+    var keepPick = state.billPick0 ? $('crmBillContact').value : null;
     /* Below Work on the Billing part the fields are read and not typed in;
        the database refuses the save anyway (`clients_billing_guard`). */
     var ro = !mayPart('clients.billing', 'work');
@@ -2561,6 +2562,72 @@
       }).join('');
     var live = (state.contacts || []).some(function (ct) { return !ct.archived_at; });
     $('crmBillAddContact').hidden = live || !mayPart('clients.contacts', 'work');
+    if (state.billPick0) paintBillPick(keepPick);
+  }
+  /* A brand's own billing contact (2026-10-31; the user: "Could be shared
+     or different contact for different brand"): where the company on the
+     sheet bills other brands too, the tick says whether the contact chosen
+     is the company's shared one, which every brand without its own
+     follows, or this brand's own. */
+  function billEnt() {
+    if (!state.client || state.entFor !== state.client.id || !state.entities) return null;
+    if (state.entEdit) return state.entEdit.id ? entOf(state.entEdit.id) : null;
+    return state.entities.filter(function (e) { return e.main; })[0] || null;
+  }
+  function entMulti(e) { return !!(e && ((e.brands || []).length || e.hidden)); }
+  function personOf(k) { return esc(ADspaceWords.person(k.salutation, k.name)); }
+  function paintBillPick(keep) {
+    var e = billEnt(), multi = entMulti(e);
+    $('crmBillSharedRow').hidden = !multi;
+    if (!multi) return false;
+    var every = $('crmBillShared').checked, sel = $('crmBillContact'), c = state.client, main = mainContact();
+    var sh = e.bill_contact;
+    var opts = every
+      ? '<option value="">Primary contact of each client</option>' +
+        (sh && sh.client_id !== c.id ? '<option value="' + esc(e.bill_contact_id) + '">' + personOf(sh) + ' · ' + esc(sh.client || '') + '</option>' : '')
+      : '<option value="">' + (sh ? 'Same as every brand · ' + personOf(sh) : main ? 'Primary contact · ' + personOf(main) : 'None') + '</option>';
+    /* The empty choice already names the primary contact where it stands for it. */
+    var asMain = !every && !sh && main;
+    opts += (state.contacts || []).filter(function (ct) { return !ct.archived_at && !(asMain && ct.id === main.id); }).map(function (ct) {
+      return '<option value="' + esc(ct.id) + '">' + personOf(ct) + (ct.is_primary ? ' · Primary contact' : '') + '</option>';
+    }).join('');
+    sel.innerHTML = opts;
+    var v = keep != null ? keep : (every ? e.bill_contact_id : e.own_contact_id) || '';
+    sel.value = v;
+    if (sel.value !== v) sel.value = '';
+    return true;
+  }
+  /* Called as the sheet opens: the tick as the company holds it, kept to
+     tell what the Save changed. */
+  function startBillPick() {
+    var e = billEnt();
+    $('crmBillShared').checked = !(e && e.own_contact_id);
+    state.billPick0 = null;
+    if (paintBillPick(null)) state.billPick0 = { ent: e.id, every: $('crmBillShared').checked, value: $('crmBillContact').value || null };
+  }
+  $('crmBillShared').addEventListener('change', function () { paintBillPick($('crmBillContact').value); });
+  function billPickChange() {
+    var p = state.billPick0;
+    if (!p) return null;
+    var every = $('crmBillShared').checked, v = $('crmBillContact').value || null;
+    return every !== p.every || v !== p.value ? { ent: p.ent, every: every, value: v } : null;
+  }
+  function billPickSave(cid, ch) {
+    if (!ch) return Promise.resolve('');
+    return db.rpc('client_entity_contact', { p_client: cid, p_entity: ch.ent, p_contact: ch.value, p_every: ch.every }).then(function (r) {
+      if (r.data && r.data.error === 'held') return 'Bukku holds this company\'s billing person. Change it in Bukku, or untick Use for every brand to choose this brand\'s own.';
+      return r.error || (r.data && r.data.error) ? entSaid(r) : '';
+    }).catch(function (x) { return (x && x.message) || String(x); });
+  }
+  /* The contact a brand bills an entity to, as the database answers it:
+     its own, else the company's shared one, else its primary contact. */
+  function contactLine(e, fallback) {
+    var k = e && e.contact, main = mainContact();
+    if (!k) return fallback;
+    var note = k.client_id !== state.client.id && k.client ? k.client
+      : entMulti(e) && !e.own_contact_id && k.id === e.bill_contact_id ? 'All brands'
+      : main && k.id === main.id ? 'Primary contact' : '';
+    return personOf(k) + (note ? ' <span class="muted">· ' + esc(note) + '</span>' : '');
   }
   $('crmBillAddContact').addEventListener('click', function () {
     $('crmBillCancel').click();
@@ -2604,7 +2671,7 @@
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
-        ['Billing contact', pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Primary contact</span>' : '') : '', true],
+        ['Billing contact', contactLine(mainEnt, pick ? esc(ADspaceWords.person(pick.salutation, pick.name)) + (pick.is_primary ? ' <span class="muted">· Primary contact</span>' : '') : ''), true],
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]) +
@@ -2652,6 +2719,7 @@
     return go.join(' ');
   }
   function entContact(e) {
+    if (e.contact) return contactLine(e, '');
     var k = e.bill_contact;
     if (!k) {
       var main = mainContact();
@@ -2688,7 +2756,7 @@
           ['Billing contact', entContact(e)], ['Finance email', t(e.finance_email)]].forEach(function (r) { if (r[1]) rows.push(r); });
         rows.push(['Billing address', t(e.billing_address), true, true]);
         if (e.brands.length || e.hidden) rows.push(['Also bills', entBrands(e)]);
-        var k = e.bill_contact;
+        var k = e.contact || e.bill_contact;
         var sum = [e.company_no, k ? ADspaceWords.person(k.salutation, k.name) : ''].filter(Boolean).join(' · ');
         var shut = GRP ? GRP.shut('client-entities', cid + ':' + e.id, true) : true;
         var id = 'entf-' + e.id;
@@ -2868,12 +2936,14 @@
     state.entEdit = { id: ent ? ent.id : null, updated_at: ent ? ent.updated_at : null };
     var c = state.client;
     BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = ent ? (ent[f[1]] || '') : ''; });
+    state.billPick0 = null;
     paintBilling(c);
     if (ent && ent.bill_contact_id && ent.bill_contact && ent.bill_contact.client_id !== c.id) {
       $('crmBillContact').insertAdjacentHTML('beforeend', '<option value="' + esc(ent.bill_contact_id) + '">' +
         esc(ADspaceWords.person(ent.bill_contact.salutation, ent.bill_contact.name)) + ' · ' + esc(ent.bill_contact.client || '') + '</option>');
     }
     $('crmBillContact').value = ent && ent.bill_contact_id ? ent.bill_contact_id : '';
+    startBillPick();
     $('crmBillTitle').textContent = ent ? 'Billing entity' : 'New billing entity';
     entSheetMode(true);
     /* A new one is made in Bukku too, where Bukku answered the Add entity
@@ -2884,6 +2954,7 @@
     openSheet('crmBillSheet', opener || $('crmEntAdd'));
   }
   function entSheetMode(on) {
+    if (!on) { state.billPick0 = null; $('crmBillSharedRow').hidden = true; }
     $('crmBillAsk').hidden = true;
     $('crmSstApplies').closest('.tickline').hidden = on;
     if (on) $('crmBillInRow').hidden = true;
@@ -2892,6 +2963,10 @@
   function entSave() {
     var ed = state.entEdit, cid = state.client.id, vals = {};
     BILLING.forEach(function (f) { vals[f[1]] = val(f[0]) || null; });
+    /* Where the company bills other brands too, the billing contact is
+       saved apart, shared or this brand's own (2026-10-31). */
+    var pick = billPickChange();
+    if (state.billPick0) vals.bill_contact_id = (entOf(ed.id) || {}).bill_contact_id || null;
     if (vals.legal_name) vals.legal_name = vals.legal_name.toUpperCase();
     if (!vals.legal_name) { msg('crmBillMsg', 'Enter the company name as registered.', 'err'); $('crmLegalName').focus(); return; }
     if (vals.finance_email && !ADspaceWords.emailOk(vals.finance_email)) {
@@ -2902,10 +2977,13 @@
     if (ed.id && window.ADspaceBukku && window.ADspaceBukku.held('entity', ed.id)) {
       var ent0 = entOf(ed.id) || {};
       bkWrite('entity', ed.id, vals, ent0).then(function (r) {
-        b.disabled = false;
-        if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
-        entKeepOpen(ed.id);
-        entClose(); entReload(); msg('crmBillNote', r.bukku ? 'Saved to Bukku.' : 'Saved.', 'ok');
+        if (r.error) { b.disabled = false; msg('crmBillMsg', r.error.message, 'err'); return; }
+        return billPickSave(cid, pick).then(function (err) {
+          b.disabled = false;
+          if (err) { msg('crmBillMsg', err, 'err'); return; }
+          entKeepOpen(ed.id);
+          entClose(); entReload(); msg('crmBillNote', r.bukku ? 'Saved to Bukku.' : 'Saved.', 'ok');
+        });
       });
       return;
     }
@@ -2936,6 +3014,15 @@
       if (d.error === 'stale') { state.entFor = null; loadEntities(); }
       if (r.error || d.error) { msg('crmBillMsg', entSaid(r), 'err'); return; }
       entKeepOpen(ed.id || d.id);
+      if (ed.id && pick) {
+        b.disabled = true;
+        billPickSave(cid, pick).then(function (err) {
+          b.disabled = false;
+          if (err) { msg('crmBillMsg', err, 'err'); return; }
+          entClose(); entReload(); msg('crmBillNote', 'Saved.', 'ok');
+        });
+        return;
+      }
       if (ed.id || !entFound.bukkuOn) { entClose(); entReload(); msg('crmBillNote', ed.id ? 'Saved.' : 'Added.', 'ok'); return; }
       /* Made in Bukku as well, or linked to the customer Bukku holds of its
          registration no.; a refusal leaves the entity added, Link to Bukku
@@ -3144,8 +3231,10 @@
     state.toLetter = null;
     state.entEdit = null;
     entSheetMode(false);
+    state.billPick0 = null;
     fillBilling(state.client);
     paintBilling(state.client);
+    startBillPick();
     msg('crmBillMsg', ''); msg('crmBillNote', '');
     if ($('crmBillAsk')) $('crmBillAsk').hidden = true;
     $('crmBillSave').textContent = bkHeld() ? 'Save to Bukku' : 'Save';
@@ -3156,7 +3245,7 @@
   $('crmBillCancel').addEventListener('click', function () {
     if (state.entEdit) { state.entEdit = null; shutSheet('crmBillSheet'); entSheetMode(false); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', ''); return; }
     state.detUse = null;
-    state.toActive = null; state.toLetter = null;
+    state.toActive = null; state.toLetter = null; state.billPick0 = null;
     shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
   });
   sheetClose('crmBillClose', 'crmBillCancel');
@@ -3989,6 +4078,10 @@
     var patch = { sst_applies: $('crmSstApplies').checked };
     if (!$('crmBillInRow').hidden) patch.bill_sgd = $('crmBillIn').value === 'SG';
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    /* Where the primary company bills other brands too, the billing
+       contact is saved apart, shared or this brand's own (2026-10-31). */
+    var pick = billPickChange();
+    if (state.billPick0) delete patch.bill_contact_id;
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
     if (patch.finance_email && !ADspaceWords.emailOk(patch.finance_email)) {
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
@@ -4007,6 +4100,17 @@
     var same = !state.detUse && Object.keys(patch).every(function (k) {
       return String(patch[k] == null ? '' : patch[k]) === String(was[k] == null ? '' : was[k]);
     });
+    if (same && pick) {
+      $('crmBillSave').disabled = true;
+      billPickSave(cid, pick).then(function (err) {
+        $('crmBillSave').disabled = false;
+        if (err) { msg('crmBillMsg', err, 'err'); return; }
+        if (window.ADspaceSheet) window.ADspaceSheet.clean();
+        state.billPick0 = null;
+        shutSheet('crmBillSheet'); entReload(); msg('crmBillNote', 'Saved.', 'ok');
+      });
+      return;
+    }
     if (same) {
       var now = billingMissing(state.client);
       if (gate && now.length) { held(now); return; }
@@ -4050,7 +4154,11 @@
       }
       if (gate && still.length) { paintBilling(state.client); held(still); return; }
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
+      state.billPick0 = null;
       shutSheet('crmBillSheet');
+      if (pick) billPickSave(cid, pick).then(function (err) {
+        if (err) msg('crmBillNote', 'Saved. The billing contact was not saved: ' + err, 'warn'); else entReload();
+      });
       /* The details form's answers taken in by this Save (2026-10-14). */
       if (state.detUse) {
         var used = state.detUse; state.detUse = null;

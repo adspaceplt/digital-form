@@ -7695,3 +7695,25 @@ read and set every page for a tab served before.
   does, and the quotation website suite turns the template on.
 - **Deferred:** a billing contact shared by an entity across brands, and
   merging `bukku_linked` with `bukku_link_only`: design questions, not bugs.
+
+### 2026-10-31 · A brand bills a company to its own contact, or to the company's shared one
+- **Asked:** the deferred question of 2026-10-30. The user: "Could be
+  shared or different contact for different brand". A company billing
+  two brands held one billing contact; a brand that chose its own on its
+  Billing sheet wrote it to the company, and the other brand, holding no
+  such contact, was left following its primary contact.
+- **Built:** each brand holds its own billing contact for a company
+  (`client_entities.bill_contact_id`), else follows the company's shared
+  one, else its own primary contact. The sheet asks Use for every brand
+  this company bills only where the company bills more than one brand;
+  ticked, the contact chosen is the shared one; unticked, it is this
+  brand's own. The letter's Attn and the overdue reminder read the brand's
+  contact. Bukku's billing person stays the shared one, since Bukku holds
+  one person a company, so a brand's own choice is the portal's alone and
+  never makes the Bukku band read Differs.
+- **No foreign key on the new column:** a statement holding `delete`
+  stops the connector, and a contact removed for good leaves a choice
+  pointing at nothing, which every reading passes over.
+- **Kept apart:** Link only and Link and send stay two buttons (the user:
+  "some small details wouldnt want to change to keep to just link instead
+  of link and update details").
