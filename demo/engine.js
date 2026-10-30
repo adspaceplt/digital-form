@@ -261,7 +261,7 @@
     bukku_config: '', bukku_config_set: 'p_client p_supplier', bukku_link_get: 'p_kind p_id',
     bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     bukku_read_may: 'p_kind p_id p_level', bukku_prepare_with: 'p_kind p_id p_values',
-    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_remove: 'p_client p_entity',
+    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_remove: 'p_client p_entity',
     supplier_save: 'p_id p_values p_form',
     supplier_set_status: 'p_id p_status',
     supplier_delete: 'p_id p_name',
@@ -10290,7 +10290,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
-    if (/^bukku_/.test(name)) {
+    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku') {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return bkNo(window.__refuseRpc[name]);
@@ -10363,6 +10363,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
           read_hash: rl.read_hash || null, portal: bkPortal(args.p_kind, args.p_id) });
       }
       if (name === 'bukku_take' || name === 'bukku_held_links') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
+
+      if (name === 'client_entity_from_bukku') {
+        var fbC = Number(args.p_contact);
+        if (!(fbC > 0)) return bkNo('bad-contact');
+        var fbL = DB.bukku_links.filter(function (l) { return Number(l.contact_id) === fbC && (l.kind === 'entity' || l.kind === 'client'); })
+          .sort(function (a, b) { return (b.kind === 'entity' ? 1 : 0) - (a.kind === 'entity' ? 1 : 0); })[0];
+        var fbHeld = fbL ? (fbL.kind === 'entity' ? fbL.record_id : mainEnt(fbL.record_id)) : null;
+        if (fbHeld) return rpc('client_entity_add', { p_client: args.p_client, p_entity: fbHeld, p_values: null }).then(function (r) {
+          return { data: Object.assign({}, r.data || {}, { held: true }), error: null };
+        });
+        if (DB.bukku_links.some(function (l) { return Number(l.contact_id) === fbC; })) return bkNo('taken');
+        var fbSnap = JSON.stringify(DB), fbV = Object.assign({}, args.p_values || {}); delete fbV.bill_contact_id;
+        return rpc('client_entity_add', { p_client: args.p_client, p_entity: null, p_values: fbV }).then(function (r) {
+          var d = r.data || {};
+          if (d.error) return r;
+          return rpc('bukku_link_only', { p_kind: 'entity', p_id: d.id, p_contact: fbC, p_code: args.p_code }).then(function (l) {
+            if (l.data && l.data.error) {
+              var back = JSON.parse(fbSnap); Object.keys(back).forEach(function (k) { DB[k] = back[k]; }); persist();
+              return { data: { error: l.data.error }, error: null };
+            }
+            return r;
+          });
+        });
+      }
       if (!bkMay(args.p_kind, 'work', args.p_id)) return bkNo('denied');
       if (name === 'bukku_prepare_with') {
         if (['client', 'entity'].indexOf(args.p_kind) < 0) return bkNo('bad-kind');
@@ -11918,31 +11942,61 @@ function opsCodeRange(cid, period, ty, src, seq) {
             { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '000000012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];
 
-          if (bkb.action === 'contacts' || bkb.action === 'contact') {
+          var bkVals = function (k) {
+            var t = function (v) { var x = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return x || null; };
+            return { legal_name: t(k.legal_name) ? t(k.legal_name).toUpperCase() : null, company_no: t(k.reg_no), company_no_old: t(k.old_reg_no),
+              tin: t(k.tax_id_no), sst_no: t(k.sst_reg_no), finance_email: t(k.email) ? t(k.email).toLowerCase() : null,
+              billing_address: t(k.address), person: t(k.person) };
+          };
+          var bkSame = function (f, a, b) {
+            a = String(a == null ? '' : a).trim(); b = String(b == null ? '' : b).trim();
+            if (!a || !b) return !a && !b;
+            var al = function (v) { return v.toUpperCase().replace(f === 'billing_address' ? /,?\s*(MALAYSIA|SINGAPORE)\s*$/ : /$^/, '').replace(/[^A-Z0-9]/g, ''); };
+            if (f === 'person') {
+              var sal = /^(MR|MS|MRS|MDM|DR|PROF|DATO|DATIN|DATUK|TUAN|PUAN|ENCIK|CIK|MISS|MADAM)\b\.?\s*/;
+              var ws = function (v) { return v.toUpperCase().replace(sal, '').replace(/[^A-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean); };
+              var ow = ws(a), tw = ws(b);
+              return ow.join(' ') === tw.join(' ') || (ow.length > 0 && ow.every(function (x) { return tw.indexOf(x) > -1; }));
+            }
+            return al(a) === al(b);
+          };
+          var bkDiff = function (p, v) { return BK_ORDER.filter(function (f) { return !bkSame(f, p[f], v[f]); }); };
+          var bkHash = function (v) { return 'h' + JSON.stringify(BK_ORDER.map(function (f) { return v[f] == null ? null : v[f]; })).length + ':' + JSON.stringify(BK_ORDER.map(function (f) { return v[f]; })); };
+
+          if (bkb.action === 'contacts' || bkb.action === 'adopt') {
             return rpc('invoice_scope', {}).then(function (sr) {
               var sc = sr.data || {};
               if (sc.error) return bkR({ error: sc.error });
               if (sc.send !== true) return bkR({ error: 'denied' });
               var lk = (sc.links || []).map(function (l) { return Number(l.contact); });
               var mayK = function (id) { return sc.all === true || lk.indexOf(Number(id)) > -1; };
+              var cust = function (x) { return (x.types || []).indexOf('customer') > -1 && !x.is_archived; };
               var wd = function (v) { return String(v == null ? '' : v).toUpperCase().replace(/\b(SDN|BHD|BERHAD|PLT|PTE|LTD|ENTERPRISE|TRADING|THE)\b/g, ' ').replace(/[^A-Z0-9]+/g, ' ').trim(); };
               var dg = function (v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); };
-              if (bkb.action === 'contact') {
+              if (bkb.action === 'adopt') {
                 var k = held.filter(function (x) { return x.id === Number(bkb.contact); })[0];
                 if (!mayK(bkb.contact)) return bkR({ error: 'denied' });
-                if (!k) return bkR({ error: 'bukku-gone' });
-                var ad = (k.addresses || []).filter(function (a) { return a.is_default_billing; })[0] || (k.addresses || [])[0];
-                return bkR({ ok: true, entity: { legal_name: k.legal_name || null, company_no: k.reg_no || null, company_no_old: k.old_reg_no || null,
-                  tin: k.tax_id_no || null, sst_no: k.sst_reg_no || null, finance_email: k.email || null,
-                  billing_address: ad ? [ad.street, [ad.postcode, ad.city].filter(Boolean).join(' '), ad.state, ad.country_code === 'SG' ? 'Singapore' : 'Malaysia'].filter(Boolean).join(', ') : null } });
+                if (!k || !cust(k)) return bkR({ error: 'bukku-gone' });
+                window.__bukkuAdopted = { client: bkb.client, contact: k.id };
+                var av = bkVals(k);
+                var ev = Object.assign({}, av); delete ev.person;
+                return rpc('client_entity_from_bukku', { p_client: bkb.client, p_contact: k.id, p_code: k.contact_code, p_values: ev }).then(function (r) {
+                  var d = r.data || {};
+                  if (d.error) return bkR(d);
+                  if (!d.held) bkTake((opsMe() || {}).name, 'entity', d.id, av, bkHash(av), bkDiff(bkPortal('entity', d.id) || {}, av), 'hold');
+                  return bkR({ ok: true, id: d.id, main: d.main === true, held: d.held === true, code: k.contact_code });
+                });
               }
+              window.__bukkuListed = (window.__bukkuListed || 0) + 1;
               var q = String(bkb.q || '').trim(), ws = wd(q).split(' ').filter(Boolean), rg = dg(q);
-              if (q.length < 2 || (sc.all !== true && !lk.length)) return bkR({ ok: true, contacts: [] });
+              if (sc.all !== true && !lk.length) return bkR({ ok: true, contacts: [] });
+              if (q && (q.length < 2 || (!ws.length && rg.length < 4))) return bkR({ ok: true, contacts: [] });
               return bkR({ ok: true, contacts: held.filter(function (x) {
                 var nm = wd(x.legal_name) + ' ' + wd(x.other_name);
-                return (x.types || []).indexOf('customer') > -1 && !x.is_archived && mayK(x.id) &&
-                  ((ws.length && ws.every(function (w) { return nm.indexOf(w) > -1; })) || (rg.length >= 4 && dg(x.reg_no).indexOf(rg) > -1));
-              }).slice(0, 8).map(function (x) { return { id: x.id, code: x.contact_code, name: x.legal_name, other: x.other_name || null, reg_no: x.reg_no || null }; }) });
+                return cust(x) && mayK(x.id) &&
+                  (!q || (ws.length && ws.every(function (w) { return nm.indexOf(w) > -1; })) || (rg.length >= 4 && dg(x.reg_no).indexOf(rg) > -1));
+              }).slice(0, q ? 8 : 2000).map(function (x) { return { id: x.id, code: x.contact_code, name: x.legal_name, other: x.other_name || null,
+                reg_no: x.reg_no || null, held: lk.indexOf(Number(x.id)) > -1 }; }) });
             });
           }
           if (bkb.action === 'invoices' || bkb.action === 'remind') {
@@ -12053,27 +12107,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
               return { data: { ok: true, fields: window.__bukkuFields || [{ id: 11, name: 'Client ID', type: 'text' }, { id: 12, name: 'Supplier ID', type: 'text' }, { id: 13, name: 'Region', type: 'text' }] }, error: null };
             });
           }
-
-          var bkVals = function (k) {
-            var t = function (v) { var x = String(v == null ? '' : v).replace(/\s+/g, ' ').trim(); return x || null; };
-            return { legal_name: t(k.legal_name) ? t(k.legal_name).toUpperCase() : null, company_no: t(k.reg_no), company_no_old: t(k.old_reg_no),
-              tin: t(k.tax_id_no), sst_no: t(k.sst_reg_no), finance_email: t(k.email) ? t(k.email).toLowerCase() : null,
-              billing_address: t(k.address), person: t(k.person) };
-          };
-          var bkSame = function (f, a, b) {
-            a = String(a == null ? '' : a).trim(); b = String(b == null ? '' : b).trim();
-            if (!a || !b) return !a && !b;
-            var al = function (v) { return v.toUpperCase().replace(f === 'billing_address' ? /,?\s*(MALAYSIA|SINGAPORE)\s*$/ : /$^/, '').replace(/[^A-Z0-9]/g, ''); };
-            if (f === 'person') {
-              var sal = /^(MR|MS|MRS|MDM|DR|PROF|DATO|DATIN|DATUK|TUAN|PUAN|ENCIK|CIK|MISS|MADAM)\b\.?\s*/;
-              var ws = function (v) { return v.toUpperCase().replace(sal, '').replace(/[^A-Z0-9]+/g, ' ').trim().split(' ').filter(Boolean); };
-              var ow = ws(a), tw = ws(b);
-              return ow.join(' ') === tw.join(' ') || (ow.length > 0 && ow.every(function (x) { return tw.indexOf(x) > -1; }));
-            }
-            return al(a) === al(b);
-          };
-          var bkDiff = function (p, v) { return BK_ORDER.filter(function (f) { return !bkSame(f, p[f], v[f]); }); };
-          var bkHash = function (v) { return 'h' + JSON.stringify(BK_ORDER.map(function (f) { return v[f] == null ? null : v[f]; })).length + ':' + JSON.stringify(BK_ORDER.map(function (f) { return v[f]; })); };
           if (bkb.action === 'read' || bkb.action === 'hold' || bkb.action === 'save') {
             if (['client', 'entity'].indexOf(bkb.kind) < 0) return bkR({ error: 'bad-request' });
             return rpc('bukku_read_may', { p_kind: bkb.kind, p_id: bkb.id, p_level: bkb.action === 'read' ? 'view' : 'work' }).then(function (mr) {
@@ -12159,7 +12192,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
               });
             }
             if (window.__bukkuRefuse) return { data: { error: 'bukku-refused', message: window.__bukkuRefuse }, error: null };
-            if (!ct) { ct = { id: 600 + held.length, contact_code: nextC(), legal_name: p.legal_name, reg_no: p.reg_no, types: [], fields: [] }; held.push(ct); }
+
+            var bkD = function (v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); };
+            if (!ct && bkb.action === 'send' && bkb.guard === true && p.kind === 'entity' && bkD(p.reg_no).length >= 4) {
+              var same = held.filter(function (c) { return !c.is_archived && bkD(c.reg_no) === bkD(p.reg_no); })[0];
+              if (same) return rpc('bukku_link_only', { p_kind: p.kind, p_id: p.id, p_contact: same.id, p_code: same.contact_code }).then(function (l) {
+                if (l.data && l.data.error) return { data: { error: l.data.error }, error: null };
+                return { data: { ok: true, contact: same.id, code: same.contact_code, linked: true, existing: true }, error: null };
+              });
+            }
+            if (!ct) { ct = { id: Math.max.apply(null, held.map(function (c) { return Number(c.id) || 0; }).concat([600])) + 1, contact_code: nextC(), legal_name: p.legal_name, reg_no: p.reg_no, types: [], fields: [] }; held.push(ct); }
             ct.legal_name = p.legal_name; ct.address = p.address || ct.address; if (ct.types.indexOf(p.type) < 0) ct.types.push(p.type);
             ct.fields = (ct.fields || []).filter(function (f) { return f.field_id !== p.field_id; }).concat([{ field_id: p.field_id, value: p.our_id }]);
             window.__bukkuSent = { kind: p.kind, id: p.id, contact: ct.id, code: ct.contact_code };

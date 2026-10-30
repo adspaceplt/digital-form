@@ -1894,13 +1894,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     bills, or its BRN digits (`billing_entities_find`, ten, only those
     billing a client the reader sees, or none; In the portal), a customer
     Bukku holds by every word of its name or its registration no.
-    (`bukku-sync` `contacts`, eight, held as Overdue invoices are, at
-    Billing Work; In Bukku, one the portal holds by BRN left out; Bukku
-    not connected is left out, Bukku failing said in one line), whose
-    `contact` read starts New billing entity with its details (Filled from
-    Bukku (code)., nothing written until Save, no link made), or opens
-    Billing's sheet as New billing entity (no SST
-    on quotes, no currency, no details form); Clients: Billing at Work, the
+    (`bukku-sync` `contacts`, read once as the sheet opens and found on
+    the page, eight, held as Overdue invoices are, at Billing Work; In
+    Bukku, one the portal holds by BRN left out, one the portal links
+    marked Linked in the portal; Bukku not connected is left out, Bukku
+    failing said in one line), which Add adds in one press (the user,
+    2026-10-30: "just add and pull from Bukku"; `bukku-sync` `adopt`,
+    `client_entity_from_bukku`: the entity made from Bukku's details and
+    linked to its contact in one transaction, then held, so Bukku holds
+    it; a contact the portal already links adds that entity, nothing
+    made; `taken` where a supplier holds it; Undo where it happened, none
+    for the primary), or opens Billing's sheet as New billing entity (no
+    SST on quotes, no currency, no details form), whose Save reads Create
+    in Bukku where Bukku answered the sheet: the entity added, then made
+    in Bukku (`send` with `guard`), or linked to the customer Bukku holds
+    of its registration no., never a second; a refusal leaves it added,
+    said on the line, Link to Bukku on its band; Clients: Billing at Work, the
     client in scope (`client_entity_add`, `_save` with `p_expected`,
     `_main`, `_remove`: `no-name`, `bad-email`, `bad-contact`, `stale`,
     `taken`, `main`); a BRN held is never made twice (`brn-taken`, the

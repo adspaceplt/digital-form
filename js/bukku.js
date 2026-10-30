@@ -109,11 +109,24 @@
      where it happened, so a record linked to the wrong contact is never a
      dead end. */
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  /* A Bukku contact's code, pressed to copy it. */
+  function codeOf(c) {
+    return '<button class="serial-copy bk-code" type="button" data-bk="copy" data-code="' + esc(c) + '" aria-label="Copy ' + esc(c) + '">' + esc(c) + '</button>';
+  }
   function group(host, kind, id, opts) {
     if (!host) return;
     opts = opts || {};
     var work = mayWork(kind) && opts.can !== false;
     host.classList.add('bk-band');
+    /* The contact's code is a copy control (the user, 2026-10-30), one
+       listener a band whatever state it draws. */
+    if (!host.bkCopy) {
+      host.bkCopy = true;
+      host.addEventListener('click', function (e) {
+        var c = e.target.closest && e.target.closest('[data-bk="copy"]');
+        if (c && window.ADspaceCopy) window.ADspaceCopy.to(c, c.getAttribute('data-code'));
+      });
+    }
     host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="muted">Loading.</span></div>';
     /* What the record lacks is read up front: a record that cannot be sent
        draws no Send, and says what is missing in one line (2026-10-20,
@@ -145,7 +158,7 @@
       var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
-      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? '<span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' : '') + state + '</div>' +
+      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? codeOf(d.code || String(d.contact_id)) : '') + state + '</div>' +
         (via ? '<p class="bk-sub">Linked through ' + esc(via) + '</p>'
           : linked ? '<p class="bk-sub">Last sent ' + esc(day(d.sent_at)) + (d.sent_by ? ' by ' + esc(d.sent_by) : '') + '</p>' : '') +
         (acts ? '<div class="bk-acts">' + acts + '</div>' : '') +
@@ -171,7 +184,7 @@
         r = READ[key] = { reading: true, promise: pr };
       }
       opts.reread = false;
-      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' +
+      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + codeOf(d.code || String(d.contact_id)) +
         '<span class="muted">Reading Bukku.</span></div>';
       r.promise.then(function (x) {
         if (!host.isConnected) return;
@@ -183,11 +196,11 @@
        once. Not yet held: what differs, field by field, with Send to Bukku
        and Use Bukku's. Not read: the copy the portal keeps, and when. */
     function paintRead(d, r, work) {
-      var code = esc(r.code || d.code || String(d.contact_id));
+      var code = codeOf(r.code || d.code || String(d.contact_id));
       var via = d.via ? '<p class="bk-sub">Linked through ' + esc(d.via) + '</p>' : '';
       var menu = work && !d.via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '';
-      var head = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="bk-code">' + code + '</span>';
+      var head = '<div class="bk-l"><b class="bk-t">Bukku</b>' + code;
       var when = function (iso) { return iso ? day(iso) + ', ' + (window.ADspaceClock ? window.ADspaceClock.clock(iso) : '') : ''; };
       if (r.error) {
         var copy = d.read_at ? ' Showing the copy read ' + when(d.read_at) + '.' : '';
@@ -454,5 +467,5 @@
   function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
 
   window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes,
-    held: held, state: state, save: save, fresh: fresh };
+    held: held, state: state, save: save, fresh: fresh, said: said };
 })();

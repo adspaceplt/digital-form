@@ -37,12 +37,23 @@
  *   POST { action: 'nightly' }                every held link read again
  *                                             (pg_cron at 00:30 MYT, with
  *                                             the wake secret).
- *   POST { action: 'contacts', q }            Bukku's customers matching
- *                                             every word typed (name) or the
- *                                             registration no., for Add
- *                                             entity (2026-10-29).
- *   POST { action: 'contact', contact }       one of them read whole, to
- *                                             fill New billing entity.
+ *   POST { action: 'contacts' }               Bukku's customers the
+ *                                             colleague may add, read once
+ *                                             as Add entity opens and
+ *                                             filtered on the page; those
+ *                                             the portal links marked held.
+ *                                             With q, only those matching
+ *                                             every word typed or the
+ *                                             registration no. (a tab
+ *                                             opened before 2026-10-30).
+ *   POST { action: 'adopt', client, contact } one of them added to the
+ *                                             client as a billing entity,
+ *                                             linked and held in one step.
+ *   POST { action: 'send', kind: 'entity', id, guard: true }
+ *                                             a new entity made in Bukku,
+ *                                             unless Bukku holds a customer
+ *                                             of its registration no.,
+ *                                             which is linked instead.
  *   POST { action: 'invoices', client? }      the overdue invoices
  *                                             (2026-10-28): Bukku's unpaid
  *                                             invoices held to the clients
@@ -495,14 +506,14 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
   return json({ ok: true, read, failed, left: rows.length - read - failed }, 200, origin);
 }
 
-// ---- A billing entity started from Bukku (2026-10-29) ------------------------
-/* Add entity's second list (the user, 2026-10-29: "Cant even find or
-   lookup"): Bukku's customers whose name or registration no. holds every
-   word typed, and one picked read whole to fill New billing entity. Read
-   only, nothing written in Bukku or the portal. Held as the overdue
-   invoices are (`invoice_scope`): Clients: Billing at Work, a contact
-   linked to a client the colleague sees, any other only for a colleague
-   who sees every client. */
+// ---- A billing entity from Bukku (2026-10-29, one step 2026-10-30) ------------
+/* Add entity's Bukku customers (the user, 2026-10-30: "just add and pull
+   from Bukku instead of the multiple steps"). Held as the overdue invoices
+   are (`invoice_scope`): Clients: Billing at Work, a contact linked to a
+   client the colleague sees, any other only for a colleague who sees every
+   client. `contacts` lists them once; `adopt` adds one to the client as a
+   billing entity linked to it, then holds the link, so its details are
+   Bukku's from the first read. */
 async function contactsAction(action: string, body: Record<string, any>, db: any, origin: string | null): Promise<Response> {
   const sc = await db.rpc('invoice_scope');
   if (sc.error) return json({ error: 'needs-update' }, 200, origin);
@@ -513,31 +524,42 @@ async function contactsAction(action: string, body: Record<string, any>, db: any
   const may = (id: number) => scope.all === true || linked.has(id);
   const customer = (c: any) => (c.types || []).includes('customer') && !c.is_archived;
 
-  if (action === 'contact') {
-    const id = Number(body.contact);
-    if (!(id > 0) || !may(id)) return json({ error: 'denied' }, 200, origin);
-    const c = await bukku('GET', `/contacts/${id}`).then((r) => r && r.contact)
-      .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; });
-    if (!c) return json({ error: 'bukku-gone' }, 200, origin);
-    const addr = (c.addresses || []).find((a: any) => a.is_default_billing) || (c.addresses || [])[0];
-    const s = (v: unknown) => { const x = String(v ?? '').trim(); return x || null; };
-    return json({ ok: true, entity: {
-      legal_name: s(c.legal_name), company_no: s(c.reg_no), company_no_old: s(c.old_reg_no),
-      tin: s(c.tax_id_no), sst_no: s(c.sst_reg_no), finance_email: s(c.email),
-      billing_address: s(addressLine(addr)) } }, 200, origin);
+  if (action === 'adopt') {
+    const id = Number(body.contact), client = String(body.client || '');
+    if (!(id > 0) || !/^[0-9a-f-]{36}$/i.test(client)) return json({ error: 'bad-request' }, 400, origin);
+    if (!may(id)) return json({ error: 'denied' }, 200, origin);
+    const c = await contactOf(id);
+    if (!c || !customer(c)) return json({ error: 'bukku-gone' }, 200, origin);
+    const vals = valuesOf(c);
+    const { person: _person, ...entity } = vals;
+    const r = await db.rpc('client_entity_from_bukku', { p_client: client, p_contact: id, p_code: c.contact_code || null, p_values: entity });
+    if (r.error) return json({ error: 'needs-update' }, 200, origin);
+    const d = r.data || {};
+    if (d.error) return json(d, 200, origin);
+    if (!d.held) {
+      const m = await db.rpc('bukku_read_may', { p_kind: 'entity', p_id: d.id, p_level: 'work' });
+      const md = (m.data || {}) as any;
+      if (!m.error && md.linked) {
+        const pr = md.portal || {};
+        await take(md.me, 'entity', d.id, vals, await hashOf(vals), differs(pr, vals, pr.country === 'SG' ? 'SG' : 'MY'), 'hold');
+      }
+    }
+    return json({ ok: true, id: d.id, main: d.main === true, held: d.held === true, code: c.contact_code || null }, 200, origin);
   }
 
+  if (scope.all !== true && !linked.size) return json({ ok: true, contacts: [] }, 200, origin);
   const q = String(body.q || '').trim().slice(0, 80);
   const want = words(q).split(' ').filter(Boolean), reg = digits(q);
-  if (q.length < 2 || (!want.length && reg.length < 4)) return json({ ok: true, contacts: [] }, 200, origin);
-  if (scope.all !== true && !linked.size) return json({ ok: true, contacts: [] }, 200, origin);
+  if (q && (q.length < 2 || (!want.length && reg.length < 4))) return json({ ok: true, contacts: [] }, 200, origin);
   const hit = (c: any) => {
+    if (!q) return true;
     const name = words(c.legal_name) + ' ' + words(c.other_name);
     return (want.length && want.every((w) => name.includes(w))) || (reg.length >= 4 && digits(c.reg_no).includes(reg));
   };
   const found = (await allContacts()).filter((c) => customer(c) && may(Number(c.id)) && hit(c))
-    .sort((a, b) => String(a.legal_name).localeCompare(String(b.legal_name))).slice(0, 8)
-    .map((c) => ({ id: c.id, code: c.contact_code, name: c.legal_name, other: c.other_name || null, reg_no: c.reg_no || null }));
+    .sort((a, b) => String(a.legal_name).localeCompare(String(b.legal_name))).slice(0, q ? 8 : 2000)
+    .map((c) => ({ id: c.id, code: c.contact_code, name: c.legal_name, other: c.other_name || null, reg_no: c.reg_no || null,
+      held: linked.has(Number(c.id)) }));
   return json({ ok: true, contacts: found }, 200, origin);
 }
 
@@ -875,7 +897,7 @@ Deno.serve(async (req) => {
       if (!['client', 'entity'].includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);
       return await billingAction(action, k, rid, body, db, origin);
     }
-    if (action === 'contacts' || action === 'contact') return await contactsAction(action, body, db, origin);
+    if (action === 'contacts' || action === 'adopt') return await contactsAction(action, body, db, origin);
 
     const kind = String(body.kind || ''), id = String(body.id || '');
     if (!['client', 'supplier', 'entity'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
@@ -924,7 +946,20 @@ Deno.serve(async (req) => {
     const cur = contact ? await bukku('GET', `/contacts/${contact}`).then((r) => r && r.contact)
       .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; }) : null;
     if (contact && !cur) return json({ error: 'bukku-gone' }, 200, origin);
-    const code = cur ? cur.contact_code : nextCode(await allContacts(), p.legal_name);
+    const every = cur ? null : await allContacts();
+    /* A new entity made from the portal (2026-10-30): where Bukku already
+       holds a customer of its registration no., that contact is linked as
+       Bukku holds it, never a second one made. */
+    if (action === 'send' && !cur && body.guard === true && kind === 'entity' && digits(p.reg_no).length >= 4) {
+      const same = (every || []).find((c) => !c.is_archived && digits(c.reg_no) === digits(p.reg_no));
+      if (same) {
+        const l = await db.rpc('bukku_link_only', { p_kind: kind, p_id: id, p_contact: same.id, p_code: same.contact_code || null });
+        if (l.error) return json({ error: 'needs-update' }, 200, origin);
+        if (l.data && l.data.error) return json({ error: l.data.error }, 200, origin);
+        return json({ ok: true, contact: same.id, code: same.contact_code || null, linked: true, existing: true }, 200, origin);
+      }
+    }
+    const code = cur ? cur.contact_code : nextCode(every || [], p.legal_name);
     const terms = p.payment_term ? await termsOf() : [];
     const next = merged(p, cur, code, termFor(terms, p.payment_term));
 
