@@ -5857,6 +5857,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
 
+- A website quotation's ⋯ Preview (`quotes.js`, any reader of it; the
+  user, 2026-10-30) opens `/quote/?q={key}&preview=1`: the prospect's page
+  as they see it under one bar (`#qsPreviewBar`, `.annbar.previewbar`:
+  Preview: the page as the prospect sees it. Nothing can be sent from it.;
+  its × hides it, a refused press bringing it back),
+  Proceed, a new quotation, Change selection and the billing form refusing
+  in place (Not available in preview.), page-side; reading the link writes
+  nothing. Once the quotation is sent, Copy link beside it gives the
+  prospect's own link (no `preview`) to send again by hand
+  (`tests/quotesite.js`).
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,

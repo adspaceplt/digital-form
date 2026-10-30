@@ -157,6 +157,15 @@
           var st = stateOf(q, live), h = headline(q);
           var items = [];
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
+          /* The prospect's own page (2026-10-30): Preview opens it read only,
+             for any reader of the quotation; Preview is the team's view,
+             Copy link the prospect's. */
+          if (q.source === 'website' && q.access_key && !q.removed_at) {
+            items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
+            /* Its own link, to send the prospect again by hand, once the
+               team has sent the quotation (2026-10-30). */
+            if (!awaiting(q)) items.push('<button class="kmenu-item" data-g="1" data-a="link" type="button" role="menuitem">Copy link</button>');
+          }
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
           /* What a quotation that can be offered asks next is on its row,
@@ -247,6 +256,8 @@
 
   var offering = {};
   function act(a, q, ctx, host, btn) {
+    if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
+    if (a === 'link') { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(q.access_key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); return; }
     if (a === 'pdf') {
       if (!window.ADspaceQuotePdf) return;
       var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;

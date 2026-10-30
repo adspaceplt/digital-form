@@ -824,6 +824,41 @@
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
   }
 
+  /* A colleague's preview (2026-10-30): the console's Preview opens the
+     prospect's own link with preview=1. The page reads as the prospect's
+     does, under a bar saying so, and takes no act on their behalf: Proceed,
+     a new quotation and the billing form refuse in place. Reading the link
+     writes nothing; the bar is the team's, so in English alone. */
+  var PREVIEW = (function () { var u = new URLSearchParams(location.search); return u.get('preview') === '1' && !!u.get('q'); })();
+  function previewBar() {
+    if (!PREVIEW || $('qsPreviewBar')) return;
+    var top = document.querySelector('.topbar');
+    if (!top) return;
+    var b = document.createElement('div');
+    b.className = 'annbar previewbar'; b.id = 'qsPreviewBar';
+    /* Its × hides it, so the page reads exactly as the prospect's; a
+       refused press brings it back to say so (the user, 2026-10-30, A). */
+    b.innerHTML = '<p class="annbar-text">Preview: the page as the prospect sees it. Nothing can be sent from it.</p>' +
+      '<span class="msg" id="qsPreviewMsg" role="status"></span><span class="annbar-acts">' +
+      '<button class="iconbtn annbar-x" id="qsPreviewHide" type="button" aria-label="Hide">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></span>';
+    top.parentNode.insertBefore(b, top.nextSibling);
+    $('qsPreviewHide').addEventListener('click', function () { b.hidden = true; });
+  }
+  function previewRefuse(e) {
+    e.preventDefault(); e.stopPropagation();
+    if ($('qsPreviewBar')) $('qsPreviewBar').hidden = false;
+    say('qsPreviewMsg', 'Not available in preview.');
+  }
+  if (PREVIEW) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', previewBar); else previewBar();
+    setTimeout(previewBar, 600);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('#qsRoot [data-a="propose"], #qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"]');
+      if (b) previewRefuse(e);
+    }, true);
+  }
+
   // ---- Presses ------------------------------------------------------------------
   document.addEventListener('click', function (e) {
     var b = e.target.closest('#qsRoot [data-a], #qsRoot [data-step]');

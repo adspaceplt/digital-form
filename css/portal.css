@@ -8583,8 +8583,16 @@ body.is-maint { overflow: hidden; }
 .topbar + .annbar, .demobar + .annbar { padding-left: 24px; padding-right: 12px; }
 /* The demo on a client page (js/demo.js): the announcement's band led by
    the amber dot, Exit demo at its right edge. */
-.annbar.demobar .annbar-text { flex: 1 1 auto; }
-.annbar.demobar .annbar-text::before {
+/* A colleague's preview of a prospect's quotation (js/quote.js,
+   2026-10-30) is laid the same way, its refusal at the right edge. */
+.annbar.demobar .annbar-text, .annbar.previewbar .annbar-text { flex: 1 1 auto; }
+.annbar.previewbar .msg { margin: 0; font-size: 12.5px; }
+@media (max-width: 640px) {
+  .annbar.previewbar { flex-wrap: wrap; row-gap: 0; }
+  .annbar.previewbar .annbar-text { flex: 1 1 0; }
+  .annbar.previewbar .msg:not(:empty) { order: 1; flex-basis: 100%; padding: 0 0 6px 16px; }
+}
+.annbar.demobar .annbar-text::before, .annbar.previewbar .annbar-text::before {
   content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   margin-right: 8px; vertical-align: 1px; background: var(--dot-wait);
 }
