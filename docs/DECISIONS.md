@@ -7613,3 +7613,23 @@ read and set every page for a tab served before.
   two accounts together.
 - **Mistake noted:** the name fallback assumed one ad account a report;
   a match by name is held to the account wherever the paste names one.
+
+## 2026-10-30 · The full gate on 0ed3b39: four findings, all in the suites
+- **Found:** the day's full gate (portal 0ed3b39, tests 5188f7e) ended
+  PROBLEM (4). geom read Every N days, Google Meet and the Video Scripts
+  types as cut at 390; guides waited on a switch as the Settings guide's
+  second step; uxaudit stopped on My Work's ⋯ Templates; matrix ran past
+  its 40 minutes in the keyboard pass.
+- **Why:** geom measured 400ms after unhiding every sheet, and under three
+  browsers on four processors the 144 segments had not yet refitted (alone
+  it passes). Page availability became a sheet on 2026-10-29, so the
+  Settings group shown first holds no switch; the guide skips a step whose
+  control is not drawn. Task templates moved to Settings the same day and
+  uxaudit still pressed the old item. matrix had grown past its limit.
+- **Changed:** geom waits for the frames the segments refit in. The
+  Settings guide reads the groups, Edit or Open, then a switch where the
+  group holds one; guides checks both. uxaudit opens a template family
+  from Settings. Each walk has an hour.
+- **Mistake noted:** the Settings guide's step and uxaudit's Templates
+  press were not grepped when Page availability and the templates moved;
+  a control moved is grepped across the guides and the walks too.

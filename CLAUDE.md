@@ -110,6 +110,9 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     read date literals and `current_date` in MYT (2026-10-21).
   - Postgres suites build cut-down tables, so a new column goes into their
     fixture too.
+  - uxaudit and matrix have an hour each (`gate.sh`); a suite measuring
+    what a page refits a frame later waits for the frames, never a fixed
+    time (2026-10-30: geom read 144 segments 400ms after unhiding them).
   - A suite types a date from today (`todayKey()`, a day ahead), never a
     fixed day of the month: a fixed day is a passed date on any later day
     (2026-10-28: `work` typed the 27th on the 28th). A seed's day is
@@ -363,7 +366,7 @@ added to all three in the same push.
   past that step, and a suite seeds the link still open at that move
   (2026-10-20: an approved supplier's details form stood open).
 - A control hidden, a message moved or words taken off a row is first
-  grepped by its id or words across the suites, and each suite that reads
+  grepped by its id or words across the suites and `GUIDES`, and each suite that reads
   it is changed in the same push (2026-10-21: six pressed a Publish #691
   hid, myhr read a line #693 moved, uxaudit a month #693 took off a row).
 - Before a push, every word the diff puts in front of a person is drafted
