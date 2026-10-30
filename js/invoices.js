@@ -283,18 +283,23 @@
     var row = document.createElement(st.send ? 'label' : 'div');
     row.className = 'inv-row' + (st.pick[l.id] ? ' is-picked' : '');
     var e = lastOf(l.id), s = e ? statusOf(e) : null;
-    var meta = esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') +
-      (l.client ? (st.many && st.many[l.client] && companyOf(l) ? ' · ' + esc(companyOf(l)) : '') : ' · Not linked to a client');
+    /* On a phone the due date joins the invoice's line and the days say
+       what they count, the column heads being hidden (2026-10-31; the
+       user: "this row sequence quite confusing"). */
+    var part = function (t) { return '<span class="inv-part">' + t + '</span>'; };
+    var meta = part(esc(l.number)) + (l.part ? ' · ' + part(esc(partWord(l.part))) : '') +
+      '<span class="inv-due-m"> · ' + part('Due ' + esc(day(l.due))) + '</span>' +
+      (l.client ? (st.many && st.many[l.client] && companyOf(l) ? ' · ' + esc(companyOf(l)) : '') : ' · ' + part('Not linked to a client'));
     row.innerHTML = (st.send ? '<span class="inv-tick"><input type="checkbox"' + (st.pick[l.id] ? ' checked' : '') +
         ' aria-label="' + esc(l.number + ', ' + nameOf(l)) + '"></span>' : '') +
       '<span class="inv-who"><b>' + esc(nameOf(l)) + '</b><small>' + meta + '</small></span>' +
       '<span class="inv-amt">' + esc(money(l.amount, l.currency)) +
         (l.amount < l.balance ? '<small>of ' + esc(money(l.balance, l.currency)) + '</small>' : '') + '</span>' +
       '<span class="inv-due">' + esc(day(l.due)) + '</span>' +
-      '<span class="inv-days">' + esc(plural(l.days, 'day', 'days')) + '</span>' +
-      '<span class="inv-last">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' +
+      '<span class="inv-days">' + esc(plural(l.days, 'day', 'days')) + '<span class="inv-word"> overdue</span></span>' +
+      '<span class="inv-last"><span class="inv-state">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' +
           (e.status === 'bounced' && l.client ? '<button class="linkbtn inv-fix" type="button">Open contacts</button>' : '')
-        : '<span class="muted">Not reminded</span>') +
+        : '<span class="muted">Not reminded</span>') + '</span>' +
         (l.link ? '<a class="linkbtn inv-open" href="' + esc(l.link) + '" target="_blank" rel="noopener">Open in Bukku' + OUT + '</a>' : '') + '</span>';
     var box = row.querySelector('input');
     if (box) box.addEventListener('change', function () { if (box.checked) st.pick[l.id] = true; else delete st.pick[l.id]; row.classList.toggle('is-picked', box.checked); paintBulk(shown()); });

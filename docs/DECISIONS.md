@@ -7717,3 +7717,15 @@ read and set every page for a tab served before.
 - **Kept apart:** Link only and Link and send stay two buttons (the user:
   "some small details wouldnt want to change to keep to just link instead
   of link and update details").
+
+### 2026-10-31 · An overdue invoice on a phone reads line by line
+- **Reported:** the user, on an iPhone: "Found this row sequence quite
+  confusing". The row stacked the client, the invoice, the last reminder
+  and Open in Bukku down the left, with the amount and a bare "16 days" at
+  the right, so the days stood beside "Not reminded" and read as its age;
+  the due date was not on a phone at all.
+- **Fixed:** three lines, each pairing what belongs together: the client
+  and the amount; the invoice with its due date, and "16 days overdue";
+  the last reminder, and Open in Bukku at the right edge. The invoice line
+  wraps between its parts, never inside a number or a date. The desk's
+  table is unchanged (its heads name the columns).

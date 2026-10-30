@@ -4012,21 +4012,32 @@ span.inv-amt { font-weight: 600; }
 .inv-days { font-size: 13.5px; color: var(--err); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .crm-head .inv-days { color: inherit; }
 .inv-last { display: grid; gap: 2px; justify-items: start; min-width: 0; font-size: 13px; }
+.inv-state { display: grid; gap: 2px; justify-items: start; min-width: 0; }
+.inv-due-m, .inv-word { display: none; }
 .inv-last .linkbtn { font-size: 12.5px; }
 .inv-last .linkbtn svg { width: 13px; height: 13px; margin-left: 4px; }
 .is-narrow .crm-head.inv-row { display: none; }
+/* A phone row reads line by line: the client and the amount; the invoice
+   and its due date, and how long overdue; the last reminder, and Open in
+   Bukku (2026-10-31). */
 .is-narrow .inv-row, .is-narrow .can-pick .inv-row {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "who amt" "last days";
-  align-items: start; gap: 4px 12px; padding: 12px 15px;
+  grid-template-areas: "who amt" "who days" "state open";
+  align-items: start; gap: 2px 12px; padding: 12px 15px;
 }
-.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". last days"; }
+.is-narrow .can-pick .inv-row { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "tick who amt" ". who days" ". state open"; }
 .is-narrow .inv-row > .inv-tick { grid-area: tick; padding-top: 2px; }
 .is-narrow .inv-row > .inv-who { grid-area: who; }
 .is-narrow .inv-row > .inv-amt { grid-area: amt; }
 .is-narrow .inv-row > .inv-due { display: none; }
 .is-narrow .inv-row > .inv-days { grid-area: days; justify-self: end; }
-.is-narrow .inv-row > .inv-last { grid-area: last; }
+.is-narrow .inv-row > .inv-last { display: contents; }
+.is-narrow .inv-last > .inv-state { grid-area: state; margin-top: 6px; }
+.is-narrow .inv-last > .inv-open { grid-area: open; justify-self: end; align-self: end; }
+.is-narrow .inv-due-m, .is-narrow .inv-word { display: inline; }
+/* The invoice's line wraps between its parts, never inside one. */
+.is-narrow .inv-who small { white-space: normal; }
+.inv-part { white-space: nowrap; }
 
 .sheet-card.formsheet.inv-sheet { width: min(880px, 100%); }
 .sheet-body.inv-rv { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 0; padding: 0; }
