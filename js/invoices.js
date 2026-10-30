@@ -225,7 +225,7 @@
     var rows = shown();
     st.many = several(st.rows || []);
     var clients = {};
-    rows.forEach(function (l) { clients[l.contact] = true; });
+    rows.forEach(function (l) { clients[l.client || ('c' + l.contact)] = true; });
     $('odCount').textContent = rows.length ? plural(rows.length, 'invoice', 'invoices') + ' · ' + plural(Object.keys(clients).length, 'client', 'clients') : '';
     paintTallies(rows);
     paintBulk(rows);

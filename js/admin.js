@@ -478,7 +478,7 @@
       if (r.error || d.error) {
         done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
                      : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
-                     : d.error === 'denied' ? 'This needs Team: Upgrade mode.' : d.error);
+                     : d.error === 'denied' ? 'This needs Team: Upgrade mode.' : 'Not saved. The database refused the request.');
         return;
       }
       done('');

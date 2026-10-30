@@ -233,7 +233,9 @@
         /* A client found by its name leads; one found through a contact or
            a billing entity follows, once, saying which. */
         return Promise.all([direct, people, ents]).then(function (r) {
-          if (r[0].error && r[1].error) return { error: r[0].error };
+          /* The clients read failing is said with Try again, never as no
+             matches, unless another read found someone (audit 2026-10-30). */
+          if (r[0].error && !(r[1].rows || []).length && !(r[2].rows || []).length) return { error: r[0].error };
           var seen = {}, out = [];
           (r[0].rows || []).forEach(function (c) { seen[c.id] = 1; out.push(c); });
           (r[1].rows || []).forEach(function (p) {
@@ -254,7 +256,7 @@
         var via = c.via, bill = c.bill;
         return {
           id: 'client-' + c.id, name: c.name, code: c.client_code, vic: c.id,
-          meta: via ? [via.name, via.email || via.phone] : bill ? ['Billed by ' + bill.legal_name, bill.company_no] : [stageOf(c.stage)],
+          meta: via ? [via.name, via.email || via.phone] : bill ? [bill.legal_name ? 'Billed by ' + bill.legal_name : '', bill.company_no] : [stageOf(c.stage)],
           open: function () {
             go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : bill ? '&tab=billing' : ''), 'clients');
           }
