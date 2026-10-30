@@ -7633,3 +7633,20 @@ read and set every page for a tab served before.
 - **Mistake noted:** the Settings guide's step and uxaudit's Templates
   press were not grepped when Page availability and the templates moved;
   a control moved is grepped across the guides and the walks too.
+
+## 2026-10-30 · The team previews a website quotation as the prospect sees it
+- **Asked:** a way for the team to see the page a prospect sees, the
+  quotation waiting for review included.
+- **Changed:** the website quotation's ⋯ holds Preview, opening the
+  prospect's own link with `preview=1`. The page reads as theirs under a
+  bar saying so, and Proceed, a new quotation, Change selection and the
+  billing form refuse in place, so a colleague never acts for the
+  prospect. Page-side only; the database was not changed.
+- **Copy link:** first left out (the user: "why not just one"), then
+  kept for a prospect who has lost the link (the user: "what if prospects
+  dont have the link"): offered once the quotation is sent, since before it
+  the page holds no price, and it gives the live link, which is the
+  prospect's to act on. Preview is the team's view; Copy link the
+  prospect's.
+- **Not built:** previewing the priced page before Send quotation (it
+  needs the database to answer a colleague the figures it withholds).
