@@ -9,7 +9,13 @@
  * same contact, typed Customer and Supplier.
  *
  *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku band, Unlink in its ⋯
- *                                               (kind client, supplier or entity; opts.after on a link's change)
+ *                                               (kind client, supplier or entity; opts.after on a link's change;
+ *                                               opts.read(r) after a client's or entity's read from Bukku;
+ *                                               opts.lead: linked, the band leads its container)
+ *   ADspaceBukku.held(kind, id)               — the last read where Bukku holds the record's billing, else null
+ *   ADspaceBukku.state(kind, id)              — reading, held, differs, down or none
+ *   ADspaceBukku.save(kind, id, values)       — the Billing sheet's changes saved straight to Bukku
+ *   ADspaceBukku.fresh(kind, id)              — read again at the next band (a record opened afresh)
  *   ADspaceBukku.send(kind, id, btn, done)    — the Send to Bukku sheet
  *   ADspaceBukku.openConfig(btn, say)         — Settings' Bukku sheet
  *   ADspaceBukku.configLine()                 — Settings' Bukku value line
@@ -40,6 +46,13 @@
     moved: 'Not restored. It was linked again meanwhile.',
     'needs-update': 'This needs a database update.',
     'bad-value': 'Choose a field from the list.',
+    'not-held': 'Bukku and the portal hold different details. Choose Send to Bukku or Use Bukku\'s first.',
+    stale: 'Not saved. This changed in Bukku since it was opened, and has been read again.',
+    'bad-email': 'Enter a valid email address.',
+    'no-name': 'Enter the company name as registered.',
+    'no-address': 'Enter the billing address.',
+    'bad-contact': 'Choose one of the client\'s contacts.',
+    'not-linked': 'This record is no longer linked to Bukku. Refresh the page.',
     failed: 'The request failed. Try again.'
   };
   function said(d) {
@@ -62,6 +75,29 @@
       if (r.error) return { error: /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'needs-update' : 'failed' };
       return r.data || {};
     }, function () { return { error: 'failed' }; });
+  }
+
+  /* What was last read from Bukku, a record at a time, for this visit. */
+  var READ = {};
+  var WORD = { legal_name: 'Registered name', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
+    tin: 'TIN', sst_no: 'SST registration no.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
+  function held(kind, id) { var r = READ[kind + ':' + id]; return r && r.held && !r.error && r.hash ? r : null; }
+  function state(kind, id) {
+    var r = READ[kind + ':' + id];
+    return !r ? 'none' : r.reading ? 'reading' : r.error ? 'down' : r.held ? 'held' : 'differs';
+  }
+  function fresh(kind, id) { delete READ[kind + ':' + id]; }
+  /* The Billing sheet's changes saved straight to Bukku, then read back:
+     `values` holds only what changed. A refusal is said in the sheet. */
+  function save(kind, id, values) {
+    var r = held(kind, id);
+    if (!r) return Promise.resolve({ error: 'not-held', said: said({ error: 'not-held' }) });
+    return call({ action: 'save', kind: kind, id: id, values: values, expected: r.hash }).then(function (x) {
+      if (x.error === 'stale' && x.values) READ[kind + ':' + id] = Object.assign({}, r, { values: x.values, hash: x.hash, changed: x.changed, at: Date.now() });
+      if (x.error) return { error: x.error, said: said(x) };
+      READ[kind + ':' + id] = Object.assign({}, r, { values: x.values, hash: x.hash, person_in: x.person_in, changed: [], at: Date.now() });
+      return x;
+    });
   }
 
   /* ---- The record's band -------------------------------------------------
@@ -88,6 +124,9 @@
       if (d.error === 'denied') { host.hidden = true; return; }
       host.hidden = false;
       if (d.error) { host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b></div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
+      /* Billing from Bukku (2026-10-30): a linked client's or entity's
+         billing is Bukku's, read in once a visit (Refresh reads again). */
+      if (d.contact_id && kind !== 'supplier') { readBand(d, work); return; }
       var gap = work && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
       var linked = Boolean(d.contact_id);
       /* A brand and its main entity are one company, one Bukku contact
@@ -112,11 +151,102 @@
       opts.said = '';
       wire(d);
     });
+    function readBand(d, work) {
+      var key = kind + ':' + id, r = READ[key];
+      /* Linked, the band leads the details it holds (`opts.lead`). */
+      if (opts.lead && host.parentNode && host.parentNode.firstElementChild !== host) host.parentNode.insertBefore(host, host.parentNode.firstElementChild);
+      if (r && r.at && !opts.reread) { paintRead(d, r, work); return; }
+      /* One read at a time a record: a band drawn again while it runs (the
+         pane repaints as its contacts and entities arrive) waits on it. */
+      if (!(r && r.reading) || opts.reread) {
+        var pr = call({ action: 'read', kind: kind, id: id }).then(function (x) {
+          x.at = Date.now();
+          if (READ[key] && READ[key].promise === pr) READ[key] = x;
+          return x;
+        });
+        r = READ[key] = { reading: true, promise: pr };
+      }
+      opts.reread = false;
+      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="bk-code">' + esc(d.code || String(d.contact_id)) + '</span>' +
+        '<span class="muted">Reading Bukku.</span></div>';
+      r.promise.then(function (x) {
+        if (!host.isConnected) return;
+        paintRead(d, READ[key] && READ[key].at ? READ[key] : x, work);
+        if (opts.read && !x.told) { x.told = true; opts.read(x); }
+      });
+    }
+    /* Held: the details are Bukku's; what moved since the last read said
+       once. Not yet held: what differs, field by field, with Send to Bukku
+       and Use Bukku's. Not read: the copy the portal keeps, and when. */
+    function paintRead(d, r, work) {
+      var code = esc(r.code || d.code || String(d.contact_id));
+      var via = d.via ? '<p class="bk-sub">Linked through ' + esc(d.via) + '</p>' : '';
+      var menu = work && !d.via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '';
+      var head = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="bk-code">' + code + '</span>';
+      var when = function (iso) { return iso ? day(iso) + ', ' + (window.ADspaceClock ? window.ADspaceClock.clock(iso) : '') : ''; };
+      if (r.error) {
+        var copy = d.read_at ? ' Showing the copy read ' + when(d.read_at) + '.' : '';
+        host.innerHTML = head + '<span class="chip-state is-warn">Not read</span></div>' +
+          '<p class="bk-sub">' + esc(said(r)) + esc(copy) + '</p>' +
+          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Try again</button>' + menu + '</div>';
+      } else if (r.held) {
+        /* What moved in Bukku is said for a minute and a half after the read, through the repaint it brings. */
+        var moved = (r.changed || []).length && Date.now() - r.at < 90000 ? (r.changed || []).map(function (f) { return WORD[f] || f; }) : [];
+        host.innerHTML = head + '<span class="chip-state is-ok">Linked</span></div>' +
+          (via || '<p class="bk-sub">Billing details from Bukku · Read ' + esc(when(new Date(r.at).toISOString())) + '</p>') +
+          '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="refresh">Refresh</button>' + menu + '</div>' +
+          (moved.length ? '<p class="msg bk-said" role="status">Changed in Bukku since the last read: ' + esc(moved.join(', ')) + '.</p>' : '') +
+          (r.values && r.values.person && r.person_in === false
+            ? '<p class="msg warn bk-gap">Bukku\'s billing person, ' + esc(r.values.person) + ', is not in Contacts.' +
+              (opts.addContact && may('clients.contacts', 'work') ? ' <button class="linkbtn" type="button" data-bk="addct">Add as contact</button>' : '') + '</p>' : '') +
+          (opts.said ? '<p class="msg ok bk-said" role="status">' + esc(opts.said) + '</p>' : '');
+      } else {
+        var rows = (r.differs || []);
+        host.innerHTML = head + '<span class="chip-state is-warn">Differs from Bukku</span></div>' +
+          '<p class="bk-sub">Nothing is replaced until one side is chosen.</p>' +
+          (work ? '<div class="bk-acts"><button class="btn btn-sm" type="button" data-bk="send">Send to Bukku</button>' +
+            '<button class="btn btn-sm" type="button" data-bk="hold">Use Bukku\'s</button>' + menu + '</div>' : '') +
+          '<div class="bk-table bk-diff" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
+            '<span role="columnheader">Portal</span><span role="columnheader">Bukku</span></div>' +
+          rows.map(function (x) {
+            return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + esc(WORD[x.field] || x.field) + '</span>' +
+              '<span role="cell" class="bk-now">' + (x.portal ? esc(x.portal) : '<span class="muted">—</span>') + '</span>' +
+              '<span role="cell" class="bk-now">' + (x.bukku ? esc(x.bukku) : '<span class="muted">—</span>') + '</span></div>';
+          }).join('') + '</div>';
+      }
+      opts.said = '';
+      wire(d);
+    }
     function wire(d) {
+      var rf = host.querySelector('[data-bk="refresh"]');
+      if (rf) rf.addEventListener('click', function () { group(host, kind, id, Object.assign({}, opts, { reread: true })); });
+      var ac = host.querySelector('[data-bk="addct"]');
+      if (ac) ac.addEventListener('click', function () { var r = READ[kind + ':' + id]; opts.addContact(r && r.values ? r.values.person : ''); });
+      var hb = host.querySelector('[data-bk="hold"]');
+      if (hb) hb.addEventListener('click', function () {
+        var r = READ[kind + ':' + id] || {};
+        var names = (r.differs || []).map(function (x) { return WORD[x.field] || x.field; });
+        window.ADspaceConfirm.ask({
+          title: 'Use Bukku\'s details?', go: 'Use Bukku\'s', tone: 'warn', wait: true, opener: hb,
+          body: 'The portal\'s ' + names.join(', ') + ' ' + (names.length === 1 ? 'is' : 'are') + ' replaced with what Bukku holds. From then on Bukku holds these details.'
+        }, function () {
+          return call({ action: 'hold', kind: kind, id: id }).then(function (x) {
+            if (x.error) return said(x);
+            var took = x.changed || [];
+            x.at = Date.now(); x.changed = [];
+            READ[kind + ':' + id] = x;
+            group(host, kind, id, Object.assign({}, opts, { said: 'Bukku\'s details taken in.' }));
+            if (opts.read) opts.read(Object.assign({}, x, { changed: took }));
+            return '';
+          });
+        });
+      });
       var b = host.querySelector('[data-bk="send"]');
       /* The outcome is said in the band it changed (2026-10-20, BKU-3). */
       if (b) b.addEventListener('click', function () {
         send(kind, id, b, function (r) {
+          delete READ[kind + ':' + id];
           group(host, kind, id, Object.assign({}, opts, { said: r && r.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
           if (opts.after) opts.after();
         });
@@ -148,11 +278,13 @@
         'Send to Bukku then offers the matching contacts again.' + (kind === 'entity' ? '' : ' A supplier that is also a client shares one Bukku contact, so both are unlinked.')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
-        if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Read it again.' : said(r);
+        if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);
+        delete READ[kind + ':' + id];
         group(host, kind, id, opts);
         if (opts.after) opts.after();
         if (A && A.undoHere) A.undoHere('Unlinked from Bukku.', function () {
           rpc('bukku_unlink_undo', { p_kind: kind, p_id: id, p_stamp: r.stamp }).then(function (x) {
+            delete READ[kind + ':' + id];
             group(host, kind, id, Object.assign({}, opts, { said: x.error ? (x.error === 'moved' ? 'Not restored. It was linked again meanwhile.' : said(x)) : 'Linked to Bukku again.' }));
             if (!x.error && opts.after) opts.after();
           });
@@ -310,5 +442,6 @@
   /* Bukku's tax codes (2026-10-22), for the Settings page's Tax codes. */
   function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
 
-  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes };
+  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes,
+    held: held, state: state, save: save, fresh: fresh };
 })();

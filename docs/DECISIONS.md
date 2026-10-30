@@ -7493,3 +7493,29 @@ read and set every page for a tab served before.
   reminder on the client it was sent from; Billing heads each company's
   invoices by its name. Two views in a strip are equal halves on a phone.
   `entitysql`, `bukkusql` and `entities` hold each.
+### 2026-10-30 · Billing from Bukku: once linked, Bukku holds a client's billing
+- **Asked:** "why not billing details we use Bukku's will do so we dont
+  need two sides update … Formal billing and einvoice would always
+  finalize at bukku … portal mainly use for collects n create then push to
+  bukku then done, link this brand crm to bukku then subsequent data pulls
+  from bukku realtime"; mockup approved with option A (Edit in the portal
+  saves straight to Bukku), and the client's form kept: "Filling in by
+  clients can still be from the portal via a link generated right? Then
+  only we click confirm to proceed then it pushes to Bukku".
+- **Why:** a linked client's billing was kept twice and drifted (Details
+  changed) until someone pressed Send to Bukku, and a change made in Bukku
+  by Finance never reached the next Letter of Offer.
+- **Changed:** `2026-10-30-billing-from-bukku.sql` (read, hold and the
+  copy's columns on `bukku_links`; `bukku_take`, the service role's;
+  `bukku_read_may`, `bukku_prepare_with`; the nightly read at 00:30 MYT);
+  `bukku-sync` `read`, `hold`, `save` and `nightly`; Billing's band leads
+  a linked record with Refresh, Differs from Bukku waits on Send to Bukku
+  or Use Bukku's, Edit saves to Bukku what changed with Undo, Bukku not
+  answering reads Not read and draws no Edit. The 25 links standing are
+  not held until their first read finds nothing the portal holds
+  otherwise, so nothing in the portal is overwritten by the switch.
+  Suppliers stay on Send to Bukku for now. Found by the screenshots
+  before the push: a pane repainting while Bukku was being read left the
+  band on Reading Bukku. (the repaint's band started no read and the
+  first painted a detached one); one read a record now serves every band
+  drawn while it runs.
