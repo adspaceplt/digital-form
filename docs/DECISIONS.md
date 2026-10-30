@@ -7594,3 +7594,22 @@ read and set every page for a tab served before.
 - **Mistake noted:** a stand-in function routed through a block whose
   first act is a generic permission check is refused before its own
   handler: a function added to such a block goes above that check.
+
+## 2026-10-30 · An advertising report run from two ad accounts keeps each account's ads apart
+- **Reported:** Huna's ads run from two ad accounts while the first is
+  under Meta's review. Both accounts hold the same creative under the same
+  name (2610W4_AAA_999), with different Ad IDs, and their results must
+  never be shown as one.
+- **What broke:** a paste from the second account matched no Ad ID, fell
+  back to the name and wrote its figures over the first account's row.
+- **Changed:** the importer matches a row only to an ad of the same ad
+  account where both name one (`sameAccount` in `adMatch`, and the day and
+  age exports' check for a name several ads share). The same creative in
+  two accounts is two rows; with more than one account in a report each
+  row reads `Ad account ending nnnn` in the console. Import from Meta, the
+  Report audit (which already sums Step 1's spend and impressions across
+  linked accounts) and Pictures from Meta (by each row's own Ad ID) follow.
+  Within one account nothing changes. Step 1's reach is still typed for the
+  two accounts together.
+- **Mistake noted:** the name fallback assumed one ad account a report;
+  a match by name is held to the account wherever the paste names one.

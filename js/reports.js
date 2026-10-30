@@ -3994,6 +3994,12 @@
     var box = st.host.querySelector('.rp-ads');
     if (!box) return;
     var ed = editable();
+    /* A report run from more than one ad account names each ad's account
+       under it, so a creative of one name in two accounts reads apart (the
+       user, 2026-10-30). The PDF names none. */
+    var accts = {};
+    st.ads.forEach(function (a) { if (a.ad_account) accts[a.ad_account] = true; });
+    var accWord = Object.keys(accts).length > 1 ? function (a) { return a.ad_account ? 'Ad account ending\u00a0' + String(a.ad_account).slice(-4) : ''; } : function () { return ''; };
     var picsBtn = st.host.querySelector('[data-a="metapics"]');
     if (picsBtn) picsBtn.hidden = !st.ads.some(function (a) { return (a.ad_ids || []).length; });
     var pickBtn = st.host.querySelector('[data-a="pickads"]');
@@ -4040,7 +4046,7 @@
              the parts, never inside a date (2026-10-22, RPT-5). */
           var nb = function (d) { return dayWord(d).replace(/ /g, '\u00a0'); };
           var ar = a.objective === 'sales' ? roasOf(a) : null;
-          var sub = [a.audience ? a.audience + ' audience' : '', a.starts_on ? nb(a.starts_on) + (a.ends_on ? ' to ' + nb(a.ends_on) : '') : '',
+          var sub = [accWord(a), a.audience ? a.audience + ' audience' : '', a.starts_on ? nb(a.starts_on) + (a.ends_on ? ' to ' + nb(a.ends_on) : '') : '',
             ar !== null ? 'ROAS\u00a0' + roasWord(ar) : ''].filter(Boolean).join(' · ');
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
@@ -4931,7 +4937,16 @@
      own), the objective for rows that name none, and ageOnly (an age export
      that follows the figures adds no ad). */
   var AD_FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'purchase_value', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
+  /* An ad from another ad account is never the same ad, whatever its name
+     (the user, 2026-10-30: a report run from two ad accounts while one was
+     under Meta's review; a copy with the same name in the second account
+     wrote its figures over the first's). Where either side names no
+     account, the name is read as before. */
+  function sameAccount(a, r0) {
+    return !r0.ad_account || !a.ad_account || String(a.ad_account) === String(r0.ad_account);
+  }
   function adMatch(list, r0) {
+    list = list.filter(function (a) { return sameAccount(a, r0); });
     /* An ad named by its Ad ID is that row, whatever its name reads. */
     if (r0.ad_ids) {
       var byId = list.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
@@ -4992,7 +5007,7 @@
       }
       /* A day's or an age group's rows for a name several ads here share
          cannot say which ad they belong to, so they add nothing. */
-      if ((r0._daily || out.byAge) && list.some(function (x) { return adName(x.name) === r0.name; })) { out.unclear.push(r0); return; }
+      if ((r0._daily || out.byAge) && list.some(function (x) { return sameAccount(x, r0) && adName(x.name) === r0.name; })) { out.unclear.push(r0); return; }
       if (hit.many) r0._many = true;
       /* From Meta, an ad with no spend or no results is left out, by the
          import and the Report audit alike (the user, 2026-10-09: "it
