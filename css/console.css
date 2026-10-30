@@ -1392,6 +1392,22 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 #perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
 .pane-form-head > .btn { margin-left: auto; }
+/* The client record's read groups (Billing, Brand) stand on white cards, as
+   its lists and the colleague's and the supplier's records do; the rail
+   stays on the ground (the user, 2026-10-30). A card holding nothing shown
+   is not drawn; groups inside one keep the hairline between them. */
+#crmPanes .pane-form-head { margin-bottom: 0; }
+#crmPanes .pane-form > .readgroups {
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
+  padding: 0 20px; margin-top: 12px;
+}
+#crmPanes .pane-form > .readgroups:not(:has(> :not([hidden]):not(:empty))) { display: none; }
+#crmPanes .readgroups > .readgroup, #crmPanes .ent-list > .readgroup:first-child { border-top: 0; }
+#crmPanes .pane-form > .readgroups > .readgroup:not(.bk-band) { padding-block: 16px; }
+#crmPanes .readgroups > :not([hidden]) ~ .readgroup:not([hidden]) { border-top: 1px solid var(--line-soft); }
+#crmPanes .readgroups > .readgroup.bk-band:first-child { margin-top: 16px; }
+#crmPanes .readgroups > .readgroup.bk-band:last-child { margin-bottom: 16px; }
+.is-tight #crmPanes .pane-form > .readgroups, #crmPanes .is-tight .pane-form > .readgroups { padding: 0 14px; }
 .is-narrow .ovlog-ico { grid-area: ico; }
 .is-narrow .ovlog-kind { grid-area: kind; align-self: center; }
 .is-narrow .ovlog-text { grid-area: text; white-space: normal; }

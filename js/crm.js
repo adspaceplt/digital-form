@@ -2608,8 +2608,7 @@
         ['Finance email', t('finance_email')],
         ['Billing address', t('billing_address'), true, true]
       ]) +
-      '<section class="readgroup bk-group" id="crmBukku" hidden></section>' +
-      '<div class="ent-list" id="crmEntities"></div>';
+      '<section class="readgroup bk-group" id="crmBukku" hidden></section>';
     /* Bukku (2026-10-18): the contact this client is in Bukku. Once linked
        and held (2026-10-30, BILLING FROM BUKKU) the details above are
        Bukku's, read once a visit to the record; the band leads Billing. */
