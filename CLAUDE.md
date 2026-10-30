@@ -1884,7 +1884,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     trigger (`clients_entity_sync` carries only what a write changed;
     `billing_entity_put` carries an entity to every brand it is the main
     of, a billing contact only to the brand it belongs to), so every reader
-    of a client's billing reads its main entity unchanged. Billing reads the
+    of a client's billing reads its main entity unchanged. A brand's billing
+    contact for an entity is its own (`client_entities.bill_contact_id`, one
+    of its contacts), else the entity's shared one (any brand's), else its
+    live main contact (`entity_contact(p_entity, p_client)`; the letter's
+    Attn, the overdue reminder and the pane read it; Bukku's billing person
+    stays the shared one); where the entity bills other brands the sheet
+    asks Use for every brand this company bills (`#crmBillShared`, ticked
+    while the brand has none of its own; `client_entity_contact(p_client,
+    p_entity, p_contact, p_every)`, `held` for the shared one Bukku holds),
+    and a brand's own Billing sheet writing its contact sets its own
+    (`2026-10-31-entity-contact-per-brand.sql`; the user, 2026-10-31: "Could
+    be shared or different contact for different brand"). Billing reads the
     main as before (headed Primary billing entity where there are others,
     Also bills naming each other brand, opening its Billing), then Other
     billing entities (`#crmEntities`: its count and Add entity, each one
@@ -2791,8 +2802,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   a person or address added ticks default billing alone, never default
   shipping; a supplier's payment term is set as Bukku's own term of the same
   days where Bukku holds one (the user, 2026-10-19). Link only (`#bkLink`,
-  beside Link and send for a contact Bukku holds) links it as it stands and
-  sends nothing (`bukku-sync` `link`, `bukku_link_only`, filed Linked to
+  beside Link and send for a contact Bukku holds; kept apart from Link and
+  send, the user, 2026-10-31) links it as it stands and sends nothing (`bukku-sync` `link`, `bukku_link_only`, filed Linked to
   Bukku, nothing sent; `2026-10-19-bukku-as-bukku-holds-it.sql`). What a
   record lacks (`bukku_prepare`) is read with the group: a record that
   cannot be sent draws no Send and says what is missing in one line
