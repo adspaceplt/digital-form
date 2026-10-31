@@ -120,6 +120,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     before 8am here; 2026-10-29: `overview` read a booking 5 days late,
     not 4, after midnight).
   - A `cut()` of `schema.sql` always ends at the next banner.
+  - A full-page screenshot under a finger drops the touch pointer and a
+    reload does not bring it back: uxaudit and uxsection shoot through
+    `fullShot`, which re-sends touch emulation on a session kept open
+    (2026-10-31: phone states after a shot measured at desk sizes).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
@@ -1024,7 +1028,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   10)` (the UTC day, yesterday before 8am here). A day alone (`2026-10-12`)
   is that Malaysian day; a date and time with no zone (a date field and a
   time field) is Malaysian time; a stored day keeps its form
-  (`YYYY-MM-DDT00:00:00Z`). Days are counted on the calendar, never by a
+  (`YYYY-MM-DDT00:00:00Z`). A client page writes a time 10:00am, no
+  space (`clock(v)`; 上午10:00 with `zh`). Days are counted on the calendar, never by a
   device's midnight. Left as they are: calendar arithmetic in UTC on day
   strings, the report PDF's days (`dateOf`: the Malaysian day held as a
   local midnight), and the spreadsheet and CSV importers' own date reading
