@@ -90934,10 +90934,18 @@ begin
   insert into public.activity_log (actor, action, subject, detail)
   values ('Quotation website', 'client.quotation', q.brand,
           q.ref || ' signed on the quotation link by ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name'));
-  perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by), public.quote_sign_member(c.owner)],
-    'quote.signed', 'Quotation signed · ' || q.brand,
-    q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name') || ' · check and submit',
-    q.client_id, q.id::text || ':' || v_at::text);
+  -- Who prepared it and the person in charge are told; where neither is
+  -- here (a website lead nobody has taken), the team who work leads.
+  if public.quote_sign_member(q.made_by) is null and public.quote_sign_member(c.owner) is null then
+    perform public.quote_tell(q.client_id, 'quote.signed', 'Quotation signed · ' || q.brand,
+      q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name') || ' · check and submit',
+      q.id::text || ':' || v_at::text);
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by), public.quote_sign_member(c.owner)],
+      'quote.signed', 'Quotation signed · ' || q.brand,
+      q.ref || ' · ' || (s.payload->'signer'->>'name') || ' for ' || (s.payload->'company'->>'legal_name') || ' · check and submit',
+      q.client_id, q.id::text || ':' || v_at::text);
+  end if;
   return jsonb_build_object('ok', true, 'at', v_at);
 end $$;
 revoke all on function public.quote_sign_finish(text, text) from public;
@@ -91344,7 +91352,8 @@ begin
       'company', jsonb_build_object('legal_name', coalesce(c.legal_name, ''), 'company_no', coalesce(c.company_no, ''),
                                     'billing_address', coalesce(c.billing_address, ''), 'sst_no', coalesce(c.sst_no, ''), 'tin', coalesce(c.tin, '')),
       'contact', case when pc.id is not null then jsonb_build_object('salutation', coalesce(pc.salutation, ''), 'name', coalesce(pc.name, ''),
-                                                                    'phone', coalesce(pc.phone, ''), 'email', coalesce(pc.email, ''))
+                                                                    'phone', coalesce(nullif(btrim(pc.phone), ''), case when btrim(coalesce(pc.whatsapp, '')) !~ '^@' then btrim(pc.whatsapp) end, ''),
+                                                                     'email', coalesce(pc.email, ''))
                       else jsonb_build_object('salutation', coalesce(w.contact->>'salutation', ''), 'name', coalesce(w.contact->>'name', ''),
                                               'phone', coalesce(w.contact->>'whatsapp', ''), 'email', coalesce(w.contact->>'email', '')) end) end);
 end $$;
