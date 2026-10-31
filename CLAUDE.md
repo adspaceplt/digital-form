@@ -1934,7 +1934,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     finds it again; a BRN held is never made twice (`brn-taken`, the
     question offering that entity), two clients holding one BRN before
     stay two, merged by hand; Make primary and Remove (never the primary) offer
-    Undo where they happened. Filed `client.billing` naming fields alone.
+    Undo where they happened; an entity removed from this client and billing
+    none is listed on asking (Show n removed entities,
+    `client_entities_removed`) with Restore (never asks) and, at Clients:
+    Billing Full Access where no letter or Bukku link names it, Delete in its
+    ⋯ (`client_entity_delete`, the registered name typed back, no restore;
+    `not-removed`, `bills-others`, `bukku`, `on-letter`, `bad-name`;
+    `2026-10-31-billing-entity-delete.sql`, the SQL Editor's). Filed
+    `client.billing` naming fields alone.
     Console search finds a client by an entity billing it (Billed by …,
     opening Billing). Bill to (`2026-10-29-bill-to.sql`): with two
     entities or more, the Letter of Offer sheet (`#pickBillTo`) and a
@@ -1949,7 +1956,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The details form (`2026-10-14-client-details-form.sql`, `js/details.js`;
     the user, 2026-10-14): Billing's Request from client (the user, 2026-10-29; Details form until then, a supplier's Request from supplier) makes a link
     (`client_details_link`, Clients: Billing at Work; Copy link, Preview, the
-    ⋯ Reset link, asked) to `/details/?k=` with no sign-in, open
+    ⋯ Reset link and Close link, each asked; `client_details_close` ends the
+    open form now, `no-link`, filed, `2026-10-31-client-details-link-closed.sql`)
+    to `/details/?k=` with no sign-in, open
     `details_form_days` (14, Settings: Clients, Details form). The client's page reads the
     brand and closing day alone (`client_details_read`) and sends the
     answers once (`client_details_submit`: registered name in capitals, BRN,
@@ -2139,7 +2148,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`brand_analysis_save`, filed `client.brand`), listed newest first with
   who ran it (`brand_analyses_list`); a draft until Confirm asks the AI
   declaration (`brand_analysis_confirm`, Undo, then Withdraw confirmation in
-  the ⋯). Only the latest confirmed one reaches Write with AI
+  the ⋯), and a version's ⋯ Delete at Clients: Brand Full Access (asked, no
+  restore; `brand_analysis_delete`, refused `in-use` for the latest
+  confirmed version; `2026-10-31-brand-analysis-version-delete.sql`, the SQL
+  Editor's). Only the latest confirmed one reaches Write with AI
   (`brand_analysis_brief`: positioning, audiences' pains and motivations,
   pillars) for captions, scripts and report drafts, masked as the rest.
   Counted apart (`ai_analysis_claim`: `analysis` 3, `analysis_admin` 10),

@@ -7823,6 +7823,27 @@ read and set every page for a tab served before.
   How copy is drafted gains step 9, the short word a familiar app uses,
   with the table of what to say and never say. Docs only.
 
+### 2026-10-31 · Three gaps on a client's record closed: a Brand analysis version, a billing entity, the details link
+- **Asked:** the user approved three gaps from an audit of a client
+  record's tabs: a Brand analysis version could not be deleted, a billing
+  entity could only be removed (Add entity found it again), and the client
+  details form's link could only be reset, never closed.
+- **Built:** `brand_analysis_delete` (Clients: Brand Full Access; the
+  latest confirmed version, the one Write with AI reads, refused `in-use`
+  and its Delete not drawn); `client_entities_removed` and
+  `client_entity_delete` (Billing lists the entities removed from this
+  brand that bill none on asking, with Restore, and Delete at Billing Full
+  Access with the registered name typed back, refused while it bills this
+  brand or another, Bukku links it or a letter names it; an unlink kept for
+  Undo goes with it); `client_details_close` mirroring
+  `supplier_link_close`. Each filed; the two deletes run in the SQL Editor
+  (their bodies remove rows), the close through the connector.
+- **Rejected:** Delete from Add entity's own list: the finder lists
+  entities to add, and the client an entity was removed from is where its
+  team meets it again.
+- **Known:** a Brand analysis's next run takes the next number after the
+  highest left, so a newest version deleted has its number used again.
+
 ### 2026-10-31 · Send by email for a quotation, a Letter of Offer and a client letter
 - **Asked:** a review of a client's Services tab, items 5 and 6 (the user:
   "ok build but still same as whatsapp optionally send"): a quotation and a
