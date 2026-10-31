@@ -27,7 +27,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
 | `--line-ctl` | `#8e8e8e` | `#858585` | A control's drawn edge (a radio, a tick's ring): the lightest neutral that holds 3:1 on every ground |
-| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground through `--field` / `--select-ground`, set on the one list of grey cards in `css/portal.css`; a placeholder is `--ink-mute` at full strength |
+| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground and the control's edge (`--line-ctl`, 3:1) through `--field` / `--select-ground` / `--field-edge`, set on the one list of grey cards in `css/portal.css` (the user, 2026-10-31, option A); a placeholder is `--ink-mute` at full strength |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |

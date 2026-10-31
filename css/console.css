@@ -3379,6 +3379,10 @@ button.vs-row { cursor: pointer; }
 /* At a desk a row holding them keeps its reference whole: the buttons take
    the line under the figure and state, ending at the ⋯'s edge, since three
    on the first line left the reference a word a line. */
+/* A part brought into view by its address (tab=billing) stops under the
+   sticky bar, never behind it (2026-10-31, the day's gate: Billing's heading
+   sat under the console's head). */
+.console .rec-pane { scroll-margin-top: calc(var(--head-h) + 12px); }
 .rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
 /* They run the row's whole width, ending at its right edge under the ⋯:
    spanning the auto track alone had widened it, opening a gap before the
