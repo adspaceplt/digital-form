@@ -646,7 +646,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    other. Wrapping lets the status drop to its own line instead. */
 .card-head {
   display: flex; align-items: center; flex-wrap: wrap; column-gap: 10px; row-gap: 3px;
-  padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+  padding: 12px 16px; border-bottom: 1px solid var(--line-soft);
 }
 .card-title { font-weight: 600; font-size: 13px; letter-spacing: -.01em; min-width: 0; }
 .card-dims { color: var(--ink-mute); font-size: 12px; white-space: nowrap; }
@@ -687,7 +687,10 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .cardpair > .card.in-pair > .card-head { display: none; }
 .cardpair > .tabrow.pairtabs { margin: 12px 16px; display: flex; width: auto; max-width: none; }
 .cardpair > .pairtabs .tab { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+/* The half's state in its tab reads at the tab's own weight, the dot and its
+   word as every status (2026-10-31, RV-8: the word at 400, its state at 500). */
 .pair-chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+.pairtabs .pair-chip { font-weight: 400; }
 .pair-chip:empty { display: none; }
 /* The name card above the stage strip, the client portal's own. */
 .shell-review > .rec-head { margin-top: 16px; }
@@ -713,7 +716,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .copyhead { gap: 8px; }
 .copyhead h5 { min-width: 0; white-space: nowrap; }
 .copyacts { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
-.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 5px; }
+.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 6px; }
 .copy-pen[hidden] { display: none; }
 .copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
 .copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
@@ -777,7 +780,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 .approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
 
-.approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
+/* Request changes reads in the tonal button's own ink: the mute ink read as
+   disabled beside Approve (2026-10-31, RV-1). */
+.approve-row .btn-changes { flex: 1; }
 /* On the selection page the pair are equal halves, as the review page's are
    (SELECTION-9). */
 .booking .approve-row .btn-approve, .booking .approve-row .btn-changes { flex: 1 1 50%; }
@@ -860,8 +865,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 /* It leaves rather than hides: `display: none` would drop it out of the row
    in one frame and the name field would jump into the gap. */
+/* Its words held on one line as it narrows: wrapping a word to a line in
+   no width stood the row, Approve and the name field 40 to 43px tall
+   (2026-10-31, RV-2). */
 .approve-row.is-asking .btn-changes {
-  flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0;
+  flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0; white-space: nowrap;
   padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden;
   transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
               padding var(--t-slow) var(--ease), flex-basis var(--t-slow) var(--ease);
@@ -882,7 +890,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
 .changebox { --box-h: var(--box-h-sm); }
-.changebox .textarea { font-size: 13px; resize: vertical; overflow-y: auto; }
+.changebox .textarea { font-size: var(--field-text); resize: vertical; overflow-y: auto; }
 /* The note being edited is the request; the standing one steps away until
    it is sent or the request is left. */
 .approve.is-requesting .approve-note { display: none; }
@@ -1763,8 +1771,9 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
   cursor: pointer;
 }
 .batch-head:hover .batch-title { color: var(--ink); }
+/* The drawn chevron, as the selection page's fold (2026-10-31, RV-6). */
 .fold-caret {
-  align-self: center; color: var(--ink-mute); font-size: 12px;
+  align-self: center; color: var(--ink); width: 15px; height: 15px; flex: 0 0 auto;
   transition: transform var(--t) var(--ease);
 }
 .batch.is-folded .fold-caret { transform: rotate(-90deg); }
@@ -3117,8 +3126,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    (tonal) or a plain text link. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--line-chip); border-radius: var(--radius-sm); padding: 5px 10px;
-  font-size: 12px; font-weight: 500; color: var(--ink);
+  border: 1px solid var(--line-chip); border-radius: var(--radius-sm); padding: 4px 10px;
+  /* The small control's height and words, as the .btn-sm beside it
+     (2026-10-31, POR-7: 31 and 37px chips beside 30 and 36px buttons). */
+  box-sizing: border-box; min-height: var(--ctl-h-sm);
+  font-size: 12.5px; font-weight: 500; color: var(--ink);
   text-decoration: none; background: transparent; white-space: nowrap;
 }
 .plink svg { width: 12px; height: 12px; opacity: .65; flex: 0 0 auto; }
@@ -3625,7 +3637,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .camphead-purpose { font-size: 15px; color: var(--ink-soft); margin-top: 6px; }
 
 /* A profile link reads as an instruction now, not a tag. */
-.plink { padding: 5px 11px; font-weight: 500; }
+.plink { padding-inline: 11px; font-weight: 500; }
 
 /* =========================================================================
    PHONE
@@ -3699,7 +3711,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
   /* Full label on a phone too: the client has to know which profile they are
      opening. They wrap to their own lines rather than being abbreviated. */
-  .plink { padding: 8px 11px; font-size: 12.5px; }
+  .plink { padding-inline: 11px; }
   .crow-links { flex: 1 1 100%; }
 
   /* A sheet sits on the floor of a phone rather than floating in a dark room;
@@ -3935,6 +3947,10 @@ body > .shell { width: 100%; }
    than overflowing, because a declared minimum that cannot be honoured is
    worse than no minimum at all. */
 .csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
+/* The client portal writes Qty × rate as one phrase that never breaks
+   ("1 × RM 2,830.00 × 6 months"), so its track holds the phrase whole; the
+   console's months keep their own line under the rate (2026-10-31, POR-4). */
+.cp-card .csv-row { grid-template-columns: minmax(180px, 1fr) 200px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* A meeting's date and time is a sentence, not an amount: its own track,
    measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
@@ -4295,7 +4311,6 @@ body > .shell { width: 100%; }
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
 }
 .csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
-.csv-total .is-total b { font-size: 15px; }
 .csv-total small { margin-left: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
@@ -4503,7 +4518,10 @@ body > .shell { width: 100%; }
    its own, so no chip is left a width of its own beside the rest (CP-14). */
 .is-tight .ct-row .crm-reach:has(> .plink + .plink) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-tight .ct-row .crm-reach:has(> .plink + .plink) > [href^="mailto:"],
-.is-tight .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; }
+.is-tight .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; justify-self: start; }
+/* A chip alone on its row keeps its own width, whether it is a contact's
+   only chip or the address under two halves (2026-10-31, POR-8: one
+   stretched across the card and the other did not). */
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: transparent; background: var(--sunk); margin: 12px 0 0; }
@@ -6191,10 +6209,12 @@ body.is-canvas { overflow: hidden; }
    client reads the page once; seven sections down one column, some cards
    and some loose on the ground, read as scattered, and the rail fell above
    the work below 1100. */
-#cpHead { margin-top: 24px; margin-bottom: 16px; }
+/* Head, tabs and panes 12px apart at every width, as every client page
+   stacks its blocks (2026-10-31, POR-10). */
+#cpHead { margin-top: 24px; margin-bottom: 12px; }
 #cpHead .rec-ctl .select { flex: 0 0 auto; width: auto; min-width: 150px; }
 #cpHead .rec-ctl .btn { flex: 0 0 auto; }
-.cp-tabs { margin-bottom: 16px; }
+.cp-tabs { margin-bottom: 12px; }
 .cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-pane[hidden] { display: none; }
 /* Overview: the summary on the left, who to reach and the company on the
@@ -6218,14 +6238,18 @@ body.is-canvas { overflow: hidden; }
 .cp-lines { display: grid; gap: 8px; margin: 0; }
 .cp-lines > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; align-items: baseline; }
 .cp-lines dt { font-size: 13px; color: var(--ink-mute); }
-.cp-lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* Money in a row is 13.5px, under the card's 15px title, never above it
+   (2026-10-31, POR-1: lines and money read at 16px under 15px titles). */
+.cp-lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .cp-lines .is-total dd { font-weight: 600; }
-.cp-line { margin: 0; line-height: 1.5; }
+.cp-line { margin: 0; line-height: 1.5; font-size: 14px; }
 .cp-line + .cp-line { margin-top: 4px; }
 .cp-sub { margin: 0; font-size: 13px; color: var(--ink-mute); }
+/* A line's sub-line sits 4px under it, as a record's meta does. */
+.cp-line + .cp-sub { margin-top: 4px; }
 .cp-card-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 /* The account manager: the name, then the two ways to reach them. */
-.cp-person { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.cp-person { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
 .cp-reach { display: flex; flex-wrap: wrap; gap: 8px; }
 .cp-reach .plink { flex: 0 0 auto; }
 /* On a phone the chips share the card's width equally, as every reach row
@@ -6246,14 +6270,16 @@ body.is-canvas { overflow: hidden; }
 /* One of the client's own pages: its name, and Open at the right edge. */
 .cp-eng-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .cp-open { flex: 0 0 auto; gap: 6px; }
-.cp-open svg { width: 14px; height: 14px; }
+/* Every glyph on the client portal's buttons is the system's 15px
+   (2026-10-31, POR-9: 13 and 14px beside one another). */
+.cp-open svg, .cp-panes .btn-sm svg, .cp-panes .ovgo-chev { width: 15px; height: 15px; }
 @media (max-width: 640px) {
-  #cpHead { margin-top: 16px; margin-bottom: 12px; }
-  .cp-tabs { margin-bottom: 12px; }
+  #cpHead { margin-top: 16px; }
 }
 
 .ovsec-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 2px; }
+/* The chevron 6px after its words, as every glyph sits (2026-10-31, POR-9). */
+.ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 6px; }
 .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 /* An Edit carries the pen, like every Edit in the console, and no chevron:
    it opens the pane the facts are edited in rather than going somewhere. */
@@ -8097,7 +8123,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cmdbar-views.has-thumb::before { border-radius: calc(var(--radius-ctl-sm) - 2px); }
 /* A standing fact's link (the verify page, the redirect hosts) is the
    outlined chip, inline in its sentence. */
-.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; }
+.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; min-height: 0; }
 .cr-main { min-width: 0; }
 .cr-rail { min-width: 0; }
 .cr-linktools .linkbox { flex-wrap: nowrap; }
@@ -8318,6 +8344,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .changebox.is-open { display: grid; gap: 12px; }
 .changebox > * { margin: 0; min-width: 0; }
 .changebox .changebox-who { width: 100%; }
+/* A field under its label, 8px apart (2026-10-31, RV-3). */
+.changebox-f { display: grid; gap: 8px; min-width: 0; }
+.changebox-f[hidden] { display: none; }
+.changebox-f > * { margin: 0; min-width: 0; }
 /* The decision pair and the request's own pair are equal halves (the user,
    2026-10-01: Approve took 1.35 shares and Send request its own width, so
    neither row read as balanced). While Approve asks for the name, Request
@@ -8841,7 +8871,7 @@ body.is-maint { overflow: hidden; }
 .cx-pair .btn { gap: 6px; justify-content: center; }
 .cx-pair .btn svg { width: 14px; height: 14px; }
 .cx-terms { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); display: grid; gap: 12px; }
-.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 6px; }
+.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 0; }
 .cx-term-bar i { display: block; height: 100%; border-radius: 3px; background: var(--fill); }
 .svc-row.cp-eng-row, .is-narrow .svc-row.cp-eng-row {
   grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "tile name open"; align-items: center;
@@ -9038,7 +9068,9 @@ body.is-maint { overflow: hidden; }
 .is-narrow .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .vs-block { display: grid; gap: 12px; min-width: 0; }
 .vs-block > .fsec-h { margin: 0; }
-.vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+/* What is said and seen reads at 14px, the facts' size, under the 13/600
+   headings, on the client's page as in the console (2026-10-31, VS-1). */
+.vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; }
 .vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .vs-ref .plink { max-width: 100%; min-width: 0; }
 .vs-ref-url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -9052,8 +9084,8 @@ body.is-maint { overflow: hidden; }
 }
 .vs-scenes.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 104px 48px; }
 .vs-scene:last-child { border-bottom: 0; }
-.vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; }
-.vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; }
+.vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; font-size: 14px; }
+.vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; font-size: 14px; }
 .vs-vc .input { width: 100%; }
 .vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; accent-color: var(--accent); }
 .vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
@@ -9084,6 +9116,15 @@ body.is-maint { overflow: hidden; }
 .vs-rec > .panel { margin: 0; }
 .vs-factcard > .msg { margin: 0; }
 .vs-factcard > .msg:empty { display: none; }
+/* A script's card head: its code and title over its type, a hairline
+   under it; the console's record and the client's page alike (moved from
+   console.css, 2026-10-31, VS-2: the client's head stood bare on the
+   ground). */
+.vs-cardhead {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
+}
+.vs-cardwho { min-width: 0; flex: 1 1 240px; }
 .vs-cardwho h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .vs-cardwho p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
@@ -9125,15 +9166,15 @@ body.is-maint { overflow: hidden; }
 .vs-steps { display: flex; align-items: center; gap: 8px; }
 .vs-pos { margin-right: 4px; font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
 .vs-video { display: grid; gap: 12px; min-width: 0; }
-.vs-video-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.vs-video-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .vs-video > .panel { margin: 0; }
-.vs-card { display: grid; gap: 24px; padding: 18px 20px; }
+/* The panel's own padding at every width (2026-10-31, VS-4: 14/16 on a
+   phone where every client panel pads 15/16). */
+.vs-card { display: grid; gap: 24px; }
 @media (max-width: 640px) {
   .vs-pick { padding: 12px 14px; }
   .vs-steps { flex: 1 1 100%; }
   .vs-steps > .btn { flex: 1 1 0; min-width: 0; }
-  .vs-card { padding: 14px 16px; gap: 16px; }
+  .vs-card { gap: 16px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

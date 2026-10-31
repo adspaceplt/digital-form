@@ -92,7 +92,7 @@
         <div class="rec-ctl">
           <span class="tone" id="cpState" hidden></span>
           <select class="select select-sm" id="clientPick" aria-label="Company" hidden></select>
-          <button class="btn btn-sm btn-primary" id="ovRequest" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg><span id="ovRequestWord">Request change</span></button>
+          <button class="btn btn-sm btn-primary" id="ovRequest" type="button"><span id="ovRequestWord">Request change</span></button>
         </div>
       </div>
     </section>
@@ -146,7 +146,7 @@
       <div class="cp-pane" data-pane="services" role="tabpanel" aria-labelledby="tabServices" hidden>
         <section class="panel cp-card">
           <div class="cp-card-head"><h3 id="svcHead">Services</h3></div>
-          <div id="svcBox"></div>
+          <div id="svcBox" data-narrow="730"></div>
         </section>
         <section class="panel cp-card" id="rqWrap" hidden>
           <div class="cp-card-head"><h3 id="rqHead">Requests</h3></div>
