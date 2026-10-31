@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261031e">
-<link rel="stylesheet" href="/css/console.css?v=20261031n">
+<link rel="stylesheet" href="/css/console.css?v=20261031p">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -81,7 +81,7 @@
 <script src="/js/form.js?v=20261029z"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261031n"></script>
+<script src="/js/menu.js?v=20261031p"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -92,7 +92,7 @@
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261026f"></script>
 <script src="/js/whatsapp.js?v=20261031d"></script>
-<script src="/js/docmail.js?v=20261031n"></script>
+<script src="/js/docmail.js?v=20261031p"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -1269,7 +1269,46 @@
         <div id="crmRequests" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Requests</h2></span>
+          <button class="btn btn-sm" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add request</button>
         </div>
+              <!-- A request the client made on a call or in a chat, recorded
+                   by a colleague (2026-10-31). -->
+              <div class="sheet" id="crmReqAddBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReqAddTitle">
+          <div class="sheet-head">
+            <h3 id="crmReqAddTitle">Add request</h3>
+            <button class="iconbtn" id="crmReqAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
+          <div class="row">
+            <div class="span-all"><label class="field-label" for="raKind">Request</label>
+              <select class="select" id="raKind" data-seg>
+                <option value="upgrade">Upgrade</option>
+                <option value="downgrade">Downgrade</option>
+                <option value="cancel">Cancel</option>
+                <option value="details">Change of details</option>
+              </select></div>
+          </div>
+          <div class="row" id="raServiceRow">
+            <div><label class="field-label" for="raService">Service line</label>
+              <select class="select" id="raService" aria-required="true"></select></div>
+          </div>
+          <div class="row">
+            <div><label class="field-label" for="raContact">Requested by</label>
+              <select class="select" id="raContact"></select></div>
+          </div>
+          <div class="row">
+            <div><label class="field-label" for="raNote">Note</label>
+              <textarea class="textarea" id="raNote" placeholder="What the client asked for" rows="3" maxlength="2000"></textarea></div>
+          </div>
+          <div class="msg" id="raMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="raSave" type="button">Add</button>
+            <button class="btn btn-quiet" id="raCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
               <div class="sheet" id="crmReplyBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReplyTitle">
           <div class="sheet-head">
@@ -5893,20 +5932,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261031a"></script>
+<script src="/js/admin.js?v=20261031n"></script>
 <script src="/js/documents.js?v=20261031c"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
 <script src="/js/reports.js?v=20261031a"></script>
-<script src="/js/register.js?v=20261031n"></script>
+<script src="/js/register.js?v=20261031p"></script>
 <script src="/js/suppliers.js?v=20261031a"></script>
 <script src="/js/bukku.js?v=20261030d"></script>
 <script src="/js/invoices.js?v=20261031"></script>
 <script src="/js/engage.js?v=20261026f"></script>
-<script src="/js/quotes.js?v=20261031n"></script>
+<script src="/js/quotes.js?v=20261031p"></script>
 <script src="/js/quotepdf.js?v=20261031c"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261031n"></script>
+<script src="/js/crm.js?v=20261031p"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261031a"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5921,6 +5960,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261029m"></script>
-<script src="/js/settings.js?v=20261031n"></script>
+<script src="/js/settings.js?v=20261031p"></script>
 </body>
 </html>

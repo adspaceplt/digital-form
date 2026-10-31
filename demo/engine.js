@@ -22,7 +22,7 @@
     client_document_seq: 'client_id ym next_val',
     client_document_services: 'document_id service_id created_at',
     client_documents: 'id client_id kind number issued_at market subtotal tax total bill_to lines issued_by created_at voided_at signed_at verified_at verified_by superseded_by client_code idem_key voided_by void_reason',
-    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem',
+    client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by',
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
     public_holidays: 'day name updated_at updated_by',
     departments: 'key name active in_prize criteria position updated_at updated_by',
@@ -537,6 +537,9 @@
     tax_codes_list: '', tax_codes_save: 'p_rows p_replace', tax_codes_delete: 'p_codes',
     quotation_create: 'p_client p_sel p_idem',
     quotation_set: 'p_id p_what',
+    quotation_delete: 'p_id p_ref',
+    client_request_add: 'p_client p_kind p_service p_contact p_note p_idem',
+    client_request_delete: 'p_id',
     quotation_offer: 'p_id',
     quote_catalogue: '',
     public_holidays_between: 'p_from p_to',
@@ -8965,6 +8968,50 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, id: rq.id }, error: null });
     }
+
+    if (name === 'client_request_add' || name === 'client_request_delete') {
+      DB.client_requests = DB.client_requests || [];
+      var raOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
+      var raMe = opsMe();
+      var raWord = { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' };
+      if (name === 'client_request_delete') {
+        if (!raMe || !opsAllowed('clients.requests', 'manage')) return raOk({ error: 'denied' });
+        var rdq = DB.client_requests.filter(function (r) { return r.id === args.p_id; })[0];
+        var rdc = rdq && DB.clients.filter(function (c) { return c.id === rdq.client_id; })[0];
+        if (!rdq || (rdc && !scopeRowOk(rdc.stage, rdc.owner, 'manage', rdc.sales_by))) return raOk({ error: 'not-found' });
+        DB.client_requests = DB.client_requests.filter(function (r) { return r.id !== rdq.id; });
+        DB.activity_log.unshift({ id: nid('al'), actor: raMe.name, action: 'request.deleted', subject: rdc ? rdc.name : null,
+          detail: (raWord[rdq.kind] || rdq.kind) + (rdq.service_label ? ' · ' + rdq.service_label : ''), created_at: new Date().toISOString() });
+        return raOk({ ok: true });
+      }
+      if (!raMe || !opsAllowed('clients.requests', 'work')) return raOk({ error: 'denied' });
+      var rac = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+      if (!rac || !scopeRowOk(rac.stage, rac.owner, 'work', rac.sales_by)) return raOk({ error: 'not-found' });
+      var raKey = args.p_idem ? String(args.p_idem).slice(0, 64) : null;
+      var raWas = raKey && DB.client_requests.filter(function (r) { return r.client_id === rac.id && r.idem === raKey; })[0];
+      if (raWas) return raOk({ ok: true, id: raWas.id, again: true });
+      if (!raWord[args.p_kind]) return raOk({ error: 'bad-kind' });
+      if (String(args.p_note || '').length > 2000) return raOk({ error: 'too-long' });
+      var ras = null;
+      if (args.p_kind !== 'details') {
+        ras = (DB.client_services || []).filter(function (l) { return l.id === args.p_service && l.client_id === rac.id && !l.archived_at && l.state === 'confirmed'; })[0];
+        if (!ras) return raOk({ error: 'no-service' });
+      }
+      if (args.p_kind !== 'cancel' && !String(args.p_note || '').trim()) return raOk({ error: 'note-required' });
+      var rat = null;
+      if (args.p_contact) {
+        rat = (DB.client_contacts || []).filter(function (c) { return c.id === args.p_contact && c.client_id === rac.id && !c.archived_at; })[0];
+        if (!rat) return raOk({ error: 'bad-contact' });
+      }
+      var raRow = { id: nid('r'), client_id: rac.id, contact_id: rat ? rat.id : null, contact_name: rat ? rat.name : null, kind: args.p_kind,
+        service_id: ras ? ras.id : null, service_label: ras ? ras.label : null, note: String(args.p_note || '').trim() || null,
+        state: 'requested', fee: null, reply: null, decided_by: null, withdrawn_at: null, created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(), idem: raKey, recorded_by: raMe.name };
+      DB.client_requests.push(raRow);
+      DB.activity_log.unshift({ id: nid('al'), actor: raMe.name, action: 'request.added', subject: rac.name,
+        detail: raWord[args.p_kind] + (ras ? ' · ' + ras.label : '') + (rat ? ' · for ' + rat.name : ''), created_at: new Date().toISOString() });
+      return raOk({ ok: true, id: raRow.id });
+    }
     if (name === 'portal_withdraw') {
       DB.client_requests = DB.client_requests || [];
       var ids2 = portalClients();
@@ -9272,6 +9319,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return due;
       };
       var qtLog = function (subject, d) { DB.activity_log.unshift({ id: nid('al'), actor: qtMe.name, action: 'client.quotation', subject: subject, detail: d, created_at: new Date().toISOString() }); };
+
+      var qtNextRef = function (head) {
+        var n = DB.quotations.map(function (q) { return q.ref; }).concat((DB.quotation_refs_kept || []).map(function (k) { return k.ref; }))
+          .filter(function (r) { return r.indexOf(head) === 0 && /^[0-9]+$/.test(r.slice(head.length)); })
+          .reduce(function (m, r) { return Math.max(m, Number(r.slice(head.length))); }, 0) + 1;
+        return head + (n < 10 ? '0' : '') + n;
+      };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
         var set = snap.settings || {}, text = snap.text || {};
@@ -9513,10 +9567,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         var wz = (String(wcl.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var whead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + wz;
-        var wnum = DB.quotations.filter(function (q) { return q.ref.indexOf(whead) === 0; }).length + 1;
         var wv = new Date(qtToday + 'T00:00:00Z'); wv.setUTCDate(wv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         var wkey = ''; while (wkey.length < 8) wkey += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
-        var wrow = { id: nid('qt'), ref: whead + (wnum < 10 ? '0' : '') + wnum, client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
+        var wrow = { id: nid('qt'), ref: qtNextRef(whead), client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
           selection: wsel, lines: wp.lines, totals: Object.assign({}, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
           contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
@@ -9596,6 +9649,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
         qtTell(wq.client_id, 'quote.proceed', 'Ready to proceed · ' + wq.brand, wq.ref + (wwho ? ' · ' + wwho : '') + ' · ' + wwords, wq.id);
         return qtOk({ ok: true, at: wq.proceed_at, due: wq.proceed_due });
       }
+
+      if (name === 'quotation_delete') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'manage')) return qtOk({ error: 'denied' });
+        var qdq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var qdc = qdq && DB.clients.filter(function (c) { return c.id === qdq.client_id; })[0];
+        if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
+        if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
+        if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
+        var qdn = (DB.client_services || []).filter(function (l) { return l.quotation_id === qdq.id; }).length;
+        if (qdn) return qtOk({ error: 'lines', count: qdn });
+        var qdd = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qdq.id; }); })[0];
+        if (qdd) return qtOk({ error: 'letter', number: qdd.number });
+        var qdr = DB.quotations.filter(function (x) { return x.replaces === qdq.id; })[0];
+        if (qdr) return qtOk({ error: 'revised', ref: qdr.ref });
+        DB.quotation_refs_kept = DB.quotation_refs_kept || [];
+        if (!DB.quotation_refs_kept.some(function (k) { return k.ref === qdq.ref; })) DB.quotation_refs_kept.push({ ref: qdq.ref, deleted_at: new Date().toISOString(), deleted_by: qtMe.name });
+        DB.quotations = DB.quotations.filter(function (q) { return q.id !== qdq.id; });
+        qtLog(qdq.brand, qdq.ref + ' deleted');
+        return qtOk({ ok: true });
+      }
       if (!qtMe || (!opsAllowed('clients.quotes', name === 'quote_preview' ? 'view' : 'work'))) return qtOk({ error: 'denied' });
       if (name === 'quotation_offer' && !(opsAllowed('clients.services', 'work') && opsAllowed('clients.documents', 'work'))) return qtOk({ error: 'denied' });
       if (name === 'quote_preview') {
@@ -9622,10 +9695,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!(qpr.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var qz = (String(qc.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var qhead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + qz;
-        var qn = DB.quotations.filter(function (q) { return q.ref.indexOf(qhead) === 0; }).length + 1;
         var qdays = Number(appSet('quote_valid_days', qtToday) || 30);
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
-        var qrow = { id: nid('qt'), ref: qhead + (qn < 10 ? '0' : '') + qn, client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
+        var qrow = { id: nid('qt'), ref: qtNextRef(qhead), client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }),
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
