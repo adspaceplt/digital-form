@@ -7730,6 +7730,25 @@ read and set every page for a tab served before.
   wraps between its parts, never inside a number or a date. The desk's
   table is unchanged (its heads name the columns).
 
+### 2026-10-31 · What a colleague sends a client is copied, and sent by hand
+- **Asked:** the user approved the eight gaps an audit of the client
+  record's other tabs found, page-only first, and said: "All client facing
+  sends wont go out automatically" and "Most of our sends happen in
+  whatsapp group".
+- **Weighed:** WhatsApp's Business API and a wa.me link reach one person,
+  never a group, so a direct send would miss where the team actually
+  talks to a client. The message a colleague pastes into the group is the
+  tool.
+- **Built (page only):** a meeting under Calls and visits shows and copies
+  its Message to client from the team's Meeting message (one builder,
+  `ADspaceOps.meetingMessage`, with the month's card); the details form's
+  open link offers Copy message, a formal line with the link and its
+  closing day; received answers offer Request again (asked: set aside, a
+  fresh link); Engagements offers New month, opening My Work's sheet on
+  the client; a contact's ⋯ opens the WhatsApp composer on that contact.
+- **Held:** `tests/clientsends.js` at 1280 and 390; nothing is queued by
+  any of them.
+
 ### 2026-10-31 · A Letter of Offer and a quotation are previewed before they exist
 - **Asked:** the user, approving a review of a client's Services: "need
   to allow preview pdf or page before sending". Issue Letter of Offer and

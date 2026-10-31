@@ -6603,17 +6603,24 @@
   }
   function clientMessage(e) {
     if (!e || !e.meeting_at || e.meeting_na) return '';
-    if (!meetMsg.asked) readMeetMsg();
-    var at = new Date(e.meeting_at);
-    var end = new Date(at.getTime() + (Number(e.meeting_minutes) || 30) * 60000);
-    var online = e.meeting_channel !== 'onsite';
-    return fillMessage(meetMsg.body || MEET_MSG, {
-      meeting: online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae',
-      date: CK.day(at).split('-').reverse().join('/'),
-      time: clock(at) + ' \u2013 ' + clock(end),
+    return meetingMessage({ at: e.meeting_at, minutes: e.meeting_minutes, online: e.meeting_channel !== 'onsite',
       month: monthWord(e.period),
       channel: e.meeting_channel ? CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel) : '',
-      link: e.meeting_channel && e.meeting_link ? e.meeting_link : ''
+      link: e.meeting_channel && e.meeting_link ? e.meeting_link : '' });
+  }
+  /* The one message for a meeting, the month's or one booked under a
+     client's Calls and visits (2026-10-31): a field with no value leaves
+     its line out, so a meeting outside a month carries no agenda. */
+  function meetingMessage(o) {
+    if (!o || !o.at) return '';
+    if (!meetMsg.asked) readMeetMsg();
+    var at = new Date(o.at);
+    var end = new Date(at.getTime() + (Number(o.minutes) || 30) * 60000);
+    return fillMessage(meetMsg.body || MEET_MSG, {
+      meeting: o.online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae',
+      date: CK.day(at).split('-').reverse().join('/'),
+      time: clock(at) + ' \u2013 ' + clock(end),
+      month: o.month || '', channel: o.channel || '', link: o.link || ''
     });
   }
   /* Settings, Templates: Meeting message (`team.settings`). */
@@ -6935,6 +6942,10 @@
     var eb = $('cwEng');
     if (eb) eb.hidden = !canWork || !freeMonths(c.id).length;
     syncNewMonth();
+    if (state.newMonthWant) {
+      state.newMonthWant = false;
+      if (canWork && freeMonths(c.id).length) setTimeout(function () { openEng(null, c); }, 0);
+    }
     box.innerHTML = '<div id="cwList" data-narrow="860"></div>';
     if (UI.fit) UI.fit('#cwList');
     if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
@@ -8093,6 +8104,9 @@
     /* `task=` is the address the full record had; it opens the card now. */
     var peek = params.get('open') || params.get('task');
     state.wcWant = params.get('wc') || null;
+    /* New month from a client's Engagements (2026-10-31): the sheet opens
+       once that client's months are read. */
+    state.newMonthWant = params.get('new') === 'month';
     applyView(params.get('view') || 'list');
     load();
     $('workList').hidden = false;
@@ -8381,6 +8395,8 @@
   window.ADspaceOps = {
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
+    /* The message to a client for a meeting outside a month (2026-10-31). */
+    meetingMessage: meetingMessage,
     enter: enter, urlState: urlState, signedIn: signedIn, openNumbering: openNumbering,
     /* Task templates, from Settings' Templates group (2026-10-29). */
     openTemplates: function () { openTpl(); },
