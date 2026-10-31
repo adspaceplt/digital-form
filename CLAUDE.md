@@ -5865,12 +5865,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   Issue Letter of Offer (`quotation_offer`, once, refused `expired` past
   `valid_until` and not offered then) makes the quotation's
   lines the client's To quote lines (`quotation_id`, its term and
-  percentage) and opens the letter sheet on them alone. The PDF (A4, 33pt):
-  ADSPACE PLT at the head's right, the facts, Description · Qty · Rate (RM)
-  · Subtotal (RM), totals ending at Monthly (or First month) incl. SST, Remarks / Terms at
-  8pt (validity, SST, budget billed separately, confirmation then the
-  Letter of Offer, the whole term's commitment), the rate card line over
-  PRIVATE & CONFIDENTIAL; named `ADspace Quotation {ref}.pdf`.
+  percentage) and opens the letter sheet on them alone. The PDF (`js/quotepdf.js`,
+  three pages; the user, 2026-10-31: one document, the quotation acting as
+  the Letter of Offer): the Quotation Cover drawn by the letter engine
+  itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
+  console, the type as seeded on /quote/; signed off by who prepared it);
+  the quotation on a continuation page with no second letterhead (a lead
+  sentence, Description · Qty · Rate · Amount between hairlines, each
+  amount in its currency with per month, one-off or its months under it,
+  the totals at the right ending at the one bold figure, TERMS: validity,
+  SST, budget billed separately, the whole term's commitment, binding once
+  accepted and signed with the Service Terms, the rate card line); and
+  Acceptance of quotation on a page of its own (the figures agreed, Issued
+  for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
+  client's block to sign and stamp, Name, Designation, Date). Prepared by
+  is the quotation's `made_by` (a website quotation's person in charge)
+  with their position; Reviewed by stays empty until the review after
+  signing is built. Every page's foot: the reference, PRIVATE &
+  CONFIDENTIAL, Page n of 3 (`ADspaceDocs.letterFoot`); named `ADspace
+  Quotation {ref}.pdf`.
 - The quotation website (`/quote/`, `js/quote.js`,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
