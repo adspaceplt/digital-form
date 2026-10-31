@@ -3446,27 +3446,35 @@ button.vs-row { cursor: pointer; }
 .qb-row > .svc-rate { text-align: right; font-variant-numeric: tabular-nums; }
 .qb-name { font-size: 13.5px; }
 /* A line's tax code, chosen under its name (2026-10-22). */
-.qb-name .qb-tax { display: block; width: auto; max-width: 100%; margin-top: 6px; }
+.qb-taxc .qb-tax { display: block; width: auto; max-width: 100%; margin-top: 6px; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's quantity, rate and months are typed where they are read
    (2026-10-15): each field keeps a row of words' height, its target
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
-.qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; align-items: center; }
+.qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
+.qb-row.crm-head { grid-template-areas: none; }
+.qb-row > .qb-name { grid-area: name; }
+.qb-row > .qb-taxc { grid-area: tax; }
+.qb-row > .qb-qty { grid-area: qty; }
+.qb-row > .qb-rate { grid-area: rate; }
+.qb-row > .qb-mo { grid-area: mo; }
+.qb-row > .qb-amt { grid-area: amt; }
 .qb-val { width: 100%; min-width: 0; text-align: right; font-variant-numeric: tabular-nums; margin-block: -6px; }
 @media (pointer: coarse) { .qb-val { margin-block: -9px; } }
 .qb-lab { display: none; }
 .qb-once { font-size: 12.5px; color: var(--ink-mute); }
 @media (max-width: 560px) {
-  .qb-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr); grid-template-areas: "name name amt" "qty rate mo"; column-gap: 8px; row-gap: 8px; padding-inline: 12px; align-items: end; }
+  /* One line under the name (the user, 2026-10-31): Tax, Qty (a figure
+     of two digits), Rate and Months (up to 99), each under its label. */
+  .qb-row { grid-template-columns: minmax(0, 1.1fr) 40px minmax(0, 1fr) 44px; grid-template-areas: "name name amt amt" "tax qty rate mo"; column-gap: 6px; row-gap: 8px; padding-inline: 12px; align-items: end; }
+  .qb-row:not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
   .qb-row.crm-head { display: none; }
-  .qb-row > .qb-name { grid-area: name; }
-  .qb-row > .qb-qty { grid-area: qty; }
-  .qb-row > .qb-rate { grid-area: rate; }
-  .qb-row > .qb-mo { grid-area: mo; }
-  .qb-row > .qb-amt { grid-area: amt; align-self: start; }
-  .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  .qb-row > .qb-amt { align-self: start; }
+  .qb-row > .qb-taxc, .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }
+  .qb-taxc .qb-tax { width: 100%; margin-top: 0; }
+  .qb-row .qb-val { padding-inline: 8px; }
   .qb-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
   .qb-val { margin-block: 0; }
   .qb-tot { max-width: none; }

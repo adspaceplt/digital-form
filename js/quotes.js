@@ -772,18 +772,22 @@
         var sub = [];
         if (l.list_rate != null) sub.push('Rate card ' + CUR + ' ' + rm(l.list_rate));
         /* The line's tax code (2026-10-22): the client's SST, or one the team
-           bills with, chosen where it is read; drawn while any is offered. */
+           bills with, chosen where it is read; drawn while any is offered.
+           The client's own reads as the rate alone (SST 8%), the codes by
+           their code, so on a phone it shares the line with Qty, Rate and
+           Months (2026-10-31). */
         var codes = (B && B.codes || []).filter(function (c) { return c.active; });
         var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
         var tax = codes.length ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
-          '<option value="">' + esc(MON.sstApplies(t.sst_pct) ? 'Client default · SST ' + t.sst_pct + '%' : 'Client default · No SST') + '</option>' +
+          '<option value="">' + esc(MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : 'No SST') + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
         var box = function (what, v, cls, mode, label) {
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
-        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + tax + '</span>' +
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + '</span>' +
+          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
