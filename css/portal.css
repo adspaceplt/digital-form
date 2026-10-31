@@ -2988,14 +2988,19 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2);
 }
 .engage-toggle svg {
-  width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute);
+  width: 15px; height: 15px; flex: 0 0 auto; color: inherit; stroke-width: 1.8;
   transition: transform var(--t) var(--ease);
 }
 .engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .engage-sum {
   margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: right;
   font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+  /* Its parts wrap between them, never leaving the dot at a line's end
+     (SEL-8): each dot hangs into the gap after its part, and the one that
+     would end a line overhangs the box and is clipped. */
+  display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 1em; overflow: hidden;
 }
+.engage-dot { display: inline-block; width: 1em; margin-right: -1em; text-align: center; font-style: normal; }
 /* The label keeps its line; the summary wraps between its parts, never
    inside one (the count joined it, 2026-10-14). */
 .engage-toggle { flex: 0 0 auto; white-space: nowrap; }
@@ -3053,11 +3058,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      somewhere different on every line is what reads as unaligned. */
   grid-template-columns: 26px var(--ctl-h) minmax(0, 1.15fr) minmax(0, .95fr) minmax(0, 1.9fr) 84px 92px;
   grid-template-areas: "no tick name plat links rate backup";
-  padding: 11px 14px; background: var(--card);
+  padding: 12px 14px; background: var(--card);
   border-bottom: 1px solid var(--line-soft);
 }
 .crow-head {
-  padding: 11px 14px 8px; background: var(--sunk);
+  padding: 12px 14px 8px; background: var(--sunk);
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
@@ -3088,7 +3093,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .crow-tick::before {
   content: ''; grid-area: 1 / 1; width: 24px; height: 24px; box-sizing: border-box;
-  border: 1.5px solid var(--line); border-radius: 7px; background: var(--card);
+  border: 1.5px solid var(--line-ctl); border-radius: 7px; background: var(--card);
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 .crow-tick svg { grid-area: 1 / 1; width: 14px; height: 14px; position: relative; }
@@ -3135,9 +3140,13 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .crow-backup {
   grid-area: backup; flex: 0 0 auto; white-space: nowrap;
   border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--tonal);
-  min-height: var(--ctl-h); padding: 0 11px; font-size: 11.5px; color: var(--ink-soft);
+  min-height: var(--ctl-h); padding: 0 11px; font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
 }
 @media (hover: hover) { .crow-backup:hover { background: var(--tonal-hover); color: var(--ink); } }
+/* A ticked row is shaded, and the tonal button on it all but vanished
+   (#dedede on #ececec): it takes the card's white there (SEL-6). */
+.crow.is-on .crow-backup:not(.is-on) { background: var(--card); }
+@media (hover: hover) { .crow.is-on .crow-backup:not(.is-on):hover { background: var(--sunk); } }
 .crow-backup.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 
 .tag-new {
@@ -3172,7 +3181,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* The name carries a second line, so the fee sits against the first one
      rather than floating halfway down it. */
   .crow-rate { min-width: 0; align-self: start; }
-  .crow-backup { align-self: start; padding: 0 13px; font-size: 12px; }
+  .crow-backup { align-self: start; padding: 0 13px; }
+  /* Two profile chips stack in the cell: each takes its width, so they
+     read as one pair rather than two lengths (SEL-5). */
+  .crow-links:has(> .plink + .plink) > .plink { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ---------- Confirm bar ---------- */
@@ -3389,6 +3401,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
 }
+/* A creator's own booking is the page's panel, padded as every client
+   panel is, at a desk and on a phone alike (CR-2). */
+.cwork .booking { padding: 18px 20px; }
+@media (max-width: 640px) { .cwork .booking { padding: 15px 16px; } }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .booking-head b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
@@ -3419,7 +3435,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
-  padding: 0; margin: 16px 0 12px;
+  padding: 0; margin: 12px 0;
 }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
@@ -5012,7 +5028,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .booking-next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
 /* Where a creator's booking stands, in ink above its facts, where the
    hand-in stood (the client pages audit, CR-1, 2026-10-08). */
-.booking-next.cx-status { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
+.booking-next.cx-status { margin: 12px 0 0; font-size: 14px; color: var(--ink); }
 /* The head's Request change: which change, and the confirmed line it is
    about (PO-1). */
 #reqSheet .req-pick { margin: 0 0 12px; }
@@ -5083,9 +5099,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .filepin-row .filearm-ask { max-width: none; font-size: 12px; color: var(--ink-soft); }
 .filepin-row.is-arming .filepin-open { flex: 0 1 auto; }
 
-.booking-deliver .field-label { display: block; margin: 12px 0 5px; }
-.booking-deliver .input { width: 100%; }
-.booking-deliver .kactions { margin-top: 12px; }
+.booking-deliver .field-label { display: block; margin: 12px 0 8px; }
+.booking-deliver .input { width: 100%; display: block; }
+/* The hand-in block's steps: 8 from a label to its field, 12 between
+   blocks, 16 before Submit (CR-3). */
+.booking-deliver .kactions { margin-top: 16px; }
 /* Post and results: one block a placement, a hairline between two; the
    three figures side by side under the period they are counted over. */
 .post-entry + .post-entry { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
@@ -7977,8 +7995,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    56 of air on both sides at a desk and 41 on a phone. */
 .lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
 .lp-intro-act { margin: 24px 0 0; }
-.lp-chat { gap: 8px; }
-.lp-chat svg { width: 15px; height: 15px; }
 .lp-title {
   margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
   font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
@@ -8021,8 +8037,19 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-go {
   display: inline-flex; align-items: center; gap: 4px; min-height: var(--ctl-h);
   margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 13.5px; color: var(--action-ink); text-decoration: none;
+  /* Never an underlined word (FRONT-1): the hover is a shade that hugs the
+     line, as `.linkbtn`'s does, its 6px either side given back so the
+     words keep their edge. */
+  position: relative; isolation: isolate; padding-inline: 6px; margin-inline: -6px;
 }
-@media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
+.lp-go::before {
+  content: ""; position: absolute; z-index: -1; inset: calc(50% - 13px) 0;
+  border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
+}
+@media (hover: hover) { .lp-go:hover::before { background: var(--line-soft); } }
+/* Each opens adspacestudios.com or Maps in a new tab, so it ends in the
+   leaving mark, never the chevron (FRONT-2). */
+.lp-go svg { width: 14px; height: 14px; flex: 0 0 auto; }
 /* The hours on the left; the address and WhatsApp on the right, on the
    same column. */
 .lp-duo {
@@ -8034,7 +8061,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hours { width: 100%; border-collapse: collapse; font-size: 14px; }
 .lp-hours th, .lp-hours td { padding: 10px 0; border-top: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
 .lp-hours tr:last-child th, .lp-hours tr:last-child td { border-bottom: 1px solid var(--line-soft); }
-.lp-hours th { font-family: var(--font-head); font-weight: 400; color: var(--ink); width: 34%; }
+.lp-hours th { font-family: var(--font-head); font-size: 15px; font-weight: 400; color: var(--ink); width: 34%; }
 .lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .lp-hours td:last-child { text-align: right; white-space: nowrap; }
 .lp-hours .is-shut td:last-child { color: var(--ink-mute); }
@@ -8043,8 +8070,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-address { margin: 0 0 4px; font-style: normal; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.lp-cta { gap: 8px; }
-.lp-cta svg { width: 16px; height: 16px; }
 /* The ways in read down the band once five across no longer fit, the tick
    beside its words, on a narrower column the hours and the address share. */
 @media (max-width: 900px) {
@@ -8065,7 +8090,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .lp-tick { width: 18px; height: 18px; margin-top: 1px; }
   .lp-way-name { font-size: 14px; }
   .lp-go { font-size: 13px; }
-  .lp-hours { font-size: 13.5px; }
+  /* The days in Slate Regular 14 on a phone, as the names are; the
+     figures 14, as the address beside them (FRONT-3). */
+  .lp-hours th { font-size: 14px; }
+  /* The bar on the content's 24px edge, so a phone reads one left edge
+     from the wordmark down (FRONT-4). The foot keeps every page's 16: at
+     24 its one line broke in two on a 390 phone. */
+  body.lp .topbar-inner { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
   .lp-duo { padding-block: 32px 48px; gap: 32px; }
   .lp-side { gap: 32px; }
   .lp-h2 { font-size: 16px; }
@@ -8443,12 +8474,12 @@ body.ncpage { background: var(--nc-ground); }
 .nc-qrbox canvas, .nc-qrbox img { width: 100% !important; height: auto !important; }
 .nc-qrname { margin-top: 24px; font-family: var(--font-head); font-weight: 400; font-size: 22px; line-height: 1.1; }
 .nc-qrlink { margin: 6px 0 auto; font-size: 12.5px; color: var(--nc-word); text-align: center; overflow-wrap: anywhere; }
-.nc-who { margin-top: 34px; display: flex; flex-direction: column; gap: 5px; }
+.nc-who { margin-top: 24px; display: flex; flex-direction: column; gap: 5px; }
 .nc-name { font-family: var(--font-head); font-weight: 400; font-size: 30px; line-height: 1.1; letter-spacing: -.005em; }
 .nc-post { font-size: 13px; color: var(--nc-word); }
-.nc-rows { margin-top: 22px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
+.nc-rows { margin-top: 24px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
 .nc-row { min-height: 44px; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
-  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14px; font-variant-numeric: tabular-nums; }
 .nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
@@ -8456,13 +8487,23 @@ body.ncpage { background: var(--nc-ground); }
 .nc-row-mail .nc-value.is-wrap { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
-.nc-cover-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+/* The portrait back reads in one 24px step, mark to name to rows to acts,
+   the acts kept at the card's foot and its spare height above the mark
+   (CARD-3). */
+.nc:not(.is-land) .nc-back { justify-content: flex-end; }
+.nc:not(.is-land) .nc-back > .nc-acts { margin-top: 24px; padding-top: 0; }
+.nc-cover-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); justify-content: center; gap: 8px; margin-top: 16px; }
+/* Full-size buttons, one width: equal halves of the column on a phone,
+   each taking the column where its words would not hold one line beside
+   the other (a 390 phone; COV-2). */
+.nc-cover-acts > .btn { min-width: 0; white-space: nowrap; }
+@media (max-width: 640px) { .nc-cover-acts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); } }
 .nc-cover-acts[hidden] { display: none; }
 /* A 320 phone's half holds Save contact's mark and words with room either
    side only a little closer together. */
 @media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: 500 var(--ctl-text) var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
@@ -8786,11 +8827,12 @@ body.is-maint { overflow: hidden; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
-.cx-nextup-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+.cx-nextup-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
 .cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
 .cx-nextup .booking-deliver { border-top: 0; padding-top: 0; }
+.cx-nextup .booking-deliver > .cx-drop:first-child { margin-top: 0; }
 .cx-drop {
-  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 14px; padding: 22px 12px;
+  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 12px; padding: 22px 12px;
   border-radius: var(--radius-sm); background: var(--tonal); text-align: center; cursor: pointer;
 }
 .cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
@@ -8801,6 +8843,9 @@ body.is-maint { overflow: hidden; }
 .cx-drop-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cx-chips .plink { gap: 6px; }
+/* On a phone a creator's two contact chips (WhatsApp, Call) share their
+   row as equal halves, as every reach line does (CR-8). */
+@media (max-width: 640px) { .cwork .cx-chips:has(> .plink + .plink) > .plink { flex: 1 1 0; justify-content: center; } }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips),
 .booking-facts.cx-facts:has(> :nth-child(5)) > div:has(.cx-chips) { grid-column: 1 / -1; }

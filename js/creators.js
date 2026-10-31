@@ -46,12 +46,9 @@
   }
   function money(n)  { return MON.money(n, mkt()); }
   function money2(n) { return MON.money2(n, mkt()); }
-  // The mark that says this opens somewhere else.
-  var EXT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
-    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
-    '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
-
+  /* The mark that says this opens somewhere else: the one leaving mark
+     (js/icons.js, loaded first; CR-7). */
+  var EXT_ICON = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
   /* What is booked carries SST at the rate in force when the client last
      confirmed, so a confirmed campaign's total never moves with a later rate
      (the third audit, item 10); a selection still to confirm, today's. */
@@ -1292,7 +1289,9 @@
        so it reads while the detail is shut (SELECTION-2). */
     var sum = $('engageSum'), base = sum.getAttribute('data-base') || '';
     var parts = [base, choosable().length && slots ? t().count(n, slots) : ''].filter(Boolean);
-    sum.innerHTML = parts.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join(' · ');
+    sum.innerHTML = parts.map(function (x, i) {
+      return '<span>' + esc(x) + (i < parts.length - 1 ? '<i class="engage-dot" aria-hidden="true">·</i>' : '') + '</span>';
+    }).join(' ');
     if (!parts.length) sum.textContent = sum.getAttribute('data-fallback') || '';
     $('progressCard').classList.toggle('is-done', n >= slots);
 
@@ -1300,9 +1299,11 @@
     var have = countBackups();
     var backupsOk = have >= want;
     $('progBackup').hidden = !want;
+    /* Chinese runs on after its full stop; English takes a space (SEL-9). */
+    var gap = lang === 'zh' ? '' : ' ';
     $('progBackup').textContent = !want ? '' :
-      (backupsOk ? t().backupsDone + ' ' + t().backupCount(have, want)
-                 : t().backupsNeeded(want - have) + ' ' + t().backupCount(have, want));
+      (backupsOk ? t().backupsDone + gap + t().backupCount(have, want)
+                 : t().backupsNeeded(want - have) + gap + t().backupCount(have, want));
     $('progBackup').classList.toggle('is-ok', backupsOk);
 
     /* The bar is about what is waiting to be confirmed, not about the campaign.
@@ -1310,9 +1311,6 @@
        confirm a selection nobody had made. */
     var pending = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
     var value = pending.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
-    // Confirming needs the backups too, and the bar says so rather than just
-    // refusing. A backup promoted into a slot leaves one fewer in reserve.
-    var short = want - have;
     $('confirmSummary').innerHTML =
       '<b>' + esc(t().totalShort(money2(value + sstOf(value)),
                  sstOf(value) ? MON.taxLabel(mkt()) : '')) + '</b>' +
@@ -1322,7 +1320,8 @@
       '<span class="muted">' + esc(t().count(n, slots) + ' · ' + money2(value)) +
         (sstOf(value) ? ' + ' + esc(MON.taxLabel(mkt())) + ' ' + money2(sstOf(value)) : '') +
       '</span>' +
-      (short > 0 && !over ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '') +
+      /* Backups are said once, on the selection card; never again in the bar
+         (SEL-4). */
       (over ? '<span class="is-over">' + esc(t().overSlots(slotsLeft())) + '</span>' : '') +
       (conf && !asConfirmed && confDay ? '<span class="muted">' + esc(t().changedSince(confDay)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;

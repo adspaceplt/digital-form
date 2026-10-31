@@ -186,7 +186,7 @@
     },
     rqKind: { upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更' },
     campState: { draft: '草稿', open: '待客户选择', production: '制作中', completed: '已完成' },
-    journey: ['已预约', '拍摄', '草稿', '审核', '发布', '数据'], journeyDelivery: '寄送',
+    journey: ['已预约', '拍摄日', '初稿截止', '客户审核', '发布日期', '数据'], journeyDelivery: '寄送日',
     untitled: '未命名项目',
 
     act: {

@@ -65,7 +65,7 @@
       nextUpWord: 'Next up', handIn: 'Submit your draft', handInAgain: 'Submit your revision',
       dropTitle: 'Add photos or videos', dropSub: 'Up to 1 GB each',
       directions: 'Directions', call: 'Call', whatsapp: 'WhatsApp',
-      captionHint: 'Caption to publish with this post.',
+      captionHint: 'Caption for this post.',
       submit: 'Submit draft', submitting: 'Submitting…', update: 'Update submission',
       needFiles: 'Attach at least one file.',
       uploading: 'Uploading', saving: 'Saving', remove: 'Remove',
@@ -115,7 +115,7 @@
       codeWrong: '访问码错误。',
       standDown: '暂无合作',
       standDownText: '请联系您的 ADspace 客户经理。',
-      lang: 'English',
+      lang: 'EN',
       work: '您的合作',
       needsYou: '待您处理',
       none: '暂无合作安排',
@@ -133,7 +133,7 @@
       nextUpWord: '下一步', handIn: '提交草稿', handInAgain: '提交修改稿',
       dropTitle: '添加照片或视频', dropSub: '每个文件不超过 1 GB',
       directions: '查看路线', call: '致电', whatsapp: 'WhatsApp',
-      captionHint: '将随作品一同发布的文案。',
+      captionHint: '此作品的文案。',
       submit: '提交', submitting: '提交中…', update: '更新提交',
       needFiles: '请至少上传一个文件。',
       uploading: '上传中', saving: '保存中', remove: '移除',
@@ -356,7 +356,8 @@
     tiktok: 'https://www.tiktok.com/@adspace.advertising',
     facebook: 'https://www.facebook.com/adspace.advertising'
   };
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  /* The one leaving mark (js/icons.js), never a drawing of its own (CR-7). */
+  function OUTMARK() { return window.ADspaceIcons ? window.ADspaceIcons.svg('out') : ''; }
 
   function monthYear(ts) {
     return ts ? ADspaceClock.month(ts, { zh: lang === 'zh' }) : '';
@@ -386,7 +387,7 @@
     var list = profiles();
     $('crLinks').innerHTML = list.length
       ? list.map(function (p) {
-          return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(linkWord(p)) + OUT + '</a>';
+          return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(linkWord(p)) + OUTMARK() + '</a>';
         }).join('')
       : '<p class="crlinks-none">' + esc(t().linksNone) + '</p>';
     $('linksEditWord').textContent = list.length ? t().linksEdit : t().linksAdd;
@@ -588,10 +589,8 @@
   function placeHtml(where) {
     return '<div class="cx-chips"><a class="plink" href="https://www.google.com/maps/search/?api=1&query=' +
       encodeURIComponent(where) + '" target="_blank" rel="noopener">' + esc(t().directions) +
-      (window.ADspaceIcons ? EXT_MARK : '') + '</a></div>';
+      OUTMARK() + '</a></div>';
   }
-  var EXT_MARK = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
-    'stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
 
   function bookingCard(b) {
     var card = document.createElement('section');
@@ -727,7 +726,7 @@
              as the selection page words it. */
           (absUrl(p.post_url) ? '<p class="post-entry-link"><a class="plink" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
             esc(lang === 'zh' ? (platKeyOf(plat) === 'xhs' ? '查看小红书笔记' : '查看' + word + '帖子') : 'View post on ' + word) +
-            EXT_MARK + '</a></p>' : '') +
+            OUTMARK() + '</a></p>' : '') +
           (period ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' : '') +
           '<dl class="post-nums">' + nums.map(function (n) {
             return '<div><dt>' + esc(t()[n[0]]) + '</dt><dd>' + esc(n[1] == null ? '—' : Number(n[1]).toLocaleString('en-US')) + '</dd></div>';
