@@ -5154,7 +5154,11 @@
     cover.hidden = !letterable;
     var build = $('qtBuild');
     var offers = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="offer"]'));
-    var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"]'));
+    /* An awaiting website quotation's blue is Send quotation once its
+       template is on, else Publish (2026-10-31). */
+    var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl')).map(function (dl) {
+      return dl.querySelector('[data-a="send"]:not([hidden])') || dl.querySelector('[data-a="publish"]');
+    }).filter(Boolean);
     var blue = null;
     /* A website quotation waiting for the team comes first (2026-10-29). */
     if (sends.length === 1) blue = sends[0];
@@ -5162,7 +5166,8 @@
     else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
     else if (offers.length === 1) blue = offers[0];
     else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
-    [build, cover].concat(offers, sends).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
+    [build, cover].concat(offers, gives).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteCtx() {
     return { client: state.client, db: db, may: mayPart, msg: msg, services: state.services || [], live: liveMap(),
