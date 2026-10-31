@@ -682,6 +682,12 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     Pre-Advertising Checklist.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
+- Remove and Delete are two promises (the user, 2026-10-31: "Remove means
+  can be added back; Delete then gone forever"): Remove hides or takes
+  away and can be brought back (Undo where it happened, Restore or Enable
+  after); Delete is gone for good, asked first and named so. A control
+  that cannot be brought back never reads Remove, and one that can never
+  reads Delete.
 - One word per act, everywhere (the user, 2026-10-09: "why do you use
   different terms"): Publish / Unpublish (never Share, Unshare or Publish to
   client), Download (never Download PDF), Preview PDF beside it where a
@@ -808,7 +814,32 @@ screenshotted, and the push names any line it could not settle.
 8. **Chinese is written, not translated** (§6 above): the same check in
    Chinese, a 中文 version for every client-facing English line, read by
    its own rules.
-9. **Retire it for good.** A word the user rejects joins
+9. **The short word a familiar app uses** (the user, 2026-10-31: "dont
+   need long text just simple understanding ones would do"). A button or
+   menu item is the one or two words people already know from everyday
+   apps, never a phrase where one word says it; the screen around it gives
+   the object:
+
+   | Say | Never |
+   |---|---|
+   | Duplicate | Make a copy |
+   | Cancel (the state Cancelled) | Not proceeding |
+   | Repeat | Repeat on a schedule |
+   | Reassign | Change person in charge |
+   | Submit | Submit for review |
+   | Share | Share with management |
+   | Clear filters | Clear the filters |
+   | Add lead, Add service | Add the first lead, Add the first service |
+   | Make primary | Make primary contact |
+   | Enable access, Revoke access | Enable portal access, Revoke portal access |
+   | Do not contact, Allow contact | Mark Do not contact, Clear Do not contact |
+   | Use passkey | Unlock with a passkey |
+
+   Extra words stay only where they change what the act is (Confirm
+   without letter, Send on WhatsApp beside Resend on WhatsApp, Issue Letter
+   of Offer). A question's title may still name its object (Remove from
+   Content Review?).
+10. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section.
 
