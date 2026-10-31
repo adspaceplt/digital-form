@@ -47,6 +47,7 @@
     return m ? Number(m[3]) + ' ' + MONTHS[Number(m[2]) - 1] + ' ' + m[1] : '';
   }
   function dayOf(ts) { return window.ADspaceClock ? window.ADspaceClock.day(ts) : String(ts).slice(0, 10); }
+  function clockOf(ts) { return window.ADspaceClock ? window.ADspaceClock.clock(ts) : String(ts).slice(11, 16); }
   function cur(q) { return (q.totals || {}).currency === 'SGD' ? 'S$ ' : 'RM '; }
   function amt(n, q) {
     var v = Number(n || 0), s = window.ADspaceMoney.money2(Math.abs(v), 'MY').replace(/^RM /, cur(q));
@@ -57,7 +58,9 @@
   /* opts: attention (the contact named), attentionRole, to { name, address }
      (the registered company where known, else the brand), cover (the team's
      Quotation Cover type), preparedBy and reviewedBy ({ name, designation,
-     day }), client (for the S$ line), draft. */
+     day }), signed ({ name, designation, day, signature, record, via }:
+     the client's signature on the acceptance page and how it was made),
+     client (for the S$ line), draft. */
   function draw(q, opts) {
     var docs = D();
     opts = opts || {};
@@ -312,7 +315,33 @@
       text(r[0], M + cw + 6, top - rh / 2 - 3, 8.5, book, mute);
       if (r[1]) text(r[1], M + cw + lw + 8, top - rh / 2 - 3.5, TB, reg);
     });
+    /* The signature as the client drew it (an SVG path in a 300 by 100
+       box) or typed it; a signature made on paper is held by its scan. */
+    var sig = signer && signer.signature;
+    if (sig && sig.type === 'drawn' && /^[MLQCZmlqcz0-9 .,-]+$/.test(String(sig.path || ''))) {
+      var sc = Math.min((cw - 16) / 300, (sh - 22) / 100);
+      try {
+        pn.page.drawSvgPath(sig.path, { x: M + 8 + ((cw - 16) - 300 * sc) / 2, y: y - 4, scale: sc,
+          borderColor: ink, borderWidth: 1.6 / sc });
+      } catch (e) { /* a path the PDF tools cannot read leaves the box as signed below */ }
+    } else if (sig && sig.type === 'typed' && sig.text) {
+      text(sig.text, M + 10, y - sh / 2 - 2, 18, reg);
+    }
     y -= sh;
+    // How it was signed, under the box.
+    var rec = signer && signer.record;
+    if (signer && signer.via) {
+      var lines2 = [];
+      if (signer.via === 'online' && rec) {
+        lines2.push('Signed electronically on ' + longDay(dayOf(rec.at)) + ', ' + clockOf(rec.at) + ' (GMT+8), confirmed by a code sent to ' + rec.email + '.');
+        lines2.push(['IP address ' + (rec.ip || 'not recorded') + (rec.country ? ' (' + rec.country + ')' : ''),
+          rec.fingerprint ? 'Document fingerprint ' + rec.fingerprint : ''].filter(Boolean).join(' · ') + '.');
+      } else if (signer.via === 'paper') {
+        lines2.push('Signed on paper on ' + longDay(signer.day) + '; the signed copy is kept by ADspace.');
+      }
+      y -= 6;
+      lines2.forEach(function (s) { wrap(s, FULL, SM, book).forEach(function (ln) { y -= 11; text(ln, M, y, SM, book, mute); }); });
+    }
 
     // The foot on every page; a preview is a draft over every page.
     docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL');
