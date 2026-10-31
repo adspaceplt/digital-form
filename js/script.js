@@ -28,7 +28,8 @@
     { at: '#vsStages', text: 'Each content month has its own tab.' },
     { at: '.vs-pick', text: 'Open a script to read it, with its scenes as they will be shot.' }] };
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+  /* The leaving mark from the client pages' one icon set (2026-10-31, VS-3). */
+  var OUT = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
 
   function esc(s) { return window.ADspaceWords.esc(s); }
@@ -235,13 +236,15 @@
       }).join('') : '<p class="vs-empty">No scenes.</p>') + '</div></section>';
   }
 
-  /* One video: its head, its facts card, its script card. */
+  /* One video: its facts card headed by its code and title over its type,
+     as the console's record heads it (2026-10-31, VS-2: the head stood bare
+     on the ground between the strip and the card), then its script card. */
   function video(s) {
     var el = document.createElement('section');
     el.className = 'vs-video';
     el.setAttribute('data-id', s.id);
-    var html = '<header class="vs-video-head"><h3>' + esc(label(s)) + '</h3><p>' + esc(KIND_WORD[s.kind] || '') + '</p></header>' +
-      '<div class="panel vs-card">' + factsOf(s) + '</div>';
+    var html = '<div class="panel vs-card"><div class="vs-cardhead"><div class="vs-cardwho"><h3>' + esc(label(s)) + '</h3><p>' +
+      esc(KIND_WORD[s.kind] || '') + '</p></div></div>' + factsOf(s) + '</div>';
     var body = '';
     if (CONTEXT_WORD[s.kind]) {
       body += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4><p class="vs-prose">' +
