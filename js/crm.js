@@ -4484,7 +4484,7 @@
         }
         if (gone.length) {
           var t = document.createElement('button');
-          t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+          t.type = 'button'; t.className = 'btn btn-quiet btn-sm crm-removed-toggle';
           t.textContent = (showRemovedContacts ? 'Hide ' : 'Show ') + gone.length +
             ' removed contact' + (gone.length === 1 ? '' : 's');
           t.addEventListener('click', function () { showRemovedContacts = !showRemovedContacts; loadContacts(); });
@@ -4895,7 +4895,7 @@
         state.touches.forEach(function (tc) { box.appendChild(touchRow(tc, false)); });
         if (gone.length) {
           var t = document.createElement('button');
-          t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+          t.type = 'button'; t.className = 'btn btn-quiet btn-sm crm-removed-toggle';
           t.textContent = (showRemovedTouches ? 'Hide ' : 'Show ') + gone.length +
             ' removed ' + (gone.length === 1 ? 'entry' : 'entries');
           t.addEventListener('click', function () { showRemovedTouches = !showRemovedTouches; loadTouches(); });
@@ -5478,7 +5478,7 @@
     }
     if (gone.length) {
       var t = document.createElement('button');
-      t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+      t.type = 'button'; t.className = 'btn btn-quiet btn-sm crm-removed-toggle';
       t.textContent = (showRemovedServices ? 'Hide ' : 'Show ') + gone.length +
         ' removed service' + (gone.length === 1 ? '' : 's');
       t.addEventListener('click', function () { showRemovedServices = !showRemovedServices; paintServices(); });

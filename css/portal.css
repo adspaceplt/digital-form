@@ -4554,7 +4554,7 @@ body > .shell { width: 100%; }
   background: var(--sunk); color: var(--ink);
   border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px;
 }
-.crm-removed-toggle { display: block; margin: 6px 0 12px; }
+.crm-removed-toggle { display: flex; width: max-content; margin: 0 0 12px; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
 /* The same sub-heading the rate card, the Team page and the creators list
    use, carrying what the separate card heads used to: the stage, the count,
