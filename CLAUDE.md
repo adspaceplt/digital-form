@@ -5824,12 +5824,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   it will be sent on WhatsApp, in one column, and `quote_website_read`
   answers no lines, totals, version or validity while it is unsent,
   whatever its stage (`quote_proceed` refuses `not-sent`). On the lead's Services it reads
-  Awaiting review · Send by {day}, Send quotation the pane's one blue
-  (asked; `quotation_send`, Clients: Quotations at Work, the client in
-  scope: valid from that day, the `quote_ready` WhatsApp queued only
-  while its template is on and filed as sent on WhatsApp only then;
-  refused `no-contact` while marked Do not contact; filed),
-  Adjust and send beside it, no Send on WhatsApp; the managers are told
+  Awaiting review · Send by {day} with two ways to show it, each asked and
+  valid from that day (`quotation_release`, no page's to call; Clients:
+  Quotations at Work, the client in scope; the user, 2026-10-31: "publish
+  quotation / send quotation", never a tick): Send quotation
+  (`quotation_send`), drawn only while the `quote_ready` template is on
+  and never for a prospect marked Do not contact (`no-contact`), queues
+  that WhatsApp, filed as sent on WhatsApp, and is the pane's one blue;
+  Publish (`quotation_publish`, the Publish glyph, tonal beside it, the
+  blue where Send is not drawn) shows the rates on the link alone, nothing
+  queued, filed published on the quotation link;
+  Adjust and send beside them, no Send on WhatsApp; the managers are told
   six hours before the reply is owed while it waits (`quote_proceed_remind`).
   Once sent, the rates show, with Download (the A4 PDF); the website asks no
   billing and never a Letter of Offer, which the team sends after a

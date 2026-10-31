@@ -7730,6 +7730,25 @@ read and set every page for a tab served before.
   wraps between its parts, never inside a number or a date. The desk's
   table is unchanged (its heads name the columns).
 
+### 2026-10-31 · A website quotation is published, or sent on WhatsApp
+- **Asked:** the user: "both send quotation and resend quotation are
+  optional i could choose to push the rates only but not the whatsapp
+  message right", then "Not everything needs a tick why not show button
+  like publish quotation / send quotation". Send quotation always queued
+  the quotation-ready WhatsApp where its template was on; there was no
+  way to show the rates alone.
+- **Built:** two buttons on an awaiting website quotation. Publish
+  (`quotation_publish`) shows the rates on the prospect's link, valid from
+  today, and sends nothing; Send quotation (`quotation_send`, unchanged)
+  does the same and queues the WhatsApp. Both run one body,
+  `quotation_release(p_id, p_whatsapp)`, closed to every page. Send
+  quotation is drawn only while its template is on (it said "sent" with
+  nothing sent before), and never for a prospect marked Do not contact,
+  who may still be published to: the link is theirs already.
+- **Found on the way:** the Services pane's one blue moved to Send once
+  the template answered, but Publish kept the blue it took first; the
+  pane now clears the blue from every Send and Publish before it lays it.
+
 ### 2026-10-31 · The short word a familiar app uses
 - **Reported:** the user: "Make a copy → Duplicate, Not proceeding →
   Cancel. I prefer these kind of wordings", then "Check for others …

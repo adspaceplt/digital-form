@@ -545,6 +545,7 @@
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
     quotation_send: 'p_id',
+    quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
     rate_card_publish: 'p_version p_valid_until p_note',
     rate_card_text_save: 'p_key p_value',
@@ -9574,21 +9575,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
         qtLog(qq.brand, qq.ref + ' revises ' + qold.ref);
         return qtOk({ ok: true });
       }
-      if (name === 'quotation_send') {
+
+      if (name === 'quotation_send' || name === 'quotation_publish') {
+        var qsSend = name === 'quotation_send';
         if (qq.removed_at) return qtOk({ error: 'not-found' });
         if (qq.source !== 'website') return qtOk({ error: 'bad-quotation' });
         if (qq.released_at) return qtOk({ ok: true, again: true, valid_until: qq.valid_until });
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
-        if (qq.no_contact_at) return qtOk({ error: 'no-contact' });
+        if (qsSend && qq.no_contact_at) return qtOk({ error: 'no-contact' });
         var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
 
         var qsT = (DB.wa_templates || []).filter(function (t) { return t.purpose === 'quote_ready'; })[0] || (window.__waTemplates || {}).quote_ready;
-        var qsWa = !!(qsT && qsT.active && qsT.name) && /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
+        var qsWa = qsSend && !!(qsT && qsT.active && qsT.name) && /^\+?(60|65)[0-9]{8,10}$/.test(String((qq.contact || {}).whatsapp || '').replace(/[^0-9+]/g, ''));
         if (qsWa) (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quotation', ref_id: qq.id, client_id: qq.client_id,
           to_number: String(qq.contact.whatsapp).replace(/[^0-9]/g, ''), button: qq.access_key, status: 'queued', created_at: qtNow.toISOString() });
-        qtLog(qq.brand, qq.ref + ' sent to the prospect' + (qsWa ? ' on WhatsApp' : '') + ' · valid until ' + qq.valid_until);
+        qtLog(qq.brand, qq.ref + (qsSend ? ' sent to the prospect' + (qsWa ? ' on WhatsApp' : '') : ' published on the quotation link') + ' · valid until ' + qq.valid_until);
         return qtOk({ ok: true, valid_until: qq.valid_until, whatsapp: qsWa });
       }
 
@@ -9618,7 +9621,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;
-        if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' cancelled'; }
+        if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' marked Not proceeding'; }
         else if (qw === 'proceeding') { qq.status = qq.requested_at ? 'requested' : 'sent'; word = ' restored'; }
         else if (qw === 'remove') { qq.removed_at = new Date().toISOString(); qq.removed_by = qtMe.name; word = ' removed'; }
         else if (qw === 'restore') { qq.removed_at = null; qq.removed_by = null; word = ' restored'; }

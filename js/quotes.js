@@ -177,9 +177,15 @@
           var acts = [];
           /* A website quotation is revised from its row: Build quote on a
              copy, linked as its revision, then sent (2026-10-26). */
-          /* Not drawn for a prospect marked Do not contact, which quotation_send
-             refuses (audit 2026-10-30). */
-          if (maySet && awaiting(q) && !q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" type="button">Send quotation</button>');
+          /* Two ways to show the rates (the user, 2026-10-31): Publish shows
+             them on the prospect's link alone; Send quotation shows them and
+             sends the quotation-ready WhatsApp, drawn once its template is on
+             (`data-wa-ready`) and never for a prospect marked Do not contact,
+             which quotation_send refuses (audit 2026-10-30). */
+          if (maySet && awaiting(q)) {
+            if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready hidden type="button">Send quotation</button>');
+            acts.push('<button class="btn btn-sm" data-a="publish" type="button">Publish</button>');
+          }
           if (maySet && !q.removed_at && q.source === 'website' && !q._revised && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
@@ -241,6 +247,7 @@
       WA().on('quote_ready').then(function (yes) {
         if (!yes) return;
         Array.prototype.forEach.call(host.querySelectorAll('[data-wa-ready]'), function (it) { it.hidden = false; });
+        if (ctx.painted) ctx.painted();
       });
     }
     if (host.querySelector('[data-wa]')) {
@@ -311,6 +318,25 @@
           if (btn) btn.disabled = false;
           if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
           var line = q.ref + ' sent' + (d.whatsapp ? ' on WhatsApp' : '') + '. Valid until ' + window.ADspaceClock.date(d.valid_until) + '.';
+          ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
+        }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
+      });
+      return;
+    }
+    if (a === 'publish') {
+      /* The rates on the prospect's link with no message (2026-10-31): the
+         team tells the prospect in its own chat. */
+      var whom = (q.contact && q.contact.name) || q.brand;
+      window.ADspaceConfirm.ask({ title: 'Publish quotation?',
+        body: q.ref + ' is shown to ' + whom + ' on the quotation link. No WhatsApp message is sent. It is valid for ' +
+          (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
+        go: 'Publish' }, function () {
+        if (btn) btn.disabled = true;
+        ctx.db.rpc('quotation_publish', { p_id: q.id }).then(function (r) {
+          var d = r.data || {};
+          if (btn) btn.disabled = false;
+          if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+          var line = q.ref + ' published. Valid until ' + window.ADspaceClock.date(d.valid_until) + '.';
           ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); });
         }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
       });
