@@ -1969,7 +1969,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     with Add as contact, before and after Use details, which opens Contacts
     prefilled and makes the contact saved the billing contact. The
     form never writes the record. `client_detail_forms` has RLS on, no
-    policy, no grant.
+    policy, no grant. An open link offers Copy message (2026-10-31: the
+    link in a formal message to the billing contact, else the primary
+    contact, with its closing day); answers received carry a ⋯ of Request
+    again (asked: they are set aside and a fresh link made,
+    `client_details_link`).
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
     `#crmBrandSheet`. The Active gate opens the sheet on the first missing
     field, and its Save, billing then complete, carries on into the move
@@ -2215,6 +2219,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     the client portal, the creator's page, the namecard), reading a number
     as `wa_number` does in SQL (WhatsApp, below).
   - Remove is soft, then Delete permanently at Manage.
+  - A contact with a number offers Send on WhatsApp in its ⋯
+    (2026-10-31): the composer (`purpose` message) opened on that contact
+    (`contactId`); nothing goes until its Send.
 - Portal access is one switch per contact (Enable / Revoke in the ⋯, with
   Undo), shown as Portal access after its green dot.
   - Enabling opens a sheet with **Send invitation email unticked**; a move
@@ -2270,6 +2277,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work), a moved time moves the event and an entry no longer a meeting
   takes it off; the client's Meetings lists it as Meeting (time, length,
   link while ahead), never its summary. The link is the `.plink` address.
+  A meeting ahead offers Message to client, Show and Copy (2026-10-31):
+  the team's Meeting message filled from it (`ADspaceOps.meetingMessage`,
+  the one builder the month's card uses too; no content month, so no
+  agenda line), copied to paste into the client's WhatsApp group.
+- Nothing reaches a client by itself (the user, 2026-10-31): every
+  client-facing send is a colleague's press, and most go into the client's
+  WhatsApp group, which no API can post to, so a record offers its message
+  to copy (Copy message) beside any WhatsApp template send.
 - Requests (Request · Fee · State · ⋯):
   - Requested → Reviewing → Approved / Declined → Applied; Withdrawn is a chip.
   - Reply sets a fee and a reply the client reads.
@@ -2284,8 +2299,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   reports included. The tab is drawn for an Active, Paused or Past client,
   or one holding anything in it (a lead's waits for the answer, and its
   address falls back to Overview). The head holds Open Content Review /
-  Enable Content Review and New campaign, each behind its own check, while
-  the client is Active.
+  Enable Content Review, New campaign and New month (My Work at Work;
+  2026-10-31: opens My Work's Months on the client, `new=month`, with the
+  New month sheet), each behind its own check, while the client is Active.
   - A card a month (`ADspaceGroup.section`, route `client-months`), newest
     first: a month from today's on open, an older one shut until opened and
     remembered; a month starting on its `start_day` states its span on the
