@@ -151,7 +151,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
   measured is time itself.
 - It prints one line per suite, ending in its wall time, then the total,
   and ends `gate: ok` or `gate: PROBLEM (n)`
-  (also written to `$OUT`, default `/tmp/gate.txt`).
+  (also written to `$OUT`, default `/tmp/gate.txt`); a pass that warned
+  keeps its whole output in `/tmp/gate-warn-{suite}.log`.
 - Run it as **one background command and wait for its completion notice**.
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
     frozen copy of HEAD (commit first), so the next change is built while it
