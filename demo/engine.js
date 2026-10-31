@@ -201,6 +201,7 @@
     doc_type_save: 'p_id p_family p_name p_code p_title p_salutation p_closing p_body_en p_body_zh p_body_ms p_signed p_fields',
     doc_type_set_active: 'p_id p_on',
     issue_letter: 'p_idem p_deal p_total p_replaces p_client p_subtotal p_renewal p_services p_serial p_tax',
+    issue_letter_preview: 'p_deal p_total p_replaces p_client p_subtotal p_renewal p_services p_serial p_tax',
     letter_quote_terms: 'p_services',
     issuer_name_ok: 'p_name',
     letter_delete: 'p_reason p_doc p_confirm',
@@ -8229,6 +8230,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var out = opsRpc(name, args);
       if (out && out.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: out.__raise } });
       if (out !== null) return Promise.resolve({ data: out, error: null });
+    }
+
+    if (name === 'issue_letter_preview') {
+      var ilKeep = JSON.stringify(DB);
+      var ilPrev = issueLetter(Object.assign({}, args, { p_idem: 'preview-' + Date.now() + Math.random() }));
+      var ilDoc = ilPrev && ilPrev.id ? JSON.parse(JSON.stringify((DB.client_documents || []).filter(function (d) { return d.id === ilPrev.id; })[0] || null)) : null;
+      var ilBack = JSON.parse(ilKeep);
+      Object.keys(DB).forEach(function (k) { if (!(k in ilBack)) delete DB[k]; });
+      Object.keys(ilBack).forEach(function (k) { DB[k] = ilBack[k]; });
+      persist();
+      if (ilPrev && ilPrev.__raise) return Promise.resolve({ data: null, error: { code: 'P0001', message: ilPrev.__raise } });
+      if (!ilPrev || ilPrev.error) return Promise.resolve({ data: ilPrev, error: null });
+      return Promise.resolve({ data: { ok: true, doc: ilDoc }, error: null });
     }
     if (name === 'issue_letter') {
       var ilOut = issueLetter(args);

@@ -160,6 +160,9 @@
           var st = stateOf(q, live), h = headline(q);
           var items = [];
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
+          /* Preview PDF (2026-10-31): the file in a tab to read before it is
+             sent, beside the row's Download. */
+          else items.push('<button class="kmenu-item" data-g="1" data-a="view" type="button" role="menuitem">Preview PDF</button>');
           /* The prospect's own page (2026-10-30): Preview opens it read only,
              for any reader of the quotation; Preview is the team's view,
              Copy link the prospect's. */
@@ -302,9 +305,10 @@
   function act(a, q, ctx, host, btn) {
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
     if (a === 'link') { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(q.access_key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); return; }
-    if (a === 'pdf') {
+    if (a === 'pdf' || a === 'view') {
       if (!window.ADspaceQuotePdf) return;
-      var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
+      var tab = a === 'view' ? window.ADspaceDocs.previewTab()
+        : window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
       window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client }).then(function (blob) {
         window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
       }).catch(function (e) {
@@ -677,6 +681,7 @@
       B.sel = selection();
       B.priced = null;
       $('qbSave').disabled = true;
+      $('qbPreview').disabled = true;
       $('qbSum').textContent = '';
       /* The client named, so its SST exemption applies (2026-10-15, audit I1). */
       B.ctx.db.rpc('quote_preview', { p_sel: Object.assign({ client: B.ctx.client.id }, B.sel) }).then(function (r) {
@@ -694,6 +699,7 @@
         $('qbLines').innerHTML = table(d);
         $('qbSum').textContent = sumOf(d) + (FX == null ? MON.approx(mainOf(d), B.ctx.client) : '');
         $('qbSave').disabled = false;
+        $('qbPreview').disabled = false;
       }).catch(function (e) { if (B && seq === B.seq) $('qbLines').innerHTML = '<p class="ovnone">' + esc(said(e)) + '</p>'; });
     }, 200);
   }
@@ -841,6 +847,27 @@
     });
     $('qbCancel').addEventListener('click', function () { window.ADspaceSheet.close(); B = null; });
     $('qbClose').addEventListener('click', function () { $('qbCancel').click(); });
+    /* Preview PDF (2026-10-31; the user: "preview pdf … before sending"):
+       the quotation as it is priced now, drawn under DRAFT with the
+       reference PREVIEW; nothing is made and no number is spent. */
+    $('qbPreview').addEventListener('click', function () {
+      if (!B || !B.priced || !window.ADspaceQuotePdf) return;
+      var d = B.priced, ctx = B.ctx, btn = this;
+      var today = window.ADspaceClock.today();
+      var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30;
+      var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
+        version: d.version, lines: d.lines, totals: d.totals, selection: B.sel };
+      var tab = window.ADspaceDocs.previewTab();
+      btn.disabled = true;
+      window.ADspaceQuotePdf.draw(q, { attention: ctx.attention || '', client: ctx.client, draft: true }).then(function (blob) {
+        btn.disabled = false;
+        window.ADspaceDocs.save(blob, 'Preview ' + window.ADspaceQuotePdf.fileName(q), tab);
+      }).catch(function (e) {
+        btn.disabled = false;
+        if (tab) try { tab.close(); } catch (x) {}
+        $('qbMsg').textContent = said(e) || 'The preview could not be drawn.'; $('qbMsg').className = 'msg err';
+      });
+    });
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
