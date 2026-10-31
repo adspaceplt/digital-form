@@ -440,7 +440,7 @@ a { color: inherit; }
   /* Every select is a tonal pop-up (the user, 2026-10-11: the same cell
      everywhere): something picked, not typed, so it wears the buttons'
      shade and no outline, its chevron at its end. */
-  border-color: transparent; background-color: var(--tonal);
+  border-color: transparent; background-color: var(--select-ground, var(--tonal));
   /* A value longer than the box (a registered name, Bill to) ends in an
      ellipsis, never a word cut at the edge (2026-10-29, audit REG-1). */
   text-overflow: ellipsis;
@@ -580,6 +580,20 @@ textarea[data-oneline] {
 textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1.45em) / 2); }
 .input:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus); background-color: var(--card);
+}
+/* A placeholder (a format, an example) in the mute ink at full strength:
+   the browser's own grey stood at 4.04:1 on the filled field (2026-10-31,
+   G-1). Kept low, so a field that hides or tunes its own still wins. */
+:where(input, textarea)::placeholder { color: var(--ink-mute); opacity: 1; }
+/* A field on a grey card takes the white ground (the user, 2026-10-31:
+   "white fields on grey cards", G-2): the filled grey stood at about 1.03:1
+   against --sunk and vanished. The card sets the field's ground, so every
+   field, the signature pad and an autofilled field follow it; typed in, it
+   keeps the blue edge and ring above. A select there is the white pop-up
+   (`--select-ground`, read by the select's own rule). Every grey card that
+   holds a field is named here, one list. */
+:where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .is-narrow .ck-tr:not(.ck-th)) {
+  --field: var(--card); --select-ground: var(--card);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
    field pale yellow and Chrome pale blue whatever the page, so on the dark
@@ -1964,6 +1978,21 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 :root[data-face="client"] .verify-out span { font-size: 16px; }
 .verify-out .tone { font-size: 11.5px; color: inherit; }
 .verify-out .verify-need { color: var(--err); }
+/* The verify page is a form, not a notice (2026-10-31, VER-1 to VER-3): on
+   the scale (the title 8 over its line, the field 24 under it, the answer
+   24 under that, 32 above and below), its line at the form's 14 as the
+   404's, and on a phone the field and Verify each the column's width, so a
+   whole reference stays in sight. */
+.cover-panel.verify-panel { padding: 32px 0; }
+.verify-panel h2 { margin-bottom: 8px; }
+:root[data-face="client"] .verify-panel p { font-size: 14px; }
+.verify-panel form { margin-top: 24px; }
+.verify-panel .verify-out { margin-top: 24px; }
+@media (max-width: 640px) {
+  .cover-panel.verify-panel { padding: 32px 0; }
+  .verify-panel form { flex-direction: column; }
+  .verify-panel form > .btn { width: 100%; }
+}
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
@@ -9233,10 +9262,19 @@ body.is-maint { overflow: hidden; }
    2026-10-27): the title 26 (16 × 1.618), a card's name 16 over its line
    13 (16 ÷ √1.618), the notes 13; the title's own line 8 under it, the
    next block 24. */
-.qs-title { margin: 0; font-family: var(--font-head); font-size: 26px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
-.qs-lead { margin: 0; font-size: 16px; color: var(--ink-soft); }
+/* The title is its lead times φ, one figure setting both (`--qs-lead`): the
+   quotation's opening page 16 over 26; a details form's lead is a fact read
+   beside 14 and 15px fields, so the form takes 14 over 22.65 (2026-10-31,
+   DET-5, SUP-4). */
+.qs { --qs-lead: 16px; }
+.qs.qs-formpage { --qs-lead: 14px; }
+.qs-title { margin: 0; font-family: var(--font-head); font-size: calc(var(--qs-lead, 16px) * 1.618); font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.qs-lead { margin: 0; font-size: var(--qs-lead, 16px); color: var(--ink-soft); }
 .qs-top { display: grid; gap: 8px; }
-.qs-intro { gap: 24px; }
+.qs-lead .qs-part { white-space: nowrap; }
+/* A page's head (its title over its lead) stands 24 above what follows, the
+   opening page and a details form alike (DET-4, SUP-3). */
+.qs-intro, .qs-step:has(> .qs-top) { gap: 24px; }
 .qs-steps { margin: 0; padding: 0; list-style: none; counter-reset: qs-step; display: grid; gap: 12px; }
 .qs-steps li { counter-increment: qs-step; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
 .qs-steps li::before {
@@ -9305,6 +9343,17 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
    (the 8 of .qs-sec is for choice cards). */
 .qs-form .qs-sec { gap: 16px; }
 .qs-form .field { display: grid; gap: 4px; }
+/* On the scale (DET-8, SUP-8): a label 8 over its field (its 4 and the
+   field's gap), a section's heading 16 over its first field (the gap alone). */
+.qs-form .field-label { margin-bottom: 4px; }
+.qs-form .qs-sec-h { margin-bottom: 0; }
+/* A tick's refusal stands 4 under it, in line with its words (DET-3, SUP-2,
+   QTE-5): the form's 16 given back to 4, the tick's track and its gap in. */
+.qs-form .qs-consent + .msg { margin-top: -12px; padding-left: 34px; }
+/* A select with nothing chosen reads its prompt (Optional, Choose a term) in
+   the mute ink, as a field's placeholder does; the list keeps its ink (DET-9). */
+.qs-form .select:has(> option[value=""]:checked) { color: var(--ink-mute); }
+.qs-form .select option { color: var(--ink); }
 .qs-form .field .msg { margin: 0; }
 .qs-form .field .msg:empty { display: none; }
 .qs-form .input, .qs .field .select { width: 100%; }
@@ -9454,7 +9503,7 @@ body.qs-page { background: var(--card); }
 
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */
-.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; }
+.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; gap: 4px; color: var(--ink-soft); }
 
 /* Buttons sharing a row share one width under a finger wider than a phone
    too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a

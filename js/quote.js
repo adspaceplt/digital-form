@@ -40,7 +40,7 @@
       introP: 'Select the services your brand requires and request your quotation.',
       introH: 'What to expect',
       introSteps: ['Select the services you require.', 'Choose your plan and customise the content, languages and commitment.',
-        'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Proceed with the quotation when ready, and our team will contact you to finalise the details.'],
+        'Provide your contact details. ADspace will review your request and send your quotation on WhatsApp.', 'Accept and sign the quotation on this page. ADspace will then confirm your start date.'],
       introNote: 'This takes approximately three minutes.',
       start: 'Start',
       needT: 'What do you need?',
@@ -74,8 +74,8 @@
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
-      waBad: 'A valid Malaysian or Singaporean WhatsApp number is required.',
-      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', consent: 'Please tick the consent box to continue.' },
+      waBad: 'Enter a Malaysian or Singapore WhatsApp number.',
+      req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', consent: 'Tick the box to continue.' },
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
@@ -108,7 +108,7 @@
       newQuote: 'New quotation',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
-        'bad-whatsapp': 'A valid Malaysian or Singaporean WhatsApp number is required.', 'bad-email': 'Enter a valid email address.',
+        'bad-whatsapp': 'Enter a Malaysian or Singapore WhatsApp number.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
@@ -154,7 +154,7 @@
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可申请报价。',
       introH: '流程说明',
-      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace审核后将通过 WhatsApp 发送报价。', '准备好后确认报价，我们的团队将与您联系。'],
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
       introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
@@ -188,8 +188,8 @@
       commence: '计划开始时间', choose: '请选择', starts3: [['1_3', '三个月内'], ['3_6', '三至六个月'], ['6_plus', '六个月以后']],
       consent: '本人同意 ADspace 保存以上资料，以便准备报价并就此与本人联系。',
       freeMail: '建议使用工作邮箱。',
-      waBad: '请填写有效的马来西亚或新加坡 WhatsApp 号码。',
-      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', consent: '请勾选同意后继续。' },
+      waBad: '请填写马来西亚或新加坡的 WhatsApp 号码。',
+      req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', consent: '请勾选后继续。' },
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
       line: '服务', qty: '数量', rate: '单价 ({c})', sub: '小计 ({c})', onReq: '另行报价',
@@ -222,7 +222,7 @@
       newQuote: '重新报价',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
-        'bad-whatsapp': '请填写有效的马来西亚或新加坡 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
+        'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
         expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已取消，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
@@ -1028,12 +1028,12 @@
       (s.at ? '<dt>' + esc(w.on) + '</dt><dd>' + esc(when(s.at)) + '</dd>' : '') + '</dl>' +
       '<button class="btn" type="button" data-a="pdf">' + esc(w.dl) + '</button><p>' + esc(w.doneP) + '</p>';
   }
-  // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14.
+  // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14 (js/clock.js, one format).
   function when(iso) {
     var C = window.ADspaceClock, p = C && C.parts(iso);
     if (!p) return '';
-    var dd = C.day(iso), mm = (p.mi < 10 ? '0' : '') + p.mi;
-    return lang === 'zh' ? day(dd) + ' ' + (p.h < 12 ? '上午' : '下午') + ((p.h % 12) || 12) + ':' + mm : day(dd, true) + ', ' + C.clock(iso);
+    var dd = C.day(iso);
+    return lang === 'zh' ? day(dd) + ' ' + C.clock(iso, { zh: true }) : day(dd, true) + ', ' + C.clock(iso);
   }
   function initials(n) {
     var p = String(n || '').trim().split(/\s+/);

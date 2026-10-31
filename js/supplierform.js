@@ -77,19 +77,21 @@
   }
   function paintForm() {
     var ind = typed.kind === 'individual', keepBank = update && bankHeld, keepNric = update && nricHeld;
-    return '<div class="qs-step" data-shown><h1 class="qs-title">' + (update ? 'Update Supplier Details' : 'Supplier Details') + '</h1>' +
+    return '<div class="qs-step" data-shown><div class="qs-top"><h1 class="qs-title">' + (update ? 'Update Supplier Details' : 'Supplier Details') + '</h1>' +
       /* Who asks, then whose details (2026-10-20, SPF-3). */
-      '<p class="qs-lead">For ADspace · ' + (info.name ? esc(info.name) + ' · ' : '') + 'Supplier ID ' + esc(info.code) + '</p>' +
+      /* A line of parts breaks between its parts, never inside one (2026-10-31). */
+      '<p class="qs-lead"><span class="qs-part">For ADspace</span> · ' + (info.name ? esc(info.name) + ' · ' : '') +
+        '<span class="qs-part">Supplier ID ' + esc(info.code) + '</span></p></div>' +
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
-        field('sfBrn', '12-digit SSM BRN', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
+        field('sfBrn', 'Business registration no.', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
         (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
         field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
         field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
         field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
-        field('sfAddr', 'Billing address', '<textarea class="input" id="sfAddr" data-k="address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.address || '') + '</textarea>') +
+        field('sfAddr', 'Billing address', '<textarea class="textarea" id="sfAddr" data-k="address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.address || '') + '</textarea>') +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Person in charge</h2>' +
         field('sfContact', 'Legal name', input('sfContact', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
@@ -103,10 +105,10 @@
         field('sfCur', 'Currency', seg('sfCur', 'currency', [['MYR', 'MYR / RM'], ['SGD', 'SGD / S$']], 'Currency')) +
         field('sfPayee', 'Payee name', input('sfPayee', 'payee_name', !keepBank, 'maxlength="120"'), 'As shown on the bank account.') +
         field('sfBank', 'Bank', select('sfBank', 'bank_name', !keepBank, BANKS, keepBank ? 'Keep current bank' : 'Choose a bank')) +
-        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Leave blank to keep current"' : ''))) +
+        field('sfAcct', 'Account number', input('sfAcct', 'bank_account', !keepBank, 'maxlength="24" inputmode="numeric"' + (keepBank ? ' placeholder="Optional"' : ''))) +
         field('sfFin', 'Finance email', input('sfFin', 'finance_email', true, 'type="email" maxlength="160" placeholder="email@adspace.me"')) +
         field('sfSwift', 'SWIFT code', input('sfSwift', 'swift', false, 'maxlength="11" autocapitalize="characters" placeholder="Optional"')) +
-        field('sfBankAddr', 'Bank address', '<textarea class="input" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
+        field('sfBankAddr', 'Bank address', '<textarea class="textarea" id="sfBankAddr" data-k="bank_address" rows="2" maxlength="300" placeholder="Optional">' + esc(typed.bank_address || '') + '</textarea>') +
       '</section>' +
       '<ol class="qs-notes sf-auth">' + AUTH.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
       '<label class="qs-consent"><input type="checkbox" id="sfConsent"' + (consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">I agree to the authorisation above.</span></label>' +
@@ -116,10 +118,12 @@
       '</form></div>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" id="sfSubmit">Submit</button></div>';
   }
-  function paintDone() {
+  /* Received, just sent or opened again, reads one way: the tick, the title
+     and its line (2026-10-31, DET-10). */
+  function paintDone(text) {
     root().innerHTML = '<div class="qs-step qs-done" data-shown><span class="qs-tick" aria-hidden="true">' +
       '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></span>' +
-      '<h1 class="qs-title">Details received</h1><p>' + (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.') + '</p></div>';
+      '<h1 class="qs-title">Details received</h1><p>' + esc(text || (update ? 'Thank you. ADspace will review the changes.' : 'Thank you. ADspace will review your details.')) + '</p></div>';
   }
   function paint() {
     if (state === 'loading') return;
@@ -127,7 +131,7 @@
     if (state === 'bad') { cover(W.notFound, W.contactAdspace); return; }
     if (state === 'fail') { cover(W.failTitle, W.failTextAdspace); return; }
     if (state === 'expired') { cover('Link expired', W.contactAdspace); return; }
-    if (state === 'submitted') { cover('Details received', 'This form has already been submitted.'); return; }
+    if (state === 'submitted') { paintDone('This form has already been submitted.'); return; }
     if (state === 'done') { paintDone(); return; }
     root().innerHTML = paintForm();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
@@ -149,7 +153,7 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit BRN, digits only.',
+    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit registration number, digits only.',
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
     sst_no: 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     mobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', address: 'Enter the full billing address.',
@@ -189,7 +193,7 @@
     }
     if (!mail.test(v('finance_email'))) bad('finance_email');
     if (!bankKept() && v('swift') && !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(v('swift').replace(/\s+/g, ''))) bad('swift');
-    if (!consent) { say('sfConsentMsg', 'Tick to agree.'); if (!first) first = 'sfConsent'; }
+    if (!consent) { say('sfConsentMsg', 'Tick the box to continue.'); if (!first) first = 'sfConsent'; }
     if (first && $(first)) $(first).focus();
     return !first;
   }
