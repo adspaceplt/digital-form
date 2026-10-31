@@ -426,7 +426,7 @@ a { color: inherit; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
   font: inherit; font-size: var(--field-text); color: var(--ink); background: var(--field);
-  border: 1px solid transparent; border-radius: var(--radius-sm); padding: 8px 12px;
+  border: 1px solid var(--field-edge, transparent); border-radius: var(--radius-sm); padding: 8px 12px;
 }
 .select, .input { min-height: var(--ctl-h); padding-block: 0; }
 /* The native control drew its own chrome, so a select sat a few pixels taller
@@ -440,7 +440,7 @@ a { color: inherit; }
   /* Every select is a tonal pop-up (the user, 2026-10-11: the same cell
      everywhere): something picked, not typed, so it wears the buttons'
      shade and no outline, its chevron at its end. */
-  border-color: transparent; background-color: var(--select-ground, var(--tonal));
+  border-color: var(--field-edge, transparent); background-color: var(--select-ground, var(--tonal));
   /* A value longer than the box (a registered name, Bill to) ends in an
      ellipsis, never a word cut at the edge (2026-10-29, audit REG-1). */
   text-overflow: ellipsis;
@@ -590,10 +590,13 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    against --sunk and vanished. The card sets the field's ground, so every
    field, the signature pad and an autofilled field follow it; typed in, it
    keeps the blue edge and ring above. A select there is the white pop-up
-   (`--select-ground`, read by the select's own rule). Every grey card that
-   holds a field is named here, one list. */
+   (`--select-ground`, read by the select's own rule). White on the grey
+   card stood at 1.05:1, so a field there also draws the control's edge
+   (`--field-edge`, --line-ctl, 3:1 on --sunk in both themes; the user,
+   2026-10-31, option A). Every grey card that holds a field is named here,
+   one list. */
 :where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .is-narrow .ck-tr:not(.ck-th)) {
-  --field: var(--card); --select-ground: var(--card);
+  --field: var(--card); --select-ground: var(--card); --field-edge: var(--line-ctl);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
    field pale yellow and Chrome pale blue whatever the page, so on the dark
@@ -2837,7 +2840,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
 .slugfield-pre {
   display: inline-flex; align-items: center; padding: 0 0 0 12px; min-height: var(--ctl-h);
-  border: 1px solid transparent; border-right: 0;
+  border: 1px solid var(--field-edge, transparent); border-right: 0;
   border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--field);
   font-size: var(--field-text); color: var(--ink-mute); white-space: nowrap;
 }
@@ -9490,7 +9493,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-sig-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--ctl-h-sm); margin-bottom: 4px; }
 .qs-sig-head .field-label { margin: 0; }
 .qs-sig-acts { display: flex; gap: 4px; margin-right: -8px; }
-.qs-pad { position: relative; aspect-ratio: 3 / 1; border-radius: var(--radius-sm); background: var(--field); touch-action: none; cursor: crosshair; overflow: hidden; }
+.qs-pad { position: relative; aspect-ratio: 3 / 1; border-radius: var(--radius-sm); background: var(--field); box-shadow: inset 0 0 0 1px var(--field-edge, transparent); touch-action: none; cursor: crosshair; overflow: hidden; }
 .qs-pad[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--err); }
 .qs-pad svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .qs-pad path { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
