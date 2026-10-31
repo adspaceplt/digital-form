@@ -274,6 +274,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
+| `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
@@ -588,12 +589,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
-  (Sent again: WhatsApp and supplier
+  (Sent again: WhatsApp and
   emails, Website quotations: how many a day are told on WhatsApp), Performance
   (Months, Quarters, Bonus and trip, Commission at `team.performance` View,
   behind the master code; 2026-10-29), Templates (the user,
   2026-10-29: every template in one place: WhatsApp templates at WhatsApp
-  Full Access, Supplier emails at Suppliers Full Access, Overdue reminder,
+  Full Access, Supplier emails at Suppliers Full Access, Client emails, Overdue reminder,
   Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access); each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
@@ -2743,6 +2744,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   Access). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
+- Send by email (`js/docmail.js`, `2026-10-31-client-document-emails.sql`;
+  the user, 2026-10-31: "ok build but still same as whatsapp optionally
+  send"): a quotation's ⋯ (not Cancelled, not a website quotation still
+  awaiting review, not Do not contact), a Letter of Offer's (not voided or
+  replaced) and a client letter's issued in the portal (Documents family
+  `client`, not void) each offer Send by email in the Send group beside
+  Send on WhatsApp; nothing goes by itself. Access: Clients: Quotations,
+  Clients: Letters, Letters or Documents: Client documents at Work
+  (`client_email_may`), the client in scope. One sheet (`#dmSheet`,
+  `ADspaceDocMail.compose`): From `ADspace <noreply-client@sc.adspace.me>`
+  (`MAIL_CLIENT_FROM`), replies to the colleague who sends (else
+  marketing@adspacestudios.com), To the client's contacts holding an email,
+  the billing contact first, else the primary (`client_email_prepare`),
+  Copy the finance email where it differs, Subject and Message the kind's
+  template filled from the record and editable, the PDF drawn here as
+  Download draws it with Preview PDF, Send asking first and Sent recently
+  (the same record within `wa_repeat_hours`) asking again in warn.
+  `supplier-mail`'s `client` branch checks the PDF names the record's
+  reference, files it first (`client_email_begin`: the record's lock,
+  `sending`, `recent` unless asked again), sends through `_shared/mail.ts`
+  and closes it (`client_email_done`, filed `client.edited` on the
+  client); Resend's word and `mail_sweep` reach `client_emails` as they do
+  the supplier's. The record's row reads its last email under its
+  reference (Emailed {day} · Delivered; `client_emails_of`, one read a
+  visit to the client). The three templates are Settings, Templates:
+  Client emails (`#dmTplSheet`, `team.settings`; filed `team.changed`
+  under Client emails). `client_email_templates` and `client_emails` have
+  RLS on, no policy, no grant.
 
 - Tax codes per line (`2026-10-22-tax-codes-per-line.sql`; the user,
   2026-10-22: "make the 8% SST inside settings … choose to apply each under

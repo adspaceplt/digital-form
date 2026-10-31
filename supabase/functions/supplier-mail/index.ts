@@ -22,6 +22,18 @@
  *                          complained reach `supplier_email_status` with the
  *                          service role, which alone may call it.
  *
+ *   POST { client: true, kind, ref, contact, cc, subject, body, again, pdf,
+ *          filename }      a client's quotation, Letter of Offer or client
+ *                          letter (2026-10-31,
+ *                          2026-10-31-client-document-emails.sql), from the
+ *                          Send by email sheet: the record's part at Work
+ *                          and the client in scope. The recipient, the copy
+ *                          and the reply-to (the colleague who sends) are
+ *                          `client_email_begin`'s answer; the PDF is the
+ *                          page's drawing and must name the record's own
+ *                          reference. From MAIL_CLIENT_FROM (unset:
+ *                          ADspace <noreply-client@sc.adspace.me>).
+ *
  * The email is the portal's one layout (_shared/mail.ts, the sign-in
  * emails' white card on the light grey page, docs/SIGN-IN-EMAILS.md): the subject as its heading,
  * then the message the colleague wrote in the Send email sheet, word for
@@ -45,6 +57,11 @@ import { layout, resend } from '../_shared/mail.ts';
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const FROM = () => secret('MAIL_FROM') || 'ADspace <noreply-supplier@sc.adspace.me>';
 const REPLY_TO = () => secret('MAIL_REPLY_TO') || 'ap@adspacestudios.com';
+const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
+/* A client email with no colleague's address to reply to goes to the
+   account manager's (MAIL_CLIENT_REPLY_TO, unset: js/config.js's
+   accountEmail). */
+const CLIENT_REPLY_TO = () => secret('MAIL_CLIENT_REPLY_TO') || 'marketing@adspacestudios.com';
 // ---- The document's PDF, as wa-send reads a letter's ----------------------
 function b64Of(b: Uint8Array): string {
   let s = '';
@@ -102,6 +119,7 @@ Deno.serve(async (req) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const uuid = /^[0-9a-f-]{36}$/i;
+  if (body.client === true) return clientMail(req, body, origin, uuid);
   const supplier = String(body.supplier || ''), purpose = String(body.purpose || '');
   const document = body.document ? String(body.document) : null;
   if (!uuid.test(supplier) || (document && !uuid.test(document)) || !['approved', 'document'].includes(purpose)) {
@@ -154,3 +172,50 @@ Deno.serve(async (req) => {
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
 });
+
+/* A client's quotation, Letter of Offer or client letter, emailed by hand
+   (2026-10-31): the PDF read and checked before anything is filed, then
+   filed, sent and closed as the supplier's email is. */
+async function clientMail(req: Request, body: Record<string, any>, origin: string | null, uuid: RegExp): Promise<Response> {
+  const kind = String(body.kind || ''), ref = String(body.ref || '');
+  const contact = body.contact ? String(body.contact) : null;
+  if (!['quotation', 'offer', 'letter'].includes(kind) || !uuid.test(ref) || (contact && !uuid.test(contact))) {
+    return json({ error: 'bad-request' }, 400, origin);
+  }
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  const prep = await db.rpc('client_email_prepare', { p_kind: kind, p_ref: ref, p_contact: contact });
+  if (prep.error) return json({ error: 'needs-update' }, 200, origin);
+  const p = (prep.data || {}) as Record<string, any>;
+  if (p.error) return json({ error: p.error }, 200, origin);
+  const bytes = pdfFrom(String(body.pdf || ''));
+  if (!bytes || !(await namesRef(bytes, String((p.document || {}).serial || '')))) return json({ error: 'bad-file' }, 200, origin);
+  const filename = String(body.filename || 'Document.pdf').replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 200);
+  const attach = { filename: /\.pdf$/i.test(filename) ? filename : filename + '.pdf', content: b64Of(bytes) };
+
+  const begun = await db.rpc('client_email_begin', { p_kind: kind, p_ref: ref, p_contact: contact, p_cc: body.cc === true,
+    p_subject: String(body.subject || ''), p_body: String(body.body || ''), p_again: body.again === true });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = (begun.data || {}) as Record<string, any>;
+  if (b.error) return json(b, 200, origin);
+
+  const doc = (b.document || {}) as Record<string, string>;
+  const heading = String(b.subject || '').replace(/\s*[·|-]\s*ADspace\s*$/i, '').trim() || String(doc.title || 'Document');
+  const html = layout({
+    heading,
+    body: String(b.body || ''),
+    foot: kind === 'quotation' ? '' : 'Verify this document at digital.adspace.me/verify.',
+    preheader: String(b.subject || '')
+  });
+  const msg: Record<string, unknown> = {
+    from: CLIENT_FROM(), to: [String((b.to || {}).email || '')], reply_to: String(b.reply_to || '') || CLIENT_REPLY_TO(),
+    subject: String(b.subject || ''), html, text: String(b.body || ''), attachments: [attach]
+  };
+  if (b.cc) msg.cc = [String(b.cc)];
+
+  const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
+  const done = await db.rpc('client_email_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
+  if (done.error) console.error('supplier-mail: client email not closed', done.error.message);
+  if (status !== 'sent') console.error('supplier-mail:', status, error);
+  return json(status === 'sent' ? { ok: true, id: b.id } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}

@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261030c">
-<link rel="stylesheet" href="/css/console.css?v=20261031">
+<link rel="stylesheet" href="/css/console.css?v=20261031c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -81,7 +81,7 @@
 <script src="/js/form.js?v=20261029z"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261031a"></script>
+<script src="/js/menu.js?v=20261031c"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -92,6 +92,7 @@
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261026f"></script>
 <script src="/js/whatsapp.js?v=20261031a"></script>
+<script src="/js/docmail.js?v=20261031c"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -5698,6 +5699,81 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
+<!-- Send by email (2026-10-31, js/docmail.js): a client's quotation, Letter
+     of Offer or client letter to one of its contacts, the words the
+     template's filled from the record, the PDF attached, sent by
+     supplier-mail. -->
+<div class="sheet" id="dmSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="dmTitle" data-narrow="560">
+    <div class="sheet-head">
+      <h3 id="dmTitle">Send by email</h3>
+      <button class="iconbtn" id="dmClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <section class="fsec">
+        <h4 class="fsec-h">Recipient</h4>
+        <div class="row fgrid">
+          <div class="span-all"><span class="field-label">From</span><p class="readfield">ADspace · noreply-client@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="dmReply"></p></div>
+          <div class="span-all"><label class="field-label" for="dmTo">To</label>
+            <select class="select" id="dmTo" aria-required="true" data-nodraft data-nofind></select></div>
+        </div>
+        <label class="tickline" id="dmCcLine" hidden><input type="checkbox" id="dmCc" checked data-nodraft> <span id="dmCcWord">Copy the finance email</span></label>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Message</h4>
+        <div class="row fgrid">
+          <div class="span-all"><label class="field-label" for="dmSubject">Subject</label>
+            <textarea class="input" id="dmSubject" rows="1" data-oneline maxlength="200" aria-required="true" data-nodraft></textarea></div>
+          <div class="span-all"><label class="field-label" for="dmBody">Message</label>
+            <textarea class="textarea" id="dmBody" rows="8" maxlength="5000" aria-required="true" data-nodraft></textarea></div>
+        </div>
+        <div class="dm-attach">
+          <span class="dm-attach-word"><span class="field-label">Attachment</span><span class="dm-attach-name" id="dmAttachName"></span></span>
+          <button class="btn btn-sm" id="dmPreview" type="button">Preview PDF</button>
+        </div>
+      </section>
+      <p class="msg warn" id="dmRecent" hidden></p>
+      <div class="msg" id="dmMsg" role="status"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="dmGo" type="button">Send</button>
+      <button class="btn btn-quiet" id="dmCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Client emails (Settings, Templates; Business settings): each kind's
+     subject and message, {fields} filled from the record. -->
+<div class="sheet" id="dmTplSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="dmTplTitle">
+    <div class="sheet-head">
+      <h3 id="dmTplTitle">Client emails</h3>
+      <button class="iconbtn" id="dmTplClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="row fgrid">
+        <div class="span-all"><label class="field-label" for="dmTplPick">Template</label>
+          <select class="select" id="dmTplPick" data-seg data-nodraft><option value="quotation">Quotation</option><option value="offer">Letter of Offer</option><option value="letter">Client letter</option></select></div>
+        <div class="span-all"><label class="field-label" for="dmTplSubject">Subject</label>
+          <textarea class="input" id="dmTplSubject" rows="1" data-oneline maxlength="200" aria-required="true" data-nodraft></textarea></div>
+        <div class="span-all"><label class="field-label" for="dmTplBody">Message</label>
+          <textarea class="textarea" id="dmTplBody" rows="10" maxlength="5000" aria-required="true" data-nodraft></textarea></div>
+      </div>
+      <div class="sup-fields" id="dmTplFields" role="group" aria-label="Insert a field"></div>
+      <div class="msg" id="dmTplMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="dmTplGo" type="button">Save</button>
+      <button class="btn btn-quiet" id="dmTplCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div class="sheet" id="regAddSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
     <div class="sheet-head">
@@ -5817,15 +5893,15 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
 <script src="/js/reports.js?v=20261031a"></script>
-<script src="/js/register.js?v=20261031a"></script>
+<script src="/js/register.js?v=20261031c"></script>
 <script src="/js/suppliers.js?v=20261031a"></script>
 <script src="/js/bukku.js?v=20261030d"></script>
 <script src="/js/invoices.js?v=20261031"></script>
 <script src="/js/engage.js?v=20261026f"></script>
-<script src="/js/quotes.js?v=20261031b"></script>
+<script src="/js/quotes.js?v=20261031c"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261031b"></script>
+<script src="/js/crm.js?v=20261031c"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261031a"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
@@ -5840,6 +5916,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261029a"></script>
 <script src="/js/analytics.js?v=20261029m"></script>
-<script src="/js/settings.js?v=20261029ze"></script>
+<script src="/js/settings.js?v=20261031c"></script>
 </body>
 </html>

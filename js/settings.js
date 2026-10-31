@@ -155,6 +155,7 @@
         return plural(((r.data && r.data.rows) || []).length, 'template', 'templates');
       });
     },
+    clientmail: function () { return window.ADspaceDocMail && window.ADspaceDocMail.templatesLine(); },
     /* The meeting message (2026-10-29): who last changed its words. */
     meetmsg: function () { return window.ADspaceOps && window.ADspaceOps.meetMessageLine && window.ADspaceOps.meetMessageLine(); },
     /* Task templates (2026-10-29): the families, and how many fill a task. */
@@ -269,7 +270,7 @@
       /* Sent again (2026-10-14): the same message sent within the window
          asks again before it goes, a supplier's email too (SET2-1). */
       biz && { id: 'resend', name: 'Sent again', kind: 'edit',
-        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and supplier emails', 'Within ' + plural(rep2, 'hour', 'hours')]) },
+        meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) },
       /* Website quotations (2026-10-29): how many a day are sent on
          WhatsApp, each a message ADspace pays for. */
       biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
@@ -285,6 +286,9 @@
     add('templates', 'Templates', [
       window.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp') },
       full('suppliers') && { id: 'suptpl', name: 'Supplier emails', kind: 'open', meta: line('suptpl') },
+      /* A quotation's, a Letter of Offer's and a client letter's email, sent
+         by Send by email (2026-10-31). */
+      biz && window.ADspaceDocMail && { id: 'clientmail', name: 'Client emails', kind: 'open', meta: line('clientmail') },
       /* The email an overdue invoice is reminded with, sent from Clients'
          Overdue invoices (2026-10-28). */
       biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
@@ -473,6 +477,7 @@
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
+    if (a === 'clientmail') { if (window.ADspaceDocMail) window.ADspaceDocMail.openTemplates(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
     if (a === 'demo') { openDemo(); return; }

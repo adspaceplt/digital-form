@@ -5819,6 +5819,7 @@
           table.innerHTML = '<div class="crm-head svc-row doc-row ltr-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
           rows.forEach(function (d) { table.appendChild(documentRow(d)); });
           box.appendChild(table);
+          mailLines(c.id, table);
         }
         /* The client's other documents (the quotation cover, a thank-you
            letter) come from the Register and take their own row shape under
@@ -5826,8 +5827,26 @@
         if (window.ADspaceRegister) {
           window.ADspaceRegister.paintFor(c.id, box, function (regRows) {
             if (state.client && state.client.id === c.id && regRows.length && empty.parentNode) empty.remove();
+            if (state.client && state.client.id === c.id && regRows.length) mailLines(c.id, box.querySelector('.reg-table'));
           });
         }
+      });
+    });
+  }
+
+  /* Each letter's last email, under its reference (2026-10-31): one read a
+     visit to the client (ADspaceDocMail.lines), for the Letters of Offer
+     and the client letters below them alike. */
+  function mailLines(clientId, host) {
+    if (!window.ADspaceDocMail || !host) return;
+    window.ADspaceDocMail.lines(clientId).then(function (by) {
+      Array.prototype.forEach.call(host.querySelectorAll('[data-doc]'), function (row) {
+        var e = by[row.getAttribute('data-doc')], name = row.querySelector('.svc-name');
+        if (!e || !name || name.querySelector('.dm-line')) return;
+        var sm = document.createElement('small');
+        sm.className = 'dm-line' + (e.bad ? ' is-bad' : '');
+        sm.textContent = e.line;
+        name.appendChild(sm);
       });
     });
   }
@@ -5842,12 +5861,14 @@
     var st = DOCS.letterState(d);
     var w = LETTER_WORD[st] || LETTER_WORD.issued;
     var waOffer = Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('offer'));
+    var mailOffer = Boolean(window.ADspaceDocMail && window.ADspaceDocMail.may('offer'));
     var mapped = (state.docMap || {})[d.id] || [];
     /* Verification is offered only where the letter knows exactly which lines
        it carried. A legacy letter is history and is left as history. */
     var canVerify = st === 'signed' && mapped.length && mapped.length === (d.lines || []).length;
     var row = document.createElement('div');
     row.className = 'svc-row doc-row ltr-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    row.setAttribute('data-doc', d.id);
     var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
     var lines = docLines(d);
     row.innerHTML =
@@ -5872,7 +5893,9 @@
             [],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
-            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true }],
+            [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
+             /* Send by email beside it (2026-10-31), optional as WhatsApp. */
+             mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email' }],
             [st === 'issued' && { a: 'sign', label: 'Mark signed' },
              st === 'signed' && { a: 'unsign', label: 'Mark not signed' }],
             [],
@@ -5913,6 +5936,17 @@
           onSent: function (x, line) { msg('crmDocMsg', line, 'ok'); } });
       });
     }
+    on('mail', function () {
+      shut();
+      window.ADspaceDocMail.compose({ kind: 'offer', ref: d.id, clientId: d.client_id || (state.client && state.client.id),
+        opener: row.querySelector('[data-a="menu"]'),
+        doc: { title: 'Letter of Offer ' + d.number, file: function () {
+          return DOCS.render(d).then(function (bytes) {
+            return { blob: new Blob([bytes], { type: 'application/pdf' }), name: DOCS.fileName(d) };
+          });
+        } },
+        onSent: function (line) { loadDocuments(); msg('crmDocMsg', line, 'ok'); } });
+    });
     on('sign', function () {
       shut();
       DOCS.setSigned(d, true, function (err) {

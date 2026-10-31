@@ -1,6 +1,7 @@
-# Supplier emails: setup
+# Supplier and client emails: setup
 
-Supplier emails are sent by the `supplier-mail` edge function through
+Supplier emails, and a client's quotation, Letter of Offer or client letter
+(Send by email, 2026-10-31), are sent by the `supplier-mail` edge function through
 Resend. Until the steps below are done, Send email answers "Email is not set
 up yet. Tell an admin." and nothing is sent.
 
@@ -27,6 +28,12 @@ up yet. Tell an admin." and nothing is sent.
 ## Optional
 - `MAIL_FROM` replaces `ADspace <noreply-supplier@sc.adspace.me>`.
 - `MAIL_REPLY_TO` replaces `ap@adspacestudios.com`.
+- `MAIL_CLIENT_FROM` replaces `ADspace <noreply-client@sc.adspace.me>`, the
+  sender of a client's document. Its replies go to the colleague who sends
+  it. Any address on the verified `sc.adspace.me` domain sends with the
+  same API key; nothing is added in Resend.
+- `MAIL_CLIENT_REPLY_TO` replaces `marketing@adspacestudios.com`, where a
+  client's document goes to when the colleague who sends has no email.
 
 The function runs with Verify JWT off: Resend calls it with no session, and
 a send is checked as the colleague by the database.

@@ -7783,3 +7783,23 @@ read and set every page for a tab served before.
   Enable) and Delete (gone for good, asked first) as two promises, and
   How copy is drafted gains step 9, the short word a familiar app uses,
   with the table of what to say and never say. Docs only.
+
+### 2026-10-31 · Send by email for a quotation, a Letter of Offer and a client letter
+- **Asked:** a review of a client's Services tab, items 5 and 6 (the user:
+  "ok build but still same as whatsapp optionally send"): a quotation and a
+  Letter of Offer could be sent on WhatsApp alone, and a client letter
+  issued with Issue document had no way to be sent.
+- **Built:** Send by email beside Send on WhatsApp in each ⋯, on what the
+  supplier emails already hold, never a second copy: `supplier-mail` gains
+  a `client` branch (the same PDF reference check, `_shared/mail.ts`
+  layout and Resend send, the same signed webhook), the database the same
+  fill (`supplier_email_fill`), begin/done pair, Sent recently window and
+  sweep (`2026-10-31-client-document-emails.sql`: `client_emails`,
+  `client_email_templates`; `supplier_email_status` and `mail_sweep`
+  restated to reach the new table). Sent from noreply-client@sc.adspace.me
+  on the domain Resend already verifies (`docs/SUPPLIER-EMAIL-SETUP.md`:
+  any address on `sc.adspace.me`), replies going to the colleague who
+  sends. Templates in Settings, Templates: Client emails.
+- **Chosen:** the website quotation's refusal reads `unreleased`, never
+  `not-sent`, which the function already answers for a Resend refusal.
+  A quotation carries no verify line (`/verify/` answers letters alone).
