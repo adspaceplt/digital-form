@@ -2988,14 +2988,19 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2);
 }
 .engage-toggle svg {
-  width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute);
+  width: 15px; height: 15px; flex: 0 0 auto; color: inherit; stroke-width: 1.8;
   transition: transform var(--t) var(--ease);
 }
 .engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .engage-sum {
   margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: right;
   font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+  /* Its parts wrap between them, never leaving the dot at a line's end
+     (SEL-8): each dot hangs into the gap after its part, and the one that
+     would end a line overhangs the box and is clipped. */
+  display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 1em; overflow: hidden;
 }
+.engage-dot { display: inline-block; width: 1em; margin-right: -1em; text-align: center; font-style: normal; }
 /* The label keeps its line; the summary wraps between its parts, never
    inside one (the count joined it, 2026-10-14). */
 .engage-toggle { flex: 0 0 auto; white-space: nowrap; }
@@ -3053,11 +3058,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      somewhere different on every line is what reads as unaligned. */
   grid-template-columns: 26px var(--ctl-h) minmax(0, 1.15fr) minmax(0, .95fr) minmax(0, 1.9fr) 84px 92px;
   grid-template-areas: "no tick name plat links rate backup";
-  padding: 11px 14px; background: var(--card);
+  padding: 12px 14px; background: var(--card);
   border-bottom: 1px solid var(--line-soft);
 }
 .crow-head {
-  padding: 11px 14px 8px; background: var(--sunk);
+  padding: 12px 14px 8px; background: var(--sunk);
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
@@ -3088,7 +3093,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .crow-tick::before {
   content: ''; grid-area: 1 / 1; width: 24px; height: 24px; box-sizing: border-box;
-  border: 1.5px solid var(--line); border-radius: 7px; background: var(--card);
+  border: 1.5px solid var(--line-ctl); border-radius: 7px; background: var(--card);
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 .crow-tick svg { grid-area: 1 / 1; width: 14px; height: 14px; position: relative; }
@@ -3135,9 +3140,13 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .crow-backup {
   grid-area: backup; flex: 0 0 auto; white-space: nowrap;
   border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--tonal);
-  min-height: var(--ctl-h); padding: 0 11px; font-size: 11.5px; color: var(--ink-soft);
+  min-height: var(--ctl-h); padding: 0 11px; font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
 }
 @media (hover: hover) { .crow-backup:hover { background: var(--tonal-hover); color: var(--ink); } }
+/* A ticked row is shaded, and the tonal button on it all but vanished
+   (#dedede on #ececec): it takes the card's white there (SEL-6). */
+.crow.is-on .crow-backup:not(.is-on) { background: var(--card); }
+@media (hover: hover) { .crow.is-on .crow-backup:not(.is-on):hover { background: var(--sunk); } }
 .crow-backup.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 
 .tag-new {
@@ -3172,7 +3181,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* The name carries a second line, so the fee sits against the first one
      rather than floating halfway down it. */
   .crow-rate { min-width: 0; align-self: start; }
-  .crow-backup { align-self: start; padding: 0 13px; font-size: 12px; }
+  .crow-backup { align-self: start; padding: 0 13px; }
+  /* Two profile chips stack in the cell: each takes its width, so they
+     read as one pair rather than two lengths (SEL-5). */
+  .crow-links:has(> .plink + .plink) > .plink { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ---------- Confirm bar ---------- */
@@ -3389,6 +3401,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
 }
+/* A creator's own booking is the page's panel, padded as every client
+   panel is, at a desk and on a phone alike (CR-2). */
+.cwork .booking { padding: 18px 20px; }
+@media (max-width: 640px) { .cwork .booking { padding: 15px 16px; } }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .booking-head b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
@@ -3419,7 +3435,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
-  padding: 0; margin: 16px 0 12px;
+  padding: 0; margin: 12px 0;
 }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
@@ -5012,7 +5028,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .booking-next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
 /* Where a creator's booking stands, in ink above its facts, where the
    hand-in stood (the client pages audit, CR-1, 2026-10-08). */
-.booking-next.cx-status { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
+.booking-next.cx-status { margin: 12px 0 0; font-size: 14px; color: var(--ink); }
 /* The head's Request change: which change, and the confirmed line it is
    about (PO-1). */
 #reqSheet .req-pick { margin: 0 0 12px; }
@@ -5083,9 +5099,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .filepin-row .filearm-ask { max-width: none; font-size: 12px; color: var(--ink-soft); }
 .filepin-row.is-arming .filepin-open { flex: 0 1 auto; }
 
-.booking-deliver .field-label { display: block; margin: 12px 0 5px; }
-.booking-deliver .input { width: 100%; }
-.booking-deliver .kactions { margin-top: 12px; }
+.booking-deliver .field-label { display: block; margin: 12px 0 8px; }
+.booking-deliver .input { width: 100%; display: block; }
+/* The hand-in block's steps: 8 from a label to its field, 12 between
+   blocks, 16 before Submit (CR-3). */
+.booking-deliver .kactions { margin-top: 16px; }
 /* Post and results: one block a placement, a hairline between two; the
    three figures side by side under the period they are counted over. */
 .post-entry + .post-entry { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
@@ -8786,11 +8804,12 @@ body.is-maint { overflow: hidden; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
-.cx-nextup-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+.cx-nextup-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
 .cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
 .cx-nextup .booking-deliver { border-top: 0; padding-top: 0; }
+.cx-nextup .booking-deliver > .cx-drop:first-child { margin-top: 0; }
 .cx-drop {
-  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 14px; padding: 22px 12px;
+  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 12px; padding: 22px 12px;
   border-radius: var(--radius-sm); background: var(--tonal); text-align: center; cursor: pointer;
 }
 .cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
@@ -8801,6 +8820,9 @@ body.is-maint { overflow: hidden; }
 .cx-drop-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cx-chips .plink { gap: 6px; }
+/* On a phone a creator's two contact chips (WhatsApp, Call) share their
+   row as equal halves, as every reach line does (CR-8). */
+@media (max-width: 640px) { .cwork .cx-chips:has(> .plink + .plink) > .plink { flex: 1 1 0; justify-content: center; } }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips),
 .booking-facts.cx-facts:has(> :nth-child(5)) > div:has(.cx-chips) { grid-column: 1 / -1; }
