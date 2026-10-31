@@ -16,13 +16,29 @@
  * five-a-day count is per contact, and a contact is whatever is typed, so it
  * is never the only guard (audit S1, 2026-10-15).
  *
- * Deploy:  supabase functions deploy quote-request
+ * Signing (2026-10-31, QUOTATION SIGNING): `action: 'sign'` with the
+ * quotation's `key` and the client's `payload` (company, billing contact,
+ * signer, signature, agreement) asks `quote_sign_code` (the service role's
+ * alone), which checks every field and makes a six-digit code kept hashed,
+ * five a quotation an hour; the code is emailed here to the address the
+ * client typed and never answered to the page, which is told only where
+ * it went. The page then signs with `quote_sign_finish` (anon), which
+ * records the time, address, country and device as the database saw them.
+ *
+ * Deploy:  supabase functions deploy quote-request (with ../_shared/cors.ts
+ *          and ../_shared/mail.ts)
  * Secrets: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (the platform's);
- *          TURNSTILE_SECRET (required, above).
+ *          TURNSTILE_SECRET (required, above); RESEND_API_KEY and
+ *          MAIL_CLIENT_FROM (unset: ADspace <noreply-client@sc.adspace.me>)
+ *          for the signing code.
  * Verify JWT: OFF. It is called by somebody who has no account.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
+import { layout, resend } from '../_shared/mail.ts';
+
+function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
+const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
 
 async function human(token: string, ip: string | null): Promise<boolean> {
   const secret = Deno.env.get('TURNSTILE_SECRET');
@@ -50,9 +66,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { sel?: unknown; contact?: unknown; idem?: string; token?: string } = {};
+  let body: { sel?: unknown; contact?: unknown; idem?: string; token?: string; action?: string; key?: string; payload?: unknown } = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
-  if (!body || typeof body.sel !== 'object' || typeof body.contact !== 'object') {
+  const signing = body && body.action === 'sign';
+  if (signing && (typeof body.key !== 'string' || !body.payload || typeof body.payload !== 'object')) {
+    return json({ error: 'bad-request' }, 400, origin);
+  }
+  if (!signing && (!body || typeof body.sel !== 'object' || typeof body.contact !== 'object')) {
     return json({ error: 'bad-request' }, 400, origin);
   }
   /* The address Cloudflare saw, else the last X-Forwarded-For entry, the
@@ -63,6 +83,39 @@ Deno.serve(async (req) => {
   if (!(await human(String(body.token || ''), ip))) return json({ error: 'captcha' }, 200, origin);
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  if (signing) {
+    if (!secret('RESEND_API_KEY')) {
+      console.error('quote-request: RESEND_API_KEY is not set; no signing code can be sent');
+      return json({ error: 'failed' }, 200, origin);
+    }
+    const r = await admin.rpc('quote_sign_code', { p_key: body.key, p_payload: body.payload });
+    if (r.error) {
+      console.error('quote-request: quote_sign_code failed', r.error.message);
+      return json({ error: 'failed' }, 200, origin);
+    }
+    const d = (r.data || {}) as Record<string, string>;
+    if (d.error) return json({ error: d.error }, 200, origin);
+    const heading = 'Your signing code';
+    const msg = {
+      from: CLIENT_FROM(), to: [d.email],
+      subject: 'Your code to sign quotation ' + d.ref + ': ' + d.code,
+      html: layout({
+        heading, preheader: 'Your code is ' + d.code + '. It expires in 15 minutes.',
+        body: 'Dear ' + d.name + ',\n\nYour code to sign quotation ' + d.ref + ' is:\n\n' + d.code +
+          '\n\nEnter it on the quotation page to complete your signature. The code expires in 15 minutes.',
+        foot: 'If you did not ask to sign this quotation, please ignore this email. Nothing is signed without the code.'
+      }),
+      text: 'Dear ' + d.name + ',\n\nYour code to sign quotation ' + d.ref + ' is ' + d.code +
+        '.\n\nEnter it on the quotation page to complete your signature. The code expires in 15 minutes.' +
+        '\n\nIf you did not ask to sign this quotation, please ignore this email.'
+    };
+    const sent = await resend(msg, String(d.id), secret('RESEND_API_KEY'));
+    if (sent.status === 'failed') {
+      console.error('quote-request: signing code not sent', sent.error);
+      return json({ error: 'failed' }, 200, origin);
+    }
+    return json({ ok: true, email: d.email }, 200, origin);
+  }
   const { data, error } = await admin.rpc('quote_website_create', {
     p_sel: body.sel, p_contact: body.contact, p_idem: String(body.idem || '')
   });

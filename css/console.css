@@ -4164,3 +4164,29 @@ span.inv-amt { font-weight: 600; }
 .is-narrow .od-log .r > :last-child { grid-column: 2; grid-row: 1; justify-self: end; }
 .is-narrow .od-log .b { grid-column: 1; color: var(--ink-mute); }
 
+
+/* QUOTATION SIGNING (2026-10-31): Check and submit, Review and Mark signed.
+   What was signed reads as facts, each company value with its pen while it
+   is checked (the colleague record's Overview), a correction's signed value
+   under it; the signature on a white plate in both themes, as it was drawn. */
+.qsg-facts > div { grid-template-columns: 170px minmax(0, 1fr); }
+.is-tight .qsg-facts > div, .qsg-card.is-tight .qsg-facts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.qsg-facts dd { min-width: 0; overflow-wrap: anywhere; }
+.qsg-facts dd.mfield { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.qsg-facts dd.mfield > .mval { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.qsg-facts dd.mfield.is-empty > .mval { color: var(--ink-mute); }
+.qsg-facts dd.mfield.is-pre > .mval { white-space: pre-line; }
+.qsg-facts dd.mfield > .tl-pen { flex: 0 0 auto; }
+.qsg-facts .qsg-was { flex: 1 0 100%; font-size: 12.5px; color: var(--ink-mute); }
+.qsg-facts .qsg-who small { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.qsg-facts .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.qsg-sig { display: block; width: min(280px, 100%); height: 88px; padding: 8px 12px; background: #fff; border-radius: var(--radius-sm); }
+.qsg-sig-svg { display: block; width: 100%; height: 100%; }
+.qsg-sig-svg path { fill: none; stroke: #1b1a17; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.qsg-sig.is-typed { display: flex; align-items: center; height: auto; min-height: 56px; color: #1b1a17; font-family: var(--font-head); font-size: 22px; font-style: italic; }
+.qsg-card .qsg-pdf { align-self: flex-start; margin-top: 12px; }
+.qsg-card .qsg-back { margin: 0 0 12px; }
+.qsg-card #qsgReviewer { width: 100%; }
+.qsg-facts > div:has(.qsg-sig) { align-items: start; }
+#qsgCheckBack[hidden] + #qsgCheckFacts > .fsec:first-child { margin-top: 0; padding-top: 4px; border-top: 0; }
+.qsg-card .sheet-body > .fsec:first-child, .qsg-card .sheet-body > :first-child > .fsec:first-child { padding-top: 4px; }
