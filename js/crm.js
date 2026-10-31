@@ -6163,6 +6163,12 @@
       '<div class="lpickref">' +
         '<label class="field-label" for="pickTerms">Terms</label>' +
         '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
+      '</div>' +
+      /* Preview draws the letter Issue would keep, no number spent; no
+         commit, so under the fields, never in the foot (2026-10-31, as the
+         client letter's DOC-6). */
+      '<div class="doc-preview-row">' +
+        '<button class="btn btn-sm" id="pickPreview" type="button">Preview</button>' +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
@@ -6311,6 +6317,51 @@
                   onDone: function () { loadDocuments(); } });
   });
 
+  /* The lines, terms and Bill to as the sheet stands, refused in place:
+     what Issue sends and Preview draws (2026-10-31). */
+  function pickPayload(ids) {
+    var c = state.client;
+    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
+      .map(function (t) { return t.trim(); }).filter(Boolean);
+    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
+      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
+      $('pickTerms').focus();
+      return null;
+    }
+    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
+    /* A billing entity other than the main is named; the main is the
+       client's own billing, sent as before. */
+    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
+      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
+    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
+      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
+      $('pickBillTo').focus();
+      return null;
+    }
+    return { rows: rows, renewal: rows.some(function (l) { return l.state === 'confirmed'; }), deal: {
+      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
+      entity: billEnt && !billEnt.main ? billEnt.id : null
+    } };
+  }
+  $('pickBody').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#pickPreview');
+    if (!b || !picking || !DOCS || !DOCS.preview) return;
+    var ids = pickedIds();
+    if (!ids.length) { msg('pickMsg', 'Choose at least one service.', 'err'); return; }
+    var pay = pickPayload(ids);
+    if (!pay) return;
+    msg('pickMsg', '');
+    b.disabled = true;
+    DOCS.preview('offer', state.client, pay.rows, pay.deal,
+      { replaces: picking.replaces, renewal: pay.renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
+        serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
+      function (r) {
+        b.disabled = false;
+        if (r.error) msg('pickMsg', r.error, 'err');
+      });
+  });
+
   $('pickGo').addEventListener('click', function () {
     if (!picking || !DOCS) return;
     var ids = pickedIds();
@@ -6344,15 +6395,9 @@
       }).catch(function (e) { gb.disabled = false; msg('pickMsg', String((e && e.message) || e), 'err'); });
       return;
     }
-    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
-      .map(function (t) { return t.trim(); }).filter(Boolean);
-    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
-      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
-      $('pickTerms').focus();
-      return;
-    }
-    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
+    var pay = pickPayload(ids);
+    if (!pay) return;
+    var rows = pay.rows, renewal = pay.renewal, deal = pay.deal;
     /* One key per press of this button, held while the request is in flight,
        so a second press is the same submission and comes back as the same
        letter rather than a second one. */
@@ -6360,20 +6405,6 @@
     var go = $('pickGo');
     go.disabled = true;
     go.textContent = 'Issuing…';
-    /* A billing entity other than the main is named; the main is the
-       client's own billing, sent as before. */
-    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
-      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
-    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
-      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
-      $('pickBillTo').focus();
-      return;
-    }
-    var deal = {
-      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
-      entity: billEnt && !billEnt.main ? billEnt.id : null
-    };
     DOCS.issue('offer', c, rows, deal,
       { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },

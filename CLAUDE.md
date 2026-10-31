@@ -2402,6 +2402,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     which Issue writes to the client first (filed from and to) and then
     numbers the letter from (the user, 2026-10-27, CLI-15).
   - The file name swaps `/` for `-`.
+  - Preview (`#pickPreview`, a `.btn-sm` under Terms, never in the foot;
+    the user, 2026-10-31) draws the letter Issue would keep: the database
+    makes it and rolls it back (`issue_letter_preview`, issue_letter inside a
+    subtransaction, its refusals passed on, `2026-10-31-letter-preview.sql`),
+    drawn under DRAFT (INTERNAL USE ONLY) with the reference PREVIEW; no
+    letter, number or Activity record row is kept.
 - Letter content:
   - Only To quote lines.
   - Terms of its own (`#pickTerms`, one point a line, ten at most, 400
@@ -5740,7 +5746,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   holds, Issue letter, drawn only once a To quote or Confirmed line
   exists; else none. An empty Quotations list carries Build quote on its
   line; an empty Service lines list reads the enquiry (else No service
-  lines.), its Add service the heading's alone (the user, 2026-10-27). Build quote (`#qbBox`, as the approved
+  lines.), its Add service the heading's alone (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
