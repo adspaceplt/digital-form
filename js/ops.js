@@ -1443,7 +1443,7 @@
     if (!rows.length) {
       /* Back to open work, and no further: whose queue you are looking at
          and how it is grouped are views, not filters. */
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         var was = state.filter !== 'day';
         state.find = ''; state.filter = 'day';
         if ($('workFind')) $('workFind').value = '';
@@ -2653,7 +2653,7 @@
     };
     var items =
       (takeable(t) && !takeShown ? item('take', 'Take') : '') +
-      (mayMove(t) && !isFinished(t) ? item(offered(t) ? 'unoffer' : 'offer', offered(t) ? 'Withdraw offer' : 'Offer to the team') : '') +
+      (mayMove(t) && !isFinished(t) ? item(offered(t) ? 'unoffer' : 'offer', offered(t) ? 'Withdraw offer' : 'Offer to team') : '') +
       (may('ops', 'manage') ? item('delete', 'Delete', 'is-danger') : '');
     if (!items) return '';
     return '<span class="kmenu-wrap">' +
@@ -3142,7 +3142,7 @@
     var rep = menu.querySelector('[data-a="repeat"]');
     rep.hidden = !work;
     /* A repeat already running reads as its edit (2026-10-22, WRK-11). */
-    rep.textContent = state.rule && state.rule.active !== false ? 'Edit repeat' : 'Repeat on a schedule';
+    rep.textContent = state.rule && state.rule.active !== false ? 'Edit repeat' : 'Repeat';
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
 
     menu.querySelector('[data-a="archive"]').hidden = !t.archived_at || !may('ops', 'manage');
@@ -6970,7 +6970,7 @@
     keys = keys.filter(function (k) { return k !== 'none'; }).sort().reverse().concat(by.none ? ['none'] : []);
     if (!keys.length) {
       UI.emptyLine(list, cw.tasks.length ? 'No matches.' : 'No tasks.',
-        cw.tasks.length ? 'Clear the filters' : (may('ops', 'work') ? 'Add the first task' : ''),
+        cw.tasks.length ? 'Clear filters' : (may('ops', 'work') ? 'Add task' : ''),
         cw.tasks.length
           ? function () { cw.find = ''; cw.status = 'open'; cw.period = ''; cw.who = ''; paintClientWork(); }
           : function () { openNew({ client: c }); });

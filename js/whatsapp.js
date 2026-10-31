@@ -356,7 +356,7 @@
       return;
     }
     if (!list.length) {
-      S.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      S.emptyLine(box, 'No matches.', 'Clear filters', function () {
         $('waFind').value = ''; $('waPurpose').value = ''; $('waStatus').value = '';
         ['waFind', 'waPurpose', 'waStatus'].forEach(function (id) { $(id).dispatchEvent(new Event('change', { bubbles: true })); });
         paintList();

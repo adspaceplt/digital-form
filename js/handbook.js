@@ -152,7 +152,7 @@
       return;
     }
     if (!list.length) {
-      window.ADspaceState.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      window.ADspaceState.emptyLine(box, 'No matches.', 'Clear filters', function () {
         $('hbFind').value = '';
         paint();
       });

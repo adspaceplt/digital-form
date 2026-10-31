@@ -263,7 +263,7 @@
       return;
     }
     if (!rows.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         state.find = '';
         if ($('regFind')) $('regFind').value = '';
         paint();

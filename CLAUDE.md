@@ -1619,7 +1619,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Documents, Team, Services, Handbook, Short Links). An option for all reads
   All stages, All people, All months, never Every …, Everyone or Everything.
 - A filter repaints only when its value changed: `input` and `change` both fire,
-  and `change` on blur detached Clear the filters.
+  and `change` on blur detached Clear filters.
 - A list reads what its rows show in one request (`.in()`, paged by the
   thousand), never one a row, and a repaint or a key typed reads nothing
   again: every request is a logged line Supabase meters (Content Review's
@@ -2144,7 +2144,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A restricted account (`2026-10-10-account-restricted.sql`; the user: "account
   restricted"): `clients.restricted_platform` (Instagram, Facebook, TikTok,
   rednote, Other account), `restricted_since` and `restricted_note`, all or
-  none, read with the record alone. The record's ⋯ Mark account restricted
+  none, read with the record alone. The record's ⋯ Mark restricted
   (Clients Work; asks the platform, since when, a note) and the rail's red
   block (`#crmRestrict`, `.railgate.is-restricted`) with Clear (never asks,
   Undo where it happened), each filed `client.edited` from and to. The
@@ -2343,7 +2343,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     its tick inside the name cell (`label.client-row.is-picking`, the
     columns unmoved), a press anywhere on it ticking it; the bar
     (`#crmBulk`: a tick for every client shown, `n selected`, Done) offers
-    Change person in charge, asking one colleague, moving each ticked client
+    Reassign, asking one colleague, moving each ticked client
     not already theirs through the same write (`.select('id')`, the guard
     re-checking, filed `client.edited` from and to), naming a refusal
     against its client, with Undo where it happened putting back each
@@ -3095,7 +3095,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Access
     code as a sheet with one Save, the handles and logo Brand's alone since
-    2026-10-29, Reset link, Remove from Content Review), the review link under it as every record's client link
+    2026-10-29, Reset link, Remove), the review link under it as every record's client link
     (`.rec-linktools`: the address, Copy link, Preview; 2026-10-10), the
     address and Copy link the review page's own link, Preview the page;
     a published set's head adds Copy link (`#copySetLink`, beside
@@ -3160,7 +3160,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   ticks.
 - Deleting a set is `can_remove` / Manage, drawn behind it
   (`body.no-remove #deleteSet`). Both deletes take `.select('id')`.
-- Remove from Content Review hides the client and nothing else
+- Remove (the Content Review client's ⋯) hides the client and nothing else
   (`clients.review_hidden`, Content Review settings at Work, asked in warn
   with nothing typed): every set, post and approval is kept, Undo is drawn
   over the list, and Enable Content Review on the client's record is the way
@@ -3827,7 +3827,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     No completed tasks. (Show this year).
   - Whose work (`#workScope`) is a view, not a filter: Assigned to me,
     Created by me, The whole team (only with `ops.all`). No Following.
-  - Clear the filters returns the search and Show to Open; Whose work and
+  - Clear filters returns the search and Show to Open; Whose work and
     Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
@@ -4087,7 +4087,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_may_see_task`. `mayReassign(t)` draws the controls.
 - Open to take (`2026-10-04-open-to-take.sql`, `ops_tasks.open_at` /
   `open_by`): the assignee or an admin offers an open task to the team
-  (Offer to the team / Withdraw offer in the ⋯, never asks;
+  (Offer to team / Withdraw offer in the ⋯, never asks;
   `ops_set_open`, filed `offered` / `offer_withdrawn`); any colleague at My
   Work Work whose client scope holds its client sees it (`ops_may_see_task`)
   and takes it (Take, asked first, naming who is told; `ops_take_task`,
@@ -4124,8 +4124,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Draft due and Post date are a content task's: an everyday task (a
     month's report task included) shows its Due date alone, and its post
     date never reaches the calendar (the user, 2026-10-11).
-  - The card's ⋯ is Take or Offer to the team / Withdraw offer (where they
-    apply), Make a copy, Repeat on a schedule, Delete; who has the task is
+  - The card's ⋯ is Take or Offer to team / Withdraw offer (where they
+    apply), Duplicate, Repeat, Delete; who has the task is
     changed on its Assigned to row (the name and a pen at the facts' right
     edge, named Reassign; 2026-10-11), a task nobody holds from the
     next step's Assign, never from the ⋯. The row's ⋯ holds only what the row cannot do (Take where the row
@@ -4285,7 +4285,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The month (engagement):
   - Made by hand, never derived from the client's service lines (the portal
     is supplementary: quotations and invoices are issued in Bukku). New
-    month, New task and Make a copy offer last month and the next six
+    month, New task and Duplicate offer last month and the next six
     (`fillMonths`).
   - It owes reports and starts on a day (`2026-10-04-month-reports.sql`):
     `reports` (`social` Accounts report, `ads` Advertising report, both or
@@ -4505,7 +4505,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Nobody acts on their own review.
 - A member's page always asks for a fresh proof (`perf_guarded()` true;
   `perf_code_fresh()` reads `otp`, `magiclink`, `webauthn` or `passkey` in the
-  token's `amr` within 15 minutes): Unlock with a passkey first where the
+  token's `amr` within 15 minutes): Use passkey first where the
   person holds one of their own, Email a code beside it. The code field takes 6 to 10
   digits. The Magic Link template prints `{{ .Token }}`.
 - The review list is chosen (`perf_people.reviewed`, off by default; admins
@@ -4787,7 +4787,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Reports is its own section (`reports` View / Work / Manage), not a part of
   Clients. `clients_read` also answers Reports View.
 - Flow:
-  - Draft → Submit for review (Work) → Confirm (Manage; never the submitter,
+  - Draft → Submit (Work) → Confirm (Manage; never the submitter,
     but an admin may confirm their own after a question saying nobody else
     checked it: `2026-10-02-report-admin-confirm.sql`) → Publish
     (Manage).
@@ -5409,7 +5409,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first. An ad's
     name opens its Edit; its ⋯ reads Open in Ads Manager, then Edit and
-    Make a copy, then Mark or Clear ad error, then Remove (`data-g`); on a
+    Duplicate, then Mark or Clear ad error, then Remove (`data-g`); on a
     narrow pane a table with no picture gives up the picture's track and
     the dates wrap between their parts (2026-10-22, RPT-4, RPT-5).
   - Ad error (`sm_report_ads.ad_error`, `2026-10-16-ad-error.sql`; the
@@ -5732,7 +5732,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Valid, Ready to proceed, Letter of Offer requested) Issue Letter of
   Offer beside it (at a desk under the figure, the reference kept whole;
   equal halves under the meta on a phone); the ⋯
-  Make a copy, Send on WhatsApp, Not proceeding / Restore, Remove with Undo
+  Duplicate, Send on WhatsApp, Cancel / Restore (Cancelled), Remove with Undo
   (Restore after) (the user, 2026-10-22, QT-M1: "approve"). The pane's one
   blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
   quote line, Build quote; one quotation that can be offered, its Issue
@@ -5852,7 +5852,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   answers one `stage` (quote, ready, billing with the client's open
   details form's key, billing_sent, letter while a Letter of Offer stands
   on the quotation's lines, never lines made with no letter, signed,
-  welcome once verified and Active, expired, closed once Not proceeding;
+  welcome once verified and Active, expired, closed once Cancelled;
   billing only on the website quotation that made the lead, never one
   that matched an existing lead; `quote_proceed` judged on the revision
   shown; a name or brand holding a web address refused, `bad-name`,
@@ -5872,7 +5872,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sent by itself (`quote_wa_day` now limits nothing). On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
-  WhatsApp composer) and in its ⋯ Mark Do not contact / Clear Do not
+  WhatsApp composer) and in its ⋯ Do not contact / Allow
   contact (`quotation_set`, a website quotation's alone; no reminder
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
@@ -6571,14 +6571,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   report attached is `report`; else the record's (`feedback`, `creator`),
   else `message`. The record buttons stay where they were and open it
   prefilled: Send on WhatsApp beside Mark as sent (then marked as sent
-  today), Request feedback on WhatsApp in a client's ⋯, Resend booking in a
+  today), Request feedback in a client's ⋯, Resend booking in a
   booked creator's ⋯ at Confirmed and Pending visit alone (the booking goes
   out by itself on confirming; the user, 2026-10-11).
 - A quotation and a Letter of Offer (`quotation`, `offer`,
   `2026-10-14-whatsapp-documents.sql`, the purposes added by
   `2026-10-14-whatsapp-document-purposes.sql` in the SQL Editor; the user,
   2026-10-14: the team decides which to send once a client proceeds): Send
-  on WhatsApp in a quotation's ⋯ (not removed, not Not proceeding) and a
+  on WhatsApp in a quotation's ⋯ (not removed, not Cancelled) and a
   Letter of Offer's ⋯ on the client's Documents (not voided or replaced;
   `wa_compose_prepare` refuses either `void`), each drawn once its template is on; the composer takes the
   record fixed (`o.doc`: `#waDocOne`, a readfield, never a select of one),

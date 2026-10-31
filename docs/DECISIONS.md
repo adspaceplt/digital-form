@@ -7729,3 +7729,29 @@ read and set every page for a tab served before.
   the last reminder, and Open in Bukku at the right edge. The invoice line
   wraps between its parts, never inside a number or a date. The desk's
   table is unchanged (its heads name the columns).
+
+### 2026-10-31 · The short word a familiar app uses
+- **Reported:** the user: "Make a copy → Duplicate, Not proceeding →
+  Cancel. I prefer these kind of wordings", then "Check for others …
+  dont need long text just simple understanding ones would do".
+- **Changed:** Make a copy reads Duplicate (a task, a quotation, an ad);
+  Not proceeding reads Cancel, the quotation's state Cancelled and its
+  Activity record row "{ref} cancelled" (`quotation_set`,
+  `2026-10-31-quotation-cancelled.sql`; the stored `not_proceeding`
+  stays). The sweep of every ⋯ item and button: Repeat on a schedule →
+  Repeat, Offer to the team → Offer to team, Change content month →
+  Change month, Remove from Content Review → Remove, Mark / Clear Do not
+  contact → Do not contact / Allow contact, Request feedback on WhatsApp →
+  Request feedback, Make primary contact → Make primary, Mark account
+  restricted → Mark restricted, Enable / Revoke portal access → Enable
+  access / Revoke access (its sheet headed Portal access), Add the first
+  {thing} → Add {thing}, Clear the filters → Clear filters, Change person
+  in charge → Reassign, Submit for review → Submit, Share with management
+  → Share, Unlock with a passkey → Use passkey, Send back with Meta's
+  changes → Send back.
+- **Kept:** labels whose extra words say what the act is (Confirm without
+  letter, Issue Letter of Offer, Send on WhatsApp beside Resend on
+  WhatsApp, Add existing document, Continue without Meta). A question's
+  title may still name its object.
+- **Held:** every retired phrase joins `tests/words.js`, and the rule joins
+  DESIGN.md §5 item 9 and §6's drafting step 2.

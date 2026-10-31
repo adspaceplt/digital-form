@@ -29,8 +29,8 @@
     'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
-    expired: 'This quotation has expired. Make a copy to quote again.',
-    'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Clear it first.',
+    expired: 'This quotation has expired. Duplicate it to quote again.',
+    'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
     'no-number': 'No WhatsApp number is held for this prospect.',
     'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
@@ -56,13 +56,13 @@
   function acct(n) { n = Number(n || 0); return n < 0 ? '(' + rm(-n) + ')' : rm(n); }
 
   /* What a quotation is now, worked out on every read: removed, a Letter of
-     Offer issued from it, Not proceeding, requested by the client, valid, or
+     Offer issued from it, cancelled, requested by the client, valid, or
      past its day. */
   function stateOf(q, live) {
     if (q.removed_at) return ['Removed', 'is-off'];
     var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
     if (held) return ['Letter of Offer issued', 'is-ok', held];
-    if (q.status === 'not_proceeding') return ['Not proceeding', 'is-off'];
+    if (q.status === 'not_proceeding') return ['Cancelled', 'is-off'];
     /* A later quotation made from this one revises it; the prospect's link
        shows that one (2026-10-26). */
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
@@ -187,7 +187,7 @@
             acts.push('<button class="btn btn-sm" data-a="offer" type="button">Issue Letter of Offer</button>');
           }
           if (maySet && !q.removed_at) {
-            items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Make a copy</button>');
+            items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
@@ -202,12 +202,12 @@
             }
             if (q.source === 'website') {
               items.push(q.no_contact_at
-                ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Clear Do not contact</button>'
-                : '<button class="kmenu-item" data-g="4" data-a="no_contact" type="button" role="menuitem">Mark Do not contact</button>');
+                ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Allow contact</button>'
+                : '<button class="kmenu-item" data-g="4" data-a="no_contact" type="button" role="menuitem">Do not contact</button>');
             }
             items.push(q.status === 'not_proceeding'
               ? '<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>'
-              : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Not proceeding</button>');
+              : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
             items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
@@ -358,7 +358,7 @@
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
     set(q, a, ctx, function () {
       if (!back) { ctx.msg('qtMsg', a === 'restore' || a === 'proceeding' ? 'Restored.' : a === 'no_contact' ? q.ref + ' marked Do not contact.' : 'Saved.', 'ok'); return; }
-      ctx.undo(q.ref + (a === 'remove' ? ' removed.' : ' marked Not proceeding.'), function () {
+      ctx.undo(q.ref + (a === 'remove' ? ' removed.' : ' cancelled.'), function () {
         set(q, back, ctx, function () {});
       }, $('qtMsg'));
     });

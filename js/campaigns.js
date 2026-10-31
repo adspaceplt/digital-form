@@ -344,13 +344,13 @@
 
     box.innerHTML = '';
     if (!state.creators.length) {
-      UI.emptyLine(box, 'No creators.', 'Add the first creator', function () {
+      UI.emptyLine(box, 'No creators.', 'Add creator', function () {
         $('showAddCreator').click();
       });
       return;
     }
     if (!shown.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         $('rosterSearch').value = '';
         if ($('rosterPlatform')) $('rosterPlatform').value = 'all';
         paintRoster();
@@ -1054,7 +1054,7 @@
     if ($('campStages')) $('campStages').hidden = !all.length;
     if (!all.length) { box.innerHTML = '<div class="empty">No campaigns.</div>'; return; }
     if (!rows.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         campFind = '';
         if ($('campFind')) $('campFind').value = '';
         paintCampaigns();
@@ -3178,7 +3178,7 @@
       return;
     }
     if (!addable.length && !held.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         $('optionSearch').value = ''; $('optionPlatform').value = 'all'; paintPicker();
       });
       return;

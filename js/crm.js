@@ -561,9 +561,9 @@
          helper, because every other list in the console says it through that
          one and this list had its own copy of the same markup. */
       if (state.clients.length) {
-        UI.emptyLine(box, 'No matches.', 'Clear the filters', clearFilters);
+        UI.emptyLine(box, 'No matches.', 'Clear filters', clearFilters);
       } else {
-        if (bandMay('lead', 'work')) UI.emptyLine(box, 'No clients.', 'Add the first lead', function () { $('crmNew').click(); });
+        if (bandMay('lead', 'work')) UI.emptyLine(box, 'No clients.', 'Add lead', function () { $('crmNew').click(); });
         else UI.emptyLine(box, 'No clients.');
       }
       return;
@@ -746,7 +746,7 @@
     if (!list.length) return;
     var people = (state.team || []).slice().sort(F.byStaff);
     window.ADspaceConfirm.ask({
-      title: 'Change person in charge?', go: 'Change',
+      title: 'Reassign?', go: 'Reassign',
       field: { label: 'Person in charge', value: '', need: 'Choose a colleague.',
         choices: [['', 'Choose a colleague']].concat(people.map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; })) }
     }, function (v) {
@@ -1818,7 +1818,7 @@
   function askRestrict(c) {
     var day = today();
     window.ADspaceConfirm.ask({
-      title: 'Mark account restricted', go: 'Save',
+      title: 'Mark restricted', go: 'Save',
       fields: [{ name: 'p', label: 'Platform', choices: RESTRICT, value: 'instagram', half: true },
                { name: 's', label: 'Since', type: 'date', value: day, max: day, required: true, half: true },
                { name: 'n', label: 'Note', placeholder: 'Optional', required: false }],
@@ -4404,10 +4404,10 @@
                 [{ a: 'del', label: 'Delete', need: 'clients.contacts:manage' }]])
             : ADspaceMenu.items([[],
                 [{ a: 'edit', label: 'Edit', need: 'clients.contacts:work' },
-                 !ct.is_primary && { a: 'primary', label: 'Make primary contact' }],
+                 !ct.is_primary && { a: 'primary', label: 'Make primary' }],
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' }],
                 [],
-                [ct.portal_access ? { a: 'unportal', label: 'Revoke portal access' } : { a: 'portal', label: 'Enable portal access' }],
+                [ct.portal_access ? { a: 'unportal', label: 'Revoke access' } : { a: 'portal', label: 'Enable access' }],
                 [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
         '</div>' +
       '</span>';
@@ -4445,7 +4445,7 @@
     // the client can sign in without ever receiving one.
     $('portalInvite').checked = Boolean(invite);
     /* Asked at Active, it reads as the question it is (2026-10-26). */
-    $('portalHeading').textContent = invite ? 'Give client portal access?' : 'Enable portal access';
+    $('portalHeading').textContent = invite ? 'Give client portal access?' : 'Portal access';
     msg('portalMsg', '');
     $('portalSheet').hidden = false;
   }
@@ -7059,7 +7059,7 @@
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
         '<b>The rate card is empty.</b>' +
-        (maySvc() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
+        (maySvc() ? '<button class="btn btn-sm" data-a="first" type="button">Add service</button>' : '') +
         '</div></div>';
       var first = box.querySelector('[data-a="first"]');
       if (first) first.addEventListener('click', function () { openSvc(null); });
@@ -7067,7 +7067,7 @@
     }
     if (!rows.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
-        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear filters</button>' +
         '</div></div>';
       box.querySelector('[data-a="clear"]').addEventListener('click', clearSvcFilters);
       return;

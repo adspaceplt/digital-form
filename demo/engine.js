@@ -9618,7 +9618,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;
-        if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' marked Not proceeding'; }
+        if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' cancelled'; }
         else if (qw === 'proceeding') { qq.status = qq.requested_at ? 'requested' : 'sent'; word = ' restored'; }
         else if (qw === 'remove') { qq.removed_at = new Date().toISOString(); qq.removed_by = qtMe.name; word = ' removed'; }
         else if (qw === 'restore') { qq.removed_at = null; qq.removed_by = null; word = ' restored'; }

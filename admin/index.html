@@ -81,7 +81,7 @@
 <script src="/js/form.js?v=20261029z"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261030d"></script>
+<script src="/js/menu.js?v=20261031a"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -91,7 +91,7 @@
 <script src="/js/maintenance.js?v=20261029v"></script>
 <script src="/js/announce.js?v=20261023e"></script>
 <script src="/js/notice.js?v=20261026f"></script>
-<script src="/js/whatsapp.js?v=20261029ze"></script>
+<script src="/js/whatsapp.js?v=20261031a"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -690,7 +690,7 @@
         <div class="bulkbar" id="crmBulk" hidden>
           <label class="tickline bulkbar-all"><input type="checkbox" id="crmBulkAll"> <span id="crmBulkCount">0 selected</span></label>
           <span class="bulkbar-acts">
-            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" hidden>Change person in charge</button>
+            <button class="btn btn-sm" id="crmBulkOwner" type="button" data-need="clients:manage" hidden>Reassign</button>
           </span>
           <button class="btn btn-sm btn-quiet bulkbar-done" id="crmBulkDone" type="button">Done</button>
         </div>
@@ -791,8 +791,8 @@
                 </button>
                 <div class="kmenu" id="crmClientMenu" hidden role="menu">
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-g="2" data-a="edit">Edit</button>
-                  <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-g="3" data-a="feedback" hidden>Request feedback on WhatsApp</button>
-                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-g="4" data-a="restrict" hidden>Mark account restricted</button>
+                  <button class="kmenu-item" id="crmFeedback" type="button" role="menuitem" data-g="3" data-a="feedback" hidden>Request feedback</button>
+                  <button class="kmenu-item" id="crmRestrictSet" type="button" role="menuitem" data-g="4" data-a="restrict" hidden>Mark restricted</button>
                   <button class="kmenu-item" id="crmVicSet" type="button" role="menuitem" data-g="4" data-a="vic" data-need="clients.vic:work" hidden>Mark as VIC</button>
                   <button class="kmenu-item" id="crmVicOff" type="button" role="menuitem" data-g="4" data-a="vicoff" data-need="clients.vic:work" hidden>Remove VIC</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-a="delclient" data-need="clients:manage">Delete</button>
@@ -1631,7 +1631,7 @@
             <div class="kmenu" id="wsMenu" hidden role="menu">
               <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-g="2" data-need="review.settings:view">Access code</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-g="5" data-need="review.settings:work">Reset link</button>
-              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove from Content Review</button>
+              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-g="6" data-need="review.settings:work">Remove</button>
             </div>
           </div>
         </div>
@@ -1685,7 +1685,7 @@
                 <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
                 <div class="kmenu" id="setMenu" hidden role="menu">
                   <button class="kmenu-item" id="selectPosts" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Select posts</button>
-                  <button class="kmenu-item" id="setMonth" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Change content month</button>
+                  <button class="kmenu-item" id="setMonth" data-g="2" data-need="review.sets:work" type="button" role="menuitem">Change month</button>
                   <button class="kmenu-item is-danger" id="deleteSet" data-g="6" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
                 </div>
               </div>
@@ -2574,7 +2574,7 @@
       <div class="sheet" id="dupSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dupTitle">
           <div class="sheet-head">
-            <h3 id="dupTitle">Make a copy</h3>
+            <h3 id="dupTitle">Duplicate</h3>
             <button class="iconbtn" id="dupClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2605,7 +2605,7 @@
             <div class="msg" id="dupMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="dupGo" type="button">Make a copy</button>
+            <button class="btn btn-primary" id="dupGo" type="button">Duplicate</button>
             <button class="btn btn-quiet" id="dupCancel" type="button">Cancel</button>
           </div>
         </div>
@@ -2616,7 +2616,7 @@
       <div class="sheet" id="recSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="recTitle">
           <div class="sheet-head">
-            <h3 id="recTitle">Repeat on a schedule</h3>
+            <h3 id="recTitle">Repeat</h3>
             <button class="iconbtn" id="recClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -3092,10 +3092,10 @@
                   <!-- The rare acts, Delete last; every stage move is the
                        stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
-                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem" data-g="2">Make a copy</button>
-                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem" data-g="2">Repeat on a schedule</button>
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem" data-g="2">Duplicate</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem" data-g="2">Repeat</button>
                     <button class="kmenu-item" data-a="take" type="button" role="menuitem" data-g="2" hidden>Take</button>
-                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" data-g="2" hidden>Offer to the team</button>
+                    <button class="kmenu-item" data-a="offer" type="button" role="menuitem" data-g="2" hidden>Offer to team</button>
                     <button class="kmenu-item" data-a="unoffer" type="button" role="menuitem" data-g="2" hidden>Withdraw offer</button>
                     <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-g="5" data-need="ops:manage" hidden>Restore</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-g="6" data-need="ops:manage">Delete</button>
@@ -4418,7 +4418,7 @@
           <button class="btn btn-primary" id="mineVerify" type="button" hidden>Verify</button>
           <!-- Face ID, Touch ID or the device password, where this browser holds
                a passkey (js/perf.js); the emailed code stays beside it. -->
-          <button class="btn btn-primary" id="minePasskey" type="button" hidden>Unlock with a passkey</button>
+          <button class="btn btn-primary" id="minePasskey" type="button" hidden>Use passkey</button>
           <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
         </div>
         <div class="msg" id="mineLockMsg"></div>
@@ -5052,7 +5052,7 @@ raya-2026        https://example.com/raya"></textarea>
 <div class="sheet" id="portalSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="portalHeading">
     <div class="sheet-head">
-      <h3 id="portalHeading">Enable portal access</h3>
+      <h3 id="portalHeading">Portal access</h3>
       <button class="iconbtn" id="portalClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
@@ -5812,30 +5812,30 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261026f"></script>
-<script src="/js/admin.js?v=20261030e"></script>
+<script src="/js/admin.js?v=20261031a"></script>
 <script src="/js/documents.js?v=20261029q"></script>
 <script src="/js/letters.js?v=20261027a"></script>
 <script src="/js/smreport.js?v=20261027a"></script>
-<script src="/js/reports.js?v=20261030e"></script>
-<script src="/js/register.js?v=20261030e"></script>
-<script src="/js/suppliers.js?v=20261029n"></script>
+<script src="/js/reports.js?v=20261031a"></script>
+<script src="/js/register.js?v=20261031a"></script>
+<script src="/js/suppliers.js?v=20261031a"></script>
 <script src="/js/bukku.js?v=20261030d"></script>
 <script src="/js/invoices.js?v=20261031"></script>
 <script src="/js/engage.js?v=20261026f"></script>
-<script src="/js/quotes.js?v=20261030e"></script>
+<script src="/js/quotes.js?v=20261031a"></script>
 <script src="/js/quotepdf.js?v=20261027a"></script>
 <script src="/js/checklists.js?v=20261027b"></script>
-<script src="/js/crm.js?v=20261031"></script>
+<script src="/js/crm.js?v=20261031a"></script>
 <script src="/js/sales.js?v=20261025a"></script>
-<script src="/js/team.js?v=20261027k"></script>
+<script src="/js/team.js?v=20261031a"></script>
 <script src="/js/namecard.js?v=20261027i"></script>
-<script src="/js/handbook.js?v=20261027d"></script>
+<script src="/js/handbook.js?v=20261031a"></script>
 <script src="/js/scripts.js?v=20261027d"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261027d"></script>
-<script src="/js/ops.js?v=20261029m"></script>
-<script src="/js/perf.js?v=20261029a"></script>
+<script src="/js/campaigns.js?v=20261031a"></script>
+<script src="/js/ops.js?v=20261031a"></script>
+<script src="/js/perf.js?v=20261031a"></script>
 <script src="/js/health.js?v=20261027b"></script>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261029a"></script>
