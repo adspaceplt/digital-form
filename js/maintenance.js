@@ -46,9 +46,15 @@
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
 
+  /* A moment in Malaysia's time, written as every client page and the
+     console write it (js/clock.js): 2 Nov 2026, 10:00am; 2026年11月2日 上午10:00
+     (2026-10-31, G-4: the paused cover read 10:00 am beside /quote/'s 6:31pm). */
   function when(iso) {
-    var d = new Date(iso);
+    var d = new Date(iso), C = window.ADspaceClock;
     if (isNaN(d)) return '';
+    if (C && C.date && C.clock) {
+      return zh() ? C.date(d, { zh: true }) + ' ' + C.clock(d, { zh: true }) : C.date(d) + ', ' + C.clock(d);
+    }
     try {
       if (zh()) {
         return d.toLocaleString('zh-CN', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: 'long',
@@ -56,7 +62,7 @@
       }
       return d.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short',
         year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-        .replace(/\bSep\b/, 'Sept').replace(/\s?([ap])\.?m\.?$/i, function (m, x) { return ' ' + x.toLowerCase() + 'm'; });
+        .replace(/\bSep\b/, 'Sept').replace(/\s?([ap])\.?m\.?$/i, function (m, x) { return x.toLowerCase() + 'm'; });
     } catch (e) { return d.toISOString(); }
   }
 
