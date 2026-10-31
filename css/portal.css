@@ -9379,7 +9379,6 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
   .qs-row { grid-template-columns: minmax(0, 1fr) auto; }
   .qs-calc { display: block; }
   .qs-tot { width: 100%; }
-  .qs-title { font-size: 21px; }
 }
 .qs-done { justify-items: start; padding-top: 16px; }
 .qs-done p { margin: 0; }
