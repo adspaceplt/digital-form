@@ -7730,6 +7730,26 @@ read and set every page for a tab served before.
   wraps between its parts, never inside a number or a date. The desk's
   table is unchanged (its heads name the columns).
 
+### 2026-10-31 · A Letter of Offer and a quotation are previewed before they exist
+- **Asked:** the user, approving a review of a client's Services: "need
+  to allow preview pdf or page before sending". Issue Letter of Offer and
+  Create quotation each took the next reference and kept the document at
+  once; a mistake was first seen on the issued file, and putting it right
+  spent another number (the quotation numbered D02 the user noticed).
+- **Built:** Preview under the Letter of Offer sheet's Terms, Preview PDF
+  under Build quote's lines, and Preview PDF first in a quotation's ⋯.
+  The letter's preview is the database's own: `issue_letter_preview`
+  runs `issue_letter` inside a subtransaction, reads the letter it made
+  and raises to roll every write back, so the snapshot, the price check
+  and every refusal are the ones Issue meets, and nothing is kept. The
+  quotation's draws `quote_preview`'s answer, already on the sheet. Both
+  print DRAFT (INTERNAL USE ONLY) on every page and the reference
+  PREVIEW.
+- **Held:** `tests/sql.js` runs the preview over a stand-in issue_letter
+  that writes a letter, the counter and the Activity record, and finds
+  none of them kept; `letter` finds the letter issued after a preview
+  still numbered 01.
+
 ### 2026-10-31 · A website quotation is published, or sent on WhatsApp
 - **Asked:** the user: "both send quotation and resend quotation are
   optional i could choose to push the rates only but not the whatsapp

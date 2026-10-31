@@ -323,18 +323,7 @@
     return quoteTerms(use, opts.quotes);
     }).then(function (quotes) {
     var price = quoteOf(client, use, quotes, opts.renewal);
-    db.rpc('issue_letter', {
-      p_client: client.id,
-      p_services: use.map(function (l) { return l.id; }),
-      p_idem: opts.idem || idemKey(),
-      p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
-      p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true,
-                entity: deal.entity || null },
-      p_replaces: opts.replaces || null,
-      p_renewal: Boolean(opts.renewal),
-      p_serial: serial || null
-    }).then(function (r) {
+    db.rpc('issue_letter', Object.assign({ p_idem: opts.idem || idemKey() }, letterArgs(client, use, deal, opts, price, serial))).then(function (r) {
       /* The migration has to be in place before the site is. Until it is, the
          function is missing and nothing is written at all — a half issued
          letter cannot exist either way. */
@@ -349,6 +338,52 @@
       });
     }).catch(function (e) { then({ error: missingWord(e && e.message) }); });
     });
+  }
+
+  /* What issue_letter and its preview are asked with: one copy. */
+  function letterArgs(client, use, deal, opts, price, serial) {
+    return {
+      p_client: client.id,
+      p_services: use.map(function (l) { return l.id; }),
+      p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
+      p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
+                stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true,
+                entity: deal.entity || null },
+      p_replaces: opts.replaces || null,
+      p_renewal: Boolean(opts.renewal),
+      p_serial: serial || null
+    };
+  }
+
+  /* Preview (2026-10-31; the user: "preview pdf … before sending"): the
+     letter Issue would keep, made by the database and rolled back
+     (`issue_letter_preview`), drawn under DRAFT (INTERNAL USE ONLY) with
+     the reference PREVIEW. Nothing is written and no number is spent; a
+     letter with no Client ID yet is previewed under PREVIEW too. */
+  function preview(kind, client, picked, deal, opts, then) {
+    opts = opts || {};
+    var use = (picked || []).filter(function (l) { return l && !l.archived_at; });
+    if (!use.length) { then({ error: 'Choose at least one service.' }); return; }
+    deal = deal || {};
+    var tab = previewTab();
+    var fail = function (e) { shut(tab); then({ error: e }); };
+    (MON.taxCodes ? MON.taxCodes() : Promise.resolve([])).then(function (list) {
+      if (list && list.length) taxRates(list);
+      return quoteTerms(use, opts.quotes);
+    }).then(function (quotes) {
+      var price = quoteOf(client, use, quotes, opts.renewal);
+      return db.rpc('issue_letter_preview', letterArgs(client, use, deal, opts, price, String(opts.serial || '').trim() || 'PREVIEW'));
+    }).then(function (r) {
+      if (r.error) { fail(missingWord(r.error.message)); return; }
+      var out = r.data || {};
+      if (out.error || !out.doc) { fail(ISSUE_WORD[out.error] || out.error || 'The preview could not be drawn.'); return; }
+      var doc = out.doc;
+      doc.number = 'PREVIEW'; doc.draft = true;
+      return render(doc).then(function (bytes) {
+        save(new Blob([bytes], { type: 'application/pdf' }), 'Preview ' + fileName(doc), tab);
+        then({ ok: true });
+      });
+    }).catch(function (e) { fail('The preview could not be drawn: ' + ((e && e.message) || e)); });
   }
 
   function readBack(id, then) {
@@ -1085,6 +1120,8 @@
 
       var signPage = page;
       pages.forEach(function (pg, i) { page = pg; pn.page = pg; foot(i, pages.length); });
+      /* A preview is no letter: every page says so (2026-10-31). */
+      if (doc.draft) pages.forEach(function (pg) { watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font); });
 
       /* The fields are added last, once the page they belong to is settled.
          Their appearance font is Helvetica rather than the letter's own face:
@@ -1333,7 +1370,7 @@
   window.ADspaceDocs = {
     validLine: validLine,
     save: save, tabFor: tabFor, previewTab: previewTab, installed: installed, shut: shut, ios: IOS, forgetFiles: forgetFiles,
-    issue: issue, download: download, render: render, lib: lib, list: list,
+    issue: issue, preview: preview, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
