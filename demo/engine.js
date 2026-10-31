@@ -279,7 +279,7 @@
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
     client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
     client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
-    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client',
+    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on',
     get_scripts: 'p_token',
     ops_add_checklist_item: 'p_task p_label',
     ops_add_comment: 'p_body p_task',
@@ -2758,6 +2758,8 @@ function cardSlugFree(name, self, email) {
 
     meta_checks: 1, reach_allowance_pct: 0.5,
 
+    client_email_on: 1,
+
     approval_reminder_days: 3,
 
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72,
@@ -2783,7 +2785,7 @@ function cardSlugFree(name, self, email) {
     fx_sgd: ['Singapore dollar rate', ' to S$1'], vic_lead_followup_hours: ['A VIC lead waits', ' hours'], vic_proposal_followup_days: ['A VIC proposal waits', ' days'], sst_pct: ['SST', '%'],
     term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
     term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
-    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], reach_allowance_pct: ['Reach allowance', '%'],
+    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
@@ -3063,7 +3065,7 @@ function cardSlugFree(name, self, email) {
           (k === 'report_due_days' && (v < 1 || v > 60 || v % 1)) || (k === 'revision_due_days' && (v < 1 || v > 60 || v % 1)) ||
           (k === 'approval_reminder_days' && (v < 1 || v > 60 || v % 1)) || (k === 'sst_pct' && (v < 0 || v > 100)) ||
           (/^term_/.test(k) && (v < -100 || v > 100)) || (/^ai_price_/.test(k) && (v < 0 || v > 1000)) ||
-          (k === 'meta_checks' && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
+          ((k === 'meta_checks' || k === 'client_email_on') && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
@@ -3085,7 +3087,7 @@ function cardSlugFree(name, self, email) {
         .sort(function (x, y) { return x.from_date < y.from_date ? -1 : 1; }).pop();
       if (row && from > today && before && Number(before.value) === to) {
         DB.app_settings.splice(DB.app_settings.indexOf(row), 1);
-        var fmt = function (x) { return key === 'meta_checks' ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
+        var fmt = function (x) { return (key === 'meta_checks' || key === 'client_email_on') ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
         DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',
           detail: APP_WORD[key][0] + ': planned change withdrawn · ' + fmt(was) + ' from ' + dayWord(from) + ', stays ' + fmt(to), created_at: now });
         moved.push(key);
@@ -10829,6 +10831,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
         persist();
         return spOk();
       }
+      if (name === 'client_email_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var ceDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), ceTo = args.p_on ? 1 : 0;
+        var ceWas = Number(appSet('client_email_on', ceDay));
+        if (ceWas === ceTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === 'client_email_on' && x.from_date === ceDay); });
+        DB.app_settings.push({ key: 'client_email_on', from_date: ceDay, value: ceTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: 'Send by email: ' + (ceWas === 1 ? 'On' : 'Off') + ' → ' + (ceTo ? 'On' : 'Off') + ' · from ' + ceDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
       if (name === 'client_emails_of') {
         if (!scopeSeen(args.p_client, 'view')) return spNo('denied');
         return spOk({ rows: DB.client_emails.filter(function (e) { return e.client_id === args.p_client && cmMay(e.kind, 'view'); })
@@ -10840,6 +10853,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var kind = args.p_kind, ref = args.p_ref, cid, sref, title, dday, valid;
         if (['quotation', 'offer', 'letter'].indexOf(kind) < 0) return { error: 'bad-request' };
         if (!cmMay(kind, 'work')) return { error: 'denied' };
+        if (Number(appSet('client_email_on', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) !== 1) return { error: 'email-off' };
         if (kind === 'quotation') {
           var q = (DB.quotations || []).filter(function (x) { return x.id === ref; })[0];
           if (!q || q.removed_at) return { error: 'not-found' };

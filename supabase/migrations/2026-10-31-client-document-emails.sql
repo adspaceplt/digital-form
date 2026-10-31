@@ -40,6 +40,14 @@
 --     colleague.
 --   * `client_emails_of(p_client)`: the record's emails, the kinds the
 --     reader may see.
+--   * A gate (the user, 2026-10-31: "Can gate the send email settings?
+--     Enable or disable at business settings"): the Business setting
+--     `client_email_on` (0 Off, 1 On, from a day; seeded Off, as Meta
+--     checks), Settings, Clients: Send by email. `client_email_set(p_on)`
+--     (`team.settings`) sets it from today and files it under Settings;
+--     while Off, prepare and begin refuse `email-off` and the page draws no
+--     Send by email. Its own setter, so app_settings_set (whose body holds
+--     a delete the connector will not apply) is not restated.
 --   * `supplier_email_status` (Resend's webhook) and `mail_sweep` (Not
 --     confirmed after ten minutes) restated with `client_emails`.
 --
@@ -49,6 +57,7 @@
 --
 -- ROLLBACK: run OVERDUE INVOICE REMINDERS' `supplier_email_status` and
 -- AUDIT SMALL FIXES' `mail_sweep` again, then
+--   drop function if exists public.client_email_set(boolean);
 --   drop function if exists public.client_emails_of(uuid);
 --   drop function if exists public.client_email_done(uuid, text, text, text);
 --   drop function if exists public.client_email_begin(text, uuid, uuid, boolean, text, text, boolean);
@@ -61,6 +70,10 @@
 -- ===========================================================================
 
 -- CLIENT DOCUMENT EMAILS ----------------------------------------------------
+
+insert into public.app_settings (key, from_date, value)
+select 'client_email_on', date '2023-08-14', 0
+ where not exists (select 1 from public.app_settings s where s.key = 'client_email_on');
 
 create table if not exists public.client_email_templates (
   kind        text primary key check (kind in ('quotation', 'offer', 'letter')),
@@ -197,6 +210,9 @@ begin
   if me.id is null then return jsonb_build_object('error', 'denied'); end if;
   if p_kind not in ('quotation', 'offer', 'letter') then return jsonb_build_object('error', 'bad-request'); end if;
   if not public.client_email_may(p_kind, 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
   if p_kind = 'quotation' then
     select * into q from public.quotations x where x.id = p_ref;
     if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
@@ -357,6 +373,32 @@ begin
 end $$;
 revoke all on function public.client_emails_of(uuid) from public, anon;
 grant execute on function public.client_emails_of(uuid) to authenticated;
+
+/* Send by email on or off from today (Settings, Clients), filed from and
+   to under Settings as a Business setting is. */
+create or replace function public.client_email_set(p_on boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_was  numeric;
+  v_to   numeric := case when coalesce(p_on, false) then 1 else 0 end;
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_was := public.app_setting('client_email_on', v_today);
+  if v_was is not distinct from v_to then return jsonb_build_object('ok', true); end if;
+  insert into public.app_settings (key, from_date, value, set_by, set_at)
+  values ('client_email_on', v_today, v_to, me.id, now())
+  on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Settings',
+          'Send by email: ' || case when v_was = 1 then 'On' else 'Off' end || ' → ' ||
+          case when v_to = 1 then 'On' else 'Off' end || ' · from ' || public.register_day(v_today));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_email_set(boolean) from public, anon;
+grant execute on function public.client_email_set(boolean) to authenticated;
 
 /* Resend's word on a sent email (supplier-mail, its webhook, the service
    role): a supplier's email, an overdue reminder or a client's document

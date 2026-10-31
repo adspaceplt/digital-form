@@ -7882,3 +7882,9 @@ read and set every page for a tab served before.
 - **Chosen:** the website quotation's refusal reads `unreleased`, never
   `not-sent`, which the function already answers for a Resend refusal.
   A quotation carries no verify line (`/verify/` answers letters alone).
+- **Gated** (the user, the same day: "Can gate the send email settings?
+  Enable or disable at business settings"): `client_email_on`, a Business
+  setting seeded Off as Meta checks is, switched at Settings, Clients:
+  Send by email through `client_email_set` (its own setter: restating
+  `app_settings_set`, whose body holds a delete, would need the SQL
+  Editor). Off, no ⋯ draws Send by email and the database refuses it.

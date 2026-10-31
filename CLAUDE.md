@@ -585,7 +585,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
   (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
-  client's and a supplier's link alike, Analytics), My
+  client's and a supplier's link alike, Analytics, Send by email), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
   Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
@@ -2798,7 +2798,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   awaiting review, not Do not contact), a Letter of Offer's (not voided or
   replaced) and a client letter's issued in the portal (Documents family
   `client`, not void) each offer Send by email in the Send group beside
-  Send on WhatsApp; nothing goes by itself. Access: Clients: Quotations,
+  Send on WhatsApp; nothing goes by itself. Gated (the user, 2026-10-31:
+  "Enable or disable at business settings"): Settings, Clients: Send by
+  email, a switch (`client_email_on`, seeded Off; `client_email_set`,
+  `team.settings`, filed under Settings); Off, no record draws it and
+  prepare and begin refuse `email-off`. Access: Clients: Quotations,
   Clients: Letters, Letters or Documents: Client documents at Work
   (`client_email_may`), the client in scope. One sheet (`#dmSheet`,
   `ADspaceDocMail.compose`): From `ADspace <noreply-client@sc.adspace.me>`

@@ -2,7 +2,9 @@
  * client's quotation, Letter of Offer or client letter emailed to one of its
  * contacts, by hand, beside Send on WhatsApp. Nothing goes by itself.
  *
- *   ADspaceDocMail.may(kind)          whether this colleague may send one:
+ *   ADspaceDocMail.may(kind)          whether this colleague may send one
+ *                                     (never while Send by email is off in
+ *                                     Business settings, `client_email_on`):
  *                                     Clients: Quotations (`quotation`),
  *                                     Clients: Letters (`offer`), Letters or
  *                                     Documents: Client documents (`letter`),
@@ -51,7 +53,8 @@
     'mail-not-set-up': 'Email is not set up yet. Tell an admin.',
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',
-    'needs-update': 'This needs a database update.'
+    'needs-update': 'This needs a database update.',
+    'email-off': 'Send by email is off. Turn it on in Settings, Clients.'
   };
   /* Resend's word on an email, as the record's line reads it. */
   var STATE = { sending: 'Sending', sent: '', delivered: 'Delivered', opened: 'Opened', failed: 'Not sent',
@@ -62,7 +65,13 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function bridge() { return window.ADspaceAdmin || {}; }
   function mayAt(key, level) { var b = bridge(); return Boolean(b.may && b.may(key, level)); }
+  /* Send by email is on (Business settings, `client_email_on`, from a day). */
+  function on() {
+    var M = window.ADspaceMoney;
+    return Boolean(M && M.setting && Number(M.setting('client_email_on', window.ADspaceClock.today())) === 1);
+  }
   function may(kind) {
+    if (!on()) return false;
     if (kind === 'quotation') return mayAt('clients.quotes', 'work');
     if (kind === 'offer') return mayAt('clients.documents', 'work');
     if (kind === 'letter') return mayAt('clients.documents', 'work') || mayAt('register.documents', 'work');

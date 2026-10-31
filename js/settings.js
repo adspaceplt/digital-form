@@ -230,7 +230,11 @@
       /* The month Analytics counts leads and clients from (2026-10-25). */
       biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
         meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
-          .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% a quarter'])) }]);
+          .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% a quarter'])) },
+      /* Send by email (2026-10-31): whether a quotation, a Letter of Offer
+         and a client letter offer it at all. */
+      biz && window.ADspaceDocMail && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: num('client_email_on') === 1,
+        meta: num('client_email_on') === 1 ? 'On · Quotations and letters' : 'Off' }]);
     var rep = num('report_due_days'), rev = num('revision_due_days');
     add('work', 'My Work', [
       biz && { id: 'due', name: 'Due dates', kind: 'edit',
@@ -455,6 +459,28 @@
     });
   }
 
+  /* Send by email (2026-10-31): on or off from today through its own
+     function, saved at the press and put back on a refusal. */
+  function flipMail(sw) {
+    var to = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', to ? 'true' : 'false');
+    sw.disabled = true;
+    db.rpc('client_email_set', { p_on: to }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+          : d.error === 'denied' ? 'This needs Team: Business settings.' : d.error);
+      }
+      return window.ADspaceMoney.load(true);
+    }).then(function () {
+      rowSay('clientmailon')(to ? 'Send by email is on.' : 'Send by email is off.', 'ok');
+    }).catch(function (e) {
+      sw.setAttribute('aria-checked', to ? 'false' : 'true');
+      sw.disabled = false;
+      rowSay('clientmailon')(String((e && e.message) || e), 'err');
+    });
+  }
+
   function press(a, btn) {
     say('');
     /* The last answer leaves its row, without a repaint under the press. */
@@ -474,6 +500,7 @@
     if (a === 'announce') { if (window.ADspaceAnnounce) window.ADspaceAnnounce.manage(btn); return; }
     if (a === 'notice') { if (window.ADspaceNotice) window.ADspaceNotice.manage(btn); return; }
     if (a === 'meta') { flipMeta(btn); return; }
+    if (a === 'clientmailon') { flipMail(btn); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
