@@ -98,7 +98,7 @@
       signedT: 'Signed copy received', signedP: 'ADspace will confirm your services shortly.', confirmed: 'Confirmed',
       welcomeT: 'Welcome to ADspace', welcomeP: 'Your services, letters, reports and meetings are available in your client portal.',
       portalBtn: 'Sign in to your client portal', portalLater: 'Your account manager will set up your client portal access.',
-      goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or chat with ADspace on WhatsApp.',
+      goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ADspace on WhatsApp.',
       goneAsked: 'Request received. Our team will contact you.',
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
