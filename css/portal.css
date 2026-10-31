@@ -8461,12 +8461,12 @@ body.ncpage { background: var(--nc-ground); }
 .nc-qrbox canvas, .nc-qrbox img { width: 100% !important; height: auto !important; }
 .nc-qrname { margin-top: 24px; font-family: var(--font-head); font-weight: 400; font-size: 22px; line-height: 1.1; }
 .nc-qrlink { margin: 6px 0 auto; font-size: 12.5px; color: var(--nc-word); text-align: center; overflow-wrap: anywhere; }
-.nc-who { margin-top: 34px; display: flex; flex-direction: column; gap: 5px; }
+.nc-who { margin-top: 24px; display: flex; flex-direction: column; gap: 5px; }
 .nc-name { font-family: var(--font-head); font-weight: 400; font-size: 30px; line-height: 1.1; letter-spacing: -.005em; }
 .nc-post { font-size: 13px; color: var(--nc-word); }
-.nc-rows { margin-top: 22px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
+.nc-rows { margin-top: 24px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
 .nc-row { min-height: 44px; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
-  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14px; font-variant-numeric: tabular-nums; }
 .nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
@@ -8474,13 +8474,22 @@ body.ncpage { background: var(--nc-ground); }
 .nc-row-mail .nc-value.is-wrap { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
-.nc-cover-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+/* The portrait back reads in one 24px step, mark to name to rows to acts,
+   the card's spare height shared above and below (CARD-3). */
+.nc:not(.is-land) .nc-back { justify-content: center; }
+.nc:not(.is-land) .nc-back > .nc-acts { margin-top: 24px; padding-top: 0; }
+.nc-cover-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); justify-content: center; gap: 8px; margin-top: 16px; }
+/* Full-size buttons, one width: equal halves of the column on a phone,
+   each taking the column where its words would not hold one line beside
+   the other (a 390 phone; COV-2). */
+.nc-cover-acts > .btn { min-width: 0; white-space: nowrap; }
+@media (max-width: 640px) { .nc-cover-acts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); } }
 .nc-cover-acts[hidden] { display: none; }
 /* A 320 phone's half holds Save contact's mark and words with room either
    side only a little closer together. */
 @media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: 500 var(--ctl-text) var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
