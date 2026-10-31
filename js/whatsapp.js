@@ -618,7 +618,9 @@
     list = list.filter(function (r) { return r.number; }).concat(list.filter(function (r) { return !r.number; }));
     cx.recips = list;
     list.forEach(function (r) { cx.byVal[r.kind + ':' + r.id] = r; });
-    var first = o.purpose === 'creator' ? list[0]
+    /* Opened from a contact's ⋯ (2026-10-31): that contact chosen. */
+    var first = o.contactId ? (list.filter(function (r) { return r.kind === 'contact' && r.id === o.contactId; })[0] || null)
+      : o.purpose === 'creator' ? list[0]
       : forClient(o) ? (list.filter(function (r) { return r.primary; })[0] || list[0]) : null;
     sel.innerHTML = (first ? '' : '<option value="">Choose a recipient</option>') + list.map(function (r) {
       return '<option value="' + esc(r.kind + ':' + r.id) + '">' + esc(r.label) + '</option>';
