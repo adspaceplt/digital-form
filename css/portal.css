@@ -9274,11 +9274,16 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
 
 .qs-quote { display: grid; gap: 24px; }
+/* A quotation is read as a document of figures, not page copy: its lines,
+   totals and the Accept card take the console's 14px reading size beside
+   14px controls and 13px notes; 16px body made them read oversized on a
+   phone (the user, 2026-10-31). */
+.qs-quote { font-size: 14px; }
 .qs-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .qs-change { justify-self: start; }
 .qs-head { display: grid; gap: 4px; }
-.qs-meta { font-size: 14px; color: var(--ink-mute); }
-.qs-status .chip-state { font-size: 14px; }
+.qs-meta { font-size: 13px; color: var(--ink-mute); }
+.qs-status .chip-state { font-size: 13px; }
 .qs-table { display: grid; }
 .qs-row {
   display: grid; grid-template-columns: minmax(0, 1fr) 64px 110px 130px; gap: 0 12px; padding: 10px 0;
@@ -9286,8 +9291,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 .qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qs-what { overflow-wrap: anywhere; }
-.qs-what small { display: block; font-size: 13px; color: var(--ink-mute); }
-.qs-calc { display: none; font-size: 13px; color: var(--ink-mute); }
+.qs-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.qs-calc { display: none; font-size: 12.5px; color: var(--ink-mute); }
 .qs-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qs-mute { color: var(--ink-mute); }
 /* A line quoted on request has no quantity or rate: its words take the figure tracks, ending on the column's right edge. */
@@ -9308,7 +9313,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* Beside the quotation (under it on a phone): a proposal to ask for, else
    the colleague who took the lead (2026-10-26). */
 .qs-side { display: grid; gap: 12px; align-content: start; align-self: start; background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; }
-.qs-side h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.qs-side h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .qs-side p { margin: 0; color: var(--ink-soft); }
 .qs-side .btn { width: 100%; }
 .qs-side .msg:empty { display: none; }
@@ -9374,6 +9379,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
   .qs-row { grid-template-columns: minmax(0, 1fr) auto; }
   .qs-calc { display: block; }
   .qs-tot { width: 100%; }
+  .qs-title { font-size: 21px; }
 }
 .qs-done { justify-items: start; padding-top: 16px; }
 .qs-done p { margin: 0; }
