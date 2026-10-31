@@ -1033,7 +1033,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
-  `journey(words, at)`) is the client pages' one icon set (outline glyphs at
+  `journey(words, at)`) is the client pages' one icon set, the leaving mark
+  (`out`, the drawing `js/acts.js` holds) and the chevron among them (outline glyphs at
   15px, stroke 1.8, in ink; never filled or coloured; a name it does not hold
   draws nothing) and the booking's one step track (`.cx-journey`), drawn
   alike on the selection page and the creator's page, its words `W.journey`
@@ -6048,7 +6049,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
   `.rec-ctl`): the mark, the name over the registered name, the state and
-  Request change, which asks which change as a segment (2026-10-27,
+  Request change, which asks which change as a segment (Cancel service, never a bare
+  Cancel beside the sheet's own; 2026-10-31; 2026-10-27,
   POR-1): Change of details, Upgrade,
   Downgrade or Cancel, the last three against a confirmed line (`#reqPick`);
   a line's ⋯ asks for that line alone.
