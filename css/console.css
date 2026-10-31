@@ -3426,7 +3426,7 @@ button.vs-row { cursor: pointer; }
    removed it when, cut at the line's end), Restore and the ⋯ at the right
    edge; on a narrow pane the words take a second line under the reference. */
 .qt-gone { background: var(--sunk); border-radius: var(--radius-sm); padding: 2px 12px; margin-bottom: 12px; }
-.qt-gonerow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.qt-gonerow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 12px; padding: 4px 0; border-top: 1px solid var(--line-soft); }
 .qt-gonerow:first-child { border-top: 0; }
 .qt-gonename { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13.5px; }
 .qt-gonename b { font-weight: 600; flex: 0 0 auto; }

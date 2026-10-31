@@ -432,7 +432,7 @@
       return ctx.db.rpc('quotation_delete', { p_id: q.id, p_ref: q.ref }).then(function (r) {
         var d = r.data || {};
         if (r.error) return said(r.error);
-        if (d.error === 'lines') return 'Service lines were made from ' + q.ref + '. Delete those ' + d.count + ' line' + (d.count === 1 ? '' : 's') + ' in Service lines first.';
+        if (d.error === 'lines') return 'Service lines were made from ' + q.ref + '. Delete ' + (d.count === 1 ? 'that line' : 'those ' + d.count + ' lines') + ' in Service lines first.';
         if (d.error === 'letter') return 'Letter of Offer ' + d.number + ' quotes ' + q.ref + '. A quotation a letter quotes is kept.';
         if (d.error === 'revised') return q.ref + ' was revised as ' + d.ref + ' and is kept while that quotation stands.';
         if (d.error) return GONE_SAID[d.error] || said(d.error);
