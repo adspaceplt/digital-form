@@ -7755,3 +7755,12 @@ read and set every page for a tab served before.
   title may still name its object.
 - **Held:** every retired phrase joins `tests/words.js`, and the rule joins
   DESIGN.md §5 item 9 and §6's drafting step 2.
+
+### 2026-10-31 · Remove and Delete, and the short word, written into the rules
+- **Asked:** the user: "Remove means can be added back; Delete then gone
+  forever. Right", then "update this tone wording text to the
+  instructions".
+- **Written:** DESIGN.md §6 states Remove (brought back: Undo, Restore or
+  Enable) and Delete (gone for good, asked first) as two promises, and
+  How copy is drafted gains step 9, the short word a familiar app uses,
+  with the table of what to say and never say. Docs only.
