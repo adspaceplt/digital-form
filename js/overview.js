@@ -69,7 +69,7 @@
      check passed is a refusal, and a refusal is never drawn as nothing. */
   function rows(r) {
     if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The read was refused.');
-    if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'Not allowed for this group.' : String(r.data.error));
+    if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'You do not have permission to view this.' : String(r.data.error));
     return r.data;
   }
 
@@ -604,7 +604,7 @@
   var OPS = [
     { key: 'open', title: 'Open tasks', can: canTeamWork, load: function () {
       return R.report().then(function (d) {
-        if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
+        if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
         var people = d.open_by_person.filter(function (p) { return Number(p.open) > 0; });
         var n = people.reduce(function (a, p) { return a + (Number(p.open) || 0); }, 0);
         return { fig: String(n), sub: people.length === 1 ? 'With 1 person' : 'Across ' + people.length + ' people' };
@@ -789,7 +789,7 @@
       [
       { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
-          if (!Array.isArray(d.open_by_person)) throw new Error('This needs a database update.');
+          if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
           /* Work nobody holds reads Unassigned, as the list on Summary says it
              (ux-audit OVW-5, 2026-10-15); the database names it otherwise. */
           var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; })

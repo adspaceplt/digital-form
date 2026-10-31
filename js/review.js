@@ -602,7 +602,7 @@
     var approveBtn = wrap.querySelector('.btn-approve');
     var asker = window.ADspaceDecide.nameBox(approveBtn, {
       label: 'Your name', placeholder: 'John Doe',
-      needed: 'A name is required to record this decision.'
+      needed: 'Please enter your name.'
     }, say);
 
     /* While a request is open, Approve and Request changes step away: the
@@ -705,7 +705,7 @@
       var name = window.ADspaceDecide.known();
       if (!name) {
         name = (who.value || '').trim();
-        if (!name) { say('A name is required to record this decision.'); who.focus(); return; }
+        if (!name) { say('Please enter your name.'); who.focus(); return; }
         window.ADspaceDecide.keep(name);
       }
       /* The request and the caption edit stay open until the answer is in,
@@ -771,7 +771,7 @@
            (2026-10-27, RVP-4). */
         refused(wrap,
           res && res.error === 'note_required'
-            ? 'Please describe the required changes.'
+            ? 'Please describe the changes required.'
             : res && res.error === 'changed'
               ? 'This post was updated after the page opened. Please refresh to review the latest version.'
               : res && res.error === 'locked' ? window.ADspaceWords.lockedLine(W, res.minutes)
@@ -792,7 +792,7 @@
     }).catch(function () {
       settle();
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-      refused(wrap, 'Unable to save. Please check your connection.');
+      refused(wrap, 'Unable to save. Please try again.');
     });
   }
   function refused(wrap, text) {

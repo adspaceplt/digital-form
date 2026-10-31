@@ -269,8 +269,8 @@
      allowed. No Access only hides the page; each card still asks Full
      Access on its own section. */
   var DASH = 'overview';
-  var DASH_DESC = { on: 'Shown with the cards of each section the group holds at Full Access.', none: 'The Dashboard is hidden.',
-    empty: 'On, but nothing is shown: the group holds no section at Full Access.' };
+  var DASH_DESC = { on: 'Shows the cards of each section the group has at Full Access.', none: 'The Dashboard is hidden.',
+    empty: 'On, but nothing is shown: the group has no section at Full Access.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
     'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1, 'whatsapp.documents': 1 };
 
@@ -422,7 +422,7 @@
   }
   var AB_WORD = { waiting: ['is-warn', 'Waiting'], approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'],
                   ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
-  var AB_SAID = { denied: 'Not allowed.', 'not-found': 'That request is no longer there.', 'not-waiting': 'That request was already decided.',
+  var AB_SAID = { denied: 'Only an admin can decide overseas access.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request was already decided.',
                   'not-approved': 'That access has already ended.', 'too-long': 'Keep the note to 300 characters.' };
   function abroadGroup(m) {
     var rows = abroadOf(m.id);
@@ -464,7 +464,7 @@
       var d = r && r.data;
       if (!r || r.error || !d || d.error) {
         if (d && d.error === 'bad-until') return 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.';
-        return (d && AB_SAID[d.error]) || (r && r.error && /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : 'Not saved.');
+        return (d && AB_SAID[d.error]) || (r && r.error && /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : 'Not saved.');
       }
       state.abroad = d.rows || []; state.abDays = d.days; state.abToday = d.today;
       paintMembers();
@@ -843,7 +843,7 @@
   /* A colleague or a group is written only over the row as it was read
      (2026-10-18, Team audit 9): one somebody changed meanwhile answers no
      row, told apart from a refusal by reading its stamp again. */
-  var STALE = 'Not saved. This changed since it was opened, and has been read again.';
+  var STALE = 'Not saved. This record was changed by someone else. The latest version is now shown.';
   function asRead(q, row) { return row && row.updated_at ? q.eq('updated_at', row.updated_at) : q; }
   function noRow(table, key, row, then) {
     db.from(table).select(key + ', updated_at').eq(key, row[key]).maybeSingle().then(function (r) {
@@ -989,7 +989,7 @@
   var REMOVE_SAID = {
     own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.', 'admin-only': ADMIN_ONLY,
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
-    denied: 'Team Full Access is required.', 'not-found': 'This colleague is no longer on the team.'
+    denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
   };
   /* Delete: who takes each kind of their work, then whether their data is
      kept, then their name typed back. Their name on past work, what they
@@ -1001,7 +1001,7 @@
       window.ADspaceConfirm.ask({
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
         /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
-        body: m.name + ' loses access for good. There is no restore.' + (fields.length ? ' Choose who takes their work.' : '') +
+        body: m.name + ' loses access permanently. This cannot be undone.' + (fields.length ? ' Choose who takes their work.' : '') +
           ' Past work, HR letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in and health check-ins.',
         fields: fields.concat([
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Erase personal details']], seg: true, value: 'keep' },
@@ -1024,7 +1024,7 @@
           if (r && r.refused) return REMOVE_SAID[r.refused] || r.refused;
           if (r && r.held) return 'Some work could not be handed over, so ' + m.name + ' was not removed. Choose again, or keep it with them.';
           var d = (r && r.data) || {};
-          if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : String(r.error.message || r.error);
+          if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : String(r.error.message || r.error);
           if (d.error) return REMOVE_SAID[d.error] || d.error;
           /* Work left with them is said, with the way to hand it over
              (TEAM-3, 2026-10-14): a removed colleague signs in no more. */
@@ -1141,7 +1141,7 @@
     if (del) del.addEventListener('click', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'The ' + r.name + ' group and the access it carries go. There is no restore.',
+        body: 'The ' + r.name + ' group and the access it carries go. This cannot be undone.',
         go: 'Delete',
         tone: 'danger',
         field: { label: 'Type the group name to confirm', placeholder: r.name, match: r.name, need: 'Type the group name to confirm.', mismatch: 'The group name does not match.' }
@@ -1900,7 +1900,7 @@
         var day = v.day || null, time = day ? (v.time || null) : null;
         db.rpc('team_set_expiry_at', { p_until: day, p_time: time }).then(function (r) {
           var d = r.data || {};
-          if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'Not allowed.' : d.error), 'err'); return; }
+          if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'You do not have permission to do this. Please ask an admin.' : d.error), 'err'); return; }
           var n = d.count == null ? others : d.count;
           load(function () {
             if (!n) { msg('teamMsg', 'Saved.', 'ok'); return; }
@@ -1982,7 +1982,7 @@
           .then(function (r) {
             var d = r.data || {};
             if (r.error) {
-              var why = (d.error === 'not_admin') ? 'Sending an invitation needs Team: Send invitation.'
+              var why = (d.error === 'not_admin') ? 'You do not have permission to send invitations. Please ask an admin.'
                 : /not deployed/.test(r.why)
                   ? 'The invite-member function is not deployed. Add the login under Supabase ' +
                     'Authentication, or deploy the function and use Send invitation.'

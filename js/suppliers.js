@@ -35,12 +35,12 @@
   var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   var STATE = { pending: ['Pending', 'is-warn'], active: ['Active', 'is-ok'], inactive: ['Inactive', 'is-off'] };
   var SAID = {
-    'denied': 'You do not have permission to do this.', 'not-found': 'That supplier is no longer there.',
-    'bad-code': 'A Supplier ID is 2 to 12 letters or digits, as AS001.', 'code-taken': 'Another supplier holds that Supplier ID.',
+    'denied': 'You do not have permission to do this.', 'not-found': 'This supplier no longer exists.',
+    'bad-code': 'A Supplier ID is 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
     'bad-name': 'Enter the name, 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
     'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
-    'bad-sst_no': 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singapore number, as 07-123 4567.',
-    'bad-mobile': 'Enter a Malaysian or Singapore mobile number, as 012-345 6789.', 'bad-address': 'Enter the full billing address.',
+    'bad-sst_no': 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
+    'bad-mobile': 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email address.', 'bad-finance_email': 'Enter a valid email address.',
     'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
@@ -50,16 +50,16 @@
     'bad-document': 'That letter is void or no longer this supplier\'s.', 'bad-purpose': 'Choose a template.',
     'bad-subject': 'Enter a subject, 2 to 200 characters.', 'bad-body': 'Enter the message, 2 to 5,000 characters.',
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
-    'mail-not-set-up': 'Email is not set up yet. Tell an admin.', 'not-sent': 'Not sent. Try again.',
+    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.', 'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.',
-    'no-client': 'That client is no longer there or is outside your clients.',
+    'no-client': 'This client no longer exists or is outside your clients.',
     'no-link': 'No link is open.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
-    if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     var k = (r && r.data && r.data.error) || m;
-    if (k === 'code-taken' && r.data.name) return 'Another supplier holds that Supplier ID: ' + r.data.name + '.';
+    if (k === 'code-taken' && r.data.name) return 'This Supplier ID is already used by ' + r.data.name + '.';
     return SAID[k] || k || 'The request failed.';
   }
   function rpc(fn, args) {
@@ -209,7 +209,7 @@
       if (state.open !== id) return;
       var d = r.data || {};
       if (r.error || d.error) {
-        if (d.error === 'not-found') { state.open = null; setUrl(); msg('supMsg', 'That supplier is no longer there.', 'err'); paint(); return; }
+        if (d.error === 'not-found') { state.open = null; setUrl(); msg('supMsg', 'This supplier no longer exists.', 'err'); paint(); return; }
         UI.failLine(rec, 'the supplier', said(r), function () { openRec(id); });
         return;
       }
@@ -476,7 +476,7 @@
     on('use', function () { openEdit(state.form); });
     on('link', function (b) { link(false, b); });
     on('reset', function () {
-      window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The link sent before stops opening. A new link is made.', go: 'Reset link', tone: 'warn' },
+      window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The link sent before will stop working. A new link will be created.', go: 'Reset link', tone: 'warn' },
         function () { link(true); });
     });
     /* Close link (2026-10-18): the link stops opening and no new one is
@@ -514,7 +514,7 @@
     on('del', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete supplier?', tone: 'danger', go: 'Delete', wait: true,
-        body: nameOf(s) + ' and its details are deleted. Letters already issued keep their words. There is no restore.',
+        body: nameOf(s) + ' and its details are deleted. Letters already issued keep their words. This cannot be undone.',
         field: { label: s.name ? 'Type the name to confirm' : 'Type the Supplier ID to confirm', match: nameOf(s) }
       }, function (v) {
         return rpc('supplier_delete', { p_id: s.id, p_name: v }).then(function (r) {
@@ -710,7 +710,7 @@
       });
     }).catch(function (e) {
       go.disabled = false;
-      msg('supMailMsg', 'The letter could not be drawn: ' + ((e && e.message) || e), 'err');
+      msg('supMailMsg', 'The letter could not be generated: ' + ((e && e.message) || e), 'err');
     });
   }
   function askMail() {

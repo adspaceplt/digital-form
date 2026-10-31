@@ -221,7 +221,7 @@
       b.disabled = false;
       var m = String((r && r.error && r.error.message) || '');
       if (r && r.error && /rate limit|too many/i.test(m)) { msg('authMsg', 'Too many tries. Please wait a few minutes, then send a new code.', 'err'); return; }
-      if (r && r.error) { msg('authMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
+      if (r && r.error) { msg('authMsg', 'The code is incorrect or has expired. Please request a new code.', 'err'); return; }
       msg('authMsg', '');
     }, function () { b.disabled = false; msg('authMsg', 'Not signed in. Please try again.', 'err'); });
   }
@@ -445,7 +445,7 @@
       /* The console's own row of Page availability (2026-10-29). */
       var word = upgrade.kind === 'paused' ? 'Temporarily unavailable' : 'Upgrade in progress';
       var w = !M ? '' : upgrade.on
-        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the cover.'
+        ? 'Console: ' + word + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '. Everyone but admins sees the notice page.'
         : 'Console: ' + word + ' from ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' to ' + M.when(upgrade.ends_at) : '') + '.';
       $('upgradeWord').textContent = w;
     }
@@ -476,9 +476,9 @@
     db.rpc('page_set', args).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+        done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
                      : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
-                     : d.error === 'denied' ? 'This needs Team: Upgrade mode.' : 'Not saved. The database refused the request.');
+                     : d.error === 'denied' ? 'You do not have permission to change page availability. Please ask an admin.' : 'Not saved. The database refused the request.');
         return;
       }
       done('');
@@ -697,7 +697,7 @@
     if (!code) return '';
     try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
   }
-  var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An administrator is never held.',
+  var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An administrator is never blocked.',
     denied: 'This sign-in is not on the team.' };
   function paintAbroad(st) {
     var panel = $('noTeamShell').querySelector('.cover-panel');
@@ -746,7 +746,7 @@
       db.rpc('abroad_request', { p_reason: why, p_until: until }).then(function (r) {
         var d = r.data, e = r.error || (d && d.error);
         if (e) {
-          abroadMsg(e.message ? (/function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message)
+          abroadMsg(e.message ? (/function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message)
             : e === 'bad-until' ? 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.' : ABROAD_SAID[e] || 'Not sent.');
           return;
         }
@@ -1575,7 +1575,7 @@
       db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
         btn.disabled = false;
         var why = r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
-          ? 'This needs a database update.' : 'Not saved. Try again.')
+          ? 'This feature is not available yet. Please contact an admin.' : 'Not saved. Try again.')
           : (r.data && r.data.error) ? 'Not saved. Try again.' : '';
         if (why) { m.textContent = why; m.className = 'msg ro-msg err'; return; }
         keepRail(send);
@@ -1669,23 +1669,23 @@
      is an explanation of the product rather than of the section. The user
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
-    overview:  'What each section has waiting, for the groups that manage it.',
+    overview:  'What needs attention in each section you manage.',
     analytics: 'Trends across sales and clients, what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
-    whatsapp:  'Every WhatsApp message the portal sent, with what Meta reports of its delivery.',
+    whatsapp:  'Every WhatsApp message the portal has sent, and its delivery status as reported by Meta.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
     scripts:   'Video scripts by content month, published to the client and used by the crew on the shoot.',
     campaigns: 'Creator campaigns, from selection through to posting.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
-    suppliers: 'The suppliers ADspace pays, each with the details its own form sent.',
+    suppliers: 'The suppliers ADspace pays, and the details each one submitted.',
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
-    settings:  'Portal switches, business figures, AI limits and document lists, kept by the colleagues who hold them.'
+    settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };
   var INTRO_SHOWS = 3;
   /* FIRST-VISIT GUIDES (js/guide.js; the user, 2026-10-07: first time users
@@ -1694,99 +1694,99 @@
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
   var GUIDES = {
     analytics: { name: 'Analytics', steps: [
-      { at: '#anlTabs', text: 'One subject a tab: sales, clients, and the sections still building their history.' },
-      { at: '#anlPeriod', text: 'Every figure reads the period chosen here, against the same length before it.' },
-      { at: '.anl-changed', text: 'What moved most against the period before, worked out from the figures.' }] },
+      { at: '#anlTabs', text: 'Each tab covers one subject: sales, clients, and the sections still building their history.' },
+      { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
+      { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
-      { at: '#ovwPeriod', text: 'Every figure reads the period chosen here.' },
-      { at: '#ovwGlance', text: 'The share of work that reached the client on time, and of posts that went live on their day.' },
-      { at: '#ovwAttention .ovw-att-row', text: 'Everything waiting, late first; a tab above shows one kind. Press a row to open it where it is kept.' }] },
+      { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
+      { at: '#ovwGlance', text: 'The share of work delivered to the client on time, and of posts that went live on their post date.' },
+      { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, with late items first. A tab above shows one kind. Press a row to open it.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
       { at: '#workNew', text: 'Add a task here, or a client\'s posts for the month.' },
-      { at: '#workList .task-stage .state-select', text: 'Move a task on from its stage. Whoever takes it next is told.' }] },
+      { at: '#workList .task-stage .state-select', text: 'Move a task to its next stage here. The colleague who takes it next is notified.' }] },
     clients: { name: 'Clients', steps: [
-      { at: '#crmNew', text: 'Add a lead the day it comes in. Billing, brand and services follow as the deal firms.' },
-      { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client for its contacts, services, documents and every call and visit.' },
+      { at: '#crmNew', text: 'Add a lead on the day it comes in. Billing, brand and services are added as the deal progresses.' },
+      { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client to see its contacts, services, documents, calls and visits.' },
       { at: '#crmBar .cmdbar-filters', text: 'Filter the list by stage or person in charge.' }] },
     whatsapp: { name: 'WhatsApp', steps: [
-      { at: '#waNew', text: 'New message sends a template Meta approved to a client contact or a creator.' },
-      { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal sent: Sent, Delivered, Read, or Failed with the reason.' },
-      { at: '#waQueue', text: 'Messages the portal sends by itself: waiting, sending, and not sent or not confirmed in the last seven days.' }] },
+      { at: '#waNew', text: 'New message sends a Meta-approved template to a client contact or a creator.' },
+      { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal has sent, with its status: Sent, Delivered, Read, or Failed with the reason.' },
+      { at: '#waQueue', text: 'Messages the portal sends automatically: those waiting or sending, and those not sent or not confirmed in the last seven days.' }] },
     review: { name: 'Content Review', steps: [
       { at: '#clientCards .cr-client-row', text: 'Open a client to prepare a content set and send it for approval.' },
       { at: '#crFind', text: 'Find a client by name.' }] },
     scripts: { name: 'Video Scripts', steps: [
-      { at: '#vsNew', text: 'New script adds a video to a client\'s content month, numbered by month (2610VS01).' },
-      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, publish it to the client\'s link and record each clip number on the day.' }] },
+      { at: '#vsNew', text: 'New script adds a video to a client\'s content month, numbered by month (for example 2610VS01).' },
+      { at: '#vsList .vs-row:not(.crm-head)', text: 'Open a script to write it, publish it to the client\'s link and record each clip number on the shoot day.' }] },
     campaigns: { name: 'Creator Campaigns', steps: [
-      { at: '#showAddCamp', text: 'New campaign starts one for a client, with creators from the Creators List.' },
-      { at: '#campSectionTabs', text: 'Campaigns, and the Creators List of every creator and their rates.' },
+      { at: '#showAddCamp', text: 'New campaign creates a campaign for a client, with creators from the Creators List.' },
+      { at: '#campSectionTabs', text: 'Campaigns, and the Creators List with every creator and their rates.' },
       { at: '#campCards .camp-row', text: 'Open a campaign to book creators, check drafts and release them to the client.' }] },
     register: { name: 'Documents', steps: [
-      { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference is numbered for you.' },
+      { at: '#regIssue', text: 'Issue a letter on the letterhead. Its reference number is assigned automatically.' },
       { at: '#regList .serial-copy', text: 'Press a reference to copy it. Anyone can check it at digital.adspace.me/verify.' }] },
     suppliers: { name: 'Suppliers', steps: [
-      { at: '#supNew', text: 'New supplier gives a Supplier ID and a link. The supplier fills in their own details.' },
-      { at: '#supList button.sup-row', text: 'Open a supplier to take in what they sent, approve them and issue them a letter.' }] },
+      { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
+      { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
     reports: { name: 'Reports', steps: [
-      { at: '#rhNew', text: 'New report starts an Accounts or Advertising Report for an active client.' },
-      { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published, where the client reads it.' },
+      { at: '#rhNew', text: 'New report creates an Accounts Report or an Advertising Report for an active client.' },
+      { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published. The client can read it once it is published.' },
       { at: '#rhMoreBtn', text: 'Select reports to download several, or mark them as sent.' }] },
     links: { name: 'Short Links', steps: [
-      { at: '#showAddLink', text: 'Add link makes a short address and its QR code.' },
-      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, then the addresses the portal makes for clients and creators. Every address in use is listed, so none is taken twice.' }] },
+      { at: '#showAddLink', text: 'Add link creates a short address and its QR code.' },
+      { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, followed by the addresses the portal creates for clients and creators. Every address in use is listed, so none is used twice.' }] },
     services: { name: 'Services', steps: [
       { at: '#svcAdd', text: 'Add a service or an add-on to the rate card.' },
-      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line seeds a client\'s services, where it stays editable.' }] },
+      { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line is the starting point for a client\'s service line, which can then be edited.' }] },
     team: { name: 'Team', steps: [
-      { at: '#teamTabs', text: 'Members, the groups that set what each may open, Performance and Health.' },
-      { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and namecard.' }] },
+      { at: '#teamTabs', text: 'Members, the user groups that control what each member can open, Performance and Health.' },
+      { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and digital namecard.' }] },
     handbook: { name: 'Handbook', steps: [
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
-      { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯.' }] },
+      { at: '#hbList .hb-row:not(.crm-head)', text: 'Open a file. Earlier versions are in its ⋯ menu.' }] },
     mine: { name: 'My records', steps: [
-      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you see them here.' }] },
+      { at: '#mineViews', text: 'Your reviews, initiatives, reflections, letters and health check-ins. Only you can see them here.' }] },
     /* A screen of its own inside a section (2026-10-10; the user: "the
        entire portal of these sections"): a tab, a report's step, a sheet.
        Keyed by guideKey(), each met once. */
     settings: { name: 'Settings', steps: [
-      { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. A group shows only the rows its colleague holds.' },
-      { at: '#setList .stg-row .btn', text: 'Edit and Open bring up the sheet that holds the setting. A business figure applies from the date given.' },
-      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone at the press, and is put back if it is refused.' }] },
+      { at: '#setList .stg-nav, #setList .stg-strip, #setList .stg-title', text: 'Settings are grouped by what they change. You see only the settings you have access to.' },
+      { at: '#setList .stg-row .btn', text: 'Edit and Open show the setting in full. A business figure applies from the date you enter.' },
+      { at: '#setList .stg-row .switch', text: 'A switch takes effect for everyone as soon as you press it. If the change is refused, it switches back.' }] },
     'whatsapp.templates': { name: 'WhatsApp templates', within: '#waTplSheet', steps: [
-      { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit chooses the template Meta approved for this purpose, read from Meta, never typed.' },
-      { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. Off, it sends nothing and its button leaves the records.' }] },
+      { at: '#waTplList .wat-row [data-a="edit"]', text: 'Edit selects the Meta-approved template for this purpose from the list Meta provides.' },
+      { at: '#waTplList .wat-row .switch', text: 'The switch turns a purpose on or off. When it is off, nothing is sent and its button is removed from the records.' }] },
     'whatsapp.compose': { name: 'New message', within: '#waCompose', steps: [
-      { at: '#waTo', text: 'Choose a client contact or a creator. The number shows under it; a username alone cannot be messaged.' },
-      { at: '#waTpl', text: 'Choose a template Meta approved. Its variables fill themselves from the record and can be changed.' },
-      { at: '#waSend', text: 'The preview reads as the message will. Send asks once more, naming the number and the category.' }] },
+      { at: '#waTo', text: 'Choose a client contact or a creator. Their number is shown below. A contact with only a username cannot be messaged.' },
+      { at: '#waTpl', text: 'Choose a Meta-approved template. Its variables are filled in from the record and can be changed.' },
+      { at: '#waSend', text: 'The preview shows the message as it will be sent. Send asks you to confirm the number and the category.' }] },
     phone: { name: 'Your sections', steps: [
       { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'Your first four sections. Press one to open it.' },
-      { at: '#tabMore', text: 'More holds the other sections, the Activity record and the build.' },
-      { at: '#acctBtn', text: 'Your name opens My records, Settings and Arrange sections, which chooses the four kept on this bar.' }] },
+      { at: '#tabMore', text: 'More opens the other sections, the Activity record and the app version.' },
+      { at: '#acctBtn', text: 'Your name opens My records, Settings and Arrange sections, where you choose the four sections on this bar.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
-      { at: '#railLists .ro-tab', text: 'Tab bar marks the sections the phone keeps at its foot.' },
-      { at: '#railSave', text: 'Save keeps the order for the web rail and the phone alike. Reset order returns to the standard.' }] },
+      { at: '#railLists .ro-tab', text: 'Tab bar marks the sections shown in the bar at the bottom of your phone.' },
+      { at: '#railSave', text: 'Save applies the order on the web and on your phone. Reset order restores the standard order.' }] },
     'mine.health': { name: 'Health', steps: [
-      { at: '#mineHealthBox .health-termbox', text: 'Five questions every two weeks, read by management by name to support you, never in a performance review.' },
+      { at: '#mineHealthBox .health-termbox', text: 'Five questions every two weeks. Management reads your answers by name to support you. They are never used in a performance review.' },
       { at: '#mineHealthBox [data-a="agree"]', text: 'I agree starts the check-ins. Withdraw stops them at any time.' }] },
     'mine.checkin': { name: 'Health', steps: [
-      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in once every half month: five answers and an optional note, changed until the half month ends.' },
-      { at: '#mineHealthBox [data-a="talk"]', text: 'Ask a colleague for a talk. They are told who asked, never your note.' },
-      { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and takes your answers out of Team: Health.' }] },
+      { at: '#mineHealthBox [data-a="checkin"]', text: 'Check in once every half month with five answers and an optional note. You can change them until the half month ends.' },
+      { at: '#mineHealthBox [data-a="talk"]', text: 'Ask a colleague for a talk. They are told who asked, but never see your note.' },
+      { at: '#mineHealthBox [data-a="withdraw"]', text: 'Withdraw stops the check-ins and removes your answers from Team: Health.' }] },
     'team.health': { name: 'Health', steps: [
-      { at: '#healthAvg', text: 'This half month\'s averages, and how many have checked in. An average under 3 is drawn in warn.' },
-      { at: '#teamHealthBox .health-prow', text: 'Press a colleague for their history. Answers show only while their agreement stands.' },
+      { at: '#healthAvg', text: 'This half month\'s averages, and how many colleagues have checked in. An average below 3 is highlighted.' },
+      { at: '#teamHealthBox .health-prow', text: 'Press a colleague to see their history. Answers are shown only while their agreement is in place.' },
       { at: '#teamHealthBox .health-talks', text: 'Talks asked for in the last 90 days.' }] },
     'reports.entry': { name: 'Report', steps: [
-      { at: '#rhEdit .rp-steps', text: 'Four steps, each with what it holds so far. Press one to go to it.' },
-      { at: '#rhEdit .rp-head [data-a="pdf"]', text: 'Preview PDF draws the report as the client will read it, marked as a draft until it is confirmed.' },
+      { at: '#rhEdit .rp-steps', text: 'Four steps, each with a summary of what it contains. Press a step to open it.' },
+      { at: '#rhEdit .rp-head [data-a="pdf"]', text: 'Preview PDF shows the report as the client will read it, marked as a draft until it is confirmed.' },
       { at: '#rhEdit .rp-stepfoot [data-a="next"]', text: 'Next opens the following step.' }] },
     'reports.text': { name: 'Commentary', steps: [
       { at: '#rhEdit .rp-aidraft [data-a="aidraft"]', text: 'Write with AI drafts the commentary from the figures and your notes. Read it before submitting.' },
-      { at: '#rhEdit .rp-ainotes > summary', text: 'Notes for the draft: reasons, changes, the goal and next month\'s budget. Kept in this browser only.' },
+      { at: '#rhEdit .rp-ainotes > summary', text: 'Notes for the draft: reasons, changes, the goal and next month\'s budget. They are kept in this browser only.' },
       { at: '#rhEdit .rp-ailang', text: 'The language Write with AI drafts in.' }] },
     'reports.check': { name: 'Check and submit', steps: [
       { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
@@ -3266,7 +3266,7 @@
   /* Resolves null where the client is ready, else { code, text }. */
   function brandGate(clientId, needAnalysis) {
     return db.rpc('ai_brand_ready', { p_client: clientId }).then(function (r) {
-      if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? 'This needs a database update.' : r.error.message };
+      if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message };
       var d = r.data || {};
       if (d.error) return { code: d.error, text: 'This client is outside your access.' };
       if ((d.missing || []).length) return { code: 'no-brief', text: brandWords('no-brief', d.missing) };
@@ -3302,15 +3302,15 @@
      words go into the fields; nothing is saved until the post's own Save,
      and Undo puts the earlier words back. */
   var CAP_SAID = {
-    'needs-update': 'This needs a database update.',
-    'ai-not-set-up': 'AI needs its key in Supabase.',
-    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
-    'ai-model': 'The caption model name in Supabase is not recognised.',
+    'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
+    'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-failed': 'No caption came back. Try again.',
     'ai-incomplete': 'No caption came back. Try again.',
-    'denied': 'This needs Content Review: Sets at Manage.',
+    'denied': 'You do not have permission to change content sets. Please ask an admin.',
     'not-found': 'This set no longer exists.'
   };
   /* The caption's language, one choice (2026-10-10). */
@@ -3860,7 +3860,7 @@
         body: n + ' post' + (n === 1 ? '' : 's') + ' in "' + b.title
             + '" and their approval records go.'
             + (b.published ? ' This set is published to the client.' : '')
-            + ' There is no restore.',
+            + ' This cannot be undone.',
         go: 'Delete',
         tone: 'danger',
         field: { label: 'Type the set name to confirm', placeholder: b.title, match: b.title, need: 'Type the set name to confirm.', mismatch: 'The set name does not match.' }
@@ -5535,7 +5535,7 @@
     ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
     ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
-    ['fx_sgd', 'RM to S$1', 'fx', 'Singapore'],
+    ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
        days (2026-10-26). */
     ['quote_reply_days', 'Contact a ready prospect within (working days)', 'reply', 'Quotation website']];
@@ -5555,25 +5555,25 @@
     term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SETTING_SHEETS = {
-    details: { title: 'Details forms', keys: [['details_form_days', 'Open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
-    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'A lead waits (hours)', 'hours', 'Every client', 'Lead', per('hour')],
-      ['proposal_followup_days', 'A proposal waits (days)', 'days', 'Every client', 'Proposal', per('day')],
+    details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
+    followup: { title: 'Follow-up limits', keys: [['lead_followup_hours', 'Lead follow-up limit (hours)', 'hours', 'Every client', 'Lead', per('hour')],
+      ['proposal_followup_days', 'Proposal follow-up limit (days)', 'days', 'Every client', 'Proposal', per('day')],
       /* A VIC's own, shorter (2026-10-15). */
-      ['vic_lead_followup_hours', 'A VIC lead waits (hours)', 'hours', 'VIC clients', 'VIC lead', per('hour')],
-      ['vic_proposal_followup_days', 'A VIC proposal waits (days)', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
+      ['vic_lead_followup_hours', 'VIC lead follow-up limit (hours)', 'hours', 'VIC clients', 'VIC lead', per('hour')],
+      ['vic_proposal_followup_days', 'VIC proposal follow-up limit (days)', 'days', 'VIC clients', 'VIC proposal', per('day')]] },
     tax: { title: 'Tax and terms', keys: TAX_KEYS.map(function (k) { return k.concat(SET_TAX_WORD[k[0]]); }) },
-    due: { title: 'Due dates', keys: [['report_due_days', 'Report: days after the month ends', 'due', '', 'Report', per('day')],
-      ['revision_due_days', 'Revision (Client): working days after changes are asked', 'due', '', 'Revision', per('working day')],
-      ['approval_reminder_days', 'Approval reminder: days a client has not approved', 'due', '', 'Approval reminder', per('day')]] },
-    priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent: hours from creation', 'hours', '', 'Urgent', per('hour')],
-      ['priority_high_hours', 'High: hours from creation', 'hours', '', 'High', per('hour')],
-      ['priority_medium_hours', 'Medium: hours from creation', 'hours', '', 'Medium', per('hour')]] },
-    nudge: { title: 'Task reminders', keys: [['task_remind_hours', 'Every: hours between reminders (0 sends none)', 'every', '', 'Every', per('hour')],
-      ['task_start_days', 'Not started: days before its date (0 sends none)', 'ahead', '', 'Not started', per('day')]] },
-    prices: { title: 'AI prices', keys: [['ai_price_in', 'Input, a million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
-      ['ai_price_out', 'Output, a million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
-      ['ai_price_search', 'Web searches, a thousand', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
-    reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach within (%) of Meta', 'allow', '', 'Reach within', pctOf]] },
+    due: { title: 'Due dates', keys: [['report_due_days', 'Report due (days after the month ends)', 'due', '', 'Report', per('day')],
+      ['revision_due_days', 'Revision (Client) due (working days after changes are requested)', 'due', '', 'Revision', per('working day')],
+      ['approval_reminder_days', 'Remind after (days without client approval)', 'due', '', 'Approval reminder', per('day')]] },
+    priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent (hours from when it is set)', 'hours', '', 'Urgent', per('hour')],
+      ['priority_high_hours', 'High (hours from when it is set)', 'hours', '', 'High', per('hour')],
+      ['priority_medium_hours', 'Medium (hours from when it is set)', 'hours', '', 'Medium', per('hour')]] },
+    nudge: { title: 'Task reminders', keys: [['task_remind_hours', 'Hours between reminders (0 turns this off)', 'every', '', 'Every', per('hour')],
+      ['task_start_days', 'Remind of tasks not started (days before the due date, 0 turns this off)', 'ahead', '', 'Not started', per('day')]] },
+    prices: { title: 'AI prices', keys: [['ai_price_in', 'Input price per million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
+      ['ai_price_out', 'Output price per million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
+      ['ai_price_search', 'Web search price per thousand searches', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
+    reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach allowance against Meta (%)', 'allow', '', 'Reach within', pctOf]] },
     /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
        against (2026-10-15, the client analysis playbook). */
     bench: { title: 'Ad benchmarks', keys: [
@@ -5587,36 +5587,36 @@
       ['bench_form_min', 'Low', 'rm', 'Lead form cost per result (RM)', 'Lead form low RM', String],
       ['bench_form_target', 'Target', 'rm', 'Lead form cost per result (RM)', 'Lead form target RM', String],
       ['bench_form_max', 'High', 'rm', 'Lead form cost per result (RM)', 'Lead form high RM', String],
-      ['bench_cpm_min', '1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
-      ['bench_cpm_max', '1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
-      ['bench_cpl_rise', 'Cost per lead rise a year (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
+      ['bench_cpm_min', 'Cost per 1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
+      ['bench_cpm_max', 'Cost per 1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
+      ['bench_cpl_rise', 'Yearly rise in cost per lead (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
       ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
-      ['bench_ad_spend_pct', 'Ad spend of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
-      ['bench_adset_daily', 'Daily budget an ad set, at least (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
+      ['bench_ad_spend_pct', 'Ad spend share of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
+      ['bench_adset_daily', 'Minimum daily budget per ad set (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
     /* The longest an overseas approval runs, and how often a waiting request
        reminds the admins (2026-10-24). */
     abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')],
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
-    healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins: months kept', 'keep', '', 'Check-ins', per('month')],
-      ['health_leaver_months', 'A leaver\'s health data: months after they left', 'leave', '', 'Leavers', per('month')]] },
-    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask again within (hours, 0 asks nothing)', 'week', '', 'Asks again within', per('hour')]] },
+    healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for (months)', 'keep', '', 'Check-ins', per('month')],
+      ['health_leaver_months', 'Leavers\' health data kept for (months after they leave)', 'leave', '', 'Leavers', per('month')]] },
+    resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask before sending again within (hours, 0 turns this off)', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */
-    quotewa: { title: 'Website quotations', keys: [['quote_wa_day', 'Sent on WhatsApp a day (0 sends none)', 'cap', '', 'On WhatsApp', per('quotation')]] },
+    quotewa: { title: 'Website quotations', keys: [['quote_wa_day', 'WhatsApp messages per day (0 turns this off)', 'cap', '', 'On WhatsApp', per('quotation')]] },
     /* Before this month the portal held clients typed in later, never the
        leads that came to nothing (2026-10-25). */
     /* When a figure reads better or worse, and when churn is an alert
        (2026-10-25). */
     analytics: { title: 'Analytics', keys: [['analytics_from', 'Count leads and clients from', 'month', '', 'Counts from', monthOfSetting],
-      ['analytics_change_pct', 'A change counts from (%)', 'chg', '', 'Change counted from', pctOf],
-      ['analytics_churn_pct', 'Churn alert, a quarter (%)', 'churn', '', 'Churn alert', pctOf]] }
+      ['analytics_change_pct', 'Minimum change to report (%)', 'chg', '', 'Change counted from', pctOf],
+      ['analytics_churn_pct', 'Quarterly churn alert (%)', 'churn', '', 'Churn alert', pctOf]] }
   };
   /* A figure in words, as the Settings row says it ("SST 6%"): the key's
      own short name and format where the Settings page gives them (k[4],
      k[5]), else its label and its kind's unit (2026-10-20, SET-5). */
   var SET_UNIT = { pct: '%', adj: '%', allow: '%', share: '%', hours: ' hours', days: ' days', due: ' days', quote: ' days',
-    week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months', chg: '%', churn: '%', cap: ' a day' };
+    week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months', chg: '%', churn: '%', cap: ' per day' };
   function setWord(k, v) {
     if (v == null || v === '') return 'not set';
     if (k[5]) return (k[4] ? k[4] + ' ' : '') + k[5](v);
@@ -5712,8 +5712,8 @@
       db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) {
-          if (spec.msg) msg(spec.msg, r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
-            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'This needs Team: Business settings.'
+          if (spec.msg) msg(spec.msg, r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
+            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.'
             : d.error === 'bad-value' ? 'A figure is out of range.' : d.error, 'err');
           return;
         }
@@ -5731,7 +5731,7 @@
      under the link, with Clear for whoever may change the link. The page
      says it to the client as a lock, never as a link unknown. */
   var UNLOCK_SAID = {
-    denied: 'Not cleared. You need Work access to change this link.',
+    denied: 'Not cleared. You do not have permission to change this link. Please ask an admin.',
     'client-scope': 'Not cleared. This client is outside the clients you hold.',
     'not-found': 'Not cleared. The link was not found.'
   };
@@ -5994,15 +5994,15 @@
   }
 
   var CONFIRM_SAID = {
-    denied: 'Not allowed for this group.',
-    'no-post': 'That post is no longer there.',
+    denied: 'You do not have permission to do this. Please ask an admin.',
+    'no-post': 'This post no longer exists.',
     'not-published': 'Publish the set first. The client sees only a published set.',
     'already-approved': 'Already approved.',
     'not-confirmed': 'There is no internal confirmation to take back.'
   };
   function confirmSaid(e) {
     var k = String(e || '');
-    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This needs a database update.';
+    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return CONFIRM_SAID[k] || k || 'Not saved.';
   }
 
@@ -6121,7 +6121,7 @@
     if (!n) return;
     window.ADspaceConfirm.ask({
       title: 'Delete ' + postsWord(n),
-      body: (n === 1 ? 'It leaves the client view, with its approval record.' : 'They leave the client view, with their approval records.') + ' There is no restore.',
+      body: (n === 1 ? 'It leaves the client view, with its approval record.' : 'They leave the client view, with their approval records.') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [{ name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' }]
     }, function () {
@@ -6453,7 +6453,7 @@
         window.ADspaceConfirm.ask({
           title: 'Delete',
           body: postName(p) + ' leaves the client view, with its approval record. '
-              + 'There is no restore.',
+              + 'This cannot be undone.',
           go: 'Delete',
           tone: 'danger'
         }, function () {
@@ -7013,7 +7013,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'Anywhere /' + l.slug + ' is already printed, posted or sent stops working. '
-          + 'There is no restore. To turn it off and keep it, pause it instead.',
+          + 'This cannot be undone. To turn it off and keep it, pause it instead.',
       go: 'Delete',
       tone: 'danger',
       field: { label: 'Type the short link to confirm', placeholder: l.slug, match: l.slug, need: 'Type the short link to confirm.', mismatch: 'The short link does not match.' }

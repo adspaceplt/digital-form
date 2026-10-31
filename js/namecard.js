@@ -211,7 +211,7 @@
     'bad-mobile': 'Enter a mobile number of 8 to 15 digits.',
     'slug-taken': 'That short link is already in use.',
     'slug-shape': 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.',
-    'not-team': 'Not allowed.'
+    'not-team': 'Only an active colleague can change a namecard.'
   };
   function $(id) { return document.getElementById(id); }
   function say(text, tone) { var m = $('mycMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (tone ? ' ' + tone : ''); } }
@@ -223,7 +223,7 @@
       var d = r.data || {};
       if (r.error || d.error || !d.key) {
         var t = r.error ? String(r.error.message || '') : '';
-        say(/function|schema cache/i.test(t) ? 'This needs a database update.' : 'Unable to load. Please try again.', 'err');
+        say(/function|schema cache/i.test(t) ? 'This feature is not available yet. Please contact an admin.' : 'Unable to load. Please try again.', 'err');
         $('mycPreview').innerHTML = '';
         $('mycUrl').textContent = '';
         window.ADspaceSheet.show($('mycSheet'), { opener: opener });
@@ -271,7 +271,7 @@
             var e = s.data && s.data.error;
             if (s.error || e) {
               var t = s.error ? String(s.error.message || '') : '';
-              say(e ? (SAID[e] || e) : /function|schema cache/i.test(t) ? 'This needs a database update.' : t, 'err');
+              say(e ? (SAID[e] || e) : /function|schema cache/i.test(t) ? 'This feature is not available yet. Please contact an admin.' : t, 'err');
               if (e === 'bad-mobile') $('mycMobile').focus();
               if (e === 'slug-taken' || e === 'slug-shape') $('mycSlug').focus();
               return;

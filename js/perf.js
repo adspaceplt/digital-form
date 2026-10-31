@@ -128,7 +128,7 @@
     'too-long': 'Keep each line to 1,000 characters.',
     'own': 'Nobody decides on their own.',
     'bad-move': 'That step is not open from here.',
-    'no-code': 'No master code is set. Set it in the Supabase SQL editor.',
+    'no-code': 'No master code is set. Please ask an admin to set one.',
     'code-needed': 'Locked. Enter the master code again.',
     'denied': 'Your group cannot open performance reviews.',
     'not-team': 'Only a team member can open this.',
@@ -144,7 +144,7 @@
     'bad-payload': 'That could not be saved.',
     'bad-category': 'Pick a category.',
     'bad-client': 'Pick a client from the list.',
-    'bad-severity': 'Pick a lower level than the issue has now.',
+    'bad-severity': 'Choose a lower level than the issue has now.',
     'what-needed': 'Say what happened.',
     'reason-needed': 'A reason is needed.',
     'cannot-return': 'Only a shared month with no query can go back to draft.',
@@ -158,7 +158,7 @@
     'bad-item': 'That item cannot be queried.',
     'not-final': 'Only a final record can be reopened.',
     'confirm-mismatch': 'The name and month typed do not match.',
-    'admin-only': 'This needs Team: Performance admin.',
+    'admin-only': 'Only an admin can do this.',
     'shared': 'That month has been shared, so it can no longer be rated.',
     'not-reviewed': 'That month is not open to rate.',
     'not-found': 'Not found.'
@@ -167,13 +167,13 @@
     if (!d || !d.error) return '';
     if (d.error === 'db') {
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
-        ? 'This needs a database update. Ask an admin to run the latest migration.' : (d.message || 'Not saved.');
+        ? 'This feature is not available yet. Please contact an admin.' : (d.message || 'Not saved.');
     }
     if (d.error === 'period-confirmed') return (d.word || 'Its period') + ' is confirmed. Reopen it under ' + (d.kind === 'quarter' ? 'Quarters' : 'Bonus and trip') + ' first.';
     if (d.error === 'window-open') return 'Queries are open until ' + timeWord(d.until) + '.';
     if (d.error === 'month-released') return (d.month || 'That month') + ' is shared. Revert it to draft to change its issues.';
-    if (d.error === 'wrong-code') return 'Wrong code. ' + d.left + (d.left === 1 ? ' try' : ' tries') + ' left.';
-    if (d.error === 'locked') return 'Too many wrong tries. Try again after ' + timeWord(d.until) + '.';
+    if (d.error === 'wrong-code') return 'Incorrect code. ' + d.left + (d.left === 1 ? ' attempt' : ' attempts') + ' left.';
+    if (d.error === 'locked') return 'Too many incorrect attempts. Please try again after ' + timeWord(d.until) + '.';
     if (d.error === 'bad-score' && d.max) return 'A score is 0 to ' + d.max + ', in steps of 0.1.';
     return SAID[d.error] || d.error;
   }
@@ -536,7 +536,7 @@
     if (opener && opener.focus) opener.focus();
     window.ADspaceConfirm.ask({
       title: 'Delete ' + rec.name + '\u2019s ' + (rec.month || 'month'),
-      body: seen + 'The review, its scores and any query go, and there is no restore. The history keeps who deleted it and why.',
+      body: seen + 'The review, its scores and any query will be deleted. This cannot be undone. The history keeps who deleted it and why.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'who', label: 'Type ' + typed + ' to confirm', match: typed, mismatch: 'Type ' + typed + ' to confirm.' },
@@ -1509,7 +1509,7 @@
     b.disabled = true;
     db.auth.verifyOtp({ email: guard.email, token: code, type: 'email' }).then(function (r) {
       b.disabled = false;
-      if (r && r.error) { msg('mineLockMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
+      if (r && r.error) { msg('mineLockMsg', 'The code is incorrect or has expired. Please request a new code.', 'err'); return; }
       showMineLock(false);
       enterMine();
     }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
@@ -1720,7 +1720,7 @@
         recs = recs.filter(Boolean);
         if (!recs.length) { if (D && D.shut) D.shut(tab); msg('perfMsg', 'The records could not be read.', 'err'); return; }
         draw(recs, 'Performance-' + st.period.slice(0, 7) + '.pdf', null, function (ok) {
-          msg('perfMsg', ok ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' downloaded.' : 'The file could not be drawn.', ok ? 'ok' : 'err');
+          msg('perfMsg', ok ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' downloaded.' : 'The file could not be generated.', ok ? 'ok' : 'err');
         }, tab);
       });
     });
@@ -1732,7 +1732,7 @@
     if (!D || !D.lib) { drawNow(recs, name, btn, then, tab); return; }
     D.lib().then(function () { drawNow(recs, name, btn, then, tab); }).catch(function (e) {
       if (D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', 'The file could not be generated: ' + ((e && e.message) || e), 'err');
       if (then) then(false);
     });
   }
@@ -1740,7 +1740,7 @@
     var PDF = window.PDFLib, D = window.ADspaceDocs;
     var fail = function (e) {
       if (D && D.shut) D.shut(tab);
-      if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
+      if (btn) msg('pvMsg', 'The file could not be generated: ' + ((e && e.message) || e), 'err');
       if (then) then(false);
     };
     if (!PDF || !D) { fail(new Error('PDF library not loaded')); return; }
@@ -2089,7 +2089,7 @@
     'dept-scores-needed': 'Enter every department’s scores first.',
     'confirmed': 'Confirmed. Reopen it to change it.',
     'not-confirmed': 'Not confirmed.',
-    'admin-only': 'This needs Team: Performance admin.',
+    'admin-only': 'Only an admin can do this.',
 
     'bad-amount': 'Enter each amount in RM, to the cent.',
     'bad-pct': 'The rate is above 0 and at most 100, to two decimals.',
@@ -3277,7 +3277,7 @@
         if (!l) return;
         if (b.getAttribute('data-a') === 'open') { window.open(l.file_url, '_blank', 'noopener'); return; }
         var LET = window.ADspaceLetters;
-        if (!LET) { msg('mineLetterMsg', 'The letter could not be drawn. Refresh the page.', 'err'); return; }
+        if (!LET) { msg('mineLetterMsg', 'The letter could not be generated. Refresh the page.', 'err'); return; }
         b.disabled = true;
         LET.download(l, function (warn) { b.disabled = false; msg('mineLetterMsg', warn || '', warn ? 'err' : ''); });
       });

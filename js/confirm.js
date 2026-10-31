@@ -180,7 +180,7 @@
     for (i = 0; i < rows.length; i++) {
       r = rows[i]; v = valueOf(r);
       if (r.spec.required !== false && !r.spec.tick && !v) {
-        say(r.spec.need || 'This is required.');
+        say(r.spec.need || 'Please fill in this field.');
         r.input.focus();
         return;
       }

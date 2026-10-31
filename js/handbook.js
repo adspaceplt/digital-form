@@ -81,8 +81,8 @@
   function said(e) {
     var m = String((e && (e.message || e.error)) || e || '');
     if (SAID[m]) return SAID[m];
-    if (/function .* does not exist|schema cache|relation .*handbook/i.test(m)) return 'This needs a database update.';
-    if (/bucket not found/i.test(m)) return 'This needs a database update.';
+    if (/function .* does not exist|schema cache|relation .*handbook/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
+    if (/bucket not found/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     if (/payload too large|exceeded the maximum allowed size|413/i.test(m)) return 'A file is 50 MB at most.';
     if (/row-level security|new row violates/i.test(m)) return SAID.denied;
     return m || 'Not saved. Try again.';
@@ -436,7 +436,7 @@
     var n = (st.vers[d.id] || []).length;
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: '"' + d.title + '"' + (n ? ' and its ' + n + (n === 1 ? ' version' : ' versions') : '') + ' will be deleted. There is no restore.',
+      body: '"' + d.title + '"' + (n ? ' and its ' + n + (n === 1 ? ' version' : ' versions') : '') + ' will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Type the title to confirm', match: d.title, mismatch: 'The title does not match.' }
     }, function (typed) {

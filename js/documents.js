@@ -331,7 +331,7 @@
       var out = r.data || {};
       if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
       readBack(out.id, function (doc, err) {
-        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be drawn.' }); return; }
+        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be generated.' }); return; }
         download(doc, function (warn) {
           then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
@@ -376,14 +376,14 @@
     }).then(function (r) {
       if (r.error) { fail(missingWord(r.error.message)); return; }
       var out = r.data || {};
-      if (out.error || !out.doc) { fail(ISSUE_WORD[out.error] || out.error || 'The preview could not be drawn.'); return; }
+      if (out.error || !out.doc) { fail(ISSUE_WORD[out.error] || out.error || 'The preview could not be generated.'); return; }
       var doc = out.doc;
       doc.number = 'PREVIEW'; doc.draft = true;
       return render(doc).then(function (bytes) {
         save(new Blob([bytes], { type: 'application/pdf' }), 'Preview ' + fileName(doc), tab);
         then({ ok: true });
       });
-    }).catch(function (e) { fail('The preview could not be drawn: ' + ((e && e.message) || e)); });
+    }).catch(function (e) { fail('The preview could not be generated: ' + ((e && e.message) || e)); });
   }
 
   function readBack(id, then) {
@@ -421,7 +421,7 @@
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
     'bad-state': 'That is not a state a service can be in.',
-    'stale': 'The services or their quotation changed since this sheet was opened. They have been read again: check them and issue the letter again.',
+    'stale': 'The services or their quotation were changed by someone else. The latest version is now shown. Please check them and issue the letter again.',
     'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
     'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
   };
@@ -429,7 +429,7 @@
   function missingWord(m) {
     m = String(m || '');
     if (/could not find|does not exist|schema cache|function public\.(issue_letter|letter_delete|letter_set_void)/i.test(m)) {
-      return 'This needs a database update.';
+      return 'This feature is not available yet. Please contact an admin.';
     }
     /* A guard trigger answers in its own word (`needs-billing`). */
     if (ISSUE_WORD[m]) return ISSUE_WORD[m];
@@ -511,11 +511,11 @@
         say(logoWarn);
       }).catch(function (e) {
         shut(tab);
-        say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
+        say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the row.');
       });
     } catch (e) {
       shut(tab);
-      say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
+      say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the row.');
     }
   }
 

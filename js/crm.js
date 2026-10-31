@@ -1737,7 +1737,7 @@
   }
   function setVic(c, on, note, since, then) {
     db.rpc('client_vic_set', { p_client: c.id, p_on: on, p_note: note, p_since: since || null }).then(function (r) {
-      if (r.error) { msg('crmWorkMsg', /client_vic_set/.test(r.error.message || '') ? 'This needs a database update.' : r.error.message, 'err'); return; }
+      if (r.error) { msg('crmWorkMsg', /client_vic_set/.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message, 'err'); return; }
       var d = r.data || {};
       if (d.error) { msg('crmWorkMsg', VIC_SAID[d.error] || 'Not saved. The database refused the request.', 'err'); return; }
       var A = window.ADspaceAdmin;
@@ -2089,8 +2089,8 @@
         if (mine && mine !== c) Object.assign(mine, r.data);
         if (state.client && state.client.id === c.id) openClient(c);
       }
-      msg('crmSinceMsg', 'Not saved. This changed since it was opened, and has been read again.', 'err');
-    }).catch(function () { msg('crmSinceMsg', 'Not saved. This changed since it was opened.', 'err'); });
+      msg('crmSinceMsg', 'Not saved. This record was changed by someone else. The latest version is now shown.', 'err');
+    }).catch(function () { msg('crmSinceMsg', 'Not saved. This record was changed by someone else.', 'err'); });
   }
   function saveDates(c, list, created, what) {
     var days = list.map(function (x) { return dayOf(x.at); });
@@ -2313,8 +2313,8 @@
         return db.rpc('delete_client', { p_client: c.id, p_code: codeNeeded ? v.code : null }).then(function (r) {
           if (r.error) return r.error.message;
           var out = r.data;
-          if (out === 'wrong-code') return 'That delete code is not right.';
-          if (out === 'not-found') return 'That client is no longer there.';
+          if (out === 'wrong-code') return 'The delete code is incorrect.';
+          if (out === 'not-found') return 'This client no longer exists.';
           if (out !== 'deleted') return String(out || 'Unable to delete.');
           /* `delete_client` files the deletion itself (audit R1). */
           state.client = null;
@@ -2449,7 +2449,7 @@
     nextClientCode(function (next) {
       window.ADspaceConfirm.ask({
         title: 'Move to Active?',
-        body: 'An Active client holds a Client ID.',
+        body: 'An Active client must have a Client ID.',
         go: 'Move', wait: true,
         fields: [{ name: 'code', label: 'Client ID', value: next, required: true }],
         check: function (v) {
@@ -2615,7 +2615,7 @@
   function billPickSave(cid, ch) {
     if (!ch) return Promise.resolve('');
     return db.rpc('client_entity_contact', { p_client: cid, p_entity: ch.ent, p_contact: ch.value, p_every: ch.every }).then(function (r) {
-      if (r.data && r.data.error === 'held') return 'Bukku holds this company\'s billing person. Change it in Bukku, or untick Use for every brand to choose this brand\'s own.';
+      if (r.data && r.data.error === 'held') return 'Bukku keeps this company\'s billing person. Change it in Bukku, or untick Use for every brand to choose this brand\'s own.';
       return r.error || (r.data && r.data.error) ? entSaid(r) : '';
     }).catch(function (x) { return (x && x.message) || String(x); });
   }
@@ -2809,13 +2809,13 @@
       (entGoneOpen ? 'Hide ' : 'Show ') + G.length + ' removed entit' + (G.length === 1 ? 'y' : 'ies') + '</button></p>' + rows;
   }
   var ENT_GONE_SAID = {
-    'denied': 'This needs Clients: Billing at Full Access.',
+    'denied': 'You do not have permission to delete billing entities. Please ask an admin.',
     'not-removed': 'This entity bills this client again. Refresh the page to see the current list.',
     'bills-others': 'This entity bills another client. Remove it there first.',
     'bukku': 'Bukku links this entity. Unlink it from Bukku first.',
     'on-letter': 'A letter names this entity, so it is kept.',
     'bad-name': 'The name does not match.',
-    'not-found': 'This entity is no longer held. Refresh the page to see the current list.'
+    'not-found': 'This billing entity no longer exists. Refresh the page to see the current list.'
   };
   document.addEventListener('click', function (e) {
     var t = e.target.closest && e.target.closest('#crmEntities [data-eg], #crmEntities [data-eg-menu]');
@@ -2846,14 +2846,14 @@
       var nm = String(ent.legal_name || '').trim();
       window.ADspaceConfirm.ask({
         title: 'Delete ' + (nm || 'billing entity') + '?',
-        body: 'The entity and its details are deleted from the portal. Bukku is not changed. There is no restore.',
+        body: 'The entity and its details are deleted from the portal. Bukku is not changed. This cannot be undone.',
         go: 'Delete', tone: 'danger', wait: true,
         field: nm ? { label: 'Type the registered name to confirm', placeholder: nm, match: nm,
           need: 'Type the registered name to confirm.', mismatch: 'The name does not match.' } : null
       }, function (v) {
         return db.rpc('client_entity_delete', { p_client: cid, p_entity: ent.id, p_name: typeof v === 'string' ? v : nm }).then(function (r) {
           var d = r.data || {};
-          if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
+          if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
           if (d.error) return ENT_GONE_SAID[d.error] || d.error;
           state.entGone = (state.entGone || []).filter(function (x) { return x.id !== ent.id; });
           paintEntities();
@@ -2927,17 +2927,17 @@
   }
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
-    'denied': 'Not allowed.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
+    'denied': 'You do not have permission to change billing entities. Please ask an admin.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
     'taken': 'This entity already bills this client.', 'no-name': 'Enter the company name as registered.',
     'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
-    'stale': 'Not saved. This changed since it was opened, and has been read again.',
+    'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
-    'needs-update': 'This needs a database update.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
     'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
-    'brn-taken': 'An entity with this registration no. is already held. Add that entity instead.'
+    'brn-taken': 'An entity with this registration no. already exists. Add that entity instead.'
   };
   function entSaid(r) {
-    if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
+    if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
     return ENT_SAID[r.data && r.data.error] || (r.data && r.data.error) || 'Not saved.';
   }
   /* The record's billing read again, then the pane: Make main moves the
@@ -3346,7 +3346,7 @@
     ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var DF_FIELDS = { legal_name: 'crmLegalName', company_no: 'crmCompanyNo', company_no_old: 'crmCompanyNoOld',
     tin: 'crmTin', sst_no: 'crmSstNo', finance_email: 'crmFinanceEmail', billing_address: 'crmBillAddr' };
-  var DF_SAID = { denied: 'This needs Clients: Billing.', 'not-found': 'This client is outside your access.',
+  var DF_SAID = { denied: 'You do not have permission to change billing details. Please ask an admin.', 'not-found': 'This client is outside your access.',
     'no-link': 'No link is open. Refresh the page to see the current state.' };
   function dfUrl(key) { return location.origin + '/details/?k=' + encodeURIComponent(key); }
   function loadDetForm() {
@@ -3359,7 +3359,7 @@
       var d = r.data || {};
       if (r.error || d.error) {
         box.hidden = false;
-        failLine(box, 'Request from client', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), loadDetForm);
+        failLine(box, 'Request from client', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : (DF_SAID[d.error] || d.error), loadDetForm);
         return;
       }
       state.detForm = d.form || null;
@@ -3501,7 +3501,7 @@
     db.rpc('client_details_link', { p_client: state.client.id, p_reset: Boolean(reset) }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        msg('crmDfMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : (DF_SAID[d.error] || d.error), 'err');
+        msg('crmDfMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : (DF_SAID[d.error] || d.error), 'err');
         if (btn) btn.disabled = false; return;
       }
       state.detForm = { id: d.id, key: d.key, state: 'open', expires_at: d.expires_at };
@@ -3536,7 +3536,7 @@
           return db.rpc('client_details_close', { p_client: cid }).then(function (r) {
             var d = r.data || {};
             if (r.error || d.error) {
-              return r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+              return r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
                 : (DF_SAID[d.error] || d.error);
             }
             if (state.detForm && state.client && state.client.id === cid) {
@@ -3554,7 +3554,7 @@
     if (a === 'again') {
       box.querySelector('[data-df-menu]').hidden = true;
       window.ADspaceConfirm.ask({ title: 'Request again?',
-        body: 'The answers received are set aside, and a new link is made for the client to answer again.', go: 'Request again', tone: 'warn' },
+        body: 'The answers received are set aside, and a new link is created for the client to answer again.', go: 'Request again', tone: 'warn' },
         function () { dfLink(false); });
       return;
     }
@@ -3658,7 +3658,7 @@
           db.rpc('client_brand_logo', { p_id: b.id, p_logo: own ? 'partner' : 'adspace' }).then(function (q) {
             var d = (q && q.data) || {};
             if ((q && q.error) || d.error) {
-              msg('crmBrandNote', d.error === 'denied' ? 'This needs Reports: White label.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
+              msg('crmBrandNote', d.error === 'denied' ? 'You do not have permission to change white label settings. Please ask an admin.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
               return;
             }
             msg('crmBrandNote', 'Saved.', 'ok');
@@ -3699,7 +3699,7 @@
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) {
         metaLinks = [];
-        list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This needs a database update.' : 'The Meta accounts could not be read.') + '</p>';
+        list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'The Meta accounts could not be read.') + '</p>';
         return;
       }
       metaLinks = d.links || [];
@@ -3722,16 +3722,16 @@
      Write with AI. Read once a client; a repaint draws from what was read. */
   var ba = { id: null, versions: null, failed: false, show: null, seq: 0, running: null };
   var BA_SAID = {
-    'needs-update': 'This needs a database update.',
-    'ai-not-set-up': 'AI needs its key in Supabase.',
-    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
-    'ai-model': 'The analysis model name in Supabase is not recognised.',
+    'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
+    'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-slow': 'The analysis took too long. Try again.',
     'ai-failed': 'No analysis came back. Try again.',
     'ai-incomplete': 'No analysis came back. Try again.',
-    denied: 'This needs Clients: Brand at View.',
+    denied: 'You do not have access to this client\'s Brand. Please ask an admin.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This analysis is no longer available.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
@@ -3846,7 +3846,7 @@
     baMsg('');
     window.ADspaceConfirm.ask({
       title: 'Delete version ' + v.version + '?',
-      body: 'Version ' + v.version + ' of the brand analysis is deleted. There is no restore.',
+      body: 'Version ' + v.version + ' of the brand analysis is deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true
     }, function () {
       return db.rpc('brand_analysis_delete', { p_id: v.id }).then(function (q) {
@@ -3860,7 +3860,7 @@
     });
   }
   function baDelSaid(m) {
-    if (m === 'denied') return 'This needs Clients: Brand at Full Access.';
+    if (m === 'denied') return 'You do not have permission to delete a Brand analysis. Please ask an admin.';
     if (/function .* does not exist|schema cache|PGRST20[25]/i.test(m)) return BA_SAID['needs-update'];
     return BA_SAID[m] || 'Not deleted. ' + m;
   }
@@ -4068,7 +4068,7 @@
     'not-connected': 'Meta is not connected.',
     'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
-    'denied': 'This needs Clients: Brand at Manage.'
+    'denied': 'You do not have permission to change this client\'s Brand. Please ask an admin.'
   };
   function metaSheet(c, b, opener) {
     var id = 'crmMetaSheet', box = $(id);
@@ -4137,8 +4137,8 @@
             save.disabled = false;
             var r = (q && q.data) || {};
             if ((q && q.error) || r.error) {
-              msg('crmMetaMsg', r.error === 'denied' ? 'This needs Clients: Brand at Manage.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
-                (q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This needs a database update.' : 'Not saved. The database refused the request.', 'err');
+              msg('crmMetaMsg', r.error === 'denied' ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
+                (q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'Not saved. The database refused the request.', 'err');
               return;
             }
             if (window.ADspaceSheet) window.ADspaceSheet.clean();
@@ -4162,7 +4162,7 @@
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) {
         msg('crmBrandNote', d.error === 'taken' ? 'That brand is already on the list.' : d.error === 'bad-name' ? 'Enter the brand name.' :
-          d.error === 'denied' ? 'This needs Reports: White label.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
+          d.error === 'denied' ? 'You do not have permission to change white label settings. Please ask an admin.' : ((q && q.error && q.error.message) || 'Not saved.'), 'err');
         return;
       }
       msg('crmBrandNote', 'Saved.', 'ok');
@@ -4420,7 +4420,7 @@
     }
     db.from('clients').update(patch).eq('id', state.client.id)
       .select('id').then(function (r) {
-        if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'The content brief and brand notes need Clients: Brand at Manage.' : r.error.message, 'err'); return; }
+        if (r.error) { msg('crmBrandMsg', /brand-columns/.test(r.error.message || '') ? 'You do not have permission to change the content brief and brand notes. Please ask an admin.' : r.error.message, 'err'); return; }
         if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
         log('client.brand', state.client.name, [changed(was, patch, [
@@ -4807,7 +4807,7 @@
     db.rpc('client_contact_make_primary', { p_contact: ct.id }).then(function (r) {
       var d = r.data || {};
       if (r.error || !d.ok) {
-        msg('crmWorkMsg', r.error && /function|schema cache/i.test(r.error.message) ? 'This needs a database update.'
+        msg('crmWorkMsg', r.error && /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.'
           : 'Not saved. The database refused the request.', 'err');
         loadContacts(); return;
       }
@@ -4841,7 +4841,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: ct.name + ' goes from this client for good. There is no restore. '
+      body: ct.name + ' will be deleted from this client. This cannot be undone. '
           + 'Calls, letters and requests keep the name as it was written at the time.',
       go: 'Delete',
       tone: 'danger',
@@ -4971,7 +4971,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'This ' + (KIND_WORD[tc.kind] || 'entry').toLowerCase() + ' on ' + niceDate(tc.happened_at) +
-          ' goes from this client for good. There is no restore.',
+          ' will be deleted from this client. This cannot be undone.',
       go: 'Delete',
       tone: 'danger'
     }, function () {
@@ -5441,7 +5441,7 @@
   function deleteService(l) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: l.label + ' goes from this client for good. There is no restore.',
+      body: l.label + ' will be deleted from this client. This cannot be undone.',
       go: 'Delete',
       tone: 'danger'
     }, function () {
@@ -5972,7 +5972,7 @@
      line where the kind needs one, who asked if a contact did, and a note;
      the database keeps it as the colleague's (`client_request_add`). */
   var RA_SAID = {
-    denied: 'This needs Clients: Requests at Manage.', 'not-found': 'This client is outside your access.',
+    denied: 'You do not have permission to answer requests. Please ask an admin.', 'not-found': 'This client is outside your access.',
     'no-service': 'Choose the service line.', 'note-required': 'Enter a note.',
     'bad-contact': 'That contact is no longer on this client.', 'too-long': 'Keep the note to 2,000 characters.'
   };
@@ -6019,7 +6019,7 @@
       p_contact: $('raContact').value || null, p_note: note || null, p_idem: adding.idem }).then(function (r) {
       btn.disabled = false;
       var d = r.data || {};
-      if (r.error) { msg('raMsg', /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message, 'err'); return; }
+      if (r.error) { msg('raMsg', /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message, 'err'); return; }
       if (d.error) { msg('raMsg', RA_SAID[d.error] || d.error, 'err'); return; }
       shutSheet('crmReqAddBox');
       adding = null;
@@ -6030,12 +6030,12 @@
   /* Delete (2026-10-31): asked, gone for good, Full Access's alone. */
   function deleteRequest(q) {
     var what = (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '');
-    window.ADspaceConfirm.ask({ title: 'Delete', body: 'The request ' + what + ' of ' + niceDate(q.created_at) + ' is deleted. There is no restore.',
+    window.ADspaceConfirm.ask({ title: 'Delete', body: 'The request ' + what + ' of ' + niceDate(q.created_at) + ' is deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true }, function () {
       return db.rpc('client_request_delete', { p_id: q.id }).then(function (r) {
         var d = r.data || {};
-        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
-        if (d.error === 'denied') return 'This needs Clients: Requests at Full Access.';
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+        if (d.error === 'denied') return 'You do not have permission to delete requests. Please ask an admin.';
         if (d.error === 'not-found') return 'This request is no longer available.';
         if (d.error) return d.error;
         loadRequests();
@@ -6077,7 +6077,7 @@
       if (!(r.data || []).length) {
         db.from('client_requests').select('id, updated_at').eq('id', q.id).maybeSingle().then(function (n) {
           var moved = n.data && q.updated_at && n.data.updated_at !== q.updated_at;
-          msg(box, moved ? 'Not saved. This request changed since it was opened, and has been read again.'
+          msg(box, moved ? 'Not saved. This request was changed by someone else. The latest version is now shown.'
             : 'Not saved. The database refused the request.', 'err');
           if (moved) loadRequests();
         });
@@ -6336,7 +6336,7 @@
          service lines on it" is a clause that says nothing. */
       'Voiding ' + d.number + ' puts back the service lines this letter alone confirmed' +
       (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
-      'A line another verified letter still holds stays confirmed. ' +
+      'A line included in another verified letter stays confirmed. ' +
       'The letter and its reference are kept, and the reference is never reused.';
     $('voidReason').value = '';
     msg('voidMsg', '', '');
@@ -6521,7 +6521,7 @@
          after the term and the validity (the user, 2026-10-23). */
       '<div class="lpickref">' +
         '<label class="field-label" for="pickTerms">Terms</label>' +
-        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
+        '<textarea class="input" id="pickTerms" rows="3" placeholder="One point per line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
       '</div>' +
       /* Preview draws the letter Issue would keep, no number spent; no
          commit, so under the fields, never in the foot (2026-10-31, as the
@@ -6973,7 +6973,7 @@
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
     'no-change': 'Nothing has changed since the live version.', 'too-long': 'The note is too long.',
-    denied: 'Publishing needs Services at Full Access.' };
+    denied: 'You do not have permission to publish the rate card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
   var SVC_LIST = 5;
@@ -7033,7 +7033,7 @@
       ]
     }, function (v) {
       return db.rpc('rate_card_publish', { p_version: v.v, p_valid_until: v.until || null, p_note: v.note || null }).then(function (r) {
-        if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+        if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
         if (r.data && r.data.error) return PUB_SAID[r.data.error] || 'Not published.';
         liveRead = false; svcVers = null;
         loadLive(function () { paintServicesPage(); msg('svcListMsg', 'Published v.' + v.v + '.', 'ok'); });
@@ -7073,7 +7073,7 @@
       db.from('rate_card_text').select('key, label, page, position, value').order('position').then(function (r) {
         if (r.error) {
           $('rcwList').innerHTML = '';
-          msg('rcwListMsg', /relation|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message, 'err');
+          msg('rcwListMsg', /relation|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message, 'err');
         } else {
           svcText = r.data || [];
           diffNow = svcDiff();
@@ -7216,8 +7216,8 @@
     btn.disabled = true;
     db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
       btn.disabled = false;
-      var no = r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
-        : r.data && r.data.error ? (r.data.error === 'denied' ? 'Changing the wording needs Services at Full Access.'
+      var no = r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
+        : r.data && r.data.error ? (r.data.error === 'denied' ? 'You do not have permission to change the rate card wording. Please ask an admin.'
           : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.') : '';
       if (no) { msg('rcwMsg', no, 'err'); return; }
       b.value = v;
@@ -7391,7 +7391,7 @@
       sp.contents = n('svcContents');
       if (!(sp.contents >= 1 && sp.contents <= 99 && sp.contents % 1 === 0)) return { err: 'Contents a month is required.', at: 'svcContents' };
       sp.mix = mixOf(val('svcMix'));
-      if (!sp.mix || !sp.mix.length || sp.mix.length > 3) return { err: 'Write each content option as 1 graphic + 3 reels, one a line, three at most.', at: 'svcMix' };
+      if (!sp.mix || !sp.mix.length || sp.mix.length > 3) return { err: 'Write each content option as 1 graphic + 3 reels, one per line, three at most.', at: 'svcMix' };
       if (sp.ads) {
         sp.ad_budget = n('svcPlanBudget');
         if (!(sp.ad_budget > 0)) return { err: 'The ad budget covered is required.', at: 'svcPlanBudget' };
@@ -7407,7 +7407,7 @@
     else if (role === 'koc') { var c = n('svcCreators'); if (c) sp.creators = c; }
     else if (role === 'kol') {
       sp.tiers = tiersOf(val('svcTiers'));
-      if (!sp.tiers || !sp.tiers.length) return { err: 'Write each tier as 3000 | 18 | 500, one a line.', at: 'svcTiers' };
+      if (!sp.tiers || !sp.tiers.length) return { err: 'Write each tier as 3000 | 18 | 500, one per line.', at: 'svcTiers' };
     } else if (role === 'addon' || role === 'language') sp.group = $('svcGroup').value;
     return { spec: sp };
   }
@@ -7695,8 +7695,8 @@
     }
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: s.name + ' leaves the rate card and cannot be quoted again. There is '
-          + 'no restore. Letters already issued keep the line as it was written.',
+      body: s.name + ' leaves the rate card and cannot be quoted again. This '
+          + 'cannot be undone. Letters already issued keep the line as it was written.',
       go: 'Delete',
       tone: 'danger',
       field: { label: 'Type the service name to confirm', placeholder: s.name, match: s.name, need: 'Type the service name to confirm.', mismatch: 'The service name does not match.' }

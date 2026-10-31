@@ -903,7 +903,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: c.name + ' leaves the Creators List. Campaigns they have already run '
-          + 'are kept. There is no restore. To stop booking them and keep the '
+          + 'are kept. This cannot be undone. To stop booking them and keep the '
           + 'record, set them inactive instead.',
       go: 'Delete',
       tone: 'danger',
@@ -1789,7 +1789,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'Every offer, selection and booking on ' + campName(c) + ' goes with it. '
-          + 'There is no restore.',
+          + 'This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
       field: {
@@ -3367,7 +3367,7 @@
       if (r.error || (r.data || []).length !== rows.length) {
         done();
         msg(msgId, r.error && /duplicate|unique/i.test(r.error.message)
-          ? 'A creator ticked is already in this campaign. The list has been read again.'
+          ? 'A selected creator is already in this campaign. The latest list is now shown.'
           : (r.error ? r.error.message : 'Not added. The database refused the request.'), 'err');
         loadOptions(); loadRoster(paintPicker);
         return;
@@ -4170,7 +4170,7 @@
       var code = r && r.data && r.data.error;
       if (r && r.error) {
         return /does not exist|PGRST202|schema cache/i.test(r.error.message || '')
-          ? 'This needs a database update.' : verb + ' Check the connection and try again.';
+          ? 'This feature is not available yet. Please contact an admin.' : verb + ' Check the connection and try again.';
       }
       return code ? verb + ' ' + (FILE_SAID[code] || 'The database refused the request.') : '';
     }
@@ -4233,7 +4233,7 @@
         if (!mayPart('campaigns.files_delete', 'work')) { cardSay(o, 'Not deleted. ' + FILE_SAID.denied, 'err'); return; }
         window.ADspaceConfirm.ask({
           title: 'Delete this file?',
-          body: what + ' leaves this booking. The client approved it. There is no restore.',
+          body: what + ' leaves this booking. The client approved it. This cannot be undone.',
           go: 'Delete', tone: 'danger', wait: true
         }, function () {
           return db.rpc('campaign_file_delete', { p_file: id }).then(function (r) {
@@ -4525,8 +4525,8 @@
 
   /* A refusal about a round, in the team's words. */
   var SAID_REVIEW = {
-    denied: 'Not allowed for this group.',
-    'no-booking': 'That booking is no longer there.',
+    denied: 'You do not have permission to do this. Please ask an admin.',
+    'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Only a submitted draft can be sent back.',
     'not-changes': 'There is no request to take back.',
     'not-reviewing': 'Only a draft at Client review can be confirmed.',
@@ -4539,7 +4539,7 @@
     var c = String(code || '');
     if (SAID_REVIEW[c]) return SAID_REVIEW[c];
     if (/qc-required/.test(c)) return SAID_REVIEW['qc-required'];
-    if (/Could not find the function|PGRST202|schema cache/i.test(c)) return 'This needs a database update.';
+    if (/Could not find the function|PGRST202|schema cache/i.test(c)) return 'This feature is not available yet. Please contact an admin.';
     return c;
   }
 
@@ -4881,7 +4881,7 @@
   /* Every refusal in the team's own words, never the database's. */
   var SAID_QC = {
     denied: 'You do not have permission to release this.',
-    'no-booking': 'That booking is no longer there.',
+    'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Nothing handed in for this booking.',
     'qc-required': 'Release to client needs the quality check completed.'
   };
@@ -5360,7 +5360,7 @@
     }).then(function (r) {
       btn.disabled = false;
       var missing = r.error && (r.error.code === 'PGRST202' || /campaign_confirm_creators/.test(r.error.message || ''));
-      if (missing) { msg('lockMsg', 'This needs a database update.', 'err'); return; }
+      if (missing) { msg('lockMsg', 'This feature is not available yet. Please contact an admin.', 'err'); return; }
       var d = r.data || {};
       if (r.error || d.error) {
         msg('lockMsg', r.error ? r.error.message : (LOCK_SAID[d.error] ? LOCK_SAID[d.error](d) : 'Not confirmed. The database refused the request.'), 'err');
@@ -5375,10 +5375,10 @@
   });
   var lockKey = null;
   var LOCK_SAID = {
-    stale: function (d) { return (d.count === 1 ? '1 creator is' : d.count + ' creators are') + ' no longer shortlisted. The list has been read again.'; },
+    stale: function (d) { return (d.count === 1 ? '1 creator is' : d.count + ' creators are') + ' no longer shortlisted. The latest list is now shown.'; },
     empty: function () { return 'No creators selected.'; },
     'over-slots': function (d) { return 'Not confirmed. ' + d.booked + ' of ' + d.slots + ' creators are already booked; confirm ' + Math.max(0, d.slots - d.booked) + ' at most.'; },
-    denied: function () { return 'Not confirmed. Creator Campaigns at Manage is required.'; },
+    denied: function () { return 'Not confirmed. You do not have permission to confirm creators. Please ask an admin.'; },
     'client-scope': function () { return 'Not confirmed. This client is outside your reach.'; },
     'not-found': function () { return 'This campaign is no longer available.'; }
   };

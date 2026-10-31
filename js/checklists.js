@@ -19,24 +19,24 @@
   var KINDS = [['onboarding', 'New Client Onboarding Checklist'], ['pre_ads', 'Pre-Advertising Checklist']];
   var STATE = { open: ['In progress', 'is-warn'], prepared: ['Waiting for review', 'is-warn'], signed: ['Signed off', 'is-ok'] };
   var SAID = {
-    denied: 'This needs Clients: Checklists at Manage.',
-    'brand-denied': 'Write with AI reads the Brand analysis, which needs Clients: Brand at View.', 'client-scope': 'This client is outside your access.',
+    denied: 'You do not have permission to change checklists. Please ask an admin.',
+    'brand-denied': 'Write with AI reads the Brand analysis, which you do not have access to. Please ask an admin.', 'client-scope': 'This client is outside your access.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
     'bad-value': 'That answer is not one the checklist takes.', 'bad-item': 'This checklist has changed. Open it again.',
     'too-long': 'A note is 1,000 characters at most.', own: 'Somebody who did not prepare or fill it in signs it off.',
     'not-started': 'Nothing has been recorded on this checklist.',
     'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
-    'ai-not-set-up': 'AI needs its key in Supabase.', 'ai-key': 'AI refused its key in Supabase.',
+    'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.', 'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'AI is busy. Try again in a minute.', 'ai-credit': 'The AI account has no credit left.',
     'ai-slow': 'AI took too long. Try again.', 'ai-failed': 'Not written. Try again.', 'ai-incomplete': 'Not written. Try again.',
-    'ai-model': 'The AI model in Supabase is not available.', 'needs-update': 'This needs a database update.'
+    'ai-model': 'Write with AI is not available at the moment. Please contact an admin.', 'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   var AI = function () { return (window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || ''; };
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   function said(e) {
     if (!e) return '';
     var m = String(e.message || e);
-    if (/could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    if (/could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     return SAID[m] || m;
   }
   function day(ts) { return ts && window.ADspaceClock ? window.ADspaceClock.date(ts) : ''; }
@@ -623,7 +623,7 @@
       });
     });
     var body = box.querySelector('[data-m="body"]');
-    if (!rows.length) { V.ctx.msg('ckMsg', 'Written by AI: every field already holds what it proposes.', 'ok'); return; }
+    if (!rows.length) { V.ctx.msg('ckMsg', 'Written by AI: every field already matches its proposal.', 'ok'); return; }
     body.innerHTML = rows.map(function (r, i) {
       var nx = r.it.kind === 'table'
         ? '<div class="ck-table is-read" style="--ck-cols:' + r.it.columns.length + '"><div class="ck-tr ck-th">' + r.it.columns.map(function (c) { return '<span>' + esc(c[1]) + '</span>'; }).join('') + '</div>' +

@@ -195,18 +195,18 @@
     return 'Live';
   }
   var SAID = {
-    denied: 'This needs Team: Announcements.',
+    denied: 'You do not have permission to manage announcements. Please ask an admin.',
     'bad-text': 'Enter the announcement, 300 characters at most.',
     'bad-link': 'The link starts with https://.',
     'bad-window': 'Choose an end after the start, and later than now.',
     'bad-tone': 'Choose Info or Important.',
     over: 'Its end has passed. Post it again with a new end.',
     live: 'Stop it first.',
-    'not-found': 'That announcement is no longer there.'
+    'not-found': 'This announcement no longer exists.'
   };
   function said(e) {
     if (!e) return 'Not saved.';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
     return SAID[e] || e;
   }
 
@@ -306,7 +306,7 @@
           /* Stop is the soft remove; Delete, once it is stopped, is the one
              that cannot be taken back. */
           on('delete', function () {
-            window.ADspaceConfirm.ask({ title: 'Delete this announcement?', body: 'It is removed for good. There is no restore.', go: 'Delete', tone: 'danger' },
+            window.ADspaceConfirm.ask({ title: 'Delete this announcement?', body: 'It will be deleted. This cannot be undone.', go: 'Delete', tone: 'danger' },
               function () { drop(a); });
           });
         });

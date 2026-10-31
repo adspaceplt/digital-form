@@ -90663,6 +90663,276 @@ grant execute on function public.app_settings_set(date, jsonb) to authenticated;
 -- END OF CLIENT DOCUMENT EMAILS, THE SQL EDITOR PART ------------------------
 
 -- ===========================================================================
+-- PERMISSION REFUSALS IN WORDS — a guard that refuses a write says so in a
+-- sentence, never a section and a level the screen does not show (2026-10-31)
+-- ===========================================================================
+-- WHY (the user, 2026-10-31, the copy review): "Billing details need
+-- Clients: Billing at Work." named the stored level `work`, which the screen
+-- calls Manage, and read as a setting rather than a sentence.
+--
+-- WHAT CHANGED
+--   * `clients_billing_guard`, `clients_white_label_guard`,
+--     `clients_brand_guard` and `campaigns_finance_guard` refuse with "You
+--     do not have permission to change … Please ask an admin." Their checks,
+--     their error code 42501, the hint `white-label` and the prefix
+--     `brand-columns:` (which the page reads) are unchanged.
+--
+-- ORDER: this file (connector), then the pages. Either order is safe: only
+-- the words of a refusal change. Safe to run twice.
+--
+-- ROLLBACK: run SEC-1's guards again (the band holding BE-4 to BE-6).
+-- ===========================================================================
+
+-- PERMISSION REFUSALS IN WORDS ----------------------------------------------
+
+create or replace function public.clients_billing_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  -- A billing contact removed from Contacts nulls bill_contact_id by the
+  -- foreign key, which is a cascade and not a person editing Billing.
+  if pg_trigger_depth() > 1 then return new; end if;
+  if tg_op = 'INSERT' then
+    if coalesce(current_setting('role', true), '') = 'authenticated'
+       and (nullif(btrim(coalesce(new.legal_name, '') || coalesce(new.company_no, '') || coalesce(new.company_no_old, '') ||
+                         coalesce(new.tin, '') || coalesce(new.sst_no, '') || coalesce(new.finance_email, '') ||
+                         coalesce(new.billing_address, '')), '') is not null
+            or new.bill_contact_id is not null or new.sst_applies is false or new.bill_sgd is true)
+       and not public.allowed('clients.billing', 'work') then
+      raise exception 'You do not have permission to change billing details. Please ask an admin.' using errcode = '42501';
+    end if;
+    return new;
+  end if;
+  if (new.legal_name, new.company_no, new.company_no_old, new.tin, new.sst_no, new.sst_applies,
+      new.bill_contact_id, new.finance_email, new.billing_address, new.bill_sgd)
+     is distinct from
+     (old.legal_name, old.company_no, old.company_no_old, old.tin, old.sst_no, old.sst_applies,
+      old.bill_contact_id, old.finance_email, old.billing_address, old.bill_sgd)
+     and not public.allowed('clients.billing', 'work') then
+    raise exception 'You do not have permission to change billing details. Please ask an admin.' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+revoke all on function public.clients_billing_guard() from public, anon, authenticated;
+
+create or replace function public.clients_white_label_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if pg_trigger_depth() > 1 or (auth.jwt() ->> 'email') is null then return new; end if;
+  if tg_op = 'INSERT' then
+    if (new.white_label is true or new.report_logo is not null)
+       and not public.ops_granted('reports.whitelabel', 'work') then
+      raise exception 'You do not have permission to change white label settings. Please ask an admin.' using errcode = '42501', hint = 'white-label';
+    end if;
+    return new;
+  end if;
+  if (new.white_label, new.report_logo) is distinct from (old.white_label, old.report_logo)
+     and not public.ops_granted('reports.whitelabel', 'work') then
+    raise exception 'You do not have permission to change white label settings. Please ask an admin.' using errcode = '42501', hint = 'white-label';
+  end if;
+  return new;
+end $$;
+revoke all on function public.clients_white_label_guard() from public, anon, authenticated;
+
+create or replace function public.clients_brand_guard()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  /* A function writing the row has asked its own permission, and a cascade
+     is not a person: only a write made on the table through the API. */
+  if pg_trigger_depth() > 1 or current_user <> 'authenticated' then
+    return new;
+  end if;
+  if (case when tg_op = 'INSERT' then new.brief is not null or new.brand_notes is not null
+           else (new.brief, new.brand_notes) is distinct from (old.brief, old.brand_notes) end)
+     and not public.allowed('clients.brand', 'work') then
+    raise exception 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.'
+      using errcode = '42501';
+  end if;
+  return new;
+end $$;
+revoke all on function public.clients_brand_guard() from public, anon, authenticated;
+
+create or replace function public.campaigns_finance_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if (case when tg_op = 'INSERT'
+           then coalesce(current_setting('role', true), '') = 'authenticated'
+                and (new.invoice_no, new.invoice_url, new.invoice_uploaded_at) is distinct from (null::text, null::text, null::timestamptz)
+           else (new.invoice_no, new.invoice_url, new.invoice_uploaded_at)
+                is distinct from (old.invoice_no, old.invoice_url, old.invoice_uploaded_at) end)
+     and not public.allowed('campaigns.finance', 'work') then
+    raise exception 'You do not have permission to change the campaign invoice. Please ask an admin.' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+revoke all on function public.campaigns_finance_guard() from public, anon, authenticated;
+
+-- END OF PERMISSION REFUSALS IN WORDS ---------------------------------------
+
+-- ===========================================================================
+-- SETTINGS WORDS IN THE RECORD — the Activity record names a Business setting
+-- as its sheet does (2026-10-31)
+-- ===========================================================================
+-- WHY: the copy audit (the user, 2026-10-31: "You are English specialist")
+-- found the settings sheets' notes-style labels ("A lead waits", "AI input,
+-- a million tokens", "Daily budget an ad set, at least") also written by
+-- `app_settings_set` into the Activity record. The sheets now read "Lead
+-- follow-up limit", "Input price per million tokens", "Minimum daily budget
+-- per ad set", and the record follows them.
+--
+-- WHAT IT CHANGES
+--   `app_settings_set` (restated whole from its last definition): only the
+--   words it files. Every key, bound, refusal and write is unchanged. Rows
+--   already filed keep their words.
+--
+-- ORDER: in the SQL Editor (the function holds a delete, which the
+-- connector holds), any time after the pages. Until it runs the record
+-- keeps the older words. Safe to run twice. Rollback: app_settings_set from
+-- CLIENT DOCUMENT EMAILS, THE SQL EDITOR PART.
+-- ===========================================================================
+
+-- SETTINGS WORDS IN THE RECORD ----------------------------------------------
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k in ('meta_checks', 'client_email_on') and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'Lead follow-up limit' when 'proposal_followup_days' then 'Proposal follow-up limit'
+        when 'vic_lead_followup_hours' then 'VIC lead follow-up limit' when 'vic_proposal_followup_days' then 'VIC proposal follow-up limit'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'quote_wa_day' then 'Website quotations on WhatsApp'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Yearly rise in cost per lead' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend share of the budget' when 'bench_adset_daily' then 'Minimum daily budget per ad set'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k = 'quote_reply_days' then ' working days'
+        when v_k = 'quote_wa_day' then ' per day'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k in ('meta_checks', 'client_email_on') then case when v_was = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k in ('meta_checks', 'client_email_on') then case when v_v = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k = 'analytics_from' then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k in ('meta_checks', 'client_email_on') then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k in ('meta_checks', 'client_email_on') then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF SETTINGS WORDS IN THE RECORD ---------------------------------------
+
+-- ===========================================================================
 -- QUOTATION SIGNING — the client accepts and signs a quotation on its link;
 -- the colleague who prepared it checks the entries and submits them to a
 -- reviewer they choose, who approves (2026-10-31)

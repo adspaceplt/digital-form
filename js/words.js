@@ -26,7 +26,7 @@
     notFound: 'Link not recognised',
     notFoundText: 'Please contact your ADspace account manager.',
     contactAdspace: 'Please contact ADspace.',
-    failTextAdspace: 'Please refresh, or contact ADspace.',
+    failTextAdspace: 'Please refresh the page, or contact ADspace.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code.',
@@ -41,7 +41,7 @@
     noAccess: 'Access denied',
     noAccessText: 'Please contact your ADspace account manager.',
     failTitle: 'Unable to load',
-    failText: 'Please refresh, or contact your ADspace account manager.',
+    failText: 'Please refresh the page, or contact your ADspace account manager.',
     // A client's act the database did not take, said without its words.
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     /* A supplier holds no account manager (2026-10-27, SPF-6). */

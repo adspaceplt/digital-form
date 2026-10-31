@@ -62,7 +62,7 @@
       code: 'Code from the email', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
-      emailNeeded: 'An email is required.',
+      emailNeeded: 'Please enter your email address.',
       emailBad: 'Enter a valid email address.',
       signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
@@ -89,7 +89,7 @@
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'Requested change', downgrade: 'Requested change', cancel: 'Reason (optional)', details: 'Details to update' },
-      send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
+      send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'Please describe the change required.', company: 'Company',
       tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
       lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
@@ -128,7 +128,7 @@
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
-      send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
+      send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请描述所需的更改。', company: '公司',
       tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
       lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
