@@ -136,7 +136,7 @@
       ? all.length + (all.length === 1 ? ' supplier' : ' suppliers') : rows.length + ' of ' + all.length;
     if (!all.length) { UI.emptyLine(box, 'No suppliers.', may('suppliers', 'work') ? 'New supplier' : '', create); return; }
     if (!rows.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () { state.find = ''; $('supFind').value = ''; paint(); });
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () { state.find = ''; $('supFind').value = ''; paint(); });
       return;
     }
     box.innerHTML = '';

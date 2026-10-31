@@ -513,17 +513,17 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
 3. Fixed order by group, a group with no item left out:
    1. Open: Open, Open file, Versions, Download (here even beside Preview
       PDF on screen).
-   2. Change: Edit, Rename, Make a copy, New version, Take, Offer to the
-      team, Reassign, Change reviewer, Transfer client, White label.
+   2. Change: Edit, Rename, Duplicate, New version, Take, Offer to
+      team, Repeat, Reassign, Change reviewer, Transfer client, White label.
    3. Send: anything reaching a person outside the screen (Send on
-      WhatsApp, Request feedback on WhatsApp, Resend booking, Send
+      WhatsApp, Request feedback, Resend booking, Send
       invitation, Share with {name}).
    4. Mark: a flag reading its current value (Mark as VIC / Remove VIC,
-      Mark account restricted, Mark signed / Mark not signed, Confirm
+      Mark restricted, Do not contact / Allow contact, Mark signed / Mark not signed, Confirm
       internally / Revert confirmation, Mark as not sent).
    5. Lifecycle: Set inactive / Set active, Archive / Restore, Pause /
-      Resume, Not proceeding, Unpublish, Withdraw, Revert to …, Reopen,
-      Stop, Cancel month, Reset link, Close link, Revoke portal access.
+      Resume, Cancel, Unpublish, Withdraw, Revert to …, Reopen,
+      Stop, Cancel month, Reset link, Close link, Enable access / Revoke access.
    6. Remove and destroy: Remove, Void, then Delete last.
 4. Separators (`hr.kmenu-sep`, `role="separator"`): always before group 6
    when anything precedes it; between the other groups once the menu
@@ -540,7 +540,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
    is a `.btn-sm` on the row or head.
 9. Words: verb first, one to three words, no object the context gives; the
    same act the same word everywhere (Reset link, Void, Issue Letter of
-   Offer, Make primary contact, Make primary); never a mood (Mark not signed).
+   Offer, Make primary, Duplicate, Cancel); never a mood (Mark not signed);
+   the short word a familiar app uses, never a phrase where one word says
+   it (Duplicate, never Make a copy; Cancel, never Not proceeding; Submit,
+   never Submit for review; the user, 2026-10-31).
 10. One look: every item 13.5px, weight 400, ink (a `<b>` inside carries no
     weight); one width at a desk (320px) and one on a phone; `role="menu"`
     and `role="menuitem"`; every item written by `ADspaceMenu.items(groups)`
@@ -779,6 +782,8 @@ screenshotted, and the push names any line it could not settle.
 2. **Say it as a letter would.** Read the line aloud as if it were in a
    signed letter or on a bank's website. A word that would not be written
    there is not written here: Primary, never main; Undone., never Put back.;
+   a control the short word a familiar app uses (Duplicate, Cancel, Repeat,
+   Clear filters, Reassign), never a phrase where one word says it;
    Refresh the page, never Read again (unless a Read again button stands
    beside it).
 3. **Never the system's word.** A stored key, a column, a function, an

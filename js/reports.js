@@ -957,7 +957,7 @@
     /* While the client links Meta, Submit rests until the Report audit's
        reading matches (2026-10-09); `holdSubmit` lets it go. */
     var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
-    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit for review</button>');
+    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
@@ -1536,7 +1536,7 @@
     var note = 'Meta\'s figures changed since it was submitted. ' + lines.join('; ') +
       (rows.length > 8 ? '; and ' + (rows.length - 8) + ' more' : '') + '. Take Meta\'s figures in the Report audit and submit it again.';
     var m = st.host && st.host.querySelector('[data-m="check"]');
-    window.ADspaceConfirm.ask({ title: 'Send back with Meta\'s changes?', body: 'It returns to draft with the rows that changed as its note. Its submitter takes Meta\'s figures and submits it to the reviewer again.', go: 'Send back' },
+    window.ADspaceConfirm.ask({ title: 'Send back?', body: 'It returns to draft with the rows that changed as its note. Its submitter takes Meta\'s figures and submits it to the reviewer again.', go: 'Send back' },
       function () { stepCall('sm_report_return', { p_id: r.id, p_note: note.slice(0, 1800) }, 'Sent back to draft.', btn, m); });
   }
   function whenWord(iso) {
@@ -1612,7 +1612,7 @@
         if (!runs) {
           var mine = r.submitted_by && r.submitted_by === myId(), reviewing = r.reviewer_id && r.reviewer_id === myId();
           var mayBack = r.status === 'confirmed' ? may('manage') : r.status === 'review' && (reviewing || mine || (isAdmin() && may('manage')));
-          if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back with Meta\'s changes</button>';
+          if (mayBack) acts = '<button class="btn btn-sm" type="button" data-a="metaback">Send back</button>';
         }
         var show = a.all ? rows : rows.slice(0, 10);
         /* One line a difference, read across as a table (the user,
@@ -2059,7 +2059,7 @@
     on('submit', function (b) {
       var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
       var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
-      var ask = { title: 'Submit for review?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
+      var ask = { title: 'Submit?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
       if (past || late) {
         ask.title = past ? 'Submit past the month\'s gate?' : 'Submit late?';
         ask.body = (past ? gateWords(g).join(' ') + ' ' : '') + (late ? 'It was due ' + dueWord(g.due) + '. ' : '') +
@@ -4059,7 +4059,7 @@
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + unit(Number(a.results) === 1 ? 'result' : 'results') + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + (c == null ? '' : adPer1000(a) ? ' / 1,000' : unit('/ result')) + '</span>' +
             (!pick && (ed || (a.ad_ids || []).length) ? rowMenu(((a.ad_ids || []).length && adPlat(a) === 'meta' ? [['Open in Ads Manager', 1]] : [])
-              .concat(ed ? [['Edit', 2], ['Make a copy', 2], [adErr(a) ? 'Clear ad error' : 'Mark ad error', 4], ['Remove', 6]] : [])) : '<span></span>') + '</div>';
+              .concat(ed ? [['Edit', 2], ['Duplicate', 2], [adErr(a) ? 'Clear ad error' : 'Mark ad error', 4], ['Remove', 6]] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join(''); }).join('');
     if (pick) { wirePick(box); return; }
@@ -4083,7 +4083,7 @@
       if (act === 'Open in Ads Manager') { window.open(adsManagerUrl(a), '_blank', 'noopener'); return; }
       if (!ed) return;
       if (act === 'Edit') adSheet(a, btn);
-      if (act === 'Make a copy') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
+      if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
       if (act === 'Remove') removeAd(a);
       if (act === 'Mark ad error') markAdError(a);
       if (act === 'Clear ad error') setAdError(a, null);

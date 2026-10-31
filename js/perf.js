@@ -439,7 +439,7 @@
       return;
     }
     if (!shown.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         st.find = ''; st.filter = '';
         $('perfFind').value = ''; $('perfState').value = '';
         paintMonth();
@@ -3437,7 +3437,7 @@
            (2026-10-20, MINE-1). */
         (f.open ? '<div class="row acts refl-acts">' +
           (shared ? '<button class="btn" data-a="unshare" type="button">Stop sharing</button>'
-                  : '<button class="btn btn-go" data-a="share" type="button">Share with management</button>') + '</div>' : '') +
+                  : '<button class="btn btn-go" data-a="share" type="button">Share</button>') + '</div>' : '') +
       '</div></div>';
     var on = function (a, f2) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { f2(b); }); };
     on('edit', function (b) { openRefl(b); });

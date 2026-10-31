@@ -1790,7 +1790,7 @@
       { at: '#rhEdit .rp-ailang', text: 'The language Write with AI drafts in.' }] },
     'reports.check': { name: 'Check and submit', steps: [
       { at: '#rhEdit .rp-aicheck', text: 'Report audit checks the figures against Meta and the commentary against the figures.' },
-      { at: '#rhEdit [data-a="submit"]', text: 'Submit for review asks who reviews the report, then sends it to them.' }] }
+      { at: '#rhEdit [data-a="submit"]', text: 'Submit asks who reviews the report, then sends it to them.' }] }
   };
   /* The screen on show, for its guide: a route, else a tab, a report's step
      or a sheet open over it. Read from the page each time it is asked. */
@@ -6812,7 +6812,7 @@
     if (!total) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
         '<b>No short links.</b>' +
-        '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
+        '<button class="btn btn-sm" data-a="first" type="button">Add link</button>' +
         '</div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null, this); });
       cardsFailed();
@@ -6820,7 +6820,7 @@
     }
     if (!count) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
-        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear filters</button>' +
         '</div></div>';
       box.querySelector('[data-a="clear"]').addEventListener('click', function () {
         $('linkSearch').value = '';

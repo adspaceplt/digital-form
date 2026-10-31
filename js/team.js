@@ -584,13 +584,13 @@
 
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No members.</b>' +
-        '<button class="btn btn-sm" data-a="first" type="button">Add the first member</button></div></div>';
+        '<button class="btn btn-sm" data-a="first" type="button">Add member</button></div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(this); });
       return;
     }
     if (!rows.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
-        '<button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button></div></div>';
+        '<button class="btn btn-sm" data-a="clear" type="button">Clear filters</button></div></div>';
       box.querySelector('[data-a="clear"]').addEventListener('click', function () {
         teamFind = '';
         if ($('teamFind')) $('teamFind').value = '';
