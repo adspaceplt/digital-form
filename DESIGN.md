@@ -848,7 +848,15 @@ screenshotted, and the push names any line it could not settle.
    without letter, Send on WhatsApp beside Resend on WhatsApp, Issue Letter
    of Offer). A question's title may still name its object (Remove from
    Content Review?).
-10. **Retire it for good.** A word the user rejects joins
+10. **Standard lines.** A delete question ends This cannot be undone.
+   (never There is no restore); a record changed meanwhile reads Not saved.
+   This record was changed by someone else. The latest version is now
+   shown.; a record gone reads This {thing} no longer exists.; a label
+   says per (Input price per million tokens, one per line), never "a";
+   an off figure says (0 turns this off). A label cut to fit a column, a
+   tile or a button (Qty × rate, Per engagement) stays short (the user,
+   2026-10-31: "sometimes are cut short due to the width compatibility").
+11. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section.
 

@@ -1234,7 +1234,7 @@
         }
 
         if (table === 'clients' && pending && ('brief' in pending || 'brand_notes' in pending) && !opsAllowed('clients.brand', 'work')) {
-          rows = []; api.__err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' }; return api;
         }
         if (inHit.some(function (r) { return adminGuard(table, r, Object.assign({}, r, pending)); })) {
           rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api;
@@ -1355,7 +1355,7 @@
         }
 
         if (table === 'clients' && pending && ('brief' in pending || 'brand_notes' in pending) && !opsAllowed('clients.brand', 'work')) {
-          rows = []; api.__err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' }; return api;
         }
         if (eqHit.some(function (r) { return salesByRefused(table, r, pending); })) {
           rows = []; api.__err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' }; return api;
@@ -1411,7 +1411,7 @@
 
             if ((('white_label' in pending && Boolean(pending.white_label) !== Boolean(r.white_label)) ||
                  ('report_logo' in pending && (pending.report_logo || null) !== (r.report_logo || null))) &&
-                !opsGranted('reports.whitelabel', 'work')) blocked = 'White label needs Reports: White label at Work.';
+                !opsGranted('reports.whitelabel', 'work')) blocked = 'You do not have permission to change white label settings. Please ask an admin.';
             if (wlLogo && !/^data:image\/png;base64,/.test(wlLogo)) blocked = 'clients_report_logo_png';
           }
 
@@ -1631,13 +1631,13 @@
         if (!err && table === 'clients') {
           var bCols = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'finance_email', 'billing_address', 'bill_contact_id'];
           if ((bCols.some(function (k) { return x[k] != null && String(x[k]).trim() !== ''; }) || x.sst_applies === false || x.bill_sgd === true) &&
-              !opsAllowed('clients.billing', 'work')) err = { code: '42501', message: 'Billing details need Clients: Billing at Work.' };
+              !opsAllowed('clients.billing', 'work')) err = { code: '42501', message: 'You do not have permission to change billing details. Please ask an admin.' };
           else if (x.stage === 'active') err = { code: 'P0001', message: 'active-needs-billing' };
-          else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' };
-          else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'White label needs Reports: White label at Work.', hint: 'white-label' };
+          else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' };
+          else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'You do not have permission to change white label settings. Please ask an admin.', hint: 'white-label' };
         }
         if (!err && table === 'campaigns' && (x.invoice_no != null || x.invoice_url != null || x.invoice_uploaded_at != null) && !opsAllowed('campaigns.finance', 'work'))
-          err = { code: '42501', message: 'The invoice needs Creator Campaigns: Finance at Work.' };
+          err = { code: '42501', message: 'You do not have permission to change the campaign invoice. Please ask an admin.' };
         if (!err && table === 'campaign_deliverables' && (x.hidden_at != null || x.hidden_by != null))
           err = { code: 'P0001', message: 'hide-function', hint: 'Hide and Restore go through campaign_file_hide.' };
         if (!err && table === 'team_roles' && scopeClash(x)) err = { code: 'P0001', message: 'scope-activity' };
@@ -2781,24 +2781,24 @@ function cardSlugFree(name, self, email) {
     health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2,
 
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
-  var APP_WORD = { lead_followup_hours: ['A lead waits', ' hours'], proposal_followup_days: ['A proposal waits', ' days'],
-    fx_sgd: ['Singapore dollar rate', ' to S$1'], vic_lead_followup_hours: ['A VIC lead waits', ' hours'], vic_proposal_followup_days: ['A VIC proposal waits', ' days'], sst_pct: ['SST', '%'],
+  var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
+    fx_sgd: ['Singapore dollar rate', ' per S$1'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
     term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
     term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
-    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
+    ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
-    wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' a day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['A leaver\'s health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
+    wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
-    analytics_churn_pct: ['Analytics churn alert, a quarter', '%'],
+    analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
     bench_cpr_high: ['Property cost per result, tier 3 from', ''], bench_cpr_top: ['Property cost per result, tier 3 up to', ''],
     bench_msg_min: ['Messaging cost per result, low', ''], bench_msg_target: ['Messaging cost per result, target', ''], bench_msg_max: ['Messaging cost per result, high', ''],
     bench_form_min: ['Lead form cost per result, low', ''], bench_form_target: ['Lead form cost per result, target', ''], bench_form_max: ['Lead form cost per result, high', ''],
-    bench_cpm_min: ['Cost per 1,000 impressions, low', ''], bench_cpm_max: ['Cost per 1,000 impressions, high', ''], bench_cpl_rise: ['Cost per lead rise a year', '%'],
-    bench_reels_share: ['Reels share of impressions', '%'], bench_ad_spend_pct: ['Ad spend of the budget', '%'], bench_adset_daily: ['Daily budget an ad set, at least', ''] };
+    bench_cpm_min: ['Cost per 1,000 impressions, low', ''], bench_cpm_max: ['Cost per 1,000 impressions, high', ''], bench_cpl_rise: ['Yearly rise in cost per lead', '%'],
+    bench_reels_share: ['Reels share of impressions', '%'], bench_ad_spend_pct: ['Ad spend share of the budget', '%'], bench_adset_daily: ['Minimum daily budget per ad set', ''] };
   var APP_PRE = function (k) { return k === 'fx_sgd' ? 'RM ' : /^ai_price_/.test(k) ? 'US$' : /^bench_/.test(k) && APP_WORD[k][1] === '' ? 'RM ' : ''; };
   function appDb() {
     if (!DB.app_settings) DB.app_settings = [];

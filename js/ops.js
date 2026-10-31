@@ -144,7 +144,7 @@
     'not-team': 'Team record not found. Contact an admin.',
     'denied': 'You do not have access to do that.',
     'no-tasks': 'That colleague has no access to My Work, so takes no tasks.',
-    'not-found': 'That task is no longer there.',
+    'not-found': 'This task no longer exists.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
     'not-live': 'Results are recorded once the post is live.',
     'bad-number': 'Enter whole numbers, 0 or more.',
@@ -154,7 +154,7 @@
     'bad-estimate': 'Enter an estimate from 0 to 10,000 minutes.',
     'no-code': 'This task has no code to change.',
     'other-client': 'That record belongs to another client.',
-    'record-not-found': 'That record is no longer there.',
+    'record-not-found': 'This record no longer exists.',
     'record-link': 'A record link is removed and linked again, not edited.',
     'stale': 'Updated by someone else. Reloaded.',
     'not-yours': 'Not yours to decide.',
@@ -190,7 +190,7 @@
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',
     'planning-incomplete': 'This month\u2019s checklists are not done.',
-    'meeting-required': 'Content meeting not held or marked N/A.',
+    'meeting-required': 'Content meeting not held or marked not applicable.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'Not a team member.',
     'bad-count': 'Add 1 to 60 posts.',
@@ -1544,7 +1544,7 @@
     var n = ids.length;
     ADspaceConfirm.ask({
       title: 'Delete ' + n + (n === 1 ? ' task' : ' tasks'),
-      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, remark, link, checklist item and time entry. There is no restore.',
+      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, remark, link, checklist item and time entry. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' },
@@ -1625,7 +1625,7 @@
       if (r.error || (d && d.error)) { msg(where, r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
         title: 'Task numbering',
-        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number.'),
+        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task has a number yet.'),
         go: 'Save',
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
       }, function (v) {
@@ -3167,7 +3167,7 @@
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var REPORT_SAID = {
     'month-gate': 'Its month in My Work does not ask for this report.',
-    'denied': 'This needs a higher access level for Reports.',
+    'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'bad-period': 'The month\'s period could not be read.'
   };
   function monthSpanOf(e) {
@@ -5635,7 +5635,7 @@
     if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
     if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be made (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
-      ? 'This needs a database update. Ask an admin to run the latest migration.' : m;
+      ? 'This feature is not available yet. Please contact an admin.' : m;
   }
   function call(fn, args, msgId, then, onFail) {
     db.rpc(fn, args).then(function (r) {
@@ -5680,7 +5680,7 @@
     var serial = serialOf(t);
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: serial + ' · ' + (t.title || 'Untitled task') + ' goes, with its ' + goes.join(', ') + '. There is no restore.',
+      body: serial + ' · ' + (t.title || 'Untitled task') + ' goes, with its ' + goes.join(', ') + '. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'serial', label: 'Type the task number to confirm', placeholder: serial, match: serial,
@@ -6624,7 +6624,7 @@
     });
   }
   /* Settings, Templates: Meeting message (`team.settings`). */
-  var MEET_SAID = { denied: 'This needs Team: Business settings.', 'bad-body': 'The message is 2 to 3,000 characters.',
+  var MEET_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-body': 'The message is 2 to 3,000 characters.',
     'no-date': 'The message needs {date}.' };
   function meetMessageLine() {
     return new Promise(function (ok, no) {
@@ -6636,7 +6636,7 @@
   }
   function openMeetMessage(btn, say) {
     readMeetMsg(function (d) {
-      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? 'This needs a database update.' : MEET_SAID[d.error] || d.error, 'err'); return; }
+      if (d.error) { if (say) say(/function|schema cache/i.test(d.message || '') ? 'This feature is not available yet. Please contact an admin.' : MEET_SAID[d.error] || d.error, 'err'); return; }
       window.ADspaceConfirm.ask({
         title: 'Meeting message', go: 'Save', wait: true,
         body: 'Fields: {meeting}, {date}, {time}, {month}, {channel}, {link}. A line whose field has no value is left out.',
@@ -6653,7 +6653,7 @@
         }
       }, function (v) {
         return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
-          if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+          if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
           if (r.data && r.data.error) return MEET_SAID[r.data.error] || r.data.error;
           meetMsg.body = String(v.body || '').replace(/\r/g, '').trim();
           if (say) say('Saved.', 'ok');
@@ -6722,7 +6722,7 @@
         title: 'Delete Google Meet',
         body: (e.meeting_event_id
           ? 'The event is deleted from the shared calendar and its link stops working.'
-          : 'The link is removed from the month.') + ' The meeting keeps its date and time. There is no restore.',
+          : 'The link is removed from the month.') + ' The meeting keeps its date and time. This cannot be undone.',
         go: 'Delete', tone: 'danger', wait: true
       }, function () {
         return new Promise(function (res) {
@@ -7180,7 +7180,7 @@
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })
             ? 'Its checklist ticks move to the next month; the meeting goes with it.'
             : 'The checklist ticks and the meeting go with it.') +
-        ' There is no restore.',
+        ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) {
@@ -7370,23 +7370,12 @@
   /* What the edge function answered, in the team's words. */
   function meetSaid(d) {
     var k = d && d.error;
-    if (k === 'meet-not-set-up') {
-      var miss = (d.missing || []).join(', ');
-      return 'Google Meet is not connected' + (miss ? ': ' + miss + ' is not set in Supabase' : '') + '. Paste a link instead.';
-    }
-    /* Google turned the shared account's sign-in away: the word it gave says
-       which secret to replace. */
-    if (k === 'google-token') {
-      var rs = String(d.reason || '');
-      if (rs === 'invalid_grant') return 'Google refused the refresh token. Get a new one from OAuth Playground and replace GOOGLE_REFRESH_TOKEN.';
-      if (rs === 'invalid_client' || rs === 'unauthorized_client') return 'Google refused the client ID or secret. Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET match the OAuth client the token was made with.';
-      return 'Google refused the sign-in' + (rs ? ' (' + rs + ')' : '') + '.';
-    }
-    if (k === 'google-refused' && /accessNotConfigured|SERVICE_DISABLED/i.test(String(d.reason || ''))) {
-      return 'The Google Calendar API is not enabled on the Google Cloud project.';
-    }
-    if (k === 'google-refused' && /insufficient|PERMISSION_DENIED|forbidden/i.test(String(d.reason || ''))) {
-      return 'The refresh token does not carry calendar access. Make it again with the calendar.events scope.';
+    if (k === 'meet-not-set-up') return 'Google Meet is not set up yet. Paste a link instead, and contact an admin.';
+    /* The setup faults (Google refused the token, the API is off, the token
+       lacks calendar access) are an admin's to fix; the reason stays in the
+       function's log, never on the screen. */
+    if (k === 'google-token' || (k === 'google-refused' && /accessNotConfigured|SERVICE_DISABLED|insufficient|PERMISSION_DENIED|forbidden/i.test(String(d.reason || '')))) {
+      return 'Google Meet is not available at the moment. Paste a link instead, and contact an admin.';
     }
     if (k === 'meet-pending') return 'The calendar event is booked and Google is still making its Meet link. Press Create Google Meet again in a moment.';
     if (k === 'unreachable') return 'Google Meet could not be reached. Try again, or paste a link.';
@@ -7395,8 +7384,8 @@
       return 'The shared calendar already has a meeting' +
         (span ? ' at ' + span : '') + '. Choose another time.';
     }
-    if (k === 'google-refused') return 'Google refused the booking' + (d.reason ? ' (' + d.reason + ')' : '') + '. Try again.';
-    if (k === 'not-saved' && d.deleted === false) return 'The event was deleted from the calendar, but the month still holds its link. Try again.';
+    if (k === 'google-refused') return 'Google Meet could not book the meeting. Try again, or paste a link.';
+    if (k === 'not-saved' && d.deleted === false) return 'The event was deleted from the calendar, but the link is still on the month. Try again.';
     if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
     return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
   }

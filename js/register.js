@@ -1198,7 +1198,7 @@
     }).catch(function (e) {
       btn.disabled = false;
       if (tab && !tab.closed) tab.close();
-      msg('docMsg', 'The preview could not be drawn: ' + ((e && e.message) || e), 'err');
+      msg('docMsg', 'The preview could not be generated: ' + ((e && e.message) || e), 'err');
     });
   }
   function sendIssue() {
@@ -1250,11 +1250,11 @@
     'code-taken':   'Another HR letter uses that reference code.',
     'bad-fields':   'A field name is up to 40 characters.',
     'too-long':     'The wording is too long.',
-    'not-found':    'That document type is no longer there.'
+    'not-found':    'This document type no longer exists.'
   };
   function dtSaid(r) {
     var m = r && r.error && (r.error.message || '');
-    if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     var k = (r && r.data && r.data.error) || m;
     return DT_SAID[k] || k || 'The request failed.';
   }

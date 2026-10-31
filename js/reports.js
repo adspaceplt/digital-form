@@ -88,14 +88,14 @@
      heading, so nothing here asks for a title or a headline. The three
      further sections are folded, because most months do not need them. */
   var TEXT = {
-    social: [['intro', 'Summary', 'Two or three sentences', 4], ['performed_well', 'Key findings', 'One point a line', 4],
-             ['underperformed', 'Areas to improve', 'One point a line', 3], ['next_actions', 'Next steps', 'One point a line', 4]],
-    ads:    [['intro', 'Summary', 'Two or three sentences', 4], ['worked', 'What worked', 'One point a line', 4],
-             ['fix', 'Areas to improve', 'One point a line', 3], ['focus', 'Focus for next month', 'One point a line', 3]]
+    social: [['intro', 'Summary', 'Two or three sentences', 4], ['performed_well', 'Key findings', 'One point per line', 4],
+             ['underperformed', 'Areas to improve', 'One point per line', 3], ['next_actions', 'Next steps', 'One point per line', 4]],
+    ads:    [['intro', 'Summary', 'Two or three sentences', 4], ['worked', 'What worked', 'One point per line', 4],
+             ['fix', 'Areas to improve', 'One point per line', 3], ['focus', 'Focus for next month', 'One point per line', 3]]
   };
   var TEXT_MORE = [['why_well', 'Performance drivers'], ['opportunities', 'Opportunities'], ['improvements', 'Improvements']];
   var SAID = {
-    'denied': 'This needs a higher access level for Reports.',
+    'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
     'month-gate': 'Its month in My Work does not ask for this report.',
@@ -105,7 +105,7 @@
     'no-platforms': 'Add an account before submitting.',
     'no-posts': 'Add the month\'s posts before submitting.',
     'no-ads': 'Add the period\'s ads before submitting.',
-    'bad-kind': 'Reports need a database update. Run the 2026-09-25 report builder migration.',
+    'bad-kind': 'This feature is not available yet. Please contact an admin.',
     'note-required': 'Say what needs changing.',
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
@@ -136,7 +136,7 @@
     var m = String((e && (e.error || e.message)) || e || '');
     var key = Object.keys(SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
     if (key) return SAID[key];
-    if (/function .* does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    if (/function .* does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     return m || 'Not saved.';
   }
 
@@ -521,7 +521,7 @@
         var d = r.data || {};
         var id = d.id;
         if (r.error || (d.error && !(d.error === 'exists' && id))) {
-          say(sm, d.error === 'index-pending' ? 'This needs a database update.' : d.error === 'bad-brand' ? 'That brand is no longer offered.' : said(r.error || d), 'err');
+          say(sm, d.error === 'index-pending' ? 'This feature is not available yet. Please contact an admin.' : d.error === 'bad-brand' ? 'That brand is no longer offered.' : said(r.error || d), 'err');
           return;
         }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
@@ -1882,7 +1882,7 @@
     (g.missing || []).forEach(function (k) {
       if (k === 'no-month') out.push('No month in My Work covers this period.');
       else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
-      else if (k === 'no-task') out.push('Its month holds no report task.');
+      else if (k === 'no-task') out.push('Its month has no report task.');
       else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
     });
     return out;
@@ -2229,7 +2229,7 @@
                 say(m, e === 'published' ? 'A published report keeps its brand. Revise it first.' :
                   e === 'exists' ? 'That brand already has a report for this period.' :
                   e === 'bad-brand' ? 'That brand is no longer offered.' :
-                  e === 'index-pending' ? 'This needs a database update.' : said(res.error || d), 'err');
+                  e === 'index-pending' ? 'This feature is not available yet. Please contact an admin.' : said(res.error || d), 'err');
                 return;
               }
               reopen('Saved.');
@@ -2290,7 +2290,7 @@
       var word = periodWord(r.period_start, r.period_end);
       var seen = (st.openVersions || []).length;
       window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and text go with it.' : 'Its accounts, posts and text go with it.') +
-        (seen ? ' It has been published: ' + (seen === 1 ? 'its version leaves' : 'its ' + seen + ' versions leave') + ' the client portal.' : '') + ' There is no restore.', go: 'Delete', tone: 'danger',
+        (seen ? ' It has been published: ' + (seen === 1 ? 'its version leaves' : 'its ' + seen + ' versions leave') + ' the client portal.' : '') + ' This cannot be undone.', go: 'Delete', tone: 'danger',
         field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period.' } },
         function (typed) {
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
@@ -2447,7 +2447,7 @@
         }
         window.ADspaceConfirm.ask({
           title: 'Delete version ' + v.version_no + '?',
-          body: 'Version ' + v.version_no + ' and its kept copy are removed from the report. There is no restore.',
+          body: 'Version ' + v.version_no + ' and its kept copy are removed from the report. This cannot be undone.',
           go: 'Delete', tone: 'danger', wait: true
         }, function () {
           return db.rpc('sm_report_version_delete', { p_version: v.id }).then(function (res) {
@@ -2585,9 +2585,9 @@
         '<div><label class="field-label" for="rpAccNote">Metric note</label><textarea class="input" id="rpAccNote" rows="1" data-oneline placeholder="Optional"></textarea></div></div></section>' +
       (remarksHere ? '<details class="fmore" data-none="Optional"><summary>Remarks for this account</summary>' +
         '<div class="row"><div><label class="field-label" for="rpAccSummary">Summary line</label><textarea class="input" id="rpAccSummary" rows="1" data-oneline></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccWorked">What worked</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point a line"></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas to improve</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point a line"></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccActions">Focus for next month</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></details>' : ''),
+        '<div class="row"><div><label class="field-label" for="rpAccWorked">What worked</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point per line"></textarea></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas to improve</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point per line"></textarea></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAccActions">Focus for next month</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point per line"></textarea></div></div></details>' : ''),
       FOOT('Save'));
     box.querySelector('h3').textContent = a ? 'Edit account' : 'Add account';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
@@ -3382,9 +3382,9 @@
       var id = g.lead.id;
       return '<section class="fsec rp-plat" data-acc="' + esc(id) + '"><h4 class="fsec-h">' + esc(g.label) + '</h4>' +
         '<div class="row"><div><label class="field-label" for="rpP_' + id + '_summary">Summary line</label><textarea class="input" id="rpP_' + id + '_summary" rows="1" data-oneline></textarea></div></div>' +
-        area('rpP_' + id + '_worked', 'What worked', 'One point a line') +
-        area('rpP_' + id + '_improve', 'Areas to improve', 'One point a line') +
-        area('rpP_' + id + '_actions', 'Focus for next month', 'One point a line') +
+        area('rpP_' + id + '_worked', 'What worked', 'One point per line') +
+        area('rpP_' + id + '_improve', 'Areas to improve', 'One point per line') +
+        area('rpP_' + id + '_actions', 'Focus for next month', 'One point per line') +
         /* The posts' remarks are one a post, under a head of their own, so
            the platform's fields above read as the platform's (the user,
            2026-10-01). */
@@ -3408,14 +3408,14 @@
       /* The line belongs to the fields of points: an ads report's four, an
          accounts report's platform blocks, never its Summary of sentences
          (ux-audit RPT-7). */
-      (ads ? '<p class="rp-hint">One point a line. Start a line with a dash for a sub-point.</p>' : '') +
+      (ads ? '<p class="rp-hint">One point per line. Start a line with a dash for a sub-point.</p>' : '') +
       fields.map(function (x) { return area('rpT_' + x[0], x[1], x[2], x[3]); }).join('') +
-      (!ads && platHtml ? '<p class="rp-hint">One point a line.</p>' : '') +
+      (!ads && platHtml ? '<p class="rp-hint">One point per line.</p>' : '') +
       platHtml +
       /* What older reports wrote across all platforms stays editable there;
          a report with none of it shows no fold. */
       (more.some(function (x) { return has(valOf(x[0])); }) ? '<details class="fmore rp-across"><summary>Across all platforms <span class="fmore-sum"></span></summary>' +
-        more.map(function (x) { return area('rpT_' + x[0], x[1], 'One point a line', 3).replace('<textarea ', '<textarea data-none="Optional" data-some="Written" '); }).join('') + '</details>' : '') +
+        more.map(function (x) { return area('rpT_' + x[0], x[1], 'One point per line', 3).replace('<textarea ', '<textarea data-none="Optional" data-some="Written" '); }).join('') + '</details>' : '') +
       '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">' + esc(nextWord()) + '</button>' +
         '<button class="btn" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
     fields.concat(more).forEach(function (x) { var el = $('rpT_' + x[0]); if (el) el.value = valOf(x[0]) || ''; });
@@ -3728,18 +3728,18 @@
     return who + (when ? ' Resets at ' + when + '.' : '');
   }
   var AI_SAID = {
-    'needs-update': 'This needs a database update.',
-    'ai-not-set-up': 'AI needs its key in Supabase.',
-    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
-    'ai-model': 'The AI model name in Supabase is not recognised.',
+    'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
+    'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-failed': 'No draft came back. Try again.',
     'ai-incomplete': 'No draft came back. Try again.',
     'no-ads': 'Add the period\'s ads before drafting.',
     'no-posts': 'Add the month\'s posts before drafting.',
     'not-draft': 'Only a draft can be drafted.',
-    'denied': 'This needs a higher access level for Reports.',
+    'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'not-found': 'This report no longer exists.'
   };
 
@@ -4748,9 +4748,9 @@
     'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'no-mapping': 'This account is no longer linked on the client\'s Brand.',
-    'denied': 'This needs Reports at Manage.',
+    'denied': 'You do not have permission to import into this report. Please ask an admin.',
     'not-draft': 'Only a draft takes an import.',
-    'needs-update': 'This needs a database update.'
+    'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   /* The pictures (2026-10-10, the user: "build post thumbnails"): after an
      import from Meta, each post or ad the report holds with no picture of
@@ -4849,7 +4849,7 @@
     say(line, '');
     var r = st.open;
     var rows = st.ads.filter(function (a) { return (a.ad_ids || []).length; });
-    if (!rows.length) { say(line, 'No ad in this report holds an Ad ID from Meta.', 'warn'); return; }
+    if (!rows.length) { say(line, 'No ad in this report has an Ad ID from Meta.', 'warn'); return; }
     var held = rows.filter(function (a) { return a.thumb_data; }).length;
     var q = { title: 'Pictures from Meta', go: 'Add pictures', body: 'Each ad takes its creative\'s own picture from Meta. No figure changes.' };
     if (held) q.field = { label: 'Replace the ' + plural(held, 'picture') + ' already added', tick: true, value: false };
@@ -4897,7 +4897,7 @@
         paintAds();
         if (!n) {
           say(line, refused === 'not-saved' ? 'Not saved. The database refused the request.'
-            : refused ? (META_SAID[refused] || 'Meta did not answer. Try again.') : 'Meta holds no picture for these ads.', refused ? 'err' : 'warn');
+            : refused ? (META_SAID[refused] || 'Meta did not answer. Try again.') : 'Meta has no picture for these ads.', refused ? 'err' : 'warn');
           return;
         }
         var swapped = ids.filter(function (id) { return before[id]; }).length;
@@ -4905,7 +4905,7 @@
           swapped ? plural(swapped, 'picture') + ' replaced' : ''].filter(Boolean).join(', '));
         if (missed) say(line, plural(missed, 'ad') + ' took no picture. ' +
           (refused === 'not-saved' ? 'The database refused the request.'
-            : refused ? (META_SAID[refused] || 'Meta did not answer.') : 'Meta holds none for ' + (missed === 1 ? 'it.' : 'them.')), 'warn');
+            : refused ? (META_SAID[refused] || 'Meta did not answer.') : 'Meta has none for ' + (missed === 1 ? 'it.' : 'them.')), 'warn');
         undoBar(plural(n, 'picture') + ' taken from Meta.', st.host.querySelector('.rp-ads'), function () {
           Promise.all(ids.map(function (id) {
             return db.from('sm_report_ads').update({ thumb_data: before[id] }).eq('id', id).select('*').then(function (res) {
@@ -5204,7 +5204,7 @@
       db.rpc('ai_draft_usage').then(function (r) {
         d = r.data || {};
         if (r.error || d.error) {
-          UI.failLine(host, 'AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
+          UI.failLine(host, 'AI usage', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : said(r.error)) : (d.error === 'denied' ? 'Only an admin sees this.' : said(d.error)), paint);
           return;
         }
         edit.disabled = false;
@@ -5271,7 +5271,7 @@
               }).join('') +
               aiUseRow({ name: 'Tokens', text: aiTokens(cost.input) + ' in · ' + aiTokens(cost.output) + ' out' }) +
               (cost.searches ? aiUseRow({ name: 'Web searches', text: fmt(cost.searches) }) : '') +
-              aiUseRow({ name: 'Price a million tokens', text: aiUsd(cost.price_in) + ' in · ' + aiUsd(cost.price_out) + ' out' }) +
+              aiUseRow({ name: 'Price per million tokens', text: aiUsd(cost.price_in) + ' in · ' + aiUsd(cost.price_out) + ' out' }) +
               (cost.price_search != null ? aiUseRow({ name: 'Price a thousand web searches', text: aiUsd(cost.price_search) }) : '') +
             '</div>' +
             (cost.untracked ? '<p class="aiu-reset">' + fmt(cost.untracked) + (cost.untracked === 1 ? ' use' : ' uses') + ' from before tokens were kept are not priced.</p>' : '') +
@@ -5304,7 +5304,7 @@
               '<small class="aiu-adm" data-was="' + (a !== v ? esc('Admins ' + a + ' a day') : '') + '"' + (a !== v ? '' : ' hidden') + '>' +
               (a !== v ? 'Admins ' + esc(String(a)) + ' a day' : '') + '</small></span>' +
               '<span class="aiu-field"><input class="input input-sm aiu-num" type="number" inputmode="numeric" min="0" max="500" step="1"' +
-              ' data-k="' + l[0] + '" value="' + esc(String(v)) + '" placeholder="' + AI_STD[l[0]] + '" aria-label="' + esc(l[2] + ', a day') + '">' +
+              ' data-k="' + l[0] + '" value="' + esc(String(v)) + '" placeholder="' + AI_STD[l[0]] + '" aria-label="' + esc(l[2] + ', per day') + '">' +
               '<span class="aiu-unit">a day</span></span></label>';
           }
           return aiUseRow({ name: l[2], text: day(v) + (a !== v ? ' · admins ' + a : ''), own: v !== AI_STD[l[0]], cap: v });

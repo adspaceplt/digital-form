@@ -21,7 +21,7 @@
   var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var SAID = {
-    denied: 'This needs Clients: Quotations at Manage.', 'client-scope': 'This client is outside your access.',
+    denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
@@ -32,13 +32,13 @@
     expired: 'This quotation has expired. Duplicate it to quote again.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
-    'no-number': 'No WhatsApp number is held for this prospect.',
+    'no-number': 'This prospect has no WhatsApp number on record.',
     'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
   };
   function said(e) {
     if (!e) return '';
     var m = String(e.message || e);
-    if (/could not find|does not exist|schema cache/i.test(m)) return 'This needs a database update.';
+    if (/could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     return SAID[m] || m;
   }
   function rm(n) { return MON.money2(n, 'MY').replace(/^RM /, ''); }
@@ -482,14 +482,14 @@
      gone for good. The database refuses one a service line, a letter or a
      revision names, and its reference is never issued again. */
   var GONE_SAID = {
-    denied: 'This needs Clients: Quotations at Full Access.',
+    denied: 'You do not have permission to delete quotations. Please ask an admin.',
     'not-removed': 'Remove this quotation first.',
     'bad-ref': 'The reference does not match.'
   };
   function remove(q, ctx) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: q.ref + ' is deleted. There is no restore, and its reference is not used again.',
+      body: q.ref + ' is deleted. This cannot be undone, and its reference will not be used again.',
       go: 'Delete', tone: 'danger', wait: true,
       field: { label: 'Type the reference to confirm', placeholder: q.ref, match: q.ref,
                need: 'Type the reference to confirm.', mismatch: 'The reference does not match.' }
@@ -951,7 +951,7 @@
       }).catch(function (e) {
         btn.disabled = false;
         if (tab) try { tab.close(); } catch (x) {}
-        $('qbMsg').textContent = said(e) || 'The preview could not be drawn.'; $('qbMsg').className = 'msg err';
+        $('qbMsg').textContent = said(e) || 'The preview could not be generated.'; $('qbMsg').className = 'msg err';
       });
     });
     $('qbSave').addEventListener('click', function () {

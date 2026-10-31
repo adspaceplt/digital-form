@@ -31,16 +31,16 @@
   var C = window.ADspaceClock;
 
   var SAID = {
-    denied: 'This needs Clients: Billing.',
+    denied: 'You do not have permission to change billing details. Please ask an admin.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
     'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
     'bukku-unreachable': 'Bukku did not respond. Try again in a few minutes.',
     'bukku-refused': 'Bukku refused the request.',
     'mail-not-set-up': 'Email is not set up. Add the Resend key to the portal\'s secrets.',
-    'needs-update': 'This needs a database update.',
-    'no-email': 'No email address is held for this client. Add one to its billing contact.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'no-email': 'This client has no email address on record. Add one to its billing contact.',
     'nothing-overdue': 'These invoices are no longer overdue.',
-    sending: 'A reminder to this client is being sent. Read again in a minute to see its status.',
+    sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
     'bad-subject': 'The subject must be 2 to 200 characters.',
     'bad-body': 'The message must be 2 to 5,000 characters.',
     'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
@@ -425,7 +425,7 @@
           '<span><span class="chip-state chip ' + s[1] + '">' + esc(s[0]) + '</span></span></div>';
       }).join('') + '</div></div>' : '';
     pv.innerHTML = '<div class="inv-rv-head"><dl class="ovfacts">' +
-        '<dt>To</dt><dd>' + (to ? esc(((g.to && g.to.name) ? g.to.name + ' · ' : '') + to) : '<span class="err-ink">No email address held</span>') + '</dd>' +
+        '<dt>To</dt><dd>' + (to ? esc(((g.to && g.to.name) ? g.to.name + ' · ' : '') + to) : '<span class="err-ink">No email address on record</span>') + '</dd>' +
         (cc ? '<dt>Copy</dt><dd><label class="tickline"><input type="checkbox" data-cc' + (g.cc ? ' checked' : '') + '> ' + esc(cc) + '</label></dd>' : '') +
         '<dt>Subject</dt><dd>' + esc(f.subject) + '</dd></dl>' +
         (d ? '' : '<button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>') + '</div>' +

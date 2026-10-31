@@ -63,7 +63,7 @@
     if (!d || !d.error) return '';
     if (d.error === 'db') {
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
-        ? 'This needs a database update. Ask an admin to run the latest migration.' : (d.message || 'Not saved.');
+        ? 'This feature is not available yet. Please contact an admin.' : (d.message || 'Not saved.');
     }
     return SAID[d.error] || d.error;
   }
@@ -249,7 +249,7 @@
       b.addEventListener('click', function () {
         shutTalkMenus();
         window.ADspaceConfirm.ask({ title: 'Delete this talk?',
-          body: 'Your withdrawn request to talk with ' + b.getAttribute('data-with') + ' is removed for good. There is no restore.',
+          body: 'Your withdrawn request to talk with ' + b.getAttribute('data-with') + ' will be deleted. This cannot be undone.',
           go: 'Delete', tone: 'danger' }, function () { dropTalk(b.getAttribute('data-talkdel')); });
       });
     });
