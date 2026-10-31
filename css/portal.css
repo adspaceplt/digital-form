@@ -7995,8 +7995,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    56 of air on both sides at a desk and 41 on a phone. */
 .lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
 .lp-intro-act { margin: 24px 0 0; }
-.lp-chat { gap: 8px; }
-.lp-chat svg { width: 15px; height: 15px; }
 .lp-title {
   margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
   font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
@@ -8039,8 +8037,19 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-go {
   display: inline-flex; align-items: center; gap: 4px; min-height: var(--ctl-h);
   margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 13.5px; color: var(--action-ink); text-decoration: none;
+  /* Never an underlined word (FRONT-1): the hover is a shade that hugs the
+     line, as `.linkbtn`'s does, its 6px either side given back so the
+     words keep their edge. */
+  position: relative; isolation: isolate; padding-inline: 6px; margin-inline: -6px;
 }
-@media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
+.lp-go::before {
+  content: ""; position: absolute; z-index: -1; inset: calc(50% - 13px) 0;
+  border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
+}
+@media (hover: hover) { .lp-go:hover::before { background: var(--line-soft); } }
+/* Each opens adspacestudios.com or Maps in a new tab, so it ends in the
+   leaving mark, never the chevron (FRONT-2). */
+.lp-go svg { width: 14px; height: 14px; flex: 0 0 auto; }
 /* The hours on the left; the address and WhatsApp on the right, on the
    same column. */
 .lp-duo {
@@ -8052,7 +8061,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hours { width: 100%; border-collapse: collapse; font-size: 14px; }
 .lp-hours th, .lp-hours td { padding: 10px 0; border-top: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
 .lp-hours tr:last-child th, .lp-hours tr:last-child td { border-bottom: 1px solid var(--line-soft); }
-.lp-hours th { font-family: var(--font-head); font-weight: 400; color: var(--ink); width: 34%; }
+.lp-hours th { font-family: var(--font-head); font-size: 15px; font-weight: 400; color: var(--ink); width: 34%; }
 .lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .lp-hours td:last-child { text-align: right; white-space: nowrap; }
 .lp-hours .is-shut td:last-child { color: var(--ink-mute); }
@@ -8061,8 +8070,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-address { margin: 0 0 4px; font-style: normal; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.lp-cta { gap: 8px; }
-.lp-cta svg { width: 16px; height: 16px; }
 /* The ways in read down the band once five across no longer fit, the tick
    beside its words, on a narrower column the hours and the address share. */
 @media (max-width: 900px) {
@@ -8083,7 +8090,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .lp-tick { width: 18px; height: 18px; margin-top: 1px; }
   .lp-way-name { font-size: 14px; }
   .lp-go { font-size: 13px; }
-  .lp-hours { font-size: 13.5px; }
+  /* The days in Slate Regular 14 on a phone, as the names are; the
+     figures 14, as the address beside them (FRONT-3). */
+  .lp-hours th { font-size: 14px; }
+  /* The bar on the content's 24px edge, so a phone reads one left edge
+     from the wordmark down (FRONT-4). The foot keeps every page's 16: at
+     24 its one line broke in two on a 390 phone. */
+  body.lp .topbar-inner { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
   .lp-duo { padding-block: 32px 48px; gap: 32px; }
   .lp-side { gap: 32px; }
   .lp-h2 { font-size: 16px; }
