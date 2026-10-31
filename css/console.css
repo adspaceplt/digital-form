@@ -1378,7 +1378,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .is-narrow .ovfacts > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
 /* A record pane read first (Billing, Brand): the values in the groups the
    Edit sheet uses, one hairline between groups. */
-.readgroups { display: grid; gap: 0; margin-top: 4px; }
+.readgroups { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 4px; }
 .readgroup { padding: 16px 0; border-top: 1px solid var(--line-soft); }
 /* The labels are longer than a contact's, so the track is too; on a phone
    the label sits over its value. */
@@ -2811,6 +2811,10 @@ button.aiu-row:first-child::before { content: none; }
    question under it, each label beside its value as the other groups. */
 .ba-acts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .ba-acts .team-act { margin-block: -3px; }
+/* On a tight pane the acts take the line under the name, at the right edge
+   (2026-10-31: Confirm, Run again and the ⋯ beside it widened a 320 phone). */
+.is-tight .ba > .readgroup-head { flex-wrap: wrap; row-gap: 8px; }
+.is-tight .ba > .readgroup-head > .ba-acts { margin-left: auto; }
 .ba-none { margin: 0; color: var(--ink-mute); font-size: 13px; }
 .ba-hypo { margin: 12px 0 0; }
 .ba-sec { margin-top: 24px; }
@@ -3454,7 +3458,6 @@ button.vs-row { cursor: pointer; }
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
 .qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
-.qb-row.crm-head { grid-template-areas: none; }
 .qb-row > .qb-name { grid-area: name; }
 .qb-row > .qb-taxc { grid-area: tax; }
 .qb-row > .qb-qty { grid-area: qty; }

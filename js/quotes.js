@@ -764,8 +764,11 @@
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
-    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span>Line</span><span class="svc-rate">Qty</span>' +
-      '<span class="svc-rate">Rate (' + CUR + ')</span><span class="svc-rate">Months</span><span class="svc-rate">Subtotal (' + CUR + ')</span></div>' +
+    /* The head holds a cell for the Tax cell where the lines carry one, so
+       its cells stand over the lines' (2026-10-31). */
+    var hasTax = (B && B.codes || []).some(function (c) { return c.active; });
+    var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Line</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
+      '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
         /* Quantity, rate and months are typed where they are read; a line
            quoted off the card names the card's rate under it. */
