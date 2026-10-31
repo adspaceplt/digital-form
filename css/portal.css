@@ -8488,8 +8488,9 @@ body.ncpage { background: var(--nc-ground); }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
 /* The portrait back reads in one 24px step, mark to name to rows to acts,
-   the card's spare height shared above and below (CARD-3). */
-.nc:not(.is-land) .nc-back { justify-content: center; }
+   the acts kept at the card's foot and its spare height above the mark
+   (CARD-3). */
+.nc:not(.is-land) .nc-back { justify-content: flex-end; }
 .nc:not(.is-land) .nc-back > .nc-acts { margin-top: 24px; padding-top: 0; }
 .nc-cover-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); justify-content: center; gap: 8px; margin-top: 16px; }
 /* Full-size buttons, one width: equal halves of the column on a phone,
