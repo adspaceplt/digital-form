@@ -141,6 +141,7 @@
     brand_analysis_save: 'p_press p_analysis p_sources p_basis p_hypothesis p_model',
     brand_analyses_list: 'p_client',
     brand_analysis_confirm: 'p_id p_on',
+    brand_analysis_delete: 'p_id',
     brand_analysis_brief: 'p_client',
     ai_brand_ready: 'p_client',
     ai_draft_tokens: 'p_id p_in p_out p_model',
@@ -242,6 +243,7 @@
     script_link: 'p_client p_reset',
     script_links: '',
     client_details_link: 'p_client p_reset',
+    client_details_close: 'p_client',
     client_details_state: 'p_client',
     client_details_read: 'p_key',
     client_checklist: 'p_client p_kind',
@@ -262,7 +264,7 @@
     bukku_config: '', bukku_config_set: 'p_client p_supplier', bukku_link_get: 'p_kind p_id',
     bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     bukku_read_may: 'p_kind p_id p_level', bukku_prepare_with: 'p_kind p_id p_values',
-    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_contact: 'p_client p_entity p_contact p_every', client_entity_remove: 'p_client p_entity',
+    client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_contact: 'p_client p_entity p_contact p_every', client_entity_remove: 'p_client p_entity', client_entities_removed: 'p_client', client_entity_delete: 'p_client p_entity p_name',
     supplier_save: 'p_id p_values p_form',
     supplier_set_status: 'p_id p_status',
     supplier_delete: 'p_id p_name',
@@ -6565,6 +6567,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { versions: DB.brand_analyses.filter(function (x) { return x.client_id === a.p_client; })
         .sort(function (p, q) { return q.version - p.version; }).slice(0, 20).map(baRow) };
     }
+
+    if (name === 'brand_analysis_delete') {
+      if (!me || !opsAllowed('clients.brand', 'manage')) return { error: 'denied' };
+      var bd = DB.brand_analyses.filter(function (x) { return x.id === a.p_id; })[0];
+      if (!bd) return { error: 'not-found' };
+      if (!scopeSeen(bd.client_id, 'manage')) return { error: 'client-scope' };
+      var bdLast = DB.brand_analyses.filter(function (x) { return x.client_id === bd.client_id && x.confirmed_at; })
+        .sort(function (p, q) { return q.version - p.version; })[0];
+      if (bdLast && bdLast.id === bd.id) return { error: 'in-use' };
+      DB.brand_analyses.splice(DB.brand_analyses.indexOf(bd), 1);
+      DB.activity_log.push({ id: nid('log'), actor: me.name, action: 'client.brand', subject: (client(bd.client_id) || {}).name,
+        detail: 'Brand analysis: version ' + bd.version + ' deleted', created_at: now });
+      return { ok: true, version: bd.version };
+    }
     if (name === 'brand_analysis_confirm') {
       var b1 = DB.brand_analyses.filter(function (x) { return x.id === a.p_id; })[0];
       if (!b1) return { error: 'not-found' };
@@ -7720,6 +7736,43 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { last_sign_in_at: (window.__signIns || {})[smEmail] || null, last_seen_at: smRow.last_seen_at || null, invited_at: smInv }, error: null });
     }
 
+    if (name === 'client_entities_removed' || name === 'client_entity_delete') {
+      args = args || {};
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
+      entSeed();
+      var egNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      var egMe = opsMe();
+      var egOrphans = function (cid) {
+        return DB.billing_entities.filter(function (e) {
+          return e.orphan_of === cid && !DB.client_entities.some(function (l) { return l.entity_id === e.id; });
+        });
+      };
+      var egBukku = function (id) { return (DB.bukku_links || []).some(function (l) { return l.kind === 'entity' && l.record_id === id; }); };
+      var egLetter = function (id) { return (DB.client_documents || []).some(function (d) { return d.bill_to && d.bill_to.entity_id === id; }); };
+      if (name === 'client_entities_removed') {
+        if (!egMe || !teamCan('billing') || !opsAllowed('clients.billing', 'view') || !scopeSeen(args.p_client, 'view')) return egNo('denied');
+        return Promise.resolve({ data: { entities: egOrphans(args.p_client).map(function (e) {
+          return { id: e.id, legal_name: entNull(e.legal_name), company_no: entNull(e.company_no), bukku: egBukku(e.id), on_letter: egLetter(e.id) };
+        }).sort(function (p, q) { return String(p.legal_name || '').localeCompare(String(q.legal_name || '')); }) }, error: null });
+      }
+      if (!egMe || !teamCan('billing') || !opsAllowed('clients.billing', 'manage') || !scopeSeen(args.p_client, 'manage')) return egNo('denied');
+      var egC = DB.clients.filter(function (x) { return x.id === args.p_client; })[0];
+      var eg = DB.billing_entities.filter(function (x) { return x.id === args.p_entity; })[0];
+      if (!egC || !eg) return egNo('not-found');
+      if (DB.client_entities.some(function (l) { return l.entity_id === eg.id && l.client_id === egC.id; })) return egNo('not-removed');
+      if (DB.client_entities.some(function (l) { return l.entity_id === eg.id; })) return egNo('bills-others');
+      if (eg.orphan_of !== egC.id) return egNo('not-found');
+      if (egBukku(eg.id)) return egNo('bukku');
+      if (egLetter(eg.id)) return egNo('on-letter');
+      var egN = function (v) { return String(v || '').trim().replace(/\s+/g, ' ').toUpperCase(); };
+      if (egN(args.p_name) !== egN(eg.legal_name)) return egNo('bad-name');
+      if (DB.bukku_links_gone) DB.bukku_links_gone = DB.bukku_links_gone.filter(function (g) { return !(g.kind === 'entity' && g.record_id === eg.id); });
+      DB.billing_entities.splice(DB.billing_entities.indexOf(eg), 1);
+      DB.activity_log.unshift({ id: nid('al'), actor: egMe.name, action: 'client.billing', subject: egC.name,
+        detail: 'Billing entity deleted: ' + (eg.legal_name || 'no registered name'), created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'client_entities_list' || name === 'billing_entities_find' || /^client_entity_(add|save|main|remove|contact)$/.test(name)) {
       args = args || {};
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
@@ -10275,6 +10328,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.client_detail_forms.push(nf);
         DB.activity_log.unshift({ id: nid('al'), actor: dfMe.name, action: 'client.edited', subject: lc.name, detail: args.p_reset ? 'Details form link reset' : 'Details form link created', created_at: dfNow.toISOString() });
         return dfOk({ id: nf.id, key: nf.access_key, expires_at: nf.expires_at });
+      }
+
+      if (name === 'client_details_close') {
+        var cc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
+        if (!cc || !scopeSeen(cc.id, 'work')) return dfNo('not-found');
+        var ccOpen = DB.client_detail_forms.filter(function (x) { return x.client_id === cc.id && dfOpen(x); });
+        if (!ccOpen.length) return dfNo('no-link');
+        ccOpen.forEach(function (x) { x.expires_at = new Date(dfNow.getTime() - 1000).toISOString(); });
+        DB.activity_log.unshift({ id: nid('al'), actor: dfMe.name, action: 'client.edited', subject: cc.name, detail: 'Details form link closed', created_at: dfNow.toISOString() });
+        return dfOk();
       }
       if (name === 'client_details_used') {
         var uf = DB.client_detail_forms.filter(function (x) { return x.id === args.p_id; })[0];
