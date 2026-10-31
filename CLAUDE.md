@@ -5864,7 +5864,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   the signed quotation is the contract; `quotation_offer` stays for a
   page served before and nothing calls it); the reviewer's approval makes
   its lines Confirmed (Quotation signing, below). Letters issued before
-  are read, voided and deleted as before. The PDF (`js/quotepdf.js`,
+  are read, voided and deleted as before; a Letter of Offer is still
+  issued from To quote service lines (Issue letter), and one not yet
+  verified is reissued on its lines as changed from its ⋯ Replace
+  (`issue_letter` `p_replaces`; the old one reads Replaced; 2026-10-31,
+  the user: Car Connect SG's letter needed changes). The PDF (`js/quotepdf.js`,
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the

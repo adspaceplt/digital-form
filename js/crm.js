@@ -6208,7 +6208,11 @@
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
             [{ a: 'download', label: 'Download' }],
-            [],
+            /* Replace (2026-10-31): a letter not yet verified is reissued on
+               its lines as changed, the new one replacing it (issue_letter's
+               p_replaces); the old one reads Replaced. */
+            [!d.voided_at && !d.superseded_by && !d.verified_at && mapped.length &&
+             { a: 'replace', label: 'Replace', need: 'clients.documents:work' }],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
             [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
@@ -6302,6 +6306,7 @@
     /* Both of these ask in a sheet rather than a confirm(): each needs a
        reason typed, and one of them needs the reference typed back. Neither
        is a question a browser dialog can carry. */
+    on('replace', function () { shut(); if (DOCS) openPick(mapped, d.id); });
     on('void', function () { shut(); openVoid(d, mapped.length); });
     on('del', function () { shut(); openDelete(d, mapped.length); });
     return row;
@@ -6419,10 +6424,12 @@
      apart, unticked, for a renewal somebody decides on deliberately. */
   var picking = null;
 
-  function eligible() {
+  /* `rep`: the letter being replaced, whose lines are open to the one that
+     replaces it (issue_letter's p_replaces; 2026-10-31). */
+  function eligible(rep) {
     var live = {};
     (state.documents || []).forEach(function (d) {
-      if (!DOCS.liveDoc(d)) return;
+      if (!DOCS.liveDoc(d) || d.id === rep) return;
       ((state.docMap || {})[d.id] || []).forEach(function (id) { live[id] = d.number; });
     });
     var out = { open: [], held: [], confirmed: [] };
@@ -6456,7 +6463,7 @@
       (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
   }
 
-  function openPick(only) {
+  function openPick(only, rep) {
     var c = state.client;
     msg('crmDocMsg', '');
     msg('pickMsg', '');
@@ -6475,8 +6482,8 @@
        audit CLI-4: the field read Numbered automatically while it could not
        be). */
     var noCode = !String(c.client_code || '').trim();
-    var e = eligible();
-    picking = { replaces: null };
+    var e = eligible(rep);
+    picking = { replaces: rep || null };
     $('pickBody').innerHTML =
       /* Bill to (2026-10-29): which billing entity the letter bills, drawn
          where the client holds more than one; the main is the default. */
@@ -6486,7 +6493,7 @@
       '</div>' +
       pickBlock('To quote', e.open, true, '') +
       pickBlock('Already on a live letter', e.held, false,
-        'Void that letter, or issue a replacement from its ⋯, before quoting these again.') +
+        'Void that letter, or choose Replace from its ⋯, before quoting these again.') +
       pickBlock('Confirmed', e.confirmed, false,
         'Tick one only for a renewal, a variation or a replacement.') +
       (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>') +
@@ -6597,6 +6604,7 @@
   }
 
   function pickAgain(ids, said) {
+    var rep = picking && picking.replaces;
     var ref = $('pickRef') ? $('pickRef').value : '';
     var terms = $('pickTerms') ? $('pickTerms').value : '';
     var bill = $('pickBillTo') && !$('pickBillBox').hidden ? $('pickBillTo').value : '';
@@ -6604,7 +6612,7 @@
     loadServices(function () {
       var reopen = function () {
         if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
-        openPick(ids);
+        openPick(ids, rep);
         if ($('pickRef')) $('pickRef').value = ref;
         if ($('pickTerms')) $('pickTerms').value = terms;
         if (bill) pickBillTo(bill);
