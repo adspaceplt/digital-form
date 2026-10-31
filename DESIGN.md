@@ -26,11 +26,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--ink-mute` | `#6b6760` | `#ada8a3` | Labels, hints, quiet buttons (4.5:1 on every ground) |
 | `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
-| `--line-ctl` | `#8e8e8e` | `#858585` | Field and outline borders: the lightest neutral that holds 3:1 on every ground |
+| `--line-ctl` | `#8e8e8e` | `#858585` | A control's drawn edge (a radio, a tick's ring): the lightest neutral that holds 3:1 on every ground |
+| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
-| `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Fields, buttons, the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
+| `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Buttons and fields are filled, never outlined; the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
 | `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button, never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
 | `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
@@ -408,10 +409,13 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Every add or edit form is a sheet over the list, never a panel unfolding at
   the top, never a form replacing the record's head.
 - Buttons:
-  - `.btn` is tonal (shaded, never outlined; fields keep the ring). The one
-    outlined control is the contact chip `.plink`. An outline means a place to
-    type: every select (a status, a form's choice, a bar's view) is a
-    tonal pop-up, the chevron at its end (the user, 2026-10-11).
+  - `.btn` is tonal (shaded, never outlined). The one outlined control is
+    the contact chip `.plink`. A box typed into (`.input`, `.textarea`, a
+    prefixed `.slugfield`, a code's boxes) is filled with `--field` and no
+    outline, turning white with the blue edge and ring while typed in (the
+    user, 2026-10-31, option B: "B"); every select (a status, a form's
+    choice, a bar's view) is a tonal pop-up, the chevron at its end (the
+    user, 2026-10-11). An invalid field keeps its red edge.
   - No bare text links in the portal: a way somewhere is a button, a chip
     or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
     Inside a line of facts it is `.linkbtn` (quiet, chevron, no underline);

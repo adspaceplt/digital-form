@@ -2999,7 +2999,7 @@
     ed.innerHTML =
       platformBoxes(current) +
       '<span class="slugfield"><span class="slugfield-pre">' + esc(MON.sign(mkt())) + '</span>' +
-      '<input class="input" type="number" inputmode="decimal" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
+      '<input class="input is-pre" type="number" inputmode="decimal" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
       '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>' +
       '<button class="btn btn-sm btn-primary" type="button">Save</button>';
     body.appendChild(ed);
@@ -3268,7 +3268,7 @@
     more.innerHTML =
       '<div class="ac-ratefield"><span class="field-label">Client rate</span>' +
         '<span class="slugfield"><span class="slugfield-pre">' + esc(MON.sign(mkt())) + '</span>' +
-        '<input class="input input-sm pickrate" type="number" inputmode="decimal" min="0" step="10" data-nodraft ' +
+        '<input class="input input-sm is-pre pickrate" type="number" inputmode="decimal" min="0" step="10" data-nodraft ' +
         'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" placeholder="360" value="' + esc(p.rate) + '"></span></div>' +
       '<div class="ac-platfield"><span class="field-label">Posts on</span>' + platformBoxes(p.plats, true) + '</div>';
     var have = {};

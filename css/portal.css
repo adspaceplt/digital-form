@@ -112,13 +112,17 @@
   /* The ring is the focus colour at the weight a ring is drawn, so one token
      still drives every control. */
   --action-ring:    #8ab4f8;
-  /* A secondary button is a tonal fill with no outline, so the outline is the
-     field's alone and a box that can be typed in never looks like one that is
-     pressed (the form audit of 2026-09-24). Translucent ink, so the same token
-     reads on the white card and on the off-white page. */
+  /* A secondary button is a tonal fill with no outline. Translucent ink, so
+     the same token reads on the white card and on the off-white page. A
+     field is filled too (--field, below; 2026-10-31), told from a button by
+     its label and turning white while typed in. */
   --tonal:        rgba(27,26,23,.065);
   --tonal-hover:  rgba(27,26,23,.105);
   --tonal-press:  rgba(27,26,23,.15);
+  /* A box typed into is filled, never outlined (the user, 2026-10-31,
+     option B): the tonal shade made opaque, so autofill and a field on a
+     shaded block read the same; it turns white while typed in. */
+  --field:        #f0f0f0;
   --seg-on:       #ffffff;   /* the chosen option of a segment, raised on its track */
   --focus:      rgba(0,113,227,.22);
   --scrim:      rgba(0,0,0,.42);
@@ -274,6 +278,7 @@
     --tonal:        rgba(242,239,236,.09);
     --tonal-hover:  rgba(242,239,236,.135);
     --tonal-press:  rgba(242,239,236,.18);
+    --field:        #323231;
     --seg-on:       #57544f;   /* lifted 2026-10-16: #3a3938 matched the track on a shaded block */
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
@@ -420,8 +425,8 @@ a { color: inherit; }
 .filterbar .count { margin-left: auto; padding-bottom: 0; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
-  font: inherit; font-size: var(--field-text); color: var(--ink); background: var(--card);
-  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); padding: 8px 12px;
+  font: inherit; font-size: var(--field-text); color: var(--ink); background: var(--field);
+  border: 1px solid transparent; border-radius: var(--radius-sm); padding: 8px 12px;
 }
 .select, .input { min-height: var(--ctl-h); padding-block: 0; }
 /* The native control drew its own chrome, so a select sat a few pixels taller
@@ -434,7 +439,7 @@ a { color: inherit; }
   background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
   /* Every select is a tonal pop-up (the user, 2026-10-11: the same cell
      everywhere): something picked, not typed, so it wears the buttons'
-     shade and no outline; an outline is left to what is typed into. */
+     shade and no outline, its chevron at its end. */
   border-color: transparent; background-color: var(--tonal);
   /* A value longer than the box (a registered name, Bill to) ends in an
      ellipsis, never a word cut at the edge (2026-10-29, audit REG-1). */
@@ -574,7 +579,7 @@ textarea[data-oneline] {
 }
 textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1.45em) / 2); }
 .input:focus, .textarea:focus {
-  outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
+  outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus); background-color: var(--card);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled
    field pale yellow and Chrome pale blue whatever the page, so on the dark
@@ -583,7 +588,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    rides on top of it. */
 .input:-webkit-autofill, .input:-webkit-autofill:hover {
   -webkit-text-fill-color: var(--ink); caret-color: var(--ink);
-  box-shadow: 0 0 0 100px var(--card) inset;
+  box-shadow: 0 0 0 100px var(--field) inset;
 }
 .input:-webkit-autofill:focus { box-shadow: 0 0 0 100px var(--card) inset, 0 0 0 3px var(--focus); }
 /* One ring, ours, on everything a keyboard can reach. It used to be the
@@ -2793,12 +2798,19 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .notice span { font-size: 13px; color: var(--ink-mute); }
 
 .slugfield-pre {
-  display: inline-flex; align-items: center; padding: 0 10px; min-height: var(--ctl-h);
-  border: 1px solid var(--line); border-right: 0;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--line-soft);
-  font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
+  display: inline-flex; align-items: center; padding: 0 0 0 12px; min-height: var(--ctl-h);
+  border: 1px solid transparent; border-right: 0;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--field);
+  font-size: var(--field-text); color: var(--ink-mute); white-space: nowrap;
 }
 .slugfield .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; min-width: 0; flex: 1 1 auto; }
+.input.is-pre { padding-left: 6px; }
+.input.is-pre:focus { border-left-color: transparent; box-shadow: none; }
+/* The prefix is part of the one filled box: while typed in, the box turns
+   white and takes the blue edge and ring whole (2026-10-31). */
+.slugfield { border-radius: var(--radius-sm); }
+.slugfield:focus-within { box-shadow: 0 0 0 3px var(--focus); }
+.slugfield:focus-within .slugfield-pre { background: var(--card); border-color: var(--action); }
 
 /* A sheet comes up from the floor and is as tall as what is in it. `height:
    100%` made every one of them full screen, so a confirmation with two lines
