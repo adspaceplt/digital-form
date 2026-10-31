@@ -9324,6 +9324,46 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-rep-mark { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; background: var(--tonal); display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
 .qs-rep-who { display: grid; min-width: 0; }
 .qs-rep-who small { font-size: 14px; color: var(--ink-mute); }
+/* Accepting the quotation in the side card (2026-10-31): the three steps
+   as a short numbered list (the one in hand in ink, those done the green
+   tick with what was given under them), each step's fields as the details
+   step's, Back and the forward step as equal halves, the signature pad, the
+   code's six boxes and, once signed, who signed for which company and when. */
+.qs-ssteps { gap: 0; }
+.qs-ssteps li { grid-template-columns: 22px minmax(0, 1fr); column-gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; color: var(--ink-soft); }
+.qs-ssteps li:first-child { border-top: 0; padding-top: 0; }
+.qs-ssteps li:last-child { padding-bottom: 0; }
+.qs-ssteps li::before { align-self: center; width: 22px; height: 22px; font-size: 12px; background: var(--card); }
+.qs-ssteps li.is-now { color: var(--ink); font-weight: 600; }
+.qs-ssteps li.is-now::before { background: var(--fill); color: var(--on-fill); }
+.qs-ssteps li.is-done::before { content: "\2713"; background: var(--ok-solid); color: var(--on-ok); }
+.qs-ssteps li > span { display: grid; min-width: 0; }
+.qs-ssteps small { font-size: 13px; font-weight: 400; color: var(--ink-mute); overflow-wrap: anywhere; }
+.qs-side h2[tabindex] { outline: none; }
+.qs-signform .textarea { width: 100%; }
+.qs-sform-h { margin: 8px 0 0; padding-top: 16px; border-top: 1px solid var(--line); }
+.qs-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.qs-sfoot { display: flex; gap: 8px; padding-top: 4px; }
+.qs-sfoot > .btn { flex: 1 1 50%; min-width: 0; }
+.qs-side .btn-quiet.btn-sm { width: auto; }
+.qs-side .qs-tot { width: 100%; background: var(--card); }
+.qs-sig-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: var(--ctl-h-sm); margin-bottom: 4px; }
+.qs-sig-head .field-label { margin: 0; }
+.qs-sig-acts { display: flex; gap: 4px; margin-right: -8px; }
+.qs-pad { position: relative; aspect-ratio: 3 / 1; border-radius: var(--radius-sm); background: var(--field); touch-action: none; cursor: crosshair; overflow: hidden; }
+.qs-pad[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--err); }
+.qs-pad svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.qs-pad path { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.qs-pad-line { position: absolute; left: 16px; right: 16px; bottom: 24%; border-top: 1px solid var(--line-ctl); }
+.qs-pad-hint { position: absolute; left: 16px; bottom: calc(24% + 6px); font-size: 13px; color: var(--ink-mute); pointer-events: none; }
+.qs-terms { justify-self: start; margin: -8px 0 0 -8px; }
+.qs-otp { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.qs-otp .input { width: 100%; min-width: 0; padding: 0; text-align: center; font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.qs-resend { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-mute); }
+.qs-resend .btn { margin-right: -8px; }
+.qs-sfacts { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; font-size: 14px; }
+.qs-sfacts dt { color: var(--ink-mute); }
+.qs-sfacts dd { margin: 0; overflow-wrap: anywhere; }
 @media (min-width: 900px) {
   .qs-quote { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 32px; }
   .qs-quote.is-single { grid-template-columns: minmax(0, 1fr); max-width: 560px; }

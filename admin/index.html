@@ -1446,6 +1446,94 @@
             </div>
           </div>
         </div>
+        <!-- QUOTATION SIGNING (2026-10-31): check and submit, review, a paper signing keyed in. -->
+        <div class="sheet" id="qsgCheckSheet" hidden>
+          <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgCheckTitle">
+            <div class="sheet-head">
+              <div class="qb-headtext"><h3 id="qsgCheckTitle">Check and submit</h3><p class="qb-for" id="qsgCheckFor"></p></div>
+              <button class="iconbtn" id="qsgCheckClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body">
+              <p class="msg warn qsg-back" id="qsgCheckBack" hidden></p>
+              <div id="qsgCheckFacts"></div>
+              <button class="btn btn-sm qsg-pdf" id="qsgCheckPdf" type="button">Preview PDF</button>
+              <section class="fsec">
+                <h4 class="fsec-h">Review</h4>
+                <label class="field-label" for="qsgReviewer">Reviewer</label>
+                <select class="select" id="qsgReviewer" aria-required="true"></select>
+              </section>
+              <div class="msg" id="qsgCheckMsg" role="alert"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="qsgSubmit" type="button">Submit</button>
+              <button class="btn btn-quiet" id="qsgCheckCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="sheet" id="qsgReviewSheet" hidden>
+          <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgReviewTitle">
+            <div class="sheet-head">
+              <div class="qb-headtext"><h3 id="qsgReviewTitle">Review</h3><p class="qb-for" id="qsgReviewFor"></p></div>
+              <button class="iconbtn" id="qsgReviewClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body">
+              <div id="qsgReviewBy"></div>
+              <div id="qsgReviewFacts"></div>
+              <button class="btn btn-sm qsg-pdf" id="qsgReviewPdf" type="button">Preview PDF</button>
+              <div class="msg" id="qsgReviewMsg" role="alert"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="qsgApprove" type="button">Approve</button>
+              <button class="btn" id="qsgSendBack" type="button">Send back</button>
+              <button class="btn btn-quiet" id="qsgReviewCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="sheet" id="qsgPaperSheet" hidden>
+          <div class="sheet-card formsheet qsg-card" data-narrow="560" role="dialog" aria-modal="true" aria-labelledby="qsgPaperTitle">
+            <div class="sheet-head">
+              <div class="qb-headtext"><h3 id="qsgPaperTitle">Mark signed</h3><p class="qb-for" id="qsgPaperFor"></p></div>
+              <button class="iconbtn" id="qsgPaperClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body">
+              <section class="fsec">
+                <h4 class="fsec-h">Company</h4>
+                <div class="row fgrid">
+                  <div class="span-all"><label class="field-label" for="qsgPLegal">Registered name</label><textarea class="input" id="qsgPLegal" data-oneline rows="1" maxlength="160" aria-required="true" placeholder="COMPANY NAME SDN BHD"></textarea></div>
+                  <div><label class="field-label" for="qsgPNo">Registration no.</label><input class="input" id="qsgPNo" maxlength="20" autocapitalize="characters" spellcheck="false" aria-required="true"></div>
+                  <div><label class="field-label" for="qsgPNoOld">Old registration no.</label><input class="input" id="qsgPNoOld" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
+                  <div><label class="field-label" for="qsgPTin">TIN</label><input class="input" id="qsgPTin" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
+                  <div><label class="field-label" for="qsgPSst">SST no.</label><input class="input" id="qsgPSst" maxlength="25" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
+                  <div class="span-all"><label class="field-label" for="qsgPAddress">Billing address</label><textarea class="input" id="qsgPAddress" rows="3" maxlength="400" aria-required="true"></textarea></div>
+                  <div class="span-all"><label class="field-label" for="qsgPFinance">Finance email</label><input class="input" id="qsgPFinance" type="email" maxlength="160" placeholder="Optional"></div>
+                </div>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Billing contact</h4>
+                <div class="row fgrid">
+                  <div><label class="field-label" for="qsgPSal">Salutation</label><select class="select" id="qsgPSal"><option value="">None</option></select></div>
+                  <div><label class="field-label" for="qsgPName">Name</label><input class="input" id="qsgPName" maxlength="80" aria-required="true" placeholder="John Doe"></div>
+                  <div><label class="field-label" for="qsgPPhone">Phone</label><input class="input" id="qsgPPhone" type="tel" maxlength="30" aria-required="true" placeholder="012-345 6789"></div>
+                  <div><label class="field-label" for="qsgPEmail">Email</label><input class="input" id="qsgPEmail" type="email" maxlength="160" aria-required="true" placeholder="email@adspace.me"></div>
+                </div>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Signature</h4>
+                <div class="row fgrid">
+                  <div><label class="field-label" for="qsgPSigner">Signed by</label><input class="input" id="qsgPSigner" maxlength="80" aria-required="true" placeholder="John Doe"></div>
+                  <div><label class="field-label" for="qsgPRole">Designation</label><input class="input" id="qsgPRole" maxlength="80" aria-required="true" placeholder="Director"></div>
+                  <div><label class="field-label" for="qsgPDay">Date signed</label><input class="input" id="qsgPDay" type="date" aria-required="true"></div>
+                  <div><label class="field-label" for="qsgPScan">Scan</label><textarea class="input" id="qsgPScan" data-oneline rows="1" maxlength="500" placeholder="https://adspace.me"></textarea></div>
+                </div>
+              </section>
+              <div class="msg" id="qsgPaperMsg" role="alert"></div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="qsgPaperSave" type="button">Save</button>
+              <button class="btn btn-quiet" id="qsgPaperCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">

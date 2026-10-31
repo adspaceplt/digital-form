@@ -33,7 +33,25 @@
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
     'no-number': 'No WhatsApp number is held for this prospect.',
-    'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.'
+    'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.',
+    /* Signing, submitting and reviewing (QUOTATION SIGNING, 2026-10-31). */
+    'not-signed': 'This quotation has not been signed.', signed: 'This quotation has already been signed. Refresh the page.',
+    reviewed: 'This quotation has already been reviewed. Refresh the page.',
+    'in-review': 'This quotation is already with its reviewer. Refresh the page.',
+    'bad-reviewer': 'Choose a reviewer with Clients: Quotations at Full Access.', own: 'Choose a reviewer other than yourself.',
+    'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
+    'not-reviewer': 'Only the reviewer chosen, or an admin, approves this quotation.',
+    'note-required': 'Enter what needs correcting.',
+    'billing-access': 'Approving fills Billing, which needs Clients: Billing at Work. Ask the reviewer chosen, or an admin.',
+    'bad-day': 'Choose the day it was signed, from the day it was issued to today.',
+    'bad-scan': 'Enter the scan as a web address starting https://.',
+    'bad-legal_name': 'Enter the registered name.', 'bad-company_no': 'Enter the registration number: 6 to 20 letters or digits.',
+    'bad-company_no_old': 'Enter the old registration number: 4 to 20 letters or digits.',
+    'bad-tin': 'Enter the TIN: 6 to 20 letters or digits.', 'bad-sst_no': 'Enter the SST number: 6 to 25 letters or digits.',
+    'bad-billing_address': 'Enter the billing address in full.', 'bad-finance_email': 'Enter a valid email address.',
+    'bad-contact_salutation': 'Choose a salutation from the list.', 'bad-contact_name': 'Enter the billing contact\'s name.',
+    'bad-contact_phone': 'Enter the billing contact\'s phone number.', 'bad-contact_email': 'Enter a valid email address.',
+    'bad-signer_name': 'Enter the name of the person who signed.', 'bad-signer_designation': 'Enter their designation.'
   };
   function said(e) {
     if (!e) return '';
@@ -60,6 +78,15 @@
      past its day. */
   function stateOf(q, live) {
     if (q.removed_at) return ['Removed', 'is-off'];
+    /* Signed on its link or on paper, then checked, submitted and reviewed
+       (QUOTATION SIGNING, 2026-10-31): the signing outranks the date, since
+       a signed quotation is held to as signed. */
+    if (q.reviewed_at) return ['Accepted', 'is-ok', 'Reviewed by ' + (q.reviewed_by || '')];
+    if (q.signed_at) {
+      if (q.returned_at) return ['Sent back', 'is-danger', 'By ' + (q.returned_by || '')];
+      if (q.submitted_at) return ['In review', 'is-warn', q.reviewer_name || ''];
+      return ['Signed', 'is-warn', 'By ' + (((q.signed || {}).signer || {}).name || '')];
+    }
     var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
     if (held) return ['Letter of Offer issued', 'is-ok', held];
     if (q.status === 'not_proceeding') return ['Cancelled', 'is-off'];
@@ -102,7 +129,8 @@
     return o ? [curOf(q) + ' ' + rm(o.incl), incl ? 'One-off' + incl : 'One-off total'] : ['—', ''];
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
-    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due';
+    'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
+    'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -168,11 +196,13 @@
           /* The prospect's own page (2026-10-30): Preview opens it read only,
              for any reader of the quotation; Preview is the team's view,
              Copy link the prospect's. */
-          if (q.source === 'website' && q.access_key && !q.removed_at) {
-            items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
-            /* Its own link, to send the prospect again by hand, once the
-               team has sent the quotation (2026-10-30). */
-            if (!awaiting(q)) items.push('<button class="kmenu-item" data-g="1" data-a="link" type="button" role="menuitem">Copy link</button>');
+          if (q.access_key && !q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
+          /* Its own link, to send the prospect again by hand, once the team
+             has sent the quotation (2026-10-30); a team's quotation has one
+             too, made at the first Copy link, so the client signs on it
+             (QUOTATION SIGNING, 2026-10-31). */
+          if (!q.removed_at && !awaiting(q) && !q._revised && q.status !== 'not_proceeding' && (q.access_key || maySet)) {
+            items.push('<button class="kmenu-item" data-g="1" data-a="link" type="button" role="menuitem">Copy link</button>');
           }
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
@@ -194,6 +224,13 @@
           if (maySet && !q.removed_at && q.source === 'website' && !q._revised && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
+          /* Signed: the colleague checks the entries and submits them to a
+             reviewer; the reviewer (or an admin) reviews (2026-10-31). The
+             act stands on the row: it is what the quotation waits on. */
+          if (maySet && !q.removed_at && q.signed_at && !q.reviewed_at && (!q.submitted_at || q.returned_at)) {
+            acts.push('<button class="btn btn-sm" data-a="check" type="button">Submit</button>');
+          }
+          if (maySet && !q.removed_at && mayReview(q)) acts.push('<button class="btn btn-sm" data-a="review" type="button">Review</button>');
           if (maySet && !q.removed_at && mayOffer && offerable(q, live)) {
             acts.push('<button class="btn btn-sm" data-a="offer" type="button">Issue Letter of Offer</button>');
           }
@@ -216,15 +253,24 @@
                 !(q.valid_until && q.valid_until < window.ADspaceClock.today())) {
               items.push('<button class="kmenu-item" data-g="3" data-a="resend" data-wa-ready hidden type="button" role="menuitem">Resend on WhatsApp</button>');
             }
+            /* A signing on paper, keyed in by the team (2026-10-31). */
+            if (!q.signed_at && offerable(q, live)) items.push('<button class="kmenu-item" data-g="4" data-a="paper" type="button" role="menuitem">Mark signed</button>');
+            /* The signature set aside and kept, so the client signs again;
+               never once reviewed. */
+            if (q.signed_at && !q.reviewed_at) items.push('<button class="kmenu-item" data-g="5" data-a="resign" type="button" role="menuitem">Request again</button>');
             if (q.source === 'website') {
               items.push(q.no_contact_at
                 ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Allow contact</button>'
                 : '<button class="kmenu-item" data-g="4" data-a="no_contact" type="button" role="menuitem">Do not contact</button>');
             }
-            items.push(q.status === 'not_proceeding'
-              ? '<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>'
-              : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
-            items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            /* An accepted quotation is the client's record: no Cancel or
+               Remove. */
+            if (!q.reviewed_at) {
+              items.push(q.status === 'not_proceeding'
+                ? '<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>'
+                : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
+              items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            }
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
@@ -258,6 +304,7 @@
     }
     host.innerHTML = html;
     host.hidden = false;
+    wireSign();
     var b = $('qtBuild');
     if (b) b.addEventListener('click', function () { build(ctx, null, b); });
     var be = host.querySelector('.empty [data-a="build"]');
@@ -343,15 +390,65 @@
       var o = { attention: named || ctx.attention || '', attentionRole: named ? '' : (ctx.attentionRole || ''),
         to: { name: c.legal_name || c.name || q.brand, address: c.billing_address || '' },
         cover: got[0], preparedBy: { name: by, designation: got[1] }, client: c };
+      var sx = signedExtra(q);
+      Object.keys(sx).forEach(function (k) { o[k] = sx[k]; });
       Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
       return window.ADspaceQuotePdf.draw(q, o);
     });
   }
 
+  /* A signed quotation's PDF carries who signed, how and when, and the
+     company it was signed for; once reviewed, who reviewed it
+     (2026-10-31). */
+  function signedExtra(q) {
+    var s = q.signed, D = window.ADspaceClock.day;
+    if (!q.signed_at || !s) return {};
+    var co = s.company || {}, ct = s.contact || {}, sg = s.signer || {};
+    var o = { signed: { name: sg.name || '', designation: sg.designation || '', day: D(q.signed_at), via: s.via || 'online',
+        signature: s.signature || null, record: s.record || null, scan: s.scan || null, company: co },
+      to: { name: co.legal_name || q.brand, address: co.billing_address || '' } };
+    if (ct.name) { o.attention = window.ADspaceWords.person ? window.ADspaceWords.person(ct.salutation, ct.name) : ct.name; o.attentionRole = ''; }
+    if (q.reviewed_at) o.reviewedBy = { name: q.reviewed_by || '', designation: q.reviewed_role || '', day: D(q.reviewed_at) };
+    return o;
+  }
+  function meNow() { return window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null; }
+  function adminNow() { var m = meNow(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
+  /* The reviewer chosen reviews; an admin may in their place. */
+  function mayReview(q) {
+    var m = meNow();
+    return Boolean(q.signed_at && q.submitted_at && !q.returned_at && !q.reviewed_at && m && (m.id === q.reviewer_id || adminNow()));
+  }
+
   var offering = {};
   function act(a, q, ctx, host, btn) {
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
-    if (a === 'link') { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(q.access_key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); return; }
+    if (a === 'link') {
+      var copy = function (key) { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); };
+      if (q.access_key) { copy(q.access_key); return; }
+      /* A team's quotation has no link until the first copy (2026-10-31). */
+      ctx.db.rpc('quotation_link', { p_id: q.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error || !d.key) { ctx.msg('qtMsg', said(r.error || d.error) || 'Not copied.', 'err'); return; }
+        q.access_key = d.key;
+        copy(d.key);
+        ctx.reload();
+      }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+      return;
+    }
+    if (a === 'check') { openCheck(q, ctx, btn); return; }
+    if (a === 'review') { openReview(q, ctx, btn); return; }
+    if (a === 'paper') { openPaper(q, ctx, btn); return; }
+    if (a === 'resign') {
+      window.ADspaceConfirm.ask({ title: 'Request again?', tone: 'warn', go: 'Request again',
+        body: 'The signature on ' + q.ref + ' is set aside and kept on record. The client signs again on the quotation link.' }, function () {
+        ctx.db.rpc('quotation_resign', { p_id: q.id }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
+          ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' is open for signing again.', 'ok'); });
+        }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+      });
+      return;
+    }
     if (a === 'pdf' || a === 'view') {
       if (!window.ADspaceQuotePdf) return;
       var tab = a === 'view' ? window.ADspaceDocs.previewTab()
@@ -505,6 +602,319 @@
         return '';
       });
     });
+  }
+
+  /* QUOTATION SIGNING (2026-10-31; the user: "Jane picks the reviewer,
+     approve"). A quotation signed on its link, or keyed in from paper, is
+     checked by the colleague who prepared it: the company details may be
+     corrected (each correction kept, from and to), then submitted to a
+     reviewer they choose. The reviewer, or an admin in their place,
+     approves (Billing filled where it was empty, the lines confirmed) or
+     sends it back with a note. */
+  var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var CO = [['legal_name', 'Registered name'], ['company_no', 'Registration no.'], ['company_no_old', 'Old registration no.'],
+    ['tin', 'TIN'], ['sst_no', 'SST no.'], ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
+  var CO_NEED = { legal_name: 1, company_no: 1, billing_address: 1 };
+  /* The company as the database holds it (the details form's reading). */
+  function coNorm(k, v) {
+    v = String(v == null ? '' : v);
+    if (k === 'legal_name') return v.replace(/\s+/g, ' ').trim().toUpperCase();
+    if (k === 'billing_address') return v.trim();
+    if (k === 'finance_email') return v.trim().toLowerCase();
+    return v.replace(/\s+/g, '').toUpperCase();
+  }
+  function coCheck(k, v) {
+    if (!v) return CO_NEED[k] ? SAID['bad-' + k] : '';
+    if (k === 'legal_name' && (v.length < 2 || v.length > 160)) return SAID['bad-legal_name'];
+    if (k === 'company_no' && !/^[A-Z0-9-]{6,20}$/.test(v)) return SAID['bad-company_no'];
+    if (k === 'company_no_old' && !/^[A-Z0-9-]{4,20}$/.test(v)) return SAID['bad-company_no_old'];
+    if (k === 'tin' && !/^[A-Z0-9-]{6,20}$/.test(v)) return SAID['bad-tin'];
+    if (k === 'sst_no' && !/^[A-Z0-9-]{6,25}$/.test(v)) return SAID['bad-sst_no'];
+    if (k === 'billing_address' && (v.length < 10 || v.length > 400)) return SAID['bad-billing_address'];
+    if (k === 'finance_email' && !window.ADspaceWords.emailOk(v)) return SAID['bad-finance_email'];
+    return '';
+  }
+  function when(iso) { return iso ? window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso) : ''; }
+  function fact(label, html, cls) { return '<div><dt>' + esc(label) + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + html + '</dd></div>'; }
+  /* What was signed, read first: the company (each value its pen while it is
+     checked), the billing contact, the signing itself. `fix` holds the
+     corrections not yet submitted. */
+  function signedHtml(q, fix, edit) {
+    var s = q.signed || {}, co = s.company || {}, ct = s.contact || {}, sg = s.signer || {}, rec = s.record || {};
+    var was = {};
+    (s.corrections || []).forEach(function (c) { if (!(c.field in was)) was[c.field] = c.from; });
+    var rows = CO.map(function (f) {
+      var k = f[0], v = fix && k in fix ? fix[k] : (co[k] || '');
+      if (!edit && !v && !(k in was)) return '';
+      var note = '';
+      if (fix && k in fix) note = '<small class="qsg-was">Signed as ' + esc(co[k] || 'Not set') + '</small>';
+      else if (k in was) note = '<small class="qsg-was">Signed as ' + esc(was[k] || 'Not set') + '</small>';
+      return '<div><dt>' + esc(f[1]) + '</dt><dd class="mfield' + (v ? '' : ' is-empty') + (k === 'billing_address' ? ' is-pre' : '') + '">' +
+        '<span class="mval" data-k="' + k + '">' + esc(v || 'Not set') + '</span>' +
+        (edit ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(f[1].toLowerCase()) + '">' + PEN_SVG + '</button>' : '') +
+        note + '</dd></div>';
+    }).join('');
+    var sig = '';
+    if (s.signature && s.signature.type === 'drawn') sig = '<span class="qsg-sig"><svg class="qsg-sig-svg" role="img" aria-label="Signature of ' + esc(sg.name || '') + '"><path d="' + esc(s.signature.path) + '"/></svg></span>';
+    else if (s.signature && s.signature.type === 'typed') sig = '<span class="qsg-sig is-typed">' + esc(s.signature.text) + '</span>';
+    var how = s.via === 'paper'
+      ? fact('Signed', 'On paper') +
+        fact('Keyed in by', esc((rec.by || '') + (rec.entered_at ? ' · ' + when(rec.entered_at) : ''))) +
+        (s.scan && window.ADspaceWords.absUrl(s.scan) ? fact('Scan', '<a class="plink" href="' + esc(window.ADspaceWords.absUrl(s.scan)) + '" target="_blank" rel="noopener">Open scan</a>') : '')
+      : fact('Signed', 'On the quotation link') +
+        (rec.email ? fact('Code sent to', esc(rec.email)) : '') +
+        (rec.ip ? fact('Signed from', esc(rec.ip + (rec.country ? ' · ' + rec.country : ''))) : '') +
+        (rec.fingerprint ? fact('Record', '<span class="mono">' + esc(rec.fingerprint) + '</span>') : '');
+    return '<section class="fsec"><h4 class="fsec-h">Company</h4><dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Billing contact</h4><dl class="ovfacts qsg-facts">' +
+        fact('Name', esc(window.ADspaceWords.person ? window.ADspaceWords.person(ct.salutation, ct.name) : ct.name || '')) +
+        (ct.phone ? fact('Phone', esc(ct.phone)) : '') + (ct.email ? fact('Email', esc(ct.email)) : '') + '</dl></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Signature</h4><dl class="ovfacts qsg-facts">' +
+        fact('Signed by', esc(sg.name || '') + (sg.designation ? '<small>' + esc(sg.designation) + '</small>' : ''), 'qsg-who') +
+        fact('Date', esc(s.via === 'paper' ? window.ADspaceClock.date(q.signed_at) : when(q.signed_at))) +
+        (sig ? fact('Signature', sig) : '') + how + '</dl></section>';
+  }
+  /* A drawn signature fits its own box, whatever the page it was drawn on. */
+  function fitSig(host) {
+    Array.prototype.forEach.call(host.querySelectorAll('.qsg-sig-svg'), function (svg) {
+      try {
+        var b = svg.querySelector('path').getBBox(), pad = Math.max(4, Math.max(b.width, b.height) * 0.04);
+        if (b.width && b.height) svg.setAttribute('viewBox', [b.x - pad, b.y - pad, b.width + 2 * pad, b.height + 2 * pad].join(' '));
+      } catch (e) {}
+    });
+  }
+  function sheetMsg(id, text, kind) { var m = $(id); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (kind ? ' ' + kind : ''); }
+  function previewSigned(q, ctx, btn, msgId, fix) {
+    if (!window.ADspaceQuotePdf) return;
+    var tab = window.ADspaceDocs.previewTab();
+    var view = q;
+    if (fix && Object.keys(fix).length) {
+      view = JSON.parse(JSON.stringify(q));
+      Object.keys(fix).forEach(function (k) { view.signed.company[k] = fix[k] || null; });
+    }
+    btn.disabled = true;
+    drawPdf(view, ctx).then(function (blob) {
+      btn.disabled = false;
+      window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (tab) try { tab.close(); } catch (x) {}
+      sheetMsg(msgId, said(e) || 'The PDF could not be drawn.', 'err');
+    });
+  }
+
+  /* Check and submit. */
+  var CK = null;
+  function openCheck(q, ctx, opener) {
+    if (!$('qsgCheckSheet') || !q.signed) return;
+    CK = { q: q, ctx: ctx, fix: {} };
+    $('qsgCheckFor').textContent = q.ref + ' · ' + q.brand;
+    var back = $('qsgCheckBack');
+    back.hidden = !q.returned_at;
+    back.textContent = q.returned_at ? 'Sent back by ' + (q.returned_by || '') + ' on ' + when(q.returned_at) + ': ' + (q.return_note || '') : '';
+    paintCheck();
+    sheetMsg('qsgCheckMsg', '');
+    var sel = $('qsgReviewer');
+    sel.innerHTML = '<option value="">Choose a colleague</option>';
+    sel.disabled = true;
+    $('qsgSubmit').disabled = true;
+    window.ADspaceSheet.show($('qsgCheckSheet'), { opener: opener || null, onClose: function () { CK = null; } });
+    requestAnimationFrame(function () { fitSig($('qsgCheckFacts')); });
+    ctx.db.rpc('quotation_reviewers', { p_id: q.id }).then(function (r) {
+      if (!CK || CK.q !== q) return;
+      var d = r.data || {};
+      if (r.error || d.error) { sheetMsg('qsgCheckMsg', said(r.error || d.error), 'err'); return; }
+      var list = d.reviewers || [];
+      if (!list.length) { sheetMsg('qsgCheckMsg', 'No colleague can review it. A reviewer needs Clients: Quotations at Full Access.', 'err'); return; }
+      sel.innerHTML = '<option value="">Choose a colleague</option>' + list.map(function (m) {
+        return '<option value="' + esc(m.id) + '"' + (m.last ? ' selected' : '') + '>' + esc((m.code ? m.code + ' · ' : '') + m.name) + '</option>';
+      }).join('');
+      sel.disabled = false;
+      $('qsgSubmit').disabled = false;
+    }).catch(function (e) { if (CK && CK.q === q) sheetMsg('qsgCheckMsg', said(e), 'err'); });
+  }
+  function paintCheck() {
+    var host = $('qsgCheckFacts'), q = CK.q;
+    host.innerHTML = signedHtml(q, CK.fix, true);
+    fitSig(host);
+    Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
+      var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
+      var label = CO.filter(function (f) { return f[0] === k; })[0][1];
+      pen.addEventListener('click', function () {
+        var raw = k in CK.fix ? CK.fix[k] : ((q.signed.company || {})[k] || '');
+        val.textContent = raw;
+        window.ADspaceAsk.rename(val, pen, {
+          value: raw, type: k === 'finance_email' ? 'email' : 'text', code: ['company_no', 'company_no_old', 'tin', 'sst_no'].indexOf(k) > -1,
+          label: label, allowEmpty: !CO_NEED[k],
+          check: function (v) { return coCheck(k, coNorm(k, v)) || ''; },
+          save: function (v) {
+            v = coNorm(k, v);
+            if (v === ((q.signed.company || {})[k] || '')) delete CK.fix[k];
+            else CK.fix[k] = v;
+            paintCheck();
+          }
+        });
+      });
+    });
+  }
+  function submitCheck() {
+    if (!CK) return;
+    var sel = $('qsgReviewer'), q = CK.q, ctx = CK.ctx, go = $('qsgSubmit');
+    if (!sel.value) { sheetMsg('qsgCheckMsg', 'Choose a reviewer.', 'err'); sel.focus(); return; }
+    var who = sel.options[sel.selectedIndex].textContent.replace(/^[A-Z0-9]+ · /, '');
+    var fix = Object.keys(CK.fix).length ? CK.fix : null;
+    go.disabled = true;
+    ctx.db.rpc('quotation_submit', { p_id: q.id, p_reviewer: sel.value, p_company: fix }).then(function (r) {
+      var d = r.data || {};
+      go.disabled = false;
+      if (r.error || d.error) { sheetMsg('qsgCheckMsg', said(r.error || d.error), 'err'); return; }
+      window.ADspaceSheet.close();
+      CK = null;
+      ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' submitted to ' + who + '.', 'ok'); });
+    }).catch(function (e) { go.disabled = false; sheetMsg('qsgCheckMsg', said(e), 'err'); });
+  }
+
+  /* Review: read only; Approve or Send back. */
+  var RV = null;
+  function openReview(q, ctx, opener) {
+    if (!$('qsgReviewSheet') || !q.signed) return;
+    RV = { q: q, ctx: ctx };
+    $('qsgReviewFor').textContent = q.ref + ' · ' + q.brand;
+    $('qsgReviewBy').innerHTML = '<section class="fsec"><h4 class="fsec-h">Submitted</h4><dl class="ovfacts qsg-facts">' +
+      fact('By', esc(q.submitted_by || '')) + fact('On', esc(when(q.submitted_at))) +
+      fact('Reviewer', esc(q.reviewer_name || '')) + '</dl></section>';
+    var host = $('qsgReviewFacts');
+    host.innerHTML = signedHtml(q, null, false);
+    fitSig(host);
+    sheetMsg('qsgReviewMsg', '');
+    window.ADspaceSheet.show($('qsgReviewSheet'), { opener: opener || null, onClose: function () { RV = null; } });
+    requestAnimationFrame(function () { fitSig(host); });
+  }
+  var BILLING_SAID = { filled: 'Billing filled from the signing.', held: 'Billing is held in Bukku and was left as Bukku holds it.', kept: 'Billing was kept as it was.' };
+  function approve() {
+    if (!RV) return;
+    var q = RV.q, ctx = RV.ctx, me = meNow(), go = $('qsgApprove');
+    var place = me && me.id !== q.reviewer_id;
+    var c = ctx.client || {};
+    var empty = !String(c.legal_name || '').trim() && !String(c.company_no || '').trim() && !String(c.billing_address || '').trim();
+    window.ADspaceConfirm.ask({
+      title: place ? 'Approve in place of ' + q.reviewer_name + '?' : 'Approve ' + q.ref + '?',
+      body: (place ? q.reviewer_name + ' was asked to review it; the approval is filed under your name in their place. ' : '') +
+        'Its lines become confirmed service lines' + (empty ? ', and Billing is filled from the signing.' : '. Billing is kept as it is.'),
+      go: 'Approve' }, function () {
+      go.disabled = true;
+      ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: true, p_note: null }).then(function (r) {
+        var d = r.data || {};
+        go.disabled = false;
+        if (r.error || d.error) { sheetMsg('qsgReviewMsg', said(r.error || d.error), 'err'); return; }
+        window.ADspaceSheet.close();
+        RV = null;
+        var line = q.ref + ' approved. ' + (d.lines || 0) + ' service line' + (d.lines === 1 ? '' : 's') + ' confirmed. ' + (BILLING_SAID[d.billing] || '') +
+          (c.stage && c.stage !== 'active' ? ' Move the client to Active from the record’s stage.' : '');
+        (ctx.refresh || ctx.reload)(function () { ctx.msg('qtMsg', line.trim(), 'ok'); });
+      }).catch(function (e) { go.disabled = false; sheetMsg('qsgReviewMsg', said(e), 'err'); });
+    });
+  }
+  function sendBack() {
+    if (!RV) return;
+    var q = RV.q, ctx = RV.ctx;
+    window.ADspaceConfirm.ask({
+      title: 'Send back?', go: 'Send back', wait: true,
+      body: (q.submitted_by || 'The colleague who submitted it') + ' is told, and may correct the details or ask the client to sign again.',
+      field: { label: 'What needs correcting', rows: 3, need: SAID['note-required'] }
+    }, function (note) {
+      return ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: false, p_note: String(note || '').trim() }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return said(r.error || d.error);
+        /* The question shuts first, then the sheet under it. */
+        setTimeout(function () {
+          window.ADspaceSheet.close();
+          RV = null;
+          ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' sent back to ' + (q.submitted_by || 'its colleague') + '.', 'ok'); });
+        }, 0);
+        return '';
+      });
+    });
+  }
+
+  /* Mark signed: a signing on paper keyed in, so the same check and review
+     follow. */
+  var PP = null;
+  var PAPER_FIELD = { legal_name: 'qsgPLegal', company_no: 'qsgPNo', company_no_old: 'qsgPNoOld', tin: 'qsgPTin', sst_no: 'qsgPSst',
+    billing_address: 'qsgPAddress', finance_email: 'qsgPFinance', contact_salutation: 'qsgPSal', contact_name: 'qsgPName',
+    contact_phone: 'qsgPPhone', contact_email: 'qsgPEmail', signer_name: 'qsgPSigner', signer_designation: 'qsgPRole', day: 'qsgPDay', scan: 'qsgPScan' };
+  function openPaper(q, ctx, opener) {
+    if (!$('qsgPaperSheet')) return;
+    PP = { q: q, ctx: ctx };
+    var c = ctx.client || {}, ct = ctx.contact || {};
+    var sal = $('qsgPSal'), from = $('ctSalutation');
+    if (from && sal.options.length < from.options.length) sal.innerHTML = from.innerHTML;
+    $('qsgPaperFor').textContent = q.ref + ' · ' + q.brand;
+    var put = function (id, v) { $(id).value = v == null ? '' : v; };
+    put('qsgPLegal', c.legal_name); put('qsgPNo', c.company_no); put('qsgPNoOld', c.company_no_old); put('qsgPTin', c.tin);
+    put('qsgPSst', c.sst_no); put('qsgPAddress', c.billing_address); put('qsgPFinance', c.finance_email);
+    put('qsgPSal', ct.salutation || ''); put('qsgPName', ct.name); put('qsgPPhone', ct.phone); put('qsgPEmail', ct.email);
+    put('qsgPSigner', ''); put('qsgPRole', ''); put('qsgPScan', '');
+    var day = $('qsgPDay'), today = window.ADspaceClock.today();
+    day.setAttribute('max', today);
+    day.setAttribute('min', window.ADspaceClock.day(q.issued_at));
+    day.value = today;
+    sheetMsg('qsgPaperMsg', '');
+    window.ADspaceSheet.show($('qsgPaperSheet'), { opener: opener || null, onClose: function () { PP = null; } });
+  }
+  function savePaper() {
+    if (!PP) return;
+    var q = PP.q, ctx = PP.ctx, go = $('qsgPaperSave');
+    var v = function (id) { return $(id).value.trim(); };
+    var bad = function (k, words) {
+      sheetMsg('qsgPaperMsg', words || SAID['bad-' + k] || said(k), 'err');
+      var f = $(PAPER_FIELD[k]);
+      if (f) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(f); f.focus(); }
+    };
+    var co = {};
+    for (var i = 0; i < CO.length; i++) {
+      var k = CO[i][0], val = coNorm(k, $(PAPER_FIELD[k]).value), w = coCheck(k, val);
+      if (w) { bad(k, w); return; }
+      co[k] = val || null;
+    }
+    if (v('qsgPName').length < 2) { bad('contact_name'); return; }
+    if (v('qsgPPhone').replace(/[^0-9]/g, '').length < 8) { bad('contact_phone'); return; }
+    if (!window.ADspaceWords.emailOk(v('qsgPEmail'))) { bad('contact_email'); return; }
+    if (v('qsgPSigner').length < 2) { bad('signer_name'); return; }
+    if (v('qsgPRole').length < 2) { bad('signer_designation'); return; }
+    if (!v('qsgPDay')) { bad('day'); return; }
+    var scan = v('qsgPScan');
+    if (scan && !/^https:\/\//i.test(scan)) scan = /^[a-z][a-z0-9+.-]*:/i.test(scan) ? scan : 'https://' + scan;
+    if (scan && !window.ADspaceWords.absUrl(scan)) { bad('scan'); return; }
+    var payload = { company: co,
+      contact: { salutation: v('qsgPSal') || null, name: v('qsgPName'), phone: v('qsgPPhone'), email: v('qsgPEmail').toLowerCase() },
+      signer: { name: v('qsgPSigner'), designation: v('qsgPRole') }, day: v('qsgPDay'), scan: scan || null };
+    go.disabled = true;
+    ctx.db.rpc('quotation_paper', { p_id: q.id, p_payload: payload }).then(function (r) {
+      var d = r.data || {};
+      go.disabled = false;
+      var e = r.error || d.error;
+      if (e) { var key = String(e.message || e).replace(/^bad-/, ''); if (PAPER_FIELD[key]) bad(key); else sheetMsg('qsgPaperMsg', said(e), 'err'); return; }
+      window.ADspaceSheet.close();
+      PP = null;
+      ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' marked signed. Submit it for review.', 'ok'); });
+    }).catch(function (e) { go.disabled = false; sheetMsg('qsgPaperMsg', said(e), 'err'); });
+  }
+  function wireSign() {
+    if (wireSign.done || !$('qsgCheckSheet')) return;
+    wireSign.done = true;
+    $('qsgSubmit').addEventListener('click', submitCheck);
+    $('qsgCheckCancel').addEventListener('click', function () { window.ADspaceSheet.close(); CK = null; });
+    $('qsgCheckClose').addEventListener('click', function () { $('qsgCheckCancel').click(); });
+    $('qsgCheckPdf').addEventListener('click', function () { if (CK) previewSigned(CK.q, CK.ctx, this, 'qsgCheckMsg', CK.fix); });
+    $('qsgApprove').addEventListener('click', approve);
+    $('qsgSendBack').addEventListener('click', sendBack);
+    $('qsgReviewCancel').addEventListener('click', function () { window.ADspaceSheet.close(); RV = null; });
+    $('qsgReviewClose').addEventListener('click', function () { $('qsgReviewCancel').click(); });
+    $('qsgReviewPdf').addEventListener('click', function () { if (RV) previewSigned(RV.q, RV.ctx, this, 'qsgReviewMsg'); });
+    $('qsgPaperSave').addEventListener('click', savePaper);
+    $('qsgPaperCancel').addEventListener('click', function () { window.ADspaceSheet.close(); PP = null; });
+    $('qsgPaperClose').addEventListener('click', function () { $('qsgPaperCancel').click(); });
   }
 
   /* The Overview's section: three rows, read only. */
