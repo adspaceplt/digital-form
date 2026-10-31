@@ -829,13 +829,15 @@
     return [p.kind === 'paused' ? 'is-off' : 'is-warn', PG_WORD[p.kind] || PG_WORD.upgrade, w];
   }
   /* How many pages are unavailable now and how many are set for later. */
-  function pgCounts(rows) {
+  /* With the noun (the Settings row: 2 pages unavailable) or after a count
+     that already names it (the sheet's foot: 10 pages · 2 unavailable). */
+  function pgCounts(rows, bare) {
     var now = rows.filter(function (p) { return p.set && p.on; }).length,
         later = rows.filter(function (p) { return p.set && !p.on; }).length;
-    return [now ? plural(now, 'page', 'pages') + ' unavailable' : '', later ? later + ' scheduled' : ''].filter(Boolean);
+    return [now ? (bare ? now : plural(now, 'page', 'pages')) + ' unavailable' : '', later ? later + ' scheduled' : ''].filter(Boolean);
   }
   function pgFoot() {
-    var n = Object.keys(pg.picked).length, counts = pgCounts(pg.rows || []);
+    var n = Object.keys(pg.picked).length, counts = pgCounts(pg.rows || [], true);
     /* While several are chosen the count is the tick for all ten (DESIGN.md
        §4 Several records at once; 2026-10-29, audit SET-1). */
     var all = (pg.rows || []).length;
