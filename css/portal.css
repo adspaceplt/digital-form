@@ -4511,7 +4511,7 @@ body > .shell { width: 100%; }
 .touch-when b { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .touch-body { grid-area: body; min-width: 0; }
 .touch-next.is-due { color: var(--err); }
-.touch-meet > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
+.touch-meet > span, .touch-msgrow > span { margin-right: 4px; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .touch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when del" "body body"; }
   }

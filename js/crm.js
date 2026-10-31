@@ -4867,7 +4867,7 @@
     /* The message to the client (2026-10-31): the team's Meeting message
        filled from this meeting, shown and copied to paste into the
        client's WhatsApp group; nothing is sent from here. */
-    var note = !removed && ahead && at ? '<div class="touch-meet touch-msgrow"><span>Message to client</span>' +
+    var note = !removed && ahead && at ? '<div class="touch-msgrow"><span>Message to client</span>' +
       '<button class="btn btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
       '<button class="btn btn-sm" data-a="msgcopy" type="button"><span>Copy</span></button></div>' +
       '<pre class="eng-meetmsg-text touch-msgtext" hidden></pre>' : '';
