@@ -91077,7 +91077,8 @@ begin
   if q.signed_at is null then return jsonb_build_object('error', 'not-signed'); end if;
   if q.reviewed_at is not null then return jsonb_build_object('error', 'reviewed'); end if;
   if q.submitted_at is null or q.returned_at is not null then return jsonb_build_object('error', 'not-submitted'); end if;
-  v_admin := coalesce(me.is_admin, false) or me.role = 'admin';
+  -- A colleague with no role is no admin: a null here would let anyone through.
+  v_admin := coalesce(me.is_admin, false) or coalesce(me.role, '') = 'admin';
   if q.reviewer_id is distinct from me.id and not v_admin then return jsonb_build_object('error', 'not-reviewer'); end if;
 
   if not coalesce(p_ok, false) then
@@ -91224,7 +91225,7 @@ declare
   c  public.clients;
   m  public.team_members;
   pm public.team_members;
-  k  public.client_contacts;
+  pc public.client_contacts;
   d  public.client_documents;
   f  public.client_detail_forms;
   v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
@@ -91310,7 +91311,7 @@ begin
     v_stage := case when w.proceed_at is not null then 'ready' else 'quote' end;
   end if;
   if q.signed_at is null then
-    select * into k from public.client_contacts x
+    select * into pc from public.client_contacts x
      where x.client_id = c.id and x.archived_at is null and x.is_primary
      order by x.created_at limit 1;
   end if;
@@ -91323,7 +91324,7 @@ begin
     'lines', case when not v_unsent then q.lines end,
     'totals', case when not v_unsent then q.totals end,
     'reply_due', case when v_stage = 'review' then q.reply_due end,
-    'selection', w.selection, 'attention', coalesce(w.contact->>'name', k.name),
+    'selection', w.selection, 'attention', coalesce(w.contact->>'name', pc.name),
     'stage', v_stage,
     'status', case when d.id is not null then 'offer' else q.status end,
     'details_key', case when v_stage = 'billing' then f.access_key end,
@@ -91342,8 +91343,8 @@ begin
     'prefill', case when q.signed_at is null and not v_unsent then jsonb_build_object(
       'company', jsonb_build_object('legal_name', coalesce(c.legal_name, ''), 'company_no', coalesce(c.company_no, ''),
                                     'billing_address', coalesce(c.billing_address, ''), 'sst_no', coalesce(c.sst_no, ''), 'tin', coalesce(c.tin, '')),
-      'contact', case when k.id is not null then jsonb_build_object('salutation', coalesce(k.salutation, ''), 'name', coalesce(k.name, ''),
-                                                                    'phone', coalesce(k.phone, ''), 'email', coalesce(k.email, ''))
+      'contact', case when pc.id is not null then jsonb_build_object('salutation', coalesce(pc.salutation, ''), 'name', coalesce(pc.name, ''),
+                                                                    'phone', coalesce(pc.phone, ''), 'email', coalesce(pc.email, ''))
                       else jsonb_build_object('salutation', coalesce(w.contact->>'salutation', ''), 'name', coalesce(w.contact->>'name', ''),
                                               'phone', coalesce(w.contact->>'whatsapp', ''), 'email', coalesce(w.contact->>'email', '')) end) end);
 end $$;
