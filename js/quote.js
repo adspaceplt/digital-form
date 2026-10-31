@@ -136,7 +136,7 @@
           tin: 'Enter a valid TIN.', sst: 'Enter a valid SST number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
           sal: 'Select a salutation from the list.', name: 'Enter the name of the billing contact.', mobile: 'Enter a valid mobile number.',
           signer: 'Enter your full name.', desig: 'Enter your designation.', sig: 'Draw or type your signature.',
-          agree: 'Please confirm that you are authorised to sign.', code: 'Enter the six-digit code.',
+          agree: 'Tick the box to confirm you are authorised to sign.', code: 'Enter the six-digit code.',
           wrong: 'The code is incorrect. {n} attempts remaining.', wrong1: 'The code is incorrect. 1 attempt remaining.',
           locked: 'Too many incorrect attempts. Please send a new code.', expired: 'This code has expired. Please send a new code.',
           noCode: 'Please send a new code.', tooMany: 'Too many codes have been requested. Please try again in an hour.'
@@ -249,7 +249,7 @@
           tin: '请填写有效的 TIN。', sst: '请填写有效的 SST 号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
           sal: '请从列表中选择称谓。', name: '请填写账单联系人姓名。', mobile: '请填写有效的手机号码。',
           signer: '请填写您的全名。', desig: '请填写您的职位。', sig: '请手写或输入您的签名。',
-          agree: '请确认您获授权签署。', code: '请输入六位数验证码。',
+          agree: '请勾选，确认您获授权签署。', code: '请输入六位数验证码。',
           wrong: '验证码不正确，还可尝试{n}次。', wrong1: '验证码不正确，还可尝试1次。',
           locked: '错误次数过多，请重新发送验证码。', expired: '验证码已过期，请重新发送。',
           noCode: '请重新发送验证码。', tooMany: '请求验证码次数过多，请一小时后再试。'

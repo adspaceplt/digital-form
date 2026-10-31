@@ -848,7 +848,7 @@
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
     /* The client pages' one clock: 12-hour, as the scripts page writes it
        (10:00 am; ux-audit REVIEWPAGE-9). */
-    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.clock(review.created_at, { space: true });
+    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.clock(review.created_at);
 
     if (review.decision === 'approved') {
       badgeWord.textContent = 'Approved';
