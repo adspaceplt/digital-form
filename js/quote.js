@@ -746,7 +746,7 @@
   function signStart() {
     var p = (Q && Q.prefill) || {}, co = p.company || {}, ct = p.contact || {};
     SG = { step: 1, mode: 'draw', path: '', text: '', agree: false, email: '', sentAt: 0,
-      co: { legal_name: co.legal_name || '', company_no: co.company_no || '', company_no_old: co.company_no_old || '', billing_address: co.billing_address || '',
+      co: { legal_name: String(co.legal_name || '').toUpperCase(), company_no: co.company_no || '', company_no_old: co.company_no_old || '', billing_address: co.billing_address || '',
         sst_no: co.sst_no || '', tin: co.tin || '', finance_email: co.finance_email || '' },
       ct: { salutation: SG_SAL.indexOf(ct.salutation) >= 0 ? ct.salutation : '', name: ct.name || '', phone: ct.phone || '', email: ct.email || '' },
       signer: { name: '', designation: '' } };
