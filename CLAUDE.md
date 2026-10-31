@@ -2306,6 +2306,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     client withdrew or a colleague answered meanwhile reads "Not saved. This
     request changed since it was opened, and has been read again." and the
     list is read again (audit C2, 2026-10-10).
+  - Add request (`#crmAddRequest`, `#crmReqAddBox`; Clients: Requests at
+    Work; the user, 2026-10-31): a request the client made on a call or in
+    a chat, its kind as a segment, the confirmed line where the kind needs
+    one, Requested by (a contact of the client or Not named) and a note
+    (asked unless Cancel), kept as the colleague's
+    (`client_request_add(p_client, p_kind, p_service, p_contact, p_note,
+    p_idem)`, the client in scope at Work, the portal's own refusals with
+    `no-service` and `bad-contact`, one key a sheet, filed
+    `request.added`; `client_requests.recorded_by`); its row reads Recorded
+    by {colleague} (for {contact}) where a client's reads its contact. The
+    section shows on an Active or Paused client to a colleague at Work.
+    Each row's ⋯ holds Delete at Requests Full Access (asked, no restore;
+    `client_request_delete`, the client in scope at Manage, filed
+    `request.deleted`).
 - Engagements (`js/engage.js`, `tab=engagements`; the user, 2026-10-09:
   "one less tab to monitor"): the client's work by content month, its
   reports included. The tab is drawn for an Active, Paused or Past client,
@@ -5767,7 +5781,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   Offer beside it (at a desk under the figure, the reference kept whole;
   equal halves under the meta on a phone); the ⋯
   Duplicate, Send on WhatsApp, Cancel / Restore (Cancelled), Remove with Undo
-  (Restore after) (the user, 2026-10-22, QT-M1: "approve"). The pane's one
+  (the user, 2026-10-22, QT-M1: "approve"). Show n removed quotations
+  (`#qtGone`) opens a small list (`#qtGoneList`, `.qt-gonerow`, a `--sunk`
+  box; the user, 2026-10-31: "it should make it small list"): a line each,
+  the reference, what it was, Removed {day} by {name}, Restore and a ⋯ of
+  Download and Delete, Delete at Clients: Quotations Full Access, the
+  reference typed back, no restore (`quotation_delete(p_id, p_ref)`, the
+  client in scope at Manage; `not-removed`, `bad-ref`, refused while a
+  service line holds it, `lines` with the count, a letter quotes it,
+  `letter` with its number, or a quotation revises it, `revised` with its
+  reference; filed `client.quotation` {ref} deleted;
+  `2026-10-31-quotation-delete-team-requests.sql`); a deleted reference is
+  kept (`quotation_refs_kept`, RLS on, no policy, no grant), which
+  `quote_ref` counts, so it is never issued again. The pane's one
   blue follows the deal (`paintDeal`, SL-M2): nothing quoted and no To
   quote line, Build quote; one quotation that can be offered, its Issue
   Letter of Offer (none blue where two can); To quote lines no live letter

@@ -5890,17 +5890,21 @@
     var wrap = $('crmRequests');
     var id = state.client.id;
     if (!mayPart('clients.requests', 'view')) { wrap.hidden = true; return; }
+    /* A colleague who may record a request sees the section on a client
+       (2026-10-31), as well as wherever the client has portal access or a
+       request stands. */
+    var mayAdd = mayPart('clients.requests', 'work') && ['active', 'paused'].indexOf(state.client.stage) > -1;
     db.from('client_contacts').select('id').eq('client_id', id).eq('portal_access', true).is('archived_at', null).then(function (pr) {
       var anyPortal = Boolean((pr.data || []).length);
       return db.from('client_requests').select('*').eq('client_id', id).order('created_at', { ascending: false }).then(function (r) {
         if (r.error || state.client.id !== id) { wrap.hidden = true; return; }
         state.requests = r.data || [];
-        wrap.hidden = !state.requests.length && !anyPortal;
+        wrap.hidden = !state.requests.length && !anyPortal && !mayAdd;
         if (wrap.hidden) return;
         box.innerHTML = '';
         if (!state.requests.length) { box.innerHTML = '<div class="empty">No requests.</div>'; return; }
         var table = document.createElement('div');
-        table.className = 'crm-table';
+        table.className = 'crm-table rq-table' + (mayPart('clients.requests', 'manage') ? ' has-menu' : '');
         table.innerHTML = '<div class="crm-head svc-row doc-row rq-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
         state.requests.forEach(function (q) { table.appendChild(requestRow(q)); });
         box.appendChild(table);
@@ -5914,7 +5918,10 @@
     var w = RQ_STATE[q.state] || RQ_STATE.requested;
     var row = document.createElement('div');
     row.className = 'svc-row doc-row rq-row' + (gone ? ' is-off' : '');
-    var sub = [q.contact_name, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
+    /* Who asked: the client's contact, or the colleague who recorded it for
+       them (2026-10-31). */
+    var by = q.recorded_by ? 'Recorded by ' + q.recorded_by + (q.contact_name ? ' for ' + q.contact_name : '') : q.contact_name;
+    var sub = [by, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
         (sub ? '<small>' + esc(sub) + '</small>' : '') +
@@ -5926,15 +5933,102 @@
           Object.keys(RQ_STATE).map(function (k) {
             return '<option value="' + k + '"' + (k === q.state ? ' selected' : '') + '>' + esc(RQ_STATE[k][0]) + '</option>';
           }).join('') + '</select>') + '</span>' +
-      /* The row's one act is on the row (MENU-6, 2026-10-22). */
+      /* Reply is on the row (MENU-6, 2026-10-22); Delete, Full Access's,
+         in its ⋯ (2026-10-31). */
       '<span class="team-act">' +
         (gone ? '' : '<button class="btn btn-sm" data-a="reply" type="button">Reply</button>') +
+        (mayPart('clients.requests', 'manage')
+          ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" data-menu hidden>' +
+            ADspaceMenu.items([[], [], [], [], [], [{ a: 'del', label: 'Delete', need: 'clients.requests:manage' }]]) + '</div>'
+          : '') +
       '</span>';
+    if (row.querySelector('[data-a="menu"]')) {
+      wireMenu(row);
+      row.querySelector('[data-a="del"]').addEventListener('click', function () { deleteRequest(q); });
+    }
     if (!gone) {
       row.querySelector('[data-a="reply"]').addEventListener('click', function () { openReply(q); });
       row.querySelector('[data-f="state"]').addEventListener('change', function () { saveRequest(q, { state: this.value }, 'request.changed'); });
     }
     return row;
+  }
+
+  /* A request recorded by a colleague (2026-10-31): the kind, the confirmed
+     line where the kind needs one, who asked if a contact did, and a note;
+     the database keeps it as the colleague's (`client_request_add`). */
+  var RA_SAID = {
+    denied: 'This needs Clients: Requests at Manage.', 'not-found': 'This client is outside your access.',
+    'no-service': 'Choose the service line.', 'note-required': 'Enter a note.',
+    'bad-contact': 'That contact is no longer on this client.', 'too-long': 'Keep the note to 2,000 characters.'
+  };
+  var adding = null;
+  function raKindChanged() {
+    var details = $('raKind').value === 'details';
+    $('raServiceRow').hidden = details;
+    /* A note is asked of every kind but Cancel, as the portal asks it. */
+    var need = $('raKind').value !== 'cancel';
+    $('raNote').setAttribute('aria-required', String(need));
+    var lab = document.querySelector('label[for="raNote"]');
+    if (lab) lab.classList.toggle('is-req', need);
+  }
+  function openAddRequest(opener) {
+    var lines = (state.services || []).filter(function (l) { return l.state === 'confirmed' && !l.archived_at; });
+    var people = (state.contacts || []).filter(function (c) { return !c.archived_at; });
+    adding = { idem: 'rq-' + token() + token() };
+    $('raKind').value = lines.length ? 'upgrade' : 'details';
+    Array.prototype.forEach.call($('raKind').options, function (o) { o.disabled = o.value !== 'details' && !lines.length; });
+    $('raService').innerHTML = '<option value="">Choose a service line</option>' + lines.map(function (l) {
+      return '<option value="' + esc(l.id) + '">' + esc(l.label) + '</option>';
+    }).join('');
+    $('raContact').innerHTML = '<option value="">Not named</option>' + people.map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(W.person ? W.person(c.salutation, c.name) : c.name) + '</option>';
+    }).join('');
+    $('raNote').value = '';
+    msg('raMsg', '');
+    raKindChanged();
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('raKind'));
+    openSheet('crmReqAddBox', opener);
+  }
+  $('crmAddRequest').addEventListener('click', function () { openAddRequest(this); });
+  $('raKind').addEventListener('change', raKindChanged);
+  $('raCancel').addEventListener('click', function () { shutSheet('crmReqAddBox'); adding = null; });
+  sheetClose('crmReqAddClose', 'raCancel');
+  $('raSave').addEventListener('click', function () {
+    if (!adding) return;
+    var kind = $('raKind').value, svc = $('raService').value, note = $('raNote').value.trim();
+    if (kind !== 'details' && !svc) { msg('raMsg', RA_SAID['no-service'], 'err'); $('raService').focus(); return; }
+    if (kind !== 'cancel' && !note) { msg('raMsg', RA_SAID['note-required'], 'err'); $('raNote').focus(); return; }
+    var btn = this, cid = state.client.id;
+    btn.disabled = true;
+    db.rpc('client_request_add', { p_client: cid, p_kind: kind, p_service: kind === 'details' ? null : svc,
+      p_contact: $('raContact').value || null, p_note: note || null, p_idem: adding.idem }).then(function (r) {
+      btn.disabled = false;
+      var d = r.data || {};
+      if (r.error) { msg('raMsg', /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message, 'err'); return; }
+      if (d.error) { msg('raMsg', RA_SAID[d.error] || d.error, 'err'); return; }
+      shutSheet('crmReqAddBox');
+      adding = null;
+      if (state.client && state.client.id === cid) { loadRequests(); msg('crmReqMsg', 'Added.', 'ok'); }
+    }).catch(function (e) { btn.disabled = false; msg('raMsg', String((e && e.message) || e), 'err'); });
+  });
+
+  /* Delete (2026-10-31): asked, gone for good, Full Access's alone. */
+  function deleteRequest(q) {
+    var what = (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '');
+    window.ADspaceConfirm.ask({ title: 'Delete', body: 'The request ' + what + ' of ' + niceDate(q.created_at) + ' is deleted. There is no restore.',
+      go: 'Delete', tone: 'danger', wait: true }, function () {
+      return db.rpc('client_request_delete', { p_id: q.id }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message;
+        if (d.error === 'denied') return 'This needs Clients: Requests at Full Access.';
+        if (d.error === 'not-found') return 'This request is no longer available.';
+        if (d.error) return d.error;
+        loadRequests();
+        msg('crmReqMsg', 'Request deleted.', 'ok');
+        return '';
+      });
+    });
   }
 
   var replying = null;
