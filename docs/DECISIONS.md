@@ -7822,3 +7822,22 @@ read and set every page for a tab served before.
   Enable) and Delete (gone for good, asked first) as two promises, and
   How copy is drafted gains step 9, the short word a familiar app uses,
   with the table of what to say and never say. Docs only.
+
+### 2026-10-31 · A removed quotation deleted; a client's request recorded by the team
+- **Asked:** the user approved items 3 and 4 of the Services tab review:
+  a quotation could be removed but never deleted ("ok but it should make
+  it small list"), and a client's request came only from the client
+  portal, so one made on a call could not be written down or one filed by
+  mistake taken away.
+- **Built:** removed quotations open as a small list with Restore and a ⋯
+  holding Delete (Full Access, the reference typed back), refused where a
+  service line, a letter or a revision names the quotation. The deleted
+  reference is kept in `quotation_refs_kept`, because `quote_ref` numbers
+  from the highest reference standing and would otherwise issue a deleted
+  highest number again. Add request records a request as the colleague's
+  (`recorded_by`), with the portal's own checks; Delete on each request is
+  Full Access. Both run through security definer functions that check the
+  client's scope and file the Activity record (`request.added`,
+  `request.deleted` joined both copies of the section map).
+- **Found:** `tests/sql.js` holds the first `activity_section` in
+  `schema.sql` equal to the last, so a new tag is written into both.

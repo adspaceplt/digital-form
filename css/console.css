@@ -3432,8 +3432,11 @@ button.vs-row { cursor: pointer; }
 .qt-gonename b { font-weight: 600; flex: 0 0 auto; }
 .qt-gonename small { font-size: 12.5px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .qt-goneacts { display: flex; align-items: center; gap: 8px; }
-.is-narrow .qt-gonename { flex-direction: column; gap: 0; }
-.is-narrow .qt-gonename small { white-space: normal; }
+.is-narrow .qt-gonerow { grid-template-areas: "ref acts" "meta meta"; row-gap: 0; }
+.is-narrow .qt-gonename { display: contents; }
+.is-narrow .qt-gonename b { grid-area: ref; }
+.is-narrow .qt-gonename small { grid-area: meta; white-space: normal; }
+.is-narrow .qt-goneacts { grid-area: acts; }
 .sheet-card.formsheet.qb-card { width: min(780px, 100%); }
 .qb-for { margin: 0 0 16px; font-size: 13px; color: var(--ink-mute); }
 .tickrow { display: flex; flex-wrap: wrap; gap: 0 20px; }
