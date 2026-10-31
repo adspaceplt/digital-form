@@ -5352,9 +5352,9 @@
     return live;
   }
   /* The Services pane's one blue follows the deal (2026-10-22, SL-M2):
-     nothing quoted and no To quote line, Build quote; a quotation that can
-     be offered, its row's Issue Letter of Offer (tonal where two could be);
-     To quote lines no live letter holds, Issue letter; else none. Issue
+     nothing quoted and no To quote line, Build quote; To quote lines no
+     live letter holds, Issue letter; else none (a quotation is signed by
+     the client, never offered as a letter, 2026-10-31). Issue
      letter is drawn once a To quote or Confirmed line exists. */
   function paintDeal() {
     var cover = $('crmCover');
@@ -5365,7 +5365,6 @@
     var quotes = (state.quotes || []).filter(function (q) { return !q.removed_at; });
     cover.hidden = !letterable;
     var build = $('qtBuild');
-    var offers = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="offer"]'));
     /* An awaiting website quotation's blue is Send quotation once its
        template is on, else Publish (2026-10-31). */
     var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl')).map(function (dl) {
@@ -5380,10 +5379,9 @@
     else if (sends.length === 1) blue = sends[0];
     else if (sends.length) blue = null;
     else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
-    else if (offers.length === 1) blue = offers[0];
     else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
-    [build, cover].concat(offers, gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    [build, cover].concat(gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteContact() {
     return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
@@ -5405,8 +5403,7 @@
         API.withBilling([state.client]).then(function () { paintBilling(state.client); });
         loadServices(null, done, done);
       },
-      painted: paintDeal,
-      offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); } };
+      painted: paintDeal };
   }
   /* `always`: done is called on a refused read too (the letter sheet reads
      again either way). */
@@ -6211,7 +6208,11 @@
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
             [{ a: 'download', label: 'Download' }],
-            [],
+            /* Replace (2026-10-31): a letter not yet verified is reissued on
+               its lines as changed, the new one replacing it (issue_letter's
+               p_replaces); the old one reads Replaced. */
+            [!d.voided_at && !d.superseded_by && !d.verified_at && mapped.length &&
+             { a: 'replace', label: 'Replace', need: 'clients.documents:work' }],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
             [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
@@ -6305,6 +6306,7 @@
     /* Both of these ask in a sheet rather than a confirm(): each needs a
        reason typed, and one of them needs the reference typed back. Neither
        is a question a browser dialog can carry. */
+    on('replace', function () { shut(); if (DOCS) openPick(mapped, d.id); });
     on('void', function () { shut(); openVoid(d, mapped.length); });
     on('del', function () { shut(); openDelete(d, mapped.length); });
     return row;
@@ -6422,10 +6424,12 @@
      apart, unticked, for a renewal somebody decides on deliberately. */
   var picking = null;
 
-  function eligible() {
+  /* `rep`: the letter being replaced, whose lines are open to the one that
+     replaces it (issue_letter's p_replaces; 2026-10-31). */
+  function eligible(rep) {
     var live = {};
     (state.documents || []).forEach(function (d) {
-      if (!DOCS.liveDoc(d)) return;
+      if (!DOCS.liveDoc(d) || d.id === rep) return;
       ((state.docMap || {})[d.id] || []).forEach(function (id) { live[id] = d.number; });
     });
     var out = { open: [], held: [], confirmed: [] };
@@ -6459,7 +6463,7 @@
       (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
   }
 
-  function openPick(only) {
+  function openPick(only, rep) {
     var c = state.client;
     msg('crmDocMsg', '');
     msg('pickMsg', '');
@@ -6478,8 +6482,8 @@
        audit CLI-4: the field read Numbered automatically while it could not
        be). */
     var noCode = !String(c.client_code || '').trim();
-    var e = eligible();
-    picking = { replaces: null };
+    var e = eligible(rep);
+    picking = { replaces: rep || null };
     $('pickBody').innerHTML =
       /* Bill to (2026-10-29): which billing entity the letter bills, drawn
          where the client holds more than one; the main is the default. */
@@ -6489,7 +6493,7 @@
       '</div>' +
       pickBlock('To quote', e.open, true, '') +
       pickBlock('Already on a live letter', e.held, false,
-        'Void that letter, or issue a replacement from its ⋯, before quoting these again.') +
+        'Void that letter, or choose Replace from its ⋯, before quoting these again.') +
       pickBlock('Confirmed', e.confirmed, false,
         'Tick one only for a renewal, a variation or a replacement.') +
       (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>') +
@@ -6600,6 +6604,7 @@
   }
 
   function pickAgain(ids, said) {
+    var rep = picking && picking.replaces;
     var ref = $('pickRef') ? $('pickRef').value : '';
     var terms = $('pickTerms') ? $('pickTerms').value : '';
     var bill = $('pickBillTo') && !$('pickBillBox').hidden ? $('pickBillTo').value : '';
@@ -6607,7 +6612,7 @@
     loadServices(function () {
       var reopen = function () {
         if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
-        openPick(ids);
+        openPick(ids, rep);
         if ($('pickRef')) $('pickRef').value = ref;
         if ($('pickTerms')) $('pickTerms').value = terms;
         if (bill) pickBillTo(bill);
