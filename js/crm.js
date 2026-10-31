@@ -5313,7 +5313,9 @@
 
   /* `failed` hears a read that failed, so a caller waiting on the lines
      (Issue letter read again after `stale`) says so where it is. */
-  function loadServices(after, failed) {
+  /* `quotesDone`: called once the quotations read after the lines are
+     painted (a quotation approved says its outcome over them). */
+  function loadServices(after, failed, quotesDone) {
     var box = $('crmServices');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
     var fail = function (m) {
@@ -5333,7 +5335,7 @@
           paintDeal();
           paintSummary();
           quotedLines();
-          loadQuotes();
+          loadQuotes(quotesDone);
           if (after) after();
         }).catch(function (e) { fail((e && e.message) || 'The connection was lost.'); });
     });
@@ -5369,15 +5371,19 @@
     var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl')).map(function (dl) {
       return dl.querySelector('[data-a="send"]:not([hidden])') || dl.querySelector('[data-a="publish"]');
     }).filter(Boolean);
+    /* A signed quotation waiting on its check or its review comes first
+       (QUOTATION SIGNING, 2026-10-31). */
+    var signs = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="check"], #crmQuotes .qt-dl [data-a="review"]'));
     var blue = null;
-    /* A website quotation waiting for the team comes first (2026-10-29). */
-    if (sends.length === 1) blue = sends[0];
+    /* A website quotation waiting for the team comes next (2026-10-29). */
+    if (signs.length) blue = signs.length === 1 ? signs[0] : null;
+    else if (sends.length === 1) blue = sends[0];
     else if (sends.length) blue = null;
     else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
     else if (offers.length === 1) blue = offers[0];
     else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
-    [build, cover].concat(offers, gives).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    [build, cover].concat(offers, gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteContact() {
     return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
@@ -5391,7 +5397,14 @@
         return m ? ADspaceWords.person(m.salutation, m.name) : '';
       })(),
       attentionRole: (quoteContact() || {}).role || '',
+      contact: quoteContact() || null,
       reload: function (done) { loadQuotes(done); },
+      /* A quotation approved fills Billing and confirms its lines
+         (QUOTATION SIGNING, 2026-10-31): both are read again. */
+      refresh: function (done) {
+        API.withBilling([state.client]).then(function () { paintBilling(state.client); });
+        loadServices(null, done, done);
+      },
       painted: paintDeal,
       offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); } };
   }

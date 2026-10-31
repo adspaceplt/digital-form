@@ -29,7 +29,7 @@ var ASSETS = 'adspace-console-assets';
 // A colleague's notifications, shown and opened (the one copy for every page).
 importScripts('/js/push-sw.js');
 // A PDF the console drew, held under its own name (the one copy for both pages).
-importScripts('/js/file-sw.js?v=20261031v');
+importScripts('/js/file-sw.js?v=20261031w');
 var OFFLINE = '/admin/offline.html';
 var KEEP = [OFFLINE, '/admin/icons/wordmark.png'];
 

@@ -115,6 +115,33 @@
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
       },
+      /* Accepting the quotation on its link (2026-10-31). */
+      sg: {
+        title: 'Accept this quotation', line: 'Confirm your company details and sign here. No printing or scanning is needed.',
+        steps: ['Company details', 'Review and sign', 'Confirm with the code'], go: 'Accept and sign',
+        legal: 'Registered company name', reg: 'Registration no.', regOld: 'Old registration no.', addr: 'Billing address',
+        addrPh: 'Street, postcode, city, state', sst: 'SST no.', tin: 'TIN', fin: 'Finance email', contactH: 'Billing contact',
+        mobile: 'Mobile', email: 'Email', minTerm: 'Minimum term', termTotal: 'Total for the term', termTotalIncl: 'Total for the term incl. SST',
+        signer: 'Full name', desig: 'Designation', sig: 'Signature', clear: 'Clear', typeIn: 'Type instead', drawIn: 'Draw instead',
+        pad: 'Signature area', padHint: 'Sign here', typedPh: 'Type your full name',
+        agree: 'I am authorised to sign on behalf of {c} and accept this quotation and the ADspace Service Terms.',
+        terms: 'Read the Service Terms', sending: 'Sending…',
+        codeL: 'Enter the code sent to {e}', digit: 'Digit {n} of 6', resendQ: 'Did not receive it?', resend: 'Send again',
+        resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Sign and accept', finishing: 'Signing…',
+        rec: 'The time, IP address and device are recorded with your signature.',
+        doneT: 'Quotation accepted', by: 'Signed by', forCo: 'For', on: 'On', dl: 'Download signed quotation',
+        doneP: 'ADspace will review your details and confirm your start date within 2 working days.',
+        say: {
+          legal: 'Enter the registered company name.', reg: 'Enter a valid registration number.', regOld: 'Enter a valid old registration number.',
+          tin: 'Enter a valid TIN.', sst: 'Enter a valid SST number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
+          sal: 'Select a salutation from the list.', name: 'Enter the name of the billing contact.', mobile: 'Enter a valid mobile number.',
+          signer: 'Enter your full name.', desig: 'Enter your designation.', sig: 'Draw or type your signature.',
+          agree: 'Please confirm that you are authorised to sign.', code: 'Enter the six-digit code.',
+          wrong: 'The code is incorrect. {n} attempts remaining.', wrong1: 'The code is incorrect. 1 attempt remaining.',
+          locked: 'Too many incorrect attempts. Please send a new code.', expired: 'This code has expired. Please send a new code.',
+          noCode: 'Please send a new code.', tooMany: 'Too many codes have been requested. Please try again in an hour.'
+        }
+      },
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
       offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
@@ -201,6 +228,32 @@
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
+      },
+      sg: {
+        title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',
+        steps: ['公司资料', '审阅并签署', '验证码确认'], go: '接受并签署',
+        legal: '公司注册名称', reg: '注册号码', regOld: '旧注册号码', addr: '账单地址',
+        addrPh: '街道、邮编、城市、州属', sst: 'SST 号码', tin: 'TIN', fin: '财务邮箱', contactH: '账单联系人',
+        mobile: '手机号码', email: '邮箱', minTerm: '最低合约期', termTotal: '合约期总额', termTotalIncl: '合约期总额（含 SST）',
+        signer: '全名', desig: '职位', sig: '签名', clear: '清除', typeIn: '改为输入', drawIn: '改为手写',
+        pad: '签名区', padHint: '请在此签名', typedPh: '请输入您的全名',
+        agree: '本人获授权代表 {c} 签署，并接受本报价及 ADspace 服务条款。',
+        terms: '阅读服务条款', sending: '发送中…',
+        codeL: '请输入发送至 {e} 的验证码', digit: '第{n}位，共6位', resendQ: '没有收到？', resend: '重新发送',
+        resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '签署并接受', finishing: '签署中…',
+        rec: '签署时间、IP 地址及设备将与您的签名一并记录。',
+        doneT: '报价已接受', by: '签署人', forCo: '公司', on: '日期', dl: '下载已签署报价',
+        doneP: 'ADspace 将审核您的资料，并于2个工作日内确认开始日期。',
+        say: {
+          legal: '请填写公司注册名称。', reg: '请填写有效的注册号码。', regOld: '请填写有效的旧注册号码。',
+          tin: '请填写有效的 TIN。', sst: '请填写有效的 SST 号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
+          sal: '请从列表中选择称谓。', name: '请填写账单联系人姓名。', mobile: '请填写有效的手机号码。',
+          signer: '请填写您的全名。', desig: '请填写您的职位。', sig: '请手写或输入您的签名。',
+          agree: '请确认您获授权签署。', code: '请输入六位数验证码。',
+          wrong: '验证码不正确，还可尝试{n}次。', wrong1: '验证码不正确，还可尝试1次。',
+          locked: '错误次数过多，请重新发送验证码。', expired: '验证码已过期，请重新发送。',
+          noCode: '请重新发送验证码。', tooMany: '请求验证码次数过多，请一小时后再试。'
+        }
       },
       lostT: '找不到报价', lostP: '请检查链接，或重新报价。',
       offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
@@ -667,6 +720,7 @@
       return '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
         (q.portal ? '<a class="btn btn-primary" href="/client/">' + esc(w.portalBtn) + '</a>' : '<p>' + esc(w.portalLater) + '</p>') + rep;
     }
+    if (st === 'accepted') return acceptedHtml(q) + rep;
     if (st === 'signed') return done(w.signedT, w.signedP) + rep;
     if (st === 'letter') return done(w.offer, w.letterP) + rep;
     if (st === 'billing_sent') return done(w.billSentT, w.billSentP) + rep;
@@ -674,15 +728,312 @@
       return '<h2>' + esc(w.billT) + '</h2><p>' + esc(w.billP) + '</p>' +
         '<a class="btn btn-primary" href="/details/?k=' + encodeURIComponent(q.details_key || '') + '">' + esc(w.billBtn) + '</a>' + rep;
     }
-    if (st === 'ready') return done(w.propDone, q.rep ? '' : f(w.propBy, { d: day(q.proceed_due) })) + rep;
-    if (q.rep) return repHtml(q);
-    function ask(name, label, opts) {
-      return '<fieldset class="qs-ask"><legend>' + esc(label) + '</legend>' +
-        opts.map(function (o) { return pick('radio', name, o[0], false, o[1]); }).join('') + '</fieldset>';
+    /* A sent, valid quotation not yet signed is accepted here: company
+       details, the signature and a code emailed to the billing contact
+       (2026-10-31, in place of Ready to proceed). */
+    if (SG && SG.step) return signHtml(q);
+    return '<h2>' + esc(w.sg.title) + '</h2><p>' + esc(w.sg.line) + '</p>' + signSteps(0) +
+      '<button class="btn btn-primary" type="button" data-a="signgo">' + esc(w.sg.go) + '</button>' +
+      '<p class="msg" id="qsSideMsg" role="status"></p>' + rep;
+  }
+
+  // ---- Accepting the quotation (2026-10-31) ----------------------------------------
+  /* Held in this page alone, never kept in the tab (as the details step is):
+     the company, the billing contact, the signer and the signature, while
+     the three steps are gone through. */
+  var SG = null;
+  var SG_SAL = SALUTATIONS;
+  function signStart() {
+    var p = (Q && Q.prefill) || {}, co = p.company || {}, ct = p.contact || {};
+    SG = { step: 1, mode: 'draw', path: '', text: '', agree: false, email: '', sentAt: 0,
+      co: { legal_name: String(co.legal_name || '').toUpperCase(), company_no: co.company_no || '', company_no_old: co.company_no_old || '', billing_address: co.billing_address || '',
+        sst_no: co.sst_no || '', tin: co.tin || '', finance_email: co.finance_email || '' },
+      ct: { salutation: SG_SAL.indexOf(ct.salutation) >= 0 ? ct.salutation : '', name: ct.name || '', phone: ct.phone || '', email: ct.email || '' },
+      signer: { name: '', designation: '' } };
+  }
+  function signSteps(now) {
+    var w = t().sg, sub = [SG && SG.co.legal_name, SG && SG.signer.name ? SG.signer.name + (SG.signer.designation ? ', ' + SG.signer.designation : '') : ''];
+    return '<ol class="qs-steps qs-ssteps">' + w.steps.map(function (s, i) {
+      var n = i + 1, cls = now && n < now ? 'is-done' : n === now ? 'is-now' : '';
+      return '<li' + (cls ? ' class="' + cls + '"' : '') + (n === now ? ' aria-current="step"' : '') + '><span>' + esc(s) +
+        (cls === 'is-done' && sub[i] ? '<small>' + esc(sub[i]) + '</small>' : '') + '</span></li>';
+    }).join('') + '</ol>';
+  }
+  function sgField(id, label, req, html) {
+    return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' + html + '<span class="msg" id="' + id + 'Msg"></span></div>';
+  }
+  function sgInput(id, value, attrs, cls) {
+    return '<input class="input' + (cls ? ' ' + cls : '') + '" id="' + id + '" value="' + esc(value || '') + '"' + (attrs || '') + '>';
+  }
+  function signFoot(back, go, label) {
+    return '<div class="qs-sfoot"><button class="btn" type="button" data-a="' + back + '">' + esc(t().back) + '</button>' +
+      '<button class="btn btn-primary" type="button" data-a="' + go + '">' + esc(label || t().cont) + '</button></div>';
+  }
+  /* The figures agreed to: the quotation's own total (Monthly, or First
+     month, incl. SST), then the term and its whole, as its acceptance page
+     prints them. */
+  function agreedRows(q) {
+    var tt = q.totals || {}, w = t(), rows = totalsRows(tt).filter(function (x) { return x[2]; }), last = rows[rows.length - 1];
+    var out = last ? [[last[0], last[1], 1]] : [];
+    if (tt.month) {
+      out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
+      if (tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment)]);
     }
-    return '<h2>' + esc(w.propT) + '</h2><p>' + esc(w.propP) + '</p>' + ask('pStart', w.startQ, w.starts) + ask('pDecider', w.decQ, w.decs) +
-      '<button class="btn btn-primary" id="qsPropose" type="button" data-a="propose">' + esc(w.propAsk) + '</button>' +
-      '<p class="msg" id="qsSideMsg" role="status"></p>';
+    return out;
+  }
+  function signHtml(q) {
+    var w = t(), s = w.sg, c = SG.co, k = SG.ct, opt = ' placeholder="' + esc(w.optional) + '"';
+    var head = '<h2 tabindex="-1" id="sgHead">' + esc(s.title) + '</h2>' + signSteps(SG.step);
+    if (SG.step === 1) {
+      return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
+        sgField('sgLegal', s.legal, true, sgInput('sgLegal', c.legal_name, ' autocomplete="organization" placeholder="COMPANY NAME SDN BHD" aria-required="true"', 'qs-caps')) +
+        sgField('sgReg', s.reg, true, sgInput('sgReg', c.company_no, ' autocomplete="off" aria-required="true"')) +
+        sgField('sgRegOld', s.regOld, false, sgInput('sgRegOld', c.company_no_old, ' autocomplete="off"' + opt)) +
+        sgField('sgAddr', s.addr, true, '<textarea class="textarea" id="sgAddr" rows="3" autocomplete="street-address" placeholder="' + esc(s.addrPh) + '" aria-required="true">' + esc(c.billing_address) + '</textarea>') +
+        '<div class="qs-pair">' + sgField('sgSst', s.sst, false, sgInput('sgSst', c.sst_no, ' autocomplete="off"' + opt)) +
+          sgField('sgTin', s.tin, false, sgInput('sgTin', c.tin, ' autocomplete="off"' + opt)) + '</div>' +
+        sgField('sgFin', s.fin, false, sgInput('sgFin', c.finance_email, ' type="email" autocomplete="email"' + opt)) +
+        '<h3 class="qs-sec-h qs-sform-h">' + esc(s.contactH) + '</h3>' +
+        sgField('sgSal', w.salutation, false, '<select class="select" id="sgSal"><option value="">' + esc(w.optional) + '</option>' +
+          SG_SAL.map(function (x) { return '<option value="' + esc(x) + '"' + (k.salutation === x ? ' selected' : '') + '>' + esc((lang === 'zh' && SAL_ZH[x]) || x) + '</option>'; }).join('') + '</select>') +
+        sgField('sgName', w.name, true, sgInput('sgName', k.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
+        sgField('sgMobile', s.mobile, true, sgInput('sgMobile', k.phone, ' type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789" aria-required="true"')) +
+        sgField('sgEmail', s.email, true, sgInput('sgEmail', k.email, ' type="email" autocomplete="email" placeholder="email@adspace.me" aria-required="true"')) +
+        '<p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signnext') + '</form>';
+    }
+    if (SG.step === 2) {
+      var sig = SG.mode === 'type'
+        ? sgInput('sgTyped', SG.text, ' autocomplete="off" placeholder="' + esc(s.typedPh) + '" aria-labelledby="sgSigL"', 'qs-typed')
+        : '<div class="qs-pad" id="sgPad" role="img" aria-labelledby="sgSigL"><span class="qs-pad-line" aria-hidden="true"></span>' +
+          '<span class="qs-pad-hint" aria-hidden="true"' + (SG.path ? ' hidden' : '') + '>' + esc(s.padHint) + '</span>' +
+          '<svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><path d="' + esc(SG.path) + '"/></svg></div>';
+      return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
+        '<dl class="qs-tot qs-agreed">' + agreedRows(q).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
+        '<div class="qs-pair">' + sgField('sgSigner', s.signer, true, sgInput('sgSigner', SG.signer.name, ' autocomplete="name" placeholder="John Doe" aria-required="true"')) +
+          sgField('sgDesig', s.desig, true, sgInput('sgDesig', SG.signer.designation, ' autocomplete="organization-title" aria-required="true"')) + '</div>' +
+        '<div class="field"><div class="qs-sig-head"><span class="field-label is-req" id="sgSigL">' + esc(s.sig) + '</span><span class="qs-sig-acts">' +
+          (SG.mode === 'draw' ? '<button class="btn btn-quiet btn-sm" type="button" data-a="signclear"' + (SG.path ? '' : ' hidden') + '>' + esc(s.clear) + '</button>' : '') +
+          '<button class="btn btn-quiet btn-sm" type="button" data-a="signmode">' + esc(SG.mode === 'draw' ? s.typeIn : s.drawIn) + '</button></span></div>' +
+          sig + '<span class="msg" id="sgPadMsg"></span></div>' +
+        '<label class="qs-consent"><input type="checkbox" id="sgAgree"' + (SG.agree ? ' checked' : '') + '>' + MARK +
+          '<span class="qs-text">' + esc(f(s.agree, { c: SG.co.legal_name })) + '</span></label><span class="msg" id="sgAgreeMsg"></span>' +
+        '<a class="btn btn-quiet btn-sm qs-terms" href="https://go.adspace.me/svc-terms" target="_blank" rel="noopener">' + esc(s.terms) + LEAVE + '</a>' +
+        '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signcode') + '</form>';
+    }
+    var boxes = '';
+    for (var i = 0; i < 6; i++) {
+      boxes += '<input class="input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" data-otp="' + i + '"' +
+        (i === 0 ? ' autocomplete="one-time-code"' : ' autocomplete="off"') + ' aria-label="' + esc(f(s.digit, { n: i + 1 })) + '">';
+    }
+    return head + '<form class="qs-form qs-signform" id="sgForm" novalidate>' +
+      '<div class="field"><span class="field-label" id="sgCodeL">' + esc(f(s.codeL, { e: SG.email })) + '</span>' +
+        '<div class="qs-otp" role="group" aria-labelledby="sgCodeL">' + boxes + '</div><span class="msg" id="sgCodeMsg" role="status"></span></div>' +
+      '<div class="qs-resend"><span>' + esc(s.resendQ) + '</span><button class="btn btn-quiet btn-sm" type="button" data-a="signresend">' + esc(s.resend) + '</button></div>' +
+      '<div class="qs-cf" data-cf></div><p class="msg" id="qsSideMsg" role="status"></p>' + signFoot('signback', 'signfinish', s.finish) +
+      '<p class="qs-note">' + esc(s.rec) + '</p></form>';
+  }
+  var LEAVE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 10 14"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>';
+  /* What the signer typed, read into the page's copy before any redraw. */
+  function signRead() {
+    if (!SG) return;
+    var v = function (id) { return $(id) ? $(id).value : null; };
+    if (SG.step === 1 && $('sgLegal')) {
+      SG.co = { legal_name: v('sgLegal').replace(/\s+/g, ' ').trim().toUpperCase(), company_no: v('sgReg').trim(), company_no_old: v('sgRegOld').trim(),
+        billing_address: v('sgAddr').trim(), sst_no: v('sgSst').trim(), tin: v('sgTin').trim(), finance_email: v('sgFin').trim() };
+      SG.ct = { salutation: v('sgSal'), name: v('sgName').replace(/\s+/g, ' ').trim(), phone: v('sgMobile').trim(), email: v('sgEmail').trim() };
+    }
+    if (SG.step === 2 && $('sgSigner')) {
+      SG.signer = { name: v('sgSigner').replace(/\s+/g, ' ').trim(), designation: v('sgDesig').replace(/\s+/g, ' ').trim() };
+      if ($('sgTyped')) SG.text = v('sgTyped').replace(/\s+/g, ' ').trim();
+      SG.agree = $('sgAgree').checked;
+    }
+  }
+  function sgBad(id, word, first) {
+    say(id + 'Msg', word);
+    var el = $(id); if (el) el.setAttribute('aria-invalid', 'true');
+    return first || el;
+  }
+  function signCheck() {
+    signRead();
+    var w = t().sg.say, first = null, up = function (x) { return String(x || '').replace(/\s+/g, '').toUpperCase(); };
+    Array.prototype.forEach.call($('qsSide').querySelectorAll('[aria-invalid]'), function (el) { el.removeAttribute('aria-invalid'); say(el.id + 'Msg', ''); });
+    if (SG.step === 1) {
+      var c = SG.co, k = SG.ct;
+      if (c.legal_name.length < 2) first = sgBad('sgLegal', w.legal, first);
+      if (!/^[A-Z0-9-]{6,20}$/.test(up(c.company_no))) first = sgBad('sgReg', w.reg, first);
+      if (c.company_no_old && !/^[A-Z0-9-]{4,20}$/.test(up(c.company_no_old))) first = sgBad('sgRegOld', w.regOld, first);
+      if (c.billing_address.length < 10) first = sgBad('sgAddr', w.addr, first);
+      if (c.sst_no && !/^[A-Z0-9-]{6,25}$/.test(up(c.sst_no))) first = sgBad('sgSst', w.sst, first);
+      if (c.tin && !/^[A-Z0-9-]{6,20}$/.test(up(c.tin))) first = sgBad('sgTin', w.tin, first);
+      if (c.finance_email && !ADspaceWords.emailOk(c.finance_email)) first = sgBad('sgFin', w.email, first);
+      if (k.name.length < 2) first = sgBad('sgName', w.name, first);
+      var d = k.phone.replace(/[^0-9]/g, '');
+      if (d.length < 8 || d.length > 15) first = sgBad('sgMobile', w.mobile, first);
+      if (!ADspaceWords.emailOk(k.email)) first = sgBad('sgEmail', w.email, first);
+    } else if (SG.step === 2) {
+      if (SG.signer.name.length < 2) first = sgBad('sgSigner', w.signer, first);
+      if (SG.signer.designation.length < 2) first = sgBad('sgDesig', w.desig, first);
+      if (SG.mode === 'type' ? SG.text.length < 2 : !/L/.test(SG.path)) first = sgBad(SG.mode === 'type' ? 'sgTyped' : 'sgPad', w.sig, first) || $('sgPad');
+      if (SG.mode === 'draw' && !/L/.test(SG.path)) say('sgPadMsg', w.sig);
+      if (!SG.agree) first = sgBad('sgAgree', w.agree, first);
+    }
+    if (first) { if (first.id === 'sgPad') first.scrollIntoView({ block: 'center' }); else first.focus(); }
+    return !first;
+  }
+  /* Redraw the card on its step, its heading brought into view (under the
+     quotation on a phone) and given the focus, never a field. */
+  function signShow(step) {
+    if (step != null) SG.step = step;
+    $('qsSide').innerHTML = sideHtml(Q);
+    decorate();
+    var h = $('sgHead') || $('qsSide');
+    var top = $('qsSide').getBoundingClientRect().top;
+    if (top < 72 || top > window.innerHeight * 0.6) window.scrollTo(0, Math.max(0, window.scrollY + top - 80));
+    if (h.focus) h.focus({ preventScroll: true });
+  }
+  var SG_SAY = { 'bad-legal_name': [1, 'sgLegal', 'legal'], 'bad-company_no': [1, 'sgReg', 'reg'], 'bad-company_no_old': [1, 'sgRegOld', 'regOld'],
+    'bad-tin': [1, 'sgTin', 'tin'], 'bad-sst_no': [1, 'sgSst', 'sst'], 'bad-billing_address': [1, 'sgAddr', 'addr'], 'bad-finance_email': [1, 'sgFin', 'email'],
+    'bad-contact_salutation': [1, 'sgSal', 'sal'], 'bad-contact_name': [1, 'sgName', 'name'], 'bad-contact_phone': [1, 'sgMobile', 'mobile'],
+    'bad-contact_email': [1, 'sgEmail', 'email'], 'bad-signer_name': [2, 'sgSigner', 'signer'], 'bad-signer_designation': [2, 'sgDesig', 'desig'],
+    'bad-signature': [2, 'sgPad', 'sig'], 'bad-agree': [2, 'sgAgree', 'agree'] };
+  var SG_WORD = { 'too-many': 'tooMany', 'no-code': 'noCode', 'code-expired': 'expired', locked: 'locked' };
+  function qKey() { return new URLSearchParams(location.search).get('q'); }
+  /* A refusal that means the quotation moved on (signed meanwhile, closed,
+     expired, not sent): the link is read again and says where it stands. */
+  function signGone(code) { return ['not-found', 'closed', 'unsent', 'signed', 'expired'].indexOf(code) >= 0; }
+  function signRefused(code, d) {
+    var w = t().sg.say;
+    if (signGone(code)) { SG = null; read(qKey(), function () { $('qsSide') && $('qsSide').scrollIntoView({ block: 'start' }); }); return; }
+    var at = SG_SAY[code];
+    if (at) {
+      if (SG.step !== at[0]) signShow(at[0]);
+      var el = sgBad(at[1], w[at[2]]);
+      if (at[1] === 'sgPad') say('sgPadMsg', w.sig);
+      if (el && el.focus && at[1] !== 'sgPad') el.focus();
+      return;
+    }
+    if (code === 'wrong') { say('sgCodeMsg', d && d.left === 1 ? w.wrong1 : f(w.wrong, { n: d && d.left != null ? d.left : '' })); otpClear(); return; }
+    say(SG.step === 3 && $('sgCodeMsg') ? 'sgCodeMsg' : 'qsSideMsg', SG_WORD[code] ? w[SG_WORD[code]] : (t().err[code] || t().err.any));
+  }
+  function signPayload() {
+    var c = SG.co, k = SG.ct;
+    return { company: { legal_name: c.legal_name.toUpperCase(), company_no: c.company_no, company_no_old: c.company_no_old || undefined,
+      tin: c.tin || undefined, sst_no: c.sst_no || undefined, billing_address: c.billing_address, finance_email: c.finance_email || undefined },
+      contact: { salutation: k.salutation || '', name: k.name, phone: k.phone, email: k.email },
+      signer: { name: SG.signer.name, designation: SG.signer.designation },
+      signature: SG.mode === 'type' ? { type: 'typed', text: SG.text } : { type: 'drawn', path: SG.path }, agree: true };
+  }
+  /* The code goes to the billing contact's email, made by the server; the
+     page is told where it went. Send again rests a minute after each. */
+  function signCode(btn, again) {
+    if (!again && !signCheck()) return;
+    var label = btn.textContent;
+    btn.disabled = true; if (!again) btn.textContent = t().sg.sending;
+    say('qsSideMsg', '');
+    var C = window.ADspaceCaptcha, host = $('qsSide').querySelector('[data-cf]');
+    var token = C && C.on && host ? C.token(host) : Promise.resolve(null);
+    token.then(function (tk) {
+      return db.functions.invoke('quote-request', { body: { action: 'sign', key: qKey(), token: tk || '', payload: signPayload() } });
+    }).then(function (r) {
+      var d = (r && r.data) || {};
+      btn.disabled = false; if (!again) btn.textContent = label;
+      if (r.error || d.error || !d.ok) { signRefused(d.error || 'any', d); return; }
+      SG.email = d.email || SG.ct.email; SG.sentAt = Date.now();
+      if (SG.step !== 3) signShow(3);
+      else { otpClear(); resendTick(); }
+      if (again) say('sgCodeMsg', t().sg.resent, 'ok');
+    }).catch(function () { btn.disabled = false; if (!again) btn.textContent = label; say('qsSideMsg', t().err.any); });
+  }
+  function signFinish(btn) {
+    var code = otpValue();
+    if (!/^\d{6}$/.test(code)) { say('sgCodeMsg', t().sg.say.code); otpFocus(code.length); return; }
+    btn.disabled = true; btn.textContent = t().sg.finishing;
+    db.rpc('quote_sign_finish', { p_key: qKey(), p_code: code }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error || !d.ok) { btn.disabled = false; btn.textContent = t().sg.finish; signRefused(d.error || 'any', d); return; }
+      SG = null;
+      read(qKey(), function () { var s = $('qsSide'); if (s) { s.scrollIntoView({ block: 'start' }); s.setAttribute('tabindex', '-1'); s.focus({ preventScroll: true }); } });
+    }).catch(function () { btn.disabled = false; btn.textContent = t().sg.finish; say('qsSideMsg', t().err.any); });
+  }
+  // The six boxes: one a digit, typing or pasting moving along, Backspace moving back.
+  function otpBoxes() { return Array.prototype.slice.call($('qsSide').querySelectorAll('[data-otp]')); }
+  function otpValue() { return otpBoxes().map(function (b) { return b.value; }).join('').replace(/\D/g, ''); }
+  function otpFocus(i) { var b = otpBoxes(); if (b.length) b[Math.min(Math.max(i, 0), 5)].focus(); }
+  function otpClear() { otpBoxes().forEach(function (b) { b.value = ''; }); otpFocus(0); }
+  function otpFill(from, digits) {
+    var b = otpBoxes();
+    for (var i = 0; i < digits.length && from + i < 6; i++) b[from + i].value = digits.charAt(i);
+    otpFocus(Math.min(from + digits.length, 5));
+  }
+  var resendTimer = null;
+  function resendTick() {
+    clearInterval(resendTimer);
+    var tick = function () {
+      var b = $('qsSide') && $('qsSide').querySelector('[data-a="signresend"]');
+      if (!b || !SG) { clearInterval(resendTimer); return; }
+      var left = Math.ceil((SG.sentAt + 60000 - Date.now()) / 1000);
+      b.disabled = left > 0;
+      b.textContent = left > 0 ? f(t().sg.resendIn, { s: left }) : t().sg.resend;
+      if (left <= 0) clearInterval(resendTimer);
+    };
+    tick(); resendTimer = setInterval(tick, 1000);
+  }
+  /* The pad: a finger or a mouse draws one path in a 300 by 100 box. */
+  function padWire() {
+    var pad = $('sgPad');
+    if (!pad || pad.getAttribute('data-wired')) return;
+    pad.setAttribute('data-wired', '1');
+    var path = pad.querySelector('path'), on = false, lx = 0, ly = 0;
+    var pt = function (e) {
+      var r = pad.getBoundingClientRect();
+      return [Math.max(0, Math.min(300, (e.clientX - r.left) / r.width * 300)), Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100))];
+    };
+    var fx = function (n) { return (Math.round(n * 10) / 10).toString(); };
+    pad.addEventListener('pointerdown', function (e) {
+      if (SG.path.length > 28000) return;
+      e.preventDefault(); on = true;
+      try { pad.setPointerCapture(e.pointerId); } catch (x) {}
+      var p = pt(e); lx = p[0]; ly = p[1];
+      SG.path += (SG.path ? ' ' : '') + 'M' + fx(lx) + ' ' + fx(ly);
+      path.setAttribute('d', SG.path);
+      var hint = pad.querySelector('.qs-pad-hint'); if (hint) hint.hidden = true;
+      pad.removeAttribute('aria-invalid'); say('sgPadMsg', '');
+    });
+    pad.addEventListener('pointermove', function (e) {
+      if (!on || SG.path.length > 28000) return;
+      var p = pt(e);
+      if (Math.abs(p[0] - lx) + Math.abs(p[1] - ly) < 1.2) return;
+      lx = p[0]; ly = p[1];
+      SG.path += ' L' + fx(lx) + ' ' + fx(ly);
+      path.setAttribute('d', SG.path);
+    });
+    var end = function () {
+      if (!on) return; on = false;
+      // A dot alone is a stroke too: a point beside itself.
+      if (/M[\d.]+ [\d.]+$/.test(SG.path)) { SG.path += ' L' + fx(lx + 0.5) + ' ' + fx(ly + 0.5); path.setAttribute('d', SG.path); }
+      var c = $('qsSide').querySelector('[data-a="signclear"]'); if (c) c.hidden = !SG.path;
+    };
+    pad.addEventListener('pointerup', end); pad.addEventListener('pointercancel', end); pad.addEventListener('lostpointercapture', end);
+  }
+  function signWire() {
+    if (!SG || !$('qsSide')) return;
+    padWire();
+    if (SG.step === 3 && SG.sentAt) resendTick();
+  }
+  function acceptedHtml(q) {
+    var w = t().sg, s = q.signed || {}, who = s.signer || {}, co = s.company || {};
+    return done(w.doneT) + '<dl class="qs-sfacts">' +
+      (who.name ? '<dt>' + esc(w.by) + '</dt><dd>' + esc(who.name + (who.designation ? ', ' + who.designation : '')) + '</dd>' : '') +
+      (co.legal_name ? '<dt>' + esc(w.forCo) + '</dt><dd>' + esc(co.legal_name) + '</dd>' : '') +
+      (s.at ? '<dt>' + esc(w.on) + '</dt><dd>' + esc(when(s.at)) + '</dd>' : '') + '</dl>' +
+      '<button class="btn" type="button" data-a="pdf">' + esc(w.dl) + '</button><p>' + esc(w.doneP) + '</p>';
+  }
+  // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14.
+  function when(iso) {
+    var C = window.ADspaceClock, p = C && C.parts(iso);
+    if (!p) return '';
+    var dd = C.day(iso), mm = (p.mi < 10 ? '0' : '') + p.mi;
+    return lang === 'zh' ? day(dd) + ' ' + (p.h < 12 ? '上午' : '下午') + ((p.h % 12) || 12) + ':' + mm : day(dd, true) + ', ' + C.clock(iso);
   }
   function initials(n) {
     var p = String(n || '').trim().split(/\s+/);
@@ -715,6 +1066,7 @@
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
     Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"]'), function (b) { addGlyph(b, 'file'); });
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
+    signWire();
   }
   // The WhatsApp mark, as the front door draws it before the same words.
   var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
@@ -803,12 +1155,13 @@
       read(d.key);
     }).catch(function () { btn.disabled = false; btn.textContent = t().make; say('qsMsg', t().err.any); });
   }
-  function read(k) {
+  function read(k, then) {
     db.rpc('quote_website_read', { p_key: k }).then(function (r) {
       var d = r && r.data;
       if (r.error || !d) { paint.off = true; Q = null; CAT = null; paint(); return; }
       if (d.error) { paint.lost = true; paint(); return; }
-      Q = d; paint(); window.scrollTo(0, 0);
+      Q = d; paint();
+      if (then) then(); else window.scrollTo(0, 0);
     }).catch(function () { paint.off = true; paint(); });
   }
   function propose(btn) {
@@ -826,9 +1179,15 @@
   function pdf(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
+    /* Who prepared and reviewed it, and once accepted who signed for the
+       company with the signing record (2026-10-31). */
+    var sg = Q.signed, C = window.ADspaceClock;
     window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market },
-      /* The colleague looking after the prospect prepared it (2026-10-31). */
-      preparedBy: Q.rep ? { name: Q.rep.name, designation: Q.rep.title || '' } : null }).then(function (blob) {
+      preparedBy: Q.prepared ? { name: Q.prepared.name, designation: Q.prepared.title || '' } : null,
+      reviewedBy: Q.reviewed ? { name: Q.reviewed.name, designation: Q.reviewed.title || '', day: C.day(Q.reviewed.at) } : null,
+      signed: sg ? { name: sg.signer.name, designation: sg.signer.designation, day: C.day(sg.at), signature: sg.signature, record: sg.record,
+        via: sg.via, company: sg.company } : null,
+      to: sg ? { name: sg.company.legal_name, address: sg.company.billing_address } : null }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });
@@ -859,12 +1218,15 @@
     e.preventDefault(); e.stopPropagation();
     if ($('qsPreviewBar')) $('qsPreviewBar').hidden = false;
     say('qsPreviewMsg', 'Not available in preview.');
+    /* Said in place too, where the press was (the signing card). */
+    if (e.target.closest && e.target.closest('#qsSide')) say('qsSideMsg', 'Not available in preview.', 'warn');
   }
   if (PREVIEW) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', previewBar); else previewBar();
     setTimeout(previewBar, 600);
     document.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('#qsRoot [data-a="propose"], #qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"]');
+      var b = e.target.closest && e.target.closest('#qsRoot [data-a="propose"], #qsRoot [data-a="new"], #qsRoot [data-a="change"], #qsRoot a[href^="/details/"], #qsRoot a[href="/quote/"], ' +
+        '#qsRoot [data-a="signcode"], #qsRoot [data-a="signresend"], #qsRoot [data-a="signfinish"]');
       if (b) previewRefuse(e);
     }, true);
   }
@@ -886,6 +1248,14 @@
     else if (a === 'start') go('need');
     else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
     else if (a === 'propose') propose(b);
+    else if (a === 'signgo') { signStart(); signShow(); }
+    else if (a === 'signback') { signRead(); if (SG.step === 1) { SG = null; clearInterval(resendTimer); $('qsSide').innerHTML = sideHtml(Q); decorate(); var g = $('qsSide').querySelector('[data-a="signgo"]'); if (g) g.focus(); } else signShow(SG.step - 1); }
+    else if (a === 'signnext') { if (signCheck()) signShow(2); }
+    else if (a === 'signcode') signCode(b, false);
+    else if (a === 'signresend') signCode(b, true);
+    else if (a === 'signfinish') signFinish(b);
+    else if (a === 'signclear') { SG.path = ''; signRead(); signShow(); var pd = $('sgPad'); if (pd) pd.scrollIntoView({ block: 'center' }); }
+    else if (a === 'signmode') { signRead(); SG.mode = SG.mode === 'draw' ? 'type' : 'draw'; signShow(); var m = $('qsSide').querySelector('[data-a="signmode"]'); if (m) m.focus(); }
     else if (a === 'pdf') pdf(b);
     else if (a === 'change' || a === 'new') {
       if (madeBy) S.contact = madeBy;
@@ -940,6 +1310,7 @@
       keep(); paint(); return;
     }
     else if (nm === 'pStart' || nm === 'pDecider') { say('qsSideMsg', ''); }
+    else if (id === 'sgAgree') { if (SG) SG.agree = el.checked; el.removeAttribute('aria-invalid'); say('sgAgreeMsg', ''); return; }
     else if (id === 'qsConsent') { el.removeAttribute('aria-invalid'); say('qsConsentMsg', ''); }
     else if (id === 'qsBudget') { S.budget = Number(el.value); }
     else if (id === 'qsTerm') { S.term = Number(el.value); }
@@ -954,6 +1325,36 @@
   });
   document.addEventListener('submit', function (e) {
     if (e.target.id === 'qsDetails') { e.preventDefault(); next(); }
+    /* Enter in a field of the signing card presses its forward step. */
+    if (e.target.id === 'sgForm') { e.preventDefault(); var go = e.target.querySelector('.qs-sfoot .btn-primary'); if (go && !go.disabled) go.click(); }
+  });
+  // The code's six boxes: a digit each, typing, pasting and the iPhone's code moving along.
+  document.addEventListener('input', function (e) {
+    var el = e.target, i = el.getAttribute && el.getAttribute('data-otp');
+    if (i == null) return;
+    var d = el.value.replace(/\D/g, '');
+    el.value = '';
+    if (d) otpFill(Number(i), d.slice(0, 6 - Number(i)));
+    say('sgCodeMsg', '');
+  });
+  document.addEventListener('focusin', function (e) {
+    if (e.target.getAttribute && e.target.getAttribute('data-otp') != null && e.target.select) e.target.select();
+  });
+  document.addEventListener('keydown', function (e) {
+    var el = e.target, i = el.getAttribute && el.getAttribute('data-otp');
+    if (i == null) return;
+    i = Number(i);
+    if (e.key === 'Backspace' && !el.value && i > 0) { e.preventDefault(); var b = otpBoxes(); b[i - 1].value = ''; b[i - 1].focus(); }
+    else if (e.key === 'ArrowLeft' && i > 0) { e.preventDefault(); otpFocus(i - 1); }
+    else if (e.key === 'ArrowRight' && i < 5) { e.preventDefault(); otpFocus(i + 1); }
+  });
+  document.addEventListener('paste', function (e) {
+    var el = e.target, i = el.getAttribute && el.getAttribute('data-otp');
+    if (i == null) return;
+    var d = ((e.clipboardData && e.clipboardData.getData('text')) || '').replace(/\D/g, '');
+    if (!d) return;
+    e.preventDefault();
+    otpFill(d.length >= 6 ? 0 : Number(i), d.slice(0, 6));
   });
   document.addEventListener('input', function (e) {
     // A refusal leaves its field once the field is changed; the next press checks it again.
@@ -998,6 +1399,7 @@
     lang = lang === 'en' ? 'zh' : 'en';
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     if (S.step === 'details' && !Q && $('qsName')) readDetails();
+    signRead();
     paint();
   });
 

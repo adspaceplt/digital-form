@@ -772,6 +772,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   NAME SDN BHD, AC001, AD001. A field with no natural example keeps a short
   hint (Optional, One point a line). Never a real client, creator or
   colleague, nor a code one could hold.
+- A WhatsApp template's body is set out as a letter (the user, 2026-10-31):
+  the greeting on its own line, a blank line, one point a paragraph, each
+  detail (reference, brand, date) on a line of its own, and a blank line
+  before the closing; never a sentence broken across lines.
 - ADspace alone, never "ADspace Studio" (a strict rule).
 - Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The Mill
   International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport,

@@ -5880,10 +5880,36 @@ Each line is a rule that broke once. Its reason is in the archive.
   for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
   client's block to sign and stamp, Name, Designation, Date). Prepared by
   is the quotation's `made_by` (a website quotation's person in charge)
-  with their position; Reviewed by stays empty until the review after
-  signing is built. Every page's foot: the reference, PRIVATE &
+  with their position; Reviewed by the colleague who approved it, once
+  reviewed; a signed copy draws the client's signature in its box and how
+  it was signed under it (online: when, the email the code went to, the
+  address and country, the fingerprint; paper: the day). Every page's foot: the reference, PRIVATE &
   CONFIDENTIAL, Page n of 3 (`ADspaceDocs.letterFoot`); named `ADspace
   Quotation {ref}.pdf`.
+- Quotation signing (`2026-10-31-quotation-signing.sql`; the user,
+  2026-10-31: "Jane picks the reviewer, approve"): the client accepts on
+  the quotation's link (a team's quotation takes one from
+  `quotation_link`): company details and billing contact (prefilled from
+  the record), the figures agreed, name, designation, a signature drawn
+  or typed and the authority tick, then a six-digit code emailed by
+  `quote-request` `sign` (`quote_sign_code`, the service role's alone,
+  kept hashed, 15 minutes, five tries, five an hour; Turnstile) and
+  entered in six boxes (`quote_sign_finish`, anon), which keeps the
+  signature with its record (time, email, `request_ip()`,
+  `request_country()`, device, fingerprint) and tells who prepared it and
+  the person in charge (`quote.signed`). The link then reads Accepted
+  (`accepted`), Welcome once reviewed and Active. The colleague who
+  prepared it checks the entries (each company field correctable, kept
+  from and to) and submits to a reviewer they pick
+  (`quotation_reviewers`: Clients: Quotations Full Access or an admin,
+  never themselves; `quotation_submit`); the reviewer, or an admin in
+  their place after asking, approves (`quotation_review`: Billing filled
+  where empty, needing Billing Work, `billing-access`, left alone where
+  Bukku holds it; the quotation's lines Confirmed, made where none) or
+  sends back with a note. Signed on paper is kept by hand
+  (`quotation_paper`: the day and a link to the scan); Request signature
+  again (`quotation_resign`) keeps the earlier one in `sign_history`.
+  `quote_sign_codes` has RLS on, no policy, no grant.
 - The quotation website (`/quote/`, `js/quote.js`,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is
