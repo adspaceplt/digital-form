@@ -144,12 +144,14 @@
     var shown = rows.filter(function (q) { return !q.removed_at; });
     var gone = rows.filter(function (q) { return q.removed_at; });
     var maySet = ctx.may('clients.quotes', 'work');
+    /* Delete, a removed quotation's alone, is Full Access (2026-10-31). */
+    var mayDelete = ctx.may('clients.quotes', 'manage');
     /* Issue Letter of Offer makes service lines and a letter (2026-10-22). */
     var mayOffer = maySet && ctx.may('clients.services', 'work') && ctx.may('clients.documents', 'work');
     var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
       (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
-    var list = shown.concat(showRemoved ? gone : []);
+    var list = shown;
     /* An empty list carries its way out (2026-10-22, SL-M2). */
     if (!list.length) html += '<div class="empty has-go"><span>No quotations.</span>' +
       (maySet ? '<button class="btn btn-sm" data-a="build" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>';
@@ -231,8 +233,20 @@
         }).join('') + '</div>';
     }
     if (gone.length) {
-      html += '<button type="button" class="linkish crm-removed-toggle" id="qtGone">' +
+      html += '<button type="button" class="linkish crm-removed-toggle" id="qtGone" aria-expanded="' + showRemoved + '">' +
         (showRemoved ? 'Hide ' : 'Show ') + gone.length + ' removed quotation' + (gone.length === 1 ? '' : 's') + '</button>';
+      /* A small list (the user, 2026-10-31: "it should make it small list"):
+         one line a removed quotation, what it was and who removed it when,
+         Restore on the line and Delete in its ⋯. */
+      if (showRemoved) html += '<div class="qt-gone" id="qtGoneList">' + gone.map(function (q) {
+        var items = ['<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>'];
+        if (mayDelete) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="delete" type="button" role="menuitem">Delete</button>');
+        return '<div class="qt-gonerow" data-id="' + esc(q.id) + '"><span class="qt-gonename"><b class="qt-ref">' + esc(q.ref) + '</b>' +
+          '<small>' + wholeDays(esc(metaOf(q) + ' · Removed ' + window.ADspaceClock.date(q.removed_at) + (q.removed_by ? ' by ' + q.removed_by : ''))) + '</small></span>' +
+          '<span class="qt-goneacts">' + (maySet ? '<button class="btn btn-sm" data-a="restore" type="button">Restore</button>' : '') +
+          '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS +
+          '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div></span></span></div>';
+      }).join('') + '</div>';
     }
     host.innerHTML = html;
     host.hidden = false;
@@ -256,10 +270,10 @@
         Array.prototype.forEach.call(host.querySelectorAll('[data-wa]'), function (it) { it.hidden = false; });
       });
     }
-    Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
+    Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id], .qt-gonerow[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
-      Array.prototype.forEach.call(row.querySelectorAll('.qt-dl [data-a]'), function (b2) {
+      Array.prototype.forEach.call(row.querySelectorAll('.qt-dl [data-a], .qt-goneacts > [data-a="restore"]'), function (b2) {
         b2.addEventListener('click', function () { act(b2.getAttribute('data-a'), q, ctx, host, b2); });
       });
       if (!btn) return;
@@ -381,6 +395,7 @@
       }).catch(function (e) { done(); ctx.msg('qtMsg', said(e), 'err'); });
       return;
     }
+    if (a === 'delete') { remove(q, ctx); return; }
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
     set(q, a, ctx, function () {
       if (!back) { ctx.msg('qtMsg', a === 'restore' || a === 'proceeding' ? 'Restored.' : a === 'no_contact' ? q.ref + ' marked Do not contact.' : 'Saved.', 'ok'); return; }
@@ -396,6 +411,35 @@
       ctx.reload();
       ok();
     }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+  }
+
+  /* Delete (2026-10-31): a removed quotation, its reference typed back,
+     gone for good. The database refuses one a service line, a letter or a
+     revision names, and its reference is never issued again. */
+  var GONE_SAID = {
+    denied: 'This needs Clients: Quotations at Full Access.',
+    'not-removed': 'Remove this quotation first.',
+    'bad-ref': 'The reference does not match.'
+  };
+  function remove(q, ctx) {
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: q.ref + ' is deleted. There is no restore, and its reference is not used again.',
+      go: 'Delete', tone: 'danger', wait: true,
+      field: { label: 'Type the reference to confirm', placeholder: q.ref, match: q.ref,
+               need: 'Type the reference to confirm.', mismatch: 'The reference does not match.' }
+    }, function () {
+      return ctx.db.rpc('quotation_delete', { p_id: q.id, p_ref: q.ref }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return said(r.error);
+        if (d.error === 'lines') return 'Service lines were made from ' + q.ref + '. Delete those ' + d.count + ' line' + (d.count === 1 ? '' : 's') + ' in Service lines first.';
+        if (d.error === 'letter') return 'Letter of Offer ' + d.number + ' quotes ' + q.ref + '. A quotation a letter quotes is kept.';
+        if (d.error === 'revised') return q.ref + ' was revised as ' + d.ref + ' and is kept while that quotation stands.';
+        if (d.error) return GONE_SAID[d.error] || said(d.error);
+        ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' deleted.', 'ok'); });
+        return '';
+      });
+    });
   }
 
   /* The Overview's section: three rows, read only. */

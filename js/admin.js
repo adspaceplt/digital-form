@@ -2569,6 +2569,8 @@
     'contact.portal_invite': ['Invitation sent', '', 'clients'],
     'contact.deleted':       ['Contact deleted', 'is-danger', 'clients'],
     'request.raised':        ['Request raised', 'is-warn', 'clients'],
+    'request.added':         ['Request recorded', '', 'clients'],
+    'request.deleted':       ['Request deleted', 'is-danger', 'clients'],
     'request.changed':       ['Request changed', '', 'clients'],
     'request.replied':       ['Request replied', '', 'clients'],
     'contact.added':         ['Contact added', 'is-ok', 'clients'],

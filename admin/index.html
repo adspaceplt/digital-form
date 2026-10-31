@@ -1268,7 +1268,46 @@
         <div id="crmRequests" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Requests</h2></span>
+          <button class="btn btn-sm" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add request</button>
         </div>
+              <!-- A request the client made on a call or in a chat, recorded
+                   by a colleague (2026-10-31). -->
+              <div class="sheet" id="crmReqAddBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReqAddTitle">
+          <div class="sheet-head">
+            <h3 id="crmReqAddTitle">Add request</h3>
+            <button class="iconbtn" id="crmReqAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
+          <div class="row">
+            <div class="span-all"><label class="field-label" for="raKind">Request</label>
+              <select class="select" id="raKind" data-seg>
+                <option value="upgrade">Upgrade</option>
+                <option value="downgrade">Downgrade</option>
+                <option value="cancel">Cancel</option>
+                <option value="details">Change of details</option>
+              </select></div>
+          </div>
+          <div class="row" id="raServiceRow">
+            <div><label class="field-label" for="raService">Service line</label>
+              <select class="select" id="raService" aria-required="true"></select></div>
+          </div>
+          <div class="row">
+            <div><label class="field-label" for="raContact">Requested by</label>
+              <select class="select" id="raContact"></select></div>
+          </div>
+          <div class="row">
+            <div><label class="field-label" for="raNote">Note</label>
+              <textarea class="textarea" id="raNote" placeholder="What the client asked for" rows="3" maxlength="2000"></textarea></div>
+          </div>
+          <div class="msg" id="raMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="raSave" type="button">Add</button>
+            <button class="btn btn-quiet" id="raCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
               <div class="sheet" id="crmReplyBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReplyTitle">
           <div class="sheet-head">

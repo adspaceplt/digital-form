@@ -6117,7 +6117,7 @@ language sql immutable parallel safe as $$
                     'contact.edited', 'contact.portal_invite', 'contact.portal_off',
                     'contact.portal_on', 'contact.primary', 'contact.removed',
                     'contact.restored',
-                    'request.changed', 'request.raised',
+                    'request.added', 'request.changed', 'request.deleted', 'request.raised',
                     'request.reinstated', 'request.replied', 'request.withdrawn',
                     'service.override') then 'clients'
     when action in ('wa.sent', 'wa.template') then 'whatsapp'
