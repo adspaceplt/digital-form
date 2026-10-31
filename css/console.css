@@ -3842,6 +3842,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    the facts under it. The fold is Brand analysis's (`.ba-fold-*`). */
 .ent-fold { border-top: 1px solid var(--line-soft); }
 .ent-head + .ent-fold { margin-top: 4px; }
+.ent-gone-line { margin: 4px 0 8px; font-size: 13px; }
 .ent-fold-row { display: flex; align-items: center; gap: 4px; }
 .ent-fold-row > .ent-fold-head { flex: 1 1 auto; min-width: 0; }
 .ent-fold-head .fsec-h { overflow-wrap: anywhere; }

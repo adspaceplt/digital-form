@@ -2698,6 +2698,7 @@
     var c = state.client;
     if (!c || !maySeeBilling()) return;
     state.entLoading = true;
+    loadEntRemoved(c);
     db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
       state.entLoading = false;
       if (!state.client || state.client.id !== c.id) return;
@@ -2710,6 +2711,19 @@
       state.entFail = r.error && !/function|schema cache/i.test(r.error.message || '') ? r.error.message : '';
       paintBillRead(state.client);
     }).catch(function (x) { state.entLoading = false; state.entFor = c.id; state.entities = null; state.entFail = (x && x.message) || String(x); paintBillRead(state.client); });
+  }
+  /* The entities removed from this client that bill no client now
+     (2026-10-31): listed on asking, with Restore and, where nothing names
+     one, Delete. A database without the read lists none. */
+  function loadEntRemoved(c) {
+    state.entGone = null;
+    db.rpc('client_entities_removed', { p_client: c.id }).then(function (r) {
+      if (!state.client || state.client.id !== c.id) return;
+      var d = r.data || {};
+      state.entGone = r.error || d.error ? [] : (d.entities || []);
+      state.entGoneFor = c.id;
+      paintEntities();
+    }).catch(function () { state.entGone = []; state.entGoneFor = c.id; });
   }
   function entBrands(e) {
     var go = e.brands.map(function (b) {
@@ -2772,10 +2786,83 @@
             (sum ? '<span class="ba-fold-sum ent-fold-sum">' + esc(sum) + '</span>' : '') + '</span>' + BA_CHEV + '</button>' + menu + '</div>' +
           '<div class="ba-fold-body" id="' + id + '"><div class="ba-fold-in">' + facts +
             '<div class="readgroup bk-group ent-bk" data-ent-bk hidden></div></div></div></section>';
-      }).join('');
+      }).join('') + entGoneHtml(work);
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(box);
     Array.prototype.forEach.call(box.querySelectorAll('.ent-fold.is-open'), entBand);
   }
+  var entGoneOpen = false;
+  function entGoneHtml(work) {
+    var G = state.entGoneFor === (state.client && state.client.id) ? (state.entGone || []) : [];
+    if (!G.length) return '';
+    var full = mayPart('clients.billing', 'manage');
+    var rows = !entGoneOpen ? '' : G.map(function (e) {
+      var del = full && !e.bukku && !e.on_letter;
+      return '<section class="ent ent-fold ent-gone" data-ent-gone="' + esc(e.id) + '"><div class="ent-fold-row">' +
+        '<div class="ba-fold-t ent-gone-t"><span class="fsec-h">' + esc(e.legal_name || 'Billing entity') + '</span>' +
+        '<span class="ba-fold-sum">' + esc([e.company_no, 'Removed'].filter(Boolean).join(' · ')) + '</span></div>' +
+        (work ? '<button class="btn btn-sm" type="button" data-eg="restore">Restore</button>' : '') +
+        (del ? '<span class="team-act"><button class="kmenu-btn" type="button" data-eg-menu aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="6" data-eg="delete" data-need="clients.billing:manage">Delete</button></div></span>' : '') +
+        '</div></section>';
+    }).join('');
+    return '<p class="ent-gone-line"><button type="button" class="linkbtn" data-eg="toggle" aria-expanded="' + String(entGoneOpen) + '">' +
+      (entGoneOpen ? 'Hide ' : 'Show ') + G.length + ' removed entit' + (G.length === 1 ? 'y' : 'ies') + '</button></p>' + rows;
+  }
+  var ENT_GONE_SAID = {
+    'denied': 'This needs Clients: Billing at Full Access.',
+    'not-removed': 'This entity bills this client again. Refresh the page to see the current list.',
+    'bills-others': 'This entity bills another client. Remove it there first.',
+    'bukku': 'Bukku links this entity. Unlink it from Bukku first.',
+    'on-letter': 'A letter names this entity, so it is kept.',
+    'bad-name': 'The name does not match.',
+    'not-found': 'This entity is no longer held. Refresh the page to see the current list.'
+  };
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest && e.target.closest('#crmEntities [data-eg], #crmEntities [data-eg-menu]');
+    if (!t || !state.client) return;
+    var cid = state.client.id;
+    if (t.getAttribute('data-eg') === 'toggle') { entGoneOpen = !entGoneOpen; paintEntities(); return; }
+    e.stopPropagation();
+    if (t.hasAttribute('data-eg-menu')) {
+      var m = t.parentNode.querySelector('.kmenu'), open = m.hidden;
+      document.querySelectorAll('#crmEntities .kmenu').forEach(function (x) { x.hidden = true; });
+      m.hidden = !open; t.setAttribute('aria-expanded', String(open));
+      if (open && window.ADspaceMenu) window.ADspaceMenu.place(t, m);
+      return;
+    }
+    var row = t.closest('[data-ent-gone]'), id = row && row.getAttribute('data-ent-gone');
+    var ent = (state.entGone || []).filter(function (x) { return x.id === id; })[0];
+    if (!ent) return;
+    if (t.closest('.kmenu')) { t.closest('.kmenu').hidden = true; }
+    if (t.getAttribute('data-eg') === 'restore') {
+      t.disabled = true;
+      db.rpc('client_entity_add', { p_client: cid, p_entity: ent.id, p_values: null }).then(function (u) {
+        if (u.error || (u.data && u.data.error)) { t.disabled = false; msg('crmBillNote', entSaid(u), 'err'); return; }
+        entReload(function () { msg('crmBillNote', 'Billing entity restored.', 'ok'); });
+      }).catch(function (x) { t.disabled = false; msg('crmBillNote', (x && x.message) || String(x), 'err'); });
+      return;
+    }
+    if (t.getAttribute('data-eg') === 'delete') {
+      var nm = String(ent.legal_name || '').trim();
+      window.ADspaceConfirm.ask({
+        title: 'Delete ' + (nm || 'billing entity') + '?',
+        body: 'The entity and its details are deleted from the portal. Bukku is not changed. There is no restore.',
+        go: 'Delete', tone: 'danger', wait: true,
+        field: nm ? { label: 'Type the registered name to confirm', placeholder: nm, match: nm,
+          need: 'Type the registered name to confirm.', mismatch: 'The name does not match.' } : null
+      }, function (v) {
+        return db.rpc('client_entity_delete', { p_client: cid, p_entity: ent.id, p_name: typeof v === 'string' ? v : nm }).then(function (r) {
+          var d = r.data || {};
+          if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : r.error.message;
+          if (d.error) return ENT_GONE_SAID[d.error] || d.error;
+          state.entGone = (state.entGone || []).filter(function (x) { return x.id !== ent.id; });
+          paintEntities();
+          msg('crmBillNote', 'Billing entity deleted.', 'ok');
+          return '';
+        }).catch(function (x) { return (x && x.message) || String(x); });
+      });
+    }
+  });
   /* Each entity is its own Bukku contact (2026-10-29: a brand's unpaid
      invoices read every company billing it): its band, read as it opens. */
   function invoicesAgain() { if (window.ADspaceInvoices && state.client) window.ADspaceInvoices.client($('odClient'), state.client, true); }
@@ -3259,7 +3346,8 @@
     ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var DF_FIELDS = { legal_name: 'crmLegalName', company_no: 'crmCompanyNo', company_no_old: 'crmCompanyNoOld',
     tin: 'crmTin', sst_no: 'crmSstNo', finance_email: 'crmFinanceEmail', billing_address: 'crmBillAddr' };
-  var DF_SAID = { denied: 'This needs Clients: Billing.', 'not-found': 'This client is outside your access.' };
+  var DF_SAID = { denied: 'This needs Clients: Billing.', 'not-found': 'This client is outside your access.',
+    'no-link': 'No link is open. Refresh the page to see the current state.' };
   function dfUrl(key) { return location.origin + '/details/?k=' + encodeURIComponent(key); }
   function loadDetForm() {
     var box = $('crmDetForm'), c = state.client;
@@ -3298,7 +3386,8 @@
     } else if (f.state === 'open') {
       var url = f.key ? dfUrl(f.key) : '';
       box.innerHTML = head(work ? '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="reset" role="menuitem">Reset link</button></div></span>' : '') +
+          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="reset" role="menuitem">Reset link</button>' +
+          '<button class="kmenu-item" data-g="5" type="button" data-df="close" role="menuitem">Close link</button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Sent, open until ' + esc(day(f.expires_at)) + '</dd></div></dl>' +
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="crmDfLink" readonly aria-label="Request from client link" value="' + esc(url) + '">' +
@@ -3435,6 +3524,29 @@
       box.querySelector('[data-df-menu]').hidden = true;
       window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The current link stops working. A new one is made.', go: 'Reset link', tone: 'warn' },
         function () { dfLink(true); });
+      return;
+    }
+    /* Close link (2026-10-31): the link sent stops opening and no new one
+       is made; Create link makes one again. */
+    if (a === 'close') {
+      box.querySelector('[data-df-menu]').hidden = true;
+      var cid = state.client.id;
+      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent stops opening. A new link can be made later.', go: 'Close link', tone: 'warn', wait: true },
+        function () {
+          return db.rpc('client_details_close', { p_client: cid }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) {
+              return r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+                : (DF_SAID[d.error] || d.error);
+            }
+            if (state.detForm && state.client && state.client.id === cid) {
+              state.detForm = { id: state.detForm.id, state: 'expired', created_at: state.detForm.created_at, expires_at: new Date().toISOString() };
+              paintDetForm();
+              msg('crmDfMsg', 'Link closed.', 'ok');
+            }
+            return '';
+          }).catch(function (x) { return (x && x.message) || String(x); });
+        });
       return;
     }
     if (a === 'copy') { window.ADspaceCopy.to(b, $('crmDfLink').value); return; }
@@ -3622,6 +3734,7 @@
     denied: 'This needs Clients: Brand at View.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This analysis is no longer available.',
+    'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
     'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
   };
   function baDay(iso) { return iso ? niceDate(ADspaceClock.day(iso)) : ''; }
@@ -3722,6 +3835,35 @@
       m.followers ? 'Instagram followers' : '', n(m.ads, 'ad objective', 'ad objectives'), n(b.web_searches, 'web search', 'web searches'));
     return bits.filter(Boolean).map(function (x) { return '<span class="ba-part">' + esc(x) + '</span>'; }).join(' · ');
   }
+  /* A version is deleted at Clients: Brand Full Access (2026-10-31), never
+     the latest confirmed one: Write with AI reads it. */
+  function baDeletable(v) {
+    if (!v || ba.running || !mayPart('clients.brand', 'manage')) return false;
+    var read = (ba.versions || []).filter(function (x) { return x.confirmed_at; })[0];
+    return !read || read.id !== v.id;
+  }
+  function deleteAnalysis(c, v) {
+    baMsg('');
+    window.ADspaceConfirm.ask({
+      title: 'Delete version ' + v.version + '?',
+      body: 'Version ' + v.version + ' of the brand analysis is deleted. There is no restore.',
+      go: 'Delete', tone: 'danger', wait: true
+    }, function () {
+      return db.rpc('brand_analysis_delete', { p_id: v.id }).then(function (q) {
+        var d = (q && q.data) || {};
+        if ((q && q.error) || d.error) return baDelSaid(q && q.error ? q.error.message : d.error);
+        ba.versions = (ba.versions || []).filter(function (x) { return x.id !== v.id; });
+        ba.show = null;
+        if (state.client === c) { paintAnalysis(c); baMsg('Version ' + v.version + ' deleted.', 'ok'); }
+        return '';
+      }).catch(function (e) { return baDelSaid((e && e.message) || String(e)); });
+    });
+  }
+  function baDelSaid(m) {
+    if (m === 'denied') return 'This needs Clients: Brand at Full Access.';
+    if (/function .* does not exist|schema cache|PGRST20[25]/i.test(m)) return BA_SAID['needs-update'];
+    return BA_SAID[m] || 'Not deleted. ' + m;
+  }
   function paintAnalysis(c) {
     var host = $('crmAnalysis');
     if (!host || state.client !== c) return;
@@ -3736,8 +3878,11 @@
       (v && !v.confirmed_at && !busy ? '<button class="btn btn-sm btn-primary" type="button" data-a="ba-confirm" id="crmAnalysisConfirm">Confirm</button>' : '') +
       '<button class="btn btn-sm" type="button" data-a="ba-run" id="crmAnalysisRun"' + (busy ? ' disabled aria-busy="true"' : '') + '>' + AI +
         (busy ? 'Running' : list.length ? 'Run again' : 'Run analysis') + '</button>' +
-      (v && v.confirmed_at ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-g="5" data-a="ba-withdraw" type="button" role="menuitem">Withdraw confirmation</button></div></span>' : '');
+      (v && (v.confirmed_at || baDeletable(v)) ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' +
+        (v.confirmed_at ? '<button class="kmenu-item" data-g="5" data-a="ba-withdraw" type="button" role="menuitem">Withdraw confirmation</button>' : '') +
+        (baDeletable(v) ? '<button class="kmenu-item" data-g="6" data-a="ba-delete" type="button" role="menuitem" data-need="clients.brand:manage">Delete</button>' : '') +
+        '</div></span>' : '');
     if (acts.querySelector('[data-a="menu"]')) wireMenu(acts);
     if (ba.failed) { body.innerHTML = '<p class="msg err">The brand analysis could not be read.</p>'; return; }
     if (!ba.versions) { body.innerHTML = '<p class="ba-none">Loading.</p>'; return; }
@@ -3909,6 +4054,7 @@
     if (a === 'ba-run') runAnalysis(c, t);
     else if (a === 'ba-confirm' && shown) confirmAnalysis(c, shown, true);
     else if (a === 'ba-withdraw' && shown) confirmAnalysis(c, shown, false);
+    else if (a === 'ba-delete' && shown) deleteAnalysis(c, shown);
     else if (a === 'ba-show') { ba.show = t.getAttribute('data-id'); paintAnalysis(c); }
     else if (a === 'ba-latest') { ba.show = null; paintAnalysis(c); }
     else if (a === 'ba-fold') {
