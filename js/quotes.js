@@ -204,6 +204,11 @@
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
               items.push('<button class="kmenu-item" data-g="3" data-a="wa" data-wa hidden type="button" role="menuitem">Send on WhatsApp</button>');
             }
+            /* Send by email beside it (2026-10-31): optional as WhatsApp is,
+               never sent by itself. */
+            if (window.ADspaceDocMail && window.ADspaceDocMail.may('quotation') && q.status !== 'not_proceeding' && !awaiting(q) && !q.no_contact_at) {
+              items.push('<button class="kmenu-item" data-g="3" data-a="mail" type="button" role="menuitem">Send by email</button>');
+            }
             /* The quotation-ready WhatsApp again, its link button the
                prospect's own (2026-10-30): a website quotation the team has
                sent, still valid, drawn once its template is on. */
@@ -267,6 +272,20 @@
         if (ctx.painted) ctx.painted();
       });
     }
+    /* Each quotation's last email, under its reference (2026-10-31). */
+    var cid = (ctx.client && ctx.client.id) || (rows[0] && rows[0].client_id);
+    if (window.ADspaceDocMail && cid && list.length) {
+      window.ADspaceDocMail.lines(cid).then(function (by) {
+        Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
+          var e = by[row.getAttribute('data-id')], name = row.querySelector('.qt-name');
+          if (!e || !name || name.querySelector('.dm-line')) return;
+          var sm = document.createElement('small');
+          sm.className = 'dm-line' + (e.bad ? ' is-bad' : '');
+          sm.textContent = e.line;
+          name.appendChild(sm);
+        });
+      });
+    }
     if (host.querySelector('[data-wa]')) {
       WA().on('quotation').then(function (yes) {
         if (!yes) return;
@@ -310,6 +329,15 @@
         if (tab) try { tab.close(); } catch (x) {}
         ctx.msg('qtMsg', said(e) || 'Not drawn.', 'err');
       });
+      return;
+    }
+    if (a === 'mail') {
+      window.ADspaceDocMail.compose({ kind: 'quotation', ref: q.id, clientId: q.client_id || (ctx.client && ctx.client.id), opener: btn,
+        doc: { title: 'Quotation ' + q.ref, file: function () {
+          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client })
+            .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
+        } },
+        onSent: function (line) { ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); }); } });
       return;
     }
     if (a === 'wa') {

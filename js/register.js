@@ -324,6 +324,7 @@
     /* `own` is the client record's pane, where every row is that client's,
        so the brand would say the same thing on every line. */
     el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    el.setAttribute('data-doc', d.id);
     /* The kind, and who issued it where the portal did. A row added by hand
        says nothing about how it arrived and names nobody: an import is not a
        person, and the fact is in the ⋯ (Edit is offered on it). */
@@ -363,7 +364,11 @@
               /* An HR letter is the colleague's to read once shared (My
                  records, Letters); shared later, or taken back. */
               [d.family === 'hr' && d.member_id && !d.voided_at &&
-                { a: 'share', label: d.shared_at ? 'Stop sharing' : 'Share with ' + shareName(d), need: 'register.hr:work' }],
+                { a: 'share', label: d.shared_at ? 'Stop sharing' : 'Share with ' + shareName(d), need: 'register.hr:work' },
+               /* A client letter is emailed to the client's contact
+                  (2026-10-31), by hand. */
+               d.family === 'client' && d.client_id && d.source === 'portal' && !d.voided_at &&
+                 window.ADspaceDocMail && window.ADspaceDocMail.may('letter') && { a: 'mail', label: 'Send by email' }],
               [], [],
               [!d.voided_at && { a: 'void', label: 'Void', need: need + ':manage' },
                { a: 'del', label: 'Delete', need: need + ':manage' }]]) +
@@ -429,6 +434,16 @@
         say(on2 ? 'Shared with ' + shareName(d) + '.' : 'No longer shared.', 'ok');
         if (onChange) onChange(); else load();
       }).catch(function () { say('Not changed. The database refused the request.', 'err'); });
+    });
+    on('mail', function () {
+      window.ADspaceDocMail.compose({ kind: 'letter', ref: d.id, clientId: d.client_id,
+        opener: el.querySelector('[data-a="menu"]'),
+        doc: { title: nameOf(d.kind) + ' ' + d.serial, file: function () {
+          return LET.render(d).then(function (bytes) {
+            return { blob: new Blob([bytes], { type: 'application/pdf' }), name: LET.fileName(d) };
+          });
+        } },
+        onSent: function (line) { msg(el.closest('#crmPanes') ? 'crmDocMsg' : sayTo, line, 'ok'); if (onChange) onChange(); } });
     });
     on('del', function () { openDelete(d, onChange); });
     return el;

@@ -90023,4 +90023,643 @@ grant execute on function public.activity_section(text) to authenticated;
 
 -- END OF QUOTATIONS DELETED AND REQUESTS RECORDED BY THE TEAM ---------------
 
+-- ===========================================================================
+-- CLIENT DOCUMENT EMAILS — a quotation, a Letter of Offer or a client letter
+-- emailed to a client's contact, by hand (2026-10-31)
+-- ===========================================================================
+-- WHY (the user, 2026-10-31, on a review of a client's Services tab: "ok
+-- build but still same as whatsapp optionally send"): a quotation and a
+-- Letter of Offer could be sent on WhatsApp alone, and a client letter
+-- issued with Issue document could not be sent at all. Each gains Send by
+-- email beside Send on WhatsApp: nothing goes by itself, the team presses it.
+--
+-- WHAT IT ADDS (built on SUPPLIER EMAILS: the same fill, the same Resend
+-- send in `supplier-mail`, the same webhook and sweep)
+--   * `client_email_templates`: one subject and body a kind (`quotation`,
+--     `offer` Letter of Offer, `letter` a client letter), the team's words
+--     with {fields} filled from the record; seeded once. Read and written
+--     at `team.settings` (Settings, Templates), filed `team.changed` under
+--     Client emails.
+--   * `client_emails`: every email sent, the record it carried (kind,
+--     `ref_id`, its reference), the contact, who sent it and to whom
+--     replies go, its words as sent and what Resend said of it. Kept when
+--     the client is deleted (the link set null).
+--   * `client_email_may(p_kind, p_level)` (no page's to call): Clients:
+--     Quotations for a quotation, Clients: Letters for a Letter of Offer,
+--     Letters or Documents: Client documents (`register_may('client')`)
+--     for a client letter.
+--   * `client_email_prepare(p_kind, p_ref, p_contact)` (that part at Work,
+--     the client in scope): the client's contacts holding an email, the
+--     billing contact first, the one chosen (else the billing contact, else
+--     the primary), the finance email where it differs, each {field}, the
+--     template filled, the document's reference, and an email of the same
+--     record within `wa_repeat_hours` (`recent`). Refused `not-found`,
+--     `void` (a cancelled quotation, a voided or replaced letter),
+--     `unreleased` (a website quotation the team has not sent), `no-contact`
+--     (marked Do not contact), `no-file` (a letter added by hand), `no-email`
+--     (no contact holds one), `bad-contact`.
+--   * `client_email_begin` files the send before it goes (a lock on the
+--     record; `sending` while one is on its way, then `recent` unless asked
+--     again); `client_email_done` closes it as the sender, filed
+--     `client.edited` under the client. `supplier-mail` calls both as the
+--     colleague.
+--   * `client_emails_of(p_client)`: the record's emails, the kinds the
+--     reader may see.
+--   * A gate (the user, 2026-10-31: "Can gate the send email settings?
+--     Enable or disable at business settings"): the Business setting
+--     `client_email_on` (0 Off, 1 On, from a day; seeded Off, as Meta
+--     checks), Settings, Clients: Send by email. `client_email_set(p_on)`
+--     (`team.settings`) sets it from today and files it under Settings;
+--     while Off, prepare and begin refuse `email-off` and the page draws no
+--     Send by email. Its own setter, so app_settings_set (whose body holds
+--     a delete the connector will not apply) is not restated.
+--   * `supplier_email_status` (Resend's webhook) and `mail_sweep` (Not
+--     confirmed after ten minutes) restated with `client_emails`.
+--
+-- ORDER: this file (connector), then `supplier-mail`, then the pages. A page
+-- served before draws no Send by email; a page served after on a database
+-- without this reads "This needs a database update". Safe to run twice.
+--
+-- ROLLBACK: run OVERDUE INVOICE REMINDERS' `supplier_email_status` and
+-- AUDIT SMALL FIXES' `mail_sweep` again, then
+--   drop function if exists public.client_email_set(boolean);
+--   drop function if exists public.client_emails_of(uuid);
+--   drop function if exists public.client_email_done(uuid, text, text, text);
+--   drop function if exists public.client_email_begin(text, uuid, uuid, boolean, text, text, boolean);
+--   drop function if exists public.client_email_prepare(text, uuid, uuid);
+--   drop function if exists public.client_email_template_save(text, text, text);
+--   drop function if exists public.client_email_templates_list();
+--   drop function if exists public.client_email_may(text, text);
+--   drop table if exists public.client_emails;
+--   drop table if exists public.client_email_templates;
+-- ===========================================================================
+
+-- CLIENT DOCUMENT EMAILS ----------------------------------------------------
+
+insert into public.app_settings (key, from_date, value)
+select 'client_email_on', date '2023-08-14', 0
+ where not exists (select 1 from public.app_settings s where s.key = 'client_email_on');
+
+create table if not exists public.client_email_templates (
+  kind        text primary key check (kind in ('quotation', 'offer', 'letter')),
+  subject     text not null,
+  body        text not null,
+  updated_at  timestamptz not null default now(),
+  updated_by  uuid references public.team_members(id) on delete set null
+);
+alter table public.client_email_templates enable row level security;
+revoke all on table public.client_email_templates from public, anon, authenticated;
+
+insert into public.client_email_templates (kind, subject, body)
+select x.kind, x.subject, x.body from (values
+  ('quotation', 'Quotation {document reference} · ADspace',
+   E'Dear {contact name},\n\nThank you for your interest in ADspace. Please find attached our Quotation {document reference} for {client name}, dated {document date} and valid until {valid until}.\n\nShould you have any questions, please reply to this email.\n\nYours sincerely,\n{sender name}\nADSPACE PLT'),
+  ('offer', 'Letter of Offer {document reference} · ADspace',
+   E'Dear {contact name},\n\nPlease find attached our Letter of Offer {document reference} for {client name}, dated {document date}.\n\nKindly sign the acceptance page and return it to us to confirm.\n\nYours sincerely,\n{sender name}\nADSPACE PLT'),
+  ('letter', '{document title} {document reference} · ADspace',
+   E'Dear {contact name},\n\nPlease find attached our {document title} {document reference} for {client name}, dated {document date}.\n\nYours sincerely,\n{sender name}\nADSPACE PLT')
+) as x (kind, subject, body)
+where not exists (select 1 from public.client_email_templates);
+
+create table if not exists public.client_emails (
+  id            uuid primary key default gen_random_uuid(),
+  client_id     uuid references public.clients(id) on delete set null,
+  kind          text not null check (kind in ('quotation', 'offer', 'letter')),
+  ref_id        uuid not null,
+  reference     text not null,
+  contact_id    uuid references public.client_contacts(id) on delete set null,
+  to_email      text not null,
+  cc_email      text,
+  reply_to      text,
+  subject       text not null,
+  body          text not null,
+  sent_by       uuid references public.team_members(id) on delete set null,
+  created_at    timestamptz not null default now(),
+  status        text not null default 'sending'
+                check (status in ('sending', 'sent', 'failed', 'unknown', 'delivered', 'opened', 'bounced', 'complained')),
+  provider_id   text,
+  error         text,
+  sent_at       timestamptz,
+  delivered_at  timestamptz,
+  opened_at     timestamptz,
+  bounced_at    timestamptz
+);
+create index if not exists client_emails_client_idx on public.client_emails (client_id, created_at desc);
+create index if not exists client_emails_ref_idx on public.client_emails (kind, ref_id, created_at desc);
+create unique index if not exists client_emails_provider_idx on public.client_emails (provider_id) where provider_id is not null;
+alter table public.client_emails enable row level security;
+revoke all on table public.client_emails from public, anon, authenticated;
+
+create or replace function public.client_email_may(p_kind text, p_level text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select case p_kind
+    when 'quotation' then public.allowed('clients.quotes', p_level)
+    when 'offer'     then public.allowed('clients.documents', p_level)
+    when 'letter'    then public.register_may('client', p_level)
+    else false end
+$$;
+revoke all on function public.client_email_may(text, text) from public, anon, authenticated;
+
+create or replace function public.client_email_templates_list()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.ops_granted('team.settings', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('kind', t.kind, 'subject', t.subject, 'body', t.body,
+             'updated_at', t.updated_at, 'updated_by', m.name)
+             order by array_position(array['quotation', 'offer', 'letter'], t.kind))
+      from public.client_email_templates t left join public.team_members m on m.id = t.updated_by), '[]'::jsonb));
+end $$;
+revoke all on function public.client_email_templates_list() from public, anon;
+grant execute on function public.client_email_templates_list() to authenticated;
+
+create or replace function public.client_email_template_save(p_kind text, p_subject text, p_body text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  t   public.client_email_templates;
+  v_s text := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_b text := btrim(replace(coalesce(p_body, ''), E'\r', ''));
+  moved text[] := '{}';
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.client_email_templates x where x.kind = p_kind for update;
+  if t.kind is null then return jsonb_build_object('error', 'bad-kind'); end if;
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  if t.subject is distinct from v_s then moved := moved || ('Subject: ' || t.subject || ' → ' || v_s); end if;
+  if t.body is distinct from v_b then moved := moved || 'Message'::text; end if;
+  if array_length(moved, 1) is null then return jsonb_build_object('ok', true); end if;
+  update public.client_email_templates x set subject = v_s, body = v_b, updated_at = now(), updated_by = me.id
+   where x.kind = p_kind;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Client emails',
+          case p_kind when 'quotation' then 'Quotation' when 'offer' then 'Letter of Offer' else 'Client letter' end ||
+          ' · ' || array_to_string(moved, ' · '));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_email_template_save(text, text, text) from public, anon;
+grant execute on function public.client_email_template_save(text, text, text) to authenticated;
+
+/* What one email is: the record, the client's contacts holding an email,
+   the one it goes to, each {field} from the record as saved, and the
+   template filled. Asked by the page to draw the sheet and by
+   supplier-mail again at the send, as the colleague. */
+create or replace function public.client_email_prepare(p_kind text, p_ref uuid, p_contact uuid default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  c      public.clients;
+  q      public.quotations;
+  o      public.client_documents;
+  d      public.documents;
+  k      public.client_contacts;
+  t      public.client_email_templates;
+  v_cid  uuid;
+  v_ref  text;
+  v_tit  text;
+  v_day  date;
+  v_val  date;
+  v      jsonb;
+  ppl    jsonb;
+  hours  numeric;
+  r      public.client_emails;
+  v_cc   text;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('quotation', 'offer', 'letter') then return jsonb_build_object('error', 'bad-request'); end if;
+  if not public.client_email_may(p_kind, 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind = 'quotation' then
+    select * into q from public.quotations x where x.id = p_ref;
+    if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+    if q.status = 'not_proceeding' then return jsonb_build_object('error', 'void'); end if;
+    if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'unreleased'); end if;
+    if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+    v_cid := q.client_id; v_ref := q.ref; v_tit := 'Quotation';
+    v_day := (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date; v_val := q.valid_until;
+  elsif p_kind = 'offer' then
+    select * into o from public.client_documents x where x.id = p_ref;
+    if o.id is null or o.kind not in ('offer', 'intent', 'cover') then return jsonb_build_object('error', 'not-found'); end if;
+    if o.voided_at is not null or o.superseded_by is not null then return jsonb_build_object('error', 'void'); end if;
+    v_cid := o.client_id; v_ref := o.number; v_tit := 'Letter of Offer'; v_day := o.issued_at;
+  else
+    select * into d from public.documents x where x.id = p_ref and x.family = 'client';
+    if d.id is null or d.client_id is null then return jsonb_build_object('error', 'not-found'); end if;
+    if d.voided_at is not null then return jsonb_build_object('error', 'void'); end if;
+    if d.source <> 'portal' then return jsonb_build_object('error', 'no-file'); end if;
+    v_cid := d.client_id; v_ref := d.serial; v_tit := coalesce(nullif(d.kind, ''), 'Letter'); v_day := d.issued_at;
+  end if;
+  select * into c from public.clients x where x.id = v_cid;
+  if c.id is null or not public.client_seen(c.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.client_email_templates x where x.kind = p_kind;
+  if t.kind is null then return jsonb_build_object('error', 'needs-update'); end if;
+
+  /* The client's contacts holding an email, the billing contact first, then
+     the primary, then by name. */
+  select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'name', public.contact_named(x.salutation, x.name),
+           'email', btrim(x.email), 'role', x.role, 'billing', coalesce(x.id = c.bill_contact_id, false), 'primary', x.is_primary)
+           order by (x.id = c.bill_contact_id) desc nulls last, x.is_primary desc, x.name), '[]'::jsonb)
+    into ppl
+    from public.client_contacts x
+   where x.client_id = c.id and x.archived_at is null and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+  if jsonb_array_length(ppl) = 0 then return jsonb_build_object('error', 'no-email'); end if;
+  if p_contact is not null then
+    select * into k from public.client_contacts x
+     where x.id = p_contact and x.client_id = c.id and x.archived_at is null
+       and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+    if k.id is null then return jsonb_build_object('error', 'bad-contact'); end if;
+  else
+    select * into k from public.client_contacts x where x.id = (ppl->0->>'id')::uuid;
+  end if;
+  v_cc := nullif(btrim(coalesce(c.finance_email, '')), '');
+  if v_cc is not null and (lower(v_cc) = lower(btrim(k.email)) or v_cc !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then v_cc := null; end if;
+
+  v := jsonb_build_object(
+    'contact name', public.contact_named(k.salutation, k.name),
+    'client name', c.name,
+    'company name', coalesce(nullif(c.legal_name, ''), c.name),
+    'document title', v_tit, 'document reference', v_ref,
+    'document date', case when v_day is null then '' else to_char(v_day, 'FMDD FMMonth YYYY') end,
+    'valid until', case when v_val is null then '' else to_char(v_val, 'FMDD FMMonth YYYY') end,
+    'sender name', coalesce(me.name, ''));
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 then
+    select * into r from public.client_emails x
+     where x.kind = p_kind and x.ref_id = p_ref and x.status <> 'failed'
+       and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+  end if;
+  return jsonb_build_object('ok', true,
+    'client_id', c.id, 'client', c.name,
+    'contacts', ppl,
+    'to', jsonb_build_object('id', k.id, 'name', public.contact_named(k.salutation, k.name), 'email', btrim(k.email)),
+    'cc', v_cc,
+    'reply_to', nullif(btrim(coalesce(me.email, '')), ''),
+    'values', v,
+    'subject', public.supplier_email_fill(t.subject, v),
+    'body', public.supplier_email_fill(t.body, v),
+    'document', jsonb_build_object('id', p_ref, 'kind', p_kind, 'serial', v_ref, 'title', v_tit),
+    'recent', case when r.id is null then null else jsonb_build_object('at', r.created_at, 'to', r.to_email,
+      'by', (select m.name from public.team_members m where m.id = r.sent_by)) end);
+end $$;
+revoke all on function public.client_email_prepare(text, uuid, uuid) from public, anon;
+grant execute on function public.client_email_prepare(text, uuid, uuid) to authenticated;
+
+/* An email is filed before it goes, so a send whose answer is lost is still
+   on the record (Not confirmed). Two presses send once: a lock on the
+   record, then `sending` while the same record's email is on its way, then
+   `recent` within the window unless asked again. */
+create or replace function public.client_email_begin(p_kind text, p_ref uuid, p_contact uuid,
+  p_cc boolean, p_subject text, p_body text, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  p   jsonb;
+  v_s text;
+  v_b text;
+  v_id uuid;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  perform pg_advisory_xact_lock(hashtext('client-email:' || coalesce(p_kind, '') || ':' || coalesce(p_ref::text, '')));
+  p := public.client_email_prepare(p_kind, p_ref, p_contact);
+  if p ? 'error' then return p; end if;
+  if exists (select 1 from public.client_emails x where x.kind = p_kind and x.ref_id = p_ref
+              and x.status = 'sending' and x.created_at > now() - interval '10 minutes') then
+    return jsonb_build_object('error', 'sending');
+  end if;
+  if jsonb_typeof(p->'recent') = 'object' and not coalesce(p_again, false) then
+    return jsonb_build_object('error', 'recent', 'recent', p->'recent');
+  end if;
+  v_s := btrim(regexp_replace(public.supplier_email_fill(p_subject, p->'values'), '\s+', ' ', 'g'));
+  v_b := btrim(replace(public.supplier_email_fill(p_body, p->'values'), E'\r', ''));
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  insert into public.client_emails (client_id, kind, ref_id, reference, contact_id, to_email, cc_email, reply_to, subject, body, sent_by)
+  values ((p->>'client_id')::uuid, p_kind, p_ref, p->'document'->>'serial', (p->'to'->>'id')::uuid, p->'to'->>'email',
+          case when coalesce(p_cc, false) then p->>'cc' end, p->>'reply_to', v_s, v_b, me.id)
+  returning id into v_id;
+  return jsonb_build_object('ok', true, 'id', v_id, 'to', p->'to', 'cc', case when coalesce(p_cc, false) then p->'cc' end,
+    'reply_to', p->'reply_to', 'subject', v_s, 'body', v_b, 'document', p->'document');
+end $$;
+revoke all on function public.client_email_begin(text, uuid, uuid, boolean, text, text, boolean) from public, anon;
+grant execute on function public.client_email_begin(text, uuid, uuid, boolean, text, text, boolean) to authenticated;
+
+create or replace function public.client_email_done(p_id uuid, p_status text, p_provider text, p_error text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  e  public.client_emails;
+  c  public.clients;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_status not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-status'); end if;
+  select * into e from public.client_emails x where x.id = p_id and x.sent_by = me.id and x.status = 'sending' for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.client_emails x set status = p_status, provider_id = nullif(p_provider, ''),
+    error = left(nullif(p_error, ''), 480), sent_at = case when p_status = 'sent' then now() end
+   where x.id = p_id;
+  select * into c from public.clients x where x.id = e.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.edited', coalesce(c.name, 'Client'),
+          case e.kind when 'quotation' then 'Quotation ' when 'offer' then 'Letter of Offer ' else '' end || e.reference ||
+          case p_status when 'sent' then ' emailed to ' when 'unknown' then ' emailed, not confirmed, to ' else ' not emailed to ' end ||
+          e.to_email || coalesce(', copy to ' || e.cc_email, ''));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_email_done(uuid, text, text, text) from public, anon;
+grant execute on function public.client_email_done(uuid, text, text, text) to authenticated;
+
+create or replace function public.client_emails_of(p_client uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.client_seen(p_client, 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('id', e.id, 'kind', e.kind, 'ref_id', e.ref_id, 'reference', e.reference,
+             'to', e.to_email, 'cc', e.cc_email, 'subject', e.subject, 'status', e.status, 'created_at', e.created_at,
+             'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at, 'by', m.name)
+             order by e.created_at desc)
+      from public.client_emails e
+      left join public.team_members m on m.id = e.sent_by
+     where e.client_id = p_client and public.client_email_may(e.kind, 'view')), '[]'::jsonb));
+end $$;
+revoke all on function public.client_emails_of(uuid) from public, anon;
+grant execute on function public.client_emails_of(uuid) to authenticated;
+
+/* Send by email on or off from today (Settings, Clients), filed from and
+   to under Settings as a Business setting is. */
+create or replace function public.client_email_set(p_on boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_was  numeric;
+  v_to   numeric := case when coalesce(p_on, false) then 1 else 0 end;
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_was := public.app_setting('client_email_on', v_today);
+  if v_was is not distinct from v_to then return jsonb_build_object('ok', true); end if;
+  insert into public.app_settings (key, from_date, value, set_by, set_at)
+  values ('client_email_on', v_today, v_to, me.id, now())
+  on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Settings',
+          'Send by email: ' || case when v_was = 1 then 'On' else 'Off' end || ' → ' ||
+          case when v_to = 1 then 'On' else 'Off' end || ' · from ' || public.register_day(v_today));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_email_set(boolean) from public, anon;
+grant execute on function public.client_email_set(boolean) to authenticated;
+
+/* Resend's word on a sent email (supplier-mail, its webhook, the service
+   role): a supplier's email, an overdue reminder or a client's document
+   alike. A later word never steps back: an opened email is never delivered
+   again, a bounce stays. */
+create or replace function public.supplier_email_status(p_provider text, p_event text, p_at timestamptz)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  e    public.supplier_emails;
+  i    public.invoice_emails;
+  ce   public.client_emails;
+  rank constant jsonb := '{"sending":0,"unknown":1,"sent":1,"failed":1,"delivered":2,"opened":3,"complained":4,"bounced":4}';
+  st   text := case p_event when 'email.delivered' then 'delivered' when 'email.opened' then 'opened'
+                when 'email.clicked' then 'opened' when 'email.bounced' then 'bounced'
+                when 'email.complained' then 'complained' when 'email.sent' then 'sent' end;
+begin
+  if st is null then return jsonb_build_object('ok', true, 'ignored', true); end if;
+  select * into e from public.supplier_emails x where x.provider_id = p_provider for update;
+  if e.id is not null then
+    update public.supplier_emails x set
+      status = case when (rank->>st)::int > (rank->>x.status)::int then st else x.status end,
+      sent_at = coalesce(x.sent_at, case when st <> 'bounced' then p_at end),
+      delivered_at = case when st in ('delivered', 'opened') then coalesce(x.delivered_at, p_at) else x.delivered_at end,
+      opened_at = case when st = 'opened' then coalesce(x.opened_at, p_at) else x.opened_at end,
+      bounced_at = case when st = 'bounced' then coalesce(x.bounced_at, p_at) else x.bounced_at end
+     where x.id = e.id;
+    return jsonb_build_object('ok', true);
+  end if;
+  select * into ce from public.client_emails x where x.provider_id = p_provider for update;
+  if ce.id is not null then
+    update public.client_emails x set
+      status = case when (rank->>st)::int > (rank->>x.status)::int then st else x.status end,
+      sent_at = coalesce(x.sent_at, case when st <> 'bounced' then p_at end),
+      delivered_at = case when st in ('delivered', 'opened') then coalesce(x.delivered_at, p_at) else x.delivered_at end,
+      opened_at = case when st = 'opened' then coalesce(x.opened_at, p_at) else x.opened_at end,
+      bounced_at = case when st = 'bounced' then coalesce(x.bounced_at, p_at) else x.bounced_at end
+     where x.id = ce.id;
+    return jsonb_build_object('ok', true);
+  end if;
+  select * into i from public.invoice_emails x where x.provider_id = p_provider for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  update public.invoice_emails x set
+    status = case when (rank->>st)::int > (rank->>x.status)::int then st else x.status end,
+    sent_at = coalesce(x.sent_at, case when st <> 'bounced' then p_at end),
+    delivered_at = case when st in ('delivered', 'opened') then coalesce(x.delivered_at, p_at) else x.delivered_at end,
+    opened_at = case when st = 'opened' then coalesce(x.opened_at, p_at) else x.opened_at end,
+    bounced_at = case when st = 'bounced' then coalesce(x.bounced_at, p_at) else x.bounced_at end
+   where x.id = i.id;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.supplier_email_status(text, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.supplier_email_status(text, text, timestamptz) to service_role;
+
+create or replace function public.mail_sweep()
+returns integer
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  n integer := 0;
+  k integer;
+begin
+  update public.invoice_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending' and x.created_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.supplier_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending' and x.created_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  update public.client_emails x set status = 'unknown', error = coalesce(x.error, 'unknown: not closed')
+   where x.status = 'sending' and x.created_at < now() - interval '10 minutes';
+  get diagnostics k = row_count; n := n + k;
+  return n;
+end $$;
+revoke all on function public.mail_sweep() from public, anon, authenticated;
+
+-- END OF CLIENT DOCUMENT EMAILS ---------------------------------------------
+
+
+-- ===========================================================================
+-- CLIENT DOCUMENT EMAILS, THE SQL EDITOR PART — Settings writes Send by
+-- email as any Business setting (2026-10-31)
+-- ===========================================================================
+-- WHY: 2026-10-31-client-document-emails.sql seeds `client_email_on` and
+-- sets it through its own `client_email_set`. Every seeded Business setting
+-- is also one `app_settings_set` takes (tests/sql.js), and that function
+-- holds a delete the connector holds, so it runs here, after that file.
+--
+-- WHAT IT CHANGES
+--   `app_settings_set` (restated whole from its last definition) takes
+--   `client_email_on`, 0 or 1, filed as Send by email: Off → On.
+--
+-- ORDER: after 2026-10-31-client-document-emails.sql, in the SQL Editor.
+-- Until it runs, the Settings switch works through `client_email_set`.
+-- Safe to run twice. Rollback: app_settings_set from its last definition
+-- before this banner.
+-- ===========================================================================
+
+-- CLIENT DOCUMENT EMAILS, THE SQL EDITOR PART -------------------------------
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k in ('meta_checks', 'client_email_on') and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'A lead waits' when 'proposal_followup_days' then 'A proposal waits'
+        when 'vic_lead_followup_hours' then 'A VIC lead waits' when 'vic_proposal_followup_days' then 'A VIC proposal waits'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input, a million tokens'
+        when 'ai_price_out' then 'AI output, a million tokens' when 'ai_price_search' then 'AI web searches, a thousand' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'quote_wa_day' then 'Website quotations on WhatsApp'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Cost per lead rise a year' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend of the budget' when 'bench_adset_daily' then 'Daily budget an ad set, at least'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'A leaver''s health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics churn alert, a quarter'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' to S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'quote_valid_days', 'details_form_days', 'abroad_days') then ' days'
+        when v_k = 'quote_reply_days' then ' working days'
+        when v_k = 'quote_wa_day' then ' a day'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k in ('meta_checks', 'client_email_on') then case when v_was = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k in ('meta_checks', 'client_email_on') then case when v_v = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k = 'analytics_from' then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k in ('meta_checks', 'client_email_on') then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k in ('meta_checks', 'client_email_on') then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+-- END OF CLIENT DOCUMENT EMAILS, THE SQL EDITOR PART ------------------------
+
 select public.functions_tidy();

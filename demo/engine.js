@@ -277,6 +277,9 @@
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
     supplier_email_prepare: 'p_supplier p_purpose p_document', supplier_email_begin: 'p_supplier p_purpose p_document p_cc p_subject p_body p_again',
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
+    client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
+    client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
+    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on',
     get_scripts: 'p_token',
     ops_add_checklist_item: 'p_task p_label',
     ops_add_comment: 'p_body p_task',
@@ -2755,6 +2758,8 @@ function cardSlugFree(name, self, email) {
 
     meta_checks: 1, reach_allowance_pct: 0.5,
 
+    client_email_on: 1,
+
     approval_reminder_days: 3,
 
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72,
@@ -2780,7 +2785,7 @@ function cardSlugFree(name, self, email) {
     fx_sgd: ['Singapore dollar rate', ' to S$1'], vic_lead_followup_hours: ['A VIC lead waits', ' hours'], vic_proposal_followup_days: ['A VIC proposal waits', ' days'], sst_pct: ['SST', '%'],
     term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
     term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
-    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], reach_allowance_pct: ['Reach allowance', '%'],
+    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
@@ -3060,7 +3065,7 @@ function cardSlugFree(name, self, email) {
           (k === 'report_due_days' && (v < 1 || v > 60 || v % 1)) || (k === 'revision_due_days' && (v < 1 || v > 60 || v % 1)) ||
           (k === 'approval_reminder_days' && (v < 1 || v > 60 || v % 1)) || (k === 'sst_pct' && (v < 0 || v > 100)) ||
           (/^term_/.test(k) && (v < -100 || v > 100)) || (/^ai_price_/.test(k) && (v < 0 || v > 1000)) ||
-          (k === 'meta_checks' && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
+          ((k === 'meta_checks' || k === 'client_email_on') && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
@@ -3082,7 +3087,7 @@ function cardSlugFree(name, self, email) {
         .sort(function (x, y) { return x.from_date < y.from_date ? -1 : 1; }).pop();
       if (row && from > today && before && Number(before.value) === to) {
         DB.app_settings.splice(DB.app_settings.indexOf(row), 1);
-        var fmt = function (x) { return key === 'meta_checks' ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
+        var fmt = function (x) { return (key === 'meta_checks' || key === 'client_email_on') ? (x === 1 ? 'On' : 'Off') : APP_PRE(key) + x + APP_WORD[key][1]; };
         DB.activity_log.push({ id: nid('log'), actor: m.name, action: 'team.changed', subject: 'Settings',
           detail: APP_WORD[key][0] + ': planned change withdrawn · ' + fmt(was) + ' from ' + dayWord(from) + ', stays ' + fmt(to), created_at: now });
         moved.push(key);
@@ -10783,6 +10788,144 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return bkOk();
       }
     }
+
+    if (/^client_email/.test(name)) {
+      var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
+      DB.client_email_templates = DB.client_email_templates || [
+        { kind: 'quotation', subject: 'Quotation {document reference} · ADspace', body: 'Dear {contact name},\n\nThank you for your interest in ADspace. Please find attached our Quotation {document reference} for {client name}, dated {document date} and valid until {valid until}.\n\nShould you have any questions, please reply to this email.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' },
+        { kind: 'offer', subject: 'Letter of Offer {document reference} · ADspace', body: 'Dear {contact name},\n\nPlease find attached our Letter of Offer {document reference} for {client name}, dated {document date}.\n\nKindly sign the acceptance page and return it to us to confirm.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' },
+        { kind: 'letter', subject: '{document title} {document reference} · ADspace', body: 'Dear {contact name},\n\nPlease find attached our {document title} {document reference} for {client name}, dated {document date}.\n\nYours sincerely,\n{sender name}\nADSPACE PLT' }];
+      DB.client_emails = DB.client_emails || [];
+      var cmMe = opsMe();
+      if (!cmMe) return spNo('denied');
+      var cmFill = function (t, v) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase(); return v[k] ? v[k] : m; }); };
+      var cmMay = function (k, lv) {
+        return k === 'quotation' ? opsAllowed('clients.quotes', lv) : k === 'offer' ? opsAllowed('clients.documents', lv)
+          : k === 'letter' ? (opsAllowed('register.documents', lv) || opsAllowed('clients.documents', lv)) : false;
+      };
+      var cmLong = function (d) { if (!d) return ''; var x = new Date(String(d).slice(0, 10) + 'T00:00:00Z');
+        return x.getUTCDate() + ' ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
+      var cmMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+      var cmNamed = function (k) { return ((k.salutation ? k.salutation + ' ' : '') + k.name).trim(); };
+      var cmKindWord = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
+      if (name === 'client_email_templates_list') {
+        if (!opsGranted('team.settings', 'view')) return spNo('denied');
+        return spOk({ rows: DB.client_email_templates.map(function (t) { return { kind: t.kind, subject: t.subject, body: t.body }; }) });
+      }
+      if (name === 'client_email_template_save') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var ct = DB.client_email_templates.filter(function (t) { return t.kind === args.p_kind; })[0];
+        if (!ct) return spNo('bad-kind');
+        var cs = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), cb = String(args.p_body || '').replace(/\r/g, '').trim();
+        if (cs.length < 2 || cs.length > 200) return spNo('bad-subject');
+        if (cb.length < 2 || cb.length > 5000) return spNo('bad-body');
+        var moved = [];
+        if (ct.subject !== cs) moved.push('Subject: ' + ct.subject + ' → ' + cs);
+        if (ct.body !== cb) moved.push('Message');
+        if (!moved.length) return spOk();
+        ct.subject = cs; ct.body = cb;
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Client emails',
+          detail: cmKindWord[args.p_kind] + ' · ' + moved.join(' · '), created_at: new Date().toISOString() });
+        persist();
+        return spOk();
+      }
+      if (name === 'client_email_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var ceDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), ceTo = args.p_on ? 1 : 0;
+        var ceWas = Number(appSet('client_email_on', ceDay));
+        if (ceWas === ceTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === 'client_email_on' && x.from_date === ceDay); });
+        DB.app_settings.push({ key: 'client_email_on', from_date: ceDay, value: ceTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: 'Send by email: ' + (ceWas === 1 ? 'On' : 'Off') + ' → ' + (ceTo ? 'On' : 'Off') + ' · from ' + ceDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
+      if (name === 'client_emails_of') {
+        if (!scopeSeen(args.p_client, 'view')) return spNo('denied');
+        return spOk({ rows: DB.client_emails.filter(function (e) { return e.client_id === args.p_client && cmMay(e.kind, 'view'); })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
+          .map(function (e) { return { id: e.id, kind: e.kind, ref_id: e.ref_id, reference: e.reference, to: e.to_email, cc: e.cc_email,
+            subject: e.subject, status: e.status, created_at: e.created_at, by: e.by }; }) });
+      }
+      var cmPrep = function () {
+        var kind = args.p_kind, ref = args.p_ref, cid, sref, title, dday, valid;
+        if (['quotation', 'offer', 'letter'].indexOf(kind) < 0) return { error: 'bad-request' };
+        if (!cmMay(kind, 'work')) return { error: 'denied' };
+        if (Number(appSet('client_email_on', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) !== 1) return { error: 'email-off' };
+        if (kind === 'quotation') {
+          var q = (DB.quotations || []).filter(function (x) { return x.id === ref; })[0];
+          if (!q || q.removed_at) return { error: 'not-found' };
+          if (q.status === 'not_proceeding') return { error: 'void' };
+          if (q.source === 'website' && !q.released_at) return { error: 'unreleased' };
+          if (q.no_contact_at) return { error: 'no-contact' };
+          cid = q.client_id; sref = q.ref; title = 'Quotation'; dday = q.issued_at; valid = q.valid_until;
+        } else if (kind === 'offer') {
+          var o = (DB.client_documents || []).filter(function (x) { return x.id === ref; })[0];
+          if (!o || ['offer', 'intent', 'cover'].indexOf(o.kind) < 0) return { error: 'not-found' };
+          if (o.voided_at || o.superseded_by) return { error: 'void' };
+          cid = o.client_id; sref = o.number; title = 'Letter of Offer'; dday = o.issued_at;
+        } else {
+          var d = (DB.documents || []).filter(function (x) { return x.id === ref && x.family === 'client'; })[0];
+          if (!d || !d.client_id) return { error: 'not-found' };
+          if (d.voided_at) return { error: 'void' };
+          if (d.source !== 'portal') return { error: 'no-file' };
+          cid = d.client_id; sref = d.serial; title = d.kind || 'Letter'; dday = d.issued_at;
+        }
+        var c = (DB.clients || []).filter(function (x) { return x.id === cid; })[0];
+        if (!c || !scopeSeen(c.id, 'view')) return { error: 'not-found' };
+        var ppl = (DB.client_contacts || []).filter(function (k) { return k.client_id === c.id && !k.archived_at && cmMail.test(String(k.email || '').trim()); })
+          .sort(function (a, b) { return ((b.id === c.bill_contact_id) - (a.id === c.bill_contact_id)) || ((b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0)) || String(a.name).localeCompare(String(b.name)); });
+        if (!ppl.length) return { error: 'no-email' };
+        var k = ppl[0];
+        if (args.p_contact) {
+          k = ppl.filter(function (x) { return x.id === args.p_contact; })[0];
+          if (!k) return { error: 'bad-contact' };
+        }
+        var cc = String(c.finance_email || '').trim() || null;
+        if (cc && (cc.toLowerCase() === String(k.email).trim().toLowerCase() || !cmMail.test(cc))) cc = null;
+        var tp = DB.client_email_templates.filter(function (t) { return t.kind === kind; })[0];
+        var v = { 'contact name': cmNamed(k), 'client name': c.name, 'company name': c.legal_name || c.name, 'document title': title,
+          'document reference': sref, 'document date': cmLong(dday), 'valid until': cmLong(valid), 'sender name': cmMe.name };
+        var rec = DB.client_emails.filter(function (e) { return e.kind === kind && e.ref_id === ref && e.status !== 'failed' && Date.parse(e.created_at) > Date.now() - 24 * 3600e3; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        return { ok: true, client_id: c.id, client: c.name,
+          contacts: ppl.map(function (x) { return { id: x.id, name: cmNamed(x), email: String(x.email).trim(), role: x.role || null, billing: x.id === c.bill_contact_id, primary: Boolean(x.is_primary) }; }),
+          to: { id: k.id, name: cmNamed(k), email: String(k.email).trim() }, cc: cc, reply_to: cmMe.email || null, values: v,
+          subject: cmFill(tp.subject, v), body: cmFill(tp.body, v), document: { id: ref, kind: kind, serial: sref, title: title },
+          recent: rec ? { at: rec.created_at, to: rec.to_email, by: rec.by } : null };
+      };
+      if (name === 'client_email_prepare') { var cpp = cmPrep(); return cpp.error ? spNo(cpp.error) : spOk(cpp); }
+      if (name === 'client_email_begin') {
+        var cbp = cmPrep();
+        if (cbp.error) return spNo(cbp.error);
+        if (DB.client_emails.some(function (e) { return e.kind === args.p_kind && e.ref_id === args.p_ref && e.status === 'sending'; })) return spNo('sending');
+        if (cbp.recent && !args.p_again) return spNo('recent', { recent: cbp.recent });
+        var cbs = cmFill(String(args.p_subject || ''), cbp.values).replace(/\s+/g, ' ').trim(), cbb = cmFill(String(args.p_body || ''), cbp.values).replace(/\r/g, '').trim();
+        if (cbs.length < 2 || cbs.length > 200) return spNo('bad-subject');
+        if (cbb.length < 2 || cbb.length > 5000) return spNo('bad-body');
+        var crow = { id: nid('ce'), client_id: cbp.client_id, kind: args.p_kind, ref_id: args.p_ref, reference: cbp.document.serial, contact_id: cbp.to.id,
+          to_email: cbp.to.email, cc_email: args.p_cc ? cbp.cc : null, reply_to: cbp.reply_to, subject: cbs, body: cbb, status: 'sending',
+          by: cmMe.name, sent_by: cmMe.id, created_at: new Date().toISOString() };
+        DB.client_emails.push(crow);
+        persist();
+        return spOk({ id: crow.id, to: cbp.to, cc: crow.cc_email, reply_to: cbp.reply_to, subject: cbs, body: cbb, document: cbp.document });
+      }
+      if (name === 'client_email_done') {
+        if (['sent', 'failed', 'unknown'].indexOf(args.p_status) < 0) return spNo('bad-status');
+        var cdr = DB.client_emails.filter(function (e) { return e.id === args.p_id && e.sent_by === cmMe.id && e.status === 'sending'; })[0];
+        if (!cdr) return spNo('not-found');
+        cdr.status = args.p_status;
+        var cdc = (DB.clients || []).filter(function (x) { return x.id === cdr.client_id; })[0];
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'client.edited', subject: cdc ? cdc.name : 'Client',
+          detail: ({ quotation: 'Quotation ', offer: 'Letter of Offer ' }[cdr.kind] || '') + cdr.reference +
+            (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed, not confirmed, to ' : ' not emailed to ') + cdr.to_email +
+            (cdr.cc_email ? ', copy to ' + cdr.cc_email : ''), created_at: new Date().toISOString() });
+        persist();
+        return spOk();
+      }
+    }
     if (/^suppliers?_/.test(name) || name === 'client_suppliers') {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
@@ -12450,6 +12593,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
               }
               return { data: { ok: true, contact: ct.id, code: ct.contact_code, created: !bkb.contact }, error: null };
             });
+            });
+          });
+        }
+
+        if (name === 'supplier-mail' && opts && opts.body && opts.body.client === true) {
+          var dmb = opts.body;
+          window.__docMailAsked = { kind: dmb.kind, ref: dmb.ref, contact: dmb.contact, cc: dmb.cc, subject: dmb.subject, body: dmb.body,
+            again: dmb.again, filename: dmb.filename, pdf: dmb.pdf ? dmb.pdf.length : 0 };
+          if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          if (!dmb.pdf) return Promise.resolve({ data: { error: 'bad-file' }, error: null });
+          return rpc('client_email_begin', { p_kind: dmb.kind, p_ref: dmb.ref, p_contact: dmb.contact || null, p_cc: dmb.cc === true,
+            p_subject: dmb.subject, p_body: dmb.body, p_again: dmb.again === true }).then(function (r) {
+            var b = r.data || {};
+            if (b.error) return { data: b, error: null };
+            var st = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
+            return rpc('client_email_done', { p_id: b.id, p_status: st, p_provider: st === 'sent' ? 're_' + b.id : null, p_error: null }).then(function () {
+              return { data: st === 'sent' ? { ok: true, id: b.id } : { error: window.__mailFail }, error: null };
             });
           });
         }

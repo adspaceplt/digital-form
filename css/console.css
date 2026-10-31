@@ -3706,6 +3706,14 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .sup-fields .btn { flex: 0 0 auto; min-width: 0; }
 .sup-attach { margin-top: 12px; font-size: 13px; }
+/* Send by email (2026-10-31): the attachment named at the left, Preview PDF
+   at the right edge, on one line with the message's fields above it. */
+.dm-attach { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.dm-attach-word { display: flex; flex-direction: column; min-width: 0; }
+.dm-attach-name { font-size: 13.5px; overflow-wrap: anywhere; }
+.dm-attach .btn { flex: 0 0 auto; }
+/* A record's last email, under its reference (a quotation's, a letter's). */
+.dm-line.is-bad { color: var(--err); }
 .sup-go { display: flex; color: var(--ink-mute); }
 .sup-go svg { width: 15px; height: 15px; }
 .is-narrow .sup-row { grid-template-columns: minmax(0, 1fr) 120px; grid-template-areas: "name state" "who term"; align-items: start; }

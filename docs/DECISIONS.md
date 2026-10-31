@@ -7862,3 +7862,29 @@ read and set every page for a tab served before.
   `request.deleted` joined both copies of the section map).
 - **Found:** `tests/sql.js` holds the first `activity_section` in
   `schema.sql` equal to the last, so a new tag is written into both.
+
+### 2026-10-31 · Send by email for a quotation, a Letter of Offer and a client letter
+- **Asked:** a review of a client's Services tab, items 5 and 6 (the user:
+  "ok build but still same as whatsapp optionally send"): a quotation and a
+  Letter of Offer could be sent on WhatsApp alone, and a client letter
+  issued with Issue document had no way to be sent.
+- **Built:** Send by email beside Send on WhatsApp in each ⋯, on what the
+  supplier emails already hold, never a second copy: `supplier-mail` gains
+  a `client` branch (the same PDF reference check, `_shared/mail.ts`
+  layout and Resend send, the same signed webhook), the database the same
+  fill (`supplier_email_fill`), begin/done pair, Sent recently window and
+  sweep (`2026-10-31-client-document-emails.sql`: `client_emails`,
+  `client_email_templates`; `supplier_email_status` and `mail_sweep`
+  restated to reach the new table). Sent from noreply-client@sc.adspace.me
+  on the domain Resend already verifies (`docs/SUPPLIER-EMAIL-SETUP.md`:
+  any address on `sc.adspace.me`), replies going to the colleague who
+  sends. Templates in Settings, Templates: Client emails.
+- **Chosen:** the website quotation's refusal reads `unreleased`, never
+  `not-sent`, which the function already answers for a Resend refusal.
+  A quotation carries no verify line (`/verify/` answers letters alone).
+- **Gated** (the user, the same day: "Can gate the send email settings?
+  Enable or disable at business settings"): `client_email_on`, a Business
+  setting seeded Off as Meta checks is, switched at Settings, Clients:
+  Send by email through `client_email_set` (its own setter: restating
+  `app_settings_set`, whose body holds a delete, would need the SQL
+  Editor). Off, no ⋯ draws Send by email and the database refuses it.
