@@ -3303,12 +3303,19 @@
         (url ? '<div class="rec-linktools"><div class="linkbox">' +
           '<input class="input readfield" id="crmDfLink" readonly aria-label="Request from client link" value="' + esc(url) + '">' +
           '<button class="btn btn-icon" type="button" data-df="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>' +
+          /* The link in a message to paste into the client's WhatsApp group
+             (2026-10-31); nothing is sent from here. */
+          '<button class="btn btn-icon" type="button" data-df="copymsg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy message</span></button>' +
           '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
           '</div></div>' : '') + '<div class="msg" id="crmDfMsg"></div>';
     } else {
       var a = f.answers || {};
       var who = dfWho(a), inC = dfContactOf(a);
-      box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' : '') +
+      /* Answers that cannot be used are set aside by a fresh link
+         (2026-10-31), asked first. */
+      box.innerHTML = head(work ? '<button class="btn btn-sm btn-primary" type="button" data-df="use">Use details</button>' +
+          '<span class="dform-acts team-act"><button class="kmenu-btn" type="button" data-df="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-df-menu hidden><button class="kmenu-item" data-g="5" type="button" data-df="again" role="menuitem">Request again</button></div></span>' : '') +
         '<dl class="ovfacts"><div><dt>State</dt><dd>Received ' + esc(day(f.submitted_at)) + '</dd></div>' +
         /* An answer that differs from what Billing holds reads held → sent,
            as a supplier's update reads, so Use details is chosen knowing
@@ -3388,6 +3395,18 @@
       }).catch(function (x) { b.disabled = false; msg('crmBillMsg', (x && x.message) || String(x), 'err'); });
     }
   });
+  /* The details link in a message a colleague pastes into the client's
+     WhatsApp group (2026-10-31): formal, to the billing contact, else the
+     primary contact. */
+  function dfMessage(url, f) {
+    var c = state.client || {}, live = (state.contacts || []).filter(function (k) { return !k.archived_at; });
+    var to = live.filter(function (k) { return c.bill_contact_id && k.id === c.bill_contact_id; })[0] ||
+             live.filter(function (k) { return k.is_primary; })[0] || null;
+    var day = f && f.expires_at && window.ADspaceClock ? window.ADspaceClock.date(f.expires_at) : '';
+    return 'Dear ' + (to ? ADspaceWords.person(to.salutation, to.name) : 'Sir or Madam') + ',\n\n' +
+      'Please provide the billing details of ' + c.name + ' through the secure form below' + (day ? ', which is open until ' + day : '') + '.\n\n' +
+      url + '\n\nThank you.';
+  }
   function dfLink(reset, btn) {
     if (btn) btn.disabled = true;
     db.rpc('client_details_link', { p_client: state.client.id, p_reset: Boolean(reset) }).then(function (r) {
@@ -3419,6 +3438,14 @@
       return;
     }
     if (a === 'copy') { window.ADspaceCopy.to(b, $('crmDfLink').value); return; }
+    if (a === 'copymsg') { window.ADspaceCopy.to(b, dfMessage($('crmDfLink').value, f)); return; }
+    if (a === 'again') {
+      box.querySelector('[data-df-menu]').hidden = true;
+      window.ADspaceConfirm.ask({ title: 'Request again?',
+        body: 'The answers received are set aside, and a new link is made for the client to answer again.', go: 'Request again', tone: 'warn' },
+        function () { dfLink(false); });
+      return;
+    }
     if (a === 'use' && f && f.answers) { useDetails(b); return; }
     if (a === 'contact' && f && f.answers) {
       showPane('contacts'); pushUrl();
@@ -4373,6 +4400,7 @@
   }
 
   function contactRow(ct, removed) {
+    var waMsg = Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.may && window.ADspaceWhatsApp.may('message'));
     var row = document.createElement('div');
     row.className = 'svc-row ct-row' + (removed ? ' is-off' : '');
 
@@ -4405,7 +4433,10 @@
             : ADspaceMenu.items([[],
                 [{ a: 'edit', label: 'Edit', need: 'clients.contacts:work' },
                  !ct.is_primary && { a: 'primary', label: 'Make primary' }],
-                [ct.portal_access && { a: 'invite', label: 'Send invitation' }],
+                [ct.portal_access && { a: 'invite', label: 'Send invitation' },
+                 /* A template message to this contact, sent at the press
+                    (2026-10-31): the composer opens on them. */
+                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp' }],
                 [],
                 [ct.portal_access ? { a: 'unportal', label: 'Revoke access' } : { a: 'portal', label: 'Enable access' }],
                 [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
@@ -4417,6 +4448,10 @@
     on('primary', function () { makePrimary(ct); });
     on('portal',   function () { askPortal(ct); });
     on('invite',   function () { sendInvite(ct); });
+    on('wa',       function () {
+      window.ADspaceWhatsApp.compose({ purpose: 'message', clientId: ct.client_id || (state.client && state.client.id), contactId: ct.id,
+        opener: row.querySelector('.kmenu-btn'), onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
+    });
     on('unportal', function () { setPortal(ct, false); });
     /* One listener for Delete: on a removed contact it was also wired to
        Remove, which removed it again, filed it and offered an Undo that
@@ -4772,6 +4807,15 @@
     on('restore', function () { archiveTouch(tc, false); });
     on('purge',   function () { purgeTouch(tc); });
     on('meet',    function (ev) { bookMeet(tc, 'create', ev.currentTarget); });
+    on('msgshow', function (ev) {
+      var b = ev.currentTarget, pre = row.querySelector('.touch-msgtext');
+      if (!pre) return;
+      if (pre.hidden) pre.textContent = touchMessage(tc);
+      pre.hidden = !pre.hidden;
+      b.textContent = pre.hidden ? 'Show' : 'Hide';
+      b.setAttribute('aria-expanded', String(!pre.hidden));
+    });
+    on('msgcopy', function (ev) { if (window.ADspaceCopy) window.ADspaceCopy.to(ev.currentTarget, touchMessage(tc)); });
     return row;
   }
 
@@ -4820,8 +4864,21 @@
     if (!removed && ahead && !tc.meet_link) {
       acts += '<button class="btn btn-sm" data-a="meet" data-need="clients.calls:work" type="button">Create Google Meet</button>';
     }
-    return '<div class="touch-meet"><span>' + esc(parts.join(' · ')) + '</span>' + acts + '</div>' +
+    /* The message to the client (2026-10-31): the team's Meeting message
+       filled from this meeting, shown and copied to paste into the
+       client's WhatsApp group; nothing is sent from here. */
+    var note = !removed && ahead && at ? '<div class="touch-msgrow"><span>Message to client</span>' +
+      '<button class="btn btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
+      '<button class="btn btn-sm" data-a="msgcopy" type="button"><span>Copy</span></button></div>' +
+      '<pre class="eng-meetmsg-text touch-msgtext" hidden></pre>' : '';
+    return '<div class="touch-meet"><span>' + esc(parts.join(' · ')) + '</span>' + acts + '</div>' + note +
       '<p class="msg touch-meetmsg" hidden></p>';
+  }
+  function touchMessage(tc) {
+    var ops = window.ADspaceOps, link = String(tc.meet_link || '');
+    if (!ops || !ops.meetingMessage) return '';
+    var channel = /meet\.google\.com/i.test(link) ? 'Google Meet' : /zoom\.us/i.test(link) ? 'Zoom' : /teams\./i.test(link) ? 'Microsoft Teams' : '';
+    return ops.meetingMessage({ at: tc.meet_at, minutes: tc.meet_minutes, online: Boolean(link), channel: channel, link: link });
   }
   function meetAsk(tc, action, done) {
     if (!db.functions || !db.functions.invoke) { done({ error: 'meet-not-set-up' }); return; }
@@ -5023,7 +5080,14 @@
         : c.review_hidden
         ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
         : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + CHEVR + '</button>') +
-      (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '');
+      (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '') +
+      /* A month is made in My Work (2026-10-31): this opens its sheet there
+         on the client. */
+      (mayPart('ops', 'work') ? '<button class="btn btn-icon" id="crmNewMonth" type="button">' + PLUS + '<span>New month</span></button>' : '');
+    var nm = $('crmNewMonth');
+    if (nm) nm.addEventListener('click', function () {
+      goTo('/admin/?s=work&view=months&wc=' + encodeURIComponent(keyOf(c)) + '&new=month', 'work');
+    });
     var on = $('crmReviewOn');
     /* The way back from Remove from Content Review: never asks, and a
        refused write is named rather than taken for done. */
@@ -6257,6 +6321,12 @@
       '<div class="lpickref">' +
         '<label class="field-label" for="pickTerms">Terms</label>' +
         '<textarea class="input" id="pickTerms" rows="3" placeholder="One point a line">' + esc(DOCS.validLine ? DOCS.validLine() : '') + '</textarea>' +
+      '</div>' +
+      /* Preview draws the letter Issue would keep, no number spent; no
+         commit, so under the fields, never in the foot (2026-10-31, as the
+         client letter's DOC-6). */
+      '<div class="doc-preview-row">' +
+        '<button class="btn btn-sm" id="pickPreview" type="button">Preview</button>' +
       '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
@@ -6405,6 +6475,51 @@
                   onDone: function () { loadDocuments(); } });
   });
 
+  /* The lines, terms and Bill to as the sheet stands, refused in place:
+     what Issue sends and Preview draws (2026-10-31). */
+  function pickPayload(ids) {
+    var c = state.client;
+    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
+      .map(function (t) { return t.trim(); }).filter(Boolean);
+    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
+      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
+      $('pickTerms').focus();
+      return null;
+    }
+    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
+    /* A billing entity other than the main is named; the main is the
+       client's own billing, sent as before. */
+    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
+      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
+    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
+      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
+      $('pickBillTo').focus();
+      return null;
+    }
+    return { rows: rows, renewal: rows.some(function (l) { return l.state === 'confirmed'; }), deal: {
+      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
+      entity: billEnt && !billEnt.main ? billEnt.id : null
+    } };
+  }
+  $('pickBody').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#pickPreview');
+    if (!b || !picking || !DOCS || !DOCS.preview) return;
+    var ids = pickedIds();
+    if (!ids.length) { msg('pickMsg', 'Choose at least one service.', 'err'); return; }
+    var pay = pickPayload(ids);
+    if (!pay) return;
+    msg('pickMsg', '');
+    b.disabled = true;
+    DOCS.preview('offer', state.client, pay.rows, pay.deal,
+      { replaces: picking.replaces, renewal: pay.renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
+        serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
+      function (r) {
+        b.disabled = false;
+        if (r.error) msg('pickMsg', r.error, 'err');
+      });
+  });
+
   $('pickGo').addEventListener('click', function () {
     if (!picking || !DOCS) return;
     var ids = pickedIds();
@@ -6438,15 +6553,9 @@
       }).catch(function (e) { gb.disabled = false; msg('pickMsg', String((e && e.message) || e), 'err'); });
       return;
     }
-    var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
-      .map(function (t) { return t.trim(); }).filter(Boolean);
-    if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
-      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
-      $('pickTerms').focus();
-      return;
-    }
-    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
-    var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
+    var pay = pickPayload(ids);
+    if (!pay) return;
+    var rows = pay.rows, renewal = pay.renewal, deal = pay.deal;
     /* One key per press of this button, held while the request is in flight,
        so a second press is the same submission and comes back as the same
        letter rather than a second one. */
@@ -6454,20 +6563,6 @@
     var go = $('pickGo');
     go.disabled = true;
     go.textContent = 'Issuing…';
-    /* A billing entity other than the main is named; the main is the
-       client's own billing, sent as before. */
-    var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
-      ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
-    if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
-      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
-      $('pickBillTo').focus();
-      return;
-    }
-    var deal = {
-      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
-      entity: billEnt && !billEnt.main ? billEnt.id : null
-    };
     DOCS.issue('offer', c, rows, deal,
       { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },

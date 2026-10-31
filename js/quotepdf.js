@@ -57,6 +57,9 @@
         return docs.embedFonts(pdf, PDF, { cjk: cjk });
       }).then(function (fonts) {
         layout(pdf, PDF, fonts, q, opts);
+        /* A preview from Build quote is no quotation yet (2026-10-31): every
+           page carries the report's watermark. */
+        if (opts.draft) pdf.getPages().forEach(function (pg) { docs.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
     });
