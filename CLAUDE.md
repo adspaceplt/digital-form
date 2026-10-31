@@ -1460,8 +1460,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `clients_brand_guard`, `brand-columns`; Meta accounts; the Brand analysis)
   and Checklists (`clients.checklists`), each following Clients where a group
   sets none and named in the panel over one line of what it covers
-  (`PART_DESC`). Issue Letter of Offer from a quotation asks Quotations,
-  Service lines and Letters at Work; Issue document on the record asks
+  (`PART_DESC`). Issue document on the record asks
   Letters or Documents: Client documents at Work (`register_may`); a tab of
   several parts (Services: Quotations, Service lines, Requests; Documents;
   Brand with Reports: White label) is drawn where any is readable
@@ -5851,8 +5850,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   again by `quote_adjust` inside `quote_preview` and `quotation_make`
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
-  filed `n lines changed`, Issue Letter of Offer giving each line its
-  months; a website quotation is never adjusted; empty puts the card's
+  filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
   figure back. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused.
   A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
@@ -5862,10 +5860,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   from the card's Meta advertising and boosters, None where no plan covers
   one (the user, 2026-10-14). The pane reads Quotations (Build quote) over
   Service lines (Add service), each heading over its own list.
-  Issue Letter of Offer (`quotation_offer`, once, refused `expired` past
-  `valid_until` and not offered then) makes the quotation's
-  lines the client's To quote lines (`quotation_id`, its term and
-  percentage) and opens the letter sheet on them alone. The PDF (`js/quotepdf.js`,
+  No Letter of Offer is issued from a quotation (the user, 2026-10-31:
+  the signed quotation is the contract; `quotation_offer` stays for a
+  page served before and nothing calls it); the reviewer's approval makes
+  its lines Confirmed (Quotation signing, below). Letters issued before
+  are read, voided and deleted as before. The PDF (`js/quotepdf.js`,
   three pages; the user, 2026-10-31: one document, the quotation acting as
   the Letter of Offer): the Quotation Cover drawn by the letter engine
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
@@ -5909,7 +5908,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   sends back with a note. Signed on paper is kept by hand
   (`quotation_paper`: the day and a link to the scan); Request signature
   again (`quotation_resign`) keeps the earlier one in `sign_history`.
-  `quote_sign_codes` has RLS on, no policy, no grant.
+  `quote_sign_codes` has RLS on, no policy, no grant. A team's quotation
+  is sent to sign by the approved `quote_ready` WhatsApp (Send link on
+  WhatsApp in its ⋯, while unsigned and valid; `quotation_resend`, its
+  link made at the first send, to the primary contact's WhatsApp else
+  phone, refused `signed`; 2026-10-31, after Meta refused a template
+  asking for a signature as Marketing twice).
 - The quotation website (`/quote/`, `js/quote.js`,
   `2026-10-14-quotation-website.sql`; the user's approved canvas, Website
   1 to 6): What do you need?, Platforms and plan (where social media is

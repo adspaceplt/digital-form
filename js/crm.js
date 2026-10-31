@@ -5352,9 +5352,9 @@
     return live;
   }
   /* The Services pane's one blue follows the deal (2026-10-22, SL-M2):
-     nothing quoted and no To quote line, Build quote; a quotation that can
-     be offered, its row's Issue Letter of Offer (tonal where two could be);
-     To quote lines no live letter holds, Issue letter; else none. Issue
+     nothing quoted and no To quote line, Build quote; To quote lines no
+     live letter holds, Issue letter; else none (a quotation is signed by
+     the client, never offered as a letter, 2026-10-31). Issue
      letter is drawn once a To quote or Confirmed line exists. */
   function paintDeal() {
     var cover = $('crmCover');
@@ -5365,7 +5365,6 @@
     var quotes = (state.quotes || []).filter(function (q) { return !q.removed_at; });
     cover.hidden = !letterable;
     var build = $('qtBuild');
-    var offers = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="offer"]'));
     /* An awaiting website quotation's blue is Send quotation once its
        template is on, else Publish (2026-10-31). */
     var sends = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl')).map(function (dl) {
@@ -5380,10 +5379,9 @@
     else if (sends.length === 1) blue = sends[0];
     else if (sends.length) blue = null;
     else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
-    else if (offers.length === 1) blue = offers[0];
     else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
-    [build, cover].concat(offers, gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    [build, cover].concat(gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteContact() {
     return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
@@ -5405,8 +5403,7 @@
         API.withBilling([state.client]).then(function () { paintBilling(state.client); });
         loadServices(null, done, done);
       },
-      painted: paintDeal,
-      offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); } };
+      painted: paintDeal };
   }
   /* `always`: done is called on a refused read too (the letter sheet reads
      again either way). */

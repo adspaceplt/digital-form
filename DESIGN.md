@@ -776,6 +776,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   the greeting on its own line, a blank line, one point a paragraph, each
   detail (reference, brand, date) on a line of its own, and a blank line
   before the closing; never a sentence broken across lines.
+- A WhatsApp template's footer reads `{What it is} - ADspace Digital`
+  (Quotation - ADspace Digital, Approval Reminder - ADspace Digital; the
+  user, 2026-10-31), and its wording states a fact about the client's own
+  record, never asks them to buy or sign, or Meta files it as Marketing.
 - ADspace alone, never "ADspace Studio" (a strict rule).
 - Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The Mill
   International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport,

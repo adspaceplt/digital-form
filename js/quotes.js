@@ -4,13 +4,14 @@
  * (`quote_preview` while it is ticked, `quotation_create` to keep it), from
  * the version of the rate card that is live, so the console, the website and
  * the PDF never disagree. It is kept as sent and never edited: Make a copy
- * prices the same selection again, and a client may hold several. Issue
- * Letter of Offer turns the chosen one's lines into the client's To quote
- * lines (`quotation_offer`) and opens the letter sheet on them.
+ * prices the same selection again, and a client may hold several. The
+ * client signs it on its link, the colleague who prepared it submits it to a
+ * reviewer, and the reviewer's approval confirms its lines (QUOTATION
+ * SIGNING, 2026-10-31); no Letter of Offer is issued from it.
  *
  * crm.js hands each call its context: { client, db, may(part, level),
  * esc, msg(id, text, kind), services, live (service id to letter number),
- * reload(done), offer(ids), undo(text, fn, host) }.
+ * reload(done), refresh(done), contact, painted, undo(text, fn, host) }.
  */
 (function () {
   'use strict';
@@ -174,8 +175,6 @@
     var maySet = ctx.may('clients.quotes', 'work');
     /* Delete, a removed quotation's alone, is Full Access (2026-10-31). */
     var mayDelete = ctx.may('clients.quotes', 'manage');
-    /* Issue Letter of Offer makes service lines and a letter (2026-10-22). */
-    var mayOffer = maySet && ctx.may('clients.services', 'work') && ctx.may('clients.documents', 'work');
     var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
       (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
@@ -206,9 +205,6 @@
           }
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
-          /* What a quotation that can be offered asks next is on its row,
-             beside Download (2026-10-22, QT-M1): Issue Letter of Offer. The
-             ⋯ keeps the rest. */
           var acts = [];
           /* A website quotation is revised from its row: Build quote on a
              copy, linked as its revision, then sent (2026-10-26). */
@@ -231,9 +227,8 @@
             acts.push('<button class="btn btn-sm" data-a="check" type="button">Submit</button>');
           }
           if (maySet && !q.removed_at && mayReview(q)) acts.push('<button class="btn btn-sm" data-a="review" type="button">Review</button>');
-          if (maySet && !q.removed_at && mayOffer && offerable(q, live)) {
-            acts.push('<button class="btn btn-sm" data-a="offer" type="button">Issue Letter of Offer</button>');
-          }
+          /* No Letter of Offer is issued from a quotation (2026-10-31): the
+             client signs the quotation itself, which is the contract. */
           if (maySet && !q.removed_at) {
             items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
@@ -248,10 +243,14 @@
             }
             /* The quotation-ready WhatsApp again, its link button the
                prospect's own (2026-10-30): a website quotation the team has
-               sent, still valid, drawn once its template is on. */
-            if (q.source === 'website' && q.access_key && !awaiting(q) && !q._revised && !q.no_contact_at && q.status !== 'not_proceeding' &&
-                !(q.valid_until && q.valid_until < window.ADspaceClock.today())) {
-              items.push('<button class="kmenu-item" data-g="3" data-a="resend" data-wa-ready hidden type="button" role="menuitem">Resend on WhatsApp</button>');
+               sent, still valid, drawn once its template is on. A team's
+               quotation sends the same message to its primary contact, its
+               link opening the signing steps (2026-10-31), until signed. */
+            if (!awaiting(q) && !q._revised && !q.no_contact_at && q.status !== 'not_proceeding' &&
+                !(q.valid_until && q.valid_until < window.ADspaceClock.today()) &&
+                (q.source === 'website' ? !!q.access_key : !q.signed_at)) {
+              items.push('<button class="kmenu-item" data-g="3" data-a="resend" data-wa-ready hidden type="button" role="menuitem">' +
+                (q.source === 'website' ? 'Resend on WhatsApp' : 'Send link on WhatsApp') + '</button>');
             }
             /* A signing on paper, keyed in by the team (2026-10-31). */
             if (!q.signed_at && offerable(q, live)) items.push('<button class="kmenu-item" data-g="4" data-a="paper" type="button" role="menuitem">Mark signed</button>');
@@ -419,7 +418,6 @@
     return Boolean(q.signed_at && q.submitted_at && !q.returned_at && !q.reviewed_at && m && (m.id === q.reviewer_id || adminNow()));
   }
 
-  var offering = {};
   function act(a, q, ctx, host, btn) {
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
     if (a === 'link') {
@@ -519,7 +517,8 @@
       return;
     }
     if (a === 'resend') {
-      var to = (q.contact && q.contact.name) || q.brand;
+      var team = q.source !== 'website';
+      var to = team ? ((ctx.contact && ctx.contact.name) || q.brand) : ((q.contact && q.contact.name) || q.brand);
       var go = function (again) {
         if (btn) btn.disabled = true;
         ctx.db.rpc('quotation_resend', { p_id: q.id, p_again: !!again }).then(function (r) {
@@ -533,30 +532,17 @@
             return;
           }
           if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
-          ctx.msg('qtMsg', q.ref + ' sent again on WhatsApp.', 'ok');
+          if (team && d.key && !q.access_key) q.access_key = d.key;
+          ctx.msg('qtMsg', q.ref + (team ? ' link sent on WhatsApp.' : ' sent again on WhatsApp.'), 'ok');
         }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
       };
-      window.ADspaceConfirm.ask({ title: 'Resend on WhatsApp?',
+      window.ADspaceConfirm.ask(team ? { title: 'Send link on WhatsApp?',
+        body: 'The Quotation ready message, with the link to review and sign ' + q.ref + ', is sent to ' + to + '.', go: 'Send' } : { title: 'Resend on WhatsApp?',
         body: 'The Quotation ready message, with the link to ' + q.ref + ', is sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
-    if (a === 'offer') {
-      /* One press, one letter sheet: a second press while the lines are
-         being made is let go, and the row's ⋯ turns its ring meanwhile
-         (2026-10-22, QT-3, QT-8). */
-      if (offering[q.id]) return;
-      offering[q.id] = true;
-      if (btn) btn.disabled = true;
-      var done = function () { delete offering[q.id]; if (btn) btn.disabled = false; };
-      ctx.db.rpc('quotation_offer', { p_id: q.id }).then(function (r) {
-        var d = r.data || {};
-        if (r.error || d.error) { done(); ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }
-        ctx.offer(d.ids || [], done);
-      }).catch(function (e) { done(); ctx.msg('qtMsg', said(e), 'err'); });
-      return;
-    }
     if (a === 'delete') { remove(q, ctx); return; }
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
     set(q, a, ctx, function () {
