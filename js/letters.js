@@ -214,12 +214,6 @@
   // ---- Drawing ---------------------------------------------------------------
   var LH = 14.5, PARA = 14, BODY = 11, FLOOR = 76;
 
-  function paragraphs(s) {
-    return String(s || '').replace(/\r/g, '').split(/\n\s*\n/).map(function (p) {
-      return p.replace(/\s*\n\s*/g, ' ').trim();
-    }).filter(Boolean);
-  }
-
   function render(doc) {
     var D = window.ADspaceDocs;
     if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
@@ -228,9 +222,7 @@
   function drawLetter(doc) {
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
-    var langs = (doc.languages && doc.languages.length ? doc.languages : ['en']).filter(function (l) {
-      return l === 'en' || String((doc.body || {})[l] || '').trim();
-    });
+    var langs = DOCS.letterLangs(doc);
     var wantsCjk = langs.indexOf('zh') > -1;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
@@ -241,128 +233,13 @@
       if (wantsCjk && !fonts.cjk) {
         throw new Error('The Chinese font could not be loaded, so the Chinese block cannot be drawn. Check fontCjk in js/config.js.');
       }
-      var font = fonts.font, bold = fonts.bold, med = fonts.med || bold;
-      var pn = DOCS.pen(PDF, fonts, logo);
-      var W = pn.W, H = pn.H, M = pn.M, R = pn.R, mute = pn.mute;
-      var text = pn.text, right = pn.right, rule = pn.rule, wrap = pn.wrap, centre = pn.centre;
-      var pages = [], y;
-      var head = function () { y = pn.head(); };
-      var newPage = function () { pn.page = pdf.addPage([W, H]); pages.push(pn.page); head(); };
-      var need = function (h) { if (y - h < FLOOR) newPage(); };
-      var line = function (s, f, size, color) { need(LH); text(s, M, y, size || BODY, f, color); y -= LH; };
-      var para = function (s, f, size) {
-        wrap(s, R - M, size || BODY, f).forEach(function (ln) { line(ln, f, size); });
-        y -= PARA;
-      };
-      var paraCjk = function (s) {
-        pn.wrapCjk(s, R - M, BODY, fonts.cjk).forEach(function (ln) {
-          need(LH); pn.page.drawText(ln, { x: M, y: y, size: BODY, font: fonts.cjk, color: pn.ink }); y -= LH;
-        });
-        y -= PARA;
-      };
-      newPage();
-
-      var rc = doc.recipient || {};
-      var hr = doc.family === 'hr';
-
-      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
-
-      // Our Ref / Date / To / Attn, the colons in one column, every value
-      // wrapping to the column it started in.
-      var REFX = M + 78;
-      var ref = function (label, value, f) {
-        var lines = [];
-        String(value || '').split(/\r?\n/).forEach(function (s) {
-          if (s.trim()) lines = lines.concat(wrap(s.trim(), R - REFX, BODY, f));
-        });
-        if (!lines.length) return;
-        need(LH * lines.length);
-        text(label, M, y, BODY);
-        text(':', M + 72, y, BODY);
-        lines.forEach(function (ln) { text(ln, REFX, y, BODY, f); y -= LH; });
-      };
-      ref('Our Ref', doc.serial);
-      ref('Date', DOCS.letterDate(doc.issued_at));
-      if (hr) {
-        /* A colleague's letter names them, their position and the staff code
-           the serial is built from beside the identity number they gave. */
-        ref('To', [rc.name, rc.role, [rc.staff_code, rc.ic].filter(Boolean).join(' / ')].filter(Boolean).join('\n'));
-        y -= 4;
-        line('TO BE OPENED BY ADDRESSEE ONLY', bold);
-      } else {
-        ref('To', [String(rc.name || '').toUpperCase(), rc.address].filter(Boolean).join('\n'));
-        ref('Attn', rc.attn ? rc.attn + (rc.attn_role ? ', ' + rc.attn_role : '') : '');
-      }
-      y -= 12;
-
-      if (String(doc.title || '').trim()) {
-        wrap(String(doc.title).toUpperCase(), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
-        y -= LH;
-      }
-      if (String(doc.salutation || '').trim()) { line(doc.salutation); y -= LH; }
-
-      /* One block per language, in the order they were ticked, a hairline
-         between two. Chinese has no spaces and no Slate, so it takes the
-         Chinese face and breaks by glyph. */
-      var body = doc.body || {};
-      langs.forEach(function (l, i) {
-        /* The rule sits midway between the blocks it divides, measured on
-           the ink: the last line's descent above it and the next line's
-           glyph height below it. Hung 18pt over the next baseline it read
-           as 27 above and 10 below. After the paragraph gap y is one line
-           and a gap under the last baseline; the rule goes 10 up from
-           there and the next baseline 24 down from the rule. */
-        if (i) { need(38); y += 10; rule(y); y -= 24; }
-        paragraphs(body[l]).forEach(function (p) { l === 'zh' ? paraCjk(p) : para(p); });
-      });
-
-      /* The closing, the company, and for a signed kind a space to sign over
-         the name and the designation. Reserved together: a signature on a
-         page of its own is a signature to nothing. */
-      var sig = doc.signatory || {};
-      /* Unsigned, the name and designation follow the company with no space
-         to sign (the Issue sheet's To be signed tick, 2026-10-01). */
-      var named = String(sig.name || '').trim() !== '';
-      var closeH = LH * 2 + (doc.signed ? 60 : 0) + (named ? LH * 2 : 0);
-      need(closeH);
-      if (String(doc.closing || '').trim()) { text(doc.closing, M, y, BODY); y -= LH; }
-      text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
-      if (doc.signed) y -= 60;
-      else if (named) y -= LH * 0.5;
-      if (named) {
-        text(String(sig.name || '').toUpperCase(), M, y, BODY, bold); y -= LH;
-        if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; }
-      }
-
-      var n = pages.length;
+      var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, doc);
       var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +
         'Verify this document at ' + (ORG.verifyUrl || 'digital.adspace.me/verify');
-      /* One row at the foot (the user, 2026-10-06): the reference on the
-         left, the page count on the right, the verify line between them,
-         centred on the page where it clears both, else in the room they
-         leave. The row is 7.5pt; where the longest line (an unsigned letter
-         beside a long HR reference) cannot clear both, the whole row is 7pt,
-         the same on every page. */
-      var GAP = 12, lineW = R - M;
-      var rowFits = function (z) {
-        return font.widthOfTextAtSize(String(doc.serial || ''), z) + font.widthOfTextAtSize(footWord, z) +
-          font.widthOfTextAtSize('Page ' + n + ' of ' + n, z) + GAP * 2 <= lineW;
-      };
-      var FZ = rowFits(7.5) ? 7.5 : 7;
-      var refEnd = M + font.widthOfTextAtSize(String(doc.serial || ''), FZ);
-      var sentW = font.widthOfTextAtSize(footWord, FZ);
-      pages.forEach(function (pg, i) {
-        pn.page = pg;
-        pn.footMark(i, n, FZ);
-        text(doc.serial, M, 30, FZ, font, mute);
-        var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
-        var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
-        x = Math.min(x, pageStart - GAP - sentW);
-        text(footWord, x, 30, FZ, font, mute);
-        /* A Preview is a draft, and says so over every page (the user,
-           2026-10-06), as a report not yet confirmed does. */
-        if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
-      });
+      DOCS.letterFoot(drawn.pn, drawn.pages, doc.serial, footWord);
+      /* A Preview is a draft, and says so over every page (the user,
+         2026-10-06), as a report not yet confirmed does. */
+      if (doc.draft) drawn.pages.forEach(function (pg) { DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
       /* The reference in the file's title: an email of the letter is
          checked against it (supplier-mail, as wa-send checks a quotation). */
       pdf.setTitle(String(doc.kind || 'Letter') + ' ' + String(doc.serial || ''));

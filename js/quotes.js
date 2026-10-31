@@ -315,6 +315,39 @@
     });
   }
 
+  /* The quotation's PDF (2026-10-31): the Quotation Cover, the quotation
+     and its acceptance page. Every Download, Preview and send draws it
+     through here, so each names the same people and company: the team's own
+     Quotation Cover words (Settings, Document types), the colleague who
+     prepared it with their position (a website quotation's, the person in
+     charge), the registered company and address where Billing holds them. */
+  var COVER = null, ROLES = {};
+  function coverWords(ctx) {
+    if (COVER) return Promise.resolve(COVER);
+    return ctx.db.from('doc_types').select('title, salutation, closing, body_en').eq('id', 'quote_cover').maybeSingle()
+      .then(function (r) { COVER = (r && r.data) || window.ADspaceQuotePdf.COVER; return COVER; })
+      .catch(function () { return window.ADspaceQuotePdf.COVER; });
+  }
+  function roleOf(ctx, name) {
+    if (!name) return Promise.resolve('');
+    if (ROLES[name] != null) return Promise.resolve(ROLES[name]);
+    return ctx.db.from('team_members').select('name, designation').eq('name', name).limit(1)
+      .then(function (r) { ROLES[name] = (((r && r.data) || [])[0] || {}).designation || ''; return ROLES[name]; })
+      .catch(function () { return ''; });
+  }
+  function drawPdf(q, ctx, extra) {
+    var c = ctx.client || {};
+    var by = q.made_by || (q.source === 'website' ? c.owner : '') || '';
+    return Promise.all([coverWords(ctx), roleOf(ctx, by)]).then(function (got) {
+      var named = q.contact && q.contact.name;
+      var o = { attention: named || ctx.attention || '', attentionRole: named ? '' : (ctx.attentionRole || ''),
+        to: { name: c.legal_name || c.name || q.brand, address: c.billing_address || '' },
+        cover: got[0], preparedBy: { name: by, designation: got[1] }, client: c };
+      Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
+      return window.ADspaceQuotePdf.draw(q, o);
+    });
+  }
+
   var offering = {};
   function act(a, q, ctx, host, btn) {
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
@@ -323,7 +356,7 @@
       if (!window.ADspaceQuotePdf) return;
       var tab = a === 'view' ? window.ADspaceDocs.previewTab()
         : window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
-      window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client }).then(function (blob) {
+      drawPdf(q, ctx).then(function (blob) {
         window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
       }).catch(function (e) {
         if (tab) try { tab.close(); } catch (x) {}
@@ -334,7 +367,7 @@
     if (a === 'mail') {
       window.ADspaceDocMail.compose({ kind: 'quotation', ref: q.id, clientId: q.client_id || (ctx.client && ctx.client.id), opener: btn,
         doc: { title: 'Quotation ' + q.ref, file: function () {
-          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client })
+          return drawPdf(q, ctx)
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
         onSent: function (line) { ctx.reload(function () { ctx.msg('qtMsg', line, 'ok'); }); } });
@@ -343,7 +376,7 @@
     if (a === 'wa') {
       WA().compose({ purpose: 'quotation', clientId: q.client_id || (ctx.client && ctx.client.id), opener: btn,
         doc: { id: q.id, title: q.ref, file: function () {
-          return window.ADspaceQuotePdf.draw(q, { attention: (q.contact && q.contact.name) || ctx.attention || '', client: ctx.client })
+          return drawPdf(q, ctx)
             .then(function (blob) { return { blob: blob, name: window.ADspaceQuotePdf.fileName(q) }; });
         } },
         onSent: function (d, line) { ctx.msg('qtMsg', line, 'ok'); } });
@@ -906,11 +939,13 @@
       var d = B.priced, ctx = B.ctx, btn = this;
       var today = window.ADspaceClock.today();
       var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30;
+      var me = window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null;
       var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
+        made_by: (me && me.name) || '',
         version: d.version, lines: d.lines, totals: d.totals, selection: B.sel };
       var tab = window.ADspaceDocs.previewTab();
       btn.disabled = true;
-      window.ADspaceQuotePdf.draw(q, { attention: ctx.attention || '', client: ctx.client, draft: true }).then(function (blob) {
+      drawPdf(q, ctx, { draft: true }).then(function (blob) {
         btn.disabled = false;
         window.ADspaceDocs.save(blob, 'Preview ' + window.ADspaceQuotePdf.fileName(q), tab);
       }).catch(function (e) {

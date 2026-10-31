@@ -826,7 +826,9 @@
   function pdf(btn) {
     var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
     btn.disabled = true;
-    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market } }).then(function (blob) {
+    window.ADspaceQuotePdf.draw(Q, { attention: Q.attention || '', client: { market: Q.market },
+      /* The colleague looking after the prospect prepared it (2026-10-31). */
+      preparedBy: Q.rep ? { name: Q.rep.name, designation: Q.rep.title || '' } : null }).then(function (blob) {
       btn.disabled = false;
       window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(Q), tab);
     }).catch(function () { btn.disabled = false; if (tab) try { tab.close(); } catch (e) {} });

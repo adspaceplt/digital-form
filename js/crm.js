@@ -5379,14 +5379,18 @@
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
     [build, cover].concat(offers, gives).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
+  function quoteContact() {
+    return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
+      (state.contacts || []).filter(function (x) { return !x.archived_at; })[0];
+  }
   function quoteCtx() {
     return { client: state.client, db: db, may: mayPart, msg: msg, services: state.services || [], live: liveMap(),
       undo: undoBar,
       attention: (function () {
-        var m = (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
-                (state.contacts || []).filter(function (x) { return !x.archived_at; })[0];
+        var m = quoteContact();
         return m ? ADspaceWords.person(m.salutation, m.name) : '';
       })(),
+      attentionRole: (quoteContact() || {}).role || '',
       reload: function (done) { loadQuotes(done); },
       painted: paintDeal,
       offer: function (ids, then) { loadServices(function () { openPick(ids); if (then) then(); }, then); } };
