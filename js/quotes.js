@@ -241,7 +241,7 @@
         }).join('') + '</div>';
     }
     if (gone.length) {
-      html += '<button type="button" class="linkish crm-removed-toggle" id="qtGone" aria-expanded="' + showRemoved + '">' +
+      html += '<button type="button" class="btn btn-quiet btn-sm crm-removed-toggle" id="qtGone" aria-expanded="' + showRemoved + '">' +
         (showRemoved ? 'Hide ' : 'Show ') + gone.length + ' removed quotation' + (gone.length === 1 ? '' : 's') + '</button>';
       /* A small list (the user, 2026-10-31: "it should make it small list"):
          one line a removed quotation, what it was and who removed it when,

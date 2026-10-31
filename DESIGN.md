@@ -497,6 +497,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   the target.
 - A tonal toggle (`aria-pressed`, Review n changes) held on reads one step
   deeper (`--tonal-press`), its words in ink; never blue.
+- Every button carries a base class (`.btn` and its variants, `.linkbtn`,
+  `.kmenu-btn`): a class no rule styles draws the browser's own grey pill on
+  an iPhone (2026-10-31: Show 1 removed quotation, `.linkish`). A list's
+  removed rows open from a `.btn-quiet .btn-sm` (`.crm-removed-toggle`).
 - The ⋯ is the lightest control. The account control, the bell and the
   search carry no outline, only a `--line-soft` fill on hover and while
   open.

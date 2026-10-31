@@ -7888,3 +7888,5 @@ read and set every page for a tab served before.
   Send by email through `client_email_set` (its own setter: restating
   `app_settings_set`, whose body holds a delete, would need the SQL
   Editor). Off, no ⋯ draws Send by email and the database refuses it.
+
+- 2026-10-31 · Show 1 removed quotation drawn as the browser's own button; a quotation's ⋯ off its title line. The user's iPhone screenshot of a client's Services. What broke: the removed toggles (quotations, contacts, calls and visits, service lines) carried `linkish`, a class with no base rule but a coarse-pointer padding, so iOS drew its own grey pill with the words on its edge; and on a phone a quotation row's ⋯ was centred over its first two lines, between the reference and the plan. Why: the toggle predates the button classes and nothing measured it; the ⋯'s cell spanned both lines. How it was found: the user. Fixed: the toggles are `.btn-quiet .btn-sm`, `linkish` is gone; the ⋯'s cell takes the reference's line (22px) and its 44px target overflows it evenly, as the laws ask. Rule in DESIGN.md: every button carries a base class.
