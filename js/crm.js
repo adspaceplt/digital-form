@@ -2805,8 +2805,8 @@
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="6" data-eg="delete" data-need="clients.billing:manage">Delete</button></div></span>' : '') +
         '</div></section>';
     }).join('');
-    return '<button type="button" class="linkish crm-removed-toggle ent-gone-toggle" data-eg="toggle" aria-expanded="' + String(entGoneOpen) + '">' +
-      (entGoneOpen ? 'Hide ' : 'Show ') + G.length + ' removed entit' + (G.length === 1 ? 'y' : 'ies') + '</button>' + rows;
+    return '<p class="ent-gone-line"><button type="button" class="linkbtn" data-eg="toggle" aria-expanded="' + String(entGoneOpen) + '">' +
+      (entGoneOpen ? 'Hide ' : 'Show ') + G.length + ' removed entit' + (G.length === 1 ? 'y' : 'ies') + '</button></p>' + rows;
   }
   var ENT_GONE_SAID = {
     'denied': 'This needs Clients: Billing at Full Access.',
@@ -2846,7 +2846,7 @@
       var nm = String(ent.legal_name || '').trim();
       window.ADspaceConfirm.ask({
         title: 'Delete ' + (nm || 'billing entity') + '?',
-        body: 'The entity and its details are removed from the portal. Bukku is not changed. There is no restore.',
+        body: 'The entity and its details are deleted from the portal. Bukku is not changed. There is no restore.',
         go: 'Delete', tone: 'danger', wait: true,
         field: nm ? { label: 'Type the registered name to confirm', placeholder: nm, match: nm,
           need: 'Type the registered name to confirm.', mismatch: 'The name does not match.' } : null
@@ -3819,7 +3819,7 @@
     baMsg('');
     window.ADspaceConfirm.ask({
       title: 'Delete version ' + v.version + '?',
-      body: 'Version ' + v.version + ' of the brand analysis is removed. There is no restore.',
+      body: 'Version ' + v.version + ' of the brand analysis is deleted. There is no restore.',
       go: 'Delete', tone: 'danger', wait: true
     }, function () {
       return db.rpc('brand_analysis_delete', { p_id: v.id }).then(function (q) {
