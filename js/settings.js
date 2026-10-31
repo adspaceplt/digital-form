@@ -85,13 +85,14 @@
     m.textContent = text;
   }
   var READ = {
-    /* Page availability (2026-10-29): which pages are covered. */
+    /* Page availability (2026-10-29): which pages show their notice page
+       now, and which are set for later (2026-10-31: "2 covered" read as
+       nothing to the user). */
     pages: function () {
       return readPg().then(function (rows) {
-        var on = rows.filter(function (p) { return p.set; });
-        if (!on.length) return 'All pages available';
-        return parts([plural(on.length, 'page', 'pages') + ' covered',
-          on.length <= 3 ? on.map(function (p) { return p.name; }).join(', ') : '']);
+        var set = rows.filter(function (p) { return p.set; });
+        if (!set.length) return 'All pages available';
+        return parts(pgCounts(rows).concat(set.length <= 3 ? [set.map(function (p) { return p.name; }).join(', ')] : []));
       });
     },
     /* What the Departments row holds, from the list (2026-10-23). */
@@ -268,7 +269,7 @@
     /* AI's usage and its prices in one group (2026-10-14, ux-audit SET-9). */
     add('ai', 'AI', [may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse') },
       biz && { id: 'prices', name: 'AI prices', kind: 'edit',
-        meta: pin == null ? '' : parts(['US$ ' + pin + ' in', 'US$ ' + pout + ' out a million tokens']) }]);
+        meta: pin == null ? '' : parts(['US$ ' + pin + ' in', 'US$ ' + pout + ' out per million tokens']) }]);
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
     add('whatsapp', 'WhatsApp', [
       /* Sent again (2026-10-14): the same message sent within the window
@@ -446,8 +447,8 @@
     db.rpc('app_settings_set', { p_from: day, p_values: { meta_checks: to ? 1 : 0 } }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
-          : d.error === 'denied' ? 'This needs Team: Business settings.' : d.error === 'bad-value' ? 'This needs a database update.' : d.error);
+        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
+          : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.' : d.error === 'bad-value' ? 'This feature is not available yet. Please contact an admin.' : d.error);
       }
       return window.ADspaceMoney.load(true);
     }).then(function () {
@@ -468,8 +469,8 @@
     db.rpc('client_email_set', { p_on: to }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
-          : d.error === 'denied' ? 'This needs Team: Business settings.' : d.error);
+        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
+          : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.' : d.error);
       }
       return window.ADspaceMoney.load(true);
     }).then(function () {
@@ -522,18 +523,18 @@
   /* ---- Demo access (2026-10-27) ----------------------------------------
      One sheet: On or Off, and a new PIN (4 to 8 digits; empty keeps the
      one held). The PIN is never read back: the database keeps its hash. */
-  var DEMO_SAID = { denied: 'This needs Team: Business settings.', 'bad-pin': 'PIN: 4 to 8 digits.',
+  var DEMO_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-pin': 'PIN: 4 to 8 digits.',
     'no-pin': 'Set a PIN before turning demo access on.' };
   function openDemo() {
     db.rpc('demo_state').then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { rowSay('demo')(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : DEMO_SAID[d.error] || d.error, 'err'); return; }
+      if (r.error || d.error) { rowSay('demo')(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : DEMO_SAID[d.error] || d.error, 'err'); return; }
       window.ADspaceConfirm.ask({
         title: 'Demo access', go: 'Save', wait: true,
         fields: [{ name: 'on', label: 'Demo access', seg: true, value: d.on ? 'on' : 'off', choices: [['on', 'On'], ['off', 'Off']] },
           { name: 'pin', label: d.pin_set ? 'New PIN' : 'PIN', type: 'tel', required: !d.pin_set, placeholder: '4 to 8 digits', value: '',
-            note: d.pin_set ? 'Empty keeps the PIN held. Typed in the sign-in\'s email box, it opens the console on sample data.'
-              : 'Typed in the sign-in\'s email box, it opens the console on sample data.' }],
+            note: d.pin_set ? 'Leave blank to keep the current PIN. Enter it in the sign-in email field to open the console with sample data.'
+              : 'Enter it in the sign-in email field to open the console with sample data.' }],
         check: function (v) {
           var pin = String(v.pin || '').trim();
           if (pin && !/^[0-9]{4,8}$/.test(pin)) return DEMO_SAID['bad-pin'];
@@ -542,7 +543,7 @@
         }
       }, function (v) {
         return db.rpc('demo_set', { p_on: v.on === 'on', p_pin: String(v.pin || '').trim() || null }).then(function (r2) {
-          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? 'This needs a database update.' : r2.error.message)
+          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message)
             : r2.data && r2.data.error ? DEMO_SAID[r2.data.error] || r2.data.error : '';
           if (e) return e;
           var n = r2.data || {};
@@ -560,15 +561,15 @@
      row says the next one, the sheet lists a year at a time. */
   var hol = { rows: null, err: null, year: null };
   var HOL_SAID = {
-    taken: 'That date already holds a holiday.', 'bad-name': 'Enter a name of 2 to 80 characters.',
+    taken: 'A holiday is already set on this date.', 'bad-name': 'Enter a name of 2 to 80 characters.',
     'bad-day': 'Choose a date from 2023 to 2099.', 'not-found': 'This holiday was removed in the meantime.',
-    denied: 'Business settings access is required.'
+    denied: 'You do not have permission to change business settings. Please ask an admin.'
   };
   function holSaid(r) {
     var e = r && (r.error || (r.data && r.data.error));
     if (!e) return '';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
-    return e === 'taken' && r.data.name ? 'That date already holds ' + r.data.name + '.' : HOL_SAID[e] || 'Not saved.';
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    return e === 'taken' && r.data.name ? r.data.name + ' is already set on this date.' : HOL_SAID[e] || 'Not saved.';
   }
   function holToday() { return window.ADspaceClock.today(); }
   function holDay(d, withDow) { return window.ADspaceClock.date(d, { weekday: Boolean(withDow) }); }
@@ -647,7 +648,7 @@
   }
   function holMsg(text, tone) { var m = $('holMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function holDelete(h) {
-    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', is removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('public_holiday_delete', { p_day: h.day }).then(function (r) {
           var said = holSaid(r);
@@ -664,14 +665,14 @@
      set inactive (offered to nobody, out of the prize). */
   var dep = { rows: null, err: null };
   var DEP_SAID = {
-    denied: 'Business settings access is required.', 'bad-name': 'Enter a name of 2 to 40 characters.',
+    denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
     taken: 'A department with this name already exists.', 'criteria-needed': 'Name its five criteria to put it in the department prize.',
     'bad-criteria': 'Each criterion is 2 to 60 characters, and all five are named.', 'not-found': 'This department was removed in the meantime.'
   };
   function depSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
     if (e === 'in-use') return d.members ? plural(d.members, 'colleague is', 'colleagues are') + ' in this department. Move them first, or set it inactive.'
       : 'Performance records name this department. Set it inactive instead.';
     return DEP_SAID[e] || 'Not saved.';
@@ -757,7 +758,7 @@
     }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
   }
   function depDelete(d) {
-    window.ADspaceConfirm.ask({ title: 'Delete', body: d.name + ' is removed from the list. There is no restore.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete', body: d.name + ' is removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
           return depSaid(r) || depChanged('Deleted.');
@@ -810,7 +811,7 @@
   var PG_GROUPS = [['Team', ['admin']], ['Clients', ['client', 'review', 'script', 'details']],
     ['Creators', ['creators', 'creator']], ['Public', ['quote', 'supplier', 'verify']]];
   var PG_WORD = { upgrade: 'Upgrade in progress', paused: 'Temporarily unavailable' };
-  var PG_SAID = { denied: 'This needs Team: Upgrade mode.', 'bad-window': 'Choose an end after the start, and later than now.',
+  var PG_SAID = { denied: 'You do not have permission to change page availability. Please ask an admin.', 'bad-window': 'Choose an end after the start, and later than now.',
     'bad-page': 'Choose a page.', 'bad-kind': 'Choose the availability.' };
   function pgMsg(text, tone) { var m = $('pgMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function readPg() {
@@ -827,13 +828,21 @@
       : 'From ' + when(p.starts_at) + (p.ends_at ? ' to ' + when(p.ends_at) : '');
     return [p.kind === 'paused' ? 'is-off' : 'is-warn', PG_WORD[p.kind] || PG_WORD.upgrade, w];
   }
+  /* How many pages are unavailable now and how many are set for later. */
+  /* With the noun (the Settings row: 2 pages unavailable) or after a count
+     that already names it (the sheet's foot: 10 pages · 2 unavailable). */
+  function pgCounts(rows, bare) {
+    var now = rows.filter(function (p) { return p.set && p.on; }).length,
+        later = rows.filter(function (p) { return p.set && !p.on; }).length;
+    return [now ? (bare ? now : plural(now, 'page', 'pages')) + ' unavailable' : '', later ? later + ' scheduled' : ''].filter(Boolean);
+  }
   function pgFoot() {
-    var n = Object.keys(pg.picked).length, on = (pg.rows || []).filter(function (p) { return p.set; }).length;
+    var n = Object.keys(pg.picked).length, counts = pgCounts(pg.rows || [], true);
     /* While several are chosen the count is the tick for all ten (DESIGN.md
        §4 Several records at once; 2026-10-29, audit SET-1). */
     var all = (pg.rows || []).length;
     $('pgCount').hidden = !!pg.picking;
-    $('pgCount').textContent = pg.picking ? '' : pg.rows ? plural(all, 'page', 'pages') + ' · ' + on + ' covered' : '';
+    $('pgCount').textContent = pg.picking ? '' : pg.rows ? [plural(all, 'page', 'pages')].concat(counts).join(' · ') : '';
     $('pgAllLine').hidden = !pg.picking;
     $('pgAllCount').textContent = n + ' selected';
     $('pgAll').checked = !!all && n === all;
@@ -891,7 +900,7 @@
   function pgSave(args, then) {
     return db.rpc('page_set', args).then(function (r) {
       var d = r.data || {};
-      if (r.error || d.error) throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message) : PG_SAID[d.error] || d.error);
+      if (r.error || d.error) throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : PG_SAID[d.error] || d.error);
       pg.rows = d.pages || pg.rows;
       if (bridge.upgradeRead) bridge.upgradeRead();
       return then ? then() : null;
@@ -966,7 +975,7 @@
   var tax = { rows: null, err: null, mode: 'list', bukku: null, picked: {} };
   function taxMsg(text, tone) { var m = $('taxMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   var TAX_SAID = {
-    denied: 'Business settings are needed to change the tax codes.',
+    denied: 'You do not have permission to change tax codes. Please ask an admin.',
     'bad-row': 'A code is up to 30 letters, digits, spaces, dots or dashes, its rate 0 to 100.'
   };
   function taxRefusal(d) {
@@ -1035,7 +1044,7 @@
   function taxSave(rows, replace, done) {
     return db.rpc('tax_codes_save', { p_rows: rows, p_replace: Boolean(replace) }).then(function (r) {
       var d = r.data || {};
-      if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : (r.error.message || 'Not saved.');
+      if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : (r.error.message || 'Not saved.');
       if (d.error) return taxRefusal(d);
       tax.rows = d.codes || [];
       paintTax(); readLine('taxcodes');
@@ -1047,14 +1056,14 @@
     var one = codes.length === 1;
     window.ADspaceConfirm.ask({
       title: one ? 'Delete ' + codes[0] + '?' : 'Delete ' + codes.length + ' tax codes?',
-      body: (one ? codes[0] + ' is' : codes.join(', ') + ' are') + ' removed from the list. There is no restore.',
+      body: (one ? codes[0] + ' is' : codes.join(', ') + ' are') + ' removed from the list. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       field: one ? null : { name: 'n', label: 'Type ' + codes.length + ' to confirm', match: String(codes.length),
         need: 'Type ' + codes.length + ' to confirm.', mismatch: 'Type ' + codes.length + ' to confirm.' }
     }, function () {
       return db.rpc('tax_codes_delete', { p_codes: codes }).then(function (r) {
         var d = r.data || {};
-        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This needs a database update.' : (r.error.message || 'Not deleted.');
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : (r.error.message || 'Not deleted.');
         if (d.error) return taxRefusal(d);
         tax.rows = d.codes || [];
         tax.mode = 'list'; tax.picked = {};
@@ -1087,7 +1096,7 @@
     window.ADspaceBukku.taxes().then(function (d) {
       btn.disabled = false;
       if (d.error) { taxMsg(d.error); return; }
-      if (!(d.codes || []).length) { taxMsg('Bukku holds no tax codes the portal can read.'); return; }
+      if (!(d.codes || []).length) { taxMsg('Bukku has no tax codes the portal can read.'); return; }
       tax.bukku = d.codes.slice().sort(function (a, b) { return (b.rate - a.rate) || (a.code < b.code ? -1 : 1); });
       tax.mode = 'pick'; tax.picked = {};
       (tax.rows || []).forEach(function (t) { if (t.active && tax.bukku.some(function (b) { return b.code === t.code; })) tax.picked[t.code] = true; });

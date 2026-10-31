@@ -840,7 +840,7 @@
           var e = emojiImage(s);
           flush();
           atoms.push({ runs: [{ f: 'emoji', s: s, entry: e, ok: e.ok, ratio: e.ratio }], space: false, brk: true });
-          if (!e.ok && warn) warn('An emoji could not be drawn: ' + s);
+          if (!e.ok && warn) warn('An emoji could not be displayed: ' + s);
           continue;
         }
         if (f === fonts.cjk && isCjkCp(cp)) {

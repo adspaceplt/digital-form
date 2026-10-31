@@ -52,7 +52,7 @@
     if (err.status === 404 || /disabled|not enabled/i.test(m + ' ' + code)) {
       return 'Passkeys are not switched on. Use your email.';
     }
-    if (/InvalidStateError/.test(name)) return 'This device already holds a passkey for you.';
+    if (/InvalidStateError/.test(name)) return 'This device already has a passkey for you.';
     if (/captcha/i.test(m + ' ' + code)) return 'The security check did not finish. Please try again.';
     if (/rate limit|too many/i.test(m)) return 'Too many tries. Please wait a few minutes.';
     if (act === 'in' && /(credential|passkey)/i.test(m + ' ' + code) && /not found|unknown|invalid|no /i.test(m + ' ' + code)) {

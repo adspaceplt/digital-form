@@ -703,7 +703,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Console: Upgrade in progress until …, Turn off ending the
     console's alone). Settings, Portal: Page availability (`team.upgrade`,
-    All pages available or n pages covered) opens `#pgSheet`: the ten pages
+    All pages available or n pages unavailable) opens `#pgSheet`: the ten pages
     by group (Team, Clients, Creators, Public), each its state over when and
     Edit; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The
     question asks Availability (a segment), Starts, Ends (each a date beside
@@ -1279,7 +1279,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   answer with what came with it (`recent`, `paid`), never the code alone
   (2026-10-29: a reminder refused `recent` read "Reminded . Not sent again.").
 - A refusal is named in the team's words, never the database's (`SAID`-style
-  maps). A missing function reads "This needs a database update".
+  maps). A missing function reads "This feature is not available yet. Please contact an admin."; a refused permission "You do not have permission to {act}. Please ask an admin.", never a section and a level; a setup fault (a key, a token, Google) names no tool to a colleague ("… is not set up yet / not available at the moment. Please contact an admin.").
 - A client page never shows a database message. The console may. A refused
   load reads its cover's words; a refused send reads `W.notSent`.
 - Back navigates, Revert undoes a state, Restore brings back a record,

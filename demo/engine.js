@@ -30,7 +30,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -550,6 +550,14 @@
     public_holiday_save: 'p_day p_name p_was',
     public_holiday_delete: 'p_day',
     quote_website_read: 'p_key',
+    quote_sign_code: 'p_key p_payload',
+    quote_sign_finish: 'p_key p_code',
+    quotation_link: 'p_id',
+    quotation_reviewers: 'p_id',
+    quotation_submit: 'p_id p_reviewer p_company',
+    quotation_review: 'p_id p_ok p_note',
+    quotation_paper: 'p_id p_payload',
+    quotation_resign: 'p_id',
     quote_proceed: 'p_key p_start p_decider',
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
@@ -1234,7 +1242,7 @@
         }
 
         if (table === 'clients' && pending && ('brief' in pending || 'brand_notes' in pending) && !opsAllowed('clients.brand', 'work')) {
-          rows = []; api.__err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' }; return api;
         }
         if (inHit.some(function (r) { return adminGuard(table, r, Object.assign({}, r, pending)); })) {
           rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api;
@@ -1355,7 +1363,7 @@
         }
 
         if (table === 'clients' && pending && ('brief' in pending || 'brand_notes' in pending) && !opsAllowed('clients.brand', 'work')) {
-          rows = []; api.__err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' }; return api;
         }
         if (eqHit.some(function (r) { return salesByRefused(table, r, pending); })) {
           rows = []; api.__err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' }; return api;
@@ -1411,7 +1419,7 @@
 
             if ((('white_label' in pending && Boolean(pending.white_label) !== Boolean(r.white_label)) ||
                  ('report_logo' in pending && (pending.report_logo || null) !== (r.report_logo || null))) &&
-                !opsGranted('reports.whitelabel', 'work')) blocked = 'White label needs Reports: White label at Work.';
+                !opsGranted('reports.whitelabel', 'work')) blocked = 'You do not have permission to change white label settings. Please ask an admin.';
             if (wlLogo && !/^data:image\/png;base64,/.test(wlLogo)) blocked = 'clients_report_logo_png';
           }
 
@@ -1631,13 +1639,13 @@
         if (!err && table === 'clients') {
           var bCols = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'finance_email', 'billing_address', 'bill_contact_id'];
           if ((bCols.some(function (k) { return x[k] != null && String(x[k]).trim() !== ''; }) || x.sst_applies === false || x.bill_sgd === true) &&
-              !opsAllowed('clients.billing', 'work')) err = { code: '42501', message: 'Billing details need Clients: Billing at Work.' };
+              !opsAllowed('clients.billing', 'work')) err = { code: '42501', message: 'You do not have permission to change billing details. Please ask an admin.' };
           else if (x.stage === 'active') err = { code: 'P0001', message: 'active-needs-billing' };
-          else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: the content brief and brand notes need Clients: Brand at Work.' };
-          else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'White label needs Reports: White label at Work.', hint: 'white-label' };
+          else if ((x.brief != null || x.brand_notes != null) && !opsAllowed('clients.brand', 'work')) err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' };
+          else if ((x.white_label === true || x.report_logo != null) && !opsGranted('reports.whitelabel', 'work')) err = { code: '42501', message: 'You do not have permission to change white label settings. Please ask an admin.', hint: 'white-label' };
         }
         if (!err && table === 'campaigns' && (x.invoice_no != null || x.invoice_url != null || x.invoice_uploaded_at != null) && !opsAllowed('campaigns.finance', 'work'))
-          err = { code: '42501', message: 'The invoice needs Creator Campaigns: Finance at Work.' };
+          err = { code: '42501', message: 'You do not have permission to change the campaign invoice. Please ask an admin.' };
         if (!err && table === 'campaign_deliverables' && (x.hidden_at != null || x.hidden_by != null))
           err = { code: 'P0001', message: 'hide-function', hint: 'Hide and Restore go through campaign_file_hide.' };
         if (!err && table === 'team_roles' && scopeClash(x)) err = { code: 'P0001', message: 'scope-activity' };
@@ -2781,24 +2789,24 @@ function cardSlugFree(name, self, email) {
     health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2,
 
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
-  var APP_WORD = { lead_followup_hours: ['A lead waits', ' hours'], proposal_followup_days: ['A proposal waits', ' days'],
-    fx_sgd: ['Singapore dollar rate', ' to S$1'], vic_lead_followup_hours: ['A VIC lead waits', ' hours'], vic_proposal_followup_days: ['A VIC proposal waits', ' days'], sst_pct: ['SST', '%'],
+  var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
+    fx_sgd: ['Singapore dollar rate', ' per S$1'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
     term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
     term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
-    ai_price_in: ['AI input, a million tokens', ''], ai_price_out: ['AI output, a million tokens', ''], ai_price_search: ['AI web searches, a thousand', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
+    ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
-    wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' a day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['A leaver\'s health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
+    wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
-    analytics_churn_pct: ['Analytics churn alert, a quarter', '%'],
+    analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
     bench_cpr_high: ['Property cost per result, tier 3 from', ''], bench_cpr_top: ['Property cost per result, tier 3 up to', ''],
     bench_msg_min: ['Messaging cost per result, low', ''], bench_msg_target: ['Messaging cost per result, target', ''], bench_msg_max: ['Messaging cost per result, high', ''],
     bench_form_min: ['Lead form cost per result, low', ''], bench_form_target: ['Lead form cost per result, target', ''], bench_form_max: ['Lead form cost per result, high', ''],
-    bench_cpm_min: ['Cost per 1,000 impressions, low', ''], bench_cpm_max: ['Cost per 1,000 impressions, high', ''], bench_cpl_rise: ['Cost per lead rise a year', '%'],
-    bench_reels_share: ['Reels share of impressions', '%'], bench_ad_spend_pct: ['Ad spend of the budget', '%'], bench_adset_daily: ['Daily budget an ad set, at least', ''] };
+    bench_cpm_min: ['Cost per 1,000 impressions, low', ''], bench_cpm_max: ['Cost per 1,000 impressions, high', ''], bench_cpl_rise: ['Yearly rise in cost per lead', '%'],
+    bench_reels_share: ['Reels share of impressions', '%'], bench_ad_spend_pct: ['Ad spend share of the budget', '%'], bench_adset_daily: ['Minimum daily budget per ad set', ''] };
   var APP_PRE = function (k) { return k === 'fx_sgd' ? 'RM ' : /^ai_price_/.test(k) ? 'US$' : /^bench_/.test(k) && APP_WORD[k][1] === '' ? 'RM ' : ''; };
   function appDb() {
     if (!DB.app_settings) DB.app_settings = [];
@@ -9265,7 +9273,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$)/.test(name)) {
+    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -9587,9 +9595,237 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return qtOk({ ok: true, ref: wrow.ref, key: wkey });
       }
 
+      var qsShown = function (q0) {
+        var sh = q0, n = 0, nx;
+        while (n++ < 20 && (nx = DB.quotations.filter(function (q) { return q.replaces === sh.id && !q.removed_at; })
+          .sort(function (a, b) { return a.issued_at < b.issued_at ? 1 : -1; })[0])) sh = nx;
+        return sh;
+      };
+      var qsByKey = function (key) {
+        return /^[a-z0-9]{8}$/.test(String(key || '')) && DB.quotations.filter(function (q) { return q.access_key === key && !q.removed_at; })[0];
+      };
+      var qsMember = function (nm) { return nm && DB.team_members.filter(function (m) { return m.active && !m.system && !m.removed_at && m.name === nm; })[0]; };
+      var qsNotify = function (ids, kind, title, body, qid, cid) {
+        ids.filter(function (v, i, a) { return v && a.indexOf(v) === i; }).forEach(function (mid) {
+          var dk = kind + ':' + qid + ':' + mid + ':' + Date.now();
+          DB.ops_notifications.push({ id: nid('nt'), team_member_id: mid, task_id: null, kind: kind, title: title, body: body,
+            read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: cid });
+        });
+      };
+      var qsSal = ['Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', "Dato'", 'Datin', 'Datuk', "Dato' Sri", 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'];
+      var qsMail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+      var qsCompany = function (a) {
+        a = a || {};
+        var up = function (v) { return String(v || '').replace(/\s+/g, '').toUpperCase(); };
+        var o = { legal_name: String(a.legal_name || '').replace(/\s+/g, ' ').trim().toUpperCase(), company_no: up(a.company_no),
+          company_no_old: up(a.company_no_old) || null, tin: up(a.tin) || null, sst_no: up(a.sst_no) || null,
+          billing_address: String(a.billing_address || '').trim(), finance_email: String(a.finance_email || '').trim().toLowerCase() || null };
+        if (o.legal_name.length < 2 || o.legal_name.length > 160) return { error: 'bad-legal_name' };
+        if (!/^[A-Z0-9-]{6,20}$/.test(o.company_no)) return { error: 'bad-company_no' };
+        if (o.company_no_old && !/^[A-Z0-9-]{4,20}$/.test(o.company_no_old)) return { error: 'bad-company_no_old' };
+        if (o.tin && !/^[A-Z0-9-]{6,20}$/.test(o.tin)) return { error: 'bad-tin' };
+        if (o.sst_no && !/^[A-Z0-9-]{6,25}$/.test(o.sst_no)) return { error: 'bad-sst_no' };
+        if (o.billing_address.length < 10 || o.billing_address.length > 400) return { error: 'bad-billing_address' };
+        if (o.finance_email && (!qsMail.test(o.finance_email) || o.finance_email.length > 160)) return { error: 'bad-finance_email' };
+        return { company: o };
+      };
+      var qsContact = function (c) {
+        c = c || {};
+        var o = { salutation: String(c.salutation || '').trim() || null, name: String(c.name || '').replace(/\s+/g, ' ').trim(),
+          phone: String(c.phone || '').trim(), email: String(c.email || '').trim().toLowerCase() };
+        if (o.salutation && qsSal.indexOf(o.salutation) < 0) return { error: 'bad-contact_salutation' };
+        if (o.name.length < 2 || o.name.length > 80) return { error: 'bad-contact_name' };
+        var d = o.phone.replace(/[^0-9]/g, '');
+        if (d.length < 8 || d.length > 15 || o.phone.length > 30) return { error: 'bad-contact_phone' };
+        if (!qsMail.test(o.email) || o.email.length > 160) return { error: 'bad-contact_email' };
+        return { contact: o };
+      };
+      var qsSigner = function (sg, sig) {
+        sg = sg || {}; sig = sig || {};
+        var o = { name: String(sg.name || '').replace(/\s+/g, ' ').trim(), designation: String(sg.designation || '').replace(/\s+/g, ' ').trim() };
+        if (o.name.length < 2 || o.name.length > 80) return { error: 'bad-signer_name' };
+        if (o.designation.length < 2 || o.designation.length > 80) return { error: 'bad-signer_designation' };
+        var s2;
+        if (sig.type === 'drawn' && /^[MLQCZmlqcz0-9 .,-]{8,30000}$/.test(String(sig.path || ''))) s2 = { type: 'drawn', path: String(sig.path) };
+        else if (sig.type === 'typed' && String(sig.text || '').trim().length >= 2 && String(sig.text || '').trim().length <= 80) s2 = { type: 'typed', text: String(sig.text).trim() };
+        else return { error: 'bad-signature' };
+        return { signer: o, signature: s2 };
+      };
+
+      var qsOpen = function (q) {
+        var sh = qsShown(q);
+        if (sh.status === 'not_proceeding' || q.status === 'not_proceeding') return { error: 'closed' };
+        if (sh.source === 'website' && !sh.released_at) return { error: 'unsent' };
+        if (sh.signed_at) return { error: 'signed' };
+        if (sh.valid_until < qtToday) return { error: 'expired' };
+        return { q: sh };
+      };
+      if (name === 'quote_sign_code') {
+        var scq = qsByKey(args.p_key);
+        if (!scq) return qtOk({ error: 'not-found' });
+        var sco = qsOpen(scq);
+        if (sco.error) return qtOk({ error: sco.error });
+        var pl = args.p_payload || {};
+        var c1 = qsCompany(pl.company); if (c1.error) return qtOk(c1);
+        var c2 = qsContact(pl.contact); if (c2.error) return qtOk(c2);
+        var c3 = qsSigner(pl.signer, pl.signature); if (c3.error) return qtOk(c3);
+        if (pl.agree !== true) return qtOk({ error: 'bad-agree' });
+        DB.quote_sign_codes = DB.quote_sign_codes || [];
+        var hour = qtNow.getTime() - 3600e3;
+        if (DB.quote_sign_codes.filter(function (r) { return r.quotation_id === sco.q.id && new Date(r.created_at).getTime() > hour; }).length >= 5) return qtOk({ error: 'too-many' });
+        var code = String(100000 + Math.floor(Math.random() * 900000));
+        DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null,
+          created_at: qtNow.toISOString(), expires_at: new Date(qtNow.getTime() + 15 * 60e3).toISOString(),
+          payload: { company: c1.company, contact: c2.contact, signer: c3.signer, signature: c3.signature } });
+        window.__signCode = code;
+        return qtOk({ ok: true, id: DB.quote_sign_codes[DB.quote_sign_codes.length - 1].id, code: code, email: c2.contact.email, ref: sco.q.ref, name: (c2.contact.salutation ? c2.contact.salutation + ' ' : '') + c2.contact.name });
+      }
+      if (name === 'quote_sign_finish') {
+        var sfq = qsByKey(args.p_key);
+        if (!sfq) return qtOk({ error: 'not-found' });
+        var sfo = qsOpen(sfq);
+        if (sfo.error) return qtOk({ error: sfo.error });
+        var sfr = (DB.quote_sign_codes || []).filter(function (r) { return r.quotation_id === sfo.q.id && !r.used_at; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
+        if (!sfr) return qtOk({ error: 'no-code' });
+        if (new Date(sfr.expires_at) <= qtNow) return qtOk({ error: 'code-expired' });
+        if (sfr.tries >= 5) return qtOk({ error: 'locked' });
+        if (String(args.p_code || '').replace(/\s+/g, '') !== sfr.code) { sfr.tries++; return qtOk({ error: 'wrong', left: Math.max(0, 5 - sfr.tries) }); }
+        sfr.used_at = qtNow.toISOString();
+        var sq = sfo.q, at = qtNow.toISOString();
+        var fp = (function (str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16)).slice(-8); })(
+          sq.ref + JSON.stringify(sq.lines) + JSON.stringify(sq.totals) + JSON.stringify(sfr.payload) + at);
+        sq.signed_at = at;
+        sq.signed = Object.assign({ via: 'online' }, JSON.parse(JSON.stringify(sfr.payload)),
+          { record: { at: at, email: sfr.email, ip: window.__signIp || '203.0.113.24', country: 'MY', agent: navigator.userAgent.slice(0, 300), fingerprint: fp } });
+        sq.returned_at = null; sq.return_note = null;
+        var sc = DB.clients.filter(function (c) { return c.id === sq.client_id; })[0];
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: sq.brand,
+          detail: sq.ref + ' signed on the quotation link by ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name, created_at: at });
+        var who = [qsMember(sq.made_by), qsMember(sc && sc.owner)].filter(Boolean).map(function (m) { return m.id; });
+        if (!who.length) qtTell(sq.client_id, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id + ':' + at);
+        else qsNotify(who, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id, sq.client_id);
+        return qtOk({ ok: true, at: at });
+      }
+      if (/^quotation_(link|reviewers|submit|review|paper|resign)$/.test(name)) {
+        var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
+        if (!qtMe || !opsAllowed('clients.quotes', qsLevel)) return qtOk({ error: 'denied' });
+        var sq2 = DB.quotations.filter(function (q) { return q.id === args.p_id && !q.removed_at; })[0];
+        var sc2 = sq2 && DB.clients.filter(function (c) { return c.id === sq2.client_id; })[0];
+        if (!sq2 || (sc2 && !scopeRowOk(sc2.stage, sc2.owner, 'work', sc2.sales_by))) return qtOk({ error: 'not-found' });
+        var mayRev = function (m) {
+          if (!m || !m.active || m.system) return false;
+          if (m.is_admin || m.role === 'admin') return true;
+          var a = m.access || {};
+          return (a['clients.quotes'] || a.clients) === 'manage';
+        };
+        if (name === 'quotation_link') {
+          if (!sq2.access_key) sq2.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
+          return qtOk({ ok: true, key: sq2.access_key });
+        }
+        if (name === 'quotation_reviewers') {
+          var last = DB.quotations.filter(function (q) { return q.client_id === sq2.client_id && q.reviewer_id && q.id !== sq2.id; })
+            .sort(function (a, b) { return a.submitted_at < b.submitted_at ? 1 : -1; })[0];
+          return qtOk({ reviewers: DB.team_members.filter(function (m) { return mayRev(m) && m.id !== qtMe.id; })
+            .sort(function (a, b) { return String(a.staff_code || 'zz').localeCompare(String(b.staff_code || 'zz')) || a.name.localeCompare(b.name); })
+            .map(function (m) { return { id: m.id, name: m.name, code: m.staff_code || null, designation: m.designation || null,
+              last: m.id === (sq2.reviewer_id || (last && last.reviewer_id)) }; }) });
+        }
+        if (name === 'quotation_paper') {
+          if (sq2.signed_at) return qtOk({ error: 'signed' });
+          var pp = args.p_payload || {};
+          var p1 = qsCompany(pp.company); if (p1.error) return qtOk(p1);
+          var p2 = qsContact(pp.contact); if (p2.error) return qtOk(p2);
+          var pn = { name: String((pp.signer || {}).name || '').trim(), designation: String((pp.signer || {}).designation || '').trim() };
+          if (pn.name.length < 2 || pn.name.length > 80) return qtOk({ error: 'bad-signer_name' });
+          if (pn.designation.length < 2 || pn.designation.length > 80) return qtOk({ error: 'bad-signer_designation' });
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(pp.day || '')) || pp.day > qtToday || pp.day < String(sq2.issued_at).slice(0, 10)) return qtOk({ error: 'bad-day' });
+          var scan = String(pp.scan || '').trim();
+          if (scan && !/^https:\/\/[^\s"'<>`\\]+$/.test(scan)) return qtOk({ error: 'bad-scan' });
+          sq2.signed_at = pp.day + 'T04:00:00.000Z';
+          sq2.signed = { via: 'paper', company: p1.company, contact: p2.contact, signer: pn, signature: null, scan: scan || null,
+            record: { at: sq2.signed_at, by: qtMe.name, entered_at: qtNow.toISOString() } };
+          qtLog(sq2.brand, sq2.ref + ' signed on paper by ' + pn.name + ' for ' + p1.company.legal_name + ' on ' + pp.day + ' · entered by ' + qtMe.name);
+          return qtOk({ ok: true });
+        }
+        if (!sq2.signed_at) return qtOk({ error: 'not-signed' });
+        if (name === 'quotation_resign') {
+          if (sq2.reviewed_at) return qtOk({ error: 'reviewed' });
+          sq2.sign_history = (sq2.sign_history || []).concat([{ signed_at: sq2.signed_at, signed: sq2.signed, withdrawn_at: qtNow.toISOString(), withdrawn_by: qtMe.name }]);
+          Object.assign(sq2, { signed_at: null, signed: null, submitted_at: null, submitted_by: null, reviewer_id: null, reviewer_name: null, returned_at: null, return_note: null, returned_by: null });
+          qtLog(sq2.brand, sq2.ref + ' · signature asked again; the earlier one is kept');
+          return qtOk({ ok: true });
+        }
+        if (name === 'quotation_submit') {
+          if (sq2.reviewed_at) return qtOk({ error: 'reviewed' });
+          if (sq2.submitted_at && !sq2.returned_at) return qtOk({ error: 'in-review' });
+          var rv = DB.team_members.filter(function (m) { return m.id === args.p_reviewer; })[0];
+          if (!mayRev(rv)) return qtOk({ error: 'bad-reviewer' });
+          if (rv.id === qtMe.id) return qtOk({ error: 'own' });
+          var moved = [];
+          if (args.p_company) {
+            var fixed = qsCompany(Object.assign({}, sq2.signed.company, args.p_company)); if (fixed.error) return qtOk(fixed);
+            Object.keys(fixed.company).forEach(function (k) {
+              if ((fixed.company[k] || null) !== (sq2.signed.company[k] || null)) moved.push({ field: k, from: sq2.signed.company[k] || null, to: fixed.company[k] || null, by: qtMe.name, at: qtNow.toISOString() });
+            });
+            if (moved.length) {
+              if (!sq2.signed.company_signed) sq2.signed.company_signed = JSON.parse(JSON.stringify(sq2.signed.company));
+              sq2.signed.company = fixed.company;
+              sq2.signed.corrections = (sq2.signed.corrections || []).concat(moved);
+            }
+          }
+          Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return x.field + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
+          return qtOk({ ok: true });
+        }
+        if (name === 'quotation_review') {
+          if (!sq2.submitted_at || sq2.returned_at) return qtOk({ error: 'not-submitted' });
+          if (sq2.reviewed_at) return qtOk({ error: 'reviewed' });
+          var admin = qtMe.is_admin || qtMe.role === 'admin';
+          if (sq2.reviewer_id !== qtMe.id && !admin) return qtOk({ error: 'not-reviewer' });
+          var sub = qsMember(sq2.submitted_by);
+          if (args.p_ok !== true) {
+            var note = String(args.p_note || '').trim();
+            if (note.length < 2 || note.length > 1000) return qtOk({ error: 'note-required' });
+            Object.assign(sq2, { returned_at: qtNow.toISOString(), return_note: note, returned_by: qtMe.name });
+            qtLog(sq2.brand, sq2.ref + ' · sent back by ' + qtMe.name + ': ' + note);
+            qsNotify([sub && sub.id], 'quote.returned', 'Quotation sent back · ' + sq2.brand, sq2.ref + ' · ' + note, sq2.id, sq2.client_id);
+            return qtOk({ ok: true, returned: true });
+          }
+          var co = sq2.signed.company, held = (DB.bukku_links || []).some(function (b) { return b.kind === 'client' && b.record_id === sq2.client_id && b.held_at; });
+          var billing = 'kept';
+          var empty = sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
+          if (held) billing = 'held';
+          else if (empty) {
+            if (!opsAllowed('clients.billing', 'work')) return qtOk({ error: 'billing-access' });
+            ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'billing_address', 'finance_email'].forEach(function (k) { if (co[k]) sc2[k] = co[k]; });
+            billing = 'filled';
+          }
+          var have = DB.client_services.filter(function (l) { return l.quotation_id === sq2.id && !l.archived_at; });
+          if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
+          else sq2.lines.forEach(function (l) {
+            have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
+              label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
+              tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
+              detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
+            DB.client_services.push(have[have.length - 1]);
+          });
+          Object.assign(sq2, { reviewed_at: qtNow.toISOString(), reviewed_by: qtMe.name, reviewed_role: qtMe.designation || null });
+          if (sc2) sc2.updated_at = qtNow.toISOString();
+          qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
+            ' · ' + have.length + ' lines confirmed · Billing ' + { filled: 'filled from the signing', held: 'held in Bukku, left as Bukku holds it', kept: 'kept as it was' }[billing]);
+          qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
+            'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
+          return qtOk({ ok: true, billing: billing, lines: have.length });
+        }
+      }
+
       if (name === 'quote_website_read' || name === 'quote_proceed') {
+
         var wq = /^[a-z0-9]{8}$/.test(String(args.p_key || '')) && DB.quotations.filter(function (q) {
-          return q.access_key === args.p_key && q.source === 'website' && !q.removed_at; })[0];
+          return q.access_key === args.p_key && (q.source === 'website' || name === 'quote_website_read') && !q.removed_at; })[0];
         if (!wq) return qtOk({ error: 'not-found' });
         if (name === 'quote_website_read') {
           var wqc = DB.clients.filter(function (c) { return c.id === wq.client_id; })[0];
@@ -9614,8 +9850,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
             } else wstage = wdoc.signed_at ? 'signed' : 'letter';
           } else if (wq.status === 'not_proceeding' || wsh.status === 'not_proceeding') wstage = 'closed';
           else if (wsh.source === 'website' && !wsh.released_at) wstage = 'review';
+
+          else if (wsh.signed_at) {
+            wstage = wsh.reviewed_at && wqc && wqc.stage === 'active' ? 'welcome' : 'accepted';
+            if (wstage === 'welcome') wportal = (DB.client_contacts || []).some(function (k) { return k.client_id === wqc.id && !k.archived_at && k.portal_access &&
+              String(k.email || '').trim().toLowerCase() === String(((wsh.signed || {}).contact || {}).email || (wq.contact || {}).email || '').trim().toLowerCase(); });
+          }
           else if (wsh.valid_until < qtToday) wstage = 'expired';
-          else if (!wbilled && wqc && new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
+          else if (wq.source === 'website' && !wbilled && wqc && new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
             !DB.quotations.some(function (o) { return o.client_id === wq.client_id && o.id !== wq.id && o.issued_at < wq.issued_at; })) {
             wform = (DB.client_detail_forms || []).filter(function (x) { return x.client_id === wq.client_id && !x.voided_at; })
               .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0] || null;
@@ -9632,7 +9874,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
             details_key: wstage === 'billing' ? wform.access_key : null, portal: wportal,
             proceed_at: wq.proceed_at || null, proceed_due: wq.proceed_due || null,
             rep: wrep ? { name: wrep.name, title: wrep.designation || null, whatsapp: wrep.card_on !== false && wrep.card_mobile !== false && wrep.mobile ? (function (d) { d = String(d).replace(/[^0-9]/g, ''); return d.length < 8 ? null : d.charAt(0) === '0' ? '60' + d.slice(1) : d.length === 8 ? '65' + d : d; })(wrep.mobile) : null } : null,
-            today: qtToday })));
+            today: qtToday,
+            signed: wsh.signed_at ? { at: wsh.signed_at, via: wsh.signed.via, signer: wsh.signed.signer, signature: wsh.signed.signature,
+              company: wsh.signed.company, contact: wsh.signed.contact, record: wsh.signed.via === 'online' ? wsh.signed.record : null } : null,
+            prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm ? { name: pm.name, title: pm.designation || null } : (wsh.made_by ? { name: wsh.made_by, title: null } : null); })(),
+            reviewed: wsh.reviewed_at ? { name: wsh.reviewed_by, title: wsh.reviewed_role || null, at: wsh.reviewed_at } : null,
+            prefill: !wsh.signed_at && wqc ? (function () {
+              var pc = (DB.client_contacts || []).filter(function (k) { return k.client_id === wqc.id && !k.archived_at && k.is_primary; })[0];
+              return { company: { legal_name: wqc.legal_name || '', company_no: wqc.company_no || '', billing_address: wqc.billing_address || '',
+                sst_no: wqc.sst_no || '', tin: wqc.tin || '' },
+                contact: pc ? { salutation: pc.salutation || '', name: pc.name || '', phone: pc.phone || (/^@/.test(String(pc.whatsapp || '')) ? '' : pc.whatsapp || ''), email: pc.email || '' }
+                  : { salutation: (wq.contact || {}).salutation || '', name: (wq.contact || {}).name || '', phone: (wq.contact || {}).whatsapp || '', email: (wq.contact || {}).email || '' } };
+            })() : null })));
         }
         if (wq.proceed_at) return qtOk({ ok: true, again: true, at: wq.proceed_at, due: wq.proceed_due });
 
@@ -12166,6 +12419,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'quote-request') {
           if (window.__quoteCaptcha) return Promise.resolve({ data: { error: 'captcha' }, error: null });
           var qb = (opts && opts.body) || {};
+
+          if (qb.action === 'sign') {
+            return rpc('quote_sign_code', { p_key: qb.key, p_payload: qb.payload }).then(function (r) {
+              var d = r.data || {};
+              if (r.error) return { data: { error: 'failed' }, error: null };
+              if (d.error) return { data: { error: d.error }, error: null };
+              window.__signMail = (window.__signMail || []).concat([{ to: d.email, code: d.code, ref: d.ref }]);
+              return { data: { ok: true, email: d.email }, error: null };
+            });
+          }
           window.__quoteFn = true;
           return rpc('quote_website_create', { p_sel: qb.sel, p_contact: qb.contact, p_idem: qb.idem }).then(function (r) {
             window.__quoteFn = false;

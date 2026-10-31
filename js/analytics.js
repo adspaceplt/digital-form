@@ -455,7 +455,7 @@
       aside = 'Forecast to ' + monWord(endK) + ' ' + endK.slice(0, 4);
     } else if (r.open) {
       aside = full >= 12 ? '' : 'Forecast from ' + monthLong(CK.addMonths(countsFrom(h) || CK.today().slice(0, 7), 12));
-      if (full < 12) note = 'A forecast is drawn once 12 full months are held. ' + monthsWord(full) + (full === 1 ? ' is' : ' are') + ' held.';
+      if (full < 12) note = 'A forecast is shown once 12 full months of data are available. ' + monthsWord(full) + (full === 1 ? ' is' : ' are') + ' held.';
     }
     var el = chart(grid, 'trend', 'Leads and new clients by month', {
       kind: 'line', cats: cats, series: series, band: band, bandWord: band ? 'Likely range' : '', none: 'No figure'
@@ -566,7 +566,7 @@
     var se = seasonOf(h, 'newLeads'), full = fullKeys(h).length;
     if (!se) {
       card(grid, 'season', 'Busiest months for new leads', '',
-        waitHtml('Busiest months show once 24 full months of leads are held',
+        waitHtml('Busiest months are shown once 24 full months of leads are available',
           full, 24, full ? 'Leads are counted from ' + monthLong(countsFrom(h)) + '. The months show in ' + monthLong(CK.addMonths(countsFrom(h), 24)) + '.' : 'No lead is held yet.'));
       return;
     }
@@ -661,18 +661,18 @@
   var SEVERITY = { high: ['late', 'High risk'], medium: ['wait', 'Medium risk'], low: ['off', 'Low risk'] };
   var CREDIBLE = { credible: 'Credible', partly: 'Partly credible', not_credible: 'Not credible', not_drawn: 'Not drawn' };
   var AI_SAID = {
-    denied: 'Analytics access is required.', 'ai-not-set-up': 'Write with AI is not set up yet. Contact an admin.',
-    'ai-key': 'The AI service refused the key. Contact an admin.', 'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-credit': 'The AI service has no credit left. Contact an admin.', 'ai-model': 'The AI model is not available. Contact an admin.',
+    denied: 'You do not have access to Analytics. Please ask an admin.', 'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Write with AI is not available at the moment. Please contact an admin.', 'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.', 'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-slow': 'The analysis took too long. Try again.', 'ai-incomplete': 'The analysis came back incomplete. Try again.',
-    'ai-failed': 'The analysis could not be written. Try again.', 'needs-update': 'This needs a database update.',
+    'ai-failed': 'The analysis could not be written. Try again.', 'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-analysis': 'The analysis could not be kept. Try again.', 'not-found': 'This version was deleted in the meantime.'
   };
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
     if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. An admin can turn it on.'
       : 'No analyses left today. The next is free at 12:00 am.';
-    if (/function|schema cache|Failed to send/i.test(k)) return 'This needs a database update.';
+    if (/function|schema cache|Failed to send/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return AI_SAID[k] || 'The analysis could not be written. Try again.';
   }
   function reads() {
@@ -871,7 +871,7 @@
     }, function (v) { pick(v.v); });
   }
   function remove(v, msg, load) {
-    window.ADspaceConfirm.ask({ title: 'Delete this analysis?', body: 'Version ' + v.version + ' (' + v.period + ') is removed. There is no restore.',
+    window.ADspaceConfirm.ask({ title: 'Delete this analysis?', body: 'Version ' + v.version + ' (' + v.period + ') is removed. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true }, function () {
       return db.rpc('analytics_read_delete', { p_id: v.id }).then(function (r) {
         var d = r.data || {};
@@ -891,7 +891,7 @@
       var tab = docs.tabFor ? docs.tabFor() : null;
       drawPdf(v).then(function (blob) {
         return docs.save(blob, 'ADspace Analytics Analysis v' + v.version + '.pdf', tab);
-      }).catch(function (e) { docs.shut(tab); msg((e && e.message) || 'The PDF could not be drawn.'); });
+      }).catch(function (e) { docs.shut(tab); msg((e && e.message) || 'The PDF could not be generated.'); });
     });
   }
   function drawPdf(v) {

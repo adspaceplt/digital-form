@@ -108,7 +108,7 @@
 
   /* A refusal in the team's words. */
   var SAID = {
-    denied: 'This needs Video Scripts at Manage.',
+    denied: 'You do not have permission to change video scripts. Please ask an admin.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.',
     'bad-kind': 'Choose the script type.',
@@ -118,16 +118,16 @@
     'bad-duration': 'Choose a duration between 5 minutes and 24 hours.',
     'bad-date': 'Choose a date from 14 Aug 2023.',
     'too-long': 'A field is too long to save.',
-    'too-many': 'A month holds 99 scripts, and a script 60 scenes, at most.',
+    'too-many': 'A month can have up to 99 scripts, and a script up to 60 scenes.',
     'bad-scenes': 'The scenes could not be read.',
-    stale: 'This script was changed elsewhere and has been read again. Enter the change again.',
-    'denied-delete': 'Deleting a script needs Video Scripts at Full Access.',
+    stale: 'Not saved. This script was changed by someone else. The latest version is now shown. Please enter your change again.',
+    'denied-delete': 'You do not have permission to delete scripts. Please ask an admin.',
     name: 'The name does not match.'
   };
   function said(e) {
     var m = String((e && (e.message || e.error)) || e || '');
     if (SAID[m]) return SAID[m];
-    if (/function .* does not exist|schema cache|relation .*video_script|PGRST20[25]/i.test(m)) return 'This needs a database update.';
+    if (/function .* does not exist|schema cache|relation .*video_script|PGRST20[25]/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     if (/row-level security|new row violates|client-scope/i.test(m)) return SAID.denied;
     return m || 'Not saved. Try again.';
   }
@@ -780,7 +780,7 @@
     var nm = typedName(s);
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: label(s) + ', its scenes and their clip numbers will be deleted. There is no restore.',
+      body: label(s) + ', its scenes and their clip numbers will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Type ' + (s.title ? 'the title' : nm) + ' to confirm', match: nm, mismatch: 'The name does not match.' }
     }, function (typed) {
@@ -1040,15 +1040,15 @@
      where it happened; Save keeps them. An answer that lands after the sheet
      was shut is held for that video and put in when it is next edited. */
   var WRITE_SAID = {
-    'needs-update': 'This needs a database update.',
-    'ai-not-set-up': 'AI needs its key in Supabase.',
-    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
-    'ai-model': 'The script model name in Supabase is not recognised.',
+    'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
+    'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-failed': 'No script came back. Try again.',
     'ai-incomplete': 'No script came back. Try again.',
-    denied: 'This needs Video Scripts at Manage.',
+    denied: 'You do not have permission to change video scripts. Please ask an admin.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.'
   };

@@ -62,11 +62,11 @@
   var SECRET = { WHATSAPP_PHONE_ID: 'Phone number ID', WHATSAPP_TOKEN: 'token', WHATSAPP_WABA_ID: 'Business Account ID' };
 
   var SAID = {
-    denied: 'This needs WhatsApp access.',
-    'bad-name': 'Choose a template Meta holds.',
-    'bad-lang': 'Choose a template Meta holds.',
+    denied: 'You do not have permission to do this in WhatsApp. Please ask an admin.',
+    'bad-name': 'Choose a template approved by Meta.',
+    'bad-lang': 'Choose a template approved by Meta.',
     'bad-params': 'A template set for a purpose takes 5 variables at most.',
-    'bad-category': 'Choose a template Meta holds.',
+    'bad-category': 'Choose a template approved by Meta.',
     'bad-request': 'Not sent. Try again.',
     'bad-purpose': 'This template is not sent by hand.',
     'wa-off': 'Turn this template on in WhatsApp first.',
@@ -83,8 +83,8 @@
     'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
     'wa-no-link': 'This template\'s link button has no page for this recipient. Choose another template.',
     'wa-button-address': 'This template\'s link button address holds {{1}} typed as text. Correct it in WhatsApp Manager, then choose it again here.',
-    'wa-not-set-up': 'WhatsApp needs its Phone number ID, Business Account ID and token in Supabase.',
-    'wa-token': 'The WhatsApp token was refused. Check it in Supabase.',
+    'wa-not-set-up': 'WhatsApp is not set up yet. Please contact an admin.',
+    'wa-token': 'WhatsApp is not available at the moment. Please contact an admin.',
     'wa-template': 'Meta does not hold this template as approved.',
     'wa-params': 'The template takes a different number of variables.',
     'wa-recipient': 'This number is not on WhatsApp.',
@@ -93,7 +93,7 @@
     'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
     sending: 'This message is being sent now. Check the messages list before sending it again.',
     'bad-file': 'The PDF could not be attached.',
-    'needs-update': 'This needs a database update.'
+    'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   /* Meta's reason a message was not delivered, in the team's words. */
   var REASON = {
@@ -134,7 +134,7 @@
     if (!e) return SAID['wa-failed'];
     if (e.code === 'wa-not-set-up' && e.missing && e.missing.length) {
       var words = e.missing.map(function (m) { return SECRET[m] || m; });
-      return 'WhatsApp needs its ' + (words.length > 1 ? words.slice(0, -1).join(', ') + ' and ' + words[words.length - 1] : words[0]) + ' in Supabase.';
+      return 'WhatsApp is not set up yet. Please contact an admin.';
     }
     if (e.message) return /function|schema cache|does not exist/i.test(e.message) ? SAID['needs-update'] : SAID['wa-failed'];
     if (e.code) return SAID[e.code] || SAID['wa-failed'];
@@ -511,7 +511,7 @@
         return x.supported && (DOC[t.purpose] ? x.header === 'DOCUMENT' : x.header !== 'DOCUMENT') &&
           !x.header_var && x.body_vars.length <= 5 && !(x.button_var && NO_BUTTON[t.purpose]) && !badButton(x);
       });
-      if (!fit.length) { say($('waTplMsg'), 'Meta holds no approved template to choose.', 'err'); return; }
+      if (!fit.length) { say($('waTplMsg'), 'Meta has no approved template to choose.', 'err'); return; }
       var byKey = {};
       fit.forEach(function (x) { byKey[tplKey(x)] = x; });
       var now = t.name ? t.name + '|' + t.lang : '';
@@ -653,7 +653,7 @@
     sel.disabled = !cx.tpls.length;
     if (!cx.tpls.length) {
       sel.innerHTML = '<option value="">No templates</option>';
-      say($('waTplNote'), 'Meta holds no approved template the portal can send.', 'warn');
+      say($('waTplNote'), 'Meta has no approved template the portal can send.', 'warn');
       $('waTplNote').hidden = false;
     }
   }

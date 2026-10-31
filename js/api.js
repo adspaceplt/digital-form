@@ -79,7 +79,7 @@
      in the response, so it is read here and put into words once. */
   const FN_WORD = {
     not_signed_in: 'Sign in again.',
-    not_admin: 'Not allowed for this group.',
+    not_admin: 'You do not have permission to do this. Please ask an admin.',
     not_team: 'Not a team login.',
     bad_email: 'The email is not valid.',
     not_portal_contact: 'The deployed function predates portal access. Redeploy invite-member.',

@@ -32,8 +32,8 @@
   function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : may('clients.billing', 'work'); }
 
   var SAID = {
-    denied: 'This needs Clients: Billing (a client or a billing entity) or Suppliers (a supplier) at Manage.',
-    'not-found': 'That record is no longer there.',
+    denied: 'You do not have permission to send this record to Bukku. Please ask an admin.',
+    'not-found': 'This record no longer exists.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
     'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
@@ -44,10 +44,10 @@
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
     moved: 'Not restored. It was linked again meanwhile.',
-    'needs-update': 'This needs a database update.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-value': 'Choose a field from the list.',
     'not-held': 'Bukku and the portal hold different details. Choose Send to Bukku or Use Bukku\'s first.',
-    stale: 'Not saved. This changed in Bukku since it was opened, and has been read again.',
+    stale: 'Not saved. This record was changed in Bukku. The latest version is now shown.',
     'bad-email': 'Enter a valid email address.',
     'no-name': 'Enter the company name as registered.',
     'no-address': 'Enter the billing address.',
@@ -443,7 +443,7 @@
       if (c.error) { sayRow(said(c), 'err'); return; }
       if (f.error) { sayRow(said(f), 'err'); return; }
       var list = (f.fields || []);
-      if (!list.length) { sayRow('Bukku holds no custom contact fields. Add Client ID and Supplier ID in Bukku first.', 'err'); return; }
+      if (!list.length) { sayRow('Bukku has no custom contact fields. Add Client ID and Supplier ID in Bukku first.', 'err'); return; }
       var choices = [['', 'Not set']].concat(list.map(function (x) { return [String(x.id), x.name]; }));
       window.ADspaceConfirm.ask({
         title: 'Bukku', go: 'Save', wait: true,

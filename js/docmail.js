@@ -35,14 +35,14 @@
   var KIND = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
   var FIELDS = ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name'];
   var SAID = {
-    denied: 'This needs access to send this document.',
+    denied: 'You do not have permission to send this document. Please ask an admin.',
     'not-found': 'This document is no longer available.',
     'void-quotation': 'A cancelled quotation cannot be sent. Restore it first.',
     void: 'A voided or replaced letter cannot be sent.',
     unreleased: 'Send or publish the quotation first.',
     'no-contact': 'This prospect is marked Do not contact. Allow contact first.',
     'no-file': 'A document added by hand has no letter to send.',
-    'no-email': 'No contact of this client holds an email address. Add one in Contacts.',
+    'no-email': 'None of this client\'s contacts has an email address. Add one in Contacts.',
     'bad-contact': 'Choose a contact with an email address.',
     'bad-subject': 'Enter a subject, 2 to 200 characters.',
     'bad-body': 'Enter the message, 2 to 5,000 characters.',
@@ -50,10 +50,10 @@
     'bad-request': 'Refresh the page and try again.',
     'bad-file': 'The PDF could not be attached. Preview it to check, then try again.',
     sending: 'This email is on its way. Wait a minute before sending again.',
-    'mail-not-set-up': 'Email is not set up yet. Tell an admin.',
+    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',
-    'needs-update': 'This needs a database update.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.',
     'email-off': 'Send by email is off. Turn it on in Settings, Clients.'
   };
   /* Resend's word on an email, as the record's line reads it. */
@@ -176,7 +176,7 @@
     var tab = window.ADspaceDocs.previewTab();
     cx.o.doc.file().then(function (f) { return window.ADspaceDocs.save(f.blob, f.name, tab); }).catch(function (e) {
       window.ADspaceDocs.shut(tab);
-      msg('dmMsg', 'The PDF could not be drawn: ' + ((e && e.message) || e), 'err');
+      msg('dmMsg', 'The PDF could not be generated: ' + ((e && e.message) || e), 'err');
     });
   }
   function b64(bytes) {
@@ -233,7 +233,7 @@
       });
     }).catch(function (e) {
       mine.sending = false; go.disabled = false;
-      if (cx === mine) msg('dmMsg', 'The PDF could not be drawn: ' + ((e && e.message) || e), 'err');
+      if (cx === mine) msg('dmMsg', 'The PDF could not be generated: ' + ((e && e.message) || e), 'err');
     });
   }
   function shut() { cx = null; }

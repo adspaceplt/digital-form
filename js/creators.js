@@ -9,9 +9,9 @@
   var API = window.ADspaceAPI;
   /* FIRST-VISIT GUIDE (js/guide.js, the user, 2026-10-07): offered once in
      this browser, the moment the page shows what it is for. */
-  var GUIDE = { name: { en: 'Choose your creators', zh: '挑选创作者' }, steps: [
+  var GUIDE = { name: { en: 'Select your creators', zh: '挑选创作者' }, steps: [
     { at: '.crow-tick', text: { en: 'Select the creators for this campaign. Your selection is saved automatically.', zh: '勾选您希望合作的创作者，每次勾选都会自动保存。' } },
-    { at: '#confirmBtn', text: { en: 'Confirm selection once your picks are final.', zh: '选定后，请点「确认选择」。' } }] };
+    { at: '#confirmBtn', text: { en: 'Press Confirm selection once your selection is final.', zh: '选定后，请点「确认选择」。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
 
@@ -74,7 +74,7 @@
       kicker: 'Creator Selection',
       preparedFor: 'Prepared for',
       lang: '中文',
-      chooseMore: function (n) { return 'Choose ' + n + ' more.'; },
+      chooseMore: function (n) { return 'Select ' + n + ' more.'; },
       complete: 'All chosen.',
       over: 'The selection exceeds the number of creators for this campaign.',
       yourSelection: 'Your selection',

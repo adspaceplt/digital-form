@@ -56,7 +56,7 @@
   function missingWord(m) {
     m = String(m || '');
     if (/could not find|does not exist|schema cache|function public\.(issue_document|register_add|document_set_void|document_delete|serial_taken)/i.test(m)) {
-      return 'This needs a database update.';
+      return 'This feature is not available yet. Please contact an admin.';
     }
     return m || 'The request failed.';
   }
@@ -154,7 +154,7 @@
     call('issue_document', args, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {
-        if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be drawn.' }); return; }
+        if (e2 || !doc) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be generated.' }); return; }
         download(doc, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: doc, warn: warn }); });
       });
     });
@@ -170,7 +170,7 @@
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (d2, e2) {
-        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be drawn.' }); return; }
+        if (e2 || !d2) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be generated.' }); return; }
         download(d2, function (warn) { then({ ok: true, id: out.id, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
       });
     });
@@ -438,11 +438,11 @@
         say(DOCS.logoWarn());
       }).catch(function (e) {
         DOCS.shut(tab);
-        say('The file could not be drawn: ' + ((e && e.message) || e));
+        say('The file could not be generated: ' + ((e && e.message) || e));
       });
     } catch (e) {
       DOCS.shut(tab);
-      say('The file could not be drawn: ' + ((e && e.message) || e));
+      say('The file could not be generated: ' + ((e && e.message) || e));
     }
   }
 

@@ -25,18 +25,18 @@
     return M && M.when ? M.when(iso) : String(iso || '');
   }
   var SAID = {
-    denied: 'This needs Team: Notices.',
+    denied: 'You do not have permission to send notices. Please ask an admin.',
     'bad-title': 'Enter a title of 120 characters at most.',
     'bad-body': 'Enter a message of 1,000 characters at most.',
     'no-one': 'Choose at least one colleague.',
-    'not-found': 'That notice is no longer there.',
+    'not-found': 'This notice no longer exists.',
     live: 'Withdraw the notice before it is deleted.'
   };
   function said(e, d) {
     if (!e) return 'Not sent.';
     /* Ten notices an hour (2026-10-18, Team audit 16): the next one's time. */
-    if (e === 'too-many') return 'Ten notices an hour at most.' + (d && d.next ? ' The next can be sent at ' + when(d.next) + '.' : '');
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This needs a database update.' : 'Not sent. Check the connection and try again.';
+    if (e === 'too-many') return 'You can send up to ten notices per hour.' + (d && d.next ? ' The next can be sent at ' + when(d.next) + '.' : '');
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : 'Not sent. Check the connection and try again.';
     return SAID[e] || e;
   }
   function $(id) { return document.getElementById(id); }
@@ -126,7 +126,7 @@
         if (dl) dl.addEventListener('click', function () {
           shutMenus();
           window.ADspaceConfirm.ask({ title: 'Delete this notice?',
-            body: '\u201c' + n.title + '\u201d is removed from every colleague\u2019s bell for good. There is no restore.',
+            body: '\u201c' + n.title + '\u201d will be removed from every colleague\u2019s bell. This cannot be undone.',
             go: 'Delete', tone: 'danger' }, function () { drop(n); });
         });
       });
