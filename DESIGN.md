@@ -27,7 +27,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
 | `--line-ctl` | `#8e8e8e` | `#858585` | A control's drawn edge (a radio, a tick's ring): the lightest neutral that holds 3:1 on every ground |
-| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in |
+| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground through `--field` / `--select-ground`, set on the one list of grey cards in `css/portal.css`; a placeholder is `--ink-mute` at full strength |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
@@ -125,6 +125,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
 | Money in a row | 13.5px tabular, its figure at 600 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
+| A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (2026-10-31; uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
 | Chip | A fact's tag 11.5/600, radius 5, padding 2px 8px, sentence case (`.chip`, `.tone`); a status 12.5/500 in ink after its 8px dot, no ground (`.chip-state`, a chip with a tone), the dot an inline box on the word's baseline and 6px before it, never a flex item (a word holding a part of its own stays one phrase) | `.state-select` 12.5/500, its dot 8px inside the box (`--sdot`) and the word 6px after it; in a column it keeps the column's width (My Work's longest stage whole at 170px), standing alone (a record head) it is as wide as its longest option, never less than `--state-w` |
@@ -238,7 +239,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A client's work by month (the record's Engagements) | `ADspaceGroup.section` card a content month of `.cmonth-row`s: the section's glyph on a tonal tile, the name (a fact as a grey chip after it) over its facts wrapping between parts, the state in a `--state-w` track, the chevron last (a finished report's `.btn-sm` Download in its place, `.has-file`); on a narrow pane two columns, the state at the right of the first line, the Download under it |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
-| Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone (`is-tight`); a desk's pane keeps each its own width |
+| Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; the small control's height (`--ctl-h-sm`) with 12.5px words; equal widths on a phone unless alone (`is-tight`), a chip alone on its row keeping its own width; a desk's pane keeps each its own width |
 | A setting on or off at the press | `button.switch` (`role="switch"`, `aria-checked`): a track with a sliding thumb, the control's grey off and `--ok-solid` on, `--knob` white in both themes; saved at the press and put back on a refusal. Never a tick for on or off (the user, 2026-10-09: "not universal style") |
 | An on or off inside a form (a group's Admin tools) | The same `button.switch`, kept with the form and saved by its Save |
 | A value only read | `.readfield` (the field's height, no box) |

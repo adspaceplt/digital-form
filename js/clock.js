@@ -20,7 +20,8 @@
  *   ADspaceClock.date(v, o)     12 Sept 2026; o.long (12 September 2026),
  *                               o.year false (12 Sept), o.weekday (Sat, 12
  *                               Sept 2026), o.zh (2026年9月12日)
- *   ADspaceClock.clock(v, o)    11:30am; o.space (11:30 am), o.h24 (11:30)
+ *   ADspaceClock.clock(v, o)    11:30am; o.space (11:30 am), o.h24 (11:30),
+ *                               o.zh (上午11:30)
  *   ADspaceClock.month(v, o)    Sept 2026 (a month key or a moment);
  *                               o.long (September 2026), o.zh (2026年9月)
  *
@@ -105,6 +106,7 @@
     var p = parts(v);
     if (!p) return '';
     if (o.h24) return pad(p.h) + ':' + pad(p.mi);
+    if (o.zh) return (p.h < 12 ? '上午' : '下午') + ((p.h % 12) || 12) + ':' + pad(p.mi);
     return ((p.h % 12) || 12) + ':' + pad(p.mi) + (o.space ? ' ' : '') + (p.h < 12 ? 'am' : 'pm');
   }
   function month(v, o) {

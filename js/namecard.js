@@ -89,6 +89,10 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   var QR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>';
 
+  /* WhatsApp carries the chat mark before its words, as Chat on WhatsApp
+     does on every client page (CARD-1). */
+  var CHAT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
+
   function row(label, value, href, cls) {
     return '<a class="nc-row' + (cls ? ' ' + cls : '') + '" href="' + esc(href) + '"' +
       (/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '') + '>' +
@@ -123,7 +127,7 @@
         '<div class="nc-rows" data-nc="rows">' + rows(card) + '</div>' +
         '<div class="nc-acts' + (wa ? '' : ' is-one') + '">' +
           '<button class="nc-pill nc-pill-ink" type="button" data-nc="save">' + FILE + 'Save contact</button>' +
-          (wa ? '<a class="nc-pill" data-nc="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
+          (wa ? '<a class="nc-pill" data-nc="wa" href="' + esc(wa) + '" target="_blank" rel="noopener">' + CHAT + 'WhatsApp</a>' : '') +
         '</div>' +
       '</section>' +
     '</div></div>' +
@@ -190,7 +194,7 @@
         /* A card drawn without a mobile gains its WhatsApp once one is shown. */
         if (!q('wa') && next.mobile) {
           host.querySelector('.nc-acts').insertAdjacentHTML('beforeend',
-            '<a class="nc-pill" data-nc="wa" target="_blank" rel="noopener">WhatsApp</a>');
+            '<a class="nc-pill" data-nc="wa" target="_blank" rel="noopener">' + CHAT + 'WhatsApp</a>');
         }
         var wa = q('wa');
         if (wa && next.mobile) wa.href = 'https://wa.me/' + digits(next.mobile);

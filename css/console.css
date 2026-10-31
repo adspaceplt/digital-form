@@ -3152,11 +3152,8 @@ button.vs-row { cursor: pointer; }
 .vs-rec { display: grid; gap: 12px; min-width: 0; }
 .vs-factcard { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .vs-factcard > .undobar-here { margin: 0; }
-.vs-cardhead {
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
-  padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
-}
-.vs-cardwho { min-width: 0; flex: 1 1 240px; }
+/* .vs-cardhead and .vs-cardwho are in portal.css: the client's script
+   page draws the same head (2026-10-31). */
 .vs-cardstate { display: flex; align-items: center; flex: 0 0 auto; min-height: calc(15px * 1.55); }
 .vs-cardctl { position: relative; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
 .vs-cardctl:empty { display: none; }

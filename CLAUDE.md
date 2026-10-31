@@ -120,6 +120,10 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     before 8am here; 2026-10-29: `overview` read a booking 5 days late,
     not 4, after midnight).
   - A `cut()` of `schema.sql` always ends at the next banner.
+  - A full-page screenshot under a finger drops the touch pointer and a
+    reload does not bring it back: uxaudit and uxsection shoot through
+    `fullShot`, which re-sends touch emulation on a session kept open
+    (2026-10-31: phone states after a shot measured at desk sizes).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
@@ -200,7 +204,12 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - uxaudit and matrix pass only on their own `: ok` line; they exit 0 on
   PROBLEM too. A walk that crashed is run again once fixed, before the day's
   gate is read: a crash hides every screen after it (2026-10-21: nine
-  findings stood behind one crash on Reports).
+  findings stood behind one crash on Reports). A crash never excuses what
+  it hid: no gate is reported reviewed until the walk has run clean and
+  every client page's screens at 390 and 1280 are read by eye against
+  DESIGN.md (2026-10-31: /quote/'s figures at 16px reached the user behind
+  a crash at its quotation step; the user: "It crashes don't mean that you
+  could compromise the walks and checks").
 - `SKIP` is not a pass.
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup node tests/serve.js 8899 >/dev/null 2>&1 &` (http-server's
@@ -312,7 +321,8 @@ baseline only shrinks (`--write` refuses to add).
   - a card-sized box drawing a visible outline (`outline`); a button drawn
     outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
     a button's glyph in another ink than its words (`glyphink`);
-  - text under 11px (`type`); a wrapped or clipped value; a control under its
+  - text under 11px (`type`); a figure in a row, table, list of facts or
+    total above 14px (`figsize`); a wrapped or clipped value; a control under its
     floor (`target`); a page setting a size or text token to a figure of its own
     (`ctlh`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
@@ -1018,7 +1028,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   10)` (the UTC day, yesterday before 8am here). A day alone (`2026-10-12`)
   is that Malaysian day; a date and time with no zone (a date field and a
   time field) is Malaysian time; a stored day keeps its form
-  (`YYYY-MM-DDT00:00:00Z`). Days are counted on the calendar, never by a
+  (`YYYY-MM-DDT00:00:00Z`). A client page writes a time 10:00am, no
+  space (`clock(v)`; 上午10:00 with `zh`). Days are counted on the calendar, never by a
   device's midnight. Left as they are: calendar arithmetic in UTC on day
   strings, the report PDF's days (`dateOf`: the Malaysian day held as a
   local midnight), and the spreadsheet and CSV importers' own date reading
@@ -1027,7 +1038,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
-  `journey(words, at)`) is the client pages' one icon set (outline glyphs at
+  `journey(words, at)`) is the client pages' one icon set, the leaving mark
+  (`out`, the drawing `js/acts.js` holds) and the chevron among them (outline glyphs at
   15px, stroke 1.8, in ink; never filled or coloured; a name it does not hold
   draws nothing) and the booking's one step track (`.cx-journey`), drawn
   alike on the selection page and the creator's page, its words `W.journey`
@@ -6042,7 +6054,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
   `.rec-ctl`): the mark, the name over the registered name, the state and
-  Request change, which asks which change as a segment (2026-10-27,
+  Request change, which asks which change as a segment (Cancel service, never a bare
+  Cancel beside the sheet's own; 2026-10-31; 2026-10-27,
   POR-1): Change of details, Upgrade,
   Downgrade or Cancel, the last three against a confirmed line (`#reqPick`);
   a line's ⋯ asks for that line alone.

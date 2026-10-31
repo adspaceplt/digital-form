@@ -9993,16 +9993,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
 
       if (name === 'quotation_resend') {
+
         if (qq.removed_at) return qtOk({ error: 'not-found' });
-        if (qq.source !== 'website' || !qq.access_key) return qtOk({ error: 'bad-quotation' });
-        if (!qq.released_at) return qtOk({ error: 'not-sent' });
+        var qrTeam = qq.source !== 'website';
+        if (!qrTeam && !qq.access_key) return qtOk({ error: 'bad-quotation' });
+        if (!qrTeam && !qq.released_at) return qtOk({ error: 'not-sent' });
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
         if (qq.valid_until && qq.valid_until < qtToday) return qtOk({ error: 'expired' });
         if (qq.no_contact_at) return qtOk({ error: 'no-contact' });
+        if (qrTeam && qq.signed_at) return qtOk({ error: 'signed' });
         var qrT = (DB.wa_templates || []).filter(function (t) { return t.purpose === 'quote_ready'; })[0] || (window.__waTemplates || {}).quote_ready;
         if (!qrT || !qrT.active || !qrT.name) return qtOk({ error: 'wa-off' });
-        var qrNum = String((qq.contact || {}).whatsapp || '').replace(/[^0-9]/g, '');
+        var qrNum;
+        if (qrTeam) {
+          var qrK = (DB.client_contacts || []).filter(function (k) { return k.client_id === qq.client_id && !k.archived_at && k.is_primary; })[0] || {};
+          var qrRaw = String(qrK.whatsapp || '').trim() && !/^@/.test(String(qrK.whatsapp).trim()) ? qrK.whatsapp : qrK.phone;
+          qrNum = String(qrRaw || '').replace(/[^0-9]/g, '');
+          if (qrNum.charAt(0) === '0') qrNum = '60' + qrNum.slice(1); else if (qrNum.length === 8) qrNum = '65' + qrNum;
+        } else qrNum = String((qq.contact || {}).whatsapp || '').replace(/[^0-9]/g, '');
         if (!/^(60|65)[0-9]{8,10}$/.test(qrNum)) return qtOk({ error: 'no-number' });
         var qrH = Number(appSet('wa_repeat_hours', qtToday));
         if (!(qrH >= 0)) qrH = 24;
@@ -10011,10 +10020,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             Date.parse(o.created_at) > Date.now() - qrH * 3600e3; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
           if (qrO) return qtOk({ error: 'recent', recent: { at: qrO.created_at, by: qrO.created_by && qrO.created_by !== 'system' ? qrO.created_by : null } });
         }
+        if (!qq.access_key) qq.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
         (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quote_ready', ref_id: qq.id, client_id: qq.client_id,
           to_number: qrNum, button: qq.access_key, status: 'queued', created_by: qtMe.name, created_at: qtNow.toISOString() });
-        qtLog(qq.brand, qq.ref + ' sent again to the prospect on WhatsApp');
-        return qtOk({ ok: true });
+        qtLog(qq.brand, qq.ref + (qrTeam ? ' link sent on WhatsApp' : ' sent again to the prospect on WhatsApp'));
+        return qtOk({ ok: true, key: qq.access_key });
       }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;

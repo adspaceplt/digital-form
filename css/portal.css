@@ -440,7 +440,7 @@ a { color: inherit; }
   /* Every select is a tonal pop-up (the user, 2026-10-11: the same cell
      everywhere): something picked, not typed, so it wears the buttons'
      shade and no outline, its chevron at its end. */
-  border-color: transparent; background-color: var(--tonal);
+  border-color: transparent; background-color: var(--select-ground, var(--tonal));
   /* A value longer than the box (a registered name, Bill to) ends in an
      ellipsis, never a word cut at the edge (2026-10-29, audit REG-1). */
   text-overflow: ellipsis;
@@ -581,6 +581,20 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .input:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus); background-color: var(--card);
 }
+/* A placeholder (a format, an example) in the mute ink at full strength:
+   the browser's own grey stood at 4.04:1 on the filled field (2026-10-31,
+   G-1). Kept low, so a field that hides or tunes its own still wins. */
+:where(input, textarea)::placeholder { color: var(--ink-mute); opacity: 1; }
+/* A field on a grey card takes the white ground (the user, 2026-10-31:
+   "white fields on grey cards", G-2): the filled grey stood at about 1.03:1
+   against --sunk and vanished. The card sets the field's ground, so every
+   field, the signature pad and an autofilled field follow it; typed in, it
+   keeps the blue edge and ring above. A select there is the white pop-up
+   (`--select-ground`, read by the select's own rule). Every grey card that
+   holds a field is named here, one list. */
+:where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .is-narrow .ck-tr:not(.ck-th)) {
+  --field: var(--card); --select-ground: var(--card);
+}
 /* A field the browser filled keeps our ground. Safari paints an autofilled
    field pale yellow and Chrome pale blue whatever the page, so on the dark
    console sign-in the email was a highlighter stripe (reported with a photo,
@@ -646,7 +660,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    other. Wrapping lets the status drop to its own line instead. */
 .card-head {
   display: flex; align-items: center; flex-wrap: wrap; column-gap: 10px; row-gap: 3px;
-  padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
+  padding: 12px 16px; border-bottom: 1px solid var(--line-soft);
 }
 .card-title { font-weight: 600; font-size: 13px; letter-spacing: -.01em; min-width: 0; }
 .card-dims { color: var(--ink-mute); font-size: 12px; white-space: nowrap; }
@@ -687,7 +701,10 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .cardpair > .card.in-pair > .card-head { display: none; }
 .cardpair > .tabrow.pairtabs { margin: 12px 16px; display: flex; width: auto; max-width: none; }
 .cardpair > .pairtabs .tab { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+/* The half's state in its tab reads at the tab's own weight, the dot and its
+   word as every status (2026-10-31, RV-8: the word at 400, its state at 500). */
 .pair-chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
+.pairtabs .pair-chip { font-weight: 400; }
 .pair-chip:empty { display: none; }
 /* The name card above the stage strip, the client portal's own. */
 .shell-review > .rec-head { margin-top: 16px; }
@@ -713,7 +730,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .copyhead { gap: 8px; }
 .copyhead h5 { min-width: 0; white-space: nowrap; }
 .copyacts { display: flex; gap: 6px; flex: 0 0 auto; margin-left: auto; }
-.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 5px; }
+.copyacts > .btn { min-width: 0; padding: 0 10px; gap: 6px; }
 .copy-pen[hidden] { display: none; }
 .copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
 .copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
@@ -777,7 +794,9 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 .approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
 
-.approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
+/* Request changes reads in the tonal button's own ink: the mute ink read as
+   disabled beside Approve (2026-10-31, RV-1). */
+.approve-row .btn-changes { flex: 1; }
 /* On the selection page the pair are equal halves, as the review page's are
    (SELECTION-9). */
 .booking .approve-row .btn-approve, .booking .approve-row .btn-changes { flex: 1 1 50%; }
@@ -860,8 +879,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 }
 /* It leaves rather than hides: `display: none` would drop it out of the row
    in one frame and the name field would jump into the gap. */
+/* Its words held on one line as it narrows: wrapping a word to a line in
+   no width stood the row, Approve and the name field 40 to 43px tall
+   (2026-10-31, RV-2). */
 .approve-row.is-asking .btn-changes {
-  flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0;
+  flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0; white-space: nowrap;
   padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden;
   transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
               padding var(--t-slow) var(--ease), flex-basis var(--t-slow) var(--ease);
@@ -882,7 +904,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
 .changebox { --box-h: var(--box-h-sm); }
-.changebox .textarea { font-size: 13px; resize: vertical; overflow-y: auto; }
+.changebox .textarea { font-size: var(--field-text); resize: vertical; overflow-y: auto; }
 /* The note being edited is the request; the standing one steps away until
    it is sent or the request is left. */
 .approve.is-requesting .approve-note { display: none; }
@@ -1763,8 +1785,9 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
   cursor: pointer;
 }
 .batch-head:hover .batch-title { color: var(--ink); }
+/* The drawn chevron, as the selection page's fold (2026-10-31, RV-6). */
 .fold-caret {
-  align-self: center; color: var(--ink-mute); font-size: 12px;
+  align-self: center; color: var(--ink); width: 15px; height: 15px; flex: 0 0 auto;
   transition: transform var(--t) var(--ease);
 }
 .batch.is-folded .fold-caret { transform: rotate(-90deg); }
@@ -1964,6 +1987,21 @@ dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
 :root[data-face="client"] .verify-out span { font-size: 16px; }
 .verify-out .tone { font-size: 11.5px; color: inherit; }
 .verify-out .verify-need { color: var(--err); }
+/* The verify page is a form, not a notice (2026-10-31, VER-1 to VER-3): on
+   the scale (the title 8 over its line, the field 24 under it, the answer
+   24 under that, 32 above and below), its line at the form's 14 as the
+   404's, and on a phone the field and Verify each the column's width, so a
+   whole reference stays in sight. */
+.cover-panel.verify-panel { padding: 32px 0; }
+.verify-panel h2 { margin-bottom: 8px; }
+:root[data-face="client"] .verify-panel p { font-size: 14px; }
+.verify-panel form { margin-top: 24px; }
+.verify-panel .verify-out { margin-top: 24px; }
+@media (max-width: 640px) {
+  .cover-panel.verify-panel { padding: 32px 0; }
+  .verify-panel form { flex-direction: column; }
+  .verify-panel form > .btn { width: 100%; }
+}
 /* The sheet that issues a document carries a body per language, so it takes
    a little more width than the rest. */
 .sheet-card.sheet-wide { width: min(880px, 100%); }
@@ -2988,14 +3026,19 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2);
 }
 .engage-toggle svg {
-  width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute);
+  width: 15px; height: 15px; flex: 0 0 auto; color: inherit; stroke-width: 1.8;
   transition: transform var(--t) var(--ease);
 }
 .engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .engage-sum {
   margin-left: auto; flex: 0 1 auto; min-width: 0; text-align: right;
   font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+  /* Its parts wrap between them, never leaving the dot at a line's end
+     (SEL-8): each dot hangs into the gap after its part, and the one that
+     would end a line overhangs the box and is clipped. */
+  display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 1em; overflow: hidden;
 }
+.engage-dot { display: inline-block; width: 1em; margin-right: -1em; text-align: center; font-style: normal; }
 /* The label keeps its line; the summary wraps between its parts, never
    inside one (the count joined it, 2026-10-14). */
 .engage-toggle { flex: 0 0 auto; white-space: nowrap; }
@@ -3053,11 +3096,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
      somewhere different on every line is what reads as unaligned. */
   grid-template-columns: 26px var(--ctl-h) minmax(0, 1.15fr) minmax(0, .95fr) minmax(0, 1.9fr) 84px 92px;
   grid-template-areas: "no tick name plat links rate backup";
-  padding: 11px 14px; background: var(--card);
+  padding: 12px 14px; background: var(--card);
   border-bottom: 1px solid var(--line-soft);
 }
 .crow-head {
-  padding: 11px 14px 8px; background: var(--sunk);
+  padding: 12px 14px 8px; background: var(--sunk);
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
@@ -3088,7 +3131,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .crow-tick::before {
   content: ''; grid-area: 1 / 1; width: 24px; height: 24px; box-sizing: border-box;
-  border: 1.5px solid var(--line); border-radius: 7px; background: var(--card);
+  border: 1.5px solid var(--line-ctl); border-radius: 7px; background: var(--card);
   transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 .crow-tick svg { grid-area: 1 / 1; width: 14px; height: 14px; position: relative; }
@@ -3117,8 +3160,11 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    (tonal) or a plain text link. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--line-chip); border-radius: var(--radius-sm); padding: 5px 10px;
-  font-size: 12px; font-weight: 500; color: var(--ink);
+  border: 1px solid var(--line-chip); border-radius: var(--radius-sm); padding: 4px 10px;
+  /* The small control's height and words, as the .btn-sm beside it
+     (2026-10-31, POR-7: 31 and 37px chips beside 30 and 36px buttons). */
+  box-sizing: border-box; min-height: var(--ctl-h-sm);
+  font-size: 12.5px; font-weight: 500; color: var(--ink);
   text-decoration: none; background: transparent; white-space: nowrap;
 }
 .plink svg { width: 12px; height: 12px; opacity: .65; flex: 0 0 auto; }
@@ -3135,9 +3181,13 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .crow-backup {
   grid-area: backup; flex: 0 0 auto; white-space: nowrap;
   border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--tonal);
-  min-height: var(--ctl-h); padding: 0 11px; font-size: 11.5px; color: var(--ink-soft);
+  min-height: var(--ctl-h); padding: 0 11px; font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
 }
 @media (hover: hover) { .crow-backup:hover { background: var(--tonal-hover); color: var(--ink); } }
+/* A ticked row is shaded, and the tonal button on it all but vanished
+   (#dedede on #ececec): it takes the card's white there (SEL-6). */
+.crow.is-on .crow-backup:not(.is-on) { background: var(--card); }
+@media (hover: hover) { .crow.is-on .crow-backup:not(.is-on):hover { background: var(--sunk); } }
 .crow-backup.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 
 .tag-new {
@@ -3172,7 +3222,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* The name carries a second line, so the fee sits against the first one
      rather than floating halfway down it. */
   .crow-rate { min-width: 0; align-self: start; }
-  .crow-backup { align-self: start; padding: 0 13px; font-size: 12px; }
+  .crow-backup { align-self: start; padding: 0 13px; }
+  /* Two profile chips stack in the cell: each takes its width, so they
+     read as one pair rather than two lengths (SEL-5). */
+  .crow-links:has(> .plink + .plink) > .plink { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ---------- Confirm bar ---------- */
@@ -3389,6 +3442,10 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
 }
+/* A creator's own booking is the page's panel, padded as every client
+   panel is, at a desk and on a phone alike (CR-2). */
+.cwork .booking { padding: 18px 20px; }
+@media (max-width: 640px) { .cwork .booking { padding: 15px 16px; } }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .booking-head b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
@@ -3419,7 +3476,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
   border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
-  padding: 0; margin: 16px 0 12px;
+  padding: 0; margin: 12px 0;
 }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
@@ -3625,7 +3682,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .camphead-purpose { font-size: 15px; color: var(--ink-soft); margin-top: 6px; }
 
 /* A profile link reads as an instruction now, not a tag. */
-.plink { padding: 5px 11px; font-weight: 500; }
+.plink { padding-inline: 11px; font-weight: 500; }
 
 /* =========================================================================
    PHONE
@@ -3699,7 +3756,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 
   /* Full label on a phone too: the client has to know which profile they are
      opening. They wrap to their own lines rather than being abbreviated. */
-  .plink { padding: 8px 11px; font-size: 12.5px; }
+  .plink { padding-inline: 11px; }
   .crow-links { flex: 1 1 100%; }
 
   /* A sheet sits on the floor of a phone rather than floating in a dark room;
@@ -3935,6 +3992,10 @@ body > .shell { width: 100%; }
    than overflowing, because a declared minimum that cannot be honoured is
    worse than no minimum at all. */
 .csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
+/* The client portal writes Qty × rate as one phrase that never breaks
+   ("1 × RM 2,830.00 × 6 months"), so its track holds the phrase whole; the
+   console's months keep their own line under the rate (2026-10-31, POR-4). */
+.cp-card .csv-row { grid-template-columns: minmax(180px, 1fr) 200px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* A meeting's date and time is a sentence, not an amount: its own track,
    measured on "Wed 30 Sept 2026, 10:30pm to 11:45pm" at the client pages'
@@ -4295,7 +4356,6 @@ body > .shell { width: 100%; }
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
 }
 .csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
-.csv-total .is-total b { font-size: 15px; }
 .csv-total small { margin-left: 6px; font-size: 12px; font-variant-numeric: tabular-nums; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
@@ -4503,7 +4563,10 @@ body > .shell { width: 100%; }
    its own, so no chip is left a width of its own beside the rest (CP-14). */
 .is-tight .ct-row .crm-reach:has(> .plink + .plink) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-tight .ct-row .crm-reach:has(> .plink + .plink) > [href^="mailto:"],
-.is-tight .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; }
+.is-tight .ct-row .crm-reach > .plink:first-child:nth-last-child(2):has(+ [href^="mailto:"]) { grid-column: 1 / -1; justify-self: start; }
+/* A chip alone on its row keeps its own width, whether it is a contact's
+   only chip or the address under two halves (2026-10-31, POR-8: one
+   stretched across the card and the other did not). */
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: transparent; background: var(--sunk); margin: 12px 0 0; }
@@ -5012,7 +5075,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .booking-next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
 /* Where a creator's booking stands, in ink above its facts, where the
    hand-in stood (the client pages audit, CR-1, 2026-10-08). */
-.booking-next.cx-status { margin: 12px 0 0; font-size: 15px; color: var(--ink); }
+.booking-next.cx-status { margin: 12px 0 0; font-size: 14px; color: var(--ink); }
 /* The head's Request change: which change, and the confirmed line it is
    about (PO-1). */
 #reqSheet .req-pick { margin: 0 0 12px; }
@@ -5083,9 +5146,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .filepin-row .filearm-ask { max-width: none; font-size: 12px; color: var(--ink-soft); }
 .filepin-row.is-arming .filepin-open { flex: 0 1 auto; }
 
-.booking-deliver .field-label { display: block; margin: 12px 0 5px; }
-.booking-deliver .input { width: 100%; }
-.booking-deliver .kactions { margin-top: 12px; }
+.booking-deliver .field-label { display: block; margin: 12px 0 8px; }
+.booking-deliver .input { width: 100%; display: block; }
+/* The hand-in block's steps: 8 from a label to its field, 12 between
+   blocks, 16 before Submit (CR-3). */
+.booking-deliver .kactions { margin-top: 16px; }
 /* Post and results: one block a placement, a hairline between two; the
    three figures side by side under the period they are counted over. */
 .post-entry + .post-entry { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
@@ -6191,10 +6256,12 @@ body.is-canvas { overflow: hidden; }
    client reads the page once; seven sections down one column, some cards
    and some loose on the ground, read as scattered, and the rail fell above
    the work below 1100. */
-#cpHead { margin-top: 24px; margin-bottom: 16px; }
+/* Head, tabs and panes 12px apart at every width, as every client page
+   stacks its blocks (2026-10-31, POR-10). */
+#cpHead { margin-top: 24px; margin-bottom: 12px; }
 #cpHead .rec-ctl .select { flex: 0 0 auto; width: auto; min-width: 150px; }
 #cpHead .rec-ctl .btn { flex: 0 0 auto; }
-.cp-tabs { margin-bottom: 16px; }
+.cp-tabs { margin-bottom: 12px; }
 .cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .cp-pane[hidden] { display: none; }
 /* Overview: the summary on the left, who to reach and the company on the
@@ -6218,14 +6285,18 @@ body.is-canvas { overflow: hidden; }
 .cp-lines { display: grid; gap: 8px; margin: 0; }
 .cp-lines > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; align-items: baseline; }
 .cp-lines dt { font-size: 13px; color: var(--ink-mute); }
-.cp-lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+/* Money in a row is 13.5px, under the card's 15px title, never above it
+   (2026-10-31, POR-1: lines and money read at 16px under 15px titles). */
+.cp-lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .cp-lines .is-total dd { font-weight: 600; }
-.cp-line { margin: 0; line-height: 1.5; }
+.cp-line { margin: 0; line-height: 1.5; font-size: 14px; }
 .cp-line + .cp-line { margin-top: 4px; }
 .cp-sub { margin: 0; font-size: 13px; color: var(--ink-mute); }
+/* A line's sub-line sits 4px under it, as a record's meta does. */
+.cp-line + .cp-sub { margin-top: 4px; }
 .cp-card-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 /* The account manager: the name, then the two ways to reach them. */
-.cp-person { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.cp-person { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
 .cp-reach { display: flex; flex-wrap: wrap; gap: 8px; }
 .cp-reach .plink { flex: 0 0 auto; }
 /* On a phone the chips share the card's width equally, as every reach row
@@ -6246,14 +6317,16 @@ body.is-canvas { overflow: hidden; }
 /* One of the client's own pages: its name, and Open at the right edge. */
 .cp-eng-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .cp-open { flex: 0 0 auto; gap: 6px; }
-.cp-open svg { width: 14px; height: 14px; }
+/* Every glyph on the client portal's buttons is the system's 15px
+   (2026-10-31, POR-9: 13 and 14px beside one another). */
+.cp-open svg, .cp-panes .btn-sm svg, .cp-panes .ovgo-chev { width: 15px; height: 15px; }
 @media (max-width: 640px) {
-  #cpHead { margin-top: 16px; margin-bottom: 12px; }
-  .cp-tabs { margin-bottom: 12px; }
+  #cpHead { margin-top: 16px; }
 }
 
 .ovsec-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 2px; }
+/* The chevron 6px after its words, as every glyph sits (2026-10-31, POR-9). */
+.ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 6px; }
 .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 /* An Edit carries the pen, like every Edit in the console, and no chevron:
    it opens the pane the facts are edited in rather than going somewhere. */
@@ -7977,8 +8050,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    56 of air on both sides at a desk and 41 on a phone. */
 .lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
 .lp-intro-act { margin: 24px 0 0; }
-.lp-chat { gap: 8px; }
-.lp-chat svg { width: 15px; height: 15px; }
 .lp-title {
   margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
   font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
@@ -8021,8 +8092,19 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-go {
   display: inline-flex; align-items: center; gap: 4px; min-height: var(--ctl-h);
   margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 13.5px; color: var(--action-ink); text-decoration: none;
+  /* Never an underlined word (FRONT-1): the hover is a shade that hugs the
+     line, as `.linkbtn`'s does, its 6px either side given back so the
+     words keep their edge. */
+  position: relative; isolation: isolate; padding-inline: 6px; margin-inline: -6px;
 }
-@media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
+.lp-go::before {
+  content: ""; position: absolute; z-index: -1; inset: calc(50% - 13px) 0;
+  border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
+}
+@media (hover: hover) { .lp-go:hover::before { background: var(--line-soft); } }
+/* Each opens adspacestudios.com or Maps in a new tab, so it ends in the
+   leaving mark, never the chevron (FRONT-2). */
+.lp-go svg { width: 14px; height: 14px; flex: 0 0 auto; }
 /* The hours on the left; the address and WhatsApp on the right, on the
    same column. */
 .lp-duo {
@@ -8034,7 +8116,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hours { width: 100%; border-collapse: collapse; font-size: 14px; }
 .lp-hours th, .lp-hours td { padding: 10px 0; border-top: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
 .lp-hours tr:last-child th, .lp-hours tr:last-child td { border-bottom: 1px solid var(--line-soft); }
-.lp-hours th { font-family: var(--font-head); font-weight: 400; color: var(--ink); width: 34%; }
+.lp-hours th { font-family: var(--font-head); font-size: 15px; font-weight: 400; color: var(--ink); width: 34%; }
 .lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .lp-hours td:last-child { text-align: right; white-space: nowrap; }
 .lp-hours .is-shut td:last-child { color: var(--ink-mute); }
@@ -8043,8 +8125,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-address { margin: 0 0 4px; font-style: normal; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 .lp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
-.lp-cta { gap: 8px; }
-.lp-cta svg { width: 16px; height: 16px; }
 /* The ways in read down the band once five across no longer fit, the tick
    beside its words, on a narrower column the hours and the address share. */
 @media (max-width: 900px) {
@@ -8065,7 +8145,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .lp-tick { width: 18px; height: 18px; margin-top: 1px; }
   .lp-way-name { font-size: 14px; }
   .lp-go { font-size: 13px; }
-  .lp-hours { font-size: 13.5px; }
+  /* The days in Slate Regular 14 on a phone, as the names are; the
+     figures 14, as the address beside them (FRONT-3). */
+  .lp-hours th { font-size: 14px; }
+  /* The bar on the content's 24px edge, so a phone reads one left edge
+     from the wordmark down (FRONT-4). The foot keeps every page's 16: at
+     24 its one line broke in two on a 390 phone. */
+  body.lp .topbar-inner { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
   .lp-duo { padding-block: 32px 48px; gap: 32px; }
   .lp-side { gap: 32px; }
   .lp-h2 { font-size: 16px; }
@@ -8097,7 +8183,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cmdbar-views.has-thumb::before { border-radius: calc(var(--radius-ctl-sm) - 2px); }
 /* A standing fact's link (the verify page, the redirect hosts) is the
    outlined chip, inline in its sentence. */
-.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; }
+.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; min-height: 0; }
 .cr-main { min-width: 0; }
 .cr-rail { min-width: 0; }
 .cr-linktools .linkbox { flex-wrap: nowrap; }
@@ -8318,6 +8404,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .changebox.is-open { display: grid; gap: 12px; }
 .changebox > * { margin: 0; min-width: 0; }
 .changebox .changebox-who { width: 100%; }
+/* A field under its label, 8px apart (2026-10-31, RV-3). */
+.changebox-f { display: grid; gap: 8px; min-width: 0; }
+.changebox-f[hidden] { display: none; }
+.changebox-f > * { margin: 0; min-width: 0; }
 /* The decision pair and the request's own pair are equal halves (the user,
    2026-10-01: Approve took 1.35 shares and Send request its own width, so
    neither row read as balanced). While Approve asks for the name, Request
@@ -8443,12 +8533,12 @@ body.ncpage { background: var(--nc-ground); }
 .nc-qrbox canvas, .nc-qrbox img { width: 100% !important; height: auto !important; }
 .nc-qrname { margin-top: 24px; font-family: var(--font-head); font-weight: 400; font-size: 22px; line-height: 1.1; }
 .nc-qrlink { margin: 6px 0 auto; font-size: 12.5px; color: var(--nc-word); text-align: center; overflow-wrap: anywhere; }
-.nc-who { margin-top: 34px; display: flex; flex-direction: column; gap: 5px; }
+.nc-who { margin-top: 24px; display: flex; flex-direction: column; gap: 5px; }
 .nc-name { font-family: var(--font-head); font-weight: 400; font-size: 30px; line-height: 1.1; letter-spacing: -.005em; }
 .nc-post { font-size: 13px; color: var(--nc-word); }
-.nc-rows { margin-top: 22px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
+.nc-rows { margin-top: 24px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
 .nc-row { min-height: 44px; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
-  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14px; font-variant-numeric: tabular-nums; }
 .nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
@@ -8456,13 +8546,23 @@ body.ncpage { background: var(--nc-ground); }
 .nc-row-mail .nc-value.is-wrap { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
-.nc-cover-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+/* The portrait back reads in one 24px step, mark to name to rows to acts,
+   the acts kept at the card's foot and its spare height above the mark
+   (CARD-3). */
+.nc:not(.is-land) .nc-back { justify-content: flex-end; }
+.nc:not(.is-land) .nc-back > .nc-acts { margin-top: 24px; padding-top: 0; }
+.nc-cover-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); justify-content: center; gap: 8px; margin-top: 16px; }
+/* Full-size buttons, one width: equal halves of the column on a phone,
+   each taking the column where its words would not hold one line beside
+   the other (a 390 phone; COV-2). */
+.nc-cover-acts > .btn { min-width: 0; white-space: nowrap; }
+@media (max-width: 640px) { .nc-cover-acts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); } }
 .nc-cover-acts[hidden] { display: none; }
 /* A 320 phone's half holds Save contact's mark and words with room either
    side only a little closer together. */
 @media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: 500 var(--ctl-text) var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
@@ -8786,11 +8886,12 @@ body.is-maint { overflow: hidden; }
 .cx-nextup { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
 .cx-nextup .cx-eyebrow { margin-bottom: 4px; font-size: 12px; }
 .cx-quietlabel { font-weight: 400; color: var(--ink-mute); }
-.cx-nextup-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+.cx-nextup-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
 .cx-nextup .due-countdown { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
 .cx-nextup .booking-deliver { border-top: 0; padding-top: 0; }
+.cx-nextup .booking-deliver > .cx-drop:first-child { margin-top: 0; }
 .cx-drop {
-  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 14px; padding: 22px 12px;
+  position: relative; display: grid; justify-items: center; gap: 4px; margin-top: 12px; padding: 22px 12px;
   border-radius: var(--radius-sm); background: var(--tonal); text-align: center; cursor: pointer;
 }
 .cx-drop:focus-within { box-shadow: 0 0 0 3px var(--action-ring); }
@@ -8801,6 +8902,9 @@ body.is-maint { overflow: hidden; }
 .cx-drop-in { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 .cx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cx-chips .plink { gap: 6px; }
+/* On a phone a creator's two contact chips (WhatsApp, Call) share their
+   row as equal halves, as every reach line does (CR-8). */
+@media (max-width: 640px) { .cwork .cx-chips:has(> .plink + .plink) > .plink { flex: 1 1 0; justify-content: center; } }
 /* A fact that carries its acts takes the row, so its chips sit side by side. */
 .cx-facts > div:has(.cx-chips),
 .booking-facts.cx-facts:has(> :nth-child(5)) > div:has(.cx-chips) { grid-column: 1 / -1; }
@@ -8841,7 +8945,7 @@ body.is-maint { overflow: hidden; }
 .cx-pair .btn { gap: 6px; justify-content: center; }
 .cx-pair .btn svg { width: 14px; height: 14px; }
 .cx-terms { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); display: grid; gap: 12px; }
-.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 6px; }
+.cx-term-bar { height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; margin: 8px 0 0; }
 .cx-term-bar i { display: block; height: 100%; border-radius: 3px; background: var(--fill); }
 .svc-row.cp-eng-row, .is-narrow .svc-row.cp-eng-row {
   grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "tile name open"; align-items: center;
@@ -9038,7 +9142,9 @@ body.is-maint { overflow: hidden; }
 .is-narrow .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .vs-block { display: grid; gap: 12px; min-width: 0; }
 .vs-block > .fsec-h { margin: 0; }
-.vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+/* What is said and seen reads at 14px, the facts' size, under the 13/600
+   headings, on the client's page as in the console (2026-10-31, VS-1). */
+.vs-prose { margin: 0; white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; }
 .vs-ref { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
 .vs-ref .plink { max-width: 100%; min-width: 0; }
 .vs-ref-url { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -9052,8 +9158,8 @@ body.is-maint { overflow: hidden; }
 }
 .vs-scenes.is-two .vs-scene { grid-template-columns: 32px minmax(0, 1fr) minmax(0, 1fr) 104px 48px; }
 .vs-scene:last-child { border-bottom: 0; }
-.vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; }
-.vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; }
+.vs-n { font-variant-numeric: tabular-nums; color: var(--ink-mute); font-weight: 600; font-size: 14px; }
+.vs-text { white-space: pre-line; overflow-wrap: anywhere; min-width: 0; font-size: 14px; }
 .vs-vc .input { width: 100%; }
 .vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; accent-color: var(--accent); }
 .vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
@@ -9084,6 +9190,15 @@ body.is-maint { overflow: hidden; }
 .vs-rec > .panel { margin: 0; }
 .vs-factcard > .msg { margin: 0; }
 .vs-factcard > .msg:empty { display: none; }
+/* A script's card head: its code and title over its type, a hairline
+   under it; the console's record and the client's page alike (moved from
+   console.css, 2026-10-31, VS-2: the client's head stood bare on the
+   ground). */
+.vs-cardhead {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--line-soft);
+}
+.vs-cardwho { min-width: 0; flex: 1 1 240px; }
 .vs-cardwho h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
 .vs-cardwho p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .facts.vs-facts .vs-ref { grid-column: 1 / -1; display: block; }
@@ -9125,15 +9240,15 @@ body.is-maint { overflow: hidden; }
 .vs-steps { display: flex; align-items: center; gap: 8px; }
 .vs-pos { margin-right: 4px; font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
 .vs-video { display: grid; gap: 12px; min-width: 0; }
-.vs-video-head h3 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; overflow-wrap: anywhere; }
-.vs-video-head p { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .vs-video > .panel { margin: 0; }
-.vs-card { display: grid; gap: 24px; padding: 18px 20px; }
+/* The panel's own padding at every width (2026-10-31, VS-4: 14/16 on a
+   phone where every client panel pads 15/16). */
+.vs-card { display: grid; gap: 24px; }
 @media (max-width: 640px) {
   .vs-pick { padding: 12px 14px; }
   .vs-steps { flex: 1 1 100%; }
   .vs-steps > .btn { flex: 1 1 0; min-width: 0; }
-  .vs-card { padding: 14px 16px; gap: 16px; }
+  .vs-card { gap: 16px; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -9188,10 +9303,19 @@ body.is-maint { overflow: hidden; }
    2026-10-27): the title 26 (16 × 1.618), a card's name 16 over its line
    13 (16 ÷ √1.618), the notes 13; the title's own line 8 under it, the
    next block 24. */
-.qs-title { margin: 0; font-family: var(--font-head); font-size: 26px; font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
-.qs-lead { margin: 0; font-size: 16px; color: var(--ink-soft); }
+/* The title is its lead times φ, one figure setting both (`--qs-lead`): the
+   quotation's opening page 16 over 26; a details form's lead is a fact read
+   beside 14 and 15px fields, so the form takes 14 over 22.65 (2026-10-31,
+   DET-5, SUP-4). */
+.qs { --qs-lead: 16px; }
+.qs.qs-formpage { --qs-lead: 14px; }
+.qs-title { margin: 0; font-family: var(--font-head); font-size: calc(var(--qs-lead, 16px) * 1.618); font-weight: 600; letter-spacing: -.02em; line-height: 1.2; }
+.qs-lead { margin: 0; font-size: var(--qs-lead, 16px); color: var(--ink-soft); }
 .qs-top { display: grid; gap: 8px; }
-.qs-intro { gap: 24px; }
+.qs-lead .qs-part { white-space: nowrap; }
+/* A page's head (its title over its lead) stands 24 above what follows, the
+   opening page and a details form alike (DET-4, SUP-3). */
+.qs-intro, .qs-step:has(> .qs-top) { gap: 24px; }
 .qs-steps { margin: 0; padding: 0; list-style: none; counter-reset: qs-step; display: grid; gap: 12px; }
 .qs-steps li { counter-increment: qs-step; display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; align-items: baseline; }
 .qs-steps li::before {
@@ -9260,6 +9384,17 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
    (the 8 of .qs-sec is for choice cards). */
 .qs-form .qs-sec { gap: 16px; }
 .qs-form .field { display: grid; gap: 4px; }
+/* On the scale (DET-8, SUP-8): a label 8 over its field (its 4 and the
+   field's gap), a section's heading 16 over its first field (the gap alone). */
+.qs-form .field-label { margin-bottom: 4px; }
+.qs-form .qs-sec-h { margin-bottom: 0; }
+/* A tick's refusal stands 4 under it, in line with its words (DET-3, SUP-2,
+   QTE-5): the form's 16 given back to 4, the tick's track and its gap in. */
+.qs-form .qs-consent + .msg { margin-top: -12px; padding-left: 34px; }
+/* A select with nothing chosen reads its prompt (Optional, Choose a term) in
+   the mute ink, as a field's placeholder does; the list keeps its ink (DET-9). */
+.qs-form .select:has(> option[value=""]:checked) { color: var(--ink-mute); }
+.qs-form .select option { color: var(--ink); }
 .qs-form .field .msg { margin: 0; }
 .qs-form .field .msg:empty { display: none; }
 .qs-form .input, .qs .field .select { width: 100%; }
@@ -9274,11 +9409,16 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 @media (min-width: 641px) { .qs-foot > .btn:only-child { flex: 0 0 auto; margin-left: auto; } }
 
 .qs-quote { display: grid; gap: 24px; }
+/* A quotation is read as a document of figures, not page copy: its lines,
+   totals and the Accept card take the console's 14px reading size beside
+   14px controls and 13px notes; 16px body made them read oversized on a
+   phone (the user, 2026-10-31). */
+.qs-quote { font-size: 14px; }
 .qs-main { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .qs-change { justify-self: start; }
 .qs-head { display: grid; gap: 4px; }
-.qs-meta { font-size: 14px; color: var(--ink-mute); }
-.qs-status .chip-state { font-size: 14px; }
+.qs-meta { font-size: 13px; color: var(--ink-mute); }
+.qs-status .chip-state { font-size: 13px; }
 .qs-table { display: grid; }
 .qs-row {
   display: grid; grid-template-columns: minmax(0, 1fr) 64px 110px 130px; gap: 0 12px; padding: 10px 0;
@@ -9286,8 +9426,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 }
 .qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qs-what { overflow-wrap: anywhere; }
-.qs-what small { display: block; font-size: 13px; color: var(--ink-mute); }
-.qs-calc { display: none; font-size: 13px; color: var(--ink-mute); }
+.qs-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
+.qs-calc { display: none; font-size: 12.5px; color: var(--ink-mute); }
 .qs-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qs-mute { color: var(--ink-mute); }
 /* A line quoted on request has no quantity or rate: its words take the figure tracks, ending on the column's right edge. */
@@ -9308,7 +9448,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 /* Beside the quotation (under it on a phone): a proposal to ask for, else
    the colleague who took the lead (2026-10-26). */
 .qs-side { display: grid; gap: 12px; align-content: start; align-self: start; background: var(--sunk); border-radius: var(--radius-lg); padding: 22px; }
-.qs-side h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.qs-side h2 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .qs-side p { margin: 0; color: var(--ink-soft); }
 .qs-side .btn { width: 100%; }
 .qs-side .msg:empty { display: none; }
@@ -9404,7 +9544,7 @@ body.qs-page { background: var(--card); }
 
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */
-.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; }
+.sf-auth { margin: 0; padding-left: 20px; list-style: lower-alpha; gap: 4px; color: var(--ink-soft); }
 
 /* Buttons sharing a row share one width under a finger wider than a phone
    too (the iPhone Duo pass, 2026-10-18: a foldable opened like a book, a

@@ -62,7 +62,7 @@
     maintText: 'The portal will be available again shortly.',
     maintBack: 'Expected back by {when}.',
     pausedTitle: 'Temporarily unavailable',
-    pausedText: 'This page is not available at the moment.',
+    pausedText: 'Please check again later.',
     pausedChat: 'Chat on WhatsApp',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
@@ -157,8 +157,8 @@
     maintText: '系统将于稍后恢复使用。',
     maintBack: '预计于 {when} 恢复。',
     pausedTitle: '暂时无法使用',
-    pausedText: '此页面目前暂停服务。',
-    pausedChat: '通过 WhatsApp 联系我们',
+    pausedText: '请稍后再查看。',
+    pausedChat: 'WhatsApp 咨询',
     closed: '选择已结束',
     closedText: '如需调整，请联系您的 ADspace 客户经理。',
     nothing: '暂无待审阅内容',
@@ -186,7 +186,7 @@
     },
     rqKind: { upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更' },
     campState: { draft: '草稿', open: '待客户选择', production: '制作中', completed: '已完成' },
-    journey: ['已预约', '拍摄', '草稿', '审核', '发布', '数据'], journeyDelivery: '寄送',
+    journey: ['已预约', '拍摄日', '初稿截止', '客户审核', '发布日期', '数据'], journeyDelivery: '寄送日',
     untitled: '未命名项目',
 
     act: {

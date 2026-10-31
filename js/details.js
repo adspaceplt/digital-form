@@ -17,30 +17,35 @@
 
   var WORDS = window.ADspaceWords.of({
     en: {
-      lang: '中文', title: 'Company Details', for: 'For {b}',
+      lang: '中文', title: 'Company Details', for: '{b}',
       company: 'Company', legal: 'Registered company name', brn: 'Business registration no.',
-      brnHint: 'The new 12-digit number.', old: 'Old registration no.', tin: 'TIN',
+      brnPh: '12 digits', old: 'Old registration no.', tin: 'TIN',
       sst: 'SST registration no.', address: 'Billing address', finance: 'Finance email',
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
       optional: 'Optional', consent: 'I confirm these details are correct, and consent to ADspace keeping them for business purposes.',
       submit: 'Submit', ends: 'This form is open until {d}.',
-      req: 'Please fill in this field.', badBrn: 'Enter the registration number as shown on the company\'s registration.',
+      req: { legal_name: 'Enter the registered company name.', company_no: 'Enter the business registration number.',
+        billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
+        contact_phone: 'Enter the mobile number.', contact_email: 'Enter the email address.' },
+      badBrn: 'Enter the registration number as shown on the company\'s registration.',
       badEmail: 'Enter a valid email address.', badPhone: 'Enter a mobile number of 8 to 15 digits.',
-      badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.', tick: 'Tick to confirm.',
+      badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.', tick: 'Tick the box to continue.',
       doneT: 'Details received', doneP: 'Thank you. Your ADspace account manager will review them.',
       expT: 'Link expired', submittedT: 'Details received', submittedP: 'This form has already been submitted.'
     },
     zh: {
       lang: 'EN', title: '公司资料', for: '{b}',
       company: '公司', legal: '公司注册名称', brn: '公司注册号码',
-      brnHint: '新的12位号码。', old: '旧注册号码', tin: '税务识别号（TIN）',
+      brnPh: '12位数字', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
       optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料用于业务用途。',
       submit: '提交', ends: '此表格开放至 {d}。',
-      req: '请填写此项。', badBrn: '请按公司注册文件填写注册号码。',
+      req: { legal_name: '请填写公司注册名称。', company_no: '请填写公司注册号码。', billing_address: '请填写账单地址。',
+        contact_name: '请填写账单联系人姓名。', contact_phone: '请填写手机号码。', contact_email: '请填写邮箱地址。' },
+      badBrn: '请按公司注册文件填写注册号码。',
       badEmail: '请输入有效的邮箱地址。', badPhone: '请输入8至15位数字的手机号码。',
-      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。', tick: '请勾选确认。',
+      badAddr: '请填写完整的账单地址。', badCode: '请按注册资料填写{a}至{b}位字母或数字。', tick: '请勾选后继续。',
       doneT: '资料已收到', doneP: '谢谢。您的 ADspace 客户经理将审阅这些资料。',
       expT: '链接已过期', submittedT: '资料已收到', submittedP: '此表格已提交。'
     }
@@ -78,17 +83,17 @@
   }
   function paintForm() {
     var w = t();
-    return '<div class="qs-step" data-shown><h1 class="qs-title">' + esc(w.title) + '</h1>' +
-      '<p class="qs-lead">' + esc(f(w.for, { b: info.brand })) + '</p>' +
+    return '<div class="qs-step" data-shown><div class="qs-top"><h1 class="qs-title">' + esc(w.title) + '</h1>' +
+      '<p class="qs-lead">' + esc(f(w.for, { b: info.brand })) + '</p></div>' +
       '<form class="qs-form" id="dfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.company) + '</h2>' +
         // A name that may outrun its width wraps in the one-line box, in the capitals it is kept in.
         field('dfLegal', w.legal, true, '<textarea class="input qs-caps" id="dfLegal" data-k="legal_name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="COMPANY NAME SDN BHD">' + esc(typed.legal_name || '') + '</textarea>') +
-        field('dfBrn', w.brn, true, input('dfBrn', 'company_no', true, 'maxlength="24" inputmode="text" autocapitalize="characters" placeholder="202301234567"'), w.brnHint) +
+        field('dfBrn', w.brn, true, input('dfBrn', 'company_no', true, 'maxlength="24" inputmode="text" autocapitalize="characters" placeholder="' + esc(w.brnPh) + '"')) +
         field('dfOld', w.old, false, input('dfOld', 'company_no_old', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfTin', w.tin, false, input('dfTin', 'tin', false, 'maxlength="24" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
         field('dfSst', w.sst, false, input('dfSst', 'sst_no', false, 'maxlength="30" autocapitalize="characters" placeholder="' + esc(w.optional) + '"')) +
-        field('dfAddr', w.address, true, '<textarea class="input" id="dfAddr" data-k="billing_address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.billing_address || '') + '</textarea>') +
+        field('dfAddr', w.address, true, '<textarea class="textarea" id="dfAddr" data-k="billing_address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.billing_address || '') + '</textarea>') +
         field('dfFin', w.finance, false, input('dfFin', 'finance_email', false, 'type="email" maxlength="160" autocomplete="email" placeholder="' + esc(w.optional) + '"')) +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">' + esc(w.contact) + '</h2>' +
@@ -118,7 +123,7 @@
     if (state === 'bad') { cover(w.notFound, w.notFoundText); return; }
     if (state === 'fail') { cover(w.failTitle, w.failText); return; }
     if (state === 'expired') { cover(w.expT, w.notFoundText); return; }
-    if (state === 'submitted') { cover(w.submittedT, w.submittedP); return; }
+    if (state === 'submitted') { paintDone(w.submittedT, w.submittedP); return; }
     if (state === 'done') { paintDone(w.doneT, w.doneP); return; }
     root().innerHTML = paintForm();
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
@@ -145,20 +150,20 @@
     Object.keys(ID).forEach(function (k) { say(ID[k] + 'Msg', ''); if ($(ID[k])) $(ID[k]).removeAttribute('aria-invalid'); });
     say('dfConsentMsg', '');
     var v = function (k) { return String(typed[k] || '').trim(); };
-    if (v('legal_name').length < 2) bad('legal_name', w.req);
+    if (v('legal_name').length < 2) bad('legal_name', w.req.legal_name);
     var brn = v('company_no').replace(/\s+/g, '');
-    if (!brn) bad('company_no', w.req); else if (!/^[A-Za-z0-9-]{6,20}$/.test(brn)) bad('company_no', w.badBrn);
+    if (!brn) bad('company_no', w.req.company_no); else if (!/^[A-Za-z0-9-]{6,20}$/.test(brn)) bad('company_no', w.badBrn);
     // The lengths client_details_submit holds each number to, so the page names what the database would refuse.
     Object.keys(CODE).forEach(function (k) {
       var x = v(k).replace(/\s+/g, '');
       if (x && !new RegExp('^[A-Za-z0-9-]{' + CODE[k][0] + ',' + CODE[k][1] + '}$').test(x)) bad(k, fault(k));
     });
-    if (!v('billing_address')) bad('billing_address', w.req); else if (v('billing_address').length < 10 || v('billing_address').length > 400) bad('billing_address', w.badAddr);
+    if (!v('billing_address')) bad('billing_address', w.req.billing_address); else if (v('billing_address').length < 10 || v('billing_address').length > 400) bad('billing_address', w.badAddr);
     if (v('finance_email') && !mail.test(v('finance_email'))) bad('finance_email', w.badEmail);
-    if (v('contact_name').length < 2) bad('contact_name', w.req);
+    if (v('contact_name').length < 2) bad('contact_name', w.req.contact_name);
     var digits = v('contact_phone').replace(/\D/g, '');
-    if (!digits) bad('contact_phone', w.req); else if (digits.length < 8 || digits.length > 15) bad('contact_phone', w.badPhone);
-    if (!v('contact_email')) bad('contact_email', w.req); else if (!mail.test(v('contact_email'))) bad('contact_email', w.badEmail);
+    if (!digits) bad('contact_phone', w.req.contact_phone); else if (digits.length < 8 || digits.length > 15) bad('contact_phone', w.badPhone);
+    if (!v('contact_email')) bad('contact_email', w.req.contact_email); else if (!mail.test(v('contact_email'))) bad('contact_email', w.badEmail);
     if (!consent) { say('dfConsentMsg', w.tick); if (!first) first = 'dfConsent'; }
     if (first && $(first)) $(first).focus();
     return !first;
@@ -169,7 +174,7 @@
     var w = t();
     if (CODE[k]) return f(w.badCode, { a: CODE[k][0], b: CODE[k][1] });
     return { company_no: w.badBrn, billing_address: w.badAddr, finance_email: w.badEmail, contact_email: w.badEmail,
-      contact_phone: w.badPhone }[k] || w.req;
+      contact_phone: w.badPhone }[k] || w.req[k] || w.req.legal_name;
   }
   var SERVER = { 'bad-legal_name': 'legal_name', 'bad-company_no': 'company_no', 'bad-company_no_old': 'company_no_old',
     'bad-tin': 'tin', 'bad-sst_no': 'sst_no', 'bad-billing_address': 'billing_address', 'bad-finance_email': 'finance_email',
@@ -208,7 +213,15 @@
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && e.target && e.target.matches && e.target.matches('#dfForm input:not([type=checkbox]), #dfForm textarea[data-oneline]') && !e.isComposing) {
-      e.preventDefault(); if ($('dfSubmit')) submit($('dfSubmit'));
+      /* Enter moves to the next field and only the last one submits, as the
+         supplier's form does (2026-10-31, DET-2). */
+      e.preventDefault();
+      var all = Array.prototype.filter.call($('dfForm').querySelectorAll('input, select, textarea'), function (x) {
+        return !x.disabled && x.offsetParent !== null && x.type !== 'hidden';
+      });
+      var next = all[all.indexOf(e.target) + 1];
+      if (next) { next.focus(); return; }
+      if ($('dfSubmit')) submit($('dfSubmit'));
     }
   });
   if ($('langToggle')) $('langToggle').addEventListener('click', function () {

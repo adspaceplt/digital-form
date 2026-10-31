@@ -559,7 +559,9 @@
      two lines): js/grow.js, the one copy for every typed box. */
   function grow(t) { if (window.ADspaceGrow) window.ADspaceGrow.fit(t); }
 
+  var cbN = 0;
   function approvalBlock(post, badge, copyBlock) {
+    cbN += 1;
     var wrap = document.createElement('div');
     wrap.className = 'approve';
     wrap._copy = copyBlock || null;
@@ -568,14 +570,19 @@
         '<button class="btn btn-approve" type="button" aria-pressed="false">Approve</button>' +
         '<button class="btn btn-changes" type="button" aria-pressed="false">Request changes</button>' +
       '</div>' +
+      /* Each field under its own visible label, never a placeholder alone
+         (2026-10-31, RV-3). */
       '<div class="changebox">' +
-        '<textarea class="textarea" data-f="note" maxlength="2000" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
+        '<div class="changebox-f"><label class="field-label" for="cbNote' + cbN + '">Changes required</label>' +
+        '<textarea class="textarea" id="cbNote' + cbN + '" data-f="note" maxlength="2000"></textarea></div>' +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
         /* Shown only while no name is held (`openBox`), so Forget on the
            page brings it back. */
-        '<input class="input changebox-who" type="text" autocomplete="name" maxlength="80"' +
-          ' aria-label="Your name" placeholder="John Doe"' + (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
+        '<div class="changebox-f changebox-whof"' + (window.ADspaceDecide.known() ? ' hidden' : '') + '>' +
+        '<label class="field-label" for="cbWho' + cbN + '">Your name</label>' +
+        '<input class="input changebox-who" id="cbWho' + cbN + '" type="text" autocomplete="name" maxlength="80"' +
+          ' placeholder="John Doe"' + (window.ADspaceDecide.known() ? ' hidden' : '') + '></div>' +
         '<div class="changebox-actions">' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
           '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
@@ -610,7 +617,7 @@
        Left in place, Request changes read as the send and did nothing (the
        user's iPhone recording, 2026-10-01). */
     function openBox(on) {
-      if (on && who) who.hidden = Boolean(window.ADspaceDecide.known());
+      if (on && who) { who.hidden = Boolean(window.ADspaceDecide.known()); who.parentNode.hidden = who.hidden; }
       box.classList.toggle('is-open', on);
       wrap.classList.toggle('is-requesting', on);
       if (on) grow(textarea);
@@ -841,7 +848,7 @@
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
     /* The client pages' one clock: 12-hour, as the scripts page writes it
        (10:00 am; ux-audit REVIEWPAGE-9). */
-    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.clock(review.created_at, { space: true });
+    var when = ADspaceClock.date(review.created_at, { year: false }) + ', ' + ADspaceClock.clock(review.created_at);
 
     if (review.decision === 'approved') {
       badgeWord.textContent = 'Approved';
@@ -974,7 +981,7 @@
       head.type = 'button';
       head.className = 'batch-head';
       head.innerHTML =
-        '<span class="fold-caret" aria-hidden="true">&#9662;</span>' +
+        '<svg class="fold-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>' +
         '<span class="batch-title">' + escapeHtml(batch.title) + '</span>' +
         '<span class="batch-date">' + fmtDate(batch.created_at) + ' &middot; ' +
         batch.posts.length + ' post' + (batch.posts.length === 1 ? '' : 's') + '</span>' +
@@ -1218,6 +1225,8 @@
     });
 
     $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
+    /* No count over an empty tab: No posts. says it once (2026-10-31, RV-7). */
+    $('countLabel').hidden = !shown;
     $('stageEmpty').hidden = shown > 0;
     requestAnimationFrame(remeasure);
     savePlace();

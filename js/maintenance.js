@@ -46,9 +46,15 @@
 
   function zh() { return String(document.documentElement.lang || '').indexOf('zh') === 0; }
 
+  /* A moment in Malaysia's time, written as every client page and the
+     console write it (js/clock.js): 2 Nov 2026, 10:00am; 2026年11月2日 上午10:00
+     (2026-10-31, G-4: the paused cover read 10:00 am beside /quote/'s 6:31pm). */
   function when(iso) {
-    var d = new Date(iso);
+    var d = new Date(iso), C = window.ADspaceClock;
     if (isNaN(d)) return '';
+    if (C && C.date && C.clock) {
+      return zh() ? C.date(d, { zh: true }) + ' ' + C.clock(d, { zh: true }) : C.date(d) + ', ' + C.clock(d);
+    }
     try {
       if (zh()) {
         return d.toLocaleString('zh-CN', { timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: 'long',
@@ -56,7 +62,7 @@
       }
       return d.toLocaleString('en-GB', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short',
         year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-        .replace(/\bSep\b/, 'Sept').replace(/\s?([ap])\.?m\.?$/i, function (m, x) { return ' ' + x.toLowerCase() + 'm'; });
+        .replace(/\bSep\b/, 'Sept').replace(/\s?([ap])\.?m\.?$/i, function (m, x) { return x.toLowerCase() + 'm'; });
     } catch (e) { return d.toISOString(); }
   }
 
@@ -71,13 +77,15 @@
     var paused = shown.kind === 'paused';
     var back = shown.ends_at ? (set.maintBack || 'Expected back by {when}.').replace('{when}', when(shown.ends_at)) : '';
     var note = zh() && shown.note_zh ? shown.note_zh : shown.note;
+    /* Chat on WhatsApp carries the chat mark, as on /quote/ (2026-10-31). */
+    var CHAT_MARK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>';
     var chat = paused && shown.whatsapp ? (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.quoteWhatsApp) || 'https://wa.me/adspace' : '';
     box.querySelector('.cover-panel').innerHTML =
       '<h2 id="maintTitle">' + esc(paused ? set.pausedTitle || 'Temporarily unavailable' : set.maintTitle || 'Upgrade in progress') + '</h2>' +
-      '<p>' + esc(paused ? set.pausedText || 'This page is not available at the moment.' : set.maintText || 'The portal will be available again shortly.') + '</p>' +
+      '<p>' + esc(paused ? set.pausedText || 'Please check again later.' : set.maintText || 'The portal will be available again shortly.') + '</p>' +
       (back ? '<p class="maint-back">' + esc(back) + '</p>' : '') +
       (note ? '<p class="maint-note">' + esc(note) + '</p>' : '') +
-      (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
+      (chat ? '<a class="btn btn-primary maint-chat" href="' + esc(chat) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(set.pausedChat || 'Chat on WhatsApp') + '</a>' : '') +
       (shown.out ? '<button class="btn btn-sm maint-out" type="button" id="maintOut">Sign out</button>' : '');
     var out = document.getElementById('maintOut');
     if (out) out.addEventListener('click', shown.out);

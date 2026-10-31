@@ -47,8 +47,8 @@
   })();
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-  var EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  /* The leaving mark from the client pages' one icon set (js/icons.js). */
+  var EXT = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
   /* Download carries the console's own mark (Reports' Download). */
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
@@ -76,7 +76,9 @@
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
       months: function (n) { return n + ' months'; }, from: function (d) { return 'from ' + d; }, fromAlone: function (d) { return 'From ' + d; }, mo: 'months',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
-      upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details',
+      /* Cancel service, never Cancel: the sheet's foot holds Cancel, which
+         shuts it (2026-10-31, POR-2). The stored kind stays `cancel`. */
+      upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel service', details: 'Change of details',
       request: 'Request', fee: 'Fee', noRequests: 'No requests.', withdraw: 'Withdraw', undo: 'Undo',
       withdrawn: 'Withdrawn', withdrawnSay: 'Request withdrawn.',
       reply: 'Reply', more: 'More actions',
@@ -115,7 +117,7 @@
       service: '服务', qtyRate: '数量 × 单价', amount: '金额', state: '状态', noServices: '暂无服务。',
       months: function (n) { return n + '个月'; }, from: function (d) { return d + '起'; }, fromAlone: function (d) { return d + '起'; }, mo: '个月',
       quotedTotal: '待报价', confirmedTotal: '已确认',
-      upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更',
+      upgrade: '升级', downgrade: '降级', cancel: '取消服务', details: '资料变更',
       request: '申请', fee: '费用', noRequests: '暂无申请。', withdraw: '撤回', undo: '撤销',
       withdrawn: '已撤回', withdrawnSay: '申请已撤回。',
       reply: '回复', more: '更多操作',
@@ -187,6 +189,33 @@
     var day = '<span class="nb">' + esc(niceDate(startDay(l.start_on))) + '</span>';
     var from = count ? t().from : t().fromAlone;
     return (count ? count + ' ' : '') + from(day);
+  }
+  /* A line's unit and its term note are the rate card's English. On the
+     中文 page each part is said in Chinese where this map knows it, and a
+     part it does not know is left as the team wrote it (2026-10-31, POR-6).
+     The stored words never change. */
+  var UNIT_ZH = {
+    'per month': '每月', 'per campaign': '每项活动', 'per post': '每篇帖子', 'per video': '每个视频',
+    'per gif': '每个 GIF', 'per set': '每组', 'per account': '每个账号', 'per asset': '每项素材',
+    'per affected asset': '每项受影响的素材', 'per round': '每轮', 'per language': '每种语言',
+    'per unit / asset': '每单位／每项素材', 'per shoot': '每次拍摄', 'per scene / shoot': '每个场景／每次拍摄',
+    'per trip': '每趟', 'from': '起', 'plus meta subscription': '另加 Meta 订阅费'
+  };
+  function partZh(p) {
+    var k = String(p).trim().toLowerCase(), m;
+    if (UNIT_ZH[k]) return UNIT_ZH[k];
+    if ((m = /^(\d+)[ -]month minimum$/.exec(k))) return '最少' + m[1] + '个月';
+    if ((m = /^up to (\d+) seconds$/.exec(k))) return '最长' + m[1] + '秒';
+    if ((m = /^(rmb?) ([\d,.]+) platform fee included$/.exec(k))) return '含 ' + m[1].toUpperCase() + ' ' + m[2] + ' 平台费';
+    if ((m = /^(\d+) month term$/.exec(k))) return m[1] + '个月期限';
+    if ((m = /^([\d.]+)% short term adjustment$/.exec(k))) return '短期调整' + m[1] + '%';
+    if ((m = /^([\d.]+)% long term discount$/.exec(k))) return '长期折扣' + m[1] + '%';
+    return null;
+  }
+  function unitWord(u) {
+    if (lang !== 'zh' || !u) return u || '';
+    var out = String(u).split(', ').map(function (p) { return partZh(p) || p; });
+    return out.join('，');
   }
   function mkt() { return MON.curOf(feed && feed.client); }
   /* A number as every page writes it (js/namecard.js: +60 19-888 7777). */
@@ -746,10 +775,13 @@
       var end = new Date(Date.UTC(st.getUTCFullYear(), st.getUTCMonth() + n, st.getUTCDate() - 1));
       var endWord = lang === 'zh' ? end.getUTCFullYear() + '年' + (end.getUTCMonth() + 1) + '月'
         : MON_EN[end.getUTCMonth()] + ' ' + end.getUTCFullYear();
+      /* The line, where it is in its term under it, then the bar: a line
+         reads over its own sub-line, as every card's name does (2026-10-31,
+         POR-10: the bar between them stood the two 20px apart). */
       return '<div class="cx-term"><p class="cp-line"><b>' + esc(l.label) + '</b></p>' +
+        '<p class="cp-sub">' + parts([w.monthOf(at, n), w.endsOn(endWord)]) + '</p>' +
         '<div class="cx-term-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + n + '" aria-valuenow="' + at + '"><i style="width:' +
-          Math.round(at / n * 100) + '%"></i></div>' +
-        '<p class="cp-sub">' + parts([w.monthOf(at, n), w.endsOn(endWord)]) + '</p></div>';
+          Math.round(at / n * 100) + '%"></i></div></div>';
     }).join('');
     return rows ? '<div class="cx-terms">' + rows + '</div>' : '';
   }
@@ -880,15 +912,16 @@
       lines.filter(function (l) { return l.state === 'confirmed'; }).concat(lines.filter(function (l) { return l.state !== 'confirmed'; })).forEach(function (l) {
         var row = document.createElement('div');
         row.className = 'svc-row csv-row';
-        var sub = [parts([l.unit, MON.termNote(l.tenure, l.term_adjust, l.term_pct)]), termWord(l), l.note ? esc(l.note) : '']
+        var sub = [parts([unitWord(l.unit), unitWord(MON.termNote(l.tenure, l.term_adjust, l.term_pct))]), termWord(l), l.note ? esc(l.note) : '']
           .filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + parts([l.label]) + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span>' +
-          /* The months on a line of their own: "1 × RM 2,830.00 × 6 months"
-             ran past its column at a desk (CP-12). */
-          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l))) +
-            (Number(l.tenure || 1) > 1 ? '<small>' + esc('× ' + w.months(Number(l.tenure))) + '</small>' : '') + '</span>' +
+          /* One phrase that never breaks, "1 × RM 2,830.00 × 6 months", in a
+             track wide enough for it at a desk (2026-10-31, POR-4: the
+             months on a line of their own made a phone's row five lines). */
+          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l)) +
+            (Number(l.tenure || 1) > 1 ? ' × ' + w.months(Number(l.tenure)) : '')) + '</span>' +
           '<span class="svc-rate svc-amt"><b>' + esc(money2(amountOf(l))) + '</b></span>' +
           '<span class="svc-state">' + chip(w.svState[l.state] || l.state, l.state === 'confirmed' ? 'is-ok' : 'is-warn') + '</span>' +
           menuCell(items);
@@ -898,14 +931,19 @@
         });
         stb.appendChild(row);
       });
-      var sum = function (s) { return lines.filter(function (l) { return l.state === s; }).reduce(function (a, l) { return a + amountOf(l); }, 0); };
-      var quoted = sum('quoted'), confirmed = sum('confirmed');
-      var tot = document.createElement('div');
-      tot.className = 'csv-total';
-      /* Confirmed first, as the Overview reads them (2026-10-27, POR-3). */
-      tot.innerHTML = '<span class="is-total">' + esc(w.confirmedTotal) + '<b>' + esc(money2(confirmed)) + '</b></span>' +
-        (quoted ? '<span>' + esc(w.quotedTotal) + '<b>' + esc(money2(quoted)) + '</b></span>' : '');
-      stb.appendChild(tot);
+      var of = function (s) { return lines.filter(function (l) { return l.state === s; }); };
+      var sum = function (s) { return of(s).reduce(function (a, l) { return a + amountOf(l); }, 0); };
+      /* A state's total is drawn only over two lines or more: over one it
+         repeats that line's amount (2026-10-31, POR-3). Confirmed first, as
+         the Overview reads them. */
+      var cells = [['confirmed', w.confirmedTotal], ['quoted', w.quotedTotal]].filter(function (x) { return of(x[0]).length > 1; })
+        .map(function (x) { return '<span>' + esc(x[1]) + '<b>' + esc(money2(sum(x[0]))) + '</b></span>'; });
+      if (cells.length) {
+        var tot = document.createElement('div');
+        tot.className = 'csv-total';
+        tot.innerHTML = cells.join('');
+        stb.appendChild(tot);
+      }
       sbox.innerHTML = ''; sbox.appendChild(stb);
     }
     /* The Overview's services: what is confirmed, what is still to quote, and
