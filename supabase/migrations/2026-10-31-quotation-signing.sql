@@ -143,7 +143,8 @@ declare
 begin
   if length(v_name) < 2 or length(v_name) > 80 then return jsonb_build_object('error', 'bad-signer_name'); end if;
   if length(v_role) < 2 or length(v_role) > 80 then return jsonb_build_object('error', 'bad-signer_designation'); end if;
-  if sig->>'type' = 'drawn' and coalesce(sig->>'path', '') ~ '^[MLQCZmlqcz0-9 .,-]{8,30000}$' then
+  if sig->>'type' = 'drawn' and length(coalesce(sig->>'path', '')) between 8 and 30000
+     and sig->>'path' ~ '^[MLQCZmlqcz0-9 .,-]+$' then
     v_sig := jsonb_build_object('type', 'drawn', 'path', sig->>'path');
   elsif sig->>'type' = 'typed' and length(v_text) between 2 and 80 then
     v_sig := jsonb_build_object('type', 'typed', 'text', v_text);
