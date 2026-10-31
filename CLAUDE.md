@@ -200,7 +200,12 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 - uxaudit and matrix pass only on their own `: ok` line; they exit 0 on
   PROBLEM too. A walk that crashed is run again once fixed, before the day's
   gate is read: a crash hides every screen after it (2026-10-21: nine
-  findings stood behind one crash on Reports).
+  findings stood behind one crash on Reports). A crash never excuses what
+  it hid: no gate is reported reviewed until the walk has run clean and
+  every client page's screens at 390 and 1280 are read by eye against
+  DESIGN.md (2026-10-31: /quote/'s figures at 16px reached the user behind
+  a crash at its quotation step; the user: "It crashes don't mean that you
+  could compromise the walks and checks").
 - `SKIP` is not a pass.
 - If port 8899 is not up, the gate starts the local server itself:
   `setsid nohup node tests/serve.js 8899 >/dev/null 2>&1 &` (http-server's
@@ -312,7 +317,8 @@ baseline only shrinks (`--write` refuses to add).
   - a card-sized box drawing a visible outline (`outline`); a button drawn
     outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
     a button's glyph in another ink than its words (`glyphink`);
-  - text under 11px (`type`); a wrapped or clipped value; a control under its
+  - text under 11px (`type`); a figure in a row, table, list of facts or
+    total above 14px (`figsize`); a wrapped or clipped value; a control under its
     floor (`target`); a page setting a size or text token to a figure of its own
     (`ctlh`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
