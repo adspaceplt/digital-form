@@ -191,7 +191,7 @@
       return;
     }
     if (!list.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the search', function () { $('vsFind').value = ''; st.find = ''; paint(); });
+      UI.emptyLine(box, 'No matches.', 'Clear search', function () { $('vsFind').value = ''; st.find = ''; paint(); });
       return;
     }
     /* A card a content month, newest first (the user, 2026-10-10: thirty
