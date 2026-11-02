@@ -863,9 +863,9 @@ screenshotted, and the push names any line it could not settle.
    shown.; a record gone reads This {thing} no longer exists.; a label
    says per (Input price per million tokens, one per line), never "a";
    an off figure says (0 turns this off). A note after a select's option is copy too, a plain
-   statement of why it cannot be picked (Report not planned, No content
-   planned), never a fragment that leaves the reader guessing who asked
-   (Not asked for; the user, 2026-11-02). A label cut to fit a column, a
+   fact of one or two words, as long as the status beside it (Not planned,
+   No content, as Published), never a fragment that leaves the reader
+   guessing who asked (Not asked for; the user, 2026-11-02). A label cut to fit a column, a
    tile or a button (Qty × rate, Per engagement) stays short (the user,
    2026-10-31: "sometimes are cut short due to the width compatibility").
 11. **Retire it for good.** A word the user rejects joins

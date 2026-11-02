@@ -4937,9 +4937,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     spanned as the report will be (a month starts on its `start_day`), one
     report of a type a month: a month already holding it (same brand, same
     span) reads its stage (`· Published`) and is not offered; one whose
-    Reports ticks do not ask reads Report not planned, offered only to an admin
+    Reports ticks do not ask reads Not planned, offered only to an admin
     or Reports Full Access; a client's own Accounts Report needs the month's
-    planned content (`No content planned`; `sm_reports_month_gate`
+    planned content (`No content`; `sm_reports_month_gate`
     `no-content` at every level, `2026-10-11-reports-need-content.sql`).
     A white-label client is held to neither of the last two, for its own
     reports and its brands' (a brand takes the partner's months), either
