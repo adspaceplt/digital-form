@@ -446,8 +446,8 @@
           sel.innerHTML = list.map(function (m) {
             if (!pick && ok(m) && m.ends < today) pick = m.period;
             var has = made(m);
-            var note = has ? ' · ' + (STATUS[has.status] || [has.status])[0] : empty(m) ? ' · No content planned'
-              : free || m.asks ? '' : ' · Report not planned';
+            var note = has ? ' · ' + (STATUS[has.status] || [has.status])[0] : empty(m) ? ' · No content'
+              : free || m.asks ? '' : ' · Not planned';
             /* Named as the report will be: September 2026, or the month's
                own span where it starts on another day (10 September to 9
                October 2026). */
@@ -1902,12 +1902,12 @@
       var mo = g.month;
       var html =
         row(!has('no-month') && !has('not-ticked'), 'Month in My Work',
-          !mo ? 'No month covers this period' : (MON[Number(mo.period.slice(5, 7)) - 1] + ' ' + mo.period.slice(0, 4) + ' · ' + spanOf(mo) + (has('not-ticked') ? ' · This report is not planned' : ''))) +
+          !mo ? 'No month covers this period' : (MON[Number(mo.period.slice(5, 7)) - 1] + ' ' + mo.period.slice(0, 4) + ' · ' + spanOf(mo) + (has('not-ticked') ? ' · Not planned' : ''))) +
         (mo && !has('not-ticked') ? row(!has('no-task'), 'Report task',
           g.task ? '#WT' + String(g.task.task_no).padStart(5, '0') : 'Missing',
           g.task && bridge.may && bridge.may('ops', 'view') ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
         (mo ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
-        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late, so a reason is needed to submit' : ''), '', g.late);
+        row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late · Reason required' : ''), '', g.late);
       var card = box.querySelector('.rp-checks');
       if (card) card.insertAdjacentHTML('beforeend', html);
       var open = box.querySelector('[data-a="opentask"]');
