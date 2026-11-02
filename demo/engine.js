@@ -6709,7 +6709,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!task) missing.push('no-task'); else due = task.current_final_due_at || due;
       }
       made = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); }).length;
-      if (made < (e.planned_count || 0)) missing.push('content');
+
+      if (r.kind !== 'ads' && made < (e.planned_count || 0)) missing.push('content');
     }
     return { applies: true, ok: !missing.length, missing: missing,
       month: e ? { id: e.id, period: e.period, start_day: e.start_day || 1, starts: sp2[0], ends: sp2[1], reports: e.reports || [] } : null,
