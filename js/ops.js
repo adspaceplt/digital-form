@@ -7049,6 +7049,64 @@
       (weak.length ? '<div class="eng-row eng-results"><span class="eng-lab">Weakest in ' + esc(monthWord(prev)) + '</span>' +
         '<span class="eng-val">' + weak.map(line).join('') + '</span></div>' : '');
   }
+  function engShut(e) { return e.status === 'completed' || e.status === 'cancelled'; }
+  function engReportsWord(e) {
+    var reps = (e.reports || []).filter(function (k) { return REPORT_WORD[k]; });
+    return reps.length ? reps.map(function (k) { return REPORT_WORD[k]; }).join(' · ') : 'None';
+  }
+  /* A fact on the card, its pen beside it where it may be changed; None
+     reports is the amber dot and its word, so a month owing nothing is seen. */
+  function engValue(words, edit, key, name, none) {
+    var word = none ? '<span class="chip-state is-warn">' + esc(words) + '</span>' : esc(words);
+    return edit
+      ? '<button class="tdate" type="button" data-a="eng-' + key + '" aria-label="' + esc(name + ', ' + words + '. Change') + '">' + word + PEN_SVG + '</button>'
+      : word;
+  }
+  /* One fact of the month changed alone: the month as read, with that one
+     value moved, through the same save as Edit. */
+  function saveEngFact(e, el, change) {
+    var payload = {
+      client_id: e.client_id, period: e.period, manager_id: e.manager_id || null,
+      planned_count: Number(e.planned_count) || 0, drive_url: e.drive_url || '',
+      start_day: Number(e.start_day) || 1, reports: (e.reports || []).slice()
+    };
+    Object.keys(change).forEach(function (k) { payload[k] = change[k]; });
+    var box = el.querySelector('[data-a="msg"]');
+    var said = function (t, tone) { if (box) { box.textContent = t; box.className = 'msg' + (tone ? ' ' + tone : ''); } };
+    db.rpc('ops_engagement_upsert', { p_payload: payload }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        said(r.error ? ((r.error && r.error.message) || 'Not saved.') : (SAID[d.error] || d.message || 'Not saved.'), 'err');
+        return;
+      }
+      readClientWork();
+    }).catch(function (x) { said((x && x.message) || String(x), 'err'); });
+  }
+  function engFactEdit(e, el, which) {
+    if (which === 'runs') {
+      var day = Number(e.start_day) || 1;
+      ADspaceConfirm.ask({
+        title: 'When ' + monthWord(e.period) + ' runs', go: 'Save',
+        field: { name: 'day', label: 'Starts on', value: String(day),
+          choices: Array.apply(null, Array(28)).map(function (x, i) { return [String(i + 1), (i + 1) + ordinal(i + 1) + ' of the month']; }) }
+      }, function (v) {
+        var n = Number(v.day) || 1;
+        if (n !== day) saveEngFact(e, el, { start_day: n });
+      });
+      return;
+    }
+    var reps = e.reports || [];
+    ADspaceConfirm.ask({
+      title: 'Reports for ' + monthWord(e.period), go: 'Save',
+      fields: [
+        { name: 'social', label: REPORT_WORD.social, tick: true, value: reps.indexOf('social') > -1 ? 'on' : '' },
+        { name: 'ads', label: REPORT_WORD.ads, tick: true, value: reps.indexOf('ads') > -1 ? 'on' : '' }
+      ]
+    }, function (v) {
+      var want = ['social', 'ads'].filter(function (k) { return v[k]; });
+      if (want.join() !== ['social', 'ads'].filter(function (k) { return reps.indexOf(k) > -1; }).join()) saveEngFact(e, el, { reports: want });
+    });
+  }
   function engCard(e) {
     var can = may('ops', 'work');
     var el = document.createElement('section');
@@ -7060,6 +7118,11 @@
        folder is a link only on https (audit M3, M4, 2026-10-17). */
       ['Manager', esc(nameOf(e.manager_id))],
       ['Planned', e.planned_count ? esc(e.planned_count + (e.planned_count === 1 ? ' post' : ' posts')) : ''],
+      /* When the month runs and which reports it owes, read on the card and
+         changed where they are read (2026-11-02, the user: a month starting
+         on the 9th went unseen until a report asked for 9 Oct to 8 Nov). */
+      ['Runs', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'When the month runs')],
+      ['Reports', engValue(engReportsWord(e), can && !engShut(e), 'reports', 'Reports', !(e.reports || []).length)],
       ['Files', /^https:\/\//i.test(e.drive_url || '') ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var n = countFor(e, cw.counts, cw.tasks);
@@ -7090,6 +7153,10 @@
       '<div class="msg" data-a="msg"></div>' +
       meetHtml(e, can) +
       '<div data-a="checks">' + checksHtml(e, checks, can) + '</div>';
+    ['runs', 'reports'].forEach(function (k) {
+      var b = el.querySelector('[data-a="eng-' + k + '"]');
+      if (b) b.addEventListener('click', function () { engFactEdit(e, el, k); });
+    });
     /* Every task finished: the month asks to be closed, or for more work. */
     if (phase === 'closing' && can) {
       el.querySelector('.eng-facts').insertAdjacentHTML('afterbegin',

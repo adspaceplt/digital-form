@@ -4404,6 +4404,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`), ticked by the client's checklist
     signed off (Clients, Checklists) and marked Not needed by hand.
+  - The card's head reads Runs (the month's span, its year) and Reports
+    (each it owes, else None by the amber dot), each its pen at My Work Work
+    on an open month, asking Starts on or the two ticks and saving that one
+    fact through `ops_engagement_upsert`, the rest as read (2026-11-02).
   - Its stage is worked out on every load (`engPhase()`), never picked:
     Planning until the ticks are answered and the meeting set (or not
     needed); Ready until the meeting has passed and the month holds a task;

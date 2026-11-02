@@ -4192,7 +4192,14 @@ body > .shell { width: 100%; }
 .eng-meta { display: grid; gap: 8px; min-width: 0; }
 .eng-meta > .eng-row { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "lab val"; }
 .is-narrow .eng-meta > .eng-row { grid-template-columns: 104px minmax(0, 1fr); }
-.is-tight .eng-meta > .eng-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; }
+/* A tight card gives its facts the card's width, one label track for all,
+   the state and ⋯ beside the first fact alone, so a date or a report's name
+   keeps its line (2026-11-02, the month's Runs and Reports). */
+.is-tight .eng-head { gap: 8px 12px; }
+.is-tight .eng-who, .is-tight .eng-meta { display: contents; }
+.is-tight .eng-meta > .eng-row { grid-column: 1 / -1; grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; }
+.is-tight .eng-meta > .eng-row:first-child { grid-column: 1; grid-row: 1; }
+.is-tight .eng-head > .eng-ctl { grid-column: 2; grid-row: 1; }
 .eng-row > .eng-val { grid-area: val; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
 .eng-meetword.is-held { color: var(--ok); }
 /* The meeting's link is the contact chip, cut to the cell with an ellipsis. */
