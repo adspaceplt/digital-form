@@ -2433,7 +2433,7 @@
     box.innerHTML = '';
     if (!all.length) { UI.emptyLine(box, (state.reviewOff || []).length ? 'No clients in Content Review.' : 'No active clients.'); return; }
     if (!rows.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the search', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear search', function () {
         crFind = ''; if ($('crFind')) $('crFind').value = ''; paintReviewClients();
       });
       return;
