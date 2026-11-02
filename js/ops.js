@@ -2247,11 +2247,6 @@
     /* The client's months are not a filtered list, so the list's own
        controls say nothing about them. */
     var whole = state.view === 'months';
-    /* In Months the bar holds the views and the ⋯ alone, so on a phone they
-       share one row rather than leaving the ⋯ on a row of its own
-       (ux-audit WORK-4, 2026-10-15). */
-    var vbar = seg && seg.closest('.cmdbar');
-    if (vbar) vbar.classList.toggle('is-views-only', whole);
     if (!whole) placeMore(false);
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';

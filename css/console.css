@@ -1545,7 +1545,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   .cmdbar-acts .cmd-primary .btn-word { display: none; }
   .cmdbar-acts .cmd-primary svg { margin: 0; }
   .cmd-more { display: inline-block; position: relative; }
-  .cmdbar.is-views-only .cmdbar-views { flex: 1 1 0; order: 0; }
   }
 
 .tnext-list li + li { margin-top: 2px; }
