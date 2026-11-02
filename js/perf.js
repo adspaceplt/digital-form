@@ -2925,7 +2925,7 @@
     if (!all.length) {
       UI.emptyLine(box, 'No entries.', may('team.performance', 'work') ? 'Add entry' : '', function () { openCommission($('rwCAdd')); });
     } else if (!shown.length) {
-      UI.emptyLine(box, 'No matches.', 'Clear the search', function () { st.cfind = ''; $('rwCFind').value = ''; paintCommission(); });
+      UI.emptyLine(box, 'No matches.', 'Clear search', function () { st.cfind = ''; $('rwCFind').value = ''; paintCommission(); });
     } else {
       var payable = shown.filter(function (c) { return c.state === 'payable'; }).reduce(function (a, c) { return a + Number(c.amount); }, 0);
       box.appendChild(G.section({
@@ -3513,7 +3513,7 @@
       ? all.length + (all.length === 1 ? ' initiative' : ' initiatives') : rows.length + ' of ' + all.length;
     var box = $('piList');
     if (!all.length) { UI.emptyLine(box, 'No initiatives.'); return; }
-    if (!rows.length) { UI.emptyLine(box, 'No matches.', 'Clear the search', function () { $('piFind').value = ''; st.piFind = ''; paintInits(); }); return; }
+    if (!rows.length) { UI.emptyLine(box, 'No matches.', 'Clear search', function () { $('piFind').value = ''; st.piFind = ''; paintInits(); }); return; }
     var work = may('team.performance', 'work');
     initGroups(box, rows, 'team-inits', function (i) {
       var items = !work ? [] : i.status === 'proposed' ? [['adopted', 'Adopt'], ['not_now', 'Not now']]
