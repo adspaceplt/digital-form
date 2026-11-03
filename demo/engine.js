@@ -2,7 +2,7 @@
 (function () {
 
   var LIVE_COLS = {
-    activity_log: 'id actor action subject detail created_at',
+    activity_log: 'id actor action subject detail created_at ref',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
     client_brands: 'id client_id name active logo created_at updated_at',
@@ -507,6 +507,7 @@
     sm_report_version_delete: 'p_version',
     sm_report_snapshot: 'p_id p_final',
     sm_report_gate: 'p_id',
+    sm_report_history: 'p_id',
     sm_reports_owed: 'p_period',
     sm_report_submit: 'p_id p_reviewer p_reason',
     sm_report_assign: 'p_id p_reviewer',
@@ -6347,7 +6348,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
   function smLog(r, action, extra) {
     var c = DB.clients.filter(function (x) { return x.id === r.client_id; })[0] || {};
     DB.activity_log.push({ id: nid('a'), actor: (smMe() || {}).name || whoNow(), action: action, subject: c.name || '',
-      detail: smWord(r.period_start, r.period_end) + ' · v' + r.version_no + (extra ? ' · ' + extra : ''), created_at: new Date().toISOString() });
+      detail: smWord(r.period_start, r.period_end) + ' · v' + r.version_no + (extra ? ' · ' + extra : ''), created_at: new Date().toISOString(), ref: r.id });
   }
   function smSnap(r, final) {
     var c = DB.clients.filter(function (x) { return x.id === r.client_id; })[0] || {};
@@ -7428,6 +7429,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
       r.brand_id = rbB ? rbB.id : null; r.brand_name = rbB ? rbB.name : null; r.label_client = rbB ? r.client_id : null; r.updated_at = now;
       smLog(r, 'report.saved', 'White label: ' + (rbWas || 'not set') + ' \u2192 ' + (rbB ? rbB.name : 'not set'));
       return { ok: true };
+    }
+
+    if (name === 'sm_report_history') {
+      if (!me || !smCan('view')) return { error: 'denied' };
+      return { rows: (DB.activity_log || []).filter(function (x) { return x.ref === r.id; })
+        .sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); }).slice(0, 500)
+        .map(function (x) { return { actor: x.actor, action: x.action, subject: x.subject, detail: x.detail, created_at: x.created_at }; }) };
     }
     if (name === 'sm_report_gate') {
       if (!me || !smCan('view')) return { error: 'denied' };

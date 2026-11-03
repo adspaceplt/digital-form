@@ -150,7 +150,7 @@
     var r = r0 || st.open, c = c0 || st.client || {};
     if (!r || !window.ADspaceAdmin || !window.ADspaceAdmin.log) return;
     window.ADspaceAdmin.log(action, c.name || '',
-      periodWord(r.period_start, r.period_end) + ' · v' + r.version_no + (what ? ' · ' + what : ''));
+      periodWord(r.period_start, r.period_end) + ' · v' + r.version_no + (what ? ' · ' + what : ''), r.id);
   }
   /* Days and times are Malaysia's (js/clock.js), whatever the device's
      clock: a day stays itself, a moment reads as its day here. */
@@ -986,6 +986,7 @@
     wireSteps(box);
     if (gated) loadGate(box, r);
     loadCheck(box, r);
+    loadRecord(box, r);
   }
 
   /* The Report audit's Commentary part (the user, 2026-10-04, then
@@ -1927,9 +1928,14 @@
     }).catch(function () { /* an older database: no gate */ });
   }
 
-  /* Key dates (the user, 2026-10-04): when the report was started,
-     submitted and to whom, confirmed and by whom, and published, with the
-     time each step took; a step not reached is left out. */
+  /* The report's record (the user, 2026-11-03: "who did it, what they did,
+     when and optional why … full set"): every line filed against the
+     report, its steps, saves, imports, audits and AI uses alike, drawn as
+     every history is (`ADspaceRecords.paint`), newest first, a run of one
+     act folded, the why in its detail. Lines filed before 2026-11-03 that
+     could not be tied to one report are stood in for by the report's own
+     dated steps, so Started, Submitted, Confirmed and Published are always
+     there. Then the time from start to now (or to publishing). */
   function spanWord(ms) {
     var h = ms / 3600000;
     if (h < 1) return 'Under 1 h';
@@ -1938,31 +1944,54 @@
     if (rest === 24) { d += 1; rest = 0; }
     return d + ' days' + (rest ? ' ' + rest + ' h' : '');
   }
-  function keyDates(r) {
+  function stepMarks(r) {
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    var marks = [
-      /* Who did each step, and to whom it went (the user, 2026-10-06:
-         "submitted by who is missing"). */
-      ['Started', r.created_at, r.created_by && nameOf(r.created_by) ? 'by ' + nameOf(r.created_by) : ''],
-      ['Submitted', r.status !== 'draft' && r.submitted_at, [r.submitted_by && nameOf(r.submitted_by) ? 'by ' + nameOf(r.submitted_by) : '',
-        r.reviewer_id && nameOf(r.reviewer_id) ? 'to ' + nameOf(r.reviewer_id) : ''].filter(Boolean).join(' ')],
-      ['Confirmed', r.confirmed_at, r.confirmed_by && nameOf(r.confirmed_by) ? 'by ' + nameOf(r.confirmed_by) : ''],
-      ['Published', live && r.status === 'published' && live.published_at, '']
+    return [
+      ['report.created', r.created_at, nameOf(r.created_by), ''],
+      ['report.submitted', r.status !== 'draft' && r.submitted_at, nameOf(r.submitted_by), r.reviewer_id && nameOf(r.reviewer_id) ? 'Reviewer: ' + nameOf(r.reviewer_id) : ''],
+      ['report.confirmed', r.confirmed_at, nameOf(r.confirmed_by), ''],
+      /* A version keeps who published it by name. */
+      ['report.published', live && r.status === 'published' && live.published_at, (live && live.published_by) || '', '']
     ].filter(function (x) { return x[1]; });
-    if (marks.length < 2) return '';
-    var rows = marks.map(function (x, i) {
-      var next = marks[i + 1];
-      return '<div class="tl-row tl-stage">' +
-        '<span class="tl-lead"><span class="tl-what">' + esc(x[0]) + '</span>' +
-          '<span class="tl-when">' + esc(stampWord(x[1])) + '</span>' + (x[2] ? '<span class="tl-who">' + esc(x[2]) + '</span>' : '') + '</span>' +
-        '<span class="tl-span">' + (next ? esc(spanWord(new Date(next[1]) - new Date(x[1]))) : '') + '</span></div>';
-    });
-    var last = marks[marks.length - 1][1];
-    rows.push('<div class="tl-rule"></div><div class="tl-row tl-date"><span class="tl-lead"><span class="tl-what">' +
-      (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
-      esc(spanWord((r.status === 'published' ? new Date(last) : new Date()) - new Date(marks[0][1]))) + '</span></div>');
-    return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Key dates</h3></div>' +
-      '<div class="ovcard rp-timeline"><div class="ovsec tline">' + rows.join('') + '</div></div></div>';
+  }
+  function keyDates(r) {
+    var marks = stepMarks(r);
+    if (!marks.length) return '';
+    var end = r.status === 'published' && marks[marks.length - 1][0] === 'report.published' ? new Date(marks[marks.length - 1][1]) : new Date();
+    return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Record of changes</h3></div>' +
+      '<div class="ovcard rp-record"><div class="rp-recbox" data-rec="' + esc(r.id) + '"></div>' +
+      '<div class="tl-rule"></div><div class="tl-row tl-date"><span class="tl-lead"><span class="tl-what">' +
+        (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
+        esc(spanWord(end - new Date(marks[0][1]))) + '</span></div></div></div>';
+  }
+  function loadRecord(box, r) {
+    var host = box.querySelector('.rp-recbox');
+    if (!host || !window.ADspaceRecords) return;
+    var A = window.ADspaceAdmin || {};
+    var draw = function (rows) {
+      /* A step the record does not hold is drawn from the report's own date. */
+      stepMarks(r).forEach(function (m) {
+        if (rows.some(function (x) { return x.action === m[0]; })) return;
+        rows.push({ _col: true, actor: m[2] || '', action: m[0], subject: (st.client || {}).name || '',
+          detail: periodWord(r.period_start, r.period_end) + (m[3] ? ' · ' + m[3] : ''), created_at: m[1] });
+      });
+      rows.sort(function (a, b) { return String(b.created_at).localeCompare(String(a.created_at)); });
+      if (host.isConnected === false) return;
+      window.ADspaceRecords.paint(host, rows.map(function (x) {
+        var it = A.record ? A.record(x) : { at: x.created_at, who: x.actor, what: x.action, detail: x.detail };
+        /* The report is the page: its client is not said again on each line. */
+        it.on = '';
+        /* A step drawn from the report's date names who took it, else nobody. */
+        if (x._col) it.who = x.actor || '';
+        return it;
+      }));
+    };
+    if (UI && UI.skeleton) UI.skeleton(host, 3);
+    db.rpc('sm_report_history', { p_id: r.id }).then(function (res) {
+      var d = res.data || {};
+      if (res.error || d.error) { draw([]); return; }
+      draw((d.rows || []).slice());
+    }).catch(function () { draw([]); });
   }
 
   function moreMenu(r, live) {

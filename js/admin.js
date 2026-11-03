@@ -107,13 +107,17 @@
      can see. Deliberately fire and forget: a failure to log must never stop
      the action itself, and this is not a click tracker. */
   var actor = '';
-  function logAction(action, subject, detail) {
-    db.from('activity_log').insert({
+  function logAction(action, subject, detail, ref) {
+    var row = {
       actor: actor || 'unknown',
       action: action,
       subject: subject || null,
       detail: detail || null
-    }).then(function () {}, function () {});
+    };
+    /* The record the line is about, where one is named (a report's id,
+       2026-11-03), so that record reads its own lines. */
+    if (ref) row.ref = ref;
+    db.from('activity_log').insert(row).then(function () {}, function () {});
   }
 
   /* The activity record stores who by the address they signed in with, which

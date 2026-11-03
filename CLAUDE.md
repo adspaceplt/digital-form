@@ -5520,11 +5520,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Out of a draft the commentary check's findings fold under one line,
     and once confirmed or published they read as found, never to fix
     (2026-10-20, RPT-6, RPT-7).
-  - Check and submit ends in Key dates (`keyDates()`, two marks at least):
-    Started (by whom), Submitted (by whom, to whom), Confirmed (by whom),
-    Published, the names on their own line under the date (`.tl-who`), each with
-    the time since the step before, and the total (so far); the rows sit in
-    the card's own `.ovsec`, never on its bare edge.
+  - Check and submit ends in the report's Record of changes (the user,
+    2026-11-03: "who did it, what they did, when and optional why … full
+    set"): every line filed against the report (`activity_log.ref`, the
+    report's id, filed by `sm_report_log` and the page's `fileReport`; read
+    by `sm_report_history(p_id)` at Reports View on a client in scope,
+    whatever the reader's Activity access): steps, saves, imports, audits
+    and AI uses, drawn by `ADspaceRecords.paint`, newest first, the why in
+    each line's detail; a step its record lacks (a line filed before
+    2026-11-03 that two reports of one period shared) drawn from the
+    report's own date; then Total (so far), on the card's own padding.
   - Each objective lists its ads as the PDF ranks them: cheapest cost per
     result first, then those with no result by spend, most first. An ad's
     name opens its Edit; its ⋯ reads Open in Ads Manager, then Edit and
