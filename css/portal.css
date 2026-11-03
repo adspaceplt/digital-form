@@ -1553,7 +1553,17 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 /* A fact's value that opens its record (a supplier's client, a client's
    supplier): the value's own size, its words on the value column's edge. */
-dd > .linkbtn { margin-inline-start: -8px; font-size: inherit; }
+/* A long name wraps as the facts beside it do: left aligned (a button
+   centres its words), in the value's ink, the chevron after its last word,
+   and its target given back to the line, never pushed into what follows
+   (2026-11-03: a client's supplier stood centred in two lines over its
+   profile chips). */
+dd > .linkbtn {
+  display: inline-block; max-width: calc(100% + 8px); margin: -6px 0 -6px -8px; padding-block: 6px; min-height: 0;
+  font-size: inherit; text-align: start; color: var(--ink); line-height: inherit;
+}
+dd > .linkbtn .ovgo-chev { vertical-align: -2px; margin-inline-start: 4px; color: var(--ink-soft); }
+dd > .linkbtn::before { inset: 3px 0; }
 /* Who this device decides as, under a client page's name card, with Change
    and Forget (js/decide.js, 2026-10-08). */
 .decide-as {
