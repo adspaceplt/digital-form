@@ -6379,20 +6379,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var row = (DB.ai_draft_limits || []).filter(function (l) { return l.scope === scope; })[0];
     return row && row.daily != null ? row.daily : dflt;
   }
+
+  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
+  var AI_USES = ['drafts', 'checks', 'caption', 'script', 'analysis', 'checklist', 'analytics'];
+  function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
+  function aiPurpose(x) { return x.purpose || 'draft'; }
   function aiCheckRoom(m, rep) {
     var since = aiDay(), all = (DB.ai_drafts || []).filter(function (x) { return x.outcome !== 'failed'; });
     var isAdm = !!(m.is_admin || m.role === 'admin');
 
     var checks = all.filter(function (x) { return x.report_id === rep.id && x.purpose === 'check' && x.outcome !== 'incomplete'; });
-    var limC = aiLimit('check', 1), limCA = aiLimit('check_admin', 5);
-
-    var lR = Math.max(0, (isAdm ? limCA : limC) - checks.filter(function (x) {
-      return x.team_member_id === m.id && new Date(x.created_at).getTime() >= since; }).length);
-    var limP = aiDayCap(m);
-    var lP = Math.max(0, limP - all.filter(function (x) { return x.team_member_id === m.id && aiReportUse(x) && new Date(x.created_at).getTime() >= since; }).length);
+    var limC = aiCap(m.id, 'per_report');
+    var limP = aiCap(m.id, 'checks');
+    var lP = Math.max(0, limP - all.filter(function (x) { return x.team_member_id === m.id && aiPurpose(x) === 'check' && new Date(x.created_at).getTime() >= since; }).length);
+    var lR = limC > 0 ? Math.max(0, limC - checks.filter(function (x) {
+      return x.team_member_id === m.id && new Date(x.created_at).getTime() >= since; }).length) : lP;
     var lMin = Math.min(lR, lP);
-    var sc = limP === 0 ? 'stopped' : lMin === lR ? 'report_check' : 'person';
-    return { left: lMin, scope: sc, version: rep.version_no, limit: { stopped: 0, report_check: isAdm ? limCA : limC, person: limP }[sc],
+    var sc = limP === 0 ? 'stopped' : limC > 0 && lR <= lP ? 'report_check' : 'checks';
+    return { left: lMin, scope: sc, version: rep.version_no, limit: { stopped: 0, report_check: limC, checks: limP }[sc],
              report: lR, person: lP, admin: isAdm,
              next: lMin === 0 && sc !== 'stopped' ? new Date(since + 864e5).toISOString() : null };
   }
@@ -6405,13 +6409,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var brandOf = function (x) { return ((DB.sm_reports || []).filter(function (y) { return y.id === x.report_id; })[0] || {}).brand_id || null; };
     var same = function (x) { return x.purpose !== 'check' && x.outcome !== 'incomplete' && aiReportUse(x) && (x.report_id === rid || (sr && x.client_id === sr.client_id && x.kind === (sr.kind || 'social') &&
       brandOf(x) === (sr.brand_id || null) && x.period_start <= sr.period_end && x.period_end >= sr.period_start)); };
-    var limR = isAdm ? aiLimit('report_admin', 5) : aiLimit('report', 1);
-    var lR = Math.max(0, limR - live.filter(function (x) { return same(x) && x.team_member_id === m.id && new Date(x.created_at).getTime() >= since; }).length);
-    var limP = aiDayCap(m);
-    var lP = Math.max(0, limP - live.filter(function (x) { return x.team_member_id === m.id && aiReportUse(x) && new Date(x.created_at).getTime() >= since; }).length);
+    var limR = aiCap(m.id, 'per_report');
+    var limP = aiCap(m.id, 'drafts');
+    var lP = Math.max(0, limP - live.filter(function (x) { return x.team_member_id === m.id && aiPurpose(x) === 'draft' && new Date(x.created_at).getTime() >= since; }).length);
+    var lR = limR > 0 ? Math.max(0, limR - live.filter(function (x) { return same(x) && x.team_member_id === m.id && new Date(x.created_at).getTime() >= since; }).length) : lP;
     var lMin = Math.min(lR, lP);
-    var sc = limP === 0 ? 'stopped' : lMin === lR ? 'report' : 'person';
-    return { left: lMin, scope: sc, limit: { stopped: 0, report: limR, person: limP }[sc], report: lR, person: lP, admin: isAdm,
+    var sc = limP === 0 ? 'stopped' : limR > 0 && lR <= lP ? 'report' : 'drafts';
+    return { left: lMin, scope: sc, limit: { stopped: 0, report: limR, drafts: limP }[sc], report: lR, person: lP, admin: isAdm,
              next: lMin === 0 && sc !== 'stopped' ? new Date(since + 864e5).toISOString() : null };
   }
 
@@ -6419,7 +6423,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   function aiAnalysisRoom(m) {
     var since = aiDay(), isAdm = !!(m.is_admin || m.role === 'admin');
-    var lim = isAdm ? aiLimit('analysis_admin', 10) : aiLimit('analysis', 3);
+    var lim = aiCap(m.id, 'analysis');
     var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === m.id && x.purpose === 'analysis' && x.outcome !== 'failed' &&
       new Date(x.created_at).getTime() >= since; }).length;
     var left = Math.max(0, lim - used);
@@ -6429,7 +6433,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   function ckRoom(m) {
     var since = aiDay(), isAdm = !!(m.is_admin || m.role === 'admin');
-    var lim = isAdm ? aiLimit('checklist_admin', 20) : aiLimit('checklist', 10);
+    var lim = aiCap(m.id, 'checklist');
     var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === m.id && x.purpose === 'checklist' && x.outcome !== 'failed' &&
       new Date(x.created_at).getTime() >= since; }).length;
     var left = Math.max(0, lim - used);
@@ -6451,7 +6455,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   function anRoom(m) {
     var since = aiDay(), isAdm = !!(m.is_admin || m.role === 'admin');
-    var lim = isAdm ? aiLimit('analytics_admin', 10) : aiLimit('analytics', 3);
+    var lim = aiCap(m.id, 'analytics');
     var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === m.id && x.purpose === 'analytics' && x.outcome !== 'failed' &&
       new Date(x.created_at).getTime() >= since; }).length;
     return { left: Math.max(0, lim - used), limit: lim, next: new Date(since + 864e5).toISOString() };
@@ -6645,7 +6649,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   function aiScriptRoom(m) {
     var since = aiDay(), isAdm = !!(m.is_admin || m.role === 'admin');
-    var lim = isAdm ? aiLimit('script_admin', 20) : aiLimit('script', 10);
+    var lim = aiCap(m.id, 'script');
     var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === m.id && x.purpose === 'script' && x.outcome !== 'failed' &&
       new Date(x.created_at).getTime() >= since; }).length;
     var left = Math.max(0, lim - used);
@@ -6655,7 +6659,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   function aiCaptionRoom(m) {
     var since = aiDay(), isAdm = !!(m.is_admin || m.role === 'admin');
-    var lim = isAdm ? aiLimit('caption_admin', 40) : aiLimit('caption', 20);
+    var lim = aiCap(m.id, 'caption');
     var used = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === m.id && x.purpose === 'caption' && x.outcome !== 'failed' &&
       new Date(x.created_at).getTime() >= since; }).length;
     var left = Math.max(0, lim - used);
@@ -6683,10 +6687,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
       uses: rows.length, untracked: rows.filter(function (x) { return x.input_tokens == null; }).length,
       input: sum(rows, function (x) { return x.input_tokens || 0; }), output: sum(rows, function (x) { return x.output_tokens || 0; }),
       usd: r2(sum(rows, usd)), by: by };
-  }
-  function aiDayCap(m) {
-    if (!m) return 0;
-    return aiLimit(m.id, (m.is_admin || m.role === 'admin') ? aiLimit('admin', 20) : aiLimit('person', 10));
   }
 
   function smGate(r) {
@@ -7143,34 +7143,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var roleName = {};
       (DB.team_roles || []).forEach(function (g) { roleName[g.slug] = g.name; });
       var rank = { none: 0, view: 1, work: 2, manage: 3 };
-      var std = aiLimit('person', 10);
       var ppl = (DB.team_members || []).filter(function (t) {
         return t.active !== false && (t.is_admin || t.role === 'admin' || (rank[(t.access || {}).reports] || 0) >= 2 ||
           (rank[(t.access || {}).review] || 0) >= 2 || (rank[(t.access || {}).scripts] || 0) >= 2 ||
           uAll.some(function (x) { return x.team_member_id === t.id && inT(x, uMonth); }));
       }).map(function (t) {
         var ok = uAll.filter(function (x) { return x.team_member_id === t.id && x.outcome !== 'failed'; });
-        var own = (DB.ai_draft_limits || []).filter(function (l) { return l.scope === t.id; })[0];
-        var lim = own ? own.daily : null;
-        var tAdm = !!(t.is_admin || t.role === 'admin');
+        var P = { drafts: 'draft', checks: 'check' }, used = {}, cap = {}, own = {};
+        AI_USES.forEach(function (u) {
+          used[u] = ok.filter(function (x) { return aiPurpose(x) === (P[u] || u) && inT(x, uDay); }).length;
+          cap[u] = aiCap(t.id, u);
+          var o = (DB.ai_draft_limits || []).filter(function (l) { return l.scope === t.id + ':' + u && l.daily != null; })[0];
+          if (o) own[u] = o.daily;
+        });
         return { id: t.id, name: t.name, code: t.staff_code || null, group: roleName[t.role] || null, group_slug: t.role || null,
-          admin: tAdm, day: ok.filter(function (x) { return aiReportUse(x) && inT(x, uDay); }).length,
-          captions: ok.filter(function (x) { return x.purpose === 'caption' && inT(x, uDay); }).length,
-          caption_cap: tAdm ? aiLimit('caption_admin', 40) : aiLimit('caption', 20),
-          scripts: ok.filter(function (x) { return x.purpose === 'script' && inT(x, uDay); }).length,
-          script_cap: tAdm ? aiLimit('script_admin', 20) : aiLimit('script', 10),
-          analyses: ok.filter(function (x) { return x.purpose === 'analysis' && inT(x, uDay); }).length,
-          analysis_cap: tAdm ? aiLimit('analysis_admin', 10) : aiLimit('analysis', 3),
-          checklists: ok.filter(function (x) { return x.purpose === 'checklist' && inT(x, uDay); }).length,
-          checklist_cap: tAdm ? aiLimit('checklist_admin', 20) : aiLimit('checklist', 10),
-          month: ok.filter(function (x) { return inT(x, uMonth); }).length, limit: lim, cap: aiDayCap(t) };
+          admin: !!(t.is_admin || t.role === 'admin'), used: used, cap: cap, own: own,
+          month: ok.filter(function (x) { return inT(x, uMonth); }).length };
       }).sort(function (x, y) { return String(x.name).localeCompare(String(y.name)); });
-      return { person: std, admin: aiLimit('admin', 20), report: aiLimit('report', 1), report_admin: aiLimit('report_admin', 5),
-               check: aiLimit('check', 1), check_admin: aiLimit('check_admin', 5),
-               caption: aiLimit('caption', 20), caption_admin: aiLimit('caption_admin', 40),
-               script: aiLimit('script', 10), script_admin: aiLimit('script_admin', 20),
-               analysis: aiLimit('analysis', 3), analysis_admin: aiLimit('analysis_admin', 10),
-               checklist: aiLimit('checklist', 10), checklist_admin: aiLimit('checklist_admin', 20), cost: aiCost(),
+      var lims = {};
+      AI_USES.concat(['per_report']).forEach(function (u) { lims[u] = aiCap(null, u); });
+      return { limits: lims, cost: aiCost(),
                resets_at: new Date(uDay + 864e5).toISOString(), people: ppl };
     }
     if (name === 'ai_draft_set_limit') {
@@ -7179,31 +7171,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (dl != null && !(dl >= 0 && dl <= 500)) return { error: 'bad-limit' };
       var sc2 = String(a.p_scope || '').trim(), nm2, def2;
       var unit2 = ' a day';
-      if (sc2 === 'person') { nm2 = 'Each colleague'; def2 = 10; }
-      else if (sc2 === 'admin') { nm2 = 'Each admin'; def2 = 20; }
-      else if (sc2 === 'check') { nm2 = 'Figures checks per report, each colleague'; def2 = 1; }
-      else if (sc2 === 'check_admin') { nm2 = 'Figures checks per report, each admin'; def2 = 5; }
-      else if (sc2 === 'report') { nm2 = 'Drafts per report, each colleague'; def2 = 1; }
-      else if (sc2 === 'report_admin') { nm2 = 'Drafts per report, each admin'; def2 = 5; }
-      else if (sc2 === 'caption') { nm2 = 'Captions, each colleague'; def2 = 20; }
-      else if (sc2 === 'caption_admin') { nm2 = 'Captions, each admin'; def2 = 40; }
-      else if (sc2 === 'script') { nm2 = 'Scripts, each colleague'; def2 = 10; }
-      else if (sc2 === 'script_admin') { nm2 = 'Scripts, each admin'; def2 = 20; }
-      else if (sc2 === 'analysis') { nm2 = 'Brand analyses, each colleague'; def2 = 3; }
-      else if (sc2 === 'analysis_admin') { nm2 = 'Brand analyses, each admin'; def2 = 10; }
-      else if (sc2 === 'checklist') { nm2 = 'Checklists, each colleague'; def2 = 10; }
-      else if (sc2 === 'checklist_admin') { nm2 = 'Checklists, each admin'; def2 = 20; }
-      else if (sc2 === 'team') return { error: 'bad-scope' };
-      else {
-        var tm2 = (DB.team_members || []).filter(function (t) { return t.id === sc2; })[0];
+      var W2 = { drafts: 'Report drafts', checks: 'Commentary checks', caption: 'Captions', script: 'Scripts',
+        analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses' };
+      var per2 = sc2 === 'per_report';
+      if (per2) { if (dl != null && dl > 1) return { error: 'bad-limit' }; nm2 = 'One draft and one check a report a day'; }
+      else if (W2[sc2]) { nm2 = W2[sc2]; def2 = AI_CAP_STD[sc2]; }
+      else if (/^[^:]+:[a-z]+$/.test(sc2) && W2[sc2.split(':')[1]]) {
+        var tm2 = (DB.team_members || []).filter(function (t) { return t.id === sc2.split(':')[0]; })[0];
         if (!tm2) return { error: 'not-found' };
-        nm2 = tm2.name; def2 = (tm2.is_admin || tm2.role === 'admin') ? aiLimit('admin', 20) : aiLimit('person', 10);
-      }
+        nm2 = W2[sc2.split(':')[1]] + ', ' + tm2.name; def2 = aiCap(null, sc2.split(':')[1]);
+      } else return { error: 'bad-scope' };
       DB.ai_draft_limits = DB.ai_draft_limits || [];
       var row2 = DB.ai_draft_limits.filter(function (l) { return l.scope === sc2; })[0];
       var was2 = row2 ? row2.daily : null;
       if (was2 === dl) return { ok: true, same: true };
-      var word2 = function (v) { return v == null ? 'standard, ' + def2 + unit2 : v === 0 ? 'stopped' : v + unit2; };
+      var word2 = function (v) { return per2 ? (v === 0 ? 'off' : 'on') : v == null ? 'standard, ' + def2 + unit2 : v === 0 ? 'stopped' : v + unit2; };
       if (row2) row2.daily = dl; else DB.ai_draft_limits.push({ scope: sc2, daily: dl, set_by: me.name, set_at: now });
       DB.activity_log.push({ id: nid('log'), actor: me.name, action: 'team.changed', subject: 'AI',
         detail: nm2 + ': ' + word2(was2) + ' → ' + word2(dl), created_at: now });
@@ -13161,7 +13143,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
             if (!parts.length) return Promise.resolve({ data: { error: 'no-text' }, error: null });
             var meC = (DB.team_members || []).filter(function (m) { return String(m.email || '').toLowerCase() === whoNow(); })[0] || {};
-            var roomC = aiCheckRoom(meC, rr), limC = aiDayCap(meC);
+            var roomC = aiCheckRoom(meC, rr), limC = aiCap(meC.id, 'checks');
             if (!roomC.left) return Promise.resolve({ data: { error: 'ai-limit', scope: roomC.scope, limit: roomC.limit, next: roomC.next, version: rr.version_no }, error: null });
             var usedC = limC - roomC.person;
             var refs = parts.map(function (x) { return x.ref; });

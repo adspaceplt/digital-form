@@ -8744,14 +8744,6 @@ body.is-maint { overflow: hidden; }
 .pairtile-pic img, .pairtile-pic video { display: block; width: 100%; height: 100%; object-fit: cover; background: #000; }
 .pairlink svg { width: 15px; height: 15px; }
 .sheet-card.is-narrow .paircard, .is-narrow .paircard { grid-template-columns: minmax(0, 1fr); }
-.aiu-row:first-child { border-top: 0; padding-top: 0; }
-.aiu-name b { font-weight: 600; }
-.aiu-cap.is-sum { margin-right: 0; font-weight: 600; color: var(--ink); }
-.aiu-cap.is-own { color: var(--ink); font-weight: 600; }
-.aiu-cap.is-stopped { color: var(--ink); font-weight: 600; }
-.aiu-cap svg { width: 14px; height: 14px; }
-.aiu-bar > i { display: block; height: 100%; width: var(--p, 0%); background: var(--fill); border-radius: inherit; }
-.aiu-bar.is-full > i { background: var(--warn-solid); }
 .input.aiu-num {
   width: 72px; min-width: 0; text-align: right; font-variant-numeric: tabular-nums;
   border-color: transparent; background-color: var(--tonal); -moz-appearance: textfield;

@@ -1852,6 +1852,16 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 #rpPasteAdsSheet.is-meta .rp-paste-sum { margin: 0; font-size: 14px; color: var(--ink); }
 #rpPasteSheet.is-meta .rp-paste-sum { font-size: 14px; color: var(--ink); }
 .rp-facts dd { white-space: normal; }
+/* A commentary part numbered as the PDF numbers it (2026-11-03): 1, 2, 3,
+   each sub-point a, b, c under its point. */
+.rp-pts { margin: 0; padding-left: 20px; display: grid; gap: 6px; overflow-wrap: anywhere; }
+.rp-pts > li::marker { font-weight: 600; }
+.rp-pts-sub { margin: 4px 0 0; padding-left: 20px; list-style: lower-alpha; display: grid; gap: 4px; }
+.rp-ptread { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; column-gap: 8px; cursor: text;
+  padding: 8px 0 8px 12px; border-radius: var(--radius-sm); background: var(--field); }
+.rp-ptread[hidden] { display: none; }
+.rp-ptread .rp-ptpen { margin: -4px 0; }
+@media (hover: hover) { .rp-ptread:hover { background: var(--tonal-hover); } }
 /* A narrow pane: two lines a row. */
 .is-narrow .rp-acc-row.crm-head, .is-narrow .rp-post-row.crm-head { display: none; }
 .is-narrow .rp-acc-row > .rp-name { grid-area: name; }
@@ -2752,37 +2762,59 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
   .paircard-media { grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); width: 100%; max-width: 264px; justify-self: center; }
 }
 
-/* ---- Draft with AI usage (2026-10-04): an admin's table of each
-   colleague's drafts and allowance. Desk: who, the last 24 hours, the last
-   30 days, the allowance and Change; narrow: who over one mute line of the
-   same figures, Change at the right edge. */
+/* ---- AI usage and limits (2026-11-03, as approved): today a person a row,
+   each use's count over its limit in fixed tracks, red where full; the
+   standard limits two across; this month's cost. Narrow, a person is a
+   card: the name over the uses two across, each its label and figure. */
+.sheet-card.formsheet.aiu-card { width: min(920px, 100%); }
 .aiu-reset { margin: 0 0 12px; color: var(--ink-mute); font-size: 13px; }
-.aiu-list { display: grid; }
-.aiu-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; row-gap: 6px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
-/* A colleague's row sets their own limit: the whole row is the button, its
-   hover the next step of the sheet's ground, bled to the card's edge. */
-button.aiu-row { position: relative; width: calc(100% + 24px); margin: 0 -12px; padding-left: 12px; padding-right: 12px; font: inherit; color: inherit; text-align: left;
-  background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; }
-button.aiu-row::before { content: ""; position: absolute; top: 0; left: 12px; right: 12px; border-top: 1px solid var(--line-soft); }
-button.aiu-row:first-child::before { content: none; }
-@media (hover: hover) { button.aiu-row:hover { background: var(--sunk); } }
-.aiu-row.is-sum .aiu-name b { font-size: 15px; }
-.aiu-name { display: grid; gap: 2px; min-width: 0; }
-.aiu-code { color: var(--ink-mute); font-weight: 400; font-size: 12.5px; margin-left: 4px; }
-.aiu-cap { white-space: nowrap; color: var(--ink-soft); font-variant-numeric: tabular-nums; font-size: 13.5px; }
-.aiu-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
-/* The limits edited in place (2026-10-11; the user: "boxes boxes
-   everywhere"): the read list stays a list, each figure becoming a small
-   tonal field at the row's right edge with its unit after it, as the
-   in-place field is drawn (no box line); one limit a use, for everyone. */
-.aiu-limit { cursor: text; }
+.aiu-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.aiu-head .fsec-h { margin: 0; }
+.aiu-head .btn { flex: 0 0 auto; }
+.aiu-note { color: var(--ink-mute); font-size: 12.5px; }
+.aiu-tbl { display: grid; }
+.aiu-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(7, 76px) 16px; align-items: center; column-gap: 8px;
+  padding: 10px 0; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.aiu-th { padding-top: 0; border-top: 0; align-items: end; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.aiu-th > span:not(:first-child) { text-align: right; }
+button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; padding-left: 8px; padding-right: 8px; font: inherit; color: inherit;
+  text-align: left; background: none; border: 0; border-top: 1px solid var(--line-soft); border-radius: 0; cursor: pointer; }
+@media (hover: hover) { button.aiu-tr:hover { background: var(--sunk); } }
+.aiu-tr.is-sum .aiu-who b, .aiu-tr.is-sum .aiu-c { font-weight: 600; }
+.aiu-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.aiu-who b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.aiu-who .chip { flex: 0 0 auto; }
+.aiu-c { text-align: right; font-size: 13.5px; white-space: nowrap; }
+.aiu-c.is-full { color: var(--err); font-weight: 600; }
+.aiu-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; font-style: normal; }
+.aiu-chev { display: grid; place-items: center; color: var(--ink-mute); }
+.aiu-chev svg { width: 14px; height: 14px; }
+.aiu-lims { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 32px; }
+.aiu-lim { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; border-top: 1px solid var(--line-soft); }
+.aiu-lim-n { min-width: 0; }
+.aiu-lim-v { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.aiu-per { grid-column: 1 / -1; }
 .aiu-field { display: inline-flex; align-items: center; gap: 8px; }
 .input.aiu-num::-webkit-outer-spin-button, .input.aiu-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .aiu-unit { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
-.aiu-adm { display: block; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
-.aiu-adm[hidden] { display: none; }
-.aiu-limits.is-editing .aiu-row { padding: 6px 0; }
-.aiu-limits.is-editing .aiu-row:first-child { padding-top: 0; }
+.aiu-costs { display: grid; }
+.aiu-crow { display: grid; grid-template-columns: minmax(0, 1fr) auto 96px; column-gap: 24px; align-items: center; padding: 8px 0;
+  border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
+.aiu-crow:first-child { border-top: 0; padding-top: 0; }
+.aiu-tok { color: var(--ink-soft); white-space: nowrap; }
+.aiu-usd { text-align: right; white-space: nowrap; }
+.aiu-crow.is-total { font-weight: 600; }
+.is-narrow .aiu-th { display: none; }
+.is-narrow .aiu-tr { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; row-gap: 4px; }
+.is-narrow .aiu-tr.is-sum { border-top: 0; padding-top: 0; }
+.is-narrow .aiu-who { grid-column: 1 / -1; margin-bottom: 4px; }
+.is-narrow .aiu-c { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+.is-narrow .aiu-l { position: static; width: auto; height: auto; overflow: hidden; clip: auto; color: var(--ink-mute); text-overflow: ellipsis; }
+.is-narrow .aiu-chev { display: none; }
+.is-narrow .aiu-lims { grid-template-columns: minmax(0, 1fr); }
+.is-narrow .aiu-crow { grid-template-columns: minmax(0, 1fr) auto; }
+.is-narrow .aiu-tok { grid-column: 1; grid-row: 2; font-size: 12.5px; }
+.is-narrow .aiu-usd { grid-column: 2; grid-row: 1 / span 2; }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */
