@@ -5984,7 +5984,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `quotation_link`): company details and billing contact (prefilled from
   the record), the figures agreed, name, designation, a signature drawn
   or typed and the authority tick, then a six-digit code emailed by
-  `quote-request` `sign` (`quote_sign_code`, the service role's alone,
+  `quote-request` `sign` (the sign-in email's words and shaded code box,
+  never the code in its subject; `quote_sign_code`, the service role's alone,
   kept hashed, 15 minutes, five tries, five an hour; Turnstile) and
   entered in six boxes (`quote_sign_finish`, anon), which keeps the
   signature with its record (time, email, `request_ip()`,
