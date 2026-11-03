@@ -827,7 +827,7 @@
       /* The client's disc, as every record heads itself (2026-11-03). */
       '<span class="rec-mark' + (st.client.logo_url ? ' has-logo' : '') + '" aria-hidden="true">' +
         (st.client.logo_url ? '<img src="' + esc(st.client.logo_url) + '" alt="">' : esc(window.ADspaceState.initials(st.client.name || ''))) + '</span>' +
-      '<div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
+      '<div class="rp-who"><div class="rec-name"><h2>' + esc(st.client.name || 'Report') + '</h2></div>' +
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so

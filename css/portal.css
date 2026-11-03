@@ -3700,7 +3700,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
   /* A heading and its actions: the heading takes the line, the actions share
      the next one equally. Two buttons of different widths and heights side by
      side was the thing that read as unfinished. */
-  .viewhead { flex-wrap: wrap; gap: 10px; margin: 22px 0 12px; }
+  .viewhead { flex-wrap: wrap; gap: 10px; margin: 24px 0 12px; }
   .viewhead > h2, .viewhead > h3 { flex: 1 1 100%; min-width: 0; }
   /* A heading and its one action share the line where they fit, the way the
      desktop head does. Taking the whole row for the heading spent a line on
@@ -5532,8 +5532,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 18px 15px; font-size: 13.5px; color: var(--ink-mute);
 }
-.emptyline b { color: var(--ink); font-weight: 600; }
+/* The words in the mute ink at the body weight, as `.empty` draws them
+   (2026-11-03): the same answer read in ink and bold beside a quiet one on
+   the next pane, and outweighed the heading over it. */
+.emptyline b { color: inherit; font-weight: 400; }
 .emptyline .btn { flex: 0 0 auto; }
+/* A phone's empty line is the same height as `.empty`'s (2026-11-03). */
+@media (max-width: 640px) { .emptyline { padding: 16px 15px; } }
 
 /* Something failed, said where it failed rather than where the page ends. */
 .errline {
@@ -8247,7 +8252,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    card inside it. */
 .ovw-card .softpanel { background: none; border: 0; border-radius: 0; }
 .ovw-card .emptyline { padding: 0; }
-.ovw-card .emptyline b { font-weight: 400; color: var(--ink-mute); }
 .ovw-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }
 
 .ovw > * { margin: 0; }

@@ -175,13 +175,13 @@
     var maySet = ctx.may('clients.quotes', 'work');
     /* Delete, a removed quotation's alone, is Full Access (2026-10-31). */
     var mayDelete = ctx.may('clients.quotes', 'manage');
-    var html = '<div class="viewhead qt-head"><span class="headmark"><h3>Quotations</h3></span>' +
-      (maySet ? '<button class="btn btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
+    var html = '<div class="viewhead qt-head"><span class="headmark"><h2>Quotations</h2></span>' +
+      (maySet ? '<button class="btn" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
     var list = shown;
-    /* An empty list carries its way out (2026-10-22, SL-M2). */
-    if (!list.length) html += '<div class="empty has-go"><span>No quotations.</span>' +
-      (maySet ? '<button class="btn btn-sm" data-a="build" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>';
+    /* An empty list is words alone: Build quote is the heading's, as every
+       record pane's act is (2026-11-03). */
+    if (!list.length) html += '<div class="empty">No quotations.</div>';
     else {
       html += '<div class="crm-table qt-table"><div class="crm-head svc-row qt-row"><span>Quotation</span>' +
         '<span class="svc-rate">Amount</span><span>State</span><span></span><span></span></div>' +
@@ -306,8 +306,6 @@
     wireSign();
     var b = $('qtBuild');
     if (b) b.addEventListener('click', function () { build(ctx, null, b); });
-    var be = host.querySelector('.empty [data-a="build"]');
-    if (be) be.addEventListener('click', function () { build(ctx, null, be); });
     if (ctx.painted) ctx.painted();
     var g = $('qtGone');
     if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });

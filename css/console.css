@@ -1806,7 +1806,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-head-top > .rp-who { grid-area: who; min-width: 0; }
 .rp-head-top > .rp-ctl { grid-area: ctl; }
 .is-narrow .rp-head-top { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark . ctl" "who who who"; gap: 10px 12px; }
-.is-narrow .rp-who h3 { overflow-wrap: anywhere; }
 .is-narrow .facts.rp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
 .is-narrow .facts.rp-facts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
 .rp-facts .rp-sendacts > .btn { flex: 0 0 auto; }
@@ -3433,7 +3432,6 @@ button.vs-row {
 .is-narrow:not(.is-tight) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) auto var(--ctl-h); grid-template-areas: "name amt act" "name state act" "dl dl dl"; }
 .is-narrow:not(.is-tight) .qt-row.has-acts > .qt-dl { grid-area: dl; justify-self: end; margin-top: 8px; }
 /* An empty list carries its way out on its line (2026-10-22, SL-M2). */
-.empty.has-go { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .qb-nb { white-space: nowrap; }
 .qt-amt, .qt-state { display: flex; flex-direction: column; }
 .qt-ref { font-variant-numeric: tabular-nums; }
