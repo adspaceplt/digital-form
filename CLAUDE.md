@@ -4414,13 +4414,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     signed off (Clients, Checklists) and marked Not needed by hand.
   - Posts planned is asked, never assumed: empty is refused, a whole number
     from 0 to 200 is taken (0 an advertising-only month's true answer), and
-    the column holds the same (`ops_engagements_planned_range`). Every month
-    owes a report (the user, 2026-11-03): no posts planned ticks the
-    Advertising Report by itself, and none ticked is refused on the sheet
-    and the card's Reports pen (page-side; the database still takes one).
+    the column holds the same (`ops_engagements_planned_range`). Reports is
+    one answer of four, a segment (`#engReports`: Accounts, Advertising,
+    Both, None; the user, 2026-11-03: a client taking content alone owes no
+    report), a new month carrying the month before's, else Both; with no
+    posts planned Accounts and Both rest and the answer moves to
+    Advertising, put back once posts are planned; None is stored as no
+    report and read as an answer, never a warning.
   - The card's head reads Runs (the month's span, its year) and Reports
-    (each it owes, else None by the amber dot), each its pen at My Work Work
-    on an open month, asking Starts on or the two ticks and saving that one
+    (each it owes, else None), each its pen at My Work Work
+    on an open month, asking Starts on or the four answers and saving that one
     fact through `ops_engagement_upsert`, the rest as read (2026-11-02).
   - Its stage is worked out on every load (`engPhase()`), never picked:
     Planning until the ticks are answered and the meeting set (or not

@@ -7054,10 +7054,19 @@
     var reps = (e.reports || []).filter(function (k) { return REPORT_WORD[k]; });
     return reps.length ? reps.map(function (k) { return REPORT_WORD[k]; }).join(' · ') : 'None';
   }
-  /* A fact on the card, its pen beside it where it may be changed; None
-     reports is the amber dot and its word, so a month owing nothing is seen. */
-  function engValue(words, edit, key, name, none) {
-    var word = none ? '<span class="chip-state is-warn">' + esc(words) + '</span>' : esc(words);
+  /* What a month owes in reports, as one of four answers (the user,
+     2026-11-03: a client taking content alone is given no report). None is
+     an answer, never a gap. */
+  var REPORT_PICK = [['social', 'Accounts'], ['ads', 'Advertising'], ['both', 'Both'], ['none', 'None']];
+  function repsPick(r) {
+    r = r || [];
+    var so = r.indexOf('social') > -1, ad = r.indexOf('ads') > -1;
+    return so && ad ? 'both' : so ? 'social' : ad ? 'ads' : 'none';
+  }
+  function repsOf(v) { return v === 'both' ? ['social', 'ads'] : v === 'social' || v === 'ads' ? [v] : []; }
+  /* A fact on the card, its pen beside it where it may be changed. */
+  function engValue(words, edit, key, name) {
+    var word = esc(words);
     return edit
       ? '<button class="tdate" type="button" data-a="eng-' + key + '" aria-label="' + esc(name + ', ' + words + '. Change') + '">' + word + PEN_SVG + '</button>'
       : word;
@@ -7095,18 +7104,13 @@
       });
       return;
     }
-    var reps = e.reports || [];
+    var was = repsPick(e.reports);
     ADspaceConfirm.ask({
       title: 'Reports for ' + monthWord(e.period), go: 'Save',
-      check: function (v) { return v.social || v.ads ? '' : 'Choose at least one report.'; },
-      fields: [
-        { name: 'social', label: REPORT_WORD.social, tick: true, value: reps.indexOf('social') > -1 ? 'on' : '' },
-        { name: 'ads', label: REPORT_WORD.ads, tick: true, value: reps.indexOf('ads') > -1 ? 'on' : '' }
-      ]
+      field: { name: 'reports', label: 'Reports', choices: REPORT_PICK, seg: true, value: was }
     }, function (v) {
-      var want = ['social', 'ads'].filter(function (k) { return v[k]; });
-      if (want.join() === ['social', 'ads'].filter(function (k) { return reps.indexOf(k) > -1; }).join()) return;
-      saveEngFact(e, el, { reports: want });
+      if (!v.reports || v.reports === was) return;
+      saveEngFact(e, el, { reports: repsOf(v.reports) });
     });
   }
   function engCard(e) {
@@ -7124,7 +7128,7 @@
          changed where they are read (2026-11-02, the user: a month starting
          on the 9th went unseen until a report asked for 9 Oct to 8 Nov). */
       ['Runs', engValue(spanDates(monthSpanOf(e)) + ' ' + e.period.slice(0, 4), can && !engShut(e), 'runs', 'When the month runs')],
-      ['Reports', engValue(engReportsWord(e), can && !engShut(e), 'reports', 'Reports', !(e.reports || []).length)],
+      ['Reports', engValue(engReportsWord(e), can && !engShut(e), 'reports', 'Reports')],
       ['Files', /^https:\/\//i.test(e.drive_url || '') ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var n = countFor(e, cw.counts, cw.tasks);
@@ -7300,13 +7304,13 @@
     $('engStart').innerHTML = Array.apply(null, Array(28)).map(function (x, i) {
       return '<option value="' + (i + 1) + '"' + (i + 1 === day ? ' selected' : '') + '>' + (i + 1) + ordinal(i + 1) + ' of the month</option>';
     }).join('');
-    var reps = before.reports || [];
-    $('engRepSocial').checked = reps.indexOf('social') > -1;
-    $('engRepAds').checked = reps.indexOf('ads') > -1;
+    /* A month with none before it opens on Both. */
+    engWant = before.reports ? repsPick(before.reports) : 'both';
+    $('engReports').value = engWant;
     /* An Accounts Report needs content planned for the month (the user,
-       2026-10-11), unless the client is white label: the tick rests while
-       Posts planned is empty, as the database refuses it. */
-    engWl = false; engWant = reps.indexOf('social') > -1; engAdsAuto = false;
+       2026-10-11), unless the client is white label: Accounts and Both rest
+       while no posts are planned, as the database refuses them. */
+    engWl = false; engAdsAuto = false;
     engAccounts();
     db.from('clients').select('white_label').eq('id', client.id).maybeSingle().then(function (r) {
       if (r && !r.error && r.data && r.data.white_label) { engWl = true; engAccounts(); }
@@ -7314,17 +7318,19 @@
     msg('engMsg', '');
     sheet('engSheet', true);
   }
-  var engWl = false, engWant = false, engAdsAuto = false;
+  var engWl = false, engWant = 'both', engAdsAuto = false;
   function engAccounts() {
     var off = !engWl && !(Number($('engPlanned').value) > 0);
-    $('engRepSocial').disabled = off;
-    $('engRepSocial').checked = !off && engWant;
-    /* Every month owes a report (the user, 2026-11-03): with no posts
-       planned it is the Advertising Report, ticked here; posts planned
-       again lets go of a tick this made, never one the person made. */
-    if (off && !$('engRepAds').checked) { $('engRepAds').checked = true; engAdsAuto = true; }
-    else if (!off && engAdsAuto) { $('engRepAds').checked = false; engAdsAuto = false; }
-    /* A resting tick says why (ux-audit WORK-9). */
+    var sel = $('engReports');
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (o.value === 'social' || o.value === 'both') o.disabled = off;
+    });
+    /* With no posts planned an answer that holds the Accounts Report moves
+       to Advertising (the user, 2026-11-03); posts planned again puts back
+       the answer the person gave. None stays None. */
+    if (off && (sel.value === 'social' || sel.value === 'both')) { sel.value = 'ads'; engAdsAuto = true; }
+    else if (!off && engAdsAuto) { sel.value = engWant; engAdsAuto = false; }
+    /* Resting options say why (ux-audit WORK-9). */
     if ($('engRepNote')) $('engRepNote').hidden = !off;
   }
   /* A folder address typed without its scheme is taken as https, as a
@@ -7362,18 +7368,11 @@
       planned_count: pl.n,
       drive_url: driveUrl($('engDrive').value),
       start_day: Number($('engStart').value) || 1,
-      reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
-        .map(function (x) { return x[1]; })
+      reports: repsOf($('engReports').value)
     };
     if (!engEditing) payload['new'] = true;
     if (payload.drive_url && !/^https:\/\/[^\s"'<>`\\]+$/i.test(payload.drive_url)) {
       msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
-      return;
-    }
-    /* Every month owes at least one report (the user, 2026-11-03). */
-    if (!payload.reports.length) {
-      msg('engMsg', 'Choose at least one report.', 'err');
-      ($('engRepSocial').disabled ? $('engRepAds') : $('engRepSocial')).focus();
       return;
     }
     var btn = $('engGo');
@@ -8049,8 +8048,7 @@
     var engGoBtn = $('engGo');
     if (engGoBtn) engGoBtn.addEventListener('click', saveEng);
     if ($('engPlanned')) $('engPlanned').addEventListener('input', engAccounts);
-    if ($('engRepSocial')) $('engRepSocial').addEventListener('change', function () { engWant = $('engRepSocial').checked; });
-    if ($('engRepAds')) $('engRepAds').addEventListener('change', function () { engAdsAuto = false; });
+    if ($('engReports')) $('engReports').addEventListener('change', function () { engWant = $('engReports').value; engAdsAuto = false; });
     ['meetClose', 'meetCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('meetSheet', false); });
     });
