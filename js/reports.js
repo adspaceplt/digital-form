@@ -1959,10 +1959,10 @@
     if (!marks.length) return '';
     var end = r.status === 'published' && marks[marks.length - 1][0] === 'report.published' ? new Date(marks[marks.length - 1][1]) : new Date();
     return '<div class="rp-sec rp-keydates"><div class="rp-sec-head"><h3 class="ovsec-title">Record of changes</h3></div>' +
-      '<div class="ovcard rp-record"><div class="rp-recbox" data-rec="' + esc(r.id) + '"></div>' +
+      '<div class="ovcard rp-record"><div class="ovsec tline"><div class="rp-recbox" data-rec="' + esc(r.id) + '"></div>' +
       '<div class="tl-rule"></div><div class="tl-row tl-date"><span class="tl-lead"><span class="tl-what">' +
         (r.status === 'published' ? 'Total' : 'Total so far') + '</span></span><span class="tl-span">' +
-        esc(spanWord(end - new Date(marks[0][1]))) + '</span></div></div></div>';
+        esc(spanWord(end - new Date(marks[0][1]))) + '</span></div></div></div></div>';
   }
   function loadRecord(box, r) {
     var host = box.querySelector('.rp-recbox');
@@ -1979,8 +1979,13 @@
       if (host.isConnected === false) return;
       window.ADspaceRecords.paint(host, rows.map(function (x) {
         var it = A.record ? A.record(x) : { at: x.created_at, who: x.actor, what: x.action, detail: x.detail };
-        /* The report is the page: its client is not said again on each line. */
+        /* The report is the page: its client and period are not said again
+           on each line; the version stays. */
         it.on = '';
+        var pw = periodWord(r.period_start, r.period_end) + ' \u00b7 ';
+        ['detail', 'rest'].forEach(function (k) {
+          if (typeof it[k] === 'string' && it[k].indexOf(pw) === 0) it[k] = it[k].slice(pw.length);
+        });
         /* A step drawn from the report's date names who took it, else nobody. */
         if (x._col) it.who = x.actor || '';
         return it;
