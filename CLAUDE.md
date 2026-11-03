@@ -5259,7 +5259,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Write with AI on the Commentary step of both kinds (`report-draft` edge
     function, secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
     `docs/REPORT-DRAFT-SETUP.md`): sends the report id and Notes for the
-    draft (`#rpAiNotes`: reasons, changes, goal, next month's budget; kept
+    draft (`#rpAiNotes`: reasons, changes, goal, next month's budget;
+    required, a field on show, the press refusing in its line with the
+    caret in the box until it holds words (the user, 2026-11-03: "everyone
+    needs to input something for the AI to read"; page-side); kept
     in this browser under `adspace-draft-notes:{id}`, never saved with the
     report); the function reads the report as the caller (Reports Work, a
     draft) and sends Claude its figures, the notes and the client's last

@@ -1827,6 +1827,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 /* The notes fold inside the shaded block: a hairline on the block's own
    ground, no extra step above it. */
 .rp-aidraft > .fmore { margin-top: 0; border-top-color: var(--line); }
+.rp-aidraft > .rp-ainotes { margin: 0; padding-top: 12px; border-top: 1px solid var(--line); }
 .rp-form > .rp-hint { margin: 16px 0 0; }
 .rp-form > .rp-aidraft + .msg:empty + .rp-hint { margin-top: 16px; }
 .rp-airow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
