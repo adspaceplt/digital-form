@@ -1141,6 +1141,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     bar, 12px above the search, and every strip on its own row is the tab
     row's height; a desk keeps My Work's views at the left of the bar's own
     line (`tests/cmdbar.js`).
+  - A record's pane heads itself one way (2026-11-03, the user: Calls and
+    visits beside Quotations): each part an `h2` in `.viewhead` (19px,
+    Slate), its act a `.btn` at the control's height, and an empty list
+    words alone, its act the heading's; `.empty` and `.emptyline` are one
+    look and one height (the mute ink at 400; `tests/cmdbar.js`).
   - Every record leaves by one Back (`.backlink`: the arrow and the word
     Back) at one height, its section's own strip stepping away while it is
     open, and heads itself with `.rec-id` (the disc, the name over its meta,
@@ -5898,9 +5903,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   quote line, Build quote; one quotation that can be offered, its Issue
   Letter of Offer (none blue where two can); To quote lines no live letter
   holds, Issue letter, drawn only once a To quote or Confirmed line
-  exists; else none. An empty Quotations list carries Build quote on its
-  line; an empty Service lines list reads the enquiry (else No service
-  lines.), its Add service the heading's alone (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
+  exists; else none. An empty Quotations list reads No quotations. alone,
+  Build quote the heading's (2026-11-03); an empty Service lines list reads
+  the enquiry (else No service lines.), its Add service the heading's alone
+  (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across, the
