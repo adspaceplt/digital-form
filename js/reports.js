@@ -3494,9 +3494,10 @@
           '<select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select></div>' +
         '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span>' +
         '<button class="btn btn-sm btn-icon" type="button" data-a="aidraft">' + AI_GLYPH + 'Write with AI</button></div></div>' +
-        '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
-          '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
-          '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details></div>' +
+        /* Required (the user, 2026-11-03: "everyone needs to input
+           something for the AI to read and draft better reports"). */
+        '<div class="row rp-ainotes"><div><label class="field-label" for="rpAiNotes">Notes for the draft</label>' +
+          '<textarea class="input" id="rpAiNotes" rows="3" aria-required="true" placeholder="Reasons, goal, budget"></textarea></div></div></div>' +
       '<div class="msg" data-m="ai"></div>' +
       /* The line belongs to the fields of points: an ads report's four, an
          accounts report's platform blocks, never its Summary of sentences
@@ -3603,10 +3604,8 @@
        client; this browser keeps it for the report until it is cleared. */
     var notes = $('rpAiNotes'), noteKey = 'adspace-draft-notes:' + r.id;
     try { notes.value = localStorage.getItem(noteKey) || ''; } catch (e) { /* storage refused */ }
-    var notesFold = notes.closest('details');
-    if (notes.value) notesFold.open = true;
-    if (notesFold.__paint) notesFold.__paint();
     notes.addEventListener('input', function () {
+      if (notes.value.trim()) notes.removeAttribute('aria-invalid');
       try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
     });
     /* The report's language (`sm_reports.lang`, the user, 2026-10-01): the
@@ -3724,6 +3723,11 @@
     /* Every press asks first (the user, 2026-10-01: a draft is counted, so
        a stray click must not spend one). */
     ab.addEventListener('click', function () {
+      if (!notes.value.trim()) {
+        say(am, 'Enter the notes for the draft: what changed and why, the goal and next month\'s budget.', 'err');
+        notes.setAttribute('aria-invalid', 'true'); notes.focus();
+        return;
+      }
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       var uses = 'This uses one draft' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
       window.ADspaceConfirm.ask(written
