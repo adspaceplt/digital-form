@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261103h">
-<link rel="stylesheet" href="/css/console.css?v=20261103h">
+<link rel="stylesheet" href="/css/portal.css?v=20261103j">
+<link rel="stylesheet" href="/css/console.css?v=20261103j">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -589,7 +589,7 @@
               <span class="cmdbar-count" id="crmCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage">Select clients</button>
+              <button class="btn btn-sm" id="crmSelect" type="button" data-need="clients:manage" data-rare data-g="2">Select clients</button>
               <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
@@ -598,7 +598,7 @@
               <div class="sheet" id="crmAddBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmAddTitle">
           <div class="sheet-head">
-            <h3 id="crmFormTitle">New lead</h3>
+            <h3 id="crmFormTitle">Add lead</h3>
             <button class="iconbtn" id="crmAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
@@ -3140,7 +3140,7 @@
            is folded, and a task made here opens nothing: Enter makes it and
            the title field is ready for the next. -->
       <div class="sheet" id="quickSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="qkHead">
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="qkHead">
           <div class="sheet-head">
             <h3 id="qkHead">Add task</h3>
             <button class="iconbtn" id="qkClose" type="button" aria-label="Close">
@@ -3615,7 +3615,7 @@
             <span class="cmdbar-count" id="regCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm" id="regAdd" type="button" data-g="2" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
+            <button class="btn btn-sm" id="regAdd" type="button" data-rare data-g="2" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add existing document</button>
             <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           </span>
         </span>
@@ -3759,7 +3759,7 @@
             <div class="msg" id="tmMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="tmSave" type="button">Add</button>
+            <button class="btn btn-primary" id="tmSave" type="button">Add member</button>
             <button class="btn btn-quiet" id="tmCancel" type="button">Cancel</button>
           </div>
         </div>
@@ -4880,7 +4880,7 @@
             <div class="sheet" id="svcBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="svcTitle">
           <div class="sheet-head">
-            <h3 id="svcTitle">New service</h3>
+            <h3 id="svcTitle">Add service</h3>
             <button class="iconbtn" id="svcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
@@ -5067,7 +5067,7 @@
             <div class="sheet" id="addLinkBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="linkFormTitle">
           <div class="sheet-head">
-            <h3 id="linkFormTitle">New short link</h3>
+            <h3 id="linkFormTitle">Add link</h3>
             <button class="iconbtn" id="linkClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
@@ -5099,7 +5099,7 @@
         <div class="msg" id="linkMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="saveLink" type="button">Create</button>
+            <button class="btn btn-primary" id="saveLink" type="button">Add link</button>
             <button class="btn btn-quiet" id="cancelAddLink" type="button">Cancel</button>
           </div>
         </div>
@@ -5919,7 +5919,7 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 
 <div class="sheet" id="regAddSheet" hidden>
-  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
     <div class="sheet-head">
       <h3 id="regAddTitle">Add existing document</h3>
       <button class="iconbtn" id="regAddClose" type="button" aria-label="Close">
@@ -6032,29 +6032,29 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261031w"></script>
-<script src="/js/admin.js?v=20261103c"></script>
+<script src="/js/admin.js?v=20261103j"></script>
 <script src="/js/documents.js?v=20261031w"></script>
 <script src="/js/letters.js?v=20261031w"></script>
 <script src="/js/smreport.js?v=20261103e"></script>
-<script src="/js/reports.js?v=20261103g"></script>
+<script src="/js/reports.js?v=20261103j"></script>
 <script src="/js/register.js?v=20261031w"></script>
-<script src="/js/suppliers.js?v=20261031w"></script>
+<script src="/js/suppliers.js?v=20261103j"></script>
 <script src="/js/bukku.js?v=20261031w"></script>
 <script src="/js/invoices.js?v=20261031w"></script>
 <script src="/js/engage.js?v=20261026f"></script>
 <script src="/js/quotes.js?v=20261031x"></script>
 <script src="/js/quotepdf.js?v=20261031v"></script>
 <script src="/js/checklists.js?v=20261031w"></script>
-<script src="/js/crm.js?v=20261031x"></script>
+<script src="/js/crm.js?v=20261103j"></script>
 <script src="/js/sales.js?v=20261025a"></script>
-<script src="/js/team.js?v=20261031w"></script>
+<script src="/js/team.js?v=20261103j"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
-<script src="/js/scripts.js?v=20261102"></script>
+<script src="/js/scripts.js?v=20261103j"></script>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261031w"></script>
-<script src="/js/ops.js?v=20261103b"></script>
+<script src="/js/campaigns.js?v=20261103j"></script>
+<script src="/js/ops.js?v=20261103j"></script>
 <script src="/js/perf.js?v=20261102"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>

@@ -4012,7 +4012,9 @@
          is never a moment with no sheet and the page showing through. */
       if (from) { sheet(from, false); from = null; sheet('quickSheet', true, true); }
       else sheet('quickSheet', true);
-      $('qkTitle').focus();
+      /* A desk types straight in; under a finger the card takes focus, as
+         every sheet does, so the keyboard does not rise over it (2026-11-03). */
+      if (!matchMedia('(pointer: coarse)').matches) $('qkTitle').focus();
     });
   }
   function quickAdd() {
@@ -7137,7 +7139,7 @@
     var items = [['edit', 'Edit']];
     /* A month with its meeting confirmed takes tasks, so it offers them:
        the New sheet, on this client and this month. */
-    if (monthOpen(e)) items.unshift(['add', 'Add tasks']);
+    if (monthOpen(e)) items.push(['add', 'Add tasks']);  // after Edit: the Change group opens on Edit (2026-11-03)
     /* Completed and Cancelled are decisions: an open month can be
        cancelled, and a closed one reopened. Completing is asked for on the
        card once every task is finished. */

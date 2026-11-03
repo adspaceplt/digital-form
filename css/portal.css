@@ -5662,7 +5662,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The creator's head: who they are and one control, no mark (a creator has
    no artwork on file), and their profile links under a hairline. On a phone
    the control keeps its line beside the name rather than taking a row. */
-.crhead { margin-top: 24px; }
+.crhead { margin-top: 16px; }  /* 16 under the bar, as every client page (2026-11-03) */
 .rec-id.rec-id-solo { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }
 .rec-name h1 {
   margin: 0; font-family: var(--font-head); font-size: 19px; font-weight: 600; letter-spacing: -.02em;
@@ -6268,7 +6268,7 @@ body.is-canvas { overflow: hidden; }
    the work below 1100. */
 /* Head, tabs and panes 12px apart at every width, as every client page
    stacks its blocks (2026-10-31, POR-10). */
-#cpHead { margin-top: 24px; margin-bottom: 12px; }
+#cpHead { margin-top: 16px; margin-bottom: 12px; }  /* 16 under the bar, as every client page's name card (2026-11-03) */
 #cpHead .rec-ctl .select { flex: 0 0 auto; width: auto; min-width: 150px; }
 #cpHead .rec-ctl .btn { flex: 0 0 auto; }
 .cp-tabs { margin-bottom: 12px; }
@@ -7502,13 +7502,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-stepfoot .msg { margin: 0; }
 .rp-stepfoot > .btn { flex: 0 0 auto; }
 .rp-head .msg:empty, .rp-stepfoot .msg:empty, .rp-sec > .msg:empty { display: none; }
-/* On a narrow pane the head keeps the record head's shape: the name and
-   the controls centred on one line (the state, PDF and the ⋯ at the card's
-   right edge), then the meta across the card. The verb leaves the PDF
-   button, so the three sit together rather than strung across a row of
-   their own (the user, 2026-09-28). */
-.is-narrow .rp-head-top { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ctl" "meta meta"; gap: 4px 12px; }
-.is-narrow .rp-who { display: contents; }
+/* On a narrow pane the head keeps the record head's shape (console.css):
+   the disc with the state, PDF and the ⋯ on its line, then the name over
+   its meta across the card (2026-11-03). The verb leaves the PDF button. */
 .is-narrow .rp-pdf-long { display: none; }
 .is-narrow .rp-pdf-short { display: inline; }
 .rp-rank .select { width: auto; min-width: 160px; }
@@ -7943,7 +7939,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .topbar .chrome-actions > .pushbtn:hover { background: var(--tonal-hover); color: var(--ink); }
 }
 @media (max-width: 640px) {
-  .topbar #signOutBtn { width: var(--ctl-h); padding: 0; justify-content: center; }
+  /* Sign out gives up its word on a phone on every client page, the
+     portal's as the creator page's (2026-11-03). */
+  .topbar #signOutBtn, .topbar #portalOut { width: var(--ctl-h); padding: 0; justify-content: center; }
+  .topbar #portalOut > #portalOutWord { display: none; }
   .topbar .brand-for { display: grid; line-height: 1.25; }
   .topbar .brand-for b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }

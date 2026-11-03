@@ -1141,6 +1141,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     bar, 12px above the search, and every strip on its own row is the tab
     row's height; a desk keeps My Work's views at the left of the bar's own
     line (`tests/cmdbar.js`).
+  - Every record leaves by one Back (`.backlink`: the arrow and the word
+    Back) at one height, its section's own strip stepping away while it is
+    open, and heads itself with `.rec-id` (the disc, the name over its meta,
+    the state and the ⋯); Select is behind the bar's ⋯ in every section; an
+    empty status line takes no room (2026-11-03, the user: "check all
+    others too"; `tests/cmdbar.js`).
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
     Clear sets `data-default` (else the first option) and fires `change`.
     A field the page hides (`.cmdbar-find[hidden]`) takes its search mark with it.
@@ -4032,8 +4038,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   list's own bar steps away (`placeMore`); on a phone the strip takes its
   own row, New month goes into the section's ⋯ and the count into the
   Filters sheet's head. Then that client's months, meetings and tasks
-  (`clientWork()`), the client remembered per browser. A month's ⋯ is Add tasks (the New sheet on that client and
-  month), Edit, Cancel month, Delete. A month whose tasks the filter hides
+  (`clientWork()`), the client remembered per browser. A month's ⋯ is Edit, Add tasks (the New sheet on that client and
+  month), Cancel month, Delete. A month whose tasks the filter hides
   says No matches (Show all), never No tasks this month.
 - The phase 1 model:
   - The original commitment is written once; a date move takes a reason

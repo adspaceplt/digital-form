@@ -169,7 +169,7 @@
 
   var ICON = {
     next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
-    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>',  // every record's one Back (2026-11-03)
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     more: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>',
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>',
@@ -596,7 +596,7 @@
       sortPosts();
       st.openVersions = got[3].data || [];
       st.ads = [];
-      var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs, white_label').eq('id', st.open.client_id).maybeSingle()];
+      var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs, white_label, logo_url').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
       return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
@@ -823,7 +823,11 @@
     if (!st.step || !stepsOf(r).some(function (s) { return s[0] === st.step; })) st.step = firstStep();
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
     box.innerHTML = '<section class="panel rp-head">' +
-      '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
+      '<div class="rp-head-top">' +
+      /* The client's disc, as every record heads itself (2026-11-03). */
+      '<span class="rec-mark' + (st.client.logo_url ? ' has-logo' : '') + '" aria-hidden="true">' +
+        (st.client.logo_url ? '<img src="' + esc(st.client.logo_url) + '" alt="">' : esc(window.ADspaceState.initials(st.client.name || ''))) + '</span>' +
+      '<div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
         /* On a narrow pane the verb gives way and the button reads PDF, so

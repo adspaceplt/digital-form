@@ -1799,9 +1799,14 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-go { color: var(--ink-mute); display: flex; justify-content: flex-end; }
 .rp-thumbfield { display: flex; align-items: center; gap: 12px; }
 .rp-thumbfield .input { flex: 1 1 auto; min-width: 0; }
-.rp-editbox { display: grid; gap: 24px; }
+.rp-editbox { display: grid; gap: 12px; }  /* one block step, as every record (2026-11-03) */
 .rp-head { display: grid; gap: 12px; }
-.rp-head-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.rp-head-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark who ctl"; align-items: center; gap: 14px; }
+.rp-head-top > .rec-mark { grid-area: mark; }
+.rp-head-top > .rp-who { grid-area: who; min-width: 0; }
+.rp-head-top > .rp-ctl { grid-area: ctl; }
+.is-narrow .rp-head-top { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark . ctl" "who who who"; gap: 10px 12px; }
+.is-narrow .rp-who h3 { overflow-wrap: anywhere; }
 .is-narrow .facts.rp-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
 .is-narrow .facts.rp-facts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
 .rp-facts .rp-sendacts > .btn { flex: 0 0 auto; }
@@ -1914,11 +1919,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-stepfoot { display: flex; flex-direction: row-reverse; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
 .rp-stepfoot .msg { flex: 1 0 100%; text-align: right; }
 .rp-form .rp-stepfoot { margin-top: 24px; }
-.is-narrow .rp-who h3 { grid-area: name; align-self: center; overflow-wrap: anywhere; }
-.is-narrow .rp-meta { grid-area: meta; margin: 0; }
 .is-narrow .rp-ctl { grid-area: ctl; }
 .rp-pdf-short { display: none; }
-.is-narrow .rp-pdf { min-width: 0; }
 .rp-rank { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rp-rank .field-label { margin: 0; }
 /* Check and submit: what the report holds, one line a step. */
@@ -2363,6 +2365,11 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 #workspace.is-set #setsMsg { display: none; }
 #workspace.is-set > .cr-rec { display: block; margin-top: 0; }
 #setPanel > .setbar { margin: 0 0 12px; padding: 18px 20px; border-bottom: 0; }
+/* The set's head is padded as every record's head on a phone, and its acts
+   stand at the right edge, the forward move last, as a campaign's do
+   (2026-11-03: they stood at the left, 4px further in). */
+@media (max-width: 640px) { #setPanel > .setbar { padding: 15px 16px; } }
+#setPanel .setbar-actions { flex-direction: row-reverse; justify-content: flex-start; }
 #setPanel > .cr-rec { margin-top: 0; }
 /* A set with nothing in its rail runs the page's width (2026-10-21, REV-5). */
 #setPanel > .cr-rec:not(:has(> .cr-rail > .railblock:not([hidden]))) { grid-template-columns: minmax(0, 1fr); }
@@ -3099,13 +3106,16 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .task-row.is-swiped > .trow-next { visibility: visible; opacity: 1; transition: opacity var(--t) var(--ease); }
 
 /* After the console's 760px `.crm-row` rule, which it overrides. */
-.vs-row, .crm-head.vs-row {
+.vs-row {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 240px) var(--state-w);
-  width: 100%; padding: 10px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
-  background: none; text-align: left; font: inherit; color: inherit;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 240px) var(--state-w) 18px;
 }
-button.vs-row { cursor: pointer; }
+/* A row is a button; the header keeps every list's own face (12px, 600,
+   mute; 2026-11-03: it read as a row of body text). */
+button.vs-row {
+  width: 100%; padding: 10px 15px; border: 0; border-bottom: 1px solid var(--line-soft);
+  background: none; text-align: left; font: inherit; color: inherit; cursor: pointer;
+}
 .vs-row:last-child { border-bottom: 0; }
 @media (hover: hover) { button.vs-row:hover { background: var(--sunk); } }
 .vs-c-name { display: grid; gap: 2px; min-width: 0; }
@@ -3120,6 +3130,7 @@ button.vs-row { cursor: pointer; }
 .is-narrow .vs-row > .vs-c-name { grid-area: name; }
 .is-narrow .vs-row > .vs-c-shoot { grid-area: shoot; }
 .is-narrow .vs-row > .vs-c-state { grid-area: state; justify-self: stretch; text-align: right; }
+.is-narrow .vs-row > .crm-c-go { display: none; }
 
 .vs-head { display: grid; gap: 12px; }
 .vs-head .rec-linktools { margin-top: 0; grid-template-columns: minmax(0, 1fr); }
@@ -3318,7 +3329,11 @@ button.vs-row { cursor: pointer; }
 .stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
 /* On a phone the groups are the view strip, held under the head on the
    page's ground, edge to edge in the gutters (2026-10-22, SET2-17). */
-.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: 0 -16px 12px; padding: 4px 16px 12px; }
+.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: -4px -16px 12px; padding: 4px 16px 12px; }
+/* The page starts where every section starts: an empty status line takes no
+   room, and the strip stands at the top as every section's strip does
+   (2026-11-03: it stood 16px lower). */
+#settingsMsg:empty { display: none; }
 .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
 /* What was pressed answers on its row (2026-10-14, audit SET-2). */
 .stg-what > .msg.stg-said { margin: 4px 0 0; }
@@ -3762,9 +3777,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .sup-row > .sup-term { grid-area: term; text-align: right; }
 .is-narrow .sup-row > .sup-go { display: none; }
 .is-narrow .sup-row > .is-none { display: none; }
-.sup-back { margin-bottom: 12px; }
-.sup-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
-.sup-rec { padding: 18px 20px; }
+/* The supplier's cards take the panel's own padding (14 on a phone), as
+   every record's do (2026-11-03). */
 .sup-rec .readgroups { margin-top: 16px; }
 .sup-ans-h { margin: 16px 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 /* The record in panes (SUP-4, 2026-10-22): the head its own card, the
@@ -3772,16 +3786,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    block in a section keeps. */
 .sup-headcard, .sup-tabs { margin-bottom: 12px; }
 .sup-body .readgroups.sup-pane { margin-top: 0; }
-/* The record head (2026-10-20): the name and its meta at the left, the
-   state and the ⋯ on the name's line at the right edge, at every width. */
-.sup-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
-.sup-head .sup-ctl { min-height: 26px; }
 #supClient > p.muted { margin: 0; }
 #supClient > p.muted + .ovfacts { margin-top: 8px; }
-.sup-who-h { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sup-who-h h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; overflow-wrap: anywhere; }
-.sup-meta { font-size: 12.5px; color: var(--ink-mute); }
-.sup-ctl { display: flex; align-items: center; gap: 12px; }
 .sup-go { margin-top: 12px; display: flex; }
 
 /* A colleague's record (2026-10-18, js/team.js): the list and the Team strip
@@ -3789,8 +3795,9 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #sectionTeam.is-member .tabline,
 #sectionTeam.is-member #teamMembersPane > .cmdbar,
 #sectionTeam.is-member #teamList { display: none; }
-.mrec-back { margin-bottom: 12px; }
-.mrec-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
+/* An empty status line under the bar takes no room, so a colleague's record
+   starts where every record starts (2026-11-03: it stood 10px lower). */
+#teamMsg:empty { display: none; }
 .mrec-tabs { margin-bottom: 12px; }
 .mrec-card { padding: 18px 20px; }
 .mrec-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }

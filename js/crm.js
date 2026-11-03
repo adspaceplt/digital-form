@@ -887,7 +887,7 @@
 
   function openForm(c, btn) {
     state.editing = c || null;
-    $('crmFormTitle').textContent = c ? 'Edit client' : 'New lead';
+    $('crmFormTitle').textContent = c ? 'Edit client' : 'Add lead';  // the bar's words (2026-11-03)
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     // Rebuilt against this record, so an owner who has since left the team is
@@ -7729,7 +7729,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     editingSvc = s || null;
     $('svcCat').innerHTML = CATS.map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('');
-    $('svcTitle').textContent = s ? 'Edit service' : 'New service';
+    $('svcTitle').textContent = s ? 'Edit service' : 'Add service';
+    $('svcSave').textContent = s ? 'Save' : 'Add service';  // a new record's sheet reads as the bar (2026-11-03)
     $('svcCat').value = s ? s.category : CATS[0];
     $('svcName').value = s ? s.name : '';
     $('svcSku').value = s ? (s.sku || '') : '';
