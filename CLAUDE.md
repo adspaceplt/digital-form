@@ -4412,6 +4412,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`), ticked by the client's checklist
     signed off (Clients, Checklists) and marked Not needed by hand.
+  - Posts planned is asked, never assumed: empty is refused, a whole number
+    from 0 to 200 is taken (0 an advertising-only month's true answer), and
+    the column holds the same (`ops_engagements_planned_range`). Every month
+    owes a report (the user, 2026-11-03): no posts planned ticks the
+    Advertising Report by itself, and none ticked is refused on the sheet
+    and the card's Reports pen (page-side; the database still takes one).
   - The card's head reads Runs (the month's span, its year) and Reports
     (each it owes, else None by the amber dot), each its pen at My Work Work
     on an open month, asking Starts on or the two ticks and saving that one

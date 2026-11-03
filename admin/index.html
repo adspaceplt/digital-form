@@ -61,7 +61,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261102a"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261103a"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -3009,7 +3009,7 @@
               </div>
               <div class="field">
                 <label class="field-label" for="engPlanned">Posts planned</label>
-                <input class="input" id="engPlanned" type="number" min="0" max="200" inputmode="numeric">
+                <input class="input" id="engPlanned" type="number" min="0" max="200" step="1" inputmode="numeric" aria-required="true">
               </div>
             </div>
             <!-- What the month owes in reports and the day it starts on
@@ -6043,7 +6043,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261031w"></script>
-<script src="/js/ops.js?v=20261102b"></script>
+<script src="/js/ops.js?v=20261103a"></script>
 <script src="/js/perf.js?v=20261102"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>

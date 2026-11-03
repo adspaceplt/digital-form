@@ -5741,6 +5741,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       if (ep.drive_url && !/^https:\/\/[^\s"'<>`\\]+$/i.test(ep.drive_url)) return { __raise: 'new row for relation "ops_engagements" violates check constraint "ops_engagements_drive_url_web"' };
 
+      if (ep.planned_count !== undefined && ep.planned_count !== null && !(Number.isInteger(Number(ep.planned_count)) && Number(ep.planned_count) >= 0 && Number(ep.planned_count) <= 200)) return { __raise: 'new row for relation "ops_engagements" violates check constraint "ops_engagements_planned_range"' };
+
       if (ep.start_day !== undefined && !(Number(ep.start_day) >= 1 && Number(ep.start_day) <= 28 && /^\d{1,2}$/.test(String(ep.start_day)))) return { error: 'bad-start-day' };
       if (ep.reports !== undefined && (!Array.isArray(ep.reports) || ep.reports.some(function (x) { return ['social', 'ads'].indexOf(x) < 0; }))) return { error: 'bad-reports' };
       var e0 = DB.ops_engagements.filter(function (e) { return e.client_id === ep.client_id && e.period === ep.period; })[0];
