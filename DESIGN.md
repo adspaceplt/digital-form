@@ -685,6 +685,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   - no article, and no object the context gives (**Delete**, never
     `Delete client`);
   - a menu item is the action's name only.
+  - a sheet that makes a record reads as the bar button that opened it: its
+    title is the button's words, and its commit repeats an Add button's words
+    (Add lead, Add link, Add service, Add member) or reads Create under a
+    New one (2026-11-03).
 - Formal names take title case: documents, agreements, forms, checklists and
   reports (Letter of Offer, Service Agreement, HR Letter, Onboarding Checklist,
   Social Media Accounts Report).

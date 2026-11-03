@@ -1831,7 +1831,7 @@
     shutMenus();
     memberOpener = opener || null;
     $('tmTitle').textContent = 'Add member';
-    $('tmSave').textContent = 'Add';
+    $('tmSave').textContent = 'Add member';
     ['tmName', 'tmEmail', 'tmStaff', 'tmDesig', 'tmUntil', 'tmUntilTime', 'tmMobile'].forEach(function (id) { $(id).value = ''; });
     $('tmEmail').readOnly = false;
     fillDept('');

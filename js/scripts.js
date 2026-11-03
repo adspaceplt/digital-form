@@ -219,7 +219,7 @@
         table: function () {
           /* The column is the state, as the month's list heads it; its chip
              never repeats a heading (2026-10-20, VS-1). */
-          var table = GRP.table('vs-row', ['Client', 'Next shoot', 'State']);
+          var table = GRP.table('vs-row', ['Client', 'Next shoot', 'State', '']);
           GRP.more(table, groups, 30, 'scripts', rowOf);
           return table;
         }
@@ -229,6 +229,9 @@
 
   /* One client's month: the client over its codes and scripts, the next
      shoot (else the last), and how many of its scripts are published. */
+  /* The mark that says a row opens something, in the column every list
+     keeps for it (2026-11-03). */
+  var GO = '<svg class="crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
   function rowOf(g) {
     var row = document.createElement('button');
     row.type = 'button';
@@ -244,7 +247,7 @@
       '<span class="vs-c-name"><b>' + esc(g.client.name || 'Client') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(list[0].client_id, true) : '') + '</b><small>' +
         esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span>' +
       '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last</span>') : '<span class="mute">Not set</span>') + '</span>' +
-      '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>';
+      '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>' + GO;
     row.addEventListener('click', function () { openMonth(list[0].id, true); });
     return row;
   }
@@ -558,9 +561,9 @@
       return '<button class="crm-row vs-row vs-mrow" type="button" data-v="' + esc(x.id) + '">' +
         '<span class="vs-c-name"><b>' + esc(codeOf(x) + (x.title ? ' · ' + x.title : '')) + '</b><small>' + esc(KIND_WORD[x.kind] || '') + '</small></span>' +
         '<span class="vs-c-shoot">' + (x.shoot_on ? esc(dayWord(x.shoot_on)) : '<span class="mute">Not set</span>') + '</span>' +
-        '<span class="vs-c-state">' + chip(stateOf(x)) + '</span></button>';
+        '<span class="vs-c-state">' + chip(stateOf(x)) + '</span>' + GO + '</button>';
     }).join('');
-    $('vsMonthRows').innerHTML = '<div class="crm-table vs-mtable"><div class="crm-head vs-row"><span>Script</span><span>Shoot</span><span>State</span></div>' + rows + '</div>';
+    $('vsMonthRows').innerHTML = '<div class="crm-table vs-mtable"><div class="crm-head vs-row"><span>Script</span><span>Shoot</span><span>State</span><span></span></div>' + rows + '</div>';
     Array.prototype.forEach.call($('vsMonthRows').querySelectorAll('[data-v]'), function (r) {
       r.addEventListener('click', function () { openScript(r.getAttribute('data-v'), true); });
     });

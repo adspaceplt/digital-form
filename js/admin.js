@@ -7174,8 +7174,8 @@
 
   function openLinkForm(link, opener) {
     editingSlug = link ? link.slug : null;
-    $('linkFormTitle').textContent = link ? 'Edit short link' : 'New short link';
-    $('saveLink').textContent = link ? 'Save' : 'Create';
+    $('linkFormTitle').textContent = link ? 'Edit short link' : 'Add link';
+    $('saveLink').textContent = link ? 'Save' : 'Add link';  // a new record's sheet reads as the bar (2026-11-03)
     $('newSlug').value = link ? link.slug : '';
     $('newTarget').value = link ? (link.target_url || '') : '';
     $('newLinkLabel').value = link ? (link.title || '') : '';

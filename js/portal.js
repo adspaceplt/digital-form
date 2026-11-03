@@ -148,6 +148,7 @@
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     if ($('kicker')) $('kicker').textContent = t().kicker;
     $('portalOutWord').textContent = t().signOut;
+    $('portalOut').setAttribute('aria-label', t().signOut);  // the word gives way on a phone, as the creator page's does
     $('signGo').textContent = t().sendLink;
     $('signEmail').setAttribute('aria-label', t().email);
     $('signCode').setAttribute('aria-label', t().code);

@@ -4038,8 +4038,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   list's own bar steps away (`placeMore`); on a phone the strip takes its
   own row, New month goes into the section's ⋯ and the count into the
   Filters sheet's head. Then that client's months, meetings and tasks
-  (`clientWork()`), the client remembered per browser. A month's ⋯ is Add tasks (the New sheet on that client and
-  month), Edit, Cancel month, Delete. A month whose tasks the filter hides
+  (`clientWork()`), the client remembered per browser. A month's ⋯ is Edit, Add tasks (the New sheet on that client and
+  month), Cancel month, Delete. A month whose tasks the filter hides
   says No matches (Show all), never No tasks this month.
 - The phase 1 model:
   - The original commitment is written once; a date move takes a reason
