@@ -34,7 +34,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261102b">
-<link rel="stylesheet" href="/css/console.css?v=20261103a">
+<link rel="stylesheet" href="/css/console.css?v=20261103b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3012,20 +3012,27 @@
                 <input class="input" id="engPlanned" type="number" min="0" max="200" step="1" inputmode="numeric" aria-required="true">
               </div>
             </div>
-            <!-- What the month owes in reports and the day it starts on
-                 (2026-10-04): each report ticked is a task in the month, due
-                 seven days after it ends. -->
+            <!-- The day the month starts on, and what it owes in reports
+                 (2026-10-04; one answer of four since 2026-11-03: a client
+                 taking content alone is given None). Each report owed is a
+                 task in the month, due seven days after it ends. -->
             <div class="row fgrid">
               <div class="field">
                 <label class="field-label" for="engStart">Starts on</label>
                 <select class="select" id="engStart"></select>
               </div>
-              <fieldset class="field engreports">
-                <legend class="field-label">Reports</legend>
-                <label class="tickline"><input type="checkbox" id="engRepSocial" aria-describedby="engRepNote"> <span>Accounts report</span></label>
-                <p class="asknote" id="engRepNote" hidden>Needs posts planned.</p>
-                <label class="tickline"><input type="checkbox" id="engRepAds"> <span>Advertising report</span></label>
-              </fieldset>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="engReports">Reports</label>
+                <select class="select" id="engReports" data-seg aria-describedby="engRepNote">
+                  <option value="social">Accounts</option>
+                  <option value="ads">Advertising</option>
+                  <option value="both">Both</option>
+                  <option value="none">None</option>
+                </select>
+                <p class="asknote" id="engRepNote" hidden>Accounts needs posts planned.</p>
+              </div>
             </div>
             <div class="row">
               <div class="field">
@@ -6043,7 +6050,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261031w"></script>
-<script src="/js/ops.js?v=20261103a"></script>
+<script src="/js/ops.js?v=20261103b"></script>
 <script src="/js/perf.js?v=20261102"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>

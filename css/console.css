@@ -2786,10 +2786,6 @@ button.aiu-row:first-child::before { content: none; }
 
 /* ---- A month's reports (2026-10-04): two ticks under one label, beside
    the day the month starts on. */
-.engreports { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 8px; align-content: start; }
-.engreports > legend { padding: 0; margin-bottom: 0; }
-/* Why the Accounts report tick rests, under its words (ux-audit WORK-9). */
-.engreports > .asknote { margin: -6px 0 0 27px; }
 
 /* ---- White label (2026-10-07): a client's wide logo for reports, on a
    white strip (the PDF's own page) in the Brand sheet and its read pane. */
