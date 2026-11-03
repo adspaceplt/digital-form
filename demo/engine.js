@@ -7492,6 +7492,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         withdrawn_at: null, withdrawn_by: null, withdraw_reason: null };
       DB.sm_report_versions.push(v);
       r.status = 'published';
+
+      var pCl = (DB.clients || []).filter(function (c) { return c.id === r.client_id; })[0] || {};
+      var pPic = (DB.team_members || []).filter(function (t) { return t.active !== false && pCl.owner &&
+        String(t.name || '').trim().toLowerCase() === String(pCl.owner).trim().toLowerCase(); })[0];
+      if (pPic) smTell(pPic.id, 'report.published', 'Report published',
+        (String(r.brand_name || '').trim() || pCl.name || '') + ' · ' + smWord(r.period_start, r.period_end) + ' · Published by ' + me.name);
       smLog(r, 'report.published'); return { ok: true, status: 'published', version_id: v.id };
     }
     if (name === 'sm_report_revise') {

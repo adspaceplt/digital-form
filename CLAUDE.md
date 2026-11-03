@@ -4985,6 +4985,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     it. The list marks it On request; the head reads Requested, By the
     client.
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
+  - A report published tells the client's Person in charge (the user,
+    2026-11-03): the active colleague the client's `owner` names, in the
+    bell and on their phone, opening the report (kind `report.published`,
+    "{client or brand} · {period} · Published by {name}"), never the one
+    who published it (trigger `sm_reports_published_notice`, once a move to
+    published; `2026-11-03-report-published-notice.sql`). The client is not
+    told: that stays Mark as sent.
   - Mark as sent (Reports at Work; `sm_report_sent`, `sm_reports.sent_on` /
     `sent_by`): one date, today by default, never after today nor before
     the period (`bad-date`); filed from and to. The head's Sent fact is the
