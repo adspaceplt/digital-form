@@ -71,6 +71,13 @@ window.ADSPACE_CONFIG = {
     // moves.
     maxUploadMB: 1024,
 
+    // A picture added to Content Review (picked, or read from Google Drive)
+    // is drawn down to this many pixels on its longer side before it goes
+    // up, and kept as a JPEG unless it holds transparency (2026-11-03: a
+    // carousel of 4500px PNGs, 8 MB a slide, drew grey on the client's
+    // page). Twice Instagram's 1080, so it stays sharp on a phone's screen.
+    reviewImageMax: 2160,
+
     // A campaign's invoice PDF goes under `private/` and opens through a
     // five-minute link from sign-download. On since 2026-10-03, once the
     // bucket policy and the upload key's private/* permission were in place

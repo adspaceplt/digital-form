@@ -4026,6 +4026,54 @@
     return 'instagram:feed';                                                       // 4:5, 1:1, landscape
   }
 
+  /* A picture for Content Review is drawn down before it is held or sent
+     (2026-11-03: 4500px PNGs, 8 MB a slide, drew grey on the client's
+     page): past `s3.reviewImageMax` on its longer side, or past 2 MB, it
+     becomes that size, a JPEG at 0.88, or a PNG where it holds
+     transparency. Done in the browser: nothing is paid for. A GIF, a video
+     or a picture the browser cannot draw goes as it came. */
+  function fitImage(blob, name) {
+    var mime = String(blob.type || '').toLowerCase();
+    if (!/^image\/(png|jpeg|webp)$/.test(mime)) return Promise.resolve(blob);
+    var max = ((window.ADSPACE_CONFIG || {}).s3 || {}).reviewImageMax || 2160;
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob);
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight;
+        var k = Math.min(1, max / Math.max(w, h));
+        if (k === 1 && blob.size <= 2 * 1024 * 1024) { URL.revokeObjectURL(url); resolve(blob); return; }
+        var cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(w * k));
+        cv.height = Math.max(1, Math.round(h * k));
+        var cx = cv.getContext('2d');
+        cx.imageSmoothingQuality = 'high';
+        cx.drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        var clear = false;
+        if (mime !== 'image/jpeg') {
+          try {
+            var px = cx.getImageData(0, 0, cv.width, cv.height).data;
+            for (var i = 3; i < px.length; i += 16) { if (px[i] < 255) { clear = true; break; } }
+          } catch (e) { clear = true; }
+        }
+        var type = clear ? 'image/png' : 'image/jpeg';
+        cv.toBlob(function (b) {
+          /* Past the limit it is always drawn down; within it (only heavy),
+             never sent heavier than it came. */
+          if (!b || (k === 1 && b.size >= blob.size)) { resolve(blob); return; }
+          var stem = String(name || blob.name || 'image').replace(/\.[a-z0-9]+$/i, '');
+          var out;
+          try { out = new File([b], stem + (clear ? '.png' : '.jpg'), { type: type }); }
+          catch (e) { out = b; out.name = stem + (clear ? '.png' : '.jpg'); }
+          resolve(out);
+        }, type, 0.88);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(blob); };
+      img.src = url;
+    });
+  }
+
   /* A picked file stays in the browser: it is previewed from the device and
      goes up to storage only when Add to set is pressed, so a file removed or
      discarded before then costs nothing and leaves nothing behind in S3. */
@@ -4048,13 +4096,13 @@
 
     state.lastDropCount = queue.length;
     var slow = [];
-    runPool(queue, function (file) {
-      return probe(file).then(function (info) {
+    runPool(queue, function (picked) {
+      return fitImage(picked, picked.name).then(function (file) { return probe(file).then(function (info) {
         return hasFastStart(file).then(function (fast) {
           if (!fast) slow.push(file.name);
           return { file: file, info: info };
         });
-      });
+      }); });
     }, 3).then(function (list) {
       // Added in the order they were chosen, not the order they were read.
       list.forEach(function (x) {
@@ -4192,11 +4240,12 @@
         return storePoster(m.local.posterBlob).then(function (posterUrl) {
           if (m.driveId) {
             // Remembered even if the post is later deleted, so a re-import is free.
-            db.from('drive_assets').insert({
+            // The copy drawn down takes the place of a heavier one kept before.
+            db.from('drive_assets').upsert({
               client_id: state.client.id, drive_id: m.driveId, url: url,
               mime_type: m.mime || null, width: m.width || null, height: m.height || null,
               bytes: file.size || null, poster_url: posterUrl || null
-            }).then(function () {}, function () {});
+            }, { onConflict: 'client_id,drive_id' }).then(function () {}, function () {});
           }
           dropLocal(m);
           m.url = url;
@@ -4725,18 +4774,27 @@
      copy in S3. */
   function copyDriveFile(f, onProgress) {
     return db.from('drive_assets')
-      .select('url, poster_url').eq('client_id', state.client.id).eq('drive_id', f.id).limit(1)
+      .select('url, poster_url, bytes').eq('client_id', state.client.id).eq('drive_id', f.id).limit(1)
       .then(function (r) {
         var hit = (r.data || [])[0];
-        if (hit && hit.url) {
+        /* A picture kept before pictures were drawn down (over 2 MB) is
+           read again and drawn down, never reused (2026-11-03). */
+        var heavy = hit && !f.isVideo && !(hit.bytes && hit.bytes <= 2 * 1024 * 1024);
+        if (hit && hit.url && !heavy) {
           if (onProgress) onProgress(1);
           return { url: hit.url, reused: true, poster: hit.poster_url || null };
         }
         return fetchWithProgress(
           DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), onProgress)
+          .then(function (raw) {
+            return f.isVideo ? raw : fitImage(new Blob([raw], { type: f.mimeType || raw.type }), f.name);
+          })
           .then(function (blob) {
+            /* A picture drawn down takes its new type and size. */
+            if (!f.isVideo && blob.type && blob.type !== f.mimeType) f.mimeType = blob.type;
             // The bytes are already here, so the poster costs nothing extra.
             return probeBlob(blob, f.mimeType).then(function (shot) {
+              if (!f.isVideo && shot.width) { f.width = shot.width; f.height = shot.height; }
               if (!f.width)  f.width = shot.width;
               if (!f.height) f.height = shot.height;
               return { blob: blob, shot: shot };
@@ -6688,15 +6746,15 @@
         saveBtn.disabled = true;
         saveBtn.textContent = picked.length ? 'Uploading…' : 'Saving…';
         /* A replaced file is sent at Save, then the row points at storage. */
-        var upload = !picked.length ? Promise.resolve(null) : Promise.all(picked.map(function (f) {
-          return probe(f).then(function (info) {
+        var upload = !picked.length ? Promise.resolve(null) : Promise.all(picked.map(function (raw) {
+          return fitImage(raw, raw.name).then(function (f) { return probe(f).then(function (info) {
             return storeFile(f).then(function (url) {
               return storePoster(info.poster).then(function (poster) {
                 return { url: url, type: info.isVideo ? 'video' : 'image', width: info.width || null,
                          height: info.height || null, mime: info.mime || f.type || null, poster: poster };
               });
             });
-          });
+          }); });
         }));
         var moved = [];
         upload.then(function (fresh) {

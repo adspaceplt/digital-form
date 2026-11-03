@@ -1673,17 +1673,19 @@
 
     api.upsert = function (row, opts) {
       var arr = Array.isArray(row) ? row : [row];
-      var key = (opts && opts.onConflict) || 'id';
+
+      var keys = String((opts && opts.onConflict) || 'id').split(',').map(function (k) { return k.trim(); });
+      var same = function (x, y) { return keys.every(function (k) { return String(y[k]) === String(x[k]); }); };
       var err = null;
       for (var ui = 0; ui < arr.length && !err; ui++) err = schemaRefusal(table, arr[ui]);
       if (!err && table === 'links') arr.forEach(function (x) { if (String(x.slug || '').length < 3) err = { code: '23514', message: 'new row for relation "links" violates check constraint "links_slug_min"' }; });
       if (err) { rows = []; api.__err = err; return api; }
-      if (arr.some(function (x) { return (DB[table] || []).some(function (y) { return String(y[key]) === String(x[key]); }); }) && !policyOk(table, 'u')) {
+      if (arr.some(function (x) { return (DB[table] || []).some(function (y) { return same(x, y); }); }) && !policyOk(table, 'u')) {
         rows = []; api.__err = POLICY_REFUSED(table); return api;
       }
       var fresh = [], out = [];
       arr.forEach(function (x) {
-        var held = (DB[table] || []).filter(function (y) { return String(y[key]) === String(x[key]); })[0];
+        var held = (DB[table] || []).filter(function (y) { return same(x, y); })[0];
         if (held) { Object.assign(held, x); out.push(held); } else fresh.push(x);
       });
       if (fresh.length) {
