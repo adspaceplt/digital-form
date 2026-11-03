@@ -3695,7 +3695,19 @@
       (st.posts || []).forEach(function (p) { if (p.id === id) p.notable = vals.posts[id]; });
     });
   }
+  /* The report numbers its own points: a line Write with AI opened with a
+     dash, a bullet or a number loses the mark before it is kept (the user,
+     2026-11-03: Chinese drafts came back with lines opening "- "). A line
+     opening with a figure (12.5%, -5%) keeps it. */
+  function unmark(t) {
+    if (typeof t !== 'string') return t;
+    return t.replace(/^[ \t]*(?:[-\u2013\u2014\u2022\u00b7*]|\d{1,2}[.)])[ \t]+(?=\S)/gm, '')
+      .replace(/^[ \t]*\d{1,2}\u3001[ \t]*(?=\S)/gm, '');
+  }
   function storeDraft(rid, dr) {
+    Object.keys(dr || {}).forEach(function (k) { if (typeof dr[k] === 'string') dr[k] = unmark(dr[k]); });
+    (dr.platforms || []).forEach(function (pl) { PLAT_FIELDS.forEach(function (f) { pl[f[0]] = unmark(pl[f[0]]); }); });
+    (dr.posts || []).forEach(function (pp) { pp.remark = unmark(pp.remark); });
     return Promise.all([
       db.from('sm_reports').select('id, intro, insights').eq('id', rid).maybeSingle(),
       db.from('sm_report_platforms').select('id, summary, worked, improve, actions').eq('report_id', rid),

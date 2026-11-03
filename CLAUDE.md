@@ -5510,7 +5510,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     settings (`app_settings_set`, from today; Edit prices, `team.settings`).
     A use from before tokens were kept is counted as not priced.
   - A draft is paid for once asked, so it is saved to the report as it
-    arrives (`storeDraft`) and to the page's copy, the strip reading it at
+    arrives (`storeDraft`), a line it opened with a dash, a bullet or a
+    number losing the mark (`unmark`; the report numbers its own points;
+    2026-11-03), a line opening with a figure keeping it and to the page's copy, the strip reading it at
     once (`localDraft`, 2026-10-27, RPT-10), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with
     "Save before leaving.". While one runs, closing or reloading the tab
