@@ -7049,6 +7049,12 @@
       (weak.length ? '<div class="eng-row eng-results"><span class="eng-lab">Weakest in ' + esc(monthWord(prev)) + '</span>' +
         '<span class="eng-val">' + weak.map(line).join('') + '</span></div>' : '');
   }
+  function askNoReport(period, go) {
+    ADspaceConfirm.ask({
+      title: 'Save without a report?', go: 'Save', cancel: 'Choose reports',
+      body: monthWord(period) + ' will owe no report, so no report task is made.'
+    }, go);
+  }
   function engShut(e) { return e.status === 'completed' || e.status === 'cancelled'; }
   function engReportsWord(e) {
     var reps = (e.reports || []).filter(function (k) { return REPORT_WORD[k]; });
@@ -7104,7 +7110,9 @@
       ]
     }, function (v) {
       var want = ['social', 'ads'].filter(function (k) { return v[k]; });
-      if (want.join() !== ['social', 'ads'].filter(function (k) { return reps.indexOf(k) > -1; }).join()) saveEngFact(e, el, { reports: want });
+      if (want.join() === ['social', 'ads'].filter(function (k) { return reps.indexOf(k) > -1; }).join()) return;
+      if (!want.length) askNoReport(e.period, function () { saveEngFact(e, el, { reports: want }); });
+      else saveEngFact(e, el, { reports: want });
     });
   }
   function engCard(e) {
@@ -7291,7 +7299,9 @@
        (posts planned since 2026-10-27, WORK-3). */
     var before = e ? e : (cw.engs || []).filter(function (x) { return x.client_id === client.id; })
       .sort(function (a, b) { return String(b.period).localeCompare(String(a.period)); })[0] || {};
-    $('engPlanned').value = before.planned_count || '';
+    /* A figure held, 0 included, is shown; a month with none before asks
+       for it (2026-11-03: an empty box had saved as 0). */
+    $('engPlanned').value = before.planned_count != null ? String(before.planned_count) : '';
     var day = Number(before.start_day) || 1;
     $('engStart').innerHTML = Array.apply(null, Array(28)).map(function (x, i) {
       return '<option value="' + (i + 1) + '"' + (i + 1 === day ? ' selected' : '') + '>' + (i + 1) + ordinal(i + 1) + ' of the month</option>';
@@ -7327,13 +7337,30 @@
     if (v && !/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) v = 'https://' + v.replace(/^\/+/, '');
     return v;
   }
-  function saveEng() {
+  /* Posts planned is asked, never assumed: empty is refused, and only a
+     whole number from 0 to 200 is taken (2026-11-03; the column holds the
+     same, `ops_engagements_planned_range`). 0 stays a true answer: an
+     advertising-only client plans no posts. */
+  function plannedOf() {
+    var v = String($('engPlanned').value || '').trim();
+    if (v === '') return { err: 'Enter the posts planned, 0 if none.' };
+    if (!/^\d{1,3}$/.test(v) || Number(v) > 200) return { err: 'Enter a whole number from 0 to 200.' };
+    return { n: Number(v) };
+  }
+  function saveEng(noReport) {
     var c = cw.client;
     if (!c) return;
+    var pl = plannedOf();
+    if (pl.err) {
+      msg('engMsg', pl.err, 'err');
+      $('engPlanned').focus();
+      return;
+    }
+    msg('engMsg', '');
     var payload = {
       client_id: c.id, period: engEditing ? engEditing.period : $('engPeriod').value,
       manager_id: $('engManager').value || null,
-      planned_count: Number($('engPlanned').value) || 0,
+      planned_count: pl.n,
       drive_url: driveUrl($('engDrive').value),
       start_day: Number($('engStart').value) || 1,
       reports: [['engRepSocial', 'social'], ['engRepAds', 'ads']].filter(function (x) { return $(x[0]).checked; })
@@ -7342,6 +7369,12 @@
     if (!engEditing) payload['new'] = true;
     if (payload.drive_url && !/^https:\/\/[^\s"'<>`\\]+$/i.test(payload.drive_url)) {
       msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
+      return;
+    }
+    /* A month owing no report is allowed (not every client takes one), but
+       never by a missed tick: it is asked once (2026-11-03). */
+    if (!payload.reports.length && noReport !== true) {
+      askNoReport(payload.period, function () { saveEng(true); });
       return;
     }
     var btn = $('engGo');
