@@ -6537,6 +6537,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    Shrunk to fit inside a 32px box the segments were 26px, which the audit's
    target rule is there to catch. */
 .cmdbar-views .acttab { min-height: var(--ctl-h-sm); min-width: 0; padding: 0 11px; font-size: 12.5px; }
+/* A view strip standing on a row of its own is a section's tabs, so it
+   takes the tab row's height, as Team's and Campaigns' do (the user,
+   2026-11-03: the strips stood at two heights); one sharing a desk's bar
+   line keeps the bar's small height. */
+.actstrip > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
+@media (max-width: 640px) {
+  .cmdbar > .cmdbar-views { --ctl-h-sm: var(--ctl-h); }
+  /* and the bar's row under it stands the block gap below, where every
+     other section's bar stands under its strip */
+  .cmdbar:has(> .cmdbar-views:not([hidden])) { row-gap: 12px; }
+}
 /* On a phone the strip scrolls sideways rather than squeezing six views
    into 358px (the brief of 2026-09-26): every view keeps the same padding
    and its whole word, a view grows to fill the strip only where the strip
@@ -6920,7 +6931,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
      name. A second action is behind the ⋯ beside it. */
   .cmdbar-acts .cmd-primary { width: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding: 0; }
   .cmdbar-acts .cmd-secondary { display: none; }
-  .cmdbar-views { flex: 1 1 100%; order: 5; }
+  /* Tabs first, then the bar (the user, 2026-11-03: "why are some up and
+     some below"): a view strip held in the bar takes its first row. */
+  .cmdbar-views { flex: 1 1 100%; order: -1; }
   .cmdbar .btn { flex: 0 0 auto; }
 }
 

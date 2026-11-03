@@ -33,8 +33,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261103e">
-<link rel="stylesheet" href="/css/console.css?v=20261103g">
+<link rel="stylesheet" href="/css/portal.css?v=20261103h">
+<link rel="stylesheet" href="/css/console.css?v=20261103h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -2090,6 +2090,10 @@
              one thing this portal's copy rules forbid outright. -->
         <!-- A campaign is found by its name or by the client it is for, and
              the state is what somebody filters on first. -->
+        <!-- The campaigns by stage (2026-10-10), as Reports runs: a tab a
+             stage with its count over the bar (tabs first, 2026-11-03), then
+             a card a month under it. -->
+        <nav class="tabrow camptabs" id="campStages" role="tablist" aria-label="Campaign stages" hidden></nav>
         <div class="cmdbar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -2105,9 +2109,6 @@
           </span>
         </div>
 
-        <!-- The campaigns by stage (2026-10-10), as Reports runs: a tab a
-             stage with its count, then a card a month under it. -->
-        <nav class="tabrow camptabs" id="campStages" role="tablist" aria-label="Campaign stages" hidden></nav>
         <div id="campCards" role="tabpanel" data-swipe="campStages"></div>
       </div>
 
@@ -4857,7 +4858,9 @@
       <!-- The bar says Services and the two tables under the command bar say
            Services and Add-ons, so a "Rate card" heading over both was a third
            name pushing the controls down the page.
-           What you are looking for, how you are cutting it, the one action. -->
+           What you are looking for, how you are cutting it, the one action.
+           Its tabs come first, over the bar (2026-11-03). -->
+      <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate card views" hidden></nav>
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -4995,7 +4998,6 @@
            goes live as a numbered version; the line says which is live and
            what is not yet published. -->
       <p class="msg" id="svcLiveMsg" role="status" hidden></p>
-      <nav class="tabrow svctabs" id="svcTabs" role="tablist" aria-label="Rate card views" hidden></nav>
       <div class="msg" id="svcListMsg"></div>
       <div id="svcList" role="tabpanel"></div>
       <div id="svcVersions" role="tabpanel" hidden></div>
@@ -5006,6 +5008,9 @@
          The client record's Reports tab shows the finished ones only. ---- -->
     <div class="console-body" id="sectionReports" hidden>
       <div id="rhHub">
+        <!-- Tabs first, then the bar (the user, 2026-11-03): the tab picks
+             what the list holds and the bar's count and search act on it. -->
+        <nav class="tabrow rhtabs" id="rhTabs" role="tablist" aria-label="Report stages" hidden></nav>
         <div class="cmdbar">
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -5033,7 +5038,6 @@
             </span>
           </span>
         </div>
-        <nav class="tabrow rhtabs" id="rhTabs" role="tablist" aria-label="Report stages" hidden></nav>
         <!-- Select (2026-10-06): the reports ticked in this tab and what they
              can take together, each through the function one report uses. -->
         <div class="bulkbar" id="rhBulk" hidden>

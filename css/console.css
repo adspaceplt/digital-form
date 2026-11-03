@@ -616,7 +616,6 @@ button.appver {
 .cw-client > .select { width: 220px; }
 .cw-eng { display: contents; }
 @media (max-width: 640px) {
-  .cwbar .cmdbar-views { order: -1; flex: 1 1 100%; }
   .cwbar .cw-client { flex: 1 1 0; }
   .cwbar .cw-client > .select { width: 100%; max-width: none; }
   .cwbar .cmdbar-quiet, .cwbar .cw-eng { display: none; }
