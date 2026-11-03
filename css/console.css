@@ -2805,11 +2805,11 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .aiu-usd { text-align: right; white-space: nowrap; }
 .aiu-crow.is-total { font-weight: 600; }
 .is-narrow .aiu-th { display: none; }
-.is-narrow .aiu-tr { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; row-gap: 4px; }
+.is-narrow .aiu-tr { grid-template-columns: minmax(0, 1fr); row-gap: 4px; }
 .is-narrow .aiu-tr.is-sum { border-top: 0; padding-top: 0; }
 .is-narrow .aiu-who { grid-column: 1 / -1; margin-bottom: 4px; }
 .is-narrow .aiu-c { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
-.is-narrow .aiu-l { position: static; width: auto; height: auto; overflow: hidden; clip: auto; color: var(--ink-mute); text-overflow: ellipsis; }
+.is-narrow .aiu-l { position: static; width: auto; height: auto; overflow: visible; clip: auto; color: var(--ink-mute); font-weight: 400; }
 .is-narrow .aiu-chev { display: none; }
 .is-narrow .aiu-lims { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .aiu-crow { grid-template-columns: minmax(0, 1fr) auto; }
