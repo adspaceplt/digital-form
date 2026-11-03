@@ -203,12 +203,20 @@
     $('campListView').hidden = !(name === 'campaigns' && !state.campaign);
     $('campWork').hidden     = !(name === 'campaigns' && state.campaign);
     $('rosterView').hidden   = name !== 'roster';
+    campStrip();
     Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-tab') === name);
     });
     setUrl();
     if (name === 'roster') loadRoster(function () { rosterDraft.restore(); restoreScroll(); });
     if (name === 'campaigns' && !state.campaign) { loadCampaigns(); campDraft.restore(); restoreScroll(); }
+  }
+  /* A record stands alone, as a client's and a colleague's do: the section's
+     Campaigns / Creators List strip gives way while a campaign is open
+     (2026-11-03, the user: "check all others too"). */
+  function campStrip() {
+    var strip = $('campSectionTabs');
+    if (strip) strip.hidden = state.tab === 'campaigns' && !!state.campaign;
   }
   Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
     b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
@@ -1084,7 +1092,9 @@
     if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
     box.setAttribute('aria-labelledby', 'campStage-' + campTab);
     var mine = byTab[campTab];
-    if (!mine.length) { UI.emptyLine(box, 'No campaigns.'); return; }
+    /* An empty list offers its way out, as Clients, Reports and Suppliers do
+       (2026-11-03). */
+    if (!mine.length) { UI.emptyLine(box, 'No campaigns.', mayWork() ? 'New campaign' : '', function () { $('showAddCamp').click(); }); return; }
     var monthOf = function (c) { return c.created_at ? ADspaceClock.day(c.created_at).slice(0, 7) : 'none'; };
     var MW = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
     var months = [];
@@ -1538,6 +1548,7 @@
     parkCampForm();
     $('campListView').hidden = true;
     $('campWork').hidden = false;
+    campStrip();
     $('campName').textContent = campName(c);
     // Not the form's input of the same name: this is the line under the title.
     $('campPurposeLine').textContent = c.purpose || '';
@@ -1667,6 +1678,7 @@
     state.campaign = null;
     $('campWork').hidden = true;
     $('campListView').hidden = false;
+    campStrip();
     shutAddCreators();
     ncDraft.clear();
     setUrl();

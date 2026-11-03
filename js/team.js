@@ -2030,7 +2030,7 @@
      Documents, Performance, Health, each drawn only where its section is
      readable. The list stays the way in; Back returns to it. */
   var rec = { id: null, pane: 'overview', seq: 0 };
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>';
+  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
   var PANES = [['overview', 'Overview'], ['work', 'Work'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
   function paneOk(k) {
     if (k === 'work') return may('team', 'manage');
@@ -2100,7 +2100,7 @@
     var meta = [m.staff_code, m.designation].filter(Boolean).join(' · ');
     var self = me() && me().id === m.id;
     box.innerHTML =
-      '<div class="mrec-back"><button class="btn btn-quiet btn-sm" type="button" data-r="back">' + BACK + 'Team</button></div>' +
+      '<button class="backlink" type="button" data-r="back">' + BACK + 'Back</button>' +
       '<section class="panel rec-head mrec-head"><div class="rec-id">' +
         '<span class="rec-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(m.name || '')) + '</span>' +
         '<div class="rec-who"><div class="rec-name"><h2>' + esc(m.name || '') + '</h2>' +

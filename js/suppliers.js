@@ -67,7 +67,7 @@
   }
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>';
+  var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
 
   var state = { pane: 'overview', rows: null, find: '', open: null, rec: null, form: null, wired: false };
 
@@ -418,11 +418,14 @@
     var shown = PANES.filter(function (x) { return panes[x[0]]; });
     if (!shown.some(function (x) { return x[0] === state.pane; })) state.pane = 'overview';
     rec.innerHTML =
-      '<div class="sup-back"><button class="btn btn-quiet btn-sm" type="button" data-s="back">' + BACK + 'Suppliers</button></div>' +
+      '<button class="backlink" type="button" data-s="back">' + BACK + 'Back</button>' +
       '<div class="panel sup-rec sup-headcard">' +
-        '<div class="sup-head"><div class="sup-who-h"><h2>' + esc(nameOf(s)) + '</h2><span class="sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
-          (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</span></div>' +
-          '<div class="sup-ctl">' + chip(s, got && s.status === 'pending') +
+        /* The record head every record draws (`.rec-id`): the initials' disc,
+         the name over its meta, the state and the ⋯ (2026-11-03). */
+        '<div class="rec-id sup-head"><span class="rec-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(nameOf(s) || '')) + '</span>' +
+          '<div class="rec-who sup-who-h"><div class="rec-name"><h2>' + esc(nameOf(s)) + '</h2></div><p class="rec-id-meta sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
+          (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</p></div>' +
+          '<div class="rec-ctl sup-ctl">' + chip(s, got && s.status === 'pending') +
             (menu ? '<span class="team-act"><button class="kmenu-btn" type="button" data-s="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" data-s-menu="rec" hidden>' + menu + '</div></span>' : '') +
           '</div></div>' +

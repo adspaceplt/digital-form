@@ -3318,7 +3318,11 @@ button.vs-row { cursor: pointer; }
 .stg.is-desk { display: grid; grid-template-columns: 208px minmax(0, 1fr); gap: 24px; align-items: start; }
 /* On a phone the groups are the view strip, held under the head on the
    page's ground, edge to edge in the gutters (2026-10-22, SET2-17). */
-.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: 0 -16px 12px; padding: 4px 16px 12px; }
+.stg-strip { position: sticky; top: var(--head-h); z-index: 6; background: var(--page); margin: -4px -16px 12px; padding: 4px 16px 12px; }
+/* The page starts where every section starts: an empty status line takes no
+   room, and the strip stands at the top as every section's strip does
+   (2026-11-03: it stood 16px lower). */
+#settingsMsg:empty { display: none; }
 .stg-go[aria-current] { background: var(--line-soft); color: var(--ink); }
 /* What was pressed answers on its row (2026-10-14, audit SET-2). */
 .stg-what > .msg.stg-said { margin: 4px 0 0; }
@@ -3762,9 +3766,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .is-narrow .sup-row > .sup-term { grid-area: term; text-align: right; }
 .is-narrow .sup-row > .sup-go { display: none; }
 .is-narrow .sup-row > .is-none { display: none; }
-.sup-back { margin-bottom: 12px; }
-.sup-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
-.sup-rec { padding: 18px 20px; }
+/* The supplier's cards take the panel's own padding (14 on a phone), as
+   every record's do (2026-11-03). */
 .sup-rec .readgroups { margin-top: 16px; }
 .sup-ans-h { margin: 16px 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 /* The record in panes (SUP-4, 2026-10-22): the head its own card, the
@@ -3772,16 +3775,8 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    block in a section keeps. */
 .sup-headcard, .sup-tabs { margin-bottom: 12px; }
 .sup-body .readgroups.sup-pane { margin-top: 0; }
-/* The record head (2026-10-20): the name and its meta at the left, the
-   state and the ⋯ on the name's line at the right edge, at every width. */
-.sup-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
-.sup-head .sup-ctl { min-height: 26px; }
 #supClient > p.muted { margin: 0; }
 #supClient > p.muted + .ovfacts { margin-top: 8px; }
-.sup-who-h { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sup-who-h h2 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; overflow-wrap: anywhere; }
-.sup-meta { font-size: 12.5px; color: var(--ink-mute); }
-.sup-ctl { display: flex; align-items: center; gap: 12px; }
 .sup-go { margin-top: 12px; display: flex; }
 
 /* A colleague's record (2026-10-18, js/team.js): the list and the Team strip
@@ -3789,8 +3784,9 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #sectionTeam.is-member .tabline,
 #sectionTeam.is-member #teamMembersPane > .cmdbar,
 #sectionTeam.is-member #teamList { display: none; }
-.mrec-back { margin-bottom: 12px; }
-.mrec-back .btn svg { width: 15px; height: 15px; margin-right: 2px; }
+/* An empty status line under the bar takes no room, so a colleague's record
+   starts where every record starts (2026-11-03: it stood 10px lower). */
+#teamMsg:empty { display: none; }
 .mrec-tabs { margin-bottom: 12px; }
 .mrec-card { padding: 18px 20px; }
 .mrec-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
