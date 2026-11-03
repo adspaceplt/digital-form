@@ -523,6 +523,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.
+  - iOS draws a launch picture before the page's first byte
+    (`apple-touch-startup-image`, `admin/launch/`): the wordmark over
+    Digital Portal on white or the dark ground, one a device size and
+    orientation, dark lines first; a size with no exact match is a blank
+    screen, so a new device is added through `tests/launch-build.js`
+    (`tests/launch.js`). iOS takes it when the app is added to the Home
+    Screen.
 - The phone tab bar (`#tabBar`, js/admin.js; the user, 2026-10-09): on a
   touch screen narrower than a desk (a foldable open or shut, a tablet
   upright) and on any window at 640 and under, the one media query
