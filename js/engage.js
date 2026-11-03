@@ -234,7 +234,11 @@
       m.span = spanOf(k, own ? own.start_day : 1);
       m.rows = rowsOf(c, d, m);
       return m;
-    }).filter(function (m) { return m.rows.length; });
+    }).filter(function (m) { return m.rows.length; })
+      /* A cancelled month follows the rest, newest first otherwise
+         (2026-11-03). */
+      .map(function (m, i) { return [m.content && m.content.status === 'cancelled' ? 1 : 0, i, m]; })
+      .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; });
   }
 
   // ---- Rows -------------------------------------------------------------------

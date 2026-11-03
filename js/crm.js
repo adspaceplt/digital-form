@@ -581,6 +581,12 @@
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
+      /* Leads past their follow-up time first, the order otherwise kept
+         (2026-11-03): the one to ring now leads the band. */
+      if (g[0] === 'leads') {
+        mine = mine.map(function (c, i) { return [isStale(c) ? 0 : 1, i, c]; })
+          .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; });
+      }
       box.appendChild(GRP.section({
         route: 'clients', key: g[0], name: g[1], count: mine.length,
         marks: bandMarks(mine),
@@ -5475,7 +5481,14 @@
       table.className = 'crm-table';
       table.innerHTML = '<div class="crm-head svc-row csv-row"><span>Service</span><span class="svc-rate">Qty × rate</span>' +
         '<span class="svc-rate">Amount</span><span>State</span><span></span></div>';
-      rows.forEach(function (l) { table.appendChild(serviceRow(l)); });
+      /* To quote first (it needs a quotation or a letter), then Confirmed,
+         then Enquired; each newest first (2026-11-03). */
+      var SV_RANK = { quoted: 0, confirmed: 1, enquired: 2 };
+      rows.slice().sort(function (a, b) {
+        var ra = SV_RANK[a.state] == null ? 3 : SV_RANK[a.state], rb = SV_RANK[b.state] == null ? 3 : SV_RANK[b.state];
+        if (ra !== rb) return ra - rb;
+        return String(b.created_at || '') < String(a.created_at || '') ? -1 : String(b.created_at || '') > String(a.created_at || '') ? 1 : 0;
+      }).forEach(function (l) { table.appendChild(serviceRow(l)); });
       if (showRemovedServices) gone.forEach(function (l) { table.appendChild(serviceRow(l, true)); });
       var sum = function (st) {
         return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
@@ -5920,7 +5933,12 @@
         var table = document.createElement('div');
         table.className = 'crm-table rq-table' + (mayPart('clients.requests', 'manage') ? ' has-menu' : '');
         table.innerHTML = '<div class="crm-head svc-row doc-row rq-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
-        state.requests.forEach(function (q) { table.appendChild(requestRow(q)); });
+        /* Open requests first (Requested, Reviewing, Approved and waiting to
+           be applied), then the settled ones; each newest first (2026-11-03). */
+        var settled = function (q) { return Boolean(q.withdrawn_at) || q.state === 'declined' || q.state === 'applied'; };
+        state.requests.map(function (q, i) { return [settled(q) ? 1 : 0, i, q]; })
+          .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); })
+          .forEach(function (x) { table.appendChild(requestRow(x[2])); });
         box.appendChild(table);
       });
     }).then(null, function () { wrap.hidden = true; });
@@ -6135,7 +6153,12 @@
           var table = document.createElement('div');
           table.className = 'crm-table';
           table.innerHTML = '<div class="crm-head svc-row doc-row ltr-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
-          rows.forEach(function (d) { table.appendChild(documentRow(d)); });
+          /* A void or replaced letter follows the standing ones, each newest
+             first (2026-11-03). */
+          var over = function (d) { return d.voided_at || d.superseded_by ? 1 : 0; };
+          rows.map(function (d, i) { return [over(d), i, d]; })
+            .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); })
+            .forEach(function (x) { table.appendChild(documentRow(x[2])); });
           box.appendChild(table);
           mailLines(c.id, table);
         }
@@ -7482,7 +7505,11 @@
       t[1].forEach(function (k) {
         if (seen[k]) return;
         seen[k] = true;
-        var lines = rows.filter(function (s) { return s.category === k; });
+        /* An inactive line follows the lines offered, the card's order
+           otherwise kept (2026-11-03). */
+        var lines = rows.filter(function (s) { return s.category === k; })
+          .map(function (s, i) { return [s.active === false ? 1 : 0, i, s]; })
+          .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; });
         if (!lines.length) return;
         var key = String(k).toLowerCase().replace(/[^a-z0-9]+/g, '-');
         box.appendChild(GRP.section({

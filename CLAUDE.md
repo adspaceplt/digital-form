@@ -1648,6 +1648,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   category filter on a route whose cards are those groups (Creator Campaigns,
   Documents, Team, Services, Handbook, Short Links). An option for all reads
   All stages, All people, All months, never Every …, Everyone or Everything.
+- A list puts what needs acting on first and what is finished last (2026-11-03,
+  the user: "the more user friendly sequencing order"), the order otherwise
+  kept: My Work's rows and board columns a VIC client's open work first, then
+  priority and due date, finished work newest finished first (`rowOrder`);
+  Leads past their follow-up time first; a client's quotations needing the
+  team, then standing, then settled, then over (Expired, Revised,
+  Cancelled); requests open first; service lines To quote, Confirmed,
+  Enquired, each newest first; a void or replaced letter, a withdrawn
+  notice, an inactive rate line, a cancelled month and a posted or completed
+  booking after the rest; Content Review's sets in a month with changes
+  requested first, then drafts, then published; a report month's rows on
+  Published not sent first, then A to Z by the name they read; the client
+  portal's meetings ahead first, soonest first, then held, latest first;
+  Video Scripts' No month last. A history stays newest first and what waits
+  on the reader oldest first.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear filters.
 - A list reads what its rows show in one request (`.in()`, paged by the

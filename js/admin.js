@@ -3483,6 +3483,14 @@
           return esc(subs[id] || 'Loading…') + (chg[id] ? '<span class="sep">·</span>' + changesChip(chg[id]) : '');
         };
         var GRP = window.ADspaceGroup;
+        /* Within a month, a set the client asked changes on first, then
+           drafts, then what is published; each newest first (2026-11-03). The
+           counts arrive after the rows, which then take their places. */
+        var setOrder = function (list) {
+          var rank = function (b) { return chg[b.id] ? 0 : b.published ? 2 : 1; };
+          return list.map(function (b, i) { return [rank(b), i, b]; })
+            .sort(function (a, z) { return (a[0] - z[0]) || (a[1] - z[1]); }).map(function (x) { return x[2]; });
+        };
         months.forEach(function (k, i) {
           box.appendChild(GRP.section({
             route: 'review-sets', key: k, name: k === 'adhoc' ? 'Ad hoc' : ymWord(k), count: byMonth[k].length,
@@ -3490,7 +3498,7 @@
             table: function () {
               var t = document.createElement('div');
               t.className = 'crm-table softpanel cr-sets';
-              byMonth[k].forEach(function (b) {
+              setOrder(byMonth[k]).forEach(function (b) {
                 var card = document.createElement('button');
                 card.className = 'set-row' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
                 card.type = 'button';
@@ -3516,6 +3524,12 @@
             chg[b.id] = by[b.id] ? by[b.id].n_changes : 0;
           });
           paintSubs(false);
+          Array.prototype.forEach.call(box.querySelectorAll('.cr-sets'), function (t) {
+            var rows = Array.prototype.slice.call(t.querySelectorAll(':scope > [data-set]'));
+            var byId = {};
+            rows.forEach(function (r) { byId[r.getAttribute('data-set')] = r; });
+            setOrder(sets.filter(function (b) { return byId[b.id]; })).forEach(function (b) { t.appendChild(byId[b.id]); });
+          });
         }).catch(function () {
           sets.forEach(function (b) { subs[b.id] = 'Posts unavailable'; });
           paintSubs(true);

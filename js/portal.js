@@ -679,8 +679,17 @@
       var tb = table('<div class="crm-head svc-row doc-row meet-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       var now = Date.now();
+      var endOf = function (v) { return new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000; };
+      /* By when it takes place, never by when it was recorded (2026-11-03):
+         what is ahead first, the soonest at the top, then what was held,
+         the latest first. */
+      list = list.slice().sort(function (a, b) {
+        var ea = endOf(a), eb = endOf(b), fa = ea > now, fb = eb > now;
+        if (fa !== fb) return fa ? -1 : 1;
+        return fa ? ea - eb : eb - ea;
+      });
       list.forEach(function (v) {
-        var ahead = new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > now;
+        var ahead = endOf(v) > now;
         var row = document.createElement('div');
         row.className = 'svc-row doc-row meet-row';
         /* Join is the row's own act while the meeting is ahead, as the

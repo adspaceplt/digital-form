@@ -528,7 +528,12 @@
     var lost = options.filter(function (o) { return o.state === 'withdrawn'; });
     // The next shoot is what the client is watching for, so dated bookings
     // come first, soonest first. Undated ones follow in the order offered.
+    // A booking whose post is out (Posted, Completed) follows the running
+    // ones (2026-11-03): its old shoot date no longer leads the list.
+    var done = function (o) { return o.state === 'posted' || o.state === 'completed'; };
     booked = booked.map(function (o, i) { return [o, i]; }).sort(function (a, b) {
+      var xa = done(a[0]) ? 1 : 0, xb = done(b[0]) ? 1 : 0;
+      if (xa !== xb) return xa - xb;
       var da = a[0].visit_date || '', dbb = b[0].visit_date || '';
       if (da && dbb) return da < dbb ? -1 : da > dbb ? 1 : a[1] - b[1];
       if (da) return -1;

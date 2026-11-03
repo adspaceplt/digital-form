@@ -82,7 +82,10 @@
         if (S && S.failLine) S.failLine(box, 'Notices', said(r.error || d.error), load);
         return;
       }
-      var items = d.items || [];
+      /* Withdrawn notices follow the live ones, each newest first
+         (2026-11-03). */
+      var items = (d.items || []).map(function (n, i) { return [n.withdrawn_at ? 1 : 0, i, n]; })
+        .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; });
       if (!items.length) { box.innerHTML = '<p class="ann-none">No notices.</p>'; return; }
       var byId = {};
       items.forEach(function (n) { byId[n.id] = n; });
