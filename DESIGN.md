@@ -500,6 +500,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   `.tinline`, `.serial-copy`) keeps its whole target but never shows it: its
   hover fill hugs the line (26px, a `::before`), never a slab the height of
   the target.
+- A fact's value that opens its record (`dd > .linkbtn`: a client's
+  supplier, a supplier's client) reads as the value: left aligned, in ink,
+  wrapping as the facts beside it, the chevron after its last word, its
+  target given back to the line.
 - A tonal toggle (`aria-pressed`, Review n changes) held on reads one step
   deeper (`--tonal-press`), its words in ink; never blue.
 - Every button carries a base class (`.btn` and its variants, `.linkbtn`,
