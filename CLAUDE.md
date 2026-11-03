@@ -1133,8 +1133,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A card holding everything never shuts by default.
 - `js/cmdbar.js` owns the command bar.
   - Below 640: a search mark and a Filters mark (with a badge counting filters
-    off their default), then the count and the primary as a filled `+`; any
-    view segment on a second row.
+    off their default), then the count and the primary as a filled `+`; a
+    view segment it holds on a row of its own above them.
+  - Tabs first, then the bar, on every section at every width (the user,
+    2026-11-03: "why are some up and some below"): a section's strip (Clients,
+    Creator Campaigns and its stages, Reports, Services, Team) stands over its
+    bar, 12px above the search, and every strip on its own row is the tab
+    row's height; a desk keeps My Work's views at the left of the bar's own
+    line (`tests/cmdbar.js`).
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
     Clear sets `data-default` (else the first option) and fires `change`.
     A field the page hides (`.cmdbar-find[hidden]`) takes its search mark with it.
