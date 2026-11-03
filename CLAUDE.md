@@ -3215,7 +3215,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     device (an object URL preview) until Add to set, which uploads what is left with progress, then writes
     the posts; a removed file costs nothing. Cancel aborts; a failed upload
     keeps its draft; only uploaded drafts are kept for a reload; leaving
-    with a file held asks first.
+    with a file held asks first. A picture (PNG, JPEG, WebP) picked, read
+    from Drive or replaced is drawn down in the browser before it is held
+    (`fitImage`): past `s3.reviewImageMax` (2160) on its longer side always,
+    else past 2 MB unless that makes it heavier, a JPEG at 0.88 or a PNG
+    where it holds transparency; a Drive copy kept heavier than 2 MB is
+    read again, never reused (2026-11-03: 8 MB slides drew grey).
   - A video's thumbnail in a console row is its cover frame (`poster`),
     else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
     a bare `<video>` is blank on iPhone Safari until it plays. One whose
