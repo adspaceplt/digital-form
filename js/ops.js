@@ -7049,12 +7049,6 @@
       (weak.length ? '<div class="eng-row eng-results"><span class="eng-lab">Weakest in ' + esc(monthWord(prev)) + '</span>' +
         '<span class="eng-val">' + weak.map(line).join('') + '</span></div>' : '');
   }
-  function askNoReport(period, go) {
-    ADspaceConfirm.ask({
-      title: 'Save without a report?', go: 'Save', cancel: 'Choose reports',
-      body: monthWord(period) + ' will owe no report, so no report task is made.'
-    }, go);
-  }
   function engShut(e) { return e.status === 'completed' || e.status === 'cancelled'; }
   function engReportsWord(e) {
     var reps = (e.reports || []).filter(function (k) { return REPORT_WORD[k]; });
@@ -7104,6 +7098,7 @@
     var reps = e.reports || [];
     ADspaceConfirm.ask({
       title: 'Reports for ' + monthWord(e.period), go: 'Save',
+      check: function (v) { return v.social || v.ads ? '' : 'Choose at least one report.'; },
       fields: [
         { name: 'social', label: REPORT_WORD.social, tick: true, value: reps.indexOf('social') > -1 ? 'on' : '' },
         { name: 'ads', label: REPORT_WORD.ads, tick: true, value: reps.indexOf('ads') > -1 ? 'on' : '' }
@@ -7111,8 +7106,7 @@
     }, function (v) {
       var want = ['social', 'ads'].filter(function (k) { return v[k]; });
       if (want.join() === ['social', 'ads'].filter(function (k) { return reps.indexOf(k) > -1; }).join()) return;
-      if (!want.length) askNoReport(e.period, function () { saveEngFact(e, el, { reports: want }); });
-      else saveEngFact(e, el, { reports: want });
+      saveEngFact(e, el, { reports: want });
     });
   }
   function engCard(e) {
@@ -7312,7 +7306,7 @@
     /* An Accounts Report needs content planned for the month (the user,
        2026-10-11), unless the client is white label: the tick rests while
        Posts planned is empty, as the database refuses it. */
-    engWl = false; engWant = reps.indexOf('social') > -1;
+    engWl = false; engWant = reps.indexOf('social') > -1; engAdsAuto = false;
     engAccounts();
     db.from('clients').select('white_label').eq('id', client.id).maybeSingle().then(function (r) {
       if (r && !r.error && r.data && r.data.white_label) { engWl = true; engAccounts(); }
@@ -7320,11 +7314,16 @@
     msg('engMsg', '');
     sheet('engSheet', true);
   }
-  var engWl = false, engWant = false;
+  var engWl = false, engWant = false, engAdsAuto = false;
   function engAccounts() {
     var off = !engWl && !(Number($('engPlanned').value) > 0);
     $('engRepSocial').disabled = off;
     $('engRepSocial').checked = !off && engWant;
+    /* Every month owes a report (the user, 2026-11-03): with no posts
+       planned it is the Advertising Report, ticked here; posts planned
+       again lets go of a tick this made, never one the person made. */
+    if (off && !$('engRepAds').checked) { $('engRepAds').checked = true; engAdsAuto = true; }
+    else if (!off && engAdsAuto) { $('engRepAds').checked = false; engAdsAuto = false; }
     /* A resting tick says why (ux-audit WORK-9). */
     if ($('engRepNote')) $('engRepNote').hidden = !off;
   }
@@ -7347,7 +7346,7 @@
     if (!/^\d{1,3}$/.test(v) || Number(v) > 200) return { err: 'Enter a whole number from 0 to 200.' };
     return { n: Number(v) };
   }
-  function saveEng(noReport) {
+  function saveEng() {
     var c = cw.client;
     if (!c) return;
     var pl = plannedOf();
@@ -7371,10 +7370,10 @@
       msg('engMsg', 'Enter the folder\'s https:// address.', 'err');
       return;
     }
-    /* A month owing no report is allowed (not every client takes one), but
-       never by a missed tick: it is asked once (2026-11-03). */
-    if (!payload.reports.length && noReport !== true) {
-      askNoReport(payload.period, function () { saveEng(true); });
+    /* Every month owes at least one report (the user, 2026-11-03). */
+    if (!payload.reports.length) {
+      msg('engMsg', 'Choose at least one report.', 'err');
+      ($('engRepSocial').disabled ? $('engRepAds') : $('engRepSocial')).focus();
       return;
     }
     var btn = $('engGo');
@@ -8051,6 +8050,7 @@
     if (engGoBtn) engGoBtn.addEventListener('click', saveEng);
     if ($('engPlanned')) $('engPlanned').addEventListener('input', engAccounts);
     if ($('engRepSocial')) $('engRepSocial').addEventListener('change', function () { engWant = $('engRepSocial').checked; });
+    if ($('engRepAds')) $('engRepAds').addEventListener('change', function () { engAdsAuto = false; });
     ['meetClose', 'meetCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('meetSheet', false); });
     });
