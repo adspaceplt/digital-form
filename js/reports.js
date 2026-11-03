@@ -1829,9 +1829,7 @@
       return;
     }
     var body = (doMeta ? 'Against Meta reads Meta\'s figures for the period, with no AI use. ' : '') +
-      (room && room.admin
-        ? 'The commentary check uses one of your checks on this report today and one of your AI uses (' + room.person + ' left).'
-        : 'The commentary check uses your one check on this report today and one of your AI uses' + (room ? ' (' + room.person + ' left).' : '.'));
+      'The commentary check uses one of your commentary checks today' + (room ? ' (' + room.person + ' left).' : '.');
     window.ADspaceConfirm.ask({ title: 'Run the report audit?', body: body, go: 'Run audit' }, function () {
       if (doMeta) runMeta(r);
       runCheck(host, r);
