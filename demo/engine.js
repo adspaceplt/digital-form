@@ -13186,7 +13186,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var own = function (t) { return (DB[t] || []).filter(function (x) { return x.report_id === rid; }).map(function (x) { return x.id; }); };
             var pl = own('sm_report_platforms'), po = own('sm_report_posts');
             dr.platforms = (opts.body.platforms || []).filter(function (x) { return pl.indexOf(x) > -1; }).map(function (x) {
-              return { ref: x, summary: 'Drafted summary.', worked: 'Drafted worked.', improve: 'Drafted improve.', actions: 'We will draft actions.' };
+              return { ref: x, summary: 'Drafted summary.', worked: window.__aiDraft.dash ? 'Drafted worked.\n- Second point.' : 'Drafted worked.', improve: 'Drafted improve.', actions: 'We will draft actions.' };
             });
             dr.posts = (opts.body.posts || []).filter(function (x) { return po.indexOf(x) > -1; }).map(function (x) { return { ref: x, remark: 'Drafted remark.' }; });
           }
