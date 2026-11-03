@@ -207,7 +207,9 @@
       var g = byMonth[p][s.client_id] || (byMonth[p][s.client_id] = { client: s.clients || {}, period: s.period, scripts: [] });
       g.scripts.push(s);
     });
-    months.sort(function (a, b) { return b.localeCompare(a); });
+    /* Newest month first, No month last (2026-11-03): 'none' sorted above
+       every real month. */
+    months.sort(function (a, b) { return (a === 'none') - (b === 'none') || b.localeCompare(a); });
     months.forEach(function (p, i) {
       var groups = Object.keys(byMonth[p]).map(function (k) { return byMonth[p][k]; });
       groups.forEach(function (g) { g.scripts.sort(function (a, b) { return (a.seq || 0) - (b.seq || 0); }); });

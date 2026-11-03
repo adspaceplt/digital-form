@@ -1101,6 +1101,24 @@
   /* Inside a band the rows read by how soon, then by when: an Urgent task
      owed on Friday sits above a Normal one owed on Thursday, because the band
      has already said which week it is. */
+  /* A card's rows (2026-11-03, the user: "the more user friendly sequencing
+     order"): finished work newest finished first, so what was just done is
+     at the top; open work a VIC client's first, then by priority and due
+     date. The VIC order was once set on the band and undone by this sort. */
+  function rowOrder(a, b) {
+    var fa = isFinished(a), fb = isFinished(b);
+    if (fa !== fb) return fa ? 1 : -1;
+    if (fa) {
+      var ea = a.completed_at || a.cancelled_at || '', eb = b.completed_at || b.cancelled_at || '';
+      return ea > eb ? -1 : ea < eb ? 1 : 0;
+    }
+    var A = window.ADspaceAdmin;
+    if (A && A.vic) {
+      var va = A.vic(a.client_id) ? 0 : 1, vb = A.vic(b.client_id) ? 0 : 1;
+      if (va !== vb) return va - vb;
+    }
+    return byPriority(a, b);
+  }
   function byPriority(a, b) {
     var pa = PRIORITY_RANK[prioValue(a)], pb = PRIORITY_RANK[prioValue(b)];
     if (pa !== pb) return pa - pb;
@@ -1490,7 +1508,7 @@
                                     shutByDefault(g), g.rows.length === rows.length),
         table: function () {
           var table = GRP.table('svc-row task-row', ['', 'Task', 'Assigned to', 'Due', 'Stage', '']);
-          GRP.more(table, g.rows.slice().sort(byPriority), 30, 'tasks', function (t) { return rowOf(t); });
+          GRP.more(table, g.rows.slice().sort(rowOrder), 30, 'tasks', function (t) { return rowOf(t); });
           return table;
         }
       }));
@@ -1738,7 +1756,10 @@
         '<div class="bcards"></div>';
       var list = col.querySelector('.bcards');
       if (!cards.length) list.innerHTML = '<p class="bcol-empty">No tasks.</p>';
-      cards.forEach(function (t) { list.appendChild(cardOf(t)); });
+      /* A column reads as the list does: open work VIC first, then by
+         priority and due date; finished work newest finished first
+         (2026-11-03). */
+      cards.slice().sort(rowOrder).forEach(function (t) { list.appendChild(cardOf(t)); });
       if (!c.noDrop) dropInto(col, c.keys[0]);
       board.appendChild(col);
     });

@@ -178,7 +178,12 @@
     var html = '<div class="viewhead qt-head"><span class="headmark"><h2>Quotations</h2></span>' +
       (maySet ? '<button class="btn" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
-    var list = shown;
+    /* What needs the team first, then what stands, then what is settled,
+       then what is over (Expired, Revised, Cancelled); each newest first
+       as read (2026-11-03). */
+    var RANK = { 'is-danger': 0, 'is-warn': 0, 'is-live': 1, 'is-ok': 2, 'is-off': 3 };
+    var list = shown.map(function (q, i) { return [RANK[stateOf(q, live)[1]], i, q]; })
+      .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; });
     /* An empty list is words alone: Build quote is the heading's, as every
        record pane's act is (2026-11-03). */
     if (!list.length) html += '<div class="empty">No quotations.</div>';

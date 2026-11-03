@@ -2983,7 +2983,10 @@
       '</dt><dd>' + esc(value) + '</dd></div>';
   }
 
+  /* Finished bookings (Posted, Completed) follow the live work (2026-11-03):
+     what still needs the team leads the list. */
   function cardRank(o) {
+    if (isLive(o) && (o.state === 'posted' || o.state === 'completed')) return 1.5;
     if (isLive(o)) return 0;                                   // the live work
     if (o.state === 'shortlisted') return 1;                   // chosen, awaiting accept
     if (o.state === 'withdrawn' || o.state === 'replaced') return 3;

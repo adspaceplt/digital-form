@@ -463,7 +463,9 @@
         var table = document.createElement('div');
         table.className = 'crm-table reg-table';
         table.innerHTML = '<div class="crm-head svc-row reg-row is-own"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
-        rows.forEach(function (d) {
+        /* A void letter follows the standing ones (2026-11-03). */
+        rows.map(function (d, i) { return [d.voided_at ? 1 : 0, i, d]; })
+          .sort(function (a, b) { return (a[0] - b[0]) || (a[1] - b[1]); }).map(function (x) { return x[2]; }).forEach(function (d) {
           table.appendChild(row(d, 'clients.documents', function () { paintFor(clientId, box, then); }, true));
         });
         var old = box.querySelector('.reg-table');

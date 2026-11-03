@@ -5610,7 +5610,14 @@
     mine.forEach(function (r) { var k = monthKey(r); if (months.indexOf(k) < 0) months.push(k); });
     months.sort().reverse();
     months.forEach(function (k, i) {
-      var inMonth = mine.filter(function (r) { return monthKey(r) === k; });
+      /* Within a month: on Published, those not yet sent first; then by
+         the name each row reads, A to Z (2026-11-03: rows of one period had
+         no order of their own). */
+      var nameOf = function (r) { return String((r.brand_id && r.brand_name) || (hub.byClient[r.client_id] || {}).name || ''); };
+      var inMonth = mine.filter(function (r) { return monthKey(r) === k; }).sort(function (a, b) {
+        var sa = hub.tab === 'published' && !a.sent_on ? 0 : 1, sb = hub.tab === 'published' && !b.sent_on ? 0 : 1;
+        return (sa - sb) || nameOf(a).localeCompare(nameOf(b), 'en', { sensitivity: 'base' });
+      });
       var wholeMonth = function (r) {
         var a0 = String(r.period_start || '').slice(0, 10), b0 = String(r.period_end || '').slice(0, 10);
         if (!/^\d{4}-\d{2}-01$/.test(a0) || a0.slice(0, 7) !== b0.slice(0, 7)) return false;
