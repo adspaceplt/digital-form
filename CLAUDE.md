@@ -2080,7 +2080,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   colleague keeps the ticked proposals in `#ckAiSheet` (what a field holds
   now said under it), declares them read (`ADspaceConfirm.ai.declare`) and
   each is saved as if typed, Undo where it happened. Its own count
-  (`ai_checklist_claim`: `checklist` 10, `checklist_admin` 20), priced and
+  (`ai_checklist_claim`: `checklist` 10), priced and
   set on AI usage; the client's name goes as {brand}. Not signed off on
   an Active client, unless the month marks it Not needed, is a Dashboard
   Needs attention row (`client_checklists_due`), only where it was started
@@ -2166,7 +2166,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Editor's). Only the latest confirmed one reaches Write with AI
   (`brand_analysis_brief`: positioning, audiences' pains and motivations,
   pillars) for captions, scripts and report drafts, masked as the rest.
-  Counted apart (`ai_analysis_claim`: `analysis` 3, `analysis_admin` 10),
+  Counted apart (`ai_analysis_claim`: `analysis` 3),
   its web searches kept (`ai_drafts.web_searches`) and priced at
   `ai_price_search` (US$10 a thousand, a Business setting). The response is
   streamed with a space every 8 seconds while it runs (140 seconds at most).
@@ -3877,7 +3877,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   and never a client's name; every number Claude quotes is checked against
   them (a point quoting another is left out, a headline or summary refused
   `ai-incomplete`). Its own count (`ai_analytics_claim`, `analytics` 3,
-  `analytics_admin` 10, team.analytics at Work; AI usage lists it), kept
+  team.analytics at Work; AI usage lists it), kept
   as the next version (`analytics_reads`, RLS on, no policy, no grant;
   `analytics_read_save`, `analytics_reads_list` the last twenty), filed
   `team.changed` under Analytics. Its ⋯: Versions (one shown at a time),
@@ -5307,17 +5307,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     day with it, deleted or not: `ai_drafts` keeps client, kind and period,
     `2026-10-04-ai-draft-subject.sql`), a day from 12:00 am MYT and reset
     each midnight (`ai_draft_day()`, `2026-10-04-ai-draft-daily-reset.sql`).
-    Every limit is a setting in `ai_draft_limits` (null is the standard,
-    0 stops it; `2026-10-05-ai-limits-per-version.sql`): `person` a
-    colleague's AI uses a day, drafts and checks together (10), `admin` an
-    admin's (20), a colleague's id their own (`ai_day_cap`); then by who
-    asks, on that report, today (`2026-10-05-ai-limits-per-person-day.sql`,
-    the user: a report left to the last minute waits for the next day):
-    `report` a colleague's drafts (1; the same period of the same client is
-    the same report, `ai_draft_same`), `report_admin` an admin's (5), both
-    refused `report`; `check` a colleague's commentary checks (1; a revision
-    brings none the same day), `check_admin` an admin's (5), both refused
-    `report_check`; every refusal names the reset time. There is no team cap: the team's and a group's totals are
+    Every limit is a setting in `ai_draft_limits`, one for each use a
+    person a day, an admin's the same (`2026-11-03-ai-limits-each-use.sql`;
+    the user, 2026-11-03: "AI usage settings ok approve build"):
+    `drafts` (Report drafts), `checks` (Commentary checks), `caption`,
+    `script`, `analysis`, `checklist`, `analytics`, each a standard (null
+    the default, 0 stops it) and a colleague's own figure for any use
+    (`{colleague id}:{use}`, null the standard), read by `ai_cap(member,
+    use)` alone (every claim and every count left; `_admin` figures and the
+    day's total of AI uses are no longer read); then `per_report`, a
+    switch (1 on, 0 off): one draft and one commentary check a report a
+    day for whoever asks (the same period of the same client is the same
+    report, `ai_draft_same`; a revision brings no new check), refused
+    `report` / `report_check`, the day's own refused `drafts` / `checks`;
+    every refusal names the reset time. There is no team cap: the team's and a group's totals are
     their colleagues' limits added up (`team` refused `bad-scope`). A
     press the API refused before it generated keeps no tokens, is marked
     failed and is not counted; one that reached the model and ended with
@@ -5424,8 +5427,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     words, what the figures show and the words to use (Use). A report in
     draft or in review, Reports Work, asked first (Run audit's question names
     both parts and the AI use); the colleague's check on
-    the report for the day (`check`, an admin's `check_admin`) and one of the
-    colleague's AI uses a day (`ai_check_claim`; what is left read by
+    the report for the day where `per_report` is on, and one of the
+    person's commentary checks a day (`ai_check_claim`; what is left read by
     `ai_check_left`, the button resting with the reason at 0), never one of
     a report's drafts
     (`ai_drafts.purpose`, `ai_draft_same` drafts only). Kept with what it
@@ -5468,38 +5471,28 @@ Each line is a rule that broke once. Its reason is in the archive.
     question carries the declaration (`ADspaceConfirm.ai`: the line and a
     tick that refuses until ticked), and the submit files `report.saved`
     Commentary written with AI, read and confirmed.
-  - AI usage (the Settings page, `reports.ai`;
-    `ai_draft_usage()`), a usage page (the user, 2026-10-04): Resets at
-    12:00 am, then used today over the limit with a bar (`.aiu-bar`, warn
-    when full): Whole team, then each user group with its colleagues, most
-    used first, the totals added up on the page; then Limits, each person:
-    one limit a use for everyone (the user, 2026-10-11: "just unified
-    across everyone"; AI uses, Drafts and Checks each report, Captions,
-    Scripts, Brand analyses), a use changed saved to the colleague's and
-    the admin's setting alike and nothing else saved (2026-10-14,
-    ux-audit SET-3: one change had lowered all five admin limits), a row
-    reading `· admins n`, and its field `Admins n a day` under the name,
-    while the stored two differ. Edit limits turns those rows into small tonal fields in place
-    (`.aiu-limits.is-editing`, Save and Cancel in the foot; never a sheet
-    of boxes); a colleague's own limit is set by pressing their row
-    (`button.aiu-row`, one field, empty meaning the standard); the totals
-    and Limits rows only read. 0 to 500; only what
-    changed goes through `ai_draft_set_limit`, each filed `team.changed`
-    under AI from and to. No list of colleagues in a form (the user,
-    2026-10-05). No explanatory lines.
+  - AI usage (the Settings page, `reports.ai`; `ai_draft_usage()`: the
+    standards in `limits`, each person's `used`, `cap` and `own` for each
+    use), as approved (2026-11-03): Resets at 12:00 am; Today, a person a
+    row (`button.aiu-tr`, the whole team their sum first) over seven use
+    columns in fixed tracks, each `used/limit` (Off at 0), red with words
+    where full, Own limits as a chip; on a narrow pane a person is a card of
+    labelled uses two across; Standard limits, Edit (its head's `.btn-sm`)
+    turning the seven into small fields in place and the report rule a
+    switch, Save and Cancel in the foot; a person pressed asks Limits for
+    {name}, a field a use (empty the standard, what they used today under
+    each); This month, a use a row with its tokens (and searches) and US$,
+    then Total. 0 to 500; only what changed goes through
+    `ai_draft_set_limit`, each filed `team.changed` under AI from and to.
+    No explanatory lines.
   - Captions (2026-10-08, `2026-10-08-caption-writer.sql`) are their own
-    count (`ai_drafts.purpose` `caption`, with `batch_id`): `caption` (20)
-    a colleague's a day and `caption_admin` (40) an admin's, settings in
-    `ai_draft_limits` read by `ai_caption_claim` / `ai_caption_left`, never
-    counted in the day's report uses. Brand analyses (2026-10-10) are their
-    own count too (`analysis` 3, `analysis_admin` 10, `purpose`
-    `analysis`), listed under Brand analyses today and priced with their web
-    searches. Scripts (Video Scripts' Write script,
-    2026-10-09) are a count of their own the same way (`script` 10,
-    `script_admin` 20, `ai_drafts.script_id`); the reports' limits count
-    drafts and checks alone (`purpose in ('draft', 'check')`). Limits lists
-    Captions and Scripts with the rest; Captions today and Scripts today list the team and
-    each colleague who wrote one; This month prices Scripts apart.
+    count (`ai_drafts.purpose` `caption`, with `batch_id`, `caption` 20 a
+    day), read by `ai_caption_claim` / `ai_caption_left`. Brand analyses
+    (2026-10-10) are their own count too (`analysis` 3, `purpose`
+    `analysis`), priced with their web searches. Scripts (Video Scripts'
+    Write script, 2026-10-09) the same way (`script` 10,
+    `ai_drafts.script_id`); report drafts count `purpose` `draft` alone and
+    commentary checks `check`.
   - Cost (the user, 2026-10-08: "Also check costing"): every call keeps
     `input_tokens`, `output_tokens` and `model` on its `ai_drafts` row
     (`ai_draft_tokens(p_id, p_in, p_out, p_model)`, once, the caller's own
@@ -5510,9 +5503,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     settings (`app_settings_set`, from today; Edit prices, `team.settings`).
     A use from before tokens were kept is counted as not priced.
   - A draft is paid for once asked, so it is saved to the report as it
-    arrives (`storeDraft`), a line it opened with a dash, a bullet or a
-    number losing the mark (`unmark`; the report numbers its own points;
-    2026-11-03), a line opening with a figure keeping it and to the page's copy, the strip reading it at
+    arrives (`storeDraft`), a line opening with a dash kept as the point
+    above's sub-point, as the PDF prints it (the user, 2026-11-03), and to the page's copy, the strip reading it at
     once (`localDraft`, 2026-10-27, RPT-10), with Undo putting the earlier text back
     (`restoreDraft`); a save that fails puts the draft in the fields with
     "Save before leaving.". While one runs, closing or reloading the tab
@@ -5575,6 +5567,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     objective's results as the PDF adds them from its ads (the field's
     placeholder, read live; a mix of result types named part by part) and
     its amount spent beside them (`.readfield`, never typed).
+- A commentary part the PDF numbers (What worked, Areas to improve,
+  Focus for next month, and the older parts across platforms) reads
+  numbered in the console as it prints (the user, 2026-11-03): a point a
+  line, 1, 2, 3, and a line indented or opening with a dash its sub-point,
+  a, b, c (`pointsHtml` over `ADspaceSmReport.pointTree`, the PDF's own
+  reading); in a draft such a part reads first and its pen opens the box
+  (`readFirst`, the box's own value redrawing it), an empty part staying a
+  box.
 - A step read and not edited (in review and after) is the facts card
   (`factsCard()`: `.ovcard` > `.ovsec`, each label beside its value, written
   text keeping its lines), one section a group: This period, Results by
@@ -6279,8 +6279,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   their names), the notes and the script so far; the function reads the
   script, the client (industry, market) and the month's other titles as the
   caller, masks the client's name `{brand}` and handles `{handle}`, claims
-  `ai_script_claim` before Claude (`script` 10 a colleague, `script_admin`
-  20 an admin, a day from midnight MYT, settings in `ai_draft_limits`;
+  `ai_script_claim` before Claude (`script` 10 a person, a day from
+  midnight MYT, a setting in `ai_draft_limits`;
   `ai_script_left`), and answers the type's fields by structured output
   (secrets `ANTHROPIC_API_KEY`, `SCRIPT_MODEL`, unset `claude-opus-5-5`;
   Verify JWT off). The words fill the fields in place, `{brand}` and

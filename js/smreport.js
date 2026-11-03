@@ -2299,6 +2299,6 @@
   window.ADspaceSmReport = {
     render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, perThousand: perThousand, cprOf: cprOf, roasOf: roasOf, roasWord: roasWord, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, platWord: platWord, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS,
-    AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord
+    AD_PLATS: AD_PLATS, adPlat: adPlat, adPlatWord: adPlatWord, pointTree: pointTree
   };
 })();
