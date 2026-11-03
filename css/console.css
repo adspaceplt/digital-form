@@ -4190,3 +4190,13 @@ span.inv-amt { font-weight: 600; }
 .qsg-facts > div:has(.qsg-sig) { align-items: start; }
 #qsgCheckBack[hidden] + #qsgCheckFacts > .fsec:first-child { margin-top: 0; padding-top: 4px; border-top: 0; }
 .qsg-card .sheet-body > .fsec:first-child, .qsg-card .sheet-body > :first-child > .fsec:first-child { padding-top: 4px; }
+
+/* Arrange posts (#postArrangeSheet, 2026-11-03): the set's posts as the
+   Arrange sections list, a row its place, a small picture, its placement
+   and the grip at the right edge. */
+.ap-row { grid-template-columns: 22px 40px minmax(0, 1fr) var(--ctl-h); grid-template-areas: "n thumb name grip"; }
+.ap-n { grid-area: n; font-size: 12.5px; color: var(--ink-mute); text-align: right; font-variant-numeric: tabular-nums; }
+.ap-thumb { grid-area: thumb; width: 40px; height: 40px; border-radius: var(--radius-ctl-sm); overflow: hidden; background: var(--sunk); display: flex; }
+.ap-thumb > img, .ap-thumb > video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ap-thumb .thumb-miss { width: 100%; height: 100%; }
+.ap-meta { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }

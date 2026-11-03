@@ -3633,6 +3633,8 @@
     var empty = state.setPostN === 0;
     $('publishSet').hidden = empty && !state.batch.published;
     $('addAssets').className = 'btn btn-sm' + (empty ? ' btn-primary' : '');
+    /* Two posts or more can be put in the order the client reads them. */
+    $('arrangePosts').hidden = !(state.setPostN > 1);
     $('setMenuWrap').hidden = !menuLive($('setMenu'));
     /* A row holding nothing to press keeps no gap under the head. */
     var acts = document.querySelector('#setPanel .setbar-actions');
@@ -6141,6 +6143,127 @@
     });
   }
   $('selectPosts').addEventListener('click', function () { shutSetMenu(); setPostPicking(true); });
+
+  /* Arrange posts (the user, 2026-11-03: "allow rearrange … now it follows
+     per upload sequence", a Drive import taking the folder's order): the
+     set's posts as a list, a row dragged by its grip or moved with the arrow
+     keys on it, as Arrange sections is. Save writes `position` for each post
+     whose place moved, the order the client's page reads them in, and
+     draws Undo over the posts. Nothing about a post changes but its place,
+     so no decision is touched. */
+  var apBox = null;
+  function apSheet() {
+    if (apBox) return apBox;
+    apBox = document.createElement('div');
+    apBox.className = 'sheet'; apBox.id = 'postArrangeSheet'; apBox.hidden = true;
+    apBox.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="apSheetH" data-narrow="560">' +
+      '<div class="sheet-head"><h3 id="apSheetH">Arrange posts</h3>' +
+      '<button class="iconbtn" type="button" data-a="x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      '<div class="sheet-body"><div class="ro-list ap-list" id="apList" role="list" aria-label="Posts"></div><div class="msg ro-msg" id="apMsg" role="status"></div></div>' +
+      '<div class="sheet-foot">' +
+        '<button class="btn btn-primary" type="button" id="apSave">Save</button>' +
+        '<button class="btn btn-quiet" type="button" id="apCancel">Cancel</button>' +
+      '</div></div>';
+    document.body.appendChild(apBox);
+    apBox.querySelector('[data-a="x"]').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('apCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('apSave').addEventListener('click', apSave);
+    var list = $('apList');
+    var drag = null;
+    list.addEventListener('pointerdown', function (e) {
+      var g = e.target.closest('.ro-grip');
+      if (!g || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      e.preventDefault();
+      var row = g.closest('.ro-row');
+      drag = { row: row, id: e.pointerId };
+      row.classList.add('is-drag');
+      try { g.setPointerCapture(e.pointerId); } catch (x) {}
+    });
+    list.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var rows = Array.prototype.filter.call(list.children, function (r) { return r !== drag.row; });
+      var before = null;
+      for (var i = 0; i < rows.length; i++) {
+        var q = rows[i].getBoundingClientRect();
+        if (e.clientY < q.top + q.height / 2) { before = rows[i]; break; }
+      }
+      if (before !== drag.row.nextElementSibling || (!before && list.lastElementChild !== drag.row)) {
+        list.insertBefore(drag.row, before);
+        apNumbers();
+      }
+    });
+    function drop() { if (!drag) return; drag.row.classList.remove('is-drag'); drag = null; apNumbers(); }
+    list.addEventListener('pointerup', drop);
+    list.addEventListener('pointercancel', drop);
+    list.addEventListener('keydown', function (e) {
+      var g = e.target.closest('.ro-grip');
+      if (!g || (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')) return;
+      e.preventDefault();
+      var row = g.closest('.ro-row');
+      if (e.key === 'ArrowUp' && row.previousElementSibling) list.insertBefore(row, row.previousElementSibling);
+      else if (e.key === 'ArrowDown' && row.nextElementSibling) list.insertBefore(row.nextElementSibling, row);
+      else return;
+      g.focus();
+      apNumbers();
+    });
+    return apBox;
+  }
+  function apNumbers() {
+    Array.prototype.forEach.call($('apList').children, function (r, i) { r.querySelector('.ap-n').textContent = String(i + 1); });
+  }
+  function apSave() {
+    var posts = (state.postView && state.postView.posts) || [];
+    var byId = {};
+    posts.forEach(function (p) { byId[p.id] = p; });
+    var order = Array.prototype.map.call($('apList').children, function (r) { return r.getAttribute('data-id'); });
+    var was = posts.map(function (p) { return { id: p.id, position: p.position }; });
+    var moves = order.map(function (id, i) { return { id: id, position: i }; })
+      .filter(function (x) { return byId[x.id] && byId[x.id].position !== x.position; });
+    if (!moves.length || order.join() === posts.map(function (p) { return p.id; }).join()) { window.ADspaceSheet.close(); return; }
+    var btn = $('apSave'), m = $('apMsg');
+    m.textContent = ''; m.className = 'msg ro-msg';
+    btn.disabled = true;
+    apWrite(moves).then(function (bad) {
+      btn.disabled = false;
+      if (bad) { m.textContent = bad; m.className = 'msg ro-msg err'; loadPosts(); return; }
+      var moved = order.filter(function (id, i) { return posts[i] && posts[i].id !== id; }).length;
+      logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''), 'Posts arranged: ' + moved + ' moved');
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      loadPosts();
+      undoHere('Posts arranged.', function () {
+        apWrite(was.filter(function (x) { return order.indexOf(x.id) !== -1; })).then(function (b) {
+          if (b) msg('setMsg', b, 'err');
+          else logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''), 'Posts arranged: order undone');
+          loadPosts();
+        }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
+      }, $('postList'));
+    }).catch(function (e) { btn.disabled = false; m.textContent = (e && e.message) || 'Not saved.'; m.className = 'msg ro-msg err'; });
+  }
+  /* Each post's own write, read back (a refused update answers no row). */
+  function apWrite(rows) {
+    return Promise.all(rows.map(function (x) {
+      return db.from('posts').update({ position: x.position }).eq('id', x.id).select('id').then(function (r) {
+        return r.error ? r.error.message : (r.data || []).length ? '' : 'Not saved. The database refused the request.';
+      });
+    })).then(function (said) { return said.filter(Boolean)[0] || ''; });
+  }
+  $('arrangePosts').addEventListener('click', function () {
+    shutSetMenu();
+    var posts = (state.postView && state.postView.posts) || [];
+    if (posts.length < 2) return;
+    apSheet();
+    $('apMsg').textContent = '';
+    $('apList').innerHTML = posts.map(function (p, i) {
+      var name = MK.label(p) + (String(p.title || '').trim() ? ' · ' + p.title.trim() : '');
+      return '<div class="ro-row ap-row" role="listitem" data-id="' + esc(p.id) + '">' +
+        '<span class="ap-n">' + (i + 1) + '</span>' +
+        '<span class="ap-thumb">' + ((p.media || [])[0] ? thumbOf(p.media[0]) : '') + '</span>' +
+        '<span class="ro-name">' + esc(name) + ((p.media || []).length > 1 ? ' <span class="ap-meta">' + p.media.length + ' slides</span>' : '') + '</span>' +
+        '<button class="iconbtn ro-grip" type="button" aria-label="Move ' + esc(name) + '" aria-keyshortcuts="ArrowUp ArrowDown"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg></button></div>';
+    }).join('');
+    window.ADspaceSheet.show(apBox, { opener: $('setMenuBtn') });
+  });
   /* The set's content month: last month, this month and the next six, the
      month it holds, or Ad hoc; filed from and to (2026-10-10). */
   $('setMonth').addEventListener('click', function () {

@@ -3242,6 +3242,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - S3 signed PUT.
   - Active clients only.
   - A set's name grows out of New content set; a title is renamed in place.
+- Arrange posts (the set's ⋯, `review.sets:work`, two posts or more; the
+  user, 2026-11-03: posts kept their upload order, a Drive import the
+  folder's): `#postArrangeSheet`, the set's posts as Arrange sections'
+  list (its place, a picture, its placement and title, the grip), a row
+  dragged by its grip or moved with the arrow keys on it; Save writes
+  `position` for each post whose place moved (`.select('id')`, filed
+  `post.edited` Posts arranged), the order the client's page reads, with
+  Undo over the posts. A carousel's slides are ordered in its Edit.
 - Select posts (the set's ⋯, `review.sets:work`): a tick stands where each
   post's ⋯ was (`.saved-pick`), the row its target; the bar under the stage
   strip (`#postBulk`) counts the ticked posts shown and offers, each through
