@@ -721,9 +721,21 @@
     read.addEventListener('pointerdown', function (e) { if (e.button === 0 && !e.target.closest('a')) { e.preventDefault(); open(); } });
     read.addEventListener('click', function (e) { if (!editing && !e.target.closest('a')) open(); });
     if (label) label.addEventListener('click', function (e) { if (el.hidden) { e.preventDefault(); open(); } });
-    el.addEventListener('blur', function () { editing = false; paint(); });
+    /* A box left by a press elsewhere closes once the press is done, so
+       the page never moves under it (Save below it moved up and the press
+       landed on nothing). */
+    el.addEventListener('blur', function () {
+      editing = false;
+      if (!pressing) { paint(); return; }
+      document.addEventListener('pointerup', function () { setTimeout(paint, 0); }, { once: true });
+      setTimeout(paint, 1500);
+    });
     paint();
   }
+  var pressing = false;
+  document.addEventListener('pointerdown', function () { pressing = true; }, true);
+  document.addEventListener('pointerup', function () { setTimeout(function () { pressing = false; }, 0); }, true);
+  document.addEventListener('pointercancel', function () { pressing = false; }, true);
   function factsCard(sections) {
     return '<div class="ovcard rp-read">' + sections.filter(function (x) { return x.rows.length; }).map(function (x) {
       return '<div class="ovsec">' + (x.title ? '<div class="ovsec-head"><h3>' + esc(x.title) + '</h3></div>' : '') +
