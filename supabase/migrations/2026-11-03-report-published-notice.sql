@@ -23,7 +23,7 @@ begin
   if c.id is null or btrim(coalesce(c.owner, '')) = '' then return null; end if;
   select t.id into v_to from public.team_members t
    where t.active and lower(btrim(t.name)) = lower(btrim(c.owner))
-   order by t.created_at limit 1;
+   limit 1;
   if v_to is null then return null; end if;
   v_by := (public.ops_me()).name;
   perform public.sm_report_notify(v_to, new.id, 'report.published', 'Report published',
