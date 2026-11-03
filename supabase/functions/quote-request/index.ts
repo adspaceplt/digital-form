@@ -35,7 +35,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend } from '../_shared/mail.ts';
+import { esc, layout, resend } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const CLIENT_FROM = () => secret('MAIL_CLIENT_FROM') || 'ADspace <noreply-client@sc.adspace.me>';
@@ -95,19 +95,24 @@ Deno.serve(async (req) => {
     }
     const d = (r.data || {}) as Record<string, string>;
     if (d.error) return json({ error: d.error }, 200, origin);
+    /* The sign-in email's own words and code box (docs/SIGN-IN-EMAILS.md,
+       2026-11-03: the two read alike): the code in the shaded box, never in
+       the subject or the preview line a lock screen shows. The box is the
+       layout's one server-built block, set where `{invoices}` stands. */
     const heading = 'Your signing code';
+    const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:10px;margin:4px 0 24px;"><tr><td style="padding:16px 24px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1b1a17;">' + esc(d.code) + '</td></tr></table>';
     const msg = {
       from: CLIENT_FROM(), to: [d.email],
-      subject: 'Your code to sign quotation ' + d.ref + ': ' + d.code,
+      subject: 'Your ADspace signing code for quotation ' + d.ref,
       html: layout({
-        heading, preheader: 'Your code is ' + d.code + '. It expires in 15 minutes.',
-        body: 'Dear ' + d.name + ',\n\nYour code to sign quotation ' + d.ref + ' is:\n\n' + d.code +
-          '\n\nEnter it on the quotation page to complete your signature. The code expires in 15 minutes.',
-        foot: 'If you did not ask to sign this quotation, please ignore this email. Nothing is signed without the code.'
+        heading, preheader: 'Your signing code for quotation ' + d.ref + '.', block: box,
+        body: 'Dear ' + d.name + ',\n\nPlease enter the following code to sign quotation ' + d.ref + ':\n\n{invoices}\n\n' +
+          'The code expires in 15 minutes.\n\nYours sincerely,\nADspace',
+        foot: 'The code may be used once. If you did not request to sign this quotation, please disregard this email; nothing is signed without the code.'
       }),
-      text: 'Dear ' + d.name + ',\n\nYour code to sign quotation ' + d.ref + ' is ' + d.code +
-        '.\n\nEnter it on the quotation page to complete your signature. The code expires in 15 minutes.' +
-        '\n\nIf you did not ask to sign this quotation, please ignore this email.'
+      text: 'Dear ' + d.name + ',\n\nPlease enter the following code to sign quotation ' + d.ref + ': ' + d.code +
+        '\n\nThe code expires in 15 minutes.\n\nYours sincerely,\nADspace' +
+        '\n\nThe code may be used once. If you did not request to sign this quotation, please disregard this email; nothing is signed without the code.'
     };
     const sent = await resend(msg, String(d.id), secret('RESEND_API_KEY'));
     if (sent.status === 'failed') {
