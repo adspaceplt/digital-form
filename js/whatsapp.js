@@ -289,9 +289,207 @@
   function enter() {
     wire();
     $('waNew').hidden = !maySend('message');
-    if (st.data) paintList();
-    load();
+    st.tab = /(?:^|[?&])tab=email(?:&|$)/.test(location.search) ? 'email' : 'wa';
+    tab(st.tab, true);
   }
+
+  /* ---- WhatsApp and Email, one section (2026-11-04) ------------------------ */
+  function tab(which, quiet) {
+    st.tab = which === 'email' ? 'email' : 'wa';
+    if (!st.tabsWired) {
+      st.tabsWired = true;
+      $('msgViews').addEventListener('click', function (e) {
+        var b = e.target.closest && e.target.closest('.acttab');
+        if (!b || b.getAttribute('data-mv') === st.tab) return;
+        tab(b.getAttribute('data-mv'));
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('#msgViews .acttab'), function (b) {
+      var me = b.getAttribute('data-mv') === st.tab;
+      b.classList.toggle('is-on', me);
+      b.setAttribute('aria-pressed', String(me));
+    });
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('msgViews'));
+    $('waMessagesPane').hidden = st.tab !== 'wa';
+    $('emlPane').hidden = st.tab !== 'email';
+    if (st.tab === 'email') mlEnter();
+    else { if (st.data) paintList(); load(); }
+    var b = bridge();
+    if (!quiet && b.setUrl) b.setUrl();
+  }
+
+  /* ---- Email (2026-11-04, mail_log) ---------------------------------------
+     Every email the portal sent in the month, from the logs its senders
+     keep, each row at its own record's access. Resend's word on each, and a
+     signing code's own state (its delivery is not reported back). */
+  var ML_KIND = { reminder: 'Overdue reminder', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
+    approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code' };
+  var ML_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
+    opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
+    failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
+    requested: ['Requested', 'is-live'], used: ['Used', 'is-ok'], expired: ['Expired', 'is-off'] };
+  var ML_FROM = { supplier: 'ADspace <noreply-supplier@sc.adspace.me>', client: 'ADspace <noreply-client@sc.adspace.me>',
+    invoice: 'ADspace Finance <noreply-finance@sc.adspace.me>', signing: 'ADspace <noreply-client@sc.adspace.me>' };
+  var ml = { month: monthNow(), data: null, wired: false };
+  function mlState(x) { return ML_STATE[x.status] || [x.status || '', '']; }
+  function mlWire() {
+    if (ml.wired) return;
+    ml.wired = true;
+    $('emlMonth').innerHTML = $('waMonth').innerHTML;
+    $('emlMonth').value = ml.month;
+    $('emlMonth').setAttribute('data-default', ml.month);
+    $('emlKind').innerHTML = '<option value="">All types</option>' + Object.keys(ML_KIND).map(function (k) {
+      return '<option value="' + k + '">' + esc(ML_KIND[k]) + '</option>';
+    }).join('');
+    $('emlStatus').innerHTML = '<option value="">All statuses</option>' + Object.keys(ML_STATE).map(function (k) {
+      return '<option value="' + k + '">' + esc(ML_STATE[k][0]) + '</option>';
+    }).join('');
+    var last = {};
+    ['emlMonth', 'emlKind', 'emlStatus', 'emlFind'].forEach(function (id) {
+      var el = $(id);
+      last[id] = el.value;
+      var go = function () {
+        if (last[id] === el.value) return;
+        last[id] = el.value;
+        if (id === 'emlMonth') { ml.month = el.value || monthNow(); mlLoad(); return; }
+        mlPaint();
+      };
+      el.addEventListener('input', go);
+      el.addEventListener('change', go);
+    });
+    $('emlSheetClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  }
+  function mlEnter() {
+    if (!$('waMonth').options.length) wire();
+    mlWire();
+    if (ml.data) mlPaint();
+    mlLoad();
+  }
+  function mlLoad() {
+    var box = $('emlList'), S = window.ADspaceState;
+    if (!ml.data && S && S.skeleton) S.skeleton(box, 4);
+    var month = ml.month;
+    rpc('mail_log', { p_month: month }).then(function (d) {
+      if (month !== ml.month) return;
+      ml.data = d;
+      mlPaint();
+    }).catch(function (e) {
+      if (month !== ml.month) return;
+      ml.data = null;
+      $('emlHeads').hidden = true;
+      $('emlCount').textContent = '';
+      if (S && S.failLine) S.failLine(box, 'The emails', said(e), mlLoad);
+    });
+  }
+  function mlShown() {
+    var q = String($('emlFind').value || '').trim().toLowerCase();
+    var kind = $('emlKind').value, status = $('emlStatus').value;
+    return ((ml.data || {}).items || []).filter(function (x) {
+      if (kind && x.kind !== kind) return false;
+      if (status && x.status !== status) return false;
+      if (!q) return true;
+      return [x.to_name, x.to_email, x.cc_email, x.client, x.supplier, x.supplier_code, x.subject, x.reference, x.sent_by, ML_KIND[x.kind]]
+        .join(' ').toLowerCase().indexOf(q) > -1;
+    });
+  }
+  function mlPaint() {
+    var box = $('emlList'), S = window.ADspaceState, G = window.ADspaceGroup;
+    var all = (ml.data || {}).items || [];
+    var list = mlShown();
+    /* The month at a glance: what was sent, what arrived and what was
+       opened, and what did not arrive, warn where any did not. */
+    var sent = all.filter(function (x) { return x.source !== 'signing'; });
+    var bad = sent.filter(function (x) { return /^(bounced|complained|failed)$/.test(x.status); }).length;
+    $('emlHeads').innerHTML = [[sent.filter(function (x) { return x.status !== 'sending' && x.status !== 'failed'; }).length, 'Emails sent'],
+      [sent.filter(function (x) { return x.status === 'delivered' || x.status === 'opened'; }).length, 'Delivered'],
+      [sent.filter(function (x) { return x.status === 'opened'; }).length, 'Opened'],
+      [bad, 'Not delivered', bad ? ' is-warn' : '']].map(function (c) {
+      return '<div class="tally-cell wam-head' + (c[2] || '') + '"><b>' + c[0] + '</b><span>' + esc(c[1]) + '</span></div>';
+    }).join('');
+    $('emlHeads').hidden = false;
+    $('emlCount').textContent = !all.length ? '' : list.length !== all.length ? list.length + ' of ' + all.length : plural(all.length, 'email');
+    box.innerHTML = '';
+    if (!all.length) { S.emptyLine(box, 'No emails.'); return; }
+    if (!list.length) {
+      S.emptyLine(box, 'No matches.', 'Clear filters', function () {
+        $('emlFind').value = ''; $('emlKind').value = ''; $('emlStatus').value = '';
+        ['emlFind', 'emlKind', 'emlStatus'].forEach(function (id) { $(id).dispatchEvent(new Event('change', { bubbles: true })); });
+        mlPaint();
+      });
+      return;
+    }
+    var table = G.table('wam-row eml-row', ['To', 'Email', 'Sent by', 'Status']);
+    G.more(table, list, 30, 'emails', mlRow);
+    box.appendChild(table);
+  }
+  function mlWho(x) {
+    return x.supplier ? [x.supplier_code, x.supplier].filter(Boolean).join(' · ') : (x.client || '');
+  }
+  function mlRow(x) {
+    var s = mlState(x);
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'wam-row eml-row';
+    row.setAttribute('data-id', x.id);
+    row.setAttribute('aria-label', (ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email) + ', ' + s[0]);
+    var parts = function (list) {
+      return list.filter(Boolean).map(function (w, i) {
+        return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
+      }).join('');
+    };
+    row.innerHTML =
+      '<span class="wam-to"><b>' + esc(x.to_name || x.to_email) + '</b>' +
+        '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>' +
+      '<span class="wam-tpl"><span>' + esc(ML_KIND[x.kind] || 'Email') + '</span>' +
+        '<small class="wam-tplline"><span class="wam-tplname">' + esc(x.reference || x.subject || '') + '</span></small></span>' +
+      '<span class="wam-by">' + esc(x.source === 'signing' ? 'Client' : x.sent_by || 'Automatic') + '</span>' +
+      '<span class="wam-state"><span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>' +
+        '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
+    row.addEventListener('click', function () { mlOpen(x, row); });
+    return row;
+  }
+  /* The email as it was sent: the facts, each step's time, and the words.
+     A signing code's message is never kept (the code was in it). */
+  function mlOpen(x, opener) {
+    var s = mlState(x);
+    var steps = [[x.source === 'signing' ? 'Requested' : 'Sent', x.sent_at], ['Delivered', x.delivered_at], ['Opened', x.opened_at], ['Bounced', x.bounced_at]]
+      .filter(function (t) { return t[1]; });
+    var fact = function (k, v, raw) { return v ? '<div><dt>' + esc(k) + '</dt><dd>' + (raw ? v : esc(v)) + '</dd></div>' : ''; };
+    var rec = x.supplier_id ? '<button class="linkbtn" type="button" data-rec="supplier">' + esc(mlWho(x)) + CHEV + '</button>'
+      : x.client_id && may('clients', 'view') ? '<button class="linkbtn" type="button" data-rec="client">' + esc(x.client) + CHEV + '</button>'
+      : esc(mlWho(x));
+    $('emlSheetHead').textContent = x.subject || ML_KIND[x.kind] || 'Email';
+    $('emlSheetBody').innerHTML =
+      '<dl class="ovfacts eml-facts">' +
+        fact('Type', ML_KIND[x.kind] || 'Email') +
+        fact('From', ML_FROM[x.source]) +
+        fact('To', (x.to_name ? x.to_name + ' · ' : '') + x.to_email) +
+        fact('Copy', x.cc_email) +
+        fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
+        fact('Reference', x.reference) +
+        fact('Sent by', x.source === 'signing' ? 'The client, on the quotation link' : x.sent_by || 'Automatic') +
+        fact('Status', '<span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>', true) +
+        steps.map(function (t) { return fact(t[0], whenOf(t[1])); }).join('') +
+        fact('Reason', x.error && /failed|bounced|unknown/.test(x.status) ? String(x.error).replace(/^[a-z ]+:\s*/i, '') : '') +
+      '</dl>' +
+      (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
+        : '<p class="emptyline">The message held the signing code and is not kept.</p>');
+    Array.prototype.forEach.call($('emlSheetBody').querySelectorAll('[data-rec]'), function (b) {
+      b.addEventListener('click', function () {
+        var br = bridge();
+        window.ADspaceSheet.close();
+        if (b.getAttribute('data-rec') === 'supplier') {
+          history.replaceState(null, '', '/admin/?s=suppliers&supplier=' + encodeURIComponent(x.supplier_id) + '&tab=emails');
+          if (br.show) br.show('suppliers');
+          return;
+        }
+        history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(x.client_id) + (x.source === 'invoice' ? '&tab=billing' : '&tab=services'));
+        if (br.show) br.show('clients');
+      });
+    });
+    window.ADspaceSheet.show($('emlSheet'), { opener: opener || null });
+  }
+  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
 
   function load() {
     var box = $('waList'), S = window.ADspaceState;
@@ -1030,7 +1228,7 @@
   window.ADspaceWhatsApp = {
     enter: enter,
     manage: manage,
-    urlState: function () { return {}; },
+    urlState: function () { return st.tab === 'email' ? { tab: 'email' } : {}; },
     compose: function (o) { wireComposer(); compose(o); },
     may: maySend,
     on: on,

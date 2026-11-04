@@ -262,7 +262,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | The Activity record (`loadActivity`, `ACTION_LABEL`) | activity, run, crm |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
-| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections | whatsapp, wafn, waapprove, smsql, crm, perms, sql, then `ui` |
+| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections, the EMAIL LOG section | whatsapp, wafn, waapprove, maillogsql, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -6723,7 +6723,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   last opening are 30 days old and no lock stands
   (`2026-10-18-passcode-tries-kept-for-a-time.sql`).
 
-### WhatsApp (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `2026-10-10-whatsapp-approval-reminder.sql`, `docs/WHATSAPP-SETUP.md`)
+### Messages: WhatsApp and Email (`js/whatsapp.js`, `?s=whatsapp`, `wa-send`, `wa-hook`, `2026-10-09-whatsapp.sql`, `2026-10-10-whatsapp-section.sql`, `2026-10-10-whatsapp-approval-reminder.sql`, `2026-11-04-email-log.sql`, `docs/WHATSAPP-SETUP.md`)
+- The section reads Messages on the rail, the tab bar, its heading and the
+  Team panel (the user, 2026-11-04: "the email and whatsapp log sits
+  together in one section under different tabs"; its key, address, parts
+  and Settings' WhatsApp group stay `whatsapp`): two tabs (`#msgViews`,
+  the view strip, a sideways swipe; `tab=email`, WhatsApp left out), each
+  its own bar and month. Email (`#emlPane`) lists every email the portal
+  sent in the Malaysian month, newest first, from the logs its senders keep
+  (`mail_log(p_month)`, Messages at View first, each row at its own
+  record's access: supplier emails at Suppliers View, a quotation, Letter
+  of Offer or client letter at its kind's part (`client_email_may`) on a
+  client in scope, overdue reminders at Clients: Billing View, a
+  quotation's signing code at Clients: Quotations View, never the code,
+  read Requested, Used or Expired), the month's sent, delivered, opened and
+  not delivered above it, filtered by Type and Status; a row is one button
+  opening the email as sent (`#emlSheet`: From, To, Copy, the client or
+  supplier opening its record, Reference, Sent by, Status, each step's
+  time, a bounce's reason, the message). Sign-in and invitation emails are
+  Supabase's and are not kept (the user, 2026-11-04).
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1

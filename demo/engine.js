@@ -127,6 +127,7 @@
     ai_script_claim: 'p_script',
     wa_templates_read: '',
     wa_messages: 'p_month',
+    mail_log: 'p_month',
     wa_recipients: '',
     wa_compose_prepare: 'p_to_kind p_to p_purpose p_ref',
     wa_sent_recently: 'p_to_kind p_to p_purpose p_ref p_template',
@@ -10297,6 +10298,53 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: name === 'maintenance_set' ? mtState() : { ok: true, pages: JSON.parse(JSON.stringify(pgAll())) }, error: null });
     }
 
+    if (name === 'mail_log') {
+      if (window.__refuseRpc && window.__refuseRpc.mail_log) return Promise.resolve({ data: null, error: { message: window.__refuseRpc.mail_log } });
+      if (!opsAllowed('whatsapp', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var mlNow = new Date(Date.now() + 8 * 3600000);
+      var mlFrom = String(args.p_month || (mlNow.getUTCFullYear() + '-' + String(mlNow.getUTCMonth() + 1).padStart(2, '0') + '-01')).slice(0, 7) + '-01';
+      var mlA = Date.parse(mlFrom + 'T00:00:00+08:00');
+      var mlD = new Date(mlA + 8 * 3600000);
+      var mlB = Date.parse(new Date(Date.UTC(mlD.getUTCFullYear(), mlD.getUTCMonth() + 1, 1)).toISOString().slice(0, 10) + 'T00:00:00+08:00');
+      var mlIn = function (o) { var t = Date.parse(o.created_at); return t >= mlA && t < mlB; };
+      var mlWho = function (id, by) { var t = (DB.team_members || []).filter(function (m) { return m.id === id; })[0]; return t ? t.name : (by || null); };
+      var mlCl = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0]; return c ? c.name : null; };
+      var mlFree = function () { var me = opsMe(); return !!me && (me.is_admin || (me.client_scope || 'all') !== 'own'); };
+      var mlSeen = function (cid) { return cid ? scopeSeen(cid, 'view') : mlFree(); };
+      var mlBase = function (e) { return { id: e.id, to_email: e.to_email, cc_email: e.cc_email || null, subject: e.subject, body: e.body,
+        sent_by: mlWho(e.sent_by, e.by), created_at: e.created_at, status: e.status, error: e.error || null, sent_at: e.sent_at || null,
+        delivered_at: e.delivered_at || null, opened_at: e.opened_at || null, bounced_at: e.bounced_at || null,
+        client_id: null, client: null, supplier_id: null, supplier: null, supplier_code: null, reference: null, to_name: null }; };
+      var mlItems = [];
+      if (opsAllowed('suppliers', 'view')) (DB.supplier_emails || []).filter(mlIn).forEach(function (e) {
+        var sp = (DB.suppliers || []).filter(function (x) { return x.id === e.supplier_id; })[0];
+        var dc = (DB.documents || []).filter(function (x) { return x.id === e.document_id; })[0];
+        mlItems.push(Object.assign(mlBase(e), { source: 'supplier', kind: e.purpose, supplier_id: e.supplier_id || null,
+          supplier: sp ? sp.name : null, supplier_code: sp ? sp.code : null, reference: dc ? dc.serial : null }));
+      });
+      var mlMay = function (k) { return k === 'quotation' ? opsAllowed('clients.quotes', 'view') : k === 'offer' ? opsAllowed('clients.documents', 'view')
+        : k === 'letter' ? (opsAllowed('register.documents', 'view') || opsAllowed('clients.documents', 'view')) : false; };
+      (DB.client_emails || []).filter(function (e) { return mlIn(e) && mlMay(e.kind) && mlSeen(e.client_id); }).forEach(function (e) {
+        var ck = (DB.client_contacts || []).filter(function (x) { return x.id === e.contact_id; })[0];
+        mlItems.push(Object.assign(mlBase(e), { source: 'client', kind: e.kind, client_id: e.client_id || null, client: mlCl(e.client_id),
+          reference: e.reference, to_name: ck ? ck.name : null }));
+      });
+      if (opsAllowed('clients.billing', 'view')) (DB.invoice_emails || []).filter(function (e) { return mlIn(e) && mlSeen(e.client_id); }).forEach(function (e) {
+        mlItems.push(Object.assign(mlBase(e), { source: 'invoice', kind: 'reminder', client_id: e.client_id || null, client: mlCl(e.client_id) || e.client_name,
+          reference: (e.invoices || []).map(function (i) { return i.number; }).join(', ') }));
+      });
+      if (opsAllowed('clients.quotes', 'view')) (DB.quote_sign_codes || []).filter(mlIn).forEach(function (g) {
+        var q = (DB.quotations || []).filter(function (x) { return x.id === g.quotation_id; })[0];
+        if (!q || !mlSeen(q.client_id)) return;
+        var who = g.payload && g.payload.contact ? ((g.payload.contact.salutation ? g.payload.contact.salutation + ' ' : '') + (g.payload.contact.name || '')).trim() : '';
+        mlItems.push({ source: 'signing', id: g.id, kind: 'signing', to_email: g.email, cc_email: null, subject: 'Your ADspace signing code for quotation ' + q.ref,
+          body: null, sent_by: null, created_at: g.created_at, status: g.used_at ? 'used' : Date.parse(g.expires_at) < Date.now() ? 'expired' : 'requested',
+          error: null, sent_at: g.created_at, delivered_at: null, opened_at: null, bounced_at: null, client_id: q.client_id || null, client: mlCl(q.client_id),
+          supplier_id: null, supplier: null, supplier_code: null, reference: q.ref, to_name: who || null });
+      });
+      mlItems.sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ month: mlFrom, items: mlItems.slice(0, 2000) })), error: null });
+    }
     if (/^wa_/.test(name)) {
       var waNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return waNo(window.__refuseRpc[name]);
