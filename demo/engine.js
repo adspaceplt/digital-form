@@ -275,7 +275,7 @@
     meeting_message_get: '', meeting_message_save: 'p_body',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
-    invoice_send_template_get: '', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
+    invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
     supplier_email_prepare: 'p_supplier p_purpose p_document', supplier_email_begin: 'p_supplier p_purpose p_document p_cc p_subject p_body p_again',
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
@@ -3000,7 +3000,24 @@ function cardSlugFree(name, self, email) {
   }
   function invMoney(n, c) { return (c === 'MYR' ? 'RM\u00a0' : c === 'SGD' ? 'S$\u00a0' : c + '\u00a0') + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-  function invBegin(actor, cid, contact, name, email, invoices, cc, subject, body, again, purpose) {
+  function invOptions(cid, contact) {
+    if (!cid) return [];
+    var rcp = recipientFor(cid, contact) || {}, ok = /^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/;
+    var to = String(rcp.email || '').trim().toLowerCase(), cc = String(rcp.cc || '').trim().toLowerCase();
+    var rows = (DB.client_contacts || []).filter(function (x) { return x.client_id === cid && !x.archived_at && ok.test(String(x.email || '').trim()); })
+      .map(function (x) {
+        var e = String(x.email).trim(), nm = [String(x.salutation || '').trim(), String(x.name || '').trim()].filter(Boolean).join(' ');
+        return { email: e, name: nm || null, role: x.role || null, finance: false, billing: e.toLowerCase() === to, ord: e.toLowerCase() === to ? 0 : x.is_primary ? 1 : 2 };
+      });
+    if (to && ok.test(to)) rows.push({ email: String(rcp.email).trim(), name: rcp.name || null, role: null, finance: false, billing: true, ord: 0 });
+    if (cc && ok.test(cc)) rows.push({ email: String(rcp.cc).trim(), name: null, role: null, finance: true, billing: false, ord: 3 });
+    var seen = {}, out = [];
+    rows.sort(function (a, b) { return a.ord - b.ord; }).forEach(function (r) { var k = r.email.toLowerCase(); if (!seen[k]) { seen[k] = 1; out.push(r); } });
+    out.sort(function (a, b) { return a.ord - b.ord || String(a.name || '~').localeCompare(String(b.name || '~')) || a.email.localeCompare(b.email); });
+    return out.map(function (r) { return { email: r.email, name: r.name, role: r.role, finance: r.finance, billing: r.billing }; });
+  }
+
+  function invBegin(actor, cid, contact, name, email, invoices, cc, subject, body, again, purpose, pickTo, pickCc) {
     purpose = purpose === 'invoice' ? 'invoice' : 'reminder';
     var me = DB.team_members.filter(function (x) { return x.id === actor && x.active !== false; })[0];
     if (!me) return { error: 'denied' };
@@ -3016,16 +3033,32 @@ function cardSlugFree(name, self, email) {
       if (r) { var rb = DB.team_members.filter(function (x) { return x.id === r.sent_by; })[0]; return { error: 'recent', recent: { at: r.created_at, to: r.to_email, by: rb ? rb.name : null } }; }
     }
     var rcp = cid ? recipientFor(cid, contact) : null;
-    var to = (rcp && rcp.email) || String(email || '').trim() || null;
+    var opts = pickTo != null || pickCc != null ? invOptions(cid, contact) : [];
+    var optOf = function (e) { e = String(e || '').trim().toLowerCase(); return opts.filter(function (o) { return o.email.toLowerCase() === e; })[0] || null; };
+    var to, who, named;
+    if (pickTo != null) {
+      var pk = optOf(pickTo);
+      if (!pk) return { error: 'bad-recipient' };
+      to = pk.email; who = pk.name || 'Sir or Madam'; named = !!pk.name;
+    } else { to = (rcp && rcp.email) || String(email || '').trim() || null; who = (rcp && rcp.name) || 'Sir or Madam'; named = !!(rcp && rcp.name); }
     if (!to || !/^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$/.test(to)) return { error: 'no-email' };
-    var ccTo = cc && rcp && rcp.cc && rcp.cc.toLowerCase() !== to.toLowerCase() ? rcp.cc : null;
+    var ccTo;
+    if (pickCc != null) {
+      var cl = pickCc.filter(function (x) { return String(x || '').trim(); }), got = [], keys = {};
+      if (cl.length > 5) return { error: 'bad-copy' };
+      for (var ci = 0; ci < cl.length; ci++) {
+        var co1 = optOf(cl[ci]);
+        if (!co1 || keys[co1.email.toLowerCase()] || co1.email.toLowerCase() === to.toLowerCase()) return { error: 'bad-copy' };
+        keys[co1.email.toLowerCase()] = 1; got.push(co1.email);
+      }
+      ccTo = got.length ? got.join(', ') : null;
+    } else ccTo = cc && rcp && rcp.cc && rcp.cc.toLowerCase() !== to.toLowerCase() ? rcp.cc : null;
     var co = (rcp && rcp.company) || String(name || '').trim() || 'Client';
-    var who = (rcp && rcp.name) || 'Sir or Madam';
     var n = invoices.length, nos = invoices.map(function (x) { return x.number; });
     var by = {};
     invoices.forEach(function (x) { by[x.currency] = (by[x.currency] || 0) + Number(x.amount); });
     var vals = { 'contact name': who, client: co, 'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1], count: String(n),
-      total: Object.keys(by).sort().map(function (c) { return invMoney(by[c], c); }).join(' and '), 'sign off': rcp && rcp.name ? 'Yours sincerely' : 'Yours faithfully' };
+      total: Object.keys(by).sort().map(function (c) { return invMoney(by[c], c); }).join(' and '), 'sign off': named ? 'Yours sincerely' : 'Yours faithfully' };
     var fill = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
     var t = purpose === 'invoice' ? DB.invoice_send_template[0] : DB.invoice_email_template[0];
     var s = fill(String(subject || '').trim() || (n === 1 ? t.subject_one : t.subject_many)).replace(/\s+/g, ' ').trim();
@@ -3036,7 +3069,7 @@ function cardSlugFree(name, self, email) {
     var row = { id: nid('ie'), client_id: cid, bukku_contact: contact, client_name: co, invoices: invoices, to_email: to, cc_email: ccTo,
       subject: s, body: b, sent_by: me.id, created_at: new Date().toISOString(), status: 'sending', purpose: purpose };
     DB.invoice_emails.push(row);
-    return { ok: true, id: row.id, to: to, cc: ccTo, subject: s, body: b, legal: t.legal, disclaimer: t.disclaimer };
+    return { ok: true, id: row.id, to: to, cc: ccTo, cc_list: ccTo ? ccTo.split(', ') : [], subject: s, body: b, legal: t.legal, disclaimer: t.disclaimer };
   }
   function invDone(id, status, provider, error) {
     var e = (DB.invoice_emails || []).filter(function (x) { return x.id === id && x.status === 'sending'; })[0];
@@ -10836,6 +10869,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }).filter(Boolean).sort(function (a, b) { return a.name < b.name ? -1 : 1; });
         return ivOk({ me: { id: ivMe.id, name: ivMe.name }, all: ivAll, send: opsAllowed('clients.billing', 'work'), links: links });
       }
+      if (name === 'invoice_recipients') {
+        if (!args.p_client || !ivSeen(args.p_client)) return ivNo('not-found');
+        var rr0 = recipientFor(args.p_client, Number(args.p_contact)) || {};
+        return ivOk({ to: rr0.email || null, cc: rr0.cc || null, options: invOptions(args.p_client, Number(args.p_contact)) });
+      }
       if (name === 'invoice_reminders') {
         var want = (args.p_contacts || []).map(Number);
         var rows = DB.invoice_emails.filter(function (e) {
@@ -12799,7 +12837,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var from = lc && bkb.client && (lc.client === bkb.client || (lc.clients || []).indexOf(bkb.client) > -1) ? bkb.client : null;
               var b = invBegin(sc.me && sc.me.id, from || (lc ? lc.client : null), contact, lines[0].contact_name, lines[0].contact_email,
                 lines.map(function (l) { return { id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency, link: l.link, part: l.part }; }),
-                bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder');
+                bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder',
+                typeof bkb.to === 'string' && bkb.to.trim() ? bkb.to.trim() : null, Array.isArray(bkb.ccs) ? bkb.ccs.filter(function (x) { return typeof x === 'string'; }) : null);
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);

@@ -289,7 +289,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
-| `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS and INVOICES SENT BY EMAIL sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
+| `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL and INVOICE RECIPIENTS CHOSEN sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -3100,6 +3100,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   Invoice email) and its own Sent recently: a reminder never holds an
   invoice back, nor an invoice a reminder. The Email log reads it as
   Invoice.
+- To and Copy are chosen (`2026-11-04-invoice-recipients-chosen.sql`; the
+  user, 2026-11-04: "only related to the client contacts"): Review and send
+  (a reminder or an invoice) reads `invoice_recipients(p_client, p_contact)`
+  (Billing View, the client in scope) once a client: To a select of the
+  client's live contacts holding an email, its finance email and the
+  billing contact it goes to by default (first, chosen), Copy a tick for
+  each other one (the finance email ticked, five at most); never an
+  address typed in. `bukku-sync` sends `to` and `ccs` to
+  `invoice_mail_begin`'s thirteen-argument form, which refuses any address
+  `invoice_recipient_options` does not hold (`bad-recipient`, `bad-copy`)
+  and greets the contact chosen (the finance email Sir or Madam); every
+  copy is sent (`cc_list`) and filed in `cc_email`, comma separated.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four

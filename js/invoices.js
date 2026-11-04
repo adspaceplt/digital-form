@@ -52,6 +52,8 @@
     failed: 'The request failed. Try again.'
   };
   SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
+  SAID['bad-recipient'] = 'That address is not among this client\'s contacts. Refresh the page, then choose again.';
+  SAID['bad-copy'] = 'A copy can go to five of this client\'s contacts at most, each once and not to the recipient.';
   function said(d) { return (d && SAID[d.error]) || SAID.failed; }
   /* The instalments a line covers, as the email names them. */
   function partWord(p) {
@@ -379,7 +381,7 @@
     var ed = rv.edits[g.contact] || {};
     var n = g.lines.length;
     var nos = g.lines.map(function (l) { return l.number; });
-    var who = (g.to && g.to.name) || null;
+    var who = whoOf(g);
     var v = {
       'contact name': who || 'Sir or Madam',
       client: (g.to && g.to.company) || g.name,
@@ -393,8 +395,31 @@
     };
     return { subject: fill(ed.subject || (n === 1 ? t.subject_one : t.subject_many)), body: fill(ed.body || t.body), raw: ed };
   }
-  function toOf(g) { return (g.to && g.to.email) || g.email || ''; }
+  /* To and Copy chosen among the client's own contacts and its finance
+     email (2026-11-04, INVOICE RECIPIENTS CHOSEN): read once a client as
+     its email is shown, the billing contact To and the finance email
+     copied, as the email goes when nothing is chosen. */
+  function optOf(g, e) {
+    e = String(e || '').toLowerCase();
+    return (g.opts || []).filter(function (o) { return o.email.toLowerCase() === e; })[0] || null;
+  }
+  function toOf(g) { return g.pick ? g.pick.to : (g.to && g.to.email) || g.email || ''; }
   function ccOf(g) { return g.to && g.to.cc && g.to.cc.toLowerCase() !== toOf(g).toLowerCase() ? g.to.cc : ''; }
+  function whoOf(g) { if (g.pick) { var o = optOf(g, g.pick.to); return o ? o.name : null; } return (g.to && g.to.name) || null; }
+  function optWord(o) { var w = o.finance ? 'Finance email' : o.name; return w ? w + ' · ' + o.email : o.email; }
+  function readOptions(g) {
+    if (g.opts || g.asking || !g.client) return;
+    g.asking = true;
+    rpc('invoice_recipients', { p_client: g.client, p_contact: g.contact }).then(function (d) {
+      g.asking = false;
+      if (!d || d.error || !Array.isArray(d.options) || !d.options.length) { g.opts = []; return; }
+      g.opts = d.options;
+      var to = optOf(g, d.to) || g.opts.filter(function (o) { return !o.finance; })[0] || g.opts[0];
+      var cc = d.cc && optOf(g, d.cc);
+      g.pick = { to: to.email, ccs: cc && g.cc !== false && cc.email.toLowerCase() !== to.email.toLowerCase() ? [cc.email] : [] };
+      if (rv.groups[rv.on] === g) paintReview();
+    });
+  }
   function paintReview() {
     var list = $('odRvList'), pv = $('odRvPane');
     list.innerHTML = rv.groups.map(function (g, i) {
@@ -409,6 +434,7 @@
     });
     var g = rv.groups[rv.on];
     if (!g) { pv.innerHTML = ''; return; }
+    readOptions(g);
     var f = filled(g), to = toOf(g), cc = ccOf(g), d = rv.done[g.contact];
     var paras = String(f.body).replace(/\r/g, '').replace(/\{\s*invoices\s*\}/i, '\n\n{invoices}\n\n').split(/\n\s*\n/).map(function (p) { return p.trim(); }).filter(Boolean);
     var table = '<div class="inv-mail-t"><div class="r hd"><span>Invoice</span><span>Due</span><span class="n">Amount due</span>' +
@@ -434,14 +460,34 @@
           '<span><span class="chip-state chip ' + s[1] + '">' + esc(s[0]) + '</span></span></div>';
       }).join('') + '</div></div>' : '';
     pv.innerHTML = '<div class="inv-rv-head"><dl class="ovfacts">' +
-        '<dt>To</dt><dd>' + (to ? esc(((g.to && g.to.name) ? g.to.name + ' · ' : '') + to) : '<span class="err-ink">No email address on record</span>') + '</dd>' +
-        (cc ? '<dt>Copy</dt><dd><label class="tickline"><input type="checkbox" data-cc' + (g.cc ? ' checked' : '') + '> ' + esc(cc) + '</label></dd>' : '') +
+        (g.pick && !d ? toPick(g) :
+        '<dt>To</dt><dd>' + (to ? esc((whoOf(g) ? whoOf(g) + ' · ' : '') + to) : '<span class="err-ink">No email address on record</span>') + '</dd>' +
+        (g.pick ? (g.pick.ccs.length ? '<dt>Copy</dt><dd>' + g.pick.ccs.map(esc).join('<br>') + '</dd>' : '') :
+          cc ? '<dt>Copy</dt><dd><label class="tickline"><input type="checkbox" data-cc' + (g.cc ? ' checked' : '') + '> ' + esc(cc) + '</label></dd>' : '')) +
         '<dt>Subject</dt><dd>' + esc(f.subject) + '</dd></dl>' +
         (d ? '' : '<button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>') + '</div>' +
       (d ? '<p class="msg ' + (d.ok ? 'ok' : 'err') + '">' + esc(d.text) + '</p>' : '') +
       mail + log;
     var ccBox = pv.querySelector('[data-cc]');
     if (ccBox) ccBox.addEventListener('change', function () { g.cc = ccBox.checked; });
+    var toSel = pv.querySelector('[data-to]');
+    if (toSel) toSel.addEventListener('change', function () {
+      g.pick.to = toSel.value;
+      g.pick.ccs = g.pick.ccs.filter(function (e) { return e.toLowerCase() !== toSel.value.toLowerCase(); });
+      paintReview();
+      var back = $('odRvPane').querySelector('[data-to]');
+      if (back && back.focus) back.focus();
+    });
+    Array.prototype.forEach.call(pv.querySelectorAll('[data-ccpick]'), function (b) {
+      b.addEventListener('change', function () {
+        var e = b.getAttribute('data-ccpick');
+        g.pick.ccs = g.pick.ccs.filter(function (x) { return x.toLowerCase() !== e.toLowerCase(); });
+        if (b.checked) g.pick.ccs.push(e);
+        paintReview();
+        var again = $('odRvPane').querySelector('[data-ccpick="' + e.replace(/"/g, '') + '"]');
+        if (again && again.focus) again.focus();
+      });
+    });
     var ed = pv.querySelector('[data-a="edit"]');
     if (ed) ed.addEventListener('click', function () { editOne(g, ed); });
     var left = rv.groups.filter(function (x) { return !(rv.done[x.contact] && rv.done[x.contact].ok); });
@@ -450,6 +496,20 @@
     var lines = [];
     left.forEach(function (x) { lines = lines.concat(x.lines); });
     $('odRvCount').textContent = n ? plural(lines.length, 'invoice', 'invoices') + ' · ' + plural(n, 'client', 'clients') + ' · ' + totals(lines).join(' · ') : '';
+  }
+  /* To as a select of the client's contacts, Copy a tick for each other
+     address, five at most. */
+  function toPick(g) {
+    var opts = g.opts, full = g.pick.ccs.length >= 5;
+    var sel = '<select class="select select-sm inv-rv-to" data-to aria-label="To">' + opts.map(function (o) {
+      return '<option value="' + esc(o.email) + '"' + (o.email.toLowerCase() === g.pick.to.toLowerCase() ? ' selected' : '') + '>' + esc(optWord(o)) + '</option>';
+    }).join('') + '</select>';
+    var rest = opts.filter(function (o) { return o.email.toLowerCase() !== g.pick.to.toLowerCase(); });
+    var ticks = rest.map(function (o) {
+      var on = g.pick.ccs.some(function (e) { return e.toLowerCase() === o.email.toLowerCase(); });
+      return '<label class="tickline"><input type="checkbox" data-ccpick="' + esc(o.email) + '"' + (on ? ' checked' : full ? ' disabled' : '') + '> ' + esc(optWord(o)) + '</label>';
+    }).join('');
+    return '<dt>To</dt><dd>' + sel + '</dd>' + (rest.length ? '<dt>Copy</dt><dd class="inv-rv-cc">' + ticks + '</dd>' : '');
   }
   function editOne(g, btn) {
     var t = rv.tpl || {}, ed = rv.edits[g.contact] || {}, n = g.lines.length;
@@ -513,6 +573,7 @@
       var g = left[i++];
       var ed = rv.edits[g.contact] || {};
       call({ action: rv.purpose === 'invoice' ? 'deliver' : 'remind', contact: g.contact, client: g.client || null, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
+        to: g.pick ? g.pick.to : undefined, ccs: g.pick ? g.pick.ccs.slice() : undefined,
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);

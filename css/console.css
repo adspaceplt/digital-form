@@ -4154,6 +4154,9 @@ span.inv-amt { font-weight: 600; }
 .inv-rv-head { display: flex; align-items: flex-start; gap: 12px; }
 .inv-rv-head .ovfacts { flex: 1; min-width: 0; }
 .inv-rv-head .ovfacts dd { overflow-wrap: anywhere; }
+/* To and Copy chosen among the client's contacts (2026-11-04). */
+.inv-rv-head .inv-rv-to { width: 100%; max-width: 100%; }
+.inv-rv-head .inv-rv-cc { display: grid; gap: 6px; }
 .inv-rv-pane .err-ink { color: var(--err); }
 .inv-mail { background: #f4f4f2; border-radius: var(--radius); padding: 14px; }
 .inv-mail-card { background: #fff; color: #1b1a17; border-radius: 12px; padding: 20px 22px; display: grid; gap: 10px; font-size: 13.5px; line-height: 1.55; }
