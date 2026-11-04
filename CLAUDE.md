@@ -1857,7 +1857,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_name_zh)` (`bad-name`, `bad-name-zh`, `taken`, a rename onto another
   name included), a rename carrying onto every client holding the old
   name, those outside the caller's own client scope too (`adspace.team_owner`
-  for that update, `2026-11-04-industry-renames.sql`); Other keeps its
+  for that update, `2026-11-04-industry-renames.sql`); Enter twice while a
+  row saves is one save, both tables' keys one helper (`rowKeys`); /quote/
+  refused an industry renamed meanwhile (`bad-industry`) reads the list again
+  and asks for it in words; Other keeps its
   English name and is never deleted (`fixed`), so it stays last; each filed
   `team.changed` under Industries. A client holding a name the list no
   longer holds keeps it in its picker; a list that cannot be read is said
@@ -2029,7 +2032,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     its last client stays reachable to that client's team alone
     (`billing_entities.orphan_of`, `billing_entity_reached`), so Add entity
     finds it again; a BRN held is never made twice, one BRN checked and taken at a time (`brn-taken`, a transaction lock on its digits; the
-    question offering that entity), two clients holding one BRN before
+    question offering that entity), the client's own Billing sheet, Use
+    details and a signed quotation's review alike (`clients_entity_sync`,
+    `2026-11-04-one-brn-on-billing.sql`), two clients holding one BRN before
     stay two, merged by hand; Make primary and Remove (never the primary) offer
     Undo where they happened; an entity removed from this client and billing
     none is listed on asking (Show n removed entities,

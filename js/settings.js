@@ -662,6 +662,7 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { holMsg('Choose a date.'); dayF.focus(); return; }
     if (!name) { holMsg('Enter the holiday\'s name.'); nameF.focus(); return; }
     var btn = $('holList').querySelector(was ? '.is-edit [data-h="save"]' : '[data-h="add"]');
+    if (btn && btn.disabled) return;
     if (btn) btn.disabled = true;
     db.rpc('public_holiday_save', { p_day: day, p_name: name, p_was: was || null }).then(function (r) {
       var said = holSaid(r);
@@ -918,6 +919,8 @@
     var name = was === 'Other' ? 'Other' : (nm.value || '').replace(/\s+/g, ' ').trim();
     if (!name) { indMsg('Enter the industry\'s name.'); nm.focus(); return; }
     var btn = $('indList').querySelector(was ? '.is-edit [data-i="save"]' : '[data-i="add"]');
+    // A second Enter while the first is saving is the same press (audit 2026-11-04, 6).
+    if (btn && btn.disabled) return;
     if (btn) btn.disabled = true;
     db.rpc('industry_save', { p_was: was || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
       var said = indSaid(r);
@@ -964,14 +967,19 @@
       else if (k === 'save') indSave(i.name);
       else if (k === 'delete') indDelete(i);
     });
-    /* Enter saves the row it is typed in, Escape leaves an edit (before the
-       sheet's own capture hears it). */
+    rowKeys(list, 'i', function (row) { indSave(row.classList.contains('ind-add') ? null : row.getAttribute('data-name')); });
+  }
+
+  /* A short table's keys (Industries, Public holidays): Enter saves the row
+     it is typed in, Escape leaves an edit, both heard before the sheet's
+     own capture. One copy (audit 2026-11-04, 9). */
+  function rowKeys(list, attr, save) {
     window.addEventListener('keydown', function (e) {
       if (e.isComposing || e.keyCode === 229) return;
       var row = e.target.closest && list.contains(e.target) && e.target.closest('.ind-row');
       if (!row || e.target.tagName !== 'INPUT') return;
-      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (row.classList.contains('ind-add')) indSave(null); else indSave(row.getAttribute('data-name')); }
-      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-i="cancel"]').click(); }
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); save(row); }
+      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-' + attr + '="cancel"]').click(); }
     }, true);
   }
 
@@ -1386,15 +1394,7 @@
       else if (k === 'save') holSave(h.day);
       else if (k === 'delete') holDelete(h);
     });
-    /* Enter saves the row it is typed in, Escape leaves an edit (before the
-       sheet's own capture hears it). */
-    window.addEventListener('keydown', function (e) {
-      if (e.isComposing || e.keyCode === 229) return;
-      var row = e.target.closest && list.contains(e.target) && e.target.closest('.ind-row');
-      if (!row || e.target.tagName !== 'INPUT') return;
-      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); holSave(row.classList.contains('ind-add') ? null : row.getAttribute('data-day')); }
-      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-h="cancel"]').click(); }
-    }, true);
+    rowKeys(list, 'h', function (row) { holSave(row.classList.contains('ind-add') ? null : row.getAttribute('data-day')); });
   }
   wireHol();
   wireDeps();
