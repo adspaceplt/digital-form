@@ -6852,7 +6852,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   noreply-client (a supplier's from noreply-supplier), replies to the
   sender, and closes it (`email_new_done`, filed `email.sent` under
   Messages by the recipient's name and the number of copies, never an
-  address; Send by email's `client_email_done` alike; 2026-11-04). `team_emails` (no foreign key, RLS on, no policy, no grant)
+  address; Send by email's `client_email_done`, `supplier_email_done` and
+  `invoice_email_done` alike; 2026-11-04). One to or copying a finance
+  email is marked (`team_emails.finance`) and read on the client and in the
+  log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
   `team.settings`; `email_template_save` with `taken`, `email_template_delete`
@@ -6872,9 +6875,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
   as Address deleted; a signing code's address and details 30 days after an
   unused code expired or a year after its use; an address an email filed
-  in the Activity record before 2026-11-04 a year on (a deleted address).
-  Resend's email.failed reads Failed, and a status that arrives before its
-  email is closed is answered 503 for ten minutes, so Resend asks again. The SQL Editor part also drops the 10- and
+  in the Activity record before 2026-11-04 a year on (a deleted address),
+  the senders' own lines alone (emailed to …), never a contact's or a
+  supplier's change of email, which the record keeps its three years.
+  Resend's email.failed reads Failed, a status that arrives before its
+  email is closed is answered 503 for ten minutes, and one the database
+  could not take 500, so Resend asks again. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team

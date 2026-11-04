@@ -8197,3 +8197,17 @@ the pen alone, and a template that cannot send is said in a warn line, not
 red: it is a caution, not a refusal. Page availability's rows became one
 line at a desk (the name with its address, the state with when, the pen);
 on a phone the row stays top aligned, line for line, the pen beside it.
+
+**2026-11-04 — Emails keep Billing and history where they belong.** The
+audit and review after the Settings revamps found three faults left by the
+day's email fixes. A New email to or copying a client's finance email was
+offered at Billing alone, but the email itself still listed on the client's
+Emails and in the Email log to anybody at Clients: Contacts; such an email
+is now marked and read at Billing View, those sent before marked once. The
+yearly clean-up of addresses in the Activity record took every client and
+supplier edit holding an address, so a contact's change of email would have
+read "a deleted address → a deleted address" a year on; it now takes the
+email senders' own lines alone, and the supplier and invoice senders file
+the recipient by name as the others do. Resend's webhook answered 200 when
+the database could not take a status, so a bounce was never sent again; it
+now answers 500.

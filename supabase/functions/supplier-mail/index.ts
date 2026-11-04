@@ -122,7 +122,9 @@ Deno.serve(async (req) => {
       const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
       const at = String(ev.created_at || new Date().toISOString());
       const r = await svc.rpc('supplier_email_status', { p_provider: emailId, p_event: String(ev.type || ''), p_at: at });
-      if (r.error) console.error('supplier-mail: status not recorded', r.error.message);
+      /* A status the database could not take is answered 500, so Resend
+         sends it again (audit 2026-11-04, 3), as wa-hook does Meta's. */
+      if (r.error) { console.error('supplier-mail: status not recorded', r.error.message); return new Response('retry', { status: 500 }); }
       /* A status can arrive before its sender has closed the email (the
          provider id is kept only then): asked again for ten minutes, so the
          webhook's retry finds it; an email no log holds is let go after
