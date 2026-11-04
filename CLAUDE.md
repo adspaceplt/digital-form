@@ -6055,6 +6055,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   sends back with a note. Signed on paper is kept by hand
   (`quotation_paper`: the day and a link to the scan); Request signature
   again (`quotation_resign`) keeps the earlier one in `sign_history`.
+  A signed quotation is the contract (`2026-11-04-quotation-audit-fixes.sql`):
+  never revised (`quotation_replace` `signed`, no Adjust and send),
+  cancelled or removed (`quotation_set` `signed`, the row held; Request
+  again is its way back); a cancelled or revised one is neither submitted
+  nor approved (`not-proceeding`, `revised`); a reviewer is offered and
+  taken only where their own client scope reaches the client
+  (`quote_sign_member_sees`); the code and the finish read the link again
+  once the row is held; the record keeps `in_contacts`, the check reading
+  Not in Contacts where the code went elsewhere; the record prefills its own
+  link alone (a team's quotation, or the website quotation that made the
+  lead), nothing once closed or expired.
   `quote_sign_codes` has RLS on, no policy, no grant. A team's quotation
   is sent to sign by the approved `quote_ready` WhatsApp (Send link on
   WhatsApp in its ⋯, while unsigned and valid; `quotation_resend`, its

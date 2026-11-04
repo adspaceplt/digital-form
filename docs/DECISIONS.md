@@ -8060,3 +8060,22 @@ a merge-at-once pace. The user approved all three fixes ("ok"):
   writer had passed (a system word, two refusals with no next step, a
   present tense for a wait, a screen-reader name out of word order, a
   button repeating its object); each was rewritten.
+
+### 2026-11-04 · A signed quotation held as the contract (audit, release A)
+The audit of the releases since 2026-10-30 (the user: "fix all") found the
+signing steps let a signed quotation move under its review. Adjust and send
+revised a signed and approved one, so approving the revision confirmed every
+line a second time; Cancel and Remove stayed on a signed quotation, which
+read In review and could still be approved; a website quotation matched to
+an existing lead by email and number read that lead's billing and primary
+contact on its link; the code went to any typed address with nothing said to
+the reviewer; a colleague's Mark signed while the client typed the code was
+written over; a reviewer outside the client's scope could be chosen and the
+quotation stuck; and 30 February answered the database's words.
+QUOTATION AUDIT FIXES refuses each (`signed`, `not-proceeding`, `revised`,
+`bad-reviewer`, `bad-day`), reads the link again under the row lock, keeps
+`in_contacts` on the signing record, and prefills only a link's own record;
+the console draws no Adjust and send, Cancel or Remove on a signed quotation
+and says Not in Contacts on the check. `sql` builds it on the signing
+fixture; `quotes` walks the signed row.
+
