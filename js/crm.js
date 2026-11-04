@@ -231,6 +231,14 @@
       on.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');
     $('crmIndustry').value = keep || '';
   }
+  /* A list that could not be read is said under the field, with Try again,
+     never left as a picker of Not set alone (review 3). */
+  function industryFailed(on) {
+    var m = $('crmIndMsg');
+    if (!m) return;
+    m.hidden = !on;
+    if (on) m.innerHTML = 'Could not load the industries. <button class="linkbtn" type="button" id="crmIndRetry">Try again</button>';
+  }
   var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
   var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
                     whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
@@ -926,13 +934,21 @@
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
     fillIndustry(c && c.industry);
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
+    industryFailed(false);
     if (!industries.rows) {
       var forId = c ? c.id : null;
-      readIndustries().then(function () {
-        if ((state.editing ? state.editing.id : null) !== forId || !industries.rows) return;
-        var now = $('crmIndustry').value;
-        fillIndustry(now || (c && c.industry));
-      });
+      var askInd = function () {
+        readIndustries().then(function () {
+          if ((state.editing ? state.editing.id : null) !== forId) return;
+          if (!industries.rows) { industryFailed(true); return; }
+          industryFailed(false);
+          var now = $('crmIndustry').value;
+          fillIndustry(now || (c && c.industry));
+        });
+      };
+      askInd();
+      var mInd = $('crmIndMsg');
+      if (mInd) mInd.onclick = function (e) { if (e.target && e.target.id === 'crmIndRetry') { industryFailed(false); askInd(); } };
     }
     // Rebuilt against this record, so an owner who has since left the team is
     // still the option that is selected rather than silently cleared on save.

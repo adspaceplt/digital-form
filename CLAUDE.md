@@ -1852,8 +1852,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `in-use`); the last row adds one; `industry_save(p_was, p_name,
   p_name_zh)` (`bad-name`, `bad-name-zh`, `taken`, a rename onto another
   name included), a rename carrying onto every client holding the old
-  name; each filed `team.changed` under Industries. A client holding a
-  name the list no longer holds keeps it in its picker.
+  name, those outside the caller's own client scope too (`adspace.team_owner`
+  for that update, `2026-11-04-industry-renames.sql`); Other keeps its
+  English name and is never deleted (`fixed`), so it stays last; each filed
+  `team.changed` under Industries. A client holding a name the list no
+  longer holds keeps it in its picker; a list that cannot be read is said
+  under the field with Try again (`#crmIndMsg`).
 - The Clients list, and every read of all clients (`bridge.active`,
   `uniqueSlug`, the Dashboard), is read a thousand at a time
   (`ADspaceAPI.readPages`, the one copy; 2026-10-19); past its cap it

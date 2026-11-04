@@ -7,8 +7,9 @@
 -- "This feature is not available yet."; adding and renaming work.
 --
 -- `industry_delete(p_name)` (Business settings): removes an industry no
--- client holds (`in-use` with the count), filed `team.changed` under
--- Industries. Safe to run twice. Rollback: drop the function.
+-- client holds (`in-use` with the count), never Other (`fixed`), filed
+-- `team.changed` under Industries. Safe to run twice. Rollback: drop the
+-- function.
 -- ===========================================================================
 
 create or replace function public.industry_delete(p_name text)
@@ -21,6 +22,8 @@ begin
   if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
   perform pg_advisory_xact_lock(hashtextextended('industries', 0));
   if not exists (select 1 from public.industries i where i.name = p_name) then return jsonb_build_object('error', 'not-found'); end if;
+  -- Other stays, the website's last choice (2026-11-04, review 6).
+  if p_name = 'Other' then return jsonb_build_object('error', 'fixed'); end if;
   select count(*)::int into v_n from public.clients c where c.industry = p_name;
   if v_n > 0 then return jsonb_build_object('error', 'in-use', 'clients', v_n); end if;
   delete from public.industries i where i.name = p_name;

@@ -830,7 +830,8 @@
   var IND_SAID = {
     denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
     'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
-    'not-found': 'This industry no longer exists. The latest list is now shown.'
+    'not-found': 'This industry no longer exists. The latest list is now shown.',
+    fixed: 'Other cannot be renamed or deleted. Only its Chinese name can be changed.'
   };
   function indSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
@@ -870,12 +871,14 @@
     var rows = ind.rows.map(function (i) {
       if (i.name === ind.editing) {
         return '<div class="ind-row is-edit" data-name="' + esc(i.name) + '">' +
-          '<input class="input input-sm" id="indEdName" maxlength="40" aria-label="Industry in English" value="' + esc(i.name) + '">' +
+          /* Other keeps its name, the last choice everywhere (review 6). */
+          (i.name === 'Other' ? '<span class="ind-name" id="indEdFixed">Other</span>'
+            : '<input class="input input-sm" id="indEdName" maxlength="40" aria-label="Industry in English" value="' + esc(i.name) + '">') +
           '<input class="input input-sm" id="indEdZh" maxlength="40" aria-label="Industry in Chinese" value="' + esc(i.name_zh || '') + '">' +
           indCount(i.clients) +
           (i.clients ? '<p class="ind-note">Renaming it also changes the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
           '<span class="ind-acts">' +
-            (i.clients ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
+            (i.clients || i.name === 'Other' ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
             '<button class="btn btn-quiet btn-sm" type="button" data-i="cancel">Cancel</button>' +
             '<button class="btn btn-primary btn-sm" type="button" data-i="save">Save</button></span>' +
           '</div>';
@@ -891,11 +894,12 @@
         '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Hospitality" aria-label="New industry in English">' +
         '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="酒店业" aria-label="New industry in Chinese">' +
         '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">Add</button></span></div>';
-    if (ind.editing) { var f = $('indEdName'); if (f) f.focus(); }
+    if (ind.editing) { var f = $('indEdName') || $('indEdZh'); if (f) f.focus(); }
   }
   function indSave(was) {
     var nm = $(was ? 'indEdName' : 'indNewName'), zh = $(was ? 'indEdZh' : 'indNewZh');
-    var name = (nm.value || '').replace(/\s+/g, ' ').trim();
+    if (!nm) nm = zh;  // Other: its name stays, its Chinese name is changed
+    var name = was === 'Other' ? 'Other' : (nm.value || '').replace(/\s+/g, ' ').trim();
     if (!name) { indMsg('Enter the industry\'s name.'); nm.focus(); return; }
     var btn = $('indList').querySelector(was ? '.is-edit [data-i="save"]' : '[data-i="add"]');
     if (btn) btn.disabled = true;
