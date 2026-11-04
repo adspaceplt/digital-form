@@ -836,7 +836,7 @@
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
     if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
-    if (e === 'in-use') return 'This industry cannot be deleted, as ' + plural(d.clients || 0, 'client is', 'clients are') + ' in it.';
+    if (e === 'in-use') return (d.clients === 1 ? '1 client is in this industry. Move it' : plural(d.clients || 0, 'client', 'clients') + ' are in this industry. Move them') + ' to another industry first.';
     return IND_SAID[e] || (r && r.deleting ? 'Not deleted. Please try again.' : 'Not saved. Please try again.');
   }
   function indMsg(text, tone) { var m = $('indMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
@@ -888,8 +888,8 @@
     }).join('');
     box.innerHTML = '<div class="ind-row ind-head" aria-hidden="true"><span>English</span><span>中文</span><span>Clients</span><span></span></div>' + rows +
       '<div class="ind-row ind-add">' +
-        '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Add industry" aria-label="New industry in English">' +
-        '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="中文" aria-label="New industry in Chinese">' +
+        '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Hospitality" aria-label="New industry in English">' +
+        '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="酒店业" aria-label="New industry in Chinese">' +
         '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">Add</button></span></div>';
     if (ind.editing) { var f = $('indEdName'); if (f) f.focus(); }
   }
