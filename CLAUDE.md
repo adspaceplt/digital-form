@@ -738,8 +738,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     dot, Console: Upgrade in progress until …, Turn off ending the
     console's alone). Settings, Portal: Page availability (`team.upgrade`,
     All pages available or n pages unavailable) opens `#pgSheet`: the ten pages
-    by group (Team, Clients, Creators, Public), each its state over when and
-    Edit; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The
+    by group (Team, Clients, Creators, Public), each one line at a desk (the
+    name and its address, the state and when, the pen; on a phone the name
+    over its address, the state over when, the pen beside), revamp D,
+    2026-11-04; Select ticks several (a press on a row, or the tick for all), Set availability asking once for all. The
     question asks Availability (a segment), Starts, Ends (each a date beside
     its time, MYT; empty start is now, empty end waits, a time with no date
     is today's), a note, a 中文 note and Show Chat on WhatsApp (not the
@@ -804,10 +806,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   grant), seeded once into an empty table with Johor's 2026 and 2027.
   Settings' Portal group, Public holidays (`team.settings`): the next one
   under the name; Open lists a year at a time (`#holSheet`, Year as a
-  segment), Add holiday and each row's Edit asking Date and Name
+  segment) as Industries' table (Date · Holiday · the pen; revamp A,
+  2026-11-04): the pen opens its row as the date and name fields (Enter
+  saves, Escape leaves), the last row adds one
   (`public_holiday_save(p_day, p_name, p_was)`: `taken` naming the holiday,
-  `bad-name`, `bad-day`), Delete in its ⋯ (`public_holiday_delete`, asked,
-  no restore); each filed `team.changed` under Public holidays, from and
+  `bad-name`, `bad-day`), Delete in the open row (`public_holiday_delete`,
+  asked, no restore); each filed `team.changed` under Public holidays, from and
   to. `public_holidays_between(p_from, p_to)` (anon, 800 days at most) is
   the one read: the front door, Settings (this year and the next) and My
   Work (once a visit) ask it. My Work's calendar names a holiday on its
@@ -2927,7 +2931,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `tax_codes_list()` (the team), kept by `tax_codes_save(p_rows,
   p_replace)` (`team.settings`; `bad-row`; filed `team.changed` under Tax
   codes); Settings, Money: Tax codes (`#taxSheet`: active first, highest
-  rate first, one no longer offered last; Edit, Add code, Read from Bukku,
+  rate first, one no longer offered last; one table, Code · Rate · Name ·
+  Offered, then the pen and a ⋯, revamp B, 2026-11-04; Edit, Add code, Read from Bukku,
   which lists Bukku's codes (`bukku-sync` `taxes`, asked of `bukku_config`
   as `fields` is; 2026-10-22, BE-12) to tick, those offered
   ticked, and keeps only the ticked ones offered: one unticked is set not
@@ -6925,7 +6930,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   only templates the purpose can take are offered, 2026-10-20, WA-2; one
   whose link button's fixed part holds a variable typed by hand, `%7B%7B1%7D%7D`,
   is never offered, its row and the composer name it and Send rests,
-  2026-10-22), each row's
+  2026-10-22, said under its name in a warn line), the sheet one table
+  with no fold over it and the pen alone (revamp C, 2026-11-04), each row's
   switch (`.switch`) turns it on or off at the press (one with no template
   asks for one first); `wa_template_set`, filed `wa.template` under
   WhatsApp from and to. A purpose that is Off sends nothing and its record
