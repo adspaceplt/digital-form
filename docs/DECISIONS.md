@@ -8244,3 +8244,16 @@ with "Not sent. Please try again." for ever; it now reads the list again,
 clears the choice and says so. Enter pressed twice in Industries or Public
 holidays saved twice and then said the name was taken; the second press is
 now the same press, and the two tables share one key handler.
+
+**2026-11-05 — The day's gate: a fact's link at a control's height, Add's plus, Messages' strip walked.**
+The full gate on da86cee passed every suite but two. ops is the logged
+task-numbering defect. uxaudit found three things the walk had not been
+able to see: the email sheet's Client or Supplier fact, a link drawn at its
+13px facts, stood 33px tall against the 34px floor, because `dd > .linkbtn`
+padded 6px round its line instead of sizing to the control; it is now the
+control's height whatever the type, given back to the line evenly. The
+Public holidays table's Add (and Industries', the same row) read as words
+while the task card's Add carried the plus; a table's add row is not a
+form, so its Add takes the plus as Reports' does. The Messages strip
+(`msgViews`, #902) was met by the walk but never named in its list.
+Industries (2026-11-04) had joined no walk; it is walked now.

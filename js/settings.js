@@ -18,6 +18,8 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return window.ADspaceWords.esc(s); }
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>';
+  /* A table's add row: its Add carries the plus, as Reports' does (gate 2026-11-05). */
+  var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>';
   /* Every part a row of this page answers to. The route is offered to a
      colleague holding any of them, or Suppliers, WhatsApp or Services at
@@ -650,7 +652,7 @@
       '<div class="ind-row is-hol ind-add">' +
         '<input class="input input-sm" type="date" id="holNewDay" aria-label="New holiday\'s date" value="' + esc(firstDay) + '">' +
         '<input class="input input-sm" id="holNewName" maxlength="80" placeholder="Deepavali" aria-label="New holiday">' +
-        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-h="add">Add</button></span></div>';
+        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-h="add">' + PLUS + 'Add</button></span></div>';
     if (!rows.length) window.ADspaceState.emptyLine(box.querySelector('.hol-none'), 'No holidays.');
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(box);
     if (hol.editing) { var f = $('holEdName'); if (f) f.focus(); }
@@ -910,7 +912,7 @@
       '<div class="ind-row ind-add">' +
         '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Hospitality" aria-label="New industry in English">' +
         '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="酒店业" aria-label="New industry in Chinese">' +
-        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">Add</button></span></div>';
+        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">' + PLUS + 'Add</button></span></div>';
     if (ind.editing) { var f = $('indEdName') || $('indEdZh'); if (f) f.focus(); }
   }
   function indSave(was) {
