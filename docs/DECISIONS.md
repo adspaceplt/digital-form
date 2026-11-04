@@ -7953,3 +7953,18 @@ read and set every page for a tab served before.
 - 2026-11-04 · WhatsApp becomes Messages, with an Email tab (the user: "also i need a email log similar as WhatsApp side it shows what email sent out from the portal. entire email log", "the email and whatsapp log sits together in one section under different tabs"; approved: the name Messages, sign-in and invitation emails left out). The portal kept every email it sent in three logs (supplier_emails, client_emails, invoice_emails) and the signing codes in their own table, each read only on its record. `mail_log(p_month)` reads them together for the month, each row at the access its own record asks, so a colleague sees no email the record would not show them; a signing code's row carries no code and reads the code's own state, since its delivery is not reported back. The stand-in's first copy sat inside its `wa_` branch and answered nothing (found by the screenshot reading No emails.); it now sits before it. The section's key, address and parts stay `whatsapp`, so no group's access moves.
 - 2026-11-04 · Send invoice from a client's Billing (the user: "is it possible to build a send invoice (pulled data and pdf from bukku) send to clients email?", then "attach link for now"). Bukku's published API (its accounting and sales specs) holds no invoice PDF, only the share page (`short_link`) and files attached by hand, so the email carries Bukku's link as View PDF, as the reminders do; attaching waits on a share link to test whether the page serves a PDF the portal may fetch. The send reuses the reminder's whole path (Review and send, the finance sender, the table, Resend's word), told apart by `invoice_emails.purpose`: a reminder sent last week must not answer Sent recently to a new invoice, so each purpose keeps its own window. One filing serves both (`invoice_mail_begin`) so a refusal added to one is added to both; `invoice_email_begin` keeps its signature (a changed one would have to be dropped first, which the connector holds). The first preview showed an instalment invoice's overdue part (RM 4,000.00) while the server sends the whole balance (RM 6,000.00); the page now sends the balance it shows, and `overdue` holds the two equal.
 
+### 2026-11-04 · Invoice emails: To and Copy chosen among the client's contacts
+The user asked to choose which address an invoice or a reminder goes to and
+which are copied, "only related to the client contacts". Review and send now
+reads the client's live contacts holding an email, its finance email and
+the default billing contact (an entity's shared one may be another brand's)
+through `invoice_recipients`; To is a select, Copy a tick each, five at most.
+The database holds the choice to that list (`invoice_recipient_options`,
+`bad-recipient`, `bad-copy`), so a page can never send to an address typed
+in. `invoice_mail_begin` took two arguments in a new thirteen-argument form,
+with no defaults so no call fits both; the eleven-argument form became its
+wrapper, so the deployed function kept working between the migration and its
+deploy, and no statement needed a drop. A finance email chosen as To is
+greeted Sir or Madam. The client document emails (`js/docmail.js`) already
+choose To among the contacts; their Copy stays the finance email for now.
+

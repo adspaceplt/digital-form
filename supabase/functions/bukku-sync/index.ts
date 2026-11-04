@@ -64,7 +64,7 @@
  *                                             client, that client's unpaid
  *                                             invoices, those not yet due
  *                                             too (its Billing).
- *   POST { action: 'remind', contact, invoices, cc, subject, body, again }
+ *   POST { action: 'remind', contact, invoices, cc, to?, ccs?, subject, body, again }
  *                                             one reminder to one Bukku
  *                                             contact: each invoice read
  *                                             again from Bukku, one paid
@@ -815,7 +815,12 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const fromClient = link && /^[0-9a-f-]{36}$/i.test(String(body.client || '')) && billsFor(link, String(body.client)) ? String(body.client) : null;
   const bc = await bukku('GET', `/contacts/${contact}`).then((r) => (r && r.contact) || null).catch(() => null);
   const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const begun = await svc.rpc(deliver ? 'invoice_send_begin' : 'invoice_email_begin', {
+  /* To and Copy as chosen on the sheet (2026-11-04), held by the database
+     to the client's own contacts and finance email; none chosen, as before. */
+  const pickTo = typeof body.to === 'string' && body.to.trim() ? body.to.trim().slice(0, 254) : null;
+  const pickCc = Array.isArray(body.ccs) ? body.ccs.filter((x: unknown) => typeof x === 'string').slice(0, 6).map((x: string) => x.trim().slice(0, 254)) : null;
+  const begun = await svc.rpc('invoice_mail_begin', {
+    p_purpose: deliver ? 'invoice' : 'reminder', p_to: pickTo, p_ccs: pickCc,
     p_actor: scope.me && scope.me.id, p_client: fromClient || (link ? link.client : null), p_contact: contact,
     p_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
     p_email: String((bc && bc.email) || lines[0].contact_email || ''),
@@ -832,7 +837,8 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     '  due ' + day(l.due) + (l.link ? '  ' + l.link : '')).join('\n'));
   const msg: Record<string, unknown> = { from: FIN_FROM(), to: [String(b.to || '')], reply_to: FIN_REPLY(),
     subject: String(b.subject || ''), html, text };
-  if (b.cc) msg.cc = [String(b.cc)];
+  const ccs = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : (b.cc ? [String(b.cc)] : []);
+  if (ccs.length) msg.cc = ccs;
   const sent = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await svc.rpc('invoice_email_done', { p_id: b.id, p_status: sent.status, p_provider: sent.provider || null, p_error: sent.error || null });
   if (done.error) console.error('bukku-sync: reminder not closed', done.error.message);
