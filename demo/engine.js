@@ -1413,6 +1413,14 @@
               blocked = 'active-needs-billing';
           }
 
+          if (!blocked && table === 'clients' && pending && 'company_no' in pending &&
+              String(pending.company_no || '').replace(/\D/g, '') && String(pending.company_no || '').replace(/\D/g, '') !== String(r.company_no || '').replace(/\D/g, '')) {
+            var bnMain = (DB.client_entities || []).filter(function (l) { return l.client_id === r.id && l.is_main; })[0];
+            if ((DB.billing_entities || []).some(function (e) { return (!bnMain || e.id !== bnMain.entity_id) &&
+                String(e.company_no || '').replace(/\D/g, '') === String(pending.company_no).replace(/\D/g, ''); }))
+              blocked = 'brn-taken';
+          }
+
           if (table === 'clients' && pending && pending.client_code &&
               DB.clients.some(function (o) { return o.id !== r.id && o.client_code === pending.client_code; }))
             blocked = 'duplicate key value violates unique constraint "clients_client_code_uidx"';
@@ -1488,7 +1496,8 @@
         });
         if (blocked) {
           rows = [];
-          api.__err = { code: 'P0001', message: blocked };
+          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this registration no. already exists. Add that entity instead.', hint: 'brn-taken' }
+            : { code: 'P0001', message: blocked };
           return api;
         }
         DB[table].forEach(function (r) {
@@ -10460,7 +10469,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'team_emails_of') {
         if (!opsAllowed('clients.contacts', 'view') || !scopeSeen(args.p_client, 'view')) return emNo('denied');
-        return emOk({ rows: DB.team_emails.filter(function (e) { return e.client_id === args.p_client; })
+        return emOk({ rows: DB.team_emails.filter(function (e) { return e.client_id === args.p_client && (!e.finance || opsAllowed('clients.billing', 'view')); })
           .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
           .map(function (e) {
             var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
@@ -10506,12 +10515,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var to0, who0;
         if (aud === 'other') { to0 = String(args.p_to || '').trim().toLowerCase(); if (!EMOK.test(to0)) return emNo('bad-email'); who0 = 'Sir or Madam'; }
         else { var pk0 = optOf0(args.p_to); if (!pk0) return emNo('bad-recipient'); to0 = pk0.email; who0 = pk0.name || 'Sir or Madam'; }
+        var fin0 = aud !== 'other' && !!(pk0 && pk0.finance);
         var cc0 = (args.p_ccs || []).filter(function (x) { return String(x || '').trim(); }), got0 = [], seen0 = {};
         if (cc0.length > 5) return emNo('bad-copy');
         for (var i0 = 0; i0 < cc0.length; i0++) {
           var e0 = aud === 'other' ? String(cc0[i0]).trim().toLowerCase() : (optOf0(cc0[i0]) || {}).email;
           if (!e0 || (aud === 'other' && !EMOK.test(e0)) || seen0[e0.toLowerCase()] || e0.toLowerCase() === to0.toLowerCase()) return emNo('bad-copy');
           seen0[e0.toLowerCase()] = 1; got0.push(e0);
+          if (aud !== 'other' && (optOf0(e0) || {}).finance) fin0 = true;
         }
         var vals0 = { 'contact name': who0, 'client name': cl0 ? cl0.name : '', 'company name': cl0 ? ((opsAllowed('clients.billing', 'view') && cl0.legal_name) || cl0.name) : sp0 ? sp0.name : '',
           'supplier name': sp0 ? sp0.name : '', 'sender name': emMe.name };
@@ -10523,7 +10534,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (at0 && !/\.(pdf|png|jpe?g|webp|docx?|xlsx?|pptx?|csv)$/i.test(at0)) return emNo('bad-file');
         var row0 = { id: nid('te'), audience: aud, client_id: cl0 ? cl0.id : null, supplier_id: sp0 ? sp0.id : null, template_id: args.p_template || null,
           to_email: to0, to_name: who0 !== 'Sir or Madam' ? who0 : null, cc_email: got0.length ? got0.join(', ') : null, reply_to: emMe.email || null,
-          subject: sj0, body: bd0, attachment: at0, idem: args.p_idem, sent_by: emMe.id, created_at: new Date().toISOString(), status: 'sending' };
+          subject: sj0, body: bd0, attachment: at0, idem: args.p_idem, sent_by: emMe.id, created_at: new Date().toISOString(), status: 'sending', finance: fin0 };
         DB.team_emails.push(row0);
         return emOk({ id: row0.id, to: to0, cc: row0.cc_email, cc_list: got0, reply_to: row0.reply_to, subject: sj0, body: bd0, audience: aud });
       }
@@ -10587,7 +10598,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           error: null, sent_at: g.created_at, delivered_at: null, opened_at: null, bounced_at: null, client_id: q.client_id || null, client: mlCl(q.client_id),
           supplier_id: null, supplier: null, supplier_code: null, reference: q.ref, to_name: who || null });
       });
-      (DB.team_emails || []).filter(function (e) { return mlIn(e) && (e.client_id ? opsAllowed('clients.contacts', 'view') && scopeSeen(e.client_id, 'view') : e.supplier_id ? opsAllowed('suppliers', 'view') : true); }).forEach(function (e) {
+      (DB.team_emails || []).filter(function (e) { return mlIn(e) && (e.client_id ? opsAllowed('clients.contacts', 'view') && scopeSeen(e.client_id, 'view') : e.supplier_id ? opsAllowed('suppliers', 'view') : true) &&
+        (!e.finance || opsAllowed('clients.billing', 'view')); }).forEach(function (e) {
         var sp1 = e.supplier_id ? (DB.suppliers || []).filter(function (x) { return x.id === e.supplier_id; })[0] : null;
         mlItems.push(Object.assign(mlBase(e), { source: 'manual', kind: 'message', client_id: e.client_id || null, client: mlCl(e.client_id),
           supplier_id: e.supplier_id || null, supplier: sp1 ? sp1.name : null, supplier_code: sp1 ? sp1.code : null, reference: e.attachment || null, to_name: e.to_name || null }));

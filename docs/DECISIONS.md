@@ -8219,3 +8219,28 @@ reads "(address deleted)"; the quotation review files a corrected field
 by Billing's own label; a website lead is filed under Quotation website,
 as the rest of the quotation website is. The retired phrases joined
 `tests/words.js`.
+**2026-11-04 — Emails keep Billing and history where they belong.** The
+audit and review after the Settings revamps found three faults left by the
+day's email fixes. A New email to or copying a client's finance email was
+offered at Billing alone, but the email itself still listed on the client's
+Emails and in the Email log to anybody at Clients: Contacts; such an email
+is now marked and read at Billing View, those sent before marked once. The
+yearly clean-up of addresses in the Activity record took every client and
+supplier edit holding an address, so a contact's change of email would have
+read "a deleted address → a deleted address" a year on; it now takes the
+email senders' own lines alone, and the supplier and invoice senders file
+the recipient by name as the others do. Resend's webhook answered 200 when
+the database could not take a status, so a bounce was never sent again; it
+now answers 500.
+
+**2026-11-04 — One BRN on Billing too; /quote/ and Settings tables steady.**
+The same audit found that a client's own Billing sheet, Use details and a
+signed quotation's review wrote the client, whose main entity the trigger
+made with no BRN check, so a second entity of one company could still be
+made beside Add entity's guarded path; `clients_entity_sync` now takes the
+same lock and refuses `brn-taken`, which the Billing sheet words as Add
+entity does. /quote/ answered an industry renamed while the form was open
+with "Not sent. Please try again." for ever; it now reads the list again,
+clears the choice and says so. Enter pressed twice in Industries or Public
+holidays saved twice and then said the name was taken; the second press is
+now the same press, and the two tables share one key handler.

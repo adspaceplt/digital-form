@@ -110,6 +110,7 @@
         captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singapore WhatsApp number.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
+        'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
@@ -222,6 +223,7 @@
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
+        'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
         expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已取消，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
@@ -1146,6 +1148,14 @@
       var d = (r && r.data) || {};
       if (r.error || d.error || !d.key) {
         btn.disabled = false; btn.textContent = t().make;
+        /* An industry renamed or removed while the form was open: the list
+           is read again and the choice cleared (audit 2026-11-04, 5). */
+        if (d.error === 'bad-industry') {
+          S.contact.industry = ''; keep();
+          db.rpc('industries_list').then(function (r2) { if (r2 && !r2.error && Array.isArray(r2.data)) INDUSTRIES = r2.data; })
+            .catch(function () {}).then(function () { paint(); say('qsMsg', t().err['bad-industry']); });
+          return;
+        }
         say('qsMsg', t().err[d.error] || t().err.any);
         return;
       }

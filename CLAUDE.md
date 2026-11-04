@@ -1857,7 +1857,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_name_zh)` (`bad-name`, `bad-name-zh`, `taken`, a rename onto another
   name included), a rename carrying onto every client holding the old
   name, those outside the caller's own client scope too (`adspace.team_owner`
-  for that update, `2026-11-04-industry-renames.sql`); Other keeps its
+  for that update, `2026-11-04-industry-renames.sql`); Enter twice while a
+  row saves is one save, both tables' keys one helper (`rowKeys`); /quote/
+  refused an industry renamed meanwhile (`bad-industry`) reads the list again
+  and asks for it in words; Other keeps its
   English name and is never deleted (`fixed`), so it stays last; each filed
   `team.changed` under Industries. A client holding a name the list no
   longer holds keeps it in its picker; a list that cannot be read is said
@@ -2029,7 +2032,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     its last client stays reachable to that client's team alone
     (`billing_entities.orphan_of`, `billing_entity_reached`), so Add entity
     finds it again; a BRN held is never made twice, one BRN checked and taken at a time (`brn-taken`, a transaction lock on its digits; the
-    question offering that entity), two clients holding one BRN before
+    question offering that entity), the client's own Billing sheet, Use
+    details and a signed quotation's review alike (`clients_entity_sync`,
+    `2026-11-04-one-brn-on-billing.sql`), two clients holding one BRN before
     stay two, merged by hand; Make primary and Remove (never the primary) offer
     Undo where they happened; an entity removed from this client and billing
     none is listed on asking (Show n removed entities,
@@ -6852,7 +6857,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   noreply-client (a supplier's from noreply-supplier), replies to the
   sender, and closes it (`email_new_done`, filed `email.sent` under
   Messages by the recipient's name and the number of copies, never an
-  address; Send by email's `client_email_done` alike; 2026-11-04). `team_emails` (no foreign key, RLS on, no policy, no grant)
+  address; Send by email's `client_email_done`, `supplier_email_done` and
+  `invoice_email_done` alike; 2026-11-04). One to or copying a finance
+  email is marked (`team_emails.finance`) and read on the client and in the
+  log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
   `team.settings`; `email_template_save` with `taken`, `email_template_delete`
@@ -6872,9 +6880,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
   as Address deleted; a signing code's address and details 30 days after an
   unused code expired or a year after its use; an address an email filed
-  in the Activity record before 2026-11-04 a year on (a deleted address).
-  Resend's email.failed reads Failed, and a status that arrives before its
-  email is closed is answered 503 for ten minutes, so Resend asks again. The SQL Editor part also drops the 10- and
+  in the Activity record before 2026-11-04 a year on (a deleted address),
+  the senders' own lines alone (emailed to …), never a contact's or a
+  supplier's change of email, which the record keeps its three years.
+  Resend's email.failed reads Failed, a status that arrives before its
+  email is closed is answered 503 for ten minutes, and one the database
+  could not take 500, so Resend asks again. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
