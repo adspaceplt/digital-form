@@ -23,7 +23,13 @@
 --                        for Other; five copies at most; the fields filled;
 --                        one key a sheet; a hundred a colleague a day
 --   email_new_done       closes it as its sender, filed email.sent
---   supplier_email_status, mail_sweep, mail_log   read team_emails too
+--   supplier_email_status, mail_sweep, mail_log   read team_emails too; a
+--                        client's at Clients: Contacts View alone, as its
+--                        addresses are
+--   team_emails_of       a client's New emails, on its Contacts
+--   supplier_emails_of   a supplier's emails, its New emails among them
+--   mail_retention       an email's addresses and words cleared a year on
+--                        (pg_cron mail-retention, the 2nd of each month)
 --
 -- The SQL Editor part (2026-11-04-new-email-editor.sql): email.sent named
 -- under Messages in activity_section, and a saved template removed for good.
@@ -158,13 +164,14 @@ language plpgsql stable security definer set search_path = public as $$
 begin
   if (public.ops_me()).id is null or not public.allowed('whatsapp', 'work') then return jsonb_build_object('error', 'denied'); end if;
   return jsonb_build_object('ok', true,
-    'clients', coalesce((select jsonb_agg(jsonb_build_object('id', c.id, 'name', c.name, 'code', c.client_code, 'stage', c.stage)
+    'clients', case when public.allowed('clients.contacts', 'view') then coalesce((select jsonb_agg(jsonb_build_object('id', c.id, 'name', c.name, 'code', c.client_code, 'stage', c.stage)
                  order by c.client_code nulls last, lower(c.name))
                  from public.clients c
                 where public.client_seen(c.id, 'view')
                   and (coalesce(btrim(c.finance_email), '') ~ '^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$'
                        or exists (select 1 from public.client_contacts k where k.client_id = c.id and k.archived_at is null
-                                    and coalesce(btrim(k.email), '') ~ '^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$'))), '[]'::jsonb),
+                                    and coalesce(btrim(k.email), '') ~ '^[^@\s,;<>]+@[^@\s,;<>]+\.[^@\s,;<>]+$'))), '[]'::jsonb)
+                 else '[]'::jsonb end,
     'suppliers', case when public.allowed('suppliers', 'view') then coalesce((
                  select jsonb_agg(jsonb_build_object('id', s.id, 'name', s.name, 'code', s.code) order by s.code)
                    from public.suppliers s
@@ -181,6 +188,7 @@ language plpgsql stable security definer set search_path = public as $$
 begin
   if (public.ops_me()).id is null or not public.allowed('whatsapp', 'work') then return jsonb_build_object('error', 'denied'); end if;
   if p_client is not null then
+    if not public.allowed('clients.contacts', 'view') then return jsonb_build_object('error', 'denied'); end if;
     if not public.client_seen(p_client, 'view') then return jsonb_build_object('error', 'not-found'); end if;
     return jsonb_build_object('ok', true, 'options', public.invoice_recipient_options(p_client, null));
   end if;
@@ -228,6 +236,7 @@ begin
     return jsonb_build_object('error', 'too-many');
   end if;
   if p_audience = 'client' then
+    if not public.allowed('clients.contacts', 'view') then return jsonb_build_object('error', 'denied'); end if;
     select * into c from public.clients x where x.id = p_client;
     if c.id is null or not public.client_seen(c.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
     opts := public.invoice_recipient_options(c.id, null);
@@ -458,7 +467,7 @@ begin
             left join public.suppliers s on s.id = e.supplier_id
             left join public.team_members t on t.id = e.sent_by
            where e.created_at >= v_a and e.created_at < v_b
-             and (case when e.client_id is not null then public.client_seen(e.client_id, 'view')
+             and (case when e.client_id is not null then public.allowed('clients.contacts', 'view') and public.client_seen(e.client_id, 'view')
                        when e.supplier_id is not null then v_sup else true end)
           union all
           select 'signing', g.id, 'signing', g.email, null, 'Your ADspace signing code for quotation ' || q.ref, null,
@@ -478,6 +487,92 @@ begin
 end $$;
 revoke all on function public.mail_log(date) from public, anon;
 grant execute on function public.mail_log(date) to authenticated;
+
+create or replace function public.team_emails_of(p_client uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('clients.contacts', 'view') or not public.client_seen(p_client, 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    /* In the Email log's own shape, so its sheet opens one as it is. */
+    select jsonb_agg(jsonb_build_object('source', 'manual', 'id', e.id, 'kind', 'message', 'to_email', e.to_email,
+             'to_name', e.to_name, 'cc_email', e.cc_email, 'subject', e.subject, 'body', e.body, 'reference', e.attachment,
+             'status', e.status, 'error', e.error, 'created_at', e.created_at, 'sent_at', e.sent_at,
+             'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+             'sent_by', m.name, 'client_id', e.client_id) order by e.created_at desc)
+      from public.team_emails e
+      left join public.team_members m on m.id = e.sent_by
+     where e.client_id = p_client), '[]'::jsonb));
+end $$;
+revoke all on function public.team_emails_of(uuid) from public, anon;
+grant execute on function public.team_emails_of(uuid) to authenticated;
+
+create or replace function public.supplier_emails_of(p_supplier uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not public.allowed('suppliers', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(x.r order by x.at desc) from (
+      select jsonb_build_object('id', e.id, 'purpose', e.purpose, 'to', e.to_email, 'cc', e.cc_email,
+               'subject', e.subject, 'status', e.status, 'error', e.error, 'created_at', e.created_at,
+               'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+               'by', m.name, 'document', d.serial) as r, e.created_at as at
+        from public.supplier_emails e
+        left join public.team_members m on m.id = e.sent_by
+        left join public.documents d on d.id = e.document_id
+       where e.supplier_id = p_supplier
+      union all
+      select jsonb_build_object('id', e.id, 'purpose', 'message', 'to', e.to_email, 'cc', e.cc_email,
+               'subject', e.subject, 'status', e.status, 'error', e.error, 'created_at', e.created_at,
+               'delivered_at', e.delivered_at, 'opened_at', e.opened_at, 'bounced_at', e.bounced_at,
+               'by', m.name, 'document', e.attachment), e.created_at
+        from public.team_emails e
+        left join public.team_members m on m.id = e.sent_by
+       where e.supplier_id = p_supplier) x), '[]'::jsonb));
+end $$;
+revoke all on function public.supplier_emails_of(uuid) from public, anon;
+grant execute on function public.supplier_emails_of(uuid) to authenticated;
+
+/* An email's addresses and words are cleared a year after it was sent, as a
+   WhatsApp message's number is (PDPA 2010): the row stays, with its subject,
+   status and times, so the log still says what went and when. */
+create or replace function public.mail_retention()
+returns integer
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  n integer := 0;
+  k integer;
+begin
+  update public.team_emails x set to_email = '', to_name = null, cc_email = null, reply_to = null, body = ''
+   where x.created_at < now() - interval '12 months' and x.status <> 'sending' and (x.to_email <> '' or x.body <> '');
+  get diagnostics k = row_count; n := n + k;
+  update public.client_emails x set to_email = '', cc_email = null, reply_to = null, body = ''
+   where x.created_at < now() - interval '12 months' and x.status <> 'sending' and (x.to_email <> '' or x.body <> '');
+  get diagnostics k = row_count; n := n + k;
+  update public.supplier_emails x set to_email = '', cc_email = null, body = ''
+   where x.created_at < now() - interval '12 months' and x.status <> 'sending' and (x.to_email <> '' or x.body <> '');
+  get diagnostics k = row_count; n := n + k;
+  update public.invoice_emails x set to_email = '', cc_email = null, body = ''
+   where x.created_at < now() - interval '12 months' and x.status <> 'sending' and (x.to_email <> '' or x.body <> '');
+  get diagnostics k = row_count; n := n + k;
+  return n;
+end $$;
+revoke all on function public.mail_retention() from public, anon, authenticated;
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: emails are cleared a year on only by hand.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'mail-retention';
+  perform cron.schedule('mail-retention', '45 19 1 * *', 'select public.mail_retention()');
+end $$;
 
 -- END OF NEW EMAIL
 

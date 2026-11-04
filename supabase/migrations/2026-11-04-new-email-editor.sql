@@ -1,11 +1,14 @@
 -- NEW EMAIL, THE SQL EDITOR PART -----------------------------------------------
 -- 2026-11-04: what the connector holds for a word it cannot show (CLAUDE.md
 -- §3), run in the SQL Editor once NEW EMAIL is applied: email.sent named under
--- Messages, and a saved email template deleted (team.settings, its name typed
--- back on the page; an email already sent keeps its words).
+-- Messages, a saved email template deleted (team.settings, its name typed
+-- back on the page; an email already sent keeps its words), and the three
+-- ways of filing an invoice email that bukku-sync v26 no longer calls
+-- (invoice_mail_begin's thirteen-argument form is the one).
 --
 -- Rollback: restore activity_section from CLIENT DOCUMENT EMAILS; revoke and
--- remove email_template_delete.
+-- remove email_template_delete; restore the three from INVOICES SENT BY EMAIL
+-- and INVOICE RECIPIENTS CHOSEN.
 
 create or replace function public.activity_section(p_action text)
 returns text
@@ -90,6 +93,10 @@ begin
 end $$;
 revoke all on function public.email_template_delete(uuid) from public, anon;
 grant execute on function public.email_template_delete(uuid) to authenticated;
+
+drop function if exists public.invoice_email_begin(uuid, uuid, bigint, text, text, jsonb, boolean, text, text, boolean);
+drop function if exists public.invoice_send_begin(uuid, uuid, bigint, text, text, jsonb, boolean, text, text, boolean);
+drop function if exists public.invoice_mail_begin(text, uuid, uuid, bigint, text, text, jsonb, boolean, text, text, boolean);
 
 -- END OF NEW EMAIL, THE SQL EDITOR PART
 

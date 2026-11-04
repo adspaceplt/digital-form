@@ -6794,7 +6794,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
   `team.settings`; `email_template_save` with `taken`, `email_template_delete`
   in the ⋯, filed under Email templates). Not the invoice email, which keeps
-  its own sheet.
+  its own sheet. A client's audience asks Clients: Contacts at View too
+  (its addresses are that part's): without it no client is offered, its
+  email is refused (`denied`) and its rows leave the log. A client record's
+  Contacts pane lists the emails written to it under Emails
+  (`team_emails_of`, the log's own row and sheet, New email beside it) and
+  a contact's ⋯ Send email opens it on that contact; a supplier record's
+  Emails list them beside its own (`supplier_emails_of`). Send again on an
+  email in the log opens it filled as it went (its file attached afresh).
+  An email's addresses and words are cleared 12 months on, its subject,
+  status and times kept (`mail_retention`, pg_cron `mail-retention`, the
+  1st at 03:45 MYT; client, supplier, invoice and New emails alike), read
+  as Address cleared. The SQL Editor part also drops the 10- and
+  11-argument invoice begin wrappers nothing calls since bukku-sync v26.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1

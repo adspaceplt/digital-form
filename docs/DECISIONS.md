@@ -7984,3 +7984,16 @@ record of what was sent to it, and the connector's migration holds no drop or
 delete: `activity_section` (which names deleted tags) and
 `email_template_delete` are the SQL Editor's part.
 
+A review of the Messages section the same day found six gaps, and the user
+asked to "fix all and then merge it": a client's email asked Messages alone,
+so a colleague with no sight of a client's contacts could still write to
+them (now Clients: Contacts View too, as invoice recipients ask Billing);
+the email reached the log only, never the client's or supplier's record
+(now under Contacts and in the supplier's Emails); an email's addresses and
+words were kept for ever, where WhatsApp's are cleared after a year (now
+`mail_retention`, all four email logs, PDPA 2010); the 10- and 11-argument
+invoice begin wrappers stood unused once bukku-sync v26 called the
+13-argument form (dropped in the SQL Editor part); a bounced email had no
+way to go again but retyping it (Send again); and New email was reachable
+from Messages alone (a contact's ⋯ Send email).
+

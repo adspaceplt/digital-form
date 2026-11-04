@@ -359,7 +359,14 @@
       el.addEventListener('input', go);
       el.addEventListener('change', go);
     });
-    $('emlSheetClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  }
+  /* The sheet opens from a client record too, before the Email tab has
+     ever been drawn, so its close mark is wired on its own, once. */
+  function emlSheetWire() {
+    var x = $('emlSheetClose');
+    if (x.getAttribute('data-wired')) return;
+    x.setAttribute('data-wired', '1');
+    x.addEventListener('click', function () { window.ADspaceSheet.close(); });
   }
   function mlEnter() {
     if (!$('waMonth').options.length) wire();
@@ -427,21 +434,26 @@
   function mlWho(x) {
     return x.supplier ? [x.supplier_code, x.supplier].filter(Boolean).join(' · ') : (x.client || '');
   }
-  function mlRow(x) {
+  /* `onRecord`: drawn on its own client's record, where the client and the
+     kind go without saying, so the subject leads over who it went to. */
+  function mlRow(x, onRecord) {
     var s = mlState(x);
     var row = document.createElement('button');
     row.type = 'button';
     row.className = 'wam-row eml-row';
     row.setAttribute('data-id', x.id);
-    row.setAttribute('aria-label', (ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email) + ', ' + s[0]);
+    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'an address cleared') + ', ' + s[0]);
     var parts = function (list) {
       return list.filter(Boolean).map(function (w, i) {
         return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
       }).join('');
     };
     row.innerHTML =
-      '<span class="wam-to"><b>' + esc(x.to_name || x.to_email) + '</b>' +
-        '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>' +
+      (onRecord
+        ? '<span class="wam-to"><b>' + esc(x.subject) + '</b>' +
+            '<small class="wam-parts">' + parts([x.to_name || x.to_email || 'Address cleared', x.reference]) + '</small></span>'
+        : '<span class="wam-to"><b>' + esc(x.to_name || x.to_email || 'Address cleared') + '</b>' +
+            '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>') +
       /* A New email leads with its subject, its file under it. */
       '<span class="wam-tpl"><span>' + esc(x.source === 'manual' ? x.subject : ML_KIND[x.kind] || 'Email') + '</span>' +
         '<small class="wam-tplline"><span class="wam-tplname">' + esc(x.source === 'manual' ? x.reference || 'Email' : x.reference || x.subject || '') + '</span></small></span>' +
@@ -466,7 +478,7 @@
       '<dl class="ovfacts eml-facts">' +
         fact('Type', ML_KIND[x.kind] || 'Email') +
         fact('From', x.source === 'manual' ? ML_FROM[x.supplier_id ? 'supplier' : 'client'] : ML_FROM[x.source]) +
-        fact('To', (x.to_name ? x.to_name + ' · ' : '') + x.to_email) +
+        fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : 'Cleared after 12 months') +
         fact('Copy', x.cc_email) +
         fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
         fact(x.source === 'manual' ? 'Attachment' : 'Reference', x.reference) +
@@ -476,7 +488,19 @@
         fact('Reason', x.error && /failed|bounced|unknown/.test(x.status) ? String(x.error).replace(/^[a-z ]+:\s*/i, '') : '') +
       '</dl>' +
       (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
-        : '<p class="emptyline">The message held the signing code and is not kept.</p>');
+        : x.source === 'signing' ? '<p class="emptyline">The message held the signing code and is not kept.</p>'
+        : '<p class="emptyline">The message is cleared after 12 months.</p>') +
+      /* A New email sent again opens filled, its file to attach again. */
+      (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
+        ? '<div class="row acts"><button class="btn" type="button" data-a="again">Send again</button></div>' : '');
+    var ag = $('emlSheetBody').querySelector('[data-a="again"]');
+    if (ag) ag.addEventListener('click', function () {
+      var aud = x.client_id ? 'client' : x.supplier_id ? 'supplier' : 'other';
+      var btn = opener;
+      window.ADspaceSheet.close();
+      newEmail(btn, { audience: aud, party: x.client_id || x.supplier_id || '', to: x.to_email,
+        ccs: String(x.cc_email || '').split(/\s*,\s*/).filter(Boolean), subject: x.subject, body: x.body });
+    });
     Array.prototype.forEach.call($('emlSheetBody').querySelectorAll('[data-rec]'), function (b) {
       b.addEventListener('click', function () {
         var br = bridge();
@@ -486,10 +510,11 @@
           if (br.show) br.show('suppliers');
           return;
         }
-        history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(x.client_id) + (x.source === 'invoice' ? '&tab=billing' : '&tab=services'));
+        history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(x.client_id) + (x.source === 'invoice' ? '&tab=billing' : x.source === 'manual' ? '&tab=contacts' : '&tab=services'));
         if (br.show) br.show('clients');
       });
     });
+    emlSheetWire();
     window.ADspaceSheet.show($('emlSheet'), { opener: opener || null });
   }
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
@@ -1263,11 +1288,17 @@
   }
   function neWord(o) { var w = o.finance ? 'Finance email' : o.name; return w ? w + ' · ' + o.email : o.email; }
   function neSeg(id) { var el = $(id); if (el) el.dispatchEvent(new Event('change', { bubbles: true })); }
-  function newEmail(opener) {
+  /* `pre` opens it filled: a contact's Send email (its client and address),
+     or Send again on an email in the log (every word as it went). */
+  function newEmail(opener, pre) {
     neWire();
+    pre = pre || {};
     ne.key = neKey(); ne.file = null; ne.opts = []; ne.busy = false; ne.lastTpl = null; ne.parties = null;
-    $('nemFor').value = 'client';
-    ['nemSubject', 'nemBody', 'nemToTyped', 'nemCcTyped'].forEach(function (id) { $(id).value = ''; });
+    ne.pre = pre.party || pre.to ? { party: pre.party || '', to: pre.to || '', ccs: pre.ccs || [] } : null;
+    $('nemFor').value = pre.audience || 'client';
+    $('nemSubject').value = pre.subject || ''; $('nemBody').value = pre.body || '';
+    $('nemToTyped').value = pre.audience === 'other' ? pre.to || '' : '';
+    $('nemCcTyped').value = pre.audience === 'other' && pre.ccs && pre.ccs[0] ? pre.ccs[0] : '';
     $('nemFile').value = '';
     neMsg('');
     $('nemSend').disabled = false;
@@ -1291,6 +1322,7 @@
       : '<option value="">' + (aud === 'supplier' ? 'Choose a supplier' : 'Choose a client') + '</option>' +
         list.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc((x.code ? x.code + ' · ' : '') + x.name) + '</option>'; }).join('');
     $('nemParty').disabled = !list;
+    if (list && ne.pre && ne.pre.party) keep = ne.pre.party;
     if (list && list.some(function (x) { return x.id === keep; })) $('nemParty').value = keep;
     var tpls = (ne.tpls || []).filter(function (t) { return other || t.audience === aud; });
     var group = function (a, w) {
@@ -1320,6 +1352,20 @@
       if (seq !== ne.seq) return;
       ne.opts = d.options || [];
       paint('No email address on record');
+      /* Opened filled: the address and copies it was given, where this
+         record still holds them. */
+      var pr = ne.pre;
+      if (pr && pr.party === id) {
+        ne.pre = null;
+        if (pr.to && ne.opts.some(function (o) { return o.email.toLowerCase() === pr.to.toLowerCase(); })) {
+          $('nemTo').value = ne.opts.filter(function (o) { return o.email.toLowerCase() === pr.to.toLowerCase(); })[0].email;
+          neCc();
+        }
+        Array.prototype.forEach.call($('nemCc').querySelectorAll('input'), function (b) {
+          if ((pr.ccs || []).some(function (e) { return e.toLowerCase() === b.value.toLowerCase(); })) b.checked = true;
+        });
+        neCcCap();
+      }
     }).catch(function (e) { if (seq !== ne.seq) return; paint('Could not load the addresses'); neMsg(neSaid(e), 'err'); });
   }
   function neCc() {
@@ -1500,6 +1546,8 @@
   window.ADspaceWhatsApp = {
     enter: enter,
     newEmail: newEmail,
+    /* A client record's Emails part draws the log's own row. */
+    emailRow: mlRow,
     emailTemplates: emailTemplates,
     emailTemplatesLine: emailTemplatesLine,
     manage: manage,

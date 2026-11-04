@@ -275,7 +275,7 @@
     meeting_message_get: '', meeting_message_save: 'p_body',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
-    invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
+    invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
     supplier_email_prepare: 'p_supplier p_purpose p_document', supplier_email_begin: 'p_supplier p_purpose p_document p_cc p_subject p_body p_again',
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
@@ -10339,7 +10339,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: name === 'maintenance_set' ? mtState() : { ok: true, pages: JSON.parse(JSON.stringify(pgAll())) }, error: null });
     }
 
-    if (/^email_(templates_list|template_save|template_delete|parties|recipients|new_begin|new_done)$/.test(name)) {
+    if (/^email_(templates_list|template_save|template_delete|parties|recipients|new_begin|new_done)$|^team_emails_of$/.test(name)) {
       var emOk = function (d) { persist(); return Promise.resolve({ data: JSON.parse(JSON.stringify(Object.assign({ ok: true }, d || {}))), error: null }); };
       var emNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return emNo(window.__refuseRpc[name]);
@@ -10385,9 +10385,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.activity_log.unshift({ id: nid('al'), actor: emMe.name, action: 'team.changed', subject: 'Email templates', detail: tn, created_at: new Date().toISOString() });
         return emOk({ id: tt.id });
       }
+      if (name === 'team_emails_of') {
+        if (!opsAllowed('clients.contacts', 'view') || !scopeSeen(args.p_client, 'view')) return emNo('denied');
+        return emOk({ rows: DB.team_emails.filter(function (e) { return e.client_id === args.p_client; })
+          .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
+          .map(function (e) {
+            var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
+            return { source: 'manual', id: e.id, kind: 'message', to_email: e.to_email, to_name: e.to_name || null, cc_email: e.cc_email || null,
+              subject: e.subject, body: e.body, reference: e.attachment || null, status: e.status, error: e.error || null,
+              created_at: e.created_at, sent_at: e.sent_at || null, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
+              bounced_at: e.bounced_at || null, sent_by: who ? who.name : null, client_id: e.client_id };
+          }) });
+      }
       if (!opsAllowed('whatsapp', 'work')) return emNo('denied');
       if (name === 'email_parties') {
-        var cls = (DB.clients || []).filter(function (c) {
+        var cls = !opsAllowed('clients.contacts', 'view') ? [] : (DB.clients || []).filter(function (c) {
           return scopeSeen(c.id, 'view') && (EMOK.test(String(c.finance_email || '').trim()) ||
             (DB.client_contacts || []).some(function (k) { return k.client_id === c.id && !k.archived_at && EMOK.test(String(k.email || '').trim()); }));
         }).map(function (c) { return { id: c.id, name: c.name, code: c.client_code || null, stage: c.stage }; })
@@ -10397,7 +10409,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return emOk({ clients: cls, suppliers: sps });
       }
       if (name === 'email_recipients') {
-        if (args.p_client) { if (!scopeSeen(args.p_client, 'view')) return emNo('not-found'); return emOk({ options: invOptions(args.p_client, null) }); }
+        if (args.p_client) { if (!opsAllowed('clients.contacts', 'view')) return emNo('denied'); if (!scopeSeen(args.p_client, 'view')) return emNo('not-found'); return emOk({ options: invOptions(args.p_client, null) }); }
         if (args.p_supplier) { if (!opsAllowed('suppliers', 'view')) return emNo('denied'); return emOk({ options: emSup(args.p_supplier) }); }
         return emNo('bad-request');
       }
@@ -10406,6 +10418,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (['client', 'supplier', 'other'].indexOf(aud) < 0 || !/^[A-Za-z0-9_-]{8,64}$/.test(String(args.p_idem || ''))) return emNo('bad-request');
         if (DB.team_emails.some(function (e) { return e.sent_by === emMe.id && e.idem === args.p_idem; })) return emNo('again');
         var cl0 = null, sp0 = null, opts0 = [];
+        if (aud === 'client' && !opsAllowed('clients.contacts', 'view')) return emNo('denied');
         if (aud === 'client') { cl0 = (DB.clients || []).filter(function (x) { return x.id === args.p_client; })[0]; if (!cl0 || !scopeSeen(cl0.id, 'view')) return emNo('not-found'); opts0 = invOptions(cl0.id, null); }
         if (aud === 'supplier') { if (!opsAllowed('suppliers', 'view')) return emNo('denied'); sp0 = (DB.suppliers || []).filter(function (x) { return x.id === args.p_supplier; })[0]; if (!sp0) return emNo('not-found'); opts0 = emSup(sp0.id); }
         var optOf0 = function (e) { e = String(e || '').trim().toLowerCase(); return opts0.filter(function (o) { return o.email.toLowerCase() === e; })[0] || null; };
@@ -10489,7 +10502,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           error: null, sent_at: g.created_at, delivered_at: null, opened_at: null, bounced_at: null, client_id: q.client_id || null, client: mlCl(q.client_id),
           supplier_id: null, supplier: null, supplier_code: null, reference: q.ref, to_name: who || null });
       });
-      (DB.team_emails || []).filter(function (e) { return mlIn(e) && (e.client_id ? scopeSeen(e.client_id, 'view') : e.supplier_id ? opsAllowed('suppliers', 'view') : true); }).forEach(function (e) {
+      (DB.team_emails || []).filter(function (e) { return mlIn(e) && (e.client_id ? opsAllowed('clients.contacts', 'view') && scopeSeen(e.client_id, 'view') : e.supplier_id ? opsAllowed('suppliers', 'view') : true); }).forEach(function (e) {
         var sp1 = e.supplier_id ? (DB.suppliers || []).filter(function (x) { return x.id === e.supplier_id; })[0] : null;
         mlItems.push(Object.assign(mlBase(e), { source: 'manual', kind: 'message', client_id: e.client_id || null, client: mlCl(e.client_id),
           supplier_id: e.supplier_id || null, supplier: sp1 ? sp1.name : null, supplier_code: sp1 ? sp1.code : null, reference: e.attachment || null, to_name: e.to_name || null }));
@@ -11562,7 +11575,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!opsAllowed('suppliers', 'view')) return spNo('denied');
           return spOk({ rows: DB.supplier_emails.filter(function (e) { return e.supplier_id === args.p_supplier; })
             .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })
-            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; }) });
+            .map(function (e) { return { id: e.id, purpose: e.purpose, to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: e.by, document: e.document }; })
+            .concat((DB.team_emails || []).filter(function (e) { return e.supplier_id === args.p_supplier; }).map(function (e) {
+              var who = (DB.team_members || []).filter(function (m) { return m.id === e.sent_by; })[0];
+              return { id: e.id, purpose: 'message', to: e.to_email, cc: e.cc_email, subject: e.subject, status: e.status, created_at: e.created_at, by: who ? who.name : null, document: e.attachment };
+            }))
+            .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }) });
         }
         if (!opsAllowed('suppliers', 'work')) return spNo('denied');
         var emPrep = function () {
