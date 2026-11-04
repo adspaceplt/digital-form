@@ -4707,6 +4707,7 @@ body > .shell { width: 100%; }
   background: var(--line-soft); color: var(--ink-soft);
   font-size: 12px; font-weight: 600; letter-spacing: -.01em;
 }
+.cl-markbox { position: relative; flex: 0 0 auto; display: inline-flex; }
 .cl-mark.has-logo { background: #fff; border: 1px solid var(--line); }
 .cl-mark img { width: 100%; height: 100%; object-fit: contain; }
 .cl-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
@@ -8017,6 +8018,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop-mark { width: 18px; height: 18px; flex: 0 0 auto; color: var(--action-ink); stroke-width: 2; }
 .chip-vic svg { width: 12px; height: 12px; flex: 0 0 auto; stroke-width: 2; }
 .cl-mark.is-vic, .rec-mark.is-vic { box-shadow: 0 0 0 2px var(--card), 0 0 0 3.5px var(--vic); }
+/* The crown on a VIC's ringed mark (the Clients list) or tile (Waiting for
+   you), sitting on the ring at its top right. */
+.vic-crown { position: absolute; top: -5px; right: -5px; width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--vic-bg); color: var(--vic-ink); box-shadow: 0 0 0 1.5px var(--card); }
+.vic-crown svg { width: 10px; height: 10px; stroke-width: 2.2; }
 .vicpop.popcard { display: grid; gap: 8px; width: min(320px, calc(100vw - 16px)); padding: 14px 16px 16px; }
 .vicpop.is-dock { padding: 18px 20px 20px; }
 .vicpop-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0;
