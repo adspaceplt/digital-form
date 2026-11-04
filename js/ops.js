@@ -1201,7 +1201,7 @@
           asks.forEach(function (q) {
             var t = byId[q.task_id] || {};
             rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at, client: t.client_id,
-              title: t.content_desc || t.title || t.code || 'Task', state: 'Extension requested', who: nameOf(q.asked_by),
+              title: t.content_desc || t.title || t.code || 'Task', state: 'Extension requested',
               meta: ['To ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
               open: function () { openDrawer(q.task_id); }, request: q.id, task: q.task_id });
           });
@@ -1218,7 +1218,7 @@
           var late = due && Date.now() > due.getTime();
           rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late, client: r.client_id,
             age: late ? lateWord(due) : '',
-            title: r.brand_name || (r.clients && r.clients.name) || 'Client', state: 'Pending review', who: nameOf(r.submitted_by),
+            title: r.brand_name || (r.clients && r.clients.name) || 'Client', state: 'Pending review',
             meta: [r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report', wholeMonth(r.period_start, r.period_end) ? CK.month(r.period_start)
               : (SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : '')].filter(Boolean).join(' · '),
             url: '/admin/?s=reports&report=' + encodeURIComponent(r.id) });
@@ -1374,11 +1374,11 @@
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
                 '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
               : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind">Remind</button>' : '') + '</span>' +
-            /* Where it stands, how long it has waited, and who handed it
-               over, one under another (the user, 2026-11-04). */
+            /* Where it stands over how long it has waited, two lines as the
+               title and its meta (the user, 2026-11-04: the submitter's name
+               under them took a third line; the record names who). */
             '<span class="wfy-end">' + (r.state ? '<span class="tone is-warn">' + esc(r.state) + '</span>' : '') +
-              '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
-              (r.who ? '<span class="wfy-who">' + esc(r.who) + '</span>' : '') + '</span>' +
+              '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span></span>' +
           '</div>';
         }).join('');
         if (fail.length) {
