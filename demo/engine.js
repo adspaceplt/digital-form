@@ -7188,6 +7188,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ppl = (DB.team_members || []).filter(function (t) {
         return t.active !== false && (t.is_admin || t.role === 'admin' || (rank[(t.access || {}).reports] || 0) >= 2 ||
           (rank[(t.access || {}).review] || 0) >= 2 || (rank[(t.access || {}).scripts] || 0) >= 2 ||
+          (rank[(t.access || {})['clients.brand'] || (t.access || {}).clients] || 0) >= 1 ||
+          (rank[(t.access || {})['clients.checklists'] || (t.access || {}).clients] || 0) >= 2 ||
+          ((t.access || {})['team.analytics'] && (t.access || {})['team.analytics'] !== 'none') ||
           uAll.some(function (x) { return x.team_member_id === t.id && inT(x, uMonth); }));
       }).map(function (t) {
         var ok = uAll.filter(function (x) { return x.team_member_id === t.id && x.outcome !== 'failed'; });
