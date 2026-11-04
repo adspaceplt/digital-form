@@ -8056,3 +8056,7 @@ a merge-at-once pace. The user approved all three fixes ("ok"):
   branch adds (pages, scripts, edge functions, seeded templates), and a
   fresh agent that did not build the change reads them against DESIGN.md
   §6 alone before the merge; CLAUDE.md §1 makes it a step of every release.
+  Its first run, on this release itself, found six console lines the
+  writer had passed (a system word, two refusals with no next step, a
+  present tense for a wait, a screen-reader name out of word order, a
+  button repeating its object); each was rewritten.

@@ -33,7 +33,7 @@
     expired: 'This quotation has expired. Duplicate it to quote again.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
-    'no-number': 'This prospect has no WhatsApp number.',
+    'no-number': 'This prospect has no WhatsApp number. Add one in Contacts first.',
     'no-fx': 'Set the Singapore dollar rate in Tax and terms before quoting a Singapore client.',
     /* Signing, submitting and reviewing (QUOTATION SIGNING, 2026-10-31). */
     'not-signed': 'This quotation has not been signed.', signed: 'This quotation has already been signed. Refresh the page.',
@@ -441,7 +441,7 @@
     if (a === 'paper') { openPaper(q, ctx, btn); return; }
     if (a === 'resign') {
       window.ADspaceConfirm.ask({ title: 'Request again?', tone: 'warn', go: 'Request again',
-        body: 'The signature on ' + q.ref + ' is kept in its history, and the client signs again on the quotation link.' }, function () {
+        body: 'The signature on ' + q.ref + ' will be kept, and the client will be asked to sign again on the quotation link.' }, function () {
         ctx.db.rpc('quotation_resign', { p_id: q.id }).then(function (r) {
           var d = r.data || {};
           if (r.error || d.error) { ctx.msg('qtMsg', said(r.error || d.error), 'err'); return; }

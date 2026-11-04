@@ -442,7 +442,7 @@
     row.type = 'button';
     row.className = 'wam-row eml-row';
     row.setAttribute('data-id', x.id);
-    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'an address deleted') + ', ' + s[0]);
+    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'a deleted address') + ', ' + s[0]);
     var parts = function (list) {
       return list.filter(Boolean).map(function (w, i) {
         return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
@@ -1411,7 +1411,7 @@
     } else {
       if (!party) { neMsg(aud === 'supplier' ? 'Choose a supplier.' : 'Choose a client.', 'err'); $('nemParty').focus(); return; }
       to = $('nemTo').value;
-      if (!to) { neMsg(aud === 'supplier' ? 'This supplier has no email address. Add one to its record first.' : 'This client has no email address. Add one to its contacts first.', 'err'); return; }
+      if (!to) { neMsg(aud === 'supplier' ? 'This supplier has no email address. Add one to the supplier first.' : 'This client has no email address. Add one to its contacts first.', 'err'); return; }
       ccs = Array.prototype.map.call($('nemCc').querySelectorAll('input:checked'), function (b) { return b.value; });
     }
     var subject = String($('nemSubject').value || '').trim(), body = String($('nemBody').value || '').trim();
