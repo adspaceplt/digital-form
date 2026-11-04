@@ -8155,6 +8155,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (iName.length < 2 || iName.length > 40) iOut = { error: 'bad-name' };
         else if (iZh && iZh.length > 40) iOut = { error: 'bad-name-zh' };
         else if (ia.p_was && !iWas) iOut = { error: 'not-found' };
+        else if (iWas && iWas.name === 'Other' && iName !== 'Other') iOut = { error: 'fixed' };
         else if (DB.industries.some(function (x) { return x.name.toLowerCase() === iName.toLowerCase() && x !== iWas; })) iOut = { error: 'taken' };
         else if (!iWas) {
           DB.industries.push({ name: iName, name_zh: iZh });
@@ -8174,6 +8175,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       } else {
         var iOne = iOf(ia.p_name), iU = iOne ? iUse(iOne.name) : 0;
         if (!iOne) iOut = { error: 'not-found' };
+        else if (iOne.name === 'Other') iOut = { error: 'fixed' };
         else if (iU) iOut = { error: 'in-use', clients: iU };
         else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
       }

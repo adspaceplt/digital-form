@@ -8167,3 +8167,20 @@ an admin too; the step turns the per-report switch off, as `reports` does,
 and reads the question's current words. ops' numbering stays as logged in
 STANDARD.md.
 
+
+**2026-11-04 — Industries review fixes, and the walk's two faults.** The
+review of the Industries release found four faults. A rename carried onto
+the clients through the clients table's own guards, so a colleague holding
+Business settings whose group sees its own clients only was refused by a
+client they do not hold, and the rename failed whole; `industry_save` now
+sets `adspace.team_owner` for that one update, as `team_hand_over` does
+(`2026-11-04-industry-renames.sql`). Renaming Other dropped it from the
+last place both lists keep; Other now keeps its English name and is never
+deleted (`fixed`), its Chinese name still edited. A failed read of the list
+left the client form's Industry with Not set alone and no word; it now says
+so under the field with Try again. uxaudit crashed on the Creators List tab
+because the walk was still inside a campaign, whose strip steps away; it
+leaves by Back first. Its column check counted Build quote's inclusions as
+a cell the head lacked; moving them into the name's cell squeezed them to
+the name's width on a phone, so the layout stayed and the check now leaves
+out `ul.incl`, a list under a name that holds no column.
