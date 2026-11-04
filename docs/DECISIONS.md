@@ -8189,8 +8189,10 @@ out `ul.incl`, a list under a name that holds no column.
 The user asked to "check since last sessions tone etc.". `/copy-review`
 listed 175 new strings; its second reader found ten lines against §6, each
 fixed: /quote/ named the language Malay and the console Bahasa Malaysia
-where Video Scripts and Write caption say Bahasa Melayu (one name now, in
-/quote/, the contact sheet, Build quote and the letters' table); Approve's
+where Video Scripts and Write caption say Bahasa Melayu (one name now in
+the contact sheet, Build quote and the letters' table; /quote/'s language
+chip keeps Malay, as Bahasa Melayu wrapped its chip to two lines at 390,
+which `quotesite` measures); Approve's
 question said what its press does in the present tense ("Its lines
 become …"), now will; "Billing not changed: Bukku holds the billing
 details" reads "…, as Bukku keeps this client's billing details"; an

@@ -145,7 +145,7 @@
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
       offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
-      lang3: { en: 'English', zh: '中文', ms: 'Bahasa Melayu' }
+      lang3: { en: 'English', zh: '中文', ms: 'Malay' }
     },
     zh: {
       lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
