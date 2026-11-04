@@ -5875,6 +5875,8 @@
     /* Very Important Clients (2026-10-15): the one read and the one tag. */
     vic: vicOf,
     vicTag: vicTag,
+    /* The crown alone, for a mark worn on a tile (Waiting for you, 2026-11-04). */
+    vicCrown: CROWN,
     vicFirst: vicFirst,
     vicByName: vicByName,
     vicReload: loadVic,

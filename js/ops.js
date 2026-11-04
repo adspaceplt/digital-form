@@ -1201,8 +1201,8 @@
           asks.forEach(function (q) {
             var t = byId[q.task_id] || {};
             rows.push({ key: 'ext:' + q.id, section: 'work', at: q.asked_at, client: t.client_id,
-              title: 'Extension · ' + (t.content_desc || t.title || t.code || 'Task'),
-              meta: [nameOf(q.asked_by), 'to ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
+              title: t.content_desc || t.title || t.code || 'Task', state: 'Extension requested', who: nameOf(q.asked_by),
+              meta: ['To ' + shortDay(q.wants_at), reasonWord(q.reason)].filter(Boolean).join(' · '),
               open: function () { openDrawer(q.task_id); }, request: q.id, task: q.task_id });
           });
         });
@@ -1218,8 +1218,9 @@
           var late = due && Date.now() > due.getTime();
           rows.push({ key: 'rep:' + r.id, section: 'reports', at: r.submitted_at, late: late, client: r.client_id,
             age: late ? lateWord(due) : '',
-            title: 'Confirm report · ' + (r.brand_name || (r.clients && r.clients.name) || 'Client'),
-            meta: [SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : '', nameOf(r.submitted_by) ? nameOf(r.submitted_by) + ' submitted' : ''].filter(Boolean).join(' · '),
+            title: r.brand_name || (r.clients && r.clients.name) || 'Client', state: 'Pending review', who: nameOf(r.submitted_by),
+            meta: [r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report', wholeMonth(r.period_start, r.period_end) ? CK.month(r.period_start)
+              : (SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : '')].filter(Boolean).join(' · '),
             url: '/admin/?s=reports&report=' + encodeURIComponent(r.id) });
         });
       }));
@@ -1236,7 +1237,7 @@
               (opts || []).forEach(function (o) {
                 if (o.state !== 'submitted') return;
                 rows.push({ key: 'qc:' + o.id, section: 'campaigns', at: o.submitted_at, client: (campById[o.campaign_id] || {}).client_id,
-                  title: 'Draft to check · ' + ((o.creators && o.creators.name) || 'Creator'),
+                  title: (o.creators && o.creators.name) || 'Creator', state: 'Submitted',
                   meta: [title[o.campaign_id], o.revision_round > 1 ? 'Round ' + o.revision_round : ''].filter(Boolean).join(' · '),
                   url: urlOf(o) });
               });
@@ -1252,7 +1253,7 @@
                     var at = since[o.id], cp = campById[o.campaign_id] || {}, who = (o.creators && o.creators.name) || 'Creator';
                     if (!overdue(at) || !cp.client_id) return;
                     rows.push({ key: 'ap:' + o.id, section: 'campaigns', at: at, client: cp.client_id,
-                      title: 'Awaiting approval · ' + ((cp.clients && cp.clients.name) || 'Client'),
+                      title: (cp.clients && cp.clients.name) || 'Client', state: 'Awaiting approval',
                       meta: [who + '\'s draft', cp.title].filter(Boolean).join(' · '),
                       url: urlOf(o),
                       remind: { clientId: cp.client_id, ref: o.id, what: who + '\'s draft for ' + (String(cp.title || '').trim() || 'your campaign'),
@@ -1273,7 +1274,7 @@
               (reqs || []).forEach(function (q) {
                 var c0 = byId[q.client_id] || {};
                 rows.push({ key: 'req:' + q.id, section: 'clients', at: q.created_at, client: q.client_id,
-                  title: 'Client request · ' + (c0.name || 'Client'),
+                  title: c0.name || 'Client', state: 'Requested',
                   meta: [((window.ADspaceWords || {}).en || {}).rqKind ? (window.ADspaceWords.en.rqKind[q.kind] || q.kind) : q.kind, q.service_label].filter(Boolean).join(' · '),
                   url: '/admin/?client=' + keyOf(c0) + '&tab=services' });
               });
@@ -1294,7 +1295,7 @@
                     if (!b) return;
                     var c0 = byId[b.client_id] || {};
                     if (k.n_changes) rows.push({ key: 'cr:' + b.id, section: 'review', at: k.changes_since, client: b.client_id,
-                      title: 'Client changes · ' + (c0.name || 'Client'),
+                      title: c0.name || 'Client', state: 'Changes requested',
                       meta: [k.n_changes + (k.n_changes === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
                       url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(b.id) });
                     /* A published set with posts the client has not decided,
@@ -1302,7 +1303,7 @@
                     var n = k.n_undecided;
                     if (!n || !overdue(b.published_at)) return;
                     rows.push({ key: 'ap:' + b.id, section: 'review', at: b.published_at, client: b.client_id,
-                      title: 'Awaiting approval · ' + (c0.name || 'Client'),
+                      title: c0.name || 'Client', state: 'Awaiting approval',
                       meta: [n + (n === 1 ? ' post' : ' posts'), b.title].filter(Boolean).join(' · '),
                       url: '/admin/?s=review&client=' + keyOf(c0) + '&set=' + encodeURIComponent(b.id),
                       remind: { clientId: b.client_id, ref: b.id,
@@ -1329,6 +1330,13 @@
       paintWaiting();
     });
   }
+  /* A report on a calendar month is named by the month alone, short
+     (Sept 2026), so its line fits a phone. */
+  function wholeMonth(a, b) {
+    if (!/^\d{4}-\d{2}-01/.test(a || '') || !b || String(a).slice(0, 7) !== String(b).slice(0, 7)) return false;
+    var y = +a.slice(0, 4), m = +a.slice(5, 7);
+    return +String(b).slice(8, 10) === new Date(Date.UTC(y, m, 0)).getUTCDate();
+  }
   function shortDay(ts) {
     return ts ? CK.date(ts, { year: false }) : '';
   }
@@ -1351,15 +1359,26 @@
         t.className = 'crm-table softpanel wfy-table';
         t.innerHTML = rows.map(function (r, i) {
           var g = bridge.glyph ? bridge.glyph(r.section) : '';
+          /* A VIC client's work wears the gold ring and crown on its tile,
+             as its logo does on the Clients list, so the name keeps its line
+             (the user, 2026-11-04). */
+          var A = window.ADspaceAdmin, isVic = Boolean(r.client && A && A.vic && A.vic(r.client));
           return '<div class="wfy-row" data-i="' + i + '">' +
-            '<span class="wfy-tile">' + g + '</span>' +
-            '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + vicTag(r.client, true) + '</b>' +
-              (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</button>' +
+            '<span class="wfy-tile' + (isVic ? ' is-vic' : '') + '">' + g +
+              (isVic ? '<span class="wfy-crown" aria-hidden="true">' + (A.vicCrown || '') + '</span>' : '') + '</span>' +
+            '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + '</b>' +
+              (isVic ? '<span class="sr">VIC, Very Important Client.</span>' : '') +
+              /* A line of parts wraps between its parts, never inside one. */
+              (r.meta ? '<small>' + r.meta.split(' · ').map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }).join(' · ') + '</small>' : '') + '</button>' +
             '<span class="wfy-acts">' + (r.request && mayDecide()
               ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button>' +
                 '<button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
               : r.remind ? '<button class="btn btn-sm" type="button" data-a="remind">Remind</button>' : '') + '</span>' +
-            '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
+            /* Where it stands, how long it has waited, and who handed it
+               over, one under another (the user, 2026-11-04). */
+            '<span class="wfy-end">' + (r.state ? '<span class="tone is-warn">' + esc(r.state) + '</span>' : '') +
+              '<span class="wfy-age' + (r.late ? ' is-err' : '') + '">' + esc(r.age || agoWord(r.at)) + '</span>' +
+              (r.who ? '<span class="wfy-who">' + esc(r.who) + '</span>' : '') + '</span>' +
           '</div>';
         }).join('');
         if (fail.length) {

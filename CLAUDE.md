@@ -2241,7 +2241,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Undo where it happened; VIC since under Key dates, its pen at the part),
   Content Review's list and client head, My Work's rows, board cards and
   task card (a VIC client's work leads each band of the day axis, Urgent
-  delivery a band above it), Waiting for you (VIC rows first), the
+  delivery a band above it), Waiting for you (VIC rows first, the tile ringed in gold with the
+  crown on its corner in place of the tag), the
   Dashboard's Needs attention (VIC first among equals), the Creator
   Campaigns, Reports and Video Scripts lists, and console search. A notice
   about a VIC client's work is titled "VIC · …" (trigger
