@@ -671,15 +671,12 @@
       var k = got[0], m = got[1];
       if (k.error) { S.failLine(box, 'The templates', said(k.error.message ? k.error : { code: k.error }), paintTemplates); return; }
       if (m.error) say($('waTplMsg'), said(m.error), 'err');
+      /* One table, no fold over it (revamp C, 2026-11-04): the sheet is the
+         list, its heading the count. */
       box.innerHTML = '';
-      box.appendChild(G.section({
-        route: 'whatsapp', key: 'templates', name: 'Templates', count: k.list.length, shut: false,
-        table: function () {
-          var table = G.table('wat-row', ['Purpose', 'On', '']);
-          k.list.forEach(function (t) { table.appendChild(tplRow(t, m)); });
-          return table;
-        }
-      }));
+      var table = G.table('wat-row', ['Purpose', 'On', ''], 'wat-table');
+      k.list.forEach(function (t) { table.appendChild(tplRow(t, m)); });
+      box.appendChild(table);
     });
   }
   function tplRow(t, m) {
@@ -697,12 +694,12 @@
            (ux-audit WA-2, 2026-10-14). */
         '<small>' + (t.name ? [t.name, t.lang, CATEGORY[t.category], plural(t.params, 'variable')].filter(Boolean)
           .map(function (x) { return '<span class="wat-part">' + esc(x) + '</span>'; }).join(' · ') : 'No template') + '</small>' +
-        (why ? '<small class="wam-why">' + esc(why) + '</small>' : '') + '</span>' +
+        (why ? '<span class="msg warn wat-why">' + esc(why) + '</span>' : '') + '</span>' +
       '<span class="wat-on"><button class="switch" type="button" role="switch" aria-checked="' + (live ? 'true' : 'false') + '"' +
         ' aria-label="' + esc(w[0]) + '" data-a="on"></button></span>' +
-      /* On a phone the pen alone, beside the switch on the name's line
-         (2026-10-10: the word put Edit on a line of its own). */
-      '<span class="wat-act"><button class="btn btn-sm" type="button" data-a="edit" aria-label="Edit ' + esc(w[0]) + '">' + PEN + '<span class="wat-word">Edit</span></button></span>';
+      /* The pen alone at every width, the quiet act of a short table in
+         Settings (revamp C, 2026-11-04). */
+      '<span class="wat-act"><button class="iconbtn" type="button" data-a="edit" aria-label="Edit ' + esc(w[0]) + '" title="Edit">' + PEN + '</button></span>';
     row.querySelector('[data-a="edit"]').addEventListener('click', function () { choose(t, false); });
     row.querySelector('[data-a="on"]').addEventListener('click', function () { flip(t, row, this); });
     return row;
