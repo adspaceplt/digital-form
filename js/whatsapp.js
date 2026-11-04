@@ -1261,7 +1261,7 @@
      database holds to the record's own addresses and files first. */
   var ne = { parties: null, tpls: [], opts: [], file: null, key: '', busy: false, wired: false, lastTpl: null, seq: 0 };
   var NE_SAID = {
-    'bad-recipient': 'That address is no longer held for this client or supplier. Choose another address.',
+    'bad-recipient': 'That address is no longer listed for this client or supplier. Choose another address.',
     'bad-copy': 'Copy up to five addresses, none the same as the recipient.',
     'bad-email': 'Enter a valid email address.',
     'bad-subject': 'Enter a subject of 2 to 200 characters.',
