@@ -1181,7 +1181,7 @@
      bar under a thumb. The bar steps away while a field takes the keyboard,
      so it never sits on what is typed. */
   var TAB_WORD = {
-    overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'WhatsApp', review: 'Review',
+    overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'Messages', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
     services: 'Services', team: 'Team', handbook: 'Handbook'
   };
@@ -1650,7 +1650,7 @@
     overview: 'Dashboard',
     analytics: 'Analytics',
     clients: 'Clients',
-    whatsapp: 'WhatsApp',
+    whatsapp: 'Messages',
     work: 'My Work',
     review: 'Content Review',
     scripts: 'Video Scripts',
@@ -1682,7 +1682,7 @@
     overview:  'What needs attention in each section you manage.',
     analytics: 'Trends across sales and clients, what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
-    whatsapp:  'Every WhatsApp message the portal has sent, and its delivery status as reported by Meta.',
+    whatsapp:  'Every WhatsApp message and email the portal has sent, and the delivery status of each.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
     scripts:   'Video scripts by content month, published to the client and used by the crew on the shoot.',
@@ -1719,7 +1719,8 @@
       { at: '#crmNew', text: 'Add a lead on the day it comes in. Billing, brand and services are added as the deal progresses.' },
       { at: '#crmList .crm-row:not(.crm-head)', text: 'Open a client to see its contacts, services, documents, calls and visits.' },
       { at: '#crmBar .cmdbar-filters', text: 'Filter the list by stage or person in charge.' }] },
-    whatsapp: { name: 'WhatsApp', steps: [
+    whatsapp: { name: 'Messages', steps: [
+      { at: '#msgViews', text: 'WhatsApp and Email each list what the portal has sent, month by month.' },
       { at: '#waNew', text: 'New message sends a Meta-approved template to a client contact or a creator.' },
       { at: '#waList .wam-row:not(.crm-head)', text: 'Every message the portal has sent, with its status: Sent, Delivered, Read, or Failed with the reason.' },
       { at: '#waQueue', text: 'Messages the portal sends automatically: those waiting or sending, and those not sent or not confirmed in the last seven days.' }] },
@@ -2691,7 +2692,7 @@
   var ACT_SECTION = { all: 'All sections',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
-                      reports: 'Reports', whatsapp: 'WhatsApp', register: 'Documents', hr: 'HR letters', suppliers: 'Suppliers', links: 'Short Links',
+                      reports: 'Reports', whatsapp: 'Messages', register: 'Documents', hr: 'HR letters', suppliers: 'Suppliers', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */

@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261104e">
-<link rel="stylesheet" href="/css/console.css?v=20261104e">
+<link rel="stylesheet" href="/css/console.css?v=20261104f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261103d"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104f"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -155,7 +155,7 @@
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
 <script src="/js/notice.js?v=20261103l"></script>
-<script src="/js/whatsapp.js?v=20261031w"></script>
+<script src="/js/whatsapp.js?v=20261104f"></script>
 <script src="/js/docmail.js?v=20261031w"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
@@ -305,11 +305,12 @@
         <button class="navitem" data-section="reports" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
         </button>
-        <!-- WhatsApp (2026-10-10, js/whatsapp.js): every message the portal
-             sent with Meta's delivery status, the composer, and the
-             templates. Last in Work (the user, 2026-10-10). -->
+        <!-- Messages (WhatsApp 2026-10-10, js/whatsapp.js; Messages from
+             2026-11-04): every WhatsApp message and every email the portal
+             sent, each with its delivery status, and the composer. Last in
+             Work (the user, 2026-10-10). The key stays `whatsapp`. -->
         <button class="navitem" data-section="whatsapp" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>WhatsApp</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20l1.4-4.2A8 8 0 1 1 8.4 19z"/><path d="M9 10h6M9 13.5h4"/></svg><span>Messages</span>
         </button>
       </div>
       <div class="navgroup">
@@ -4323,7 +4324,13 @@
          and why), the month's count by category above the list, and New
          message. At Full Access the queue heads the list; the templates
          are Settings' (#waTplSheet, 2026-10-29). -->
-    <div class="console-body" id="sectionWhatsApp" hidden>
+    <div class="console-body" id="sectionWhatsApp" data-swipe="msgViews" hidden>
+      <!-- WhatsApp and Email (2026-11-04): two logs, one section; the tab
+           rides in the address (`tab=email`, WhatsApp left out). -->
+      <div class="actstrip perf-views" id="msgViewsBox"><span class="cmdbar-views actviews" id="msgViews" role="group" aria-label="View">
+        <button class="acttab btn-sm is-on" data-mv="wa" type="button" aria-pressed="true">WhatsApp</button>
+        <button class="acttab btn-sm" data-mv="email" type="button" aria-pressed="false">Email</button>
+      </span></div>
       <div id="waMessagesPane">
         <div class="cmdbar">
           <span class="cmdbar-find">
@@ -4344,6 +4351,37 @@
         <div class="tally wam-heads" id="waQueue" hidden></div>
         <div class="tally wam-heads" id="waHeads" hidden></div>
         <div id="waList" data-narrow="760"></div>
+      </div>
+      <!-- Email (2026-11-04, mail_log): every email the portal sent in the
+           month, each at its own record's access; a row opens the email as
+           sent (#mlSheet). Sign-in and invitation emails are Supabase's and
+           are not kept. -->
+      <div id="emlPane" hidden>
+        <div class="cmdbar" id="emlBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="emlFind" type="search" placeholder="Search name, client, email or reference" aria-label="Search emails" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="emlMonth" aria-label="Month" data-nofilter></select>
+          <select class="select select-sm" id="emlKind" aria-label="Type"></select>
+          <select class="select select-sm" id="emlStatus" aria-label="Status"></select>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="emlCount"></span></span>
+          </span>
+        </div>
+        <div class="tally wam-heads" id="emlHeads" hidden></div>
+        <div id="emlList" data-narrow="760"></div>
+      </div>
+    </div>
+    <!-- An email as it was sent (2026-11-04): who it went to, its copy, who
+         sent it, where it stands at each step, and the message; read only. -->
+    <div class="sheet" id="emlSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="emlSheetHead">
+        <div class="sheet-head">
+          <h3 id="emlSheetHead">Email</h3>
+          <button class="iconbtn" id="emlSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" id="emlSheetBody" data-narrow="560"></div>
       </div>
     </div>
 
@@ -6096,7 +6134,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261031w"></script>
-<script src="/js/admin.js?v=20261104d"></script>
+<script src="/js/admin.js?v=20261104f"></script>
 <script src="/js/documents.js?v=20261031w"></script>
 <script src="/js/letters.js?v=20261031w"></script>
 <script src="/js/smreport.js?v=20261103e"></script>
@@ -6111,7 +6149,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261031w"></script>
 <script src="/js/crm.js?v=20261104d"></script>
 <script src="/js/sales.js?v=20261025a"></script>
-<script src="/js/team.js?v=20261103j"></script>
+<script src="/js/team.js?v=20261104f"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
 <script src="/js/scripts.js?v=20261103l"></script>

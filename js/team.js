@@ -144,7 +144,7 @@
     /* WhatsApp (2026-10-10): View reads the messages sent, Manage sends,
        Full Access chooses the templates; the last of the Work chunk, as the
        rail and the panel's chunks read (N1, 2026-10-24). */
-    ['whatsapp',  'WhatsApp',          ['none', 'view', 'work', 'manage']],
+    ['whatsapp',  'Messages',          ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -206,7 +206,7 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['scripts', 'Video Scripts'], ['campaigns', 'Creator Campaigns'],
-                ['reports', 'Reports'], ['whatsapp', 'WhatsApp'], ['register', 'Documents'],
+                ['reports', 'Reports'], ['whatsapp', 'Messages'], ['register', 'Documents'],
                 /* An HR letter's history, read with HR Letters too (S5). */
                 ['hr', 'HR letters'], ['suppliers', 'Suppliers'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
@@ -1215,8 +1215,8 @@
            work: 'Also update and create tasks, and add months.', manage: 'Also reassign, archive and delete tasks, and delete months.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
                work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and letters, void letters and change the person in charge.' },
-    whatsapp: { none: 'WhatsApp is hidden, and no record offers it.', view: 'Read every message sent and its status.',
-                work: 'Send messages from WhatsApp and from records.', manage: 'Also choose the templates and turn them on or off.' },
+    whatsapp: { none: 'Messages is hidden, and no record offers WhatsApp.', view: 'Read every WhatsApp message and email sent, and its status.',
+                work: 'Send WhatsApp messages from Messages and from records.', manage: 'Also choose the WhatsApp templates and turn them on or off.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets and posts.' },
     scripts: { none: 'Video Scripts is hidden.', view: 'Read scripts and download their PDFs.',

@@ -3274,6 +3274,17 @@ button.vs-row {
 .is-narrow .wam-row > .wam-state { grid-area: state; justify-items: end; text-align: right; }
 .is-narrow .wam-row > .wam-tpl, .is-narrow .wam-row > .wam-by { display: none; }
 .is-narrow .wam-to .wam-why { display: block; }
+/* An email is one button that opens it as sent (2026-11-04): the WhatsApp
+   row's grid, the base row's ground, hover and inset ring. */
+button.eml-row { width: 100%; text-align: left; font: inherit; color: inherit; background: var(--card); border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; cursor: pointer; }
+button.eml-row:last-child { border-bottom: 0; }
+@media (hover: hover) { button.eml-row:hover { background: var(--sunk); } }
+button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -3px; }
+.eml-row .wam-to > b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eml-row .wam-tplname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+/* The message as sent, its lines kept, on the shaded ground. */
+.eml-facts { margin: 0 0 16px; }
+.eml-body { background: var(--sunk); border-radius: var(--radius-sm); padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.55; color: var(--ink); }
 
 .wat-row, .crm-head.wat-row {
   display: grid; align-items: center; gap: 0 12px;
