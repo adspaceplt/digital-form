@@ -735,7 +735,6 @@
          designation, the neutral chip. The name with its Employee ID beside
          it (the user, 2026-10-03), then where they sit. */
       '<span class="team-who">' +
-        '<span class="cl-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(m.name || '')) + '</span>' +
         '<span class="cl-who"><b>' + esc(m.name) +
           (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
           (self ? ' <span class="tone">You</span>' : '') +
@@ -2101,8 +2100,9 @@
     var self = me() && me().id === m.id;
     box.innerHTML =
       '<button class="backlink" type="button" data-r="back">' + BACK + 'Back</button>' +
-      '<section class="panel rec-head mrec-head"><div class="rec-id">' +
-        '<span class="rec-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(m.name || '')) + '</span>' +
+      /* No disc: a colleague holds no picture to fill one (the user,
+         2026-11-04). */
+      '<section class="panel rec-head mrec-head"><div class="rec-id is-nomark">' +
         '<div class="rec-who"><div class="rec-name"><h2>' + esc(m.name || '') + '</h2>' +
           (self ? ' <span class="tone">You</span>' : '') + (m.system ? ' <span class="tone">System</span>' : '') + '</div>' +
           '<p class="rec-id-meta">' + esc(meta) + '</p></div>' +

@@ -124,6 +124,13 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     reload does not bring it back: uxaudit and uxsection shoot through
     `fullShot`, which re-sends touch emulation on a session kept open
     (2026-10-31: phone states after a shot measured at desk sizes).
+  - A seed written inside a template literal (uxaudit's `WHATSAPP`, `CRM`)
+    writes a line break in a string as `\\n`: a bare `\n` breaks the string
+    and the whole seed, and the walk crashes at its first sign-in
+    (2026-11-04: the Email tab's seed).
+  - A suite follows a record by its id, never by being the first card: a
+    list's order moves when the order rules do (2026-11-04: `prod` read
+    another booking once a posted one sank to the end).
   - Browser suites run on Malaysia's clock (`gate.sh` sets
     `TZ=Asia/Kuala_Lumpur`; the Postgres lane keeps the machine's), so a
     suite's today is the page's; one that wants another zone names it
@@ -1164,8 +1171,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     look and one height (the mute ink at 400; `tests/cmdbar.js`).
   - Every record leaves by one Back (`.backlink`: the arrow and the word
     Back) at one height, its section's own strip stepping away while it is
-    open, and heads itself with `.rec-id` (the disc, the name over its meta,
-    the state and the ⋯); Select is behind the bar's ⋯ in every section; an
+    open, and heads itself with `.rec-id` (the disc where the record holds
+    a picture, a client's or a campaign's, else none: a supplier and a
+    colleague head with the name, `.is-nomark`, 2026-11-04; the name over
+    its meta, the state and the ⋯); Select is behind the bar's ⋯ in every section; an
     empty status line takes no room (2026-11-03, the user: "check all
     others too"; `tests/cmdbar.js`).
   - The bar's own selects are moved into `#cmdSheet` and back, never copied.
@@ -6490,10 +6499,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A colleague is a record of their own (`member=`, `mtab=`; the user,
   2026-10-18: "build it similar as client individual section"): the
   list is the Clients list's shape (the user, the same day: "it should be
-  the same as client"), a row one button (the initials' disc, the name,
-  the email, the exception, the chevron), no ⋯ on the list; it opens in
+  the same as client"), a row one button (the name, no disc since
+  2026-11-04, the email, the exception, the chevron), no ⋯ on the list; it opens in
   place of the list and the Team strip, Back returns; the head is the
-  mark, the name, Employee ID and post (the group and department are
+  name (no disc), Employee ID and post (the group and department are
   Overview's; TEAM-1, 2026-10-22), the state and the one ⋯
   of every act on a colleague (`memberMenu`, `wireActs`); panes Overview
   (Sign-in and access, Employment, Namecard, each value changed where it

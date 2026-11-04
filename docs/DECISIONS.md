@@ -8138,3 +8138,32 @@ names with nothing else to act on; it shows only for an industry no client
 holds and still asks. A rename onto a name already held is refused rather
 than merged, which would need a delete in the connector's part.
 
+### 2026-11-04 · No disc where a record holds no picture
+The user, on a supplier record (BRIQ PACKAGING, AS130): "what is the purpose
+of the rounded profile when it doesnt allow to add the profile image? why not
+just remove". The disc was added on 2026-11-03 so every record headed itself
+alike, but DESIGN.md §5 holds that a mark holds real artwork, initials only
+while none is held, and a supplier or a colleague can never hold one: the
+disc was a placeholder for good. Asked between removing it, adding an upload
+and removing it from suppliers alone, the user chose to remove it from both.
+The supplier and colleague records head with the name (`.rec-id.is-nomark`),
+and the Team list's rows lose their disc too; a client, a campaign and the
+client portal keep theirs, which hold a logo. `tests/cmdbar.js` now holds a
+disc on those alone.
+
+### 2026-11-04 · The day's gate on bf2535e, and four suites put right
+The full gate read PROBLEM (5); matrix passed. Each failure was in a suite,
+none in the portal. uxaudit crashed at its first sign-in: the Email tab's
+seed, a template literal, wrote `\n` in its emails' bodies, which became a
+real line break inside a quoted string, so the whole seed failed to parse
+and the stand-in never defined `__signIn`; the bodies now write `\\n` and
+the walk ran again. prod read the first booking card, but the sorting rules
+of 2026-11-03 put a posted booking after the rest, so it read another; it
+now follows its booking by id. vssql made an old script "now", which on
+4 November fell in the suite's fixed November and took its number; the
+script is now made on a fixed August day. audit ran a second commentary
+check on one report the same day, which the AI limits of 2026-11-03 refuse
+an admin too; the step turns the per-report switch off, as `reports` does,
+and reads the question's current words. ops' numbering stays as logged in
+STANDARD.md.
+

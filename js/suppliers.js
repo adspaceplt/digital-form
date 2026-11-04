@@ -420,9 +420,10 @@
     rec.innerHTML =
       '<button class="backlink" type="button" data-s="back">' + BACK + 'Back</button>' +
       '<div class="panel sup-rec sup-headcard">' +
-        /* The record head every record draws (`.rec-id`): the initials' disc,
-         the name over its meta, the state and the ⋯ (2026-11-03). */
-        '<div class="rec-id sup-head"><span class="rec-mark" aria-hidden="true">' + esc(window.ADspaceState.initials(nameOf(s) || '')) + '</span>' +
+        /* The record head every record draws (`.rec-id`): the name over its
+         meta, the state and the ⋯ (2026-11-03); no disc, since a supplier
+         holds no picture to fill one (the user, 2026-11-04). */
+        '<div class="rec-id is-nomark sup-head">' +
           '<div class="rec-who sup-who-h"><div class="rec-name"><h2>' + esc(nameOf(s)) + '</h2></div><p class="rec-id-meta sup-meta">' + (s.name ? '<span class="sup-code">' + esc(s.code) + '</span>' : got ? 'Received ' + esc(day(state.form.submitted_at)) : s.waiting ? '' : 'Waiting for their details') +
           (s.approved_at ? ' · Approved ' + esc(day(s.approved_at)) + (s.approved_by ? ' by ' + esc(s.approved_by) : '') : '') + '</p></div>' +
           '<div class="rec-ctl sup-ctl">' + chip(s, got && s.status === 'pending') +
