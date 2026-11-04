@@ -40,6 +40,7 @@
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'no-email': 'This client has no email address on record. Add one to its billing contact.',
     'nothing-overdue': 'These invoices are no longer overdue.',
+    'nothing-unpaid': 'This invoice is paid or voided in Bukku, so it was not sent.',
     sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
     'bad-subject': 'The subject must be 2 to 200 characters.',
     'bad-body': 'The message must be 2 to 5,000 characters.',
@@ -129,7 +130,10 @@
     }
     return null;
   }
-  function sentTo(contact) { return (rv.rem || []).filter(function (e) { return Number(e.contact) === Number(contact); }); }
+  function sentTo(contact, purpose) {
+    return (rv.rem || []).filter(function (e) { return Number(e.contact) === Number(contact) && (!purpose || (e.purpose || 'reminder') === purpose); });
+  }
+  function kindWord(e) { return (e.purpose || 'reminder') === 'invoice' ? 'Invoice' : 'Reminder'; }
 
   /* ---- The view --------------------------------------------------------- */
   function mayView() { return may('clients.billing', 'view') && Boolean(window.ADspaceAPI && API.client); }
@@ -321,8 +325,12 @@
   var rv = { groups: [], on: 0, tpl: null, edits: {}, opener: null, done: {}, after: null, rem: [] };
   /* The sheet the Overdue invoices bar and a client's Billing both open:
      `after` reads again what a send changed. */
-  function review(btn, picked, after, rem, from) {
+  function review(btn, picked, after, rem, from, purpose) {
     if (!picked || !picked.length) return;
+    /* An overdue reminder, or an unpaid invoice sent by email (2026-11-04):
+       one sheet, each its own words and its own Sent recently. */
+    rv.purpose = purpose === 'invoice' ? 'invoice' : 'reminder';
+    $('odSheetTitle').textContent = rv.purpose === 'invoice' ? 'Send invoice' : 'Send reminders';
     rv.after = after || null;
     rv.rem = rem || [];
     var by = {}, many = several(picked);
@@ -341,7 +349,8 @@
     rv.on = 0; rv.edits = {}; rv.done = {}; rv.opener = btn || null;
     $('odMsg').textContent = ''; $('odMsg').className = 'msg';
     $('odGo').disabled = false;
-    rpc('invoice_email_template_get').then(function (t) {
+    rv.tpl = null;
+    rpc(rv.purpose === 'invoice' ? 'invoice_send_template_get' : 'invoice_email_template_get').then(function (t) {
       if (t.error) { $('odMsg').textContent = said(t); $('odMsg').className = 'msg err'; return; }
       rv.tpl = t;
       paintReview();
@@ -418,10 +427,10 @@
       '<p class="inv-mail-fine">' + esc((rv.tpl && rv.tpl.disclaimer) || '') + '</p></div></div>';
     var sent = sentTo(g.contact);
     var log = sent.length ? '<div class="inv-log"><h4 class="fsec-h">Sent before</h4><div class="inv-log-t">' +
-      '<div class="r hd"><span>When</span><span>Channel</span><span>Sent by</span><span>Status</span></div>' +
+      '<div class="r hd"><span>When</span><span>Email</span><span>Sent by</span><span>Status</span></div>' +
       sent.slice(0, 8).map(function (e) {
         var s = statusOf(e);
-        return '<div class="r"><span class="w">' + esc(when(e.at)) + '</span><span class="c">Email</span><span class="b">' + esc(e.by || 'Not known') + '</span>' +
+        return '<div class="r"><span class="w">' + esc(when(e.at)) + '</span><span class="c">' + esc(kindWord(e)) + '</span><span class="b">' + esc(e.by || 'Not known') + '</span>' +
           '<span><span class="chip-state chip ' + s[1] + '">' + esc(s[0]) + '</span></span></div>';
       }).join('') + '</div></div>' : '';
     pv.innerHTML = '<div class="inv-rv-head"><dl class="ovfacts">' +
@@ -466,12 +475,13 @@
     var hours = window.ADspaceMoney && window.ADspaceMoney.setting ? Number(window.ADspaceMoney.setting('wa_repeat_hours')) : 24;
     if (!(hours >= 0)) hours = 24;
     var since = Date.now() - hours * 3600e3;
-    var recent = left.filter(function (g) { return hours > 0 && sentTo(g.contact).some(function (e) { return e.status !== 'failed' && Date.parse(e.at) > since; }); });
+    var inv = rv.purpose === 'invoice';
+    var recent = left.filter(function (g) { return hours > 0 && sentTo(g.contact, rv.purpose).some(function (e) { return e.status !== 'failed' && Date.parse(e.at) > since; }); });
     var names = left.map(function (g) { return g.name + ' (' + (toOf(g) || 'no email') + ')'; });
     window.ADspaceConfirm.ask({
-      title: 'Send ' + plural(left.length, 'reminder', 'reminders') + '?',
+      title: 'Send ' + (inv ? plural(left.length, 'invoice email', 'invoice emails') : plural(left.length, 'reminder', 'reminders')) + '?',
       body: names.join(', ') + '.' + (recent.length ? ' ' + recent.map(function (g) { return g.name; }).join(', ') +
-        (recent.length === 1 ? ' was' : ' were') + ' reminded in the last ' + plural(hours, 'hour', 'hours') + '.' : ''),
+        (recent.length === 1 ? ' was' : ' were') + (inv ? ' emailed an invoice' : ' reminded') + ' in the last ' + plural(hours, 'hour', 'hours') + '.' : ''),
       go: recent.length ? 'Send again' : 'Send', tone: recent.length ? 'warn' : undefined
     }, function () { run(left, recent); });
   }
@@ -502,7 +512,7 @@
       }
       var g = left[i++];
       var ed = rv.edits[g.contact] || {};
-      call({ action: 'remind', contact: g.contact, client: g.client || null, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
+      call({ action: rv.purpose === 'invoice' ? 'deliver' : 'remind', contact: g.contact, client: g.client || null, invoices: g.lines.map(function (l) { return l.id; }), cc: g.cc !== false,
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
@@ -510,8 +520,8 @@
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
              Send again for this client alone. */
-          if (d.recent) rv.rem = [{ contact: g.contact, status: d.recent.status || 'sent', at: d.recent.at, by: d.recent.by, to: d.recent.to }].concat(rv.rem || []);
-          rv.done[g.contact] = { ok: false, text: 'Reminded ' + when(d.recent && d.recent.at) + (d.recent && d.recent.by ? ' by ' + d.recent.by : '') + '. Not sent again.' };
+          if (d.recent) rv.rem = [{ contact: g.contact, purpose: rv.purpose, status: d.recent.status || 'sent', at: d.recent.at, by: d.recent.by, to: d.recent.to }].concat(rv.rem || []);
+          rv.done[g.contact] = { ok: false, text: (rv.purpose === 'invoice' ? 'Emailed ' : 'Reminded ') + when(d.recent && d.recent.at) + (d.recent && d.recent.by ? ' by ' + d.recent.by : '') + '. Not sent again.' };
         }
         else rv.done[g.contact] = { ok: false, text: said(d) + paid };
         paintReview();
@@ -566,25 +576,37 @@
       return '<div class="od-crow"><span class="od-who"><b>' + esc(l.number) + (l.part ? ' · ' + esc(partWord(l.part)) : '') + '</b>' +
         '<small>Due ' + esc(day(l.due)) + (l.days > 0 ? ' · <span class="od-late">' + esc(plural(l.days, 'day', 'days')) + ' overdue</span>' : ' · Not due') + '</small></span>' +
         '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
-        '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span></div>';
+        '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span>' +
+        /* Each unpaid invoice sent by email, due or not (2026-11-04). */
+        (d.send ? '<span class="od-act"><button class="btn btn-sm" type="button" data-a="send" data-id="' + esc(String(l.id)) + '" aria-label="' + esc('Send invoice ' + l.number) + '">Send invoice</button></span>' : '') + '</div>';
     };
     var body = cos.length > 1 ? cos.map(function (k) {
       var mine = rows.filter(function (l) { return l.contact === k; });
       return '<p class="od-co">' + esc(companyOf(mine[0]) || 'Bukku contact') + '</p><div class="od-mini">' + mine.map(rowHtml).join('') + '</div>';
     }).join('') : '<div class="od-mini">' + rows.map(rowHtml).join('') + '</div>';
+    host.classList.toggle('od-sends', !!d.send);
     host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4>' +
       (d.send && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
       (rows.length ? body : '<p class="muted od-none">No unpaid invoices.</p>') +
-      (rem.length ? '<h4 class="fsec-h od-sent-h">Reminders sent</h4><div class="inv-log-t od-log">' +
+      (rem.length ? '<h4 class="fsec-h od-sent-h">Emails sent</h4><div class="inv-log-t od-log">' +
         '<div class="r hd"><span>When</span><span>Invoices</span><span>Sent by</span><span>Status</span></div>' +
         rem.slice(0, 10).map(function (e) {
           var s = statusOf(e);
-          return '<div class="r"><span class="w">' + esc(when(e.at)) + '</span><span class="c">' + esc((e.invoices || []).map(function (x) { return x.number; }).join(', ')) + '</span>' +
+          return '<div class="r"><span class="w">' + esc(when(e.at)) + '</span><span class="c">' + esc(kindWord(e) + ' · ' + (e.invoices || []).map(function (x) { return x.number; }).join(', ')) + '</span>' +
             '<span class="b">' + esc(e.by || 'Not known') + '</span><span><span class="chip-state chip ' + s[1] + '">' + esc(s[0]) + '</span></span></div>';
         }).join('') + '</div>' : '');
     var b = host.querySelector('[data-a="remind"]');
     if (b) b.addEventListener('click', function () {
       review(b, late.slice(), function () { clientGroup(host, client, true); }, rem, client.id);
+    });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-a="send"]'), function (sb) {
+      sb.addEventListener('click', function () {
+        var l = rows.filter(function (x) { return String(x.id) === sb.getAttribute('data-id'); })[0];
+        /* An invoice is sent whole: its balance, as Bukku's deliver reads it,
+           never the instalment past its date a reminder names. */
+        if (l) review(sb, [Object.assign({}, l, { amount: l.balance != null ? l.balance : l.amount, part: null })],
+          function () { clientGroup(host, client, true); }, rem, client.id, 'invoice');
+      });
     });
   }
 
@@ -611,17 +633,22 @@
   }
 
   /* ---- Settings: Overdue reminder --------------------------------------- */
-  function templateLine() {
-    return rpc('invoice_email_template_get').then(function (t) {
+  var TPL = {
+    reminder: { get: 'invoice_email_template_get', save: 'invoice_email_template_save', title: 'Overdue reminder' },
+    invoice: { get: 'invoice_send_template_get', save: 'invoice_send_template_save', title: 'Invoice email' }
+  };
+  function templateLine(kind) {
+    return rpc(TPL[kind === 'invoice' ? 'invoice' : 'reminder'].get).then(function (t) {
       if (t.error) throw new Error(t.error);
       return t.updated_by ? 'Changed ' + C.date(t.updated_at) + ' by ' + t.updated_by : 'Standard wording';
     });
   }
-  function openTemplate(btn, say) {
-    rpc('invoice_email_template_get').then(function (t) {
+  function openTemplate(btn, say, kind) {
+    var k = TPL[kind === 'invoice' ? 'invoice' : 'reminder'];
+    rpc(k.get).then(function (t) {
       if (t.error) { if (say) say(said(t), 'err'); return; }
       window.ADspaceConfirm.ask({
-        title: 'Overdue reminder', go: 'Save', wait: true,
+        title: k.title, go: 'Save', wait: true,
         body: 'Fields: {contact name}, {client}, {invoice no}, {count}, {total}, {sign off}. {invoices} is where the table of invoices goes.',
         fields: [{ name: 'one', label: 'Subject, one invoice', value: t.subject_one || '' },
           { name: 'many', label: 'Subject, several invoices', value: t.subject_many || '' },
@@ -630,7 +657,7 @@
           { name: 'disclaimer', label: 'Disclaimer', rows: 3, value: t.disclaimer || '', required: false }],
         check: function (v) { return /\{\s*invoices\s*\}/i.test(String(v.body || '')) ? '' : SAID['no-invoices']; }
       }, function (v) {
-        return rpc('invoice_email_template_save', { p_subject_one: String(v.one || '').trim(), p_subject_many: String(v.many || '').trim(),
+        return rpc(k.save, { p_subject_one: String(v.one || '').trim(), p_subject_many: String(v.many || '').trim(),
           p_body: String(v.body || '').trim(), p_legal: String(v.legal || '').trim(), p_disclaimer: String(v.disclaimer || '').trim() })
           .then(function (d) {
             if (d.error) return said(d);

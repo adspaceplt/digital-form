@@ -289,7 +289,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
-| `js/invoices.js`, bukku-sync's `invoices` and `remind`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS section | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
+| `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS and INVOICES SENT BY EMAIL sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -612,7 +612,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Months, Quarters, Bonus and trip, Commission at `team.performance` View,
   behind the master code; 2026-10-29), Templates (the user,
   2026-10-29: every template in one place: WhatsApp templates at WhatsApp
-  Full Access, Supplier emails at Suppliers Full Access, Client emails, Overdue reminder,
+  Full Access, Supplier emails at Suppliers Full Access, Client emails, Overdue reminder, Invoice email,
   Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access); each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
@@ -3077,11 +3077,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   invoices not yet due as well (Not due); a reminder sent there is filed on
   that client and addressed to the company it is for,
   Send reminder while one is overdue at Billing Work (the same Review and
-  send), and its Reminders sent; read on each visit to the pane, drawn
+  send), and its Emails sent (a reminder or an invoice, which and when);
+  read on each visit to the pane, drawn
   only for a client linked to a Bukku contact (Bukku's group above says
   when it is not). No Bukku branding; WhatsApp
   reminders are not built (the user, 2026-10-28: "dont build the whatsapp
   first").
+- Send invoice (`2026-11-04-invoices-sent-by-email.sql`; the user,
+  2026-11-04: "send invoice (pulled data and pdf from bukku) send to
+  clients email", approved "attach link for now"): each unpaid invoice on
+  a client's Billing, due or not, carries Send invoice at Billing Work,
+  opening the same Review and send as Send invoice; the invoice is sent
+  whole (its balance, never an instalment), read again from Bukku at the
+  press (`bukku-sync` `deliver`: paid or voided since, `nothing-unpaid`,
+  said for what it is), filed first as `invoice_emails.purpose` invoice
+  (`invoice_send_begin`, the service role's, over the one filing both
+  sends share, `invoice_mail_begin`), from ADspace Finance with the same
+  table and Bukku's own link (View PDF; Bukku's API holds no PDF to
+  attach), and closed as Invoice emailed to … on the client. Its own
+  words (`invoice_send_template`, Settings, Templates: Invoice email,
+  `team.settings`; `invoice_send_template_get`, `_save`, filed under
+  Invoice email) and its own Sent recently: a reminder never holds an
+  invoice back, nor an invoice a reminder. The Email log reads it as
+  Invoice.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
