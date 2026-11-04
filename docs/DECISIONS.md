@@ -8098,3 +8098,18 @@ AUDIT FIXES holds each; supplier-mail answers 503 for ten minutes;
 says Not confirmed and asks for an address. `maillogsql`, `clientmailsql`,
 `entitysql`, `mailfn` and `whatsapp` cover it.
 
+### 2026-11-04 · Billing: Bukku's read, one BRN at a time, AI limits for every writer (audit, release C)
+The audit found a client's first billing entity made from a Bukku contact
+holding a name alone made every later read of that client fail:
+`bukku_take`'s own carry to the client's columns met
+`clients_billing_guard`, which asked the service role for Clients: Billing.
+Two presses of Add entity at once, on two clients, could each pass the BRN
+check and make one company twice. AI usage listed nobody who held only
+Brand analysis, Checklists or Analytics until their first use, so no limit
+could be set for them first. And My Work's month sheet escaped the client's
+name into a title set as text, showing `&amp;` for an ampersand. BILLING
+AUDIT FIXES lets a write with no signed-in caller pass the guard (as an
+insert already did), locks a BRN's digits before its check, and widens AI
+usage's people; `ops.js` sets the name as it is. `entitysql` holds the
+guard both ways and the lock with two sessions; `smsql` the people.
+

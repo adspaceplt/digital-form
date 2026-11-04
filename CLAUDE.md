@@ -1535,7 +1535,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   it too. The Activity record is not scoped. The stand-in holds the same rule
   (`scopeRowOk`).
 - Columns other parts write are guarded by trigger at the part's Work level:
-  `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`) and
+  `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`, and a write with no signed-in caller: Bukku's read, the SQL Editor; 2026-11-04) and
   `campaigns_finance_guard`; a page's write on `clients` without Clients at
   Work changes only the review columns (`client_review_columns`,
   `review-columns`).
@@ -1993,7 +1993,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     by the portal; the page then reads its band); an entity removed from
     its last client stays reachable to that client's team alone
     (`billing_entities.orphan_of`, `billing_entity_reached`), so Add entity
-    finds it again; a BRN held is never made twice (`brn-taken`, the
+    finds it again; a BRN held is never made twice, one BRN checked and taken at a time (`brn-taken`, a transaction lock on its digits; the
     question offering that entity), two clients holding one BRN before
     stay two, merged by hand; Make primary and Remove (never the primary) offer
     Undo where they happened; an entity removed from this client and billing
@@ -5565,7 +5565,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Commentary written with AI, read and confirmed.
   - AI usage (the Settings page, `reports.ai`; `ai_draft_usage()`: the
     standards in `limits`, each person's `used`, `cap` and `own` for each
-    use), as approved (2026-11-03): Resets at 12:00 am; Today, a person a
+    use, every colleague who may write with AI listed before a first use:
+    Reports, Content Review or Video Scripts at Work, Clients: Brand at
+    View, Clients: Checklists at Work, Analytics; 2026-11-04), as approved (2026-11-03): Resets at 12:00 am; Today, a person a
     row (`button.aiu-tr`, the whole team their sum first) over seven use
     columns in fixed tracks, each `used/limit` (Off at 0), red with words
     where full, Own limits as a chip; on a narrow pane a person is a card of

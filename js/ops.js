@@ -7322,7 +7322,7 @@
   function openEng(e, client) {
     if (!may('ops', 'work')) return;
     engEditing = e || null;
-    $('engTitle').textContent = e ? monthWord(e.period) + ' for ' + esc(client.name) : 'New month for ' + client.name;
+    $('engTitle').textContent = e ? monthWord(e.period) + ' for ' + client.name : 'New month for ' + client.name;
     fillMonths($('engPeriod'), e ? e.period : null,
       e ? null : (cw.engs || []).filter(function (x) { return x.client_id === client.id; }).map(function (x) { return x.period; }));
     $('engPeriod').disabled = Boolean(e);
