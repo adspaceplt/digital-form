@@ -6795,21 +6795,26 @@ Each line is a rule that broke once. Its reason is in the archive.
 - New email (`#emlNew` on the Email bar, Messages at Work;
   `2026-11-04-new-email.sql` and its SQL Editor part; the user, 2026-11-04):
   `#nemSheet` asks For (Client, Supplier, Other as a segment): a client's
-  To a select of its live contacts holding an email and its finance email
-  (`email_recipients`, as an invoice email's), Copy a tick each (five at
+  To a select of its own live contacts holding an email and, at Clients:
+  Billing View alone, its finance email (`email_recipients`,
+  `email_client_options`), Copy a tick each (five at
   most); a supplier's its email and finance email; Other an address typed
   for To and one for Copy (`ADspaceWords.emailOk`). Template: Custom
   message, else a saved one for that audience (Other: both), filling the
   subject and message; {contact name}, {company name}, {client name},
-  {supplier name} and {sender name} are filled by `email_new_begin`. One
+  {supplier name} and {sender name} are filled by `email_new_begin`
+  ({company name} the registered name at Billing View alone, else the
+  brand; Send by email the same). One
   file optional (PDF, picture, Word, Excel, PowerPoint, CSV; 10 MB). Send
   asks first, then `supplier-mail` `manual` checks the file (a PDF that is
   a PDF), files it (`email_new_begin`: the record's own addresses alone,
-  `bad-recipient`, `bad-copy`, `bad-email`, one key a sheet `again`, a
+  `bad-recipient`, `bad-copy`, `bad-email`, one key a sheet `again` with
+  its email's status, read Not confirmed where it never went, a
   hundred a colleague a day `too-many`), sends it in the branded layout from
   noreply-client (a supplier's from noreply-supplier), replies to the
   sender, and closes it (`email_new_done`, filed `email.sent` under
-  Messages). `team_emails` (no foreign key, RLS on, no policy, no grant)
+  Messages by the recipient's name and the number of copies, never an
+  address; Send by email's `client_email_done` alike; 2026-11-04). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
   `team.settings`; `email_template_save` with `taken`, `email_template_delete`
@@ -6821,11 +6826,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`team_emails_of`, the log's own row and sheet, New email beside it) and
   a contact's ⋯ Send email opens it on that contact; a supplier record's
   Emails list them beside its own (`supplier_emails_of`). Send again on an
-  email in the log opens it filled as it went (its file attached afresh).
+  email in the log opens it filled as it went (its file attached afresh);
+  an address the record no longer lists is not chosen in its place
+  (Choose an address).
   An email's addresses and words are cleared 12 months on, its subject,
   status and times kept (`mail_retention`, pg_cron `mail-retention`, the
   2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
-  as Address cleared. The SQL Editor part also drops the 10- and
+  as Address deleted; a signing code's address and details 30 days after an
+  unused code expired or a year after its use; an address an email filed
+  in the Activity record before 2026-11-04 a year on (address deleted).
+  Resend's email.failed reads Failed, and a status that arrives before its
+  email is closed is answered 503 for ten minutes, so Resend asks again. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team

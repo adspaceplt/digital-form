@@ -120,9 +120,15 @@ Deno.serve(async (req) => {
     const emailId = String((ev.data || {}).email_id || '');
     if (emailId) {
       const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-      const r = await svc.rpc('supplier_email_status', { p_provider: emailId, p_event: String(ev.type || ''),
-        p_at: String(ev.created_at || new Date().toISOString()) });
+      const at = String(ev.created_at || new Date().toISOString());
+      const r = await svc.rpc('supplier_email_status', { p_provider: emailId, p_event: String(ev.type || ''), p_at: at });
       if (r.error) console.error('supplier-mail: status not recorded', r.error.message);
+      /* A status can arrive before its sender has closed the email (the
+         provider id is kept only then): asked again for ten minutes, so the
+         webhook's retry finds it; an email no log holds is let go after
+         that (audit 2026-11-04). */
+      const fresh = Date.now() - new Date(at).getTime() < 10 * 60 * 1000;
+      if (!r.error && (r.data || {}).error === 'not-found' && fresh) return new Response('retry', { status: 503 });
     }
     return new Response('ok', { status: 200 });
   }

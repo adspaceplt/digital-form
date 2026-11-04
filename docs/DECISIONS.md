@@ -8079,3 +8079,22 @@ the console draws no Adjust and send, Cancel or Remove on a signed quotation
 and says Not in Contacts on the check. `sql` builds it on the signing
 fixture; `quotes` walks the signed row.
 
+### 2026-11-04 · Emails: Billing's fields stay Billing's, no address past its year (audit, release B)
+The same audit found New email and Send by email offered a client's finance
+email and filled {company name} with its registered name for a colleague
+without Clients: Billing; New email offered an entity's shared billing
+contact, another brand's, to a colleague outside that brand; every email
+filed its addresses in the Activity record, which keeps three years where
+the email keeps them one; a signing code kept the signer's address,
+details and signature for good; an entity removed from a brand still
+answered with that brand's contact for the others; the Billing pane named a
+client the reader cannot see beside its contact; a sheet sent twice read
+"already sent" where the first never went; Resend's email.failed was not
+taken, and a status arriving before its email was closed was lost. The
+review added: a client record read its emails again on every contact saved,
+and Send again took the first address where the old one was gone. EMAIL
+AUDIT FIXES holds each; supplier-mail answers 503 for ten minutes;
+`crm.js` reads the emails once a record and after a send; `whatsapp.js`
+says Not confirmed and asks for an address. `maillogsql`, `clientmailsql`,
+`entitysql`, `mailfn` and `whatsapp` cover it.
+
