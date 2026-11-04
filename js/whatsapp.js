@@ -1306,7 +1306,7 @@
     $('nemToTyped').value = pre.audience === 'other' ? pre.to || '' : '';
     $('nemCcTyped').value = pre.audience === 'other' && pre.ccs && pre.ccs[0] ? pre.ccs[0] : '';
     $('nemFile').value = '';
-    neMsg('');
+    neMsg(''); $('nemToNote').hidden = true;
     $('nemSend').disabled = false;
     neFile();
     neFor();
@@ -1372,7 +1372,8 @@
           $('nemTo').insertAdjacentHTML('afterbegin', '<option value="" selected>Choose an address</option>');
           $('nemTo').value = '';
           neCc();
-          neMsg(pr.to + ' is no longer listed for this ' + (aud === 'supplier' ? 'supplier' : 'client') + '. Choose another address.', 'warn');
+          $('nemToNote').textContent = pr.to + ' is no longer listed for this ' + (aud === 'supplier' ? 'supplier' : 'client') + '. Choose another address.';
+          $('nemToNote').hidden = false;
         }
         Array.prototype.forEach.call($('nemCc').querySelectorAll('input'), function (b) {
           if ((pr.ccs || []).some(function (e) { return e.toLowerCase() === b.value.toLowerCase(); })) b.checked = true;
@@ -1459,7 +1460,7 @@
     ne.wired = true;
     $('nemFor').addEventListener('change', neFor);
     $('nemParty').addEventListener('change', neRecipients);
-    $('nemTo').addEventListener('change', neCc);
+    $('nemTo').addEventListener('change', function () { if ($('nemTo').value) $('nemToNote').hidden = true; neCc(); });
     $('nemCc').addEventListener('change', neCcCap);
     $('nemTpl').addEventListener('change', neTpl);
     $('nemFilePick').addEventListener('click', function () { $('nemFile').click(); });

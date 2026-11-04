@@ -6834,7 +6834,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
   as Address deleted; a signing code's address and details 30 days after an
   unused code expired or a year after its use; an address an email filed
-  in the Activity record before 2026-11-04 a year on (address deleted).
+  in the Activity record before 2026-11-04 a year on (a deleted address).
   Resend's email.failed reads Failed, and a status that arrives before its
   email is closed is answered 503 for ten minutes, so Resend asks again. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.

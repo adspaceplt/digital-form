@@ -10487,8 +10487,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var ncc0 = te0.cc_email ? String(te0.cc_email).split(', ').length : 0;
         DB.activity_log.unshift({ id: nid('al'), actor: emMe.name, action: 'email.sent', subject: subj0,
           detail: te0.subject + ({ sent: ' · emailed to ', unknown: ' · emailed, not confirmed, to ' }[args.p_status] || ' · not emailed to ') +
-            (te0.to_name || ({ client: 'the client', supplier: 'the supplier' }[te0.audience] || 'an address typed in')) +
-            (ncc0 === 1 ? ' with 1 copy' : ncc0 > 1 ? ' with ' + ncc0 + ' copies' : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
+            (te0.to_name || ({ client: 'the client', supplier: 'the supplier' }[te0.audience] || 'an address outside the portal')) +
+            (ncc0 === 1 ? ', with a copy to 1 other' : ncc0 > 1 ? ', with a copy to ' + ncc0 + ' others' : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
         return emOk();
       }
     }

@@ -27,7 +27,7 @@
 --   * `mail_retention`: a signing code's email and details cleared 30 days
 --     after an unused code expired or a year after one was used; an address
 --     an email filed in the Activity record before today replaced by
---     "address deleted" a year on.
+--     "a deleted address" a year on.
 --   * `entity_contact`: the shared contact only while its brand is billed by
 --     the entity. `billing_entity_json`: a contact's client named only where
 --     the reader sees it.
@@ -192,10 +192,10 @@ begin
           coalesce((select c.name from public.clients c where c.id = e.client_id), (select s.name from public.suppliers s where s.id = e.supplier_id),
                    'Other recipient'),
           e.subject || case p_status when 'sent' then ' · emailed to ' when 'unknown' then ' · emailed, not confirmed, to ' else ' · not emailed to ' end ||
-          coalesce(e.to_name, case e.audience when 'client' then 'the client' when 'supplier' then 'the supplier' else 'an address typed in' end) ||
+          coalesce(e.to_name, case e.audience when 'client' then 'the client' when 'supplier' then 'the supplier' else 'an address outside the portal' end) ||
           case when nullif(e.cc_email, '') is null then ''
-               when array_length(string_to_array(e.cc_email, ', '), 1) = 1 then ' with 1 copy'
-               else ' with ' || array_length(string_to_array(e.cc_email, ', '), 1) || ' copies' end ||
+               when array_length(string_to_array(e.cc_email, ', '), 1) = 1 then ', with a copy to 1 other'
+               else ', with a copy to ' || array_length(string_to_array(e.cc_email, ', '), 1) || ' others' end ||
           coalesce(' · ' || e.attachment, ''));
   return jsonb_build_object('ok', true);
 end $$;
@@ -420,7 +420,7 @@ begin
   -- An address an email filed in the Activity record before 2026-11-04,
   -- deleted on the email's own clock (audit 2026-11-04).
   update public.activity_log x
-     set detail = regexp_replace(x.detail, '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+', 'address deleted', 'g')
+     set detail = regexp_replace(x.detail, '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+', 'a deleted address', 'g')
    where x.action in ('email.sent', 'client.edited', 'supplier.edited') and x.created_at < now() - interval '12 months'
      and x.detail ~ '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+';
   get diagnostics k = row_count; n := n + k;
