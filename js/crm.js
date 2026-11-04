@@ -4367,7 +4367,7 @@
     }).then(function (r) {
       $('crmBillSave').disabled = false;
       /* A BRN another entity holds (`clients_entity_sync`, 2026-11-04). */
-      if (r.error) { msg('crmBillMsg', /brn-taken/.test(r.error.message || '') ? ENT_SAID['brn-taken'] : r.error.message, 'err'); return; }
+      if (r.error) { msg('crmBillMsg', r.error.hint === 'brn-taken' ? ENT_SAID['brn-taken'] : r.error.message, 'err'); return; }
       if (!(r.data || []).length) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
       var still = billingMissing(state.client);

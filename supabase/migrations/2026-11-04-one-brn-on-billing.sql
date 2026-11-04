@@ -38,7 +38,7 @@ begin
     if exists (select 1 from public.billing_entities e
                 where e.id is distinct from v_ent
                   and regexp_replace(coalesce(e.company_no, ''), '\D', '', 'g') = regexp_replace(new.company_no, '\D', '', 'g')) then
-      raise exception 'brn-taken: Another billing entity already holds this registration no. Add that entity on Billing instead.'
+      raise exception 'An entity with this registration no. already exists. Add that entity instead.'
         using errcode = '23505', hint = 'brn-taken';
     end if;
   end if;

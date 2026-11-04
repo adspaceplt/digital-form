@@ -286,9 +286,11 @@ begin
           case p_status when 'sent' then 'emailed to ' when 'unknown' then 'emailed, not confirmed, to ' else 'not emailed to ' end ||
           coalesce((select nullif(public.contact_named(k.salutation, k.name), '') from public.client_contacts k
                      where k.client_id = e.client_id and lower(btrim(coalesce(k.email, ''))) = lower(btrim(e.to_email))
-                     order by k.archived_at nulls first limit 1), 'the client') ||
-          case when nullif(e.cc_email, '') is not null then ' with ' ||
-            case when array_length(string_to_array(e.cc_email, ','), 1) = 1 then 'a copy' else array_length(string_to_array(e.cc_email, ','), 1) || ' copies' end
+                     order by k.archived_at nulls first limit 1),
+                   case when exists (select 1 from public.clients c where c.id = e.client_id and lower(btrim(coalesce(c.finance_email, ''))) = lower(btrim(e.to_email)))
+                        then 'the finance email' else 'the client' end) ||
+          case when nullif(e.cc_email, '') is not null then ', copied to ' ||
+            case when array_length(string_to_array(e.cc_email, ','), 1) = 1 then '1 contact' else array_length(string_to_array(e.cc_email, ','), 1) || ' contacts' end
           else '' end || ' · ' ||
           (select string_agg(x->>'number', ', ') from jsonb_array_elements(e.invoices) x));
   return jsonb_build_object('ok', true);

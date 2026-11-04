@@ -1418,7 +1418,7 @@
             var bnMain = (DB.client_entities || []).filter(function (l) { return l.client_id === r.id && l.is_main; })[0];
             if ((DB.billing_entities || []).some(function (e) { return (!bnMain || e.id !== bnMain.entity_id) &&
                 String(e.company_no || '').replace(/\D/g, '') === String(pending.company_no).replace(/\D/g, ''); }))
-              blocked = 'brn-taken: Another billing entity already holds this registration no. Add that entity on Billing instead.';
+              blocked = 'brn-taken';
           }
 
           if (table === 'clients' && pending && pending.client_code &&
@@ -1496,7 +1496,8 @@
         });
         if (blocked) {
           rows = [];
-          api.__err = { code: 'P0001', message: blocked };
+          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this registration no. already exists. Add that entity instead.', hint: 'brn-taken' }
+            : { code: 'P0001', message: blocked };
           return api;
         }
         DB[table].forEach(function (r) {
