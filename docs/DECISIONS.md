@@ -8033,4 +8033,4 @@ for the new Messages section together with its email". Read against DESIGN.md
   or download the invoice, please select View PDF above." (INVOICE EMAIL
   WORDING, only where the seed's words stand). The overdue reminder and the
   supplier approval words, both edited by a colleague, were left alone.
-Each retired phrase joined `tests/words.js`.
+Review and send for invoices took the same two refusals and the same "No email address held". `docmail` asked that no ⋯ held `data-a="mail"`, which a contact's Send email (#905) also carries; it now asks that no item reads Send by email. Each retired phrase joined `tests/words.js`.
