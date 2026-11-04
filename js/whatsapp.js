@@ -75,7 +75,7 @@
     'no-creator-number': 'This creator has no WhatsApp number. Add one on their Creators List record.',
     'not-published': 'Publish the report first.',
     'not-booked': 'Only a booked creator can be sent their booking.',
-    'not-found': 'This record is no longer available.',
+    'not-found': 'This record no longer exists.',
     'not-client': 'Feedback is asked of a client, never a lead.',
     void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
@@ -329,7 +329,7 @@
   var ML_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
-    requested: ['Requested', 'is-live'], used: ['Used', 'is-ok'], expired: ['Expired', 'is-off'] };
+    requested: ['Code sent', 'is-live'], used: ['Signed', 'is-ok'], expired: ['Expired', 'is-off'] };
   var ML_FROM = { supplier: 'ADspace <noreply-supplier@sc.adspace.me>', client: 'ADspace <noreply-client@sc.adspace.me>',
     invoice: 'ADspace Finance <noreply-finance@sc.adspace.me>', signing: 'ADspace <noreply-client@sc.adspace.me>' };
   var ml = { month: monthNow(), data: null, wired: false };
@@ -442,7 +442,7 @@
     row.type = 'button';
     row.className = 'wam-row eml-row';
     row.setAttribute('data-id', x.id);
-    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'an address cleared') + ', ' + s[0]);
+    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'an address deleted after 12 months') + ', ' + s[0]);
     var parts = function (list) {
       return list.filter(Boolean).map(function (w, i) {
         return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
@@ -451,8 +451,8 @@
     row.innerHTML =
       (onRecord
         ? '<span class="wam-to"><b>' + esc(x.subject) + '</b>' +
-            '<small class="wam-parts">' + parts([x.to_name || x.to_email || 'Address cleared', x.reference]) + '</small></span>'
-        : '<span class="wam-to"><b>' + esc(x.to_name || x.to_email || 'Address cleared') + '</b>' +
+            '<small class="wam-parts">' + parts([x.to_name || x.to_email || 'Address deleted', x.reference]) + '</small></span>'
+        : '<span class="wam-to"><b>' + esc(x.to_name || x.to_email || 'Address deleted') + '</b>' +
             '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>') +
       /* A New email leads with its subject, its file under it. */
       '<span class="wam-tpl"><span>' + esc(x.source === 'manual' ? x.subject : ML_KIND[x.kind] || 'Email') + '</span>' +
@@ -478,18 +478,18 @@
       '<dl class="ovfacts eml-facts">' +
         fact('Type', ML_KIND[x.kind] || 'Email') +
         fact('From', x.source === 'manual' ? ML_FROM[x.supplier_id ? 'supplier' : 'client'] : ML_FROM[x.source]) +
-        fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : 'Cleared after 12 months') +
+        fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : 'Deleted after 12 months') +
         fact('Copy', x.cc_email) +
         fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
         fact(x.source === 'manual' ? 'Attachment' : 'Reference', x.reference) +
-        fact('Sent by', x.source === 'signing' ? 'The client, on the quotation link' : x.sent_by || 'Automatic') +
+        (x.source === 'signing' ? fact('Requested by', 'Client') : fact('Sent by', x.sent_by || 'Automatic')) +
         fact('Status', '<span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>', true) +
         steps.map(function (t) { return fact(t[0], whenOf(t[1])); }).join('') +
         fact('Reason', x.error && /failed|bounced|unknown/.test(x.status) ? String(x.error).replace(/^[a-z ]+:\s*/i, '') : '') +
       '</dl>' +
       (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
-        : x.source === 'signing' ? '<p class="emptyline">The message held the signing code and is not kept.</p>'
-        : '<p class="emptyline">The message is cleared after 12 months.</p>') +
+        : x.source === 'signing' ? '<p class="emptyline">The message is not kept, as it contained a signing code.</p>'
+        : '<p class="emptyline">The message was deleted after 12 months.</p>') +
       /* A New email sent again opens filled, its file to attach again. */
       (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
         ? '<div class="row acts"><button class="btn" type="button" data-a="again">Send again</button></div>' : '');
@@ -1261,22 +1261,22 @@
      database holds to the record's own addresses and files first. */
   var ne = { parties: null, tpls: [], opts: [], file: null, key: '', busy: false, wired: false, lastTpl: null, seq: 0 };
   var NE_SAID = {
-    'bad-recipient': 'That address is not among this record’s addresses. Choose again.',
-    'bad-copy': 'A copy can go to five addresses at most, each once and not to the recipient.',
+    'bad-recipient': 'That address is no longer listed for this client or supplier. Choose another address.',
+    'bad-copy': 'Copy up to five addresses, none the same as the recipient.',
     'bad-email': 'Enter a valid email address.',
-    'bad-subject': 'The subject must be 2 to 200 characters.',
-    'bad-body': 'The message must be 2 to 5,000 characters.',
+    'bad-subject': 'Enter a subject of 2 to 200 characters.',
+    'bad-body': 'Enter a message of 2 to 5,000 characters.',
     'bad-file': 'The file could not be attached. Attach a PDF, a picture, or a Word, Excel, PowerPoint or CSV file.',
     'too-big': 'The file is over 10 MB. Attach a smaller file.',
-    'too-many': 'A hundred emails have been sent in the last 24 hours. Try again later.',
-    again: 'This email was already sent. Refresh the page to see it in the Email log.',
+    'too-many': 'You have reached the limit of 100 emails in 24 hours. Please try again later.',
+    again: 'This email has already been sent. Refresh the page to see it under Email.',
     'bad-template': 'That template no longer exists. Choose another.',
     'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
-    'not-sent': 'Not sent. The email service refused the email.',
-    'not-confirmed': 'Not confirmed. Check the Email log before sending again.',
-    'not-found': 'This record is no longer available.',
+    'not-sent': 'Not sent. The email service did not accept the email. Please try again later.',
+    'not-confirmed': 'Not confirmed. Check the Email tab before sending it again.',
+    'not-found': 'This client or supplier no longer exists.',
     'bad-name': 'Enter a name of 2 to 80 characters.',
-    taken: 'A template of this name is already held for these recipients.'
+    taken: 'A template with this name already exists.'
   };
   var NE_EXT = /\.(pdf|png|jpe?g|webp|docx?|xlsx?|pptx?|csv)$/i;
   function neSaid(e) { var c = (e && (e.code || e.error)) || e; return NE_SAID[c] || said(e); }
@@ -1331,7 +1331,7 @@
         return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') + (other ? '</optgroup>' : '') : '';
     };
     var was = $('nemTpl').value;
-    $('nemTpl').innerHTML = '<option value="">Custom message</option>' + group('client', 'Clients') + group('supplier', 'Suppliers');
+    $('nemTpl').innerHTML = '<option value="">No template</option>' + group('client', 'Clients') + group('supplier', 'Suppliers');
     $('nemTpl').value = tpls.some(function (t) { return t.id === was; }) ? was : '';
     if ($('nemTpl').value !== was) neTpl();
     neRecipients();
@@ -1351,7 +1351,7 @@
     rpc('email_recipients', aud === 'supplier' ? { p_client: null, p_supplier: id } : { p_client: id, p_supplier: null }).then(function (d) {
       if (seq !== ne.seq) return;
       ne.opts = d.options || [];
-      paint('No email address on record');
+      paint('No email address held');
       /* Opened filled: the address and copies it was given, where this
          record still holds them. */
       var pr = ne.pre;
@@ -1366,7 +1366,7 @@
         });
         neCcCap();
       }
-    }).catch(function (e) { if (seq !== ne.seq) return; paint('Could not load the addresses'); neMsg(neSaid(e), 'err'); });
+    }).catch(function (e) { if (seq !== ne.seq) return; paint('Could not load addresses'); neMsg(neSaid(e), 'err'); });
   }
   function neCc() {
     var to = String($('nemTo').value || '').toLowerCase();
@@ -1383,7 +1383,7 @@
     var boxes = $('nemCc').querySelectorAll('input'), on = $('nemCc').querySelectorAll('input:checked').length;
     Array.prototype.forEach.call(boxes, function (b) { b.disabled = !b.checked && on >= 5; });
   }
-  /* A template fills the subject and the message; Custom message clears
+  /* A template fills the subject and the message; No template clears
      them only while they still hold the last template's words. */
   function neTpl() {
     var t = (ne.tpls || []).filter(function (x) { return x.id === $('nemTpl').value; })[0] || null;
@@ -1411,7 +1411,7 @@
     } else {
       if (!party) { neMsg(aud === 'supplier' ? 'Choose a supplier.' : 'Choose a client.', 'err'); $('nemParty').focus(); return; }
       to = $('nemTo').value;
-      if (!to) { neMsg('This record holds no email address. Add one to its contacts first.', 'err'); return; }
+      if (!to) { neMsg(aud === 'supplier' ? 'No email address is held for this supplier. Add one to its record first.' : 'No email address is held for this client. Add one to its contacts first.', 'err'); return; }
       ccs = Array.prototype.map.call($('nemCc').querySelectorAll('input:checked'), function (b) { return b.value; });
     }
     var subject = String($('nemSubject').value || '').trim(), body = String($('nemBody').value || '').trim();
@@ -1419,7 +1419,7 @@
     if (body.length < 2) { neMsg('Enter a message.', 'err'); $('nemBody').focus(); return; }
     neMsg('');
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
-      body: 'To ' + to + (ccs.length ? ', a copy to ' + ccs.join(', ') : '') + (ne.file ? '. Attached: ' + ne.file.name : '') + '.' }, function () {
+      body: 'To ' + to + (ccs.length ? ', with a copy to ' + ccs.join(', ') : '') + (ne.file ? ', with ' + ne.file.name + ' attached' : '') + '.' }, function () {
       var go = $('nemSend');
       ne.busy = true; go.disabled = true;
       if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
@@ -1526,7 +1526,7 @@
     fields.push({ name: 'name', label: 'Name', value: t ? t.name : '' },
       { name: 'subject', label: 'Subject', value: t ? t.subject : '' },
       { name: 'body', label: 'Message', rows: 10, value: t ? t.body : '',
-        note: '{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled when the email is sent.' });
+        note: '{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled in when the email is sent.' });
     window.ADspaceConfirm.ask({ title: t ? 'Edit template' : 'Add template', go: 'Save', fields: fields, wait: true,
       check: function (v) {
         if (String(v.name || '').trim().length < 2) return NE_SAID['bad-name'];

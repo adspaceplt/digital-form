@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104k"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104l"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -155,8 +155,8 @@
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
 <script src="/js/notice.js?v=20261103l"></script>
-<script src="/js/whatsapp.js?v=20261104k"></script>
-<script src="/js/docmail.js?v=20261031w"></script>
+<script src="/js/whatsapp.js?v=20261104m"></script>
+<script src="/js/docmail.js?v=20261104"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -4418,7 +4418,7 @@
               <textarea class="input" id="nemSubject" rows="1" data-oneline maxlength="200" aria-required="true" data-nodraft></textarea></div></div>
             <div class="row"><div><label class="field-label" for="nemBody">Message</label>
               <textarea class="textarea" id="nemBody" rows="10" maxlength="5000" aria-required="true" aria-describedby="nemFields" data-nodraft></textarea>
-              <p class="asknote" id="nemFields">{contact name}, {company name} and {sender name} are filled when the email is sent.</p></div></div>
+              <p class="asknote" id="nemFields">{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled in when the email is sent.</p></div></div>
             <div class="row"><div><span class="field-label" id="nemFileLabel">Attachment</span>
               <div class="dm-attach nem-attach" role="group" aria-labelledby="nemFileLabel">
                 <span id="nemFileName">None</span>
@@ -6220,16 +6220,16 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/smreport.js?v=20261103e"></script>
 <script src="/js/reports.js?v=20261103l"></script>
 <script src="/js/register.js?v=20261103l"></script>
-<script src="/js/suppliers.js?v=20261104k"></script>
+<script src="/js/suppliers.js?v=20261104l"></script>
 <script src="/js/bukku.js?v=20261031w"></script>
-<script src="/js/invoices.js?v=20261104k"></script>
+<script src="/js/invoices.js?v=20261104m"></script>
 <script src="/js/engage.js?v=20261103l"></script>
 <script src="/js/quotes.js?v=20261104e"></script>
 <script src="/js/quotepdf.js?v=20261104e"></script>
 <script src="/js/checklists.js?v=20261031w"></script>
 <script src="/js/crm.js?v=20261104k"></script>
 <script src="/js/sales.js?v=20261025a"></script>
-<script src="/js/team.js?v=20261104f"></script>
+<script src="/js/team.js?v=20261104g"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
 <script src="/js/scripts.js?v=20261103l"></script>

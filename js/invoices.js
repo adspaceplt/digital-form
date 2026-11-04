@@ -42,8 +42,8 @@
     'nothing-overdue': 'These invoices are no longer overdue.',
     'nothing-unpaid': 'This invoice is paid or voided in Bukku, so it was not sent.',
     sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
-    'bad-subject': 'The subject must be 2 to 200 characters.',
-    'bad-body': 'The message must be 2 to 5,000 characters.',
+    'bad-subject': 'Enter a subject of 2 to 200 characters.',
+    'bad-body': 'Enter a message of 2 to 5,000 characters.',
     'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
     'too-long': 'The legal note and the disclaimer hold 1,000 characters each.',
     'not-sent': 'Not sent. Resend refused the email.',
@@ -461,7 +461,7 @@
       }).join('') + '</div></div>' : '';
     pv.innerHTML = '<div class="inv-rv-head"><dl class="ovfacts">' +
         (g.pick && !d ? toPick(g) :
-        '<dt>To</dt><dd>' + (to ? esc((whoOf(g) ? whoOf(g) + ' · ' : '') + to) : '<span class="err-ink">No email address on record</span>') + '</dd>' +
+        '<dt>To</dt><dd>' + (to ? esc((whoOf(g) ? whoOf(g) + ' · ' : '') + to) : '<span class="err-ink">No email address held</span>') + '</dd>' +
         (g.pick ? (g.pick.ccs.length ? '<dt>Copy</dt><dd>' + g.pick.ccs.map(esc).join('<br>') + '</dd>' : '') :
           cc ? '<dt>Copy</dt><dd><label class="tickline"><input type="checkbox" data-cc' + (g.cc ? ' checked' : '') + '> ' + esc(cc) + '</label></dd>' : '')) +
         /* Edit changes the subject and the message, so it stands on the
@@ -579,7 +579,7 @@
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
-        if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', copy to ' + d.cc : '') + '.' + paid };
+        if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', with a copy to ' + d.cc : '') + '.' + paid };
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
              Send again for this client alone. */
