@@ -8113,3 +8113,28 @@ insert already did), locks a BRN's digits before its check, and widens AI
 usage's people; `ops.js` sets the name as it is. `entitysql` holds the
 guard both ways and the lock with two sessions; `smsql` the people.
 
+### 2026-11-04 · Industries kept in Settings
+The user asked whether industry could be a setting ("currently its
+hardcoded?"): the nine stood typed in the console's pickers, the quotation
+website (with their Chinese words) and `quote_website_create`'s check,
+three copies to change together. Asked how a rename treats clients already
+in it, the user chose A, every client moving with it, so the Clients list
+and Analytics never hold two names for one industry. INDUSTRIES keeps the
+list, seeded with the nine and any other industry a client held (none
+live), each with its Chinese name and whether the website offers it;
+Delete is the SQL Editor part. The website shows each name as Settings
+keeps it, so the seed takes Food and beverage and Technology, the names the
+website gave F&B and Tech (the copy review: a prospect reads formal English),
+and the clients holding the short names move with them as a rename does.
+`sql`, `industries` and `quotesite` hold it.
+The first build (active, on the website, an order, a ⋯ of Move up, Move
+down, Set inactive and Delete, Edit as a question) read to the user as too
+complex ("it could be easier modern and simpler"). Shown three mockups,
+they chose the editable list, laid as four columns: English, 中文, Clients
+and the pen. So the list is A to Z with Other last, every industry is
+offered everywhere, and the row is edited where it is read. Delete stands
+in the open row, not in a ⋯, as a departure from DESIGN.md §5 for a list of
+names with nothing else to act on; it shows only for an industry no client
+holds and still asks. A rename onto a name already held is refused rather
+than merged, which would need a delete in the connector's part.
+

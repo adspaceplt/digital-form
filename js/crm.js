@@ -209,8 +209,28 @@
      clients card shut on Monday is shut on Tuesday. */
   var GRP = window.ADspaceGroup;
   function bandShut(key, lone) { return GRP.shut('clients', key, SHUT_BY_DEFAULT[key], lone); }
-  var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
-                    'Automotive', 'Tech', 'Education', 'Other'];
+  /* The industries a client is put in, from the list kept in Settings
+     (`industries_list`, 2026-11-04): A to Z with Other last, read once a
+     visit as the form first opens. */
+  var industries = { rows: null, asked: null };
+  function readIndustries() {
+    if (!industries.asked) {
+      industries.asked = db.rpc('industries_list').then(function (r) {
+        if (r.error || !Array.isArray(r.data)) throw r.error || new Error('industries');
+        industries.rows = r.data;
+      }).catch(function () { industries.asked = null; });
+    }
+    return industries.asked;
+  }
+  /* The picker holds the list, and the one this client holds where the
+     list no longer does, so a save never clears it. */
+  function fillIndustry(keep) {
+    var on = (industries.rows || []).map(function (i) { return i.name; });
+    if (keep && on.indexOf(keep) < 0) on.push(keep);
+    $('crmIndustry').innerHTML = '<option value="">Not set</option>' +
+      on.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');
+    $('crmIndustry').value = keep || '';
+  }
   var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
   var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
                     whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
@@ -904,7 +924,16 @@
     state.editing = c || null;
     $('crmFormTitle').textContent = c ? 'Edit client' : 'Add lead';  // the bar's words (2026-11-03)
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
+    fillIndustry(c && c.industry);
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
+    if (!industries.rows) {
+      var forId = c ? c.id : null;
+      readIndustries().then(function () {
+        if ((state.editing ? state.editing.id : null) !== forId || !industries.rows) return;
+        var now = $('crmIndustry').value;
+        fillIndustry(now || (c && c.industry));
+      });
+    }
     // Rebuilt against this record, so an owner who has since left the team is
     // still the option that is selected rather than silently cleared on save.
     /* A new lead starts in the hands of whoever keys it in; they change it
@@ -7899,8 +7928,7 @@
   /* The lead's industry is a stored value, so its unset choice is empty and
      saves as null: the filter idiom's `all` here showed a blank select on a
      new lead and saved "all" as the industry when Not set was picked. */
-  $('crmIndustry').innerHTML = '<option value="">Not set</option>' +
-    INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');
+  fillIndustry('');
   fillSelect($('crmSource'), SOURCES);
   /* Not fillSelect's "all" option: that is the filter idiom, and here the empty
      choice is a value that gets stored, so it is an empty string and saves as
@@ -7911,6 +7939,8 @@
     }).join('');
 
   window.ADspaceCRM = {
+    /* Settings' Industries changed the list: the next form reads it again. */
+    industriesReload: function () { industries.rows = null; industries.asked = null; },
     sourceWord: sourceWord,
     /* The rate card's wording, from Settings' Templates (2026-10-29). */
     openWording: openWording,

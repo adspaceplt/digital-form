@@ -105,6 +105,13 @@
           plural(inp, 'in the prize', 'in the prize')]);
       });
     },
+    /* What the Industries row holds (2026-11-04). */
+    industries: function () {
+      return db.rpc('industries_list').then(function (r) {
+        if (r.error || !Array.isArray(r.data)) throw r.error || new Error('industries');
+        return plural(r.data.length, 'industry', 'industries');
+      });
+    },
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
     /* Overdue reminder (2026-10-28): who last changed the words. */
     overdue: function () { return window.ADspaceInvoices && window.ADspaceInvoices.templateLine(); },
@@ -223,6 +230,8 @@
       biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo') }]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', [
+      /* The industries a client is put in (2026-11-04). */
+      biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries') },
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
         meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
           num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
@@ -516,6 +525,7 @@
     if (a === 'holidays') { openHol(btn); return; }
     if (a === 'demo') { openDemo(); return; }
     if (a === 'depts') { openDepts(btn); return; }
+    if (a === 'industries') { openInd(btn); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
@@ -806,6 +816,143 @@
       if (k === 'active') depActive(d);
       if (k === 'delete') depDelete(d);
     });
+  }
+
+  /* ---- Industries (2026-11-04) ------------------------------------------
+     The industries a client is put in (the user, 2026-11-04: "can do a
+     setting for industry?"): the console's pickers and the quotation
+     website read this list. One table, A to Z with Other last (the user:
+     "option 1 ... 3 or 4 columns": English, 中文, Clients, the pen): the
+     pen turns its row into the two fields, a rename carrying onto every
+     client holding the old name ("A"); Delete stands in that row only for
+     an industry no client holds; the last row adds one. */
+  var ind = { rows: null, err: null, editing: null };
+  var IND_SAID = {
+    denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
+    'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
+    'not-found': 'This industry no longer exists. The latest list is now shown.'
+  };
+  function indSaid(r) {
+    var d = r && r.data, e = r && (r.error || (d && d.error));
+    if (!e) return '';
+    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    if (e === 'in-use') return (d.clients === 1 ? '1 client is in this industry. Move it' : plural(d.clients || 0, 'client', 'clients') + ' are in this industry. Move them') + ' to another industry first.';
+    return IND_SAID[e] || (r && r.deleting ? 'Not deleted. Please try again.' : 'Not saved. Please try again.');
+  }
+  function indMsg(text, tone) { var m = $('indMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
+  function readInd(done) {
+    db.rpc('industries_list').then(function (r) {
+      if (r.error || !Array.isArray(r.data)) throw r.error || new Error((r.data && r.data.error) || 'industries');
+      ind.rows = r.data; ind.err = null;
+    }).catch(function (e) { ind.rows = null; ind.err = e; }).then(function () { if (done) done(); });
+  }
+  function indChanged(text, focus) {
+    ind.editing = null;
+    readInd(function () {
+      paintInd(); readLine('industries'); indMsg(text, 'ok');
+      if (window.ADspaceCRM && window.ADspaceCRM.industriesReload) window.ADspaceCRM.industriesReload();
+      var f = focus && $(focus); if (f) f.focus();
+    });
+  }
+  function indOne(name) { return (ind.rows || []).filter(function (x) { return x.name === name; })[0]; }
+  /* The figure alone under its Clients head; the word too where the heads
+     leave (a phone). */
+  function indCount(n) { return '<span class="ind-n">' + (n || 0) + '<span class="ind-unit"> ' + (n === 1 ? 'client' : 'clients') + '</span></span>'; }
+  function paintInd() {
+    var box = $('indList');
+    if (!box) return;
+    if (ind.err) {
+      window.ADspaceState.failLine(box, 'Industries', (ind.err && ind.err.message) || '', function () { readInd(paintInd); });
+      return;
+    }
+    if (!ind.rows) { window.ADspaceState.skeleton(box, 3); return; }
+    $('indCount').textContent = plural(ind.rows.length, 'industry', 'industries');
+    var rows = ind.rows.map(function (i) {
+      if (i.name === ind.editing) {
+        return '<div class="ind-row is-edit" data-name="' + esc(i.name) + '">' +
+          '<input class="input input-sm" id="indEdName" maxlength="40" aria-label="Industry in English" value="' + esc(i.name) + '">' +
+          '<input class="input input-sm" id="indEdZh" maxlength="40" aria-label="Industry in Chinese" value="' + esc(i.name_zh || '') + '">' +
+          indCount(i.clients) +
+          (i.clients ? '<p class="ind-note">Renaming it also changes the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
+          '<span class="ind-acts">' +
+            (i.clients ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
+            '<button class="btn btn-quiet btn-sm" type="button" data-i="cancel">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" type="button" data-i="save">Save</button></span>' +
+          '</div>';
+      }
+      return '<div class="ind-row" data-name="' + esc(i.name) + '">' +
+        '<span class="ind-name">' + esc(i.name) + '</span>' +
+        '<span class="ind-zh">' + (i.name_zh ? esc(i.name_zh) : '<span class="ind-none">—</span>') + '</span>' +
+        indCount(i.clients) +
+        '<span class="ind-acts"><button class="iconbtn" type="button" data-i="edit" aria-label="Edit ' + esc(i.name) + '" title="Edit">' + PEN + '</button></span></div>';
+    }).join('');
+    box.innerHTML = '<div class="ind-row ind-head" aria-hidden="true"><span>English</span><span>中文</span><span>Clients</span><span></span></div>' + rows +
+      '<div class="ind-row ind-add">' +
+        '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Hospitality" aria-label="New industry in English">' +
+        '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="酒店业" aria-label="New industry in Chinese">' +
+        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">Add</button></span></div>';
+    if (ind.editing) { var f = $('indEdName'); if (f) f.focus(); }
+  }
+  function indSave(was) {
+    var nm = $(was ? 'indEdName' : 'indNewName'), zh = $(was ? 'indEdZh' : 'indNewZh');
+    var name = (nm.value || '').replace(/\s+/g, ' ').trim();
+    if (!name) { indMsg('Enter the industry\'s name.'); nm.focus(); return; }
+    var btn = $('indList').querySelector(was ? '.is-edit [data-i="save"]' : '[data-i="add"]');
+    if (btn) btn.disabled = true;
+    db.rpc('industry_save', { p_was: was || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
+      var said = indSaid(r);
+      if (said) { indMsg(said); if (btn) btn.disabled = false; nm.focus(); return; }
+      var moved = r.data && r.data.clients;
+      indChanged(!was ? 'Added.' : moved ? 'Saved. ' + plural(moved, 'client', 'clients') + ' updated.' : 'Saved.', was ? null : 'indNewName');
+    }).catch(function (e) { indMsg((e && e.message) || 'Not saved. Please try again.'); if (btn) btn.disabled = false; });
+  }
+  function indDelete(i) {
+    window.ADspaceConfirm.ask({ title: 'Delete', body: i.name + ' will be deleted from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
+      function () {
+        return db.rpc('industry_delete', { p_name: i.name }).then(function (r) {
+          if (r) r.deleting = true;
+          var said = indSaid(r);
+          if (said) return said;
+          indChanged('Deleted.');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
+      });
+  }
+  function openInd(opener) {
+    if (!biz()) return;
+    indMsg(''); ind.editing = null;
+    paintInd();
+    window.ADspaceSheet.show($('indSheet'), { opener: opener });
+    readInd(paintInd);
+  }
+  var indWired = false;
+  function wireInd() {
+    if (indWired || !$('indSheet')) return;
+    indWired = true;
+    $('indCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('indClose').addEventListener('click', function () { $('indCancel').click(); });
+    var list = $('indList');
+    list.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-i]');
+      if (!b) return;
+      var k = b.getAttribute('data-i'), row = b.closest('.ind-row'), name = row && row.getAttribute('data-name');
+      if (k === 'add') { indMsg(''); indSave(null); return; }
+      var i = indOne(name);
+      if (!i) return;
+      if (k === 'edit') { indMsg(''); ind.editing = i.name; paintInd(); }
+      else if (k === 'cancel') { ind.editing = null; paintInd(); var p = list.querySelector('.ind-row[data-name="' + CSS.escape(i.name) + '"] [data-i="edit"]'); if (p) p.focus(); }
+      else if (k === 'save') indSave(i.name);
+      else if (k === 'delete') indDelete(i);
+    });
+    /* Enter saves the row it is typed in, Escape leaves an edit (before the
+       sheet's own capture hears it). */
+    window.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      var row = e.target.closest && list.contains(e.target) && e.target.closest('.ind-row');
+      if (!row || e.target.tagName !== 'INPUT') return;
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (row.classList.contains('ind-add')) indSave(null); else indSave(row.getAttribute('data-name')); }
+      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-i="cancel"]').click(); }
+    }, true);
   }
 
   /* ---- Page availability (2026-10-29) ------------------------------------
@@ -1220,6 +1367,7 @@
   }
   wireHol();
   wireDeps();
+  wireInd();
   wirePg();
   /* A press outside a list's ⋯ shuts it: one listener for every list. */
   document.addEventListener('click', function (e) {

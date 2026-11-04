@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261104e">
-<link rel="stylesheet" href="/css/console.css?v=20261104k">
+<link rel="stylesheet" href="/css/console.css?v=20261104r">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -5721,6 +5721,25 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- Industries (2026-11-04): the list a client's industry is chosen from. -->
+<div class="sheet" id="indSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="indHead">
+    <div class="sheet-head">
+      <h3 id="indHead">Industries</h3>
+      <button class="iconbtn" id="indClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="indMsg" role="status"></p>
+      <div class="tax-bar"><span class="tax-count" id="indCount"></span></div>
+      <div id="indList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="indCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <!-- Page availability (2026-10-29): Upgrade mode a page at a time. -->
 <div class="sheet" id="pgSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pgHead">
@@ -6228,7 +6247,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261104n"></script>
 <script src="/js/quotepdf.js?v=20261104e"></script>
 <script src="/js/checklists.js?v=20261031w"></script>
-<script src="/js/crm.js?v=20261104p"></script>
+<script src="/js/crm.js?v=20261104r"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261104i"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
@@ -6243,6 +6262,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261031w"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261104j"></script>
+<script src="/js/settings.js?v=20261104r"></script>
 </body>
 </html>
