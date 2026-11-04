@@ -883,7 +883,12 @@ screenshotted, and the push names any line it could not settle.
    2026-10-31: "sometimes are cut short due to the width compatibility").
 11. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
-   can never return, and its rule joins this section.
+   can never return, and its rule joins this section; a kind of wording
+   joins its PATTERNS, and a line said on two screens joins
+   `ADspaceWords.line` and is read from there.
+12. **A second reader.** The writer's own read is not the check: before
+   merge the `/copy-review` skill hands the change's new words, with this
+   section alone, to a reader who did not write them (CLAUDE.md §1).
 
 ## 7. Architecture
 - The Dashboard sits alone above the two chunks, with no label, drawn only for

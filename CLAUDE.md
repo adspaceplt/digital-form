@@ -384,7 +384,16 @@ added to all three in the same push.
 - Before a push, every word the diff puts in front of a person is drafted
   and checked by DESIGN.md §6, How copy is drafted, and `tests/words.js`
   passes (a word the user rejects is added to it in the same push); copy is
-  never left for the user to review (2026-10-29).
+  never left for the user to review (2026-10-29). Before the merge, those
+  words are read by a second reader: the `/copy-review` skill lists them
+  (`tests/copyscan.js`) and hands them, with §6 alone, to a fresh agent
+  that did not build the change; every finding is fixed or answered, and
+  the PR's Test plan names the review (2026-11-04, the user: "every new
+  build didnt follow your tone etc. rules"). A line two screens say lives
+  once in `ADspaceWords.line` (`js/words.js`); `tests/words.js` fails a
+  script that types one, and its PATTERNS stop kinds of wording (a system
+  word, a refusal that is no instruction, a tab named wrongly), not only
+  phrases already met.
 - A word table holds one key a word: a new field's label takes a key of
   its own, grepped in the table first (2026-10-29: /quote/'s Planned
   commencement took `start`, and the opening page's Start button read it).

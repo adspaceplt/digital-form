@@ -3095,8 +3095,8 @@
       var d = r.data || {};
       if (d.error === 'brn-taken' && d.entity) {
         window.ADspaceConfirm.ask({
-          title: 'Registration no. already on record', go: 'Add that entity', wait: true,
-          body: d.entity.legal_name + ' holds this business registration no. Add it to ' + state.client.name + ' instead?'
+          title: 'Registration no. already in use', go: 'Add that entity', wait: true,
+          body: d.entity.legal_name + ' already uses this business registration no. Add that entity to ' + state.client.name + ' instead?'
         }, function () {
           return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
             if (u.error || (u.data && u.data.error)) return entSaid(u);

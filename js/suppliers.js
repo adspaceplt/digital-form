@@ -48,9 +48,9 @@
     'incomplete': 'Approve once the details, the payment term and the bank account are saved.',
     'no-email': 'Save the supplier\'s email first.', 'not-active': 'Approve the supplier first.',
     'bad-document': 'That letter is void or no longer this supplier\'s.', 'bad-purpose': 'Choose a template.',
-    'bad-subject': 'Enter a subject of 2 to 200 characters.', 'bad-body': 'Enter a message of 2 to 5,000 characters.',
+    'bad-subject': window.ADspaceWords.line.subject, 'bad-body': window.ADspaceWords.line.message,
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
-    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.', 'not-sent': 'Not sent. Try again.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.',
     'no-client': 'This client no longer exists or is outside your clients.',
     'no-link': 'No link is open.'
@@ -611,7 +611,7 @@
         var st = MAIL_STATE[e.status] || [e.status, ''];
         return '<div><dt>' + esc(day(e.created_at)) + '</dt><dd>' + esc(e.subject) +
           ' <span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-          '<span class="sup-mail-meta">' + (e.to ? 'To ' + esc(e.to) : 'Address deleted') + (e.cc ? ', with a copy to ' + esc(e.cc) : '') + (e.document && e.purpose === 'message' ? ' · ' + esc(e.document) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
+          '<span class="sup-mail-meta">' + (e.to ? esc(window.ADspaceWords.line.sendTo(e.to, e.cc)) : window.ADspaceWords.line.addrGone) + (e.document && e.purpose === 'message' ? ' · ' + esc(e.document) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
       }).join('') + '</dl>';
     });
   }
@@ -722,7 +722,7 @@
     if (mail.asked) { sendMail(false); return; }
     var cc = !$('supMailCcLine').hidden && $('supMailCc').checked;
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
-      body: 'To ' + p.to.email + (cc ? ', with a copy to ' + p.cc : '') + '.' }, function () { sendMail(false); });
+      body: window.ADspaceWords.line.sendTo(p.to.email, cc && p.cc) + '.' }, function () { sendMail(false); });
   }
   function shutMail() {
     $('supMailSheet').hidden = true;

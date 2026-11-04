@@ -294,5 +294,22 @@
   W.emailOk = function (v) {
     return /^[^\s@,;:<>"'()\[\]\\]+@[^\s@,;:<>"'()\[\]\\]+\.[a-z]{2,}$/i.test(String(v == null ? '' : v).trim());
   };
+  /* The console's standard lines (2026-11-04, the user: "every new build
+     didnt follow your tone"): a line two screens say is written once here
+     and read by each, never typed again (`tests/words.js` fails a script
+     that types one). A new line said on a second screen joins it. */
+  W.line = {
+    subject: 'Enter a subject of 2 to 200 characters.',
+    message: 'Enter a message of 2 to 5,000 characters.',
+    mailOff: 'Email is not set up yet. Please contact an admin.',
+    addrGone: 'Address deleted',
+    addrGoneWhen: 'Deleted after 12 months',
+    bodyGone: 'The message was deleted after 12 months.',
+    /* Who an email goes to: "To x, with a copy to y, with f attached"
+       (no full stop; the caller ends the sentence). */
+    sendTo: function (to, cc, file, lead) {
+      return (lead || 'To') + ' ' + to + (cc ? ', with a copy to ' + cc : '') + (file ? ', with ' + file + ' attached' : '');
+    }
+  };
   window.ADspaceWords = W;
 })();

@@ -2002,7 +2002,7 @@
   function reinvite(m) {
     // The ⋯ it was chosen from would otherwise sit open over the answer.
     shutMenus();
-    if (!m.email) { msg('teamMsg', m.name + ' has no email on record.', 'err'); return; }
+    if (!m.email) { msg('teamMsg', m.name + ' has no email address.', 'err'); return; }
     window.ADspaceConfirm.ask({
       title: 'Send an invitation',
       body: 'An email goes to ' + m.email + ' with a sign-in link. '
