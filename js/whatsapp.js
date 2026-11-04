@@ -1279,7 +1279,13 @@
     taken: 'A template with this name already exists.'
   };
   var NE_EXT = /\.(pdf|png|jpe?g|webp|docx?|xlsx?|pptx?|csv)$/i;
-  function neSaid(e) { var c = (e && (e.code || e.error)) || e; return NE_SAID[c] || said(e); }
+  /* A key filed before whose email was never confirmed reads as not
+     confirmed, never as sent (audit 2026-11-04). */
+  function neSaid(e) {
+    var c = (e && (e.code || e.error)) || e;
+    if (c === 'again' && e && /^(sending|unknown|failed)$/.test(String(e.status || ''))) return NE_SAID['not-confirmed'];
+    return NE_SAID[c] || said(e);
+  }
   function neMsg(t, tone) { $('nemMsg').textContent = t || ''; $('nemMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
   function neKey() {
     var a = new Uint8Array(12);
@@ -1300,7 +1306,7 @@
     $('nemToTyped').value = pre.audience === 'other' ? pre.to || '' : '';
     $('nemCcTyped').value = pre.audience === 'other' && pre.ccs && pre.ccs[0] ? pre.ccs[0] : '';
     $('nemFile').value = '';
-    neMsg('');
+    neMsg(''); $('nemToNote').hidden = true;
     $('nemSend').disabled = false;
     neFile();
     neFor();
@@ -1360,6 +1366,14 @@
         if (pr.to && ne.opts.some(function (o) { return o.email.toLowerCase() === pr.to.toLowerCase(); })) {
           $('nemTo').value = ne.opts.filter(function (o) { return o.email.toLowerCase() === pr.to.toLowerCase(); })[0].email;
           neCc();
+        } else if (pr.to && ne.opts.length) {
+          /* Sent again to an address the record no longer holds: no other
+             address is taken in its place unasked (review 2026-11-04). */
+          $('nemTo').insertAdjacentHTML('afterbegin', '<option value="" selected>Choose an address</option>');
+          $('nemTo').value = '';
+          neCc();
+          $('nemToNote').textContent = pr.to + ' is no longer listed for this ' + (aud === 'supplier' ? 'supplier' : 'client') + '. Choose another address.';
+          $('nemToNote').hidden = false;
         }
         Array.prototype.forEach.call($('nemCc').querySelectorAll('input'), function (b) {
           if ((pr.ccs || []).some(function (e) { return e.toLowerCase() === b.value.toLowerCase(); })) b.checked = true;
@@ -1411,6 +1425,7 @@
     } else {
       if (!party) { neMsg(aud === 'supplier' ? 'Choose a supplier.' : 'Choose a client.', 'err'); $('nemParty').focus(); return; }
       to = $('nemTo').value;
+      if (!to && ne.opts.length) { neMsg('Choose an address.', 'err'); $('nemTo').focus(); return; }
       if (!to) { neMsg(aud === 'supplier' ? 'This supplier has no email address. Add one to the supplier first.' : 'This client has no email address. Add one to its contacts first.', 'err'); return; }
       ccs = Array.prototype.map.call($('nemCc').querySelectorAll('input:checked'), function (b) { return b.value; });
     }
@@ -1432,10 +1447,11 @@
         var d = res && res.data;
         if (!d && res && res.error) return API.fnRefusal(res).then(function (code) { throw { code: code || 'failed' }; });
         ne.key = neKey();
-        if (!d || d.error) throw { code: (d && d.error) || 'failed' };
+        if (!d || d.error) throw { code: (d && d.error) || 'failed', status: d && d.status };
         done();
         window.ADspaceSheet.close();
         mlLoad();
+        try { window.dispatchEvent(new CustomEvent('adspace:email-sent', { detail: { audience: aud, party: party } })); } catch (x) {}
       }).catch(function (e) { done(); neMsg(neSaid(e), 'err'); });
     });
   }
@@ -1444,7 +1460,7 @@
     ne.wired = true;
     $('nemFor').addEventListener('change', neFor);
     $('nemParty').addEventListener('change', neRecipients);
-    $('nemTo').addEventListener('change', neCc);
+    $('nemTo').addEventListener('change', function () { if ($('nemTo').value) $('nemToNote').hidden = true; neCc(); });
     $('nemCc').addEventListener('change', neCcCap);
     $('nemTpl').addEventListener('change', neTpl);
     $('nemFilePick').addEventListener('click', function () { $('nemFile').click(); });

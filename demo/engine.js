@@ -10430,18 +10430,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .map(function (x) { return { id: x.id, name: x.name, code: x.code }; }) : [];
         return emOk({ clients: cls, suppliers: sps });
       }
+
+      var emCl = function (cid) {
+        return invOptions(cid, null).filter(function (o) {
+          if (o.finance) return opsAllowed('clients.billing', 'view');
+          return (DB.client_contacts || []).some(function (k) { return k.client_id === cid && !k.archived_at && String(k.email || '').trim().toLowerCase() === String(o.email || '').toLowerCase(); });
+        });
+      };
       if (name === 'email_recipients') {
-        if (args.p_client) { if (!opsAllowed('clients.contacts', 'view')) return emNo('denied'); if (!scopeSeen(args.p_client, 'view')) return emNo('not-found'); return emOk({ options: invOptions(args.p_client, null) }); }
+        if (args.p_client) { if (!opsAllowed('clients.contacts', 'view')) return emNo('denied'); if (!scopeSeen(args.p_client, 'view')) return emNo('not-found'); return emOk({ options: emCl(args.p_client) }); }
         if (args.p_supplier) { if (!opsAllowed('suppliers', 'view')) return emNo('denied'); return emOk({ options: emSup(args.p_supplier) }); }
         return emNo('bad-request');
       }
       if (name === 'email_new_begin') {
         var aud = args.p_audience;
         if (['client', 'supplier', 'other'].indexOf(aud) < 0 || !/^[A-Za-z0-9_-]{8,64}$/.test(String(args.p_idem || ''))) return emNo('bad-request');
-        if (DB.team_emails.some(function (e) { return e.sent_by === emMe.id && e.idem === args.p_idem; })) return emNo('again');
+        var ag0 = DB.team_emails.filter(function (e) { return e.sent_by === emMe.id && e.idem === args.p_idem; })[0];
+        if (ag0) return Promise.resolve({ data: { error: 'again', status: ag0.status }, error: null });
         var cl0 = null, sp0 = null, opts0 = [];
         if (aud === 'client' && !opsAllowed('clients.contacts', 'view')) return emNo('denied');
-        if (aud === 'client') { cl0 = (DB.clients || []).filter(function (x) { return x.id === args.p_client; })[0]; if (!cl0 || !scopeSeen(cl0.id, 'view')) return emNo('not-found'); opts0 = invOptions(cl0.id, null); }
+        if (aud === 'client') { cl0 = (DB.clients || []).filter(function (x) { return x.id === args.p_client; })[0]; if (!cl0 || !scopeSeen(cl0.id, 'view')) return emNo('not-found'); opts0 = emCl(cl0.id); }
         if (aud === 'supplier') { if (!opsAllowed('suppliers', 'view')) return emNo('denied'); sp0 = (DB.suppliers || []).filter(function (x) { return x.id === args.p_supplier; })[0]; if (!sp0) return emNo('not-found'); opts0 = emSup(sp0.id); }
         var optOf0 = function (e) { e = String(e || '').trim().toLowerCase(); return opts0.filter(function (o) { return o.email.toLowerCase() === e; })[0] || null; };
         var to0, who0;
@@ -10454,7 +10462,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!e0 || (aud === 'other' && !EMOK.test(e0)) || seen0[e0.toLowerCase()] || e0.toLowerCase() === to0.toLowerCase()) return emNo('bad-copy');
           seen0[e0.toLowerCase()] = 1; got0.push(e0);
         }
-        var vals0 = { 'contact name': who0, 'client name': cl0 ? cl0.name : '', 'company name': cl0 ? (cl0.legal_name || cl0.name) : sp0 ? sp0.name : '',
+        var vals0 = { 'contact name': who0, 'client name': cl0 ? cl0.name : '', 'company name': cl0 ? ((opsAllowed('clients.billing', 'view') && cl0.legal_name) || cl0.name) : sp0 ? sp0.name : '',
           'supplier name': sp0 ? sp0.name : '', 'sender name': emMe.name };
         var fill0 = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals0[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
         var sj0 = fill0(args.p_subject).replace(/\s+/g, ' ').trim(), bd0 = fill0(args.p_body).replace(/\r/g, '').trim();
@@ -10474,9 +10482,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         te0.status = args.p_status; te0.provider_id = args.p_provider || null; te0.error = args.p_error || null;
         te0.sent_at = args.p_status === 'sent' ? new Date().toISOString() : null;
         var subj0 = (te0.client_id && ((DB.clients || []).filter(function (x) { return x.id === te0.client_id; })[0] || {}).name) ||
-          (te0.supplier_id && ((DB.suppliers || []).filter(function (x) { return x.id === te0.supplier_id; })[0] || {}).name) || te0.to_email;
+          (te0.supplier_id && ((DB.suppliers || []).filter(function (x) { return x.id === te0.supplier_id; })[0] || {}).name) || 'Other recipient';
+
+        var ncc0 = te0.cc_email ? String(te0.cc_email).split(', ').length : 0;
         DB.activity_log.unshift({ id: nid('al'), actor: emMe.name, action: 'email.sent', subject: subj0,
-          detail: te0.subject + ' · emailed to ' + te0.to_email + (te0.cc_email ? ', copy to ' + te0.cc_email : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
+          detail: te0.subject + ({ sent: ' · emailed to ', unknown: ' · emailed, not confirmed, to ' }[args.p_status] || ' · not emailed to ') +
+            (te0.to_name || ({ client: 'the client', supplier: 'the supplier' }[te0.audience] || 'an address outside the portal')) +
+            (ncc0 === 1 ? ', with a copy to 1 other' : ncc0 > 1 ? ', with a copy to ' + ncc0 + ' others' : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
         return emOk();
       }
     }
@@ -11389,10 +11401,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           k = ppl.filter(function (x) { return x.id === args.p_contact; })[0];
           if (!k) return { error: 'bad-contact' };
         }
-        var cc = String(c.finance_email || '').trim() || null;
+        var cc = opsAllowed('clients.billing', 'view') ? String(c.finance_email || '').trim() || null : null;
         if (cc && (cc.toLowerCase() === String(k.email).trim().toLowerCase() || !cmMail.test(cc))) cc = null;
         var tp = DB.client_email_templates.filter(function (t) { return t.kind === kind; })[0];
-        var v = { 'contact name': cmNamed(k), 'client name': c.name, 'company name': c.legal_name || c.name, 'document title': title,
+        var v = { 'contact name': cmNamed(k), 'client name': c.name, 'company name': (opsAllowed('clients.billing', 'view') && c.legal_name) || c.name, 'document title': title,
           'document reference': sref, 'document date': cmLong(dday), 'valid until': cmLong(valid), 'sender name': cmMe.name };
         var rec = DB.client_emails.filter(function (e) { return e.kind === kind && e.ref_id === ref && e.status !== 'failed' && Date.parse(e.created_at) > Date.now() - 24 * 3600e3; })
           .sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
@@ -11426,8 +11438,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cdc = (DB.clients || []).filter(function (x) { return x.id === cdr.client_id; })[0];
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'client.edited', subject: cdc ? cdc.name : 'Client',
           detail: ({ quotation: 'Quotation ', offer: 'Letter of Offer ' }[cdr.kind] || '') + cdr.reference +
-            (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed, not confirmed, to ' : ' not emailed to ') + cdr.to_email +
-            (cdr.cc_email ? ', copy to ' + cdr.cc_email : ''), created_at: new Date().toISOString() });
+            (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed, not confirmed, to ' : ' not emailed to ') +
+            ((function () { var k = (DB.client_contacts || []).filter(function (x) { return x.client_id === cdr.client_id && String(x.email || '').trim().toLowerCase() === String(cdr.to_email || '').trim().toLowerCase(); })[0]; return k ? cmNamed(k) : 'the client'; })()) +
+            (cdr.cc_email ? ' with a copy to the finance email' : ''), created_at: new Date().toISOString() });
         persist();
         return spOk();
       }

@@ -1119,7 +1119,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) { state.contacts = []; state.contactsFor = null; state.log = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
+    if (!same) { state.contacts = []; state.contactsFor = null; state.emailsFor = null; state.log = []; state.ovFail = {}; state.quotes = null; ba.id = null; if ($('crmQuotes')) $('crmQuotes').hidden = true; }
     /* A record opens at its top. Opened from a list scrolled down, it kept
        the list's scroll and drew halfway down its own page (2026-09-28). A
        refresh restores its own place (`restoring`). */
@@ -4477,12 +4477,16 @@
       ADspaceAdmin.may('whatsapp', 'work') && mayPart('clients.contacts', 'view'));
   }
   /* The emails written to this client (`team_emails_of`): one read a visit
-     to the pane, a row opening the email as the log does. */
-  function loadEmails() {
+     to the record, and again after an email is sent from it; a contact
+     saved repaints the Contacts and reads nothing again (review
+     2026-11-04). A row opens the email as the log does. */
+  function loadEmails(again) {
     var head = $('crmEmailsHead'), box = $('crmEmails'), id = state.client && state.client.id;
     var canLog = window.ADspaceWhatsApp && window.ADspaceWhatsApp.emailRow && mayPart('clients.contacts', 'view');
     $('crmNewEmail').hidden = !mayMail();
     if (!canLog || !id) { head.hidden = box.hidden = true; return; }
+    if (!again && state.emailsFor === id) return;
+    state.emailsFor = id;
     db.rpc('team_emails_of', { p_client: id }).then(function (r) {
       if (!state.client || state.client.id !== id) return;
       if (r.error || (r.data && r.data.error)) {
@@ -4490,7 +4494,8 @@
         var m = r.error ? r.error.message : r.data.error;
         if (/denied|could not find|does not exist|PGRST202/i.test(m)) { head.hidden = box.hidden = true; return; }
         head.hidden = box.hidden = false;
-        failLine(box, 'Emails', m, loadEmails);
+        state.emailsFor = null;
+        failLine(box, 'Emails', m, function () { loadEmails(true); });
         return;
       }
       var rows = (r.data && r.data.rows) || [];
@@ -4506,6 +4511,10 @@
       box.appendChild(table);
     });
   }
+  window.addEventListener('adspace:email-sent', function (e) {
+    var d = e.detail || {};
+    if (state.client && d.audience === 'client' && d.party === state.client.id) loadEmails(true);
+  });
   $('crmNewEmail').addEventListener('click', function () {
     window.ADspaceWhatsApp.newEmail($('crmNewEmail'), { audience: 'client', party: state.client && state.client.id });
   });
