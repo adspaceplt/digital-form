@@ -8113,3 +8113,17 @@ insert already did), locks a BRN's digits before its check, and widens AI
 usage's people; `ops.js` sets the name as it is. `entitysql` holds the
 guard both ways and the lock with two sessions; `smsql` the people.
 
+### 2026-11-04 · Industries kept in Settings
+The user asked whether industry could be a setting ("currently its
+hardcoded?"): the nine stood typed in the console's pickers, the quotation
+website (with their Chinese words) and `quote_website_create`'s check,
+three copies to change together. Asked how a rename treats clients already
+in it, the user chose A, every client moving with it, so the Clients list
+and Analytics never hold two names for one industry. INDUSTRIES keeps the
+list, seeded with the nine and any other industry a client held (none
+live), each with its Chinese name and whether the website offers it;
+Delete is the SQL Editor part. The website now shows each name as Settings
+keeps it, so F&B and Tech read so in English where they read Food and
+beverage and Technology before; renaming either in Settings changes it
+everywhere. `sql`, `industries` and `quotesite` hold it.
+

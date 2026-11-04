@@ -611,7 +611,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Follow-up limits, Details forms: a
+  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Industries, Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics, Send by email), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -1818,7 +1818,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     counts them.
 - Intake: Brand name (the trading name; the registered name belongs to Billing),
   Source, Salutation (the contact sheet's own list; 2026-10-14), Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
-  Industry, Market, Urgency to commence (`clients.commence`, blank until
+  Industry (from Settings, Clients: Industries, below), Market, Urgency to commence (`clients.commence`, blank until
   asked; Within 3 months, 3 to 6 months, More than 6 months). After intake the enquiry is edited like any other fact, and a person
   becomes a row in Contacts. Under Own clients only the Person in charge is
   fixed: the colleague keying a lead holds it. Sales by (`crmSalesBy`, More
@@ -1827,6 +1827,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   and read under Details. A contact refused after the
   client is made is said, and what was typed waits in the contact sheet on
   the new record (2026-10-19).
+- Industries (`2026-11-04-industries.sql`, its SQL Editor part
+  `2026-11-04-industries-editor.sql`; the user, 2026-11-04: "can do a
+  setting for industry?", then "A"): `industries` (name, name_zh, active,
+  on_website, position; RLS on, no policy, no grant), seeded with the nine
+  the portal offered. `industries_list()` answers the team every industry
+  with how many clients hold it, and anyone else (the quotation website)
+  the active ones on the website, their names alone; the console's
+  Industry and `/quote/` read it once a visit, and `quote_website_create`
+  takes only one the website offers (`bad-industry`). Settings, Clients:
+  Industries (`#indSheet`, `team.settings`): Add industry, Edit (Name,
+  Chinese name, On the quotation website), the ⋯ Move up / Move down, Set
+  inactive / Set active (never asks; offered to nobody, its clients keep
+  it) and Delete where no client holds it (`in-use`); `industry_save`
+  (`bad-name`, `bad-name-zh`, `taken`), a rename carrying onto every client
+  holding the old name; each filed `team.changed` under Industries. A
+  client holding an inactive industry keeps it in its picker.
 - The Clients list, and every read of all clients (`bridge.active`,
   `uniqueSlug`, the Dashboard), is read a thousand at a time
   (`ADspaceAPI.readPages`, the one copy; 2026-10-19); past its cap it

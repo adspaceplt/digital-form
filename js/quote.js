@@ -145,9 +145,7 @@
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
       offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
-      lang3: { en: 'English', zh: '中文', ms: 'Malay' },
-      ind: { Property: 'Property', 'F&B': 'Food and beverage', Retail: 'Retail', Wellness: 'Wellness', Lifestyle: 'Lifestyle',
-        Automotive: 'Automotive', Tech: 'Technology', Education: 'Education', Other: 'Other' }
+      lang3: { en: 'English', zh: '中文', ms: 'Malay' }
     },
     zh: {
       lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
@@ -258,9 +256,7 @@
       lostT: '找不到报价', lostP: '请检查链接，或重新报价。',
       offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
-      lang3: { en: 'English', zh: '中文', ms: '马来文' },
-      ind: { Property: '房地产', 'F&B': '餐饮', Retail: '零售', Wellness: '健康养生', Lifestyle: '生活方式',
-        Automotive: '汽车', Tech: '科技', Education: '教育', Other: '其他' }
+      lang3: { en: 'English', zh: '中文', ms: '马来文' }
     }
   };
   // A graphic is named by its kind (the user, 2026-10-14: a plan's graphic is a static post, a carousel or a GIF).
@@ -278,7 +274,11 @@
   var SALUTATIONS = ['Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', "Dato'", 'Datin', 'Datuk', "Dato' Sri", 'Datin Sri',
     'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'];
   var SAL_ZH = { Mr: '先生', Ms: '女士', Mrs: '太太', Mdm: '夫人', Dr: '博士', Prof: '教授' };
-  var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle', 'Automotive', 'Tech', 'Education', 'Other'];
+  /* The industries the website offers, from the list kept in Settings
+     (`industries_list`, 2026-11-04): each its name and Chinese name, read
+     once a visit beside the catalogue. A failed read offers none; the field
+     is optional. */
+  var INDUSTRIES = [];
   var FREE = /@(gmail|googlemail|yahoo|ymail|hotmail|outlook|live|msn|icloud|me|aol|proton|protonmail|qq|163|126)\./i;
   var TERMS = window.ADspaceMoney.QUOTE_TERMS;
 
@@ -558,7 +558,7 @@
       field('qsWa', t().wa, true, '<input class="input" id="qsWa" type="tel" inputmode="numeric" autocomplete="tel" placeholder="012-345 6789" aria-required="true" value="' + esc(c.whatsapp) + '">', t().waHint) +
       field('qsBrand', t().brand, true, '<input class="input" id="qsBrand" autocomplete="organization" placeholder="ADspace Advertising" aria-required="true" value="' + esc(c.brand) + '">') +
       field('qsInd', t().industry, false, '<select class="select" id="qsInd"><option value="">' + esc(t().optional) + '</option>' +
-        INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '"' + (c.industry === i ? ' selected' : '') + '>' + esc(t().ind[i]) + '</option>'; }).join('') + '</select>') +
+        INDUSTRIES.map(function (i) { return '<option value="' + esc(i.name) + '"' + (c.industry === i.name ? ' selected' : '') + '>' + esc((lang === 'zh' && i.name_zh) || i.name) + '</option>'; }).join('') + '</select>') +
       field('qsStart', t().commence, true, '<select class="select" id="qsStart" aria-required="true"><option value="">' + esc(t().choose) + '</option>' +
         t().starts3.map(function (o) { return '<option value="' + o[0] + '"' + (c.commence === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('') + '</select>') +
       '<label class="qs-consent"><input type="checkbox" id="qsConsent"' + (c.consent ? ' checked' : '') + '>' + MARK + '<span class="qs-text">' + esc(t().consent) + '</span></label>' +
@@ -1388,6 +1388,11 @@
 
   function load(done) {
     if (!db) { paint.off = true; paint(); return; }
+    db.rpc('industries_list').then(function (r) {
+      INDUSTRIES = (r && !r.error && Array.isArray(r.data)) ? r.data : [];
+      if (S.contact.industry && !INDUSTRIES.some(function (i) { return i.name === S.contact.industry; })) S.contact.industry = '';
+      if (S.step === 'details' && !Q && $('qsInd')) paint();
+    }).catch(function () {});
     db.rpc('quote_catalogue').then(function (r) {
       var d = r && r.data;
       if (r.error || !d || d.error) { paint.off = true; CAT = null; paint(); return; }
