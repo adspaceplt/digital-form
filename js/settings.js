@@ -627,41 +627,56 @@
     $('holYearRow').hidden = false;
     var t = holToday();
     var rows = hol.rows.filter(function (h) { return Number(h.day.slice(0, 4)) === hol.year; });
-    if (!rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No holidays.'); return; }
-    box.innerHTML = rows.map(function (h) {
-      return '<div class="dtrow hol-row' + (h.day < t ? ' is-past' : '') + '" data-day="' + esc(h.day) + '">' +
-        '<span class="dtrow-name"><b>' + esc(h.name) + '</b><small>' + esc(holDay(h.day, true)) + '</small></span>' +
-        rowActs('h', h.name) + '</div>';
+    /* One table, as Industries (revamp A, 2026-11-04): Date · Holiday · the
+       pen; the pen opens its row in place, Delete among Cancel and Save;
+       the last row adds one. */
+    var body = rows.map(function (h) {
+      if (h.day === hol.editing) {
+        return '<div class="ind-row is-hol is-edit" data-day="' + esc(h.day) + '">' +
+          '<input class="input input-sm" type="date" id="holEdDay" aria-label="Date" value="' + esc(h.day) + '">' +
+          '<input class="input input-sm" id="holEdName" maxlength="80" aria-label="Holiday" value="' + esc(h.name) + '">' +
+          '<span class="ind-acts"><button class="btn btn-danger btn-sm" type="button" data-h="delete">Delete</button>' +
+            '<button class="btn btn-quiet btn-sm" type="button" data-h="cancel">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" type="button" data-h="save">Save</button></span></div>';
+      }
+      return '<div class="ind-row is-hol' + (h.day < t ? ' is-past' : '') + '" data-day="' + esc(h.day) + '">' +
+        '<span class="ind-zh hol-date">' + esc(holDay(h.day, true)) + '</span>' +
+        '<span class="ind-name">' + esc(h.name) + '</span>' +
+        '<span class="ind-acts"><button class="iconbtn" type="button" data-h="edit" aria-label="Edit ' + esc(h.name) + '" title="Edit">' + PEN + '</button></span></div>';
     }).join('');
+    var firstDay = String(hol.year) === t.slice(0, 4) ? t : hol.year + '-01-01';
+    box.innerHTML = (rows.length ? '<div class="ind-row ind-head is-hol" aria-hidden="true"><span>Date</span><span>Holiday</span><span></span></div>' + body
+        : '<div class="hol-none"></div>') +
+      '<div class="ind-row is-hol ind-add">' +
+        '<input class="input input-sm" type="date" id="holNewDay" aria-label="New holiday\'s date" value="' + esc(firstDay) + '">' +
+        '<input class="input input-sm" id="holNewName" maxlength="80" placeholder="Deepavali" aria-label="New holiday">' +
+        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-h="add">Add</button></span></div>';
+    if (!rows.length) window.ADspaceState.emptyLine(box.querySelector('.hol-none'), 'No holidays.');
+    if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(box);
+    if (hol.editing) { var f = $('holEdName'); if (f) f.focus(); }
   }
-  /* A list row's acts, the holidays' and the tax codes' alike: Edit, then
-     a ⋯ holding Delete. `k` is the row's data attribute (data-h, data-t). */
-  function rowActs(k, name) {
-    return '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-' + k + '="edit">' + PEN + 'Edit</button>' +
-      '<span class="team-act"><button class="kmenu-btn" type="button" data-' + k + '="menu" aria-label="More actions for ' + esc(name) + '" aria-expanded="false">' +
-        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
-      '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-' + k + '="delete">Delete</button></div></span></span>';
+  /* A holiday saved from its row or the add row. */
+  function holSave(was) {
+    var dayF = $(was ? 'holEdDay' : 'holNewDay'), nameF = $(was ? 'holEdName' : 'holNewName');
+    var day = String(dayF.value || ''), name = String(nameF.value || '').replace(/\s+/g, ' ').trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { holMsg('Choose a date.'); dayF.focus(); return; }
+    if (!name) { holMsg('Enter the holiday\'s name.'); nameF.focus(); return; }
+    var btn = $('holList').querySelector(was ? '.is-edit [data-h="save"]' : '[data-h="add"]');
+    if (btn) btn.disabled = true;
+    db.rpc('public_holiday_save', { p_day: day, p_name: name, p_was: was || null }).then(function (r) {
+      var said = holSaid(r);
+      if (said) { holMsg(said); if (btn) btn.disabled = false; nameF.focus(); return; }
+      hol.year = Number(day.slice(0, 4)); hol.editing = null;
+      readHol(function () {
+        paintHol(); paint(); say(''); holMsg(was ? 'Saved.' : 'Added.', 'ok');
+        if (!was) { var n = $('holNewName'); if (n) n.focus(); }
+      });
+    }).catch(function (e) { holMsg((e && e.message) || 'Not saved. Please try again.'); if (btn) btn.disabled = false; });
   }
-  /* Shuts a list's ⋯ menus (`#holList`, `#depList`, `#taxList`). */
+  /* Shuts a list's ⋯ menus (`#depList`, `#taxList`). */
   function shutMenus(list, k) {
     Array.prototype.forEach.call(document.querySelectorAll(list + ' .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll(list + ' [data-' + k + '="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
-  }
-  function holShut() { shutMenus('#holList', 'h'); }
-  function holAsk(h, opener) {
-    var t = holToday();
-    window.ADspaceConfirm.ask({
-      title: h ? 'Edit public holiday' : 'Add public holiday', go: 'Save', wait: true,
-      fields: [{ name: 'day', label: 'Date', type: 'date', value: h ? h.day : (hol.year && String(hol.year) !== t.slice(0, 4) ? hol.year + '-01-01' : t), required: true },
-        { name: 'name', label: 'Name', value: h ? h.name : '', placeholder: 'Deepavali', required: true }]
-    }, function (v) {
-      return db.rpc('public_holiday_save', { p_day: v.day, p_name: v.name, p_was: h ? h.day : null }).then(function (r) {
-        var said = holSaid(r);
-        if (said) return said;
-        hol.year = Number(String(v.day).slice(0, 4));
-        return new Promise(function (ok) { readHol(function () { paintHol(); paint(); say(''); holMsg('Saved.', 'ok'); ok(''); }); });
-      }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
-    });
   }
   function holMsg(text, tone) { var m = $('holMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function holDelete(h) {
@@ -670,6 +685,7 @@
         return db.rpc('public_holiday_delete', { p_day: h.day }).then(function (r) {
           var said = holSaid(r);
           if (said) return said;
+          hol.editing = null;
           return new Promise(function (ok) { readHol(function () { paintHol(); paint(); holMsg('Deleted.', 'ok'); ok(''); }); });
         }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
       });
@@ -1028,7 +1044,8 @@
           '<span class="dtrow-name">' + (pg.picking ? '<input type="checkbox" class="pg-tick" aria-label="' + esc(p.name) + '"' + (pg.picked[k] ? ' checked' : '') + '>' : '') +
             '<b>' + esc(p.name) + '</b><small class="mono">/' + esc(k) + '/</small></span>' +
           '<span class="pg-state"><span class="chip-state ' + st[0] + '">' + esc(st[1]) + '</span>' + (st[2] ? '<small>' + esc(st[2]) + '</small>' : '') + '</span>' +
-          (pg.picking ? '' : '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-p="edit" aria-label="Edit ' + esc(p.name) + '">' + PEN + 'Edit</button></span>') +
+          /* The pen alone, as every short table in Settings (revamp D). */
+          (pg.picking ? '' : '<span class="hol-acts"><button class="iconbtn" type="button" data-p="edit" aria-label="Edit ' + esc(p.name) + '" title="Edit">' + PEN + '</button></span>') +
           '</' + tag + '>';
       }).join('');
     }).join('');
@@ -1186,16 +1203,24 @@
     if (!tax.rows) { window.ADspaceState.skeleton(box, 3); return; }
     if (!tax.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No tax codes.'); return; }
     var picking = tax.mode === 'select';
-    box.innerHTML = tax.rows.map(function (t) {
-      var name = '<span class="dtrow-name"><b>' + esc(t.code) + ' · ' + esc(taxPct(t.rate)) + '</b>' +
-          '<small>' + esc([t.name, t.active ? '' : 'Not offered'].filter(Boolean).join(' · ') || 'No name') + '</small></span>';
-      if (picking) {
-        return '<label class="dtrow tax-row is-picking' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' +
-          '<input type="checkbox" value="' + esc(t.code) + '"' + (tax.picked[t.code] ? ' checked' : '') + ' aria-label="Select ' + esc(t.code) + '">' + name + '</label>';
-      }
-      return '<div class="dtrow tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + name +
-        rowActs('t', t.code) + '</div>';
-    }).join('');
+    /* One table, as Industries (revamp B, 2026-11-04): Code · Rate · Name ·
+       Offered, then the pen and a ⋯ holding Delete; Select puts a tick at
+       the row's end in their place. */
+    box.innerHTML = '<div class="ind-row ind-head is-tax" aria-hidden="true"><span>Code</span><span>Rate</span><span>Name</span><span>Offered</span><span></span></div>' +
+      tax.rows.map(function (t) {
+        var cells = '<span class="ind-name tax-code">' + esc(t.code) + '</span><span class="tax-rate">' + esc(taxPct(t.rate)) + '</span>' +
+          '<span class="ind-zh tax-name">' + (t.name ? esc(t.name) : '<span class="ind-none">—</span>') + '</span>' +
+          '<span class="tax-on"><span class="chip-state ' + (t.active ? 'is-ok' : 'is-off') + '">' + (t.active ? 'Offered' : 'Not offered') + '</span></span>';
+        if (picking) {
+          return '<label class="ind-row is-tax tax-row is-picking' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + cells +
+            '<span class="ind-acts"><input type="checkbox" value="' + esc(t.code) + '"' + (tax.picked[t.code] ? ' checked' : '') + ' aria-label="Select ' + esc(t.code) + '"></span></label>';
+        }
+        return '<div class="ind-row is-tax tax-row' + (t.active ? '' : ' is-past') + '" data-code="' + esc(t.code) + '">' + cells +
+          '<span class="ind-acts"><button class="iconbtn" type="button" data-t="edit" aria-label="Edit ' + esc(t.code) + '" title="Edit">' + PEN + '</button>' +
+          '<span class="team-act"><button class="kmenu-btn" type="button" data-t="menu" aria-label="More actions for ' + esc(t.code) + '" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+          '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-t="delete">Delete</button></div></span></span></div>';
+      }).join('');
   }
   function taxShut() { shutMenus('#taxList', 't'); }
   function taxSet(mode) { tax.mode = mode; tax.picked = {}; paintTax(); }
@@ -1335,7 +1360,7 @@
 
   function openHol(opener) {
     if (!biz()) return;
-    holMsg('');
+    holMsg(''); hol.editing = null;
     paintHol();
     window.ADspaceSheet.show($('holSheet'), { opener: opener });
     readHol(paintHol);
@@ -1347,27 +1372,29 @@
     holWired = true;
     $('holCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('holClose').addEventListener('click', function () { $('holCancel').click(); });
-    $('holAdd').addEventListener('click', function () { holMsg(''); holAsk(null, this); });
-    $('holYear').addEventListener('change', function () { hol.year = Number(this.value); holMsg(''); paintHol(); });
-    $('holList').addEventListener('click', function (e) {
+    $('holYear').addEventListener('change', function () { hol.year = Number(this.value); hol.editing = null; holMsg(''); paintHol(); });
+    var list = $('holList');
+    list.addEventListener('click', function (e) {
       var b = e.target.closest('[data-h]');
       if (!b) return;
-      var row = b.closest('.hol-row'), day = row && row.getAttribute('data-day');
+      var k = b.getAttribute('data-h'), row = b.closest('.ind-row'), day = row && row.getAttribute('data-day');
+      if (k === 'add') { holMsg(''); holSave(null); return; }
       var h = (hol.rows || []).filter(function (x) { return x.day === day; })[0];
       if (!h) return;
-      var k = b.getAttribute('data-h');
-      if (k === 'menu') {
-        e.stopPropagation();
-        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
-        holShut();
-        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
-        if (open) window.ADspaceMenu.place(b, mn);
-        return;
-      }
-      holShut(); holMsg('');
-      if (k === 'edit') holAsk(h, b);
-      if (k === 'delete') holDelete(h);
+      if (k === 'edit') { holMsg(''); hol.editing = h.day; paintHol(); }
+      else if (k === 'cancel') { hol.editing = null; paintHol(); var p = list.querySelector('.ind-row[data-day="' + h.day + '"] [data-h="edit"]'); if (p) p.focus(); }
+      else if (k === 'save') holSave(h.day);
+      else if (k === 'delete') holDelete(h);
     });
+    /* Enter saves the row it is typed in, Escape leaves an edit (before the
+       sheet's own capture hears it). */
+    window.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      var row = e.target.closest && list.contains(e.target) && e.target.closest('.ind-row');
+      if (!row || e.target.tagName !== 'INPUT') return;
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); holSave(row.classList.contains('ind-add') ? null : row.getAttribute('data-day')); }
+      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-h="cancel"]').click(); }
+    }, true);
   }
   wireHol();
   wireDeps();
@@ -1375,7 +1402,6 @@
   wirePg();
   /* A press outside a list's ⋯ shuts it: one listener for every list. */
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('#holList .team-act')) holShut();
     if (!e.target.closest('#depList .team-act')) depShut();
     if (!e.target.closest('#taxList .team-act')) taxShut();
   });

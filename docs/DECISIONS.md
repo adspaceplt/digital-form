@@ -8185,6 +8185,19 @@ a cell the head lacked; moving them into the name's cell squeezed them to
 the name's width on a phone, so the layout stayed and the check now leaves
 out `ul.incl`, a list under a name that holds no column.
 
+**2026-11-04 — Four Settings sheets on one plain table (revamps A to D).**
+The review of the Industries table proposed four quick revamps and the
+user chose them all ("build revamps A to D"). Public holidays became
+Industries' table (Date · Holiday · the pen, edited in its row, the last
+row adding one, Delete in the open row); its Add holiday button and its ⋯
+went. Tax codes became columns (Code · Rate · Name · Offered, the pen and
+a ⋯ holding Delete), Read from Bukku and Select unchanged. WhatsApp
+templates lost the fold that repeated the sheet's own title, Edit became
+the pen alone, and a template that cannot send is said in a warn line, not
+red: it is a caution, not a refusal. Page availability's rows became one
+line at a desk (the name with its address, the state with when, the pen);
+on a phone the row stays top aligned, line for line, the pen beside it.
+
 ### 2026-11-04 · Releases #908 to #913: the wording reviewed
 The user asked to "check since last sessions tone etc.". `/copy-review`
 listed 175 new strings; its second reader found ten lines against §6, each
