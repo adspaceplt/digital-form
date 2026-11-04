@@ -5974,7 +5974,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   itself (`ADspaceDocs.letterPages`, the team's Quotation Cover type in the
   console, the type as seeded on /quote/; signed off by who prepared it);
   the quotation on a continuation page with no second letterhead (a lead
-  sentence, Description · Qty · Rate · Amount between hairlines, each
+  sentence, Description · Qty · Rate · Amount between hairlines, a line's
+  inclusions under its name a point each as the service lists them (a
+  bullet, the words hung under the first; 2026-11-04), each
   amount in its currency with per month, one-off or its months under it,
   the totals at the right ending at the one bold figure, TERMS: validity,
   SST, budget billed separately, the whole term's commitment, binding once
