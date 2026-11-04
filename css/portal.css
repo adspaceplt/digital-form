@@ -5676,6 +5676,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   grid-template-areas: "mark . ctl" "who who who";
 }
 .is-narrow .rec-mark { width: 38px; height: 38px; font-size: 13px; }
+/* A record with nothing to show in a disc (a supplier, a colleague;
+   2026-11-04) heads with its name, the state and the ⋯ at the right. */
+.rec-id.is-nomark, .is-narrow .rec-id.is-nomark { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }
+.is-narrow .rec-id.is-nomark .rec-ctl { align-self: start; }
 .is-narrow .rec-name { gap: 6px 10px; }
 .is-narrow .rec-who { gap: 4px; }
 .lhist-row:first-child { border-top: 0; padding-top: 0; }

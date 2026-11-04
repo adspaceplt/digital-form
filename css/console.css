@@ -1160,7 +1160,7 @@ button.appver {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px 18px;
 }
 /* The row is the colleague, as a client's row is the client (2026-10-18):
-   the initials' disc before the name, the chevron last, no ⋯. */
+   the name first (no disc since 2026-11-04), the chevron last, no ⋯. */
 button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; cursor: pointer; }
 .team-row > .team-who { flex-direction: row; align-items: center; gap: 12px; }
 .team-mail {
@@ -1176,7 +1176,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
   }
   .team-row > .team-who   { grid-area: who; gap: 10px; }
   .team-row > .team-state { grid-area: state; align-self: center; }
-  .team-row > .team-mail  { grid-area: mail; padding-left: 38px; }
+  .team-row > .team-mail  { grid-area: mail; }
   }
 
 #crmListMsg { margin: 0 0 12px; }
