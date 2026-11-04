@@ -9476,6 +9476,11 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-headrow { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .qs-what { overflow-wrap: anywhere; }
 .qs-what small { display: block; font-size: 12.5px; color: var(--ink-mute); }
+/* A line's inclusions, a point each (the quotation's PDF prints them so):
+   the bullet hung, the words wrapping under the first (2026-11-04). */
+.incl { list-style: none; margin: 4px 0 0; padding: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); font-weight: 400; }
+.incl li { position: relative; padding-left: 12px; overflow-wrap: anywhere; }
+.incl li::before { content: '•'; position: absolute; left: 1px; top: 0; }
 .qs-calc { display: none; font-size: 12.5px; color: var(--ink-mute); }
 .qs-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .qs-mute { color: var(--ink-mute); }
