@@ -3510,6 +3510,10 @@ button.vs-row {
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
 .qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
+/* A line's inclusions run under its name, the figures staying on the
+   name's line (2026-11-04). */
+.qb-row:has(> .qb-incl) { grid-template-areas: "name qty rate mo amt" "incl . . . ." "tax . . . ."; }
+.qb-row > .qb-incl { grid-area: incl; margin-top: 2px; }
 .qb-row > .qb-name { grid-area: name; }
 .qb-row > .qb-taxc { grid-area: tax; }
 .qb-row > .qb-qty { grid-area: qty; }
@@ -3525,6 +3529,9 @@ button.vs-row {
      of two digits), Rate and Months (up to 99), each under its label. */
   .qb-row { grid-template-columns: minmax(0, 1.1fr) 40px minmax(0, 1fr) 44px; grid-template-areas: "name name amt amt" "tax qty rate mo"; column-gap: 6px; row-gap: 8px; padding-inline: 12px; align-items: end; }
   .qb-row:not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "qty qty rate mo"; }
+  .qb-row:has(> .qb-incl) { grid-template-areas: "name name amt amt" "incl incl incl incl" "tax qty rate mo"; }
+  .qb-row:has(> .qb-incl):not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
+  .qb-row > .qb-incl { margin-top: -4px; }
   .qb-row.crm-head { display: none; }
   .qb-row > .qb-amt { align-self: start; }
   .qb-row > .qb-taxc, .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }
