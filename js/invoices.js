@@ -579,7 +579,7 @@
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
-        if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', copy to ' + d.cc : '') + '.' + paid };
+        if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', with a copy to ' + d.cc : '') + '.' + paid };
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
              Send again for this client alone. */
