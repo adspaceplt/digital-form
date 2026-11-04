@@ -6804,7 +6804,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   email in the log opens it filled as it went (its file attached afresh).
   An email's addresses and words are cleared 12 months on, its subject,
   status and times kept (`mail_retention`, pg_cron `mail-retention`, the
-  1st at 03:45 MYT; client, supplier, invoice and New emails alike), read
+  2nd at 03:45 MYT; client, supplier, invoice and New emails alike), read
   as Address cleared. The SQL Editor part also drops the 10- and
   11-argument invoice begin wrappers nothing calls since bukku-sync v26.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
