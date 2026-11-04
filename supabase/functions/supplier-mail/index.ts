@@ -34,6 +34,18 @@
  *                          reference. From MAIL_CLIENT_FROM (unset:
  *                          ADspace <noreply-client@sc.adspace.me>).
  *
+ *   POST { manual: true, audience, client, supplier, template, to, ccs,
+ *          subject, body, key, file }
+ *                          a New email from Messages, Email (2026-11-04,
+ *                          2026-11-04-new-email.sql) at Messages Work: To and
+ *                          Copy a client's or a supplier's own addresses, or
+ *                          one typed (`other`); `email_new_begin` holds them,
+ *                          fills the words and files it before it goes, one
+ *                          key a sheet. A file is optional, 10 MB at most, of
+ *                          the kinds ATTACH names, a PDF that is a PDF. From
+ *                          MAIL_CLIENT_FROM, a supplier's from MAIL_FROM;
+ *                          replies to the colleague who sends.
+ *
  * The email is the portal's one layout (_shared/mail.ts, the sign-in
  * emails' white card on the light grey page, docs/SIGN-IN-EMAILS.md): the subject as its heading,
  * then the message the colleague wrote in the Send email sheet, word for
@@ -119,6 +131,7 @@ Deno.serve(async (req) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const uuid = /^[0-9a-f-]{36}$/i;
+  if (body.manual === true) return manualMail(req, body, origin, uuid);
   if (body.client === true) return clientMail(req, body, origin, uuid);
   const supplier = String(body.supplier || ''), purpose = String(body.purpose || '');
   const document = body.document ? String(body.document) : null;
@@ -218,4 +231,64 @@ async function clientMail(req: Request, body: Record<string, any>, origin: strin
   if (done.error) console.error('supplier-mail: client email not closed', done.error.message);
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}
+
+/* A New email (2026-11-04): the file read and checked before anything is
+   filed, then filed, sent and closed as a client's document email is. */
+const ATTACH: Record<string, string> = {
+  pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp',
+  doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  csv: 'text/csv'
+};
+const ATTACH_MAX = 10 * 1024 * 1024;
+export function fileOf(f: unknown): { filename: string; content: string } | 'bad-file' | 'too-big' | null {
+  if (!f || typeof f !== 'object') return null;
+  const o = f as Record<string, unknown>;
+  const name = String(o.name || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+  const ext = ((name.match(/\.([a-z0-9]+)$/i) || [])[1] || '').toLowerCase();
+  if (!name || !ATTACH[ext]) return 'bad-file';
+  const data = String(o.data || '');
+  if (data.length > Math.ceil(ATTACH_MAX / 3) * 4 + 4) return 'too-big';
+  let bytes: Uint8Array;
+  try { bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0)); } catch { return 'bad-file'; }
+  if (!bytes.length) return 'bad-file';
+  if (bytes.length > ATTACH_MAX) return 'too-big';
+  if (ext === 'pdf' && !(bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46)) return 'bad-file';
+  return { filename: name, content: b64Of(bytes) };
+}
+async function manualMail(req: Request, body: Record<string, any>, origin: string | null, uuid: RegExp): Promise<Response> {
+  const audience = String(body.audience || '');
+  const client = body.client ? String(body.client) : null, supplier = body.supplier ? String(body.supplier) : null;
+  const template = body.template ? String(body.template) : null;
+  if (!['client', 'supplier', 'other'].includes(audience) || (client && !uuid.test(client)) || (supplier && !uuid.test(supplier)) ||
+      (template && !uuid.test(template))) {
+    return json({ error: 'bad-request' }, 400, origin);
+  }
+  const file = fileOf(body.file);
+  if (file === 'bad-file' || file === 'too-big') return json({ error: file }, 200, origin);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  const ccs = Array.isArray(body.ccs) ? body.ccs.filter((x: unknown) => typeof x === 'string').slice(0, 6) : [];
+  const begun = await db.rpc('email_new_begin', { p_audience: audience, p_client: client, p_supplier: supplier, p_template: template,
+    p_to: String(body.to || ''), p_ccs: ccs, p_subject: String(body.subject || ''), p_body: String(body.body || ''),
+    p_attachment: file ? file.filename : null, p_idem: String(body.key || '') });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = (begun.data || {}) as Record<string, any>;
+  if (b.error) return json(b, 200, origin);
+  const html = layout({ heading: String(b.subject || ''), body: String(b.body || ''), preheader: String(b.subject || '') });
+  const msg: Record<string, unknown> = {
+    from: audience === 'supplier' ? FROM() : CLIENT_FROM(), to: [String(b.to || '')],
+    reply_to: String(b.reply_to || '') || (audience === 'supplier' ? REPLY_TO() : CLIENT_REPLY_TO()),
+    subject: String(b.subject || ''), html, text: String(b.body || '')
+  };
+  const cc = Array.isArray(b.cc_list) ? b.cc_list.map(String).filter(Boolean) : [];
+  if (cc.length) msg.cc = cc;
+  if (file) msg.attachments = [file];
+  const { status, provider, error } = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
+  const done = await db.rpc('email_new_done', { p_id: b.id, p_status: status, p_provider: provider || null, p_error: error || null });
+  if (done.error) console.error('supplier-mail: new email not closed', done.error.message);
+  if (status !== 'sent') console.error('supplier-mail:', status, error);
+  return json(status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
 }

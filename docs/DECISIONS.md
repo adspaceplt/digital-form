@@ -7968,3 +7968,19 @@ deploy, and no statement needed a drop. A finance email chosen as To is
 greeted Sir or Madam. The client document emails (`js/docmail.js`) already
 choose To among the contacts; their Copy stays the finance email for now.
 
+### 2026-11-04 · New email from Messages, with saved templates and a file
+The user asked for a New email on the Email tab, to send by hand to others,
+"remember the email template", then chose: recipients by selection (a
+client's contacts, a supplier) or typed freely; saved templates for clients
+or for suppliers, else a custom message in the branded layout; one file
+optional, never the invoice email. Built on supplier-mail's existing sender
+(a `manual` branch) and the shared layout, so every portal email keeps one
+look. The database holds the choice: a client's or supplier's email goes only
+to that record's own addresses (`invoice_recipient_options`,
+`email_supplier_options`), a typed one must be an address, and a hundred a
+colleague a day is the ceiling against misuse of the company's sender.
+`team_emails` carries no foreign key so removing a client never removes the
+record of what was sent to it, and the connector's migration holds no drop or
+delete: `activity_section` (which names deleted tags) and
+`email_template_delete` are the SQL Editor's part.
+

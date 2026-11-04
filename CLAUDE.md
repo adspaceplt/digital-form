@@ -262,7 +262,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | The Activity record (`loadActivity`, `ACTION_LABEL`) | activity, run, crm |
 | `scripts.js`, `scriptpdf.js`, `script.js`, the VIDEO SCRIPTS section | vs, vssql, sql, then `ui` |
 | `supabase/functions/script-draft/`, Write script, the SCRIPT WRITER section | vs, smsql, reports |
-| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections, the EMAIL LOG section | whatsapp, wafn, waapprove, maillogsql, smsql, crm, perms, sql, then `ui` |
+| `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections, the EMAIL LOG and NEW EMAIL sections | whatsapp, wafn, waapprove, maillogsql, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
@@ -6772,6 +6772,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   supplier opening its record, Reference, Sent by, Status, each step's
   time, a bounce's reason, the message). Sign-in and invitation emails are
   Supabase's and are not kept (the user, 2026-11-04).
+- New email (`#emlNew` on the Email bar, Messages at Work;
+  `2026-11-04-new-email.sql` and its SQL Editor part; the user, 2026-11-04):
+  `#nemSheet` asks For (Client, Supplier, Other as a segment): a client's
+  To a select of its live contacts holding an email and its finance email
+  (`email_recipients`, as an invoice email's), Copy a tick each (five at
+  most); a supplier's its email and finance email; Other an address typed
+  for To and one for Copy (`ADspaceWords.emailOk`). Template: Custom
+  message, else a saved one for that audience (Other: both), filling the
+  subject and message; {contact name}, {company name}, {client name},
+  {supplier name} and {sender name} are filled by `email_new_begin`. One
+  file optional (PDF, picture, Word, Excel, PowerPoint, CSV; 10 MB). Send
+  asks first, then `supplier-mail` `manual` checks the file (a PDF that is
+  a PDF), files it (`email_new_begin`: the record's own addresses alone,
+  `bad-recipient`, `bad-copy`, `bad-email`, one key a sheet `again`, a
+  hundred a colleague a day `too-many`), sends it in the branded layout from
+  noreply-client (a supplier's from noreply-supplier), replies to the
+  sender, and closes it (`email_new_done`, filed `email.sent` under
+  Messages). `team_emails` (no foreign key, RLS on, no policy, no grant)
+  joins the Email log (a row's subject over its file), Resend's word and
+  `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
+  `team.settings`; `email_template_save` with `taken`, `email_template_delete`
+  in the ⋯, filed under Email templates). Not the invoice email, which keeps
+  its own sheet.
 - Messages go through the WhatsApp Business Platform (Cloud API), each with a
   template Meta approved (the user, 2026-10-09: report to client, team
   reminders, creator updates, a feedback request sent by hand). Phase 1

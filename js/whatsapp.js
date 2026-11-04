@@ -281,6 +281,7 @@
       el.addEventListener('change', repaint(el));
     });
     $('waNew').addEventListener('click', function () { compose({ purpose: 'message', opener: this }); });
+    $('emlNew').addEventListener('click', function () { newEmail(this); });
   }
 
   /* The section is the messages alone; each purpose's template is chosen
@@ -289,6 +290,7 @@
   function enter() {
     wire();
     $('waNew').hidden = !maySend('message');
+    $('emlNew').hidden = !may('whatsapp', 'work');
     st.tab = /(?:^|[?&])tab=email(?:&|$)/.test(location.search) ? 'email' : 'wa';
     tab(st.tab, true);
   }
@@ -323,7 +325,7 @@
      keep, each row at its own record's access. Resend's word on each, and a
      signing code's own state (its delivery is not reported back). */
   var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
-    approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code' };
+    approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email' };
   var ML_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
@@ -440,8 +442,9 @@
     row.innerHTML =
       '<span class="wam-to"><b>' + esc(x.to_name || x.to_email) + '</b>' +
         '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>' +
-      '<span class="wam-tpl"><span>' + esc(ML_KIND[x.kind] || 'Email') + '</span>' +
-        '<small class="wam-tplline"><span class="wam-tplname">' + esc(x.reference || x.subject || '') + '</span></small></span>' +
+      /* A New email leads with its subject, its file under it. */
+      '<span class="wam-tpl"><span>' + esc(x.source === 'manual' ? x.subject : ML_KIND[x.kind] || 'Email') + '</span>' +
+        '<small class="wam-tplline"><span class="wam-tplname">' + esc(x.source === 'manual' ? x.reference || 'Email' : x.reference || x.subject || '') + '</span></small></span>' +
       '<span class="wam-by">' + esc(x.source === 'signing' ? 'Client' : x.sent_by || 'Automatic') + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>' +
         '<small class="wam-when">' + esc(whenOf(x.sent_at || x.created_at)) + '</small></span>';
@@ -462,11 +465,11 @@
     $('emlSheetBody').innerHTML =
       '<dl class="ovfacts eml-facts">' +
         fact('Type', ML_KIND[x.kind] || 'Email') +
-        fact('From', ML_FROM[x.source]) +
+        fact('From', x.source === 'manual' ? ML_FROM[x.supplier_id ? 'supplier' : 'client'] : ML_FROM[x.source]) +
         fact('To', (x.to_name ? x.to_name + ' · ' : '') + x.to_email) +
         fact('Copy', x.cc_email) +
         fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
-        fact('Reference', x.reference) +
+        fact(x.source === 'manual' ? 'Attachment' : 'Reference', x.reference) +
         fact('Sent by', x.source === 'signing' ? 'The client, on the quotation link' : x.sent_by || 'Automatic') +
         fact('Status', '<span class="chip-state ' + s[1] + '">' + esc(s[0]) + '</span>', true) +
         steps.map(function (t) { return fact(t[0], whenOf(t[1])); }).join('') +
@@ -1225,8 +1228,280 @@
     paintTemplates();
   }
 
+  /* ---- New email (2026-11-04, NEW EMAIL) -----------------------------------
+     A colleague's own email from Messages, Email: To and Copy a client's
+     contacts and finance email, a supplier's email and finance email, or an
+     address typed; the words a saved template's for that audience or written
+     here; one file optional. Sent by supplier-mail's manual branch, which the
+     database holds to the record's own addresses and files first. */
+  var ne = { parties: null, tpls: [], opts: [], file: null, key: '', busy: false, wired: false, lastTpl: null, seq: 0 };
+  var NE_SAID = {
+    'bad-recipient': 'That address is not among this record’s addresses. Choose again.',
+    'bad-copy': 'A copy can go to five addresses at most, each once and not to the recipient.',
+    'bad-email': 'Enter a valid email address.',
+    'bad-subject': 'The subject must be 2 to 200 characters.',
+    'bad-body': 'The message must be 2 to 5,000 characters.',
+    'bad-file': 'The file could not be attached. Attach a PDF, a picture, or a Word, Excel, PowerPoint or CSV file.',
+    'too-big': 'The file is over 10 MB. Attach a smaller file.',
+    'too-many': 'A hundred emails have been sent in the last 24 hours. Try again later.',
+    again: 'This email was already sent. Refresh the page to see it in the Email log.',
+    'bad-template': 'That template no longer exists. Choose another.',
+    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
+    'not-sent': 'Not sent. The email service refused the email.',
+    'not-confirmed': 'Not confirmed. Check the Email log before sending again.',
+    'not-found': 'This record is no longer available.',
+    'bad-name': 'Enter a name of 2 to 80 characters.',
+    taken: 'A template of this name is already held for these recipients.'
+  };
+  var NE_EXT = /\.(pdf|png|jpe?g|webp|docx?|xlsx?|pptx?|csv)$/i;
+  function neSaid(e) { var c = (e && (e.code || e.error)) || e; return NE_SAID[c] || said(e); }
+  function neMsg(t, tone) { $('nemMsg').textContent = t || ''; $('nemMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
+  function neKey() {
+    var a = new Uint8Array(12);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+  function neWord(o) { var w = o.finance ? 'Finance email' : o.name; return w ? w + ' · ' + o.email : o.email; }
+  function neSeg(id) { var el = $(id); if (el) el.dispatchEvent(new Event('change', { bubbles: true })); }
+  function newEmail(opener) {
+    neWire();
+    ne.key = neKey(); ne.file = null; ne.opts = []; ne.busy = false; ne.lastTpl = null; ne.parties = null;
+    $('nemFor').value = 'client';
+    ['nemSubject', 'nemBody', 'nemToTyped', 'nemCcTyped'].forEach(function (id) { $(id).value = ''; });
+    $('nemFile').value = '';
+    neMsg('');
+    $('nemSend').disabled = false;
+    neFile();
+    neFor();
+    window.ADspaceSheet.show($('nemSheet'), { opener: opener || null });
+    neSeg('nemFor');
+    Promise.all([rpc('email_parties'), rpc('email_templates_list')]).then(function (r) {
+      ne.parties = r[0]; ne.tpls = r[1].rows || [];
+      neFor();
+    }).catch(function (e) { neMsg(neSaid(e), 'err'); });
+  }
+  function neFor() {
+    var aud = $('nemFor').value, other = aud === 'other';
+    $('nemPartyRow').hidden = other; $('nemToRow').hidden = other; $('nemTypedRow').hidden = !other;
+    if (other) $('nemCcRow').hidden = true;
+    $('nemPartyLabel').textContent = aud === 'supplier' ? 'Supplier' : 'Client';
+    var list = !ne.parties ? null : aud === 'supplier' ? ne.parties.suppliers || [] : ne.parties.clients || [];
+    var keep = $('nemParty').value;
+    $('nemParty').innerHTML = !list ? '<option value="">Loading…</option>'
+      : '<option value="">' + (aud === 'supplier' ? 'Choose a supplier' : 'Choose a client') + '</option>' +
+        list.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc((x.code ? x.code + ' · ' : '') + x.name) + '</option>'; }).join('');
+    $('nemParty').disabled = !list;
+    if (list && list.some(function (x) { return x.id === keep; })) $('nemParty').value = keep;
+    var tpls = (ne.tpls || []).filter(function (t) { return other || t.audience === aud; });
+    var group = function (a, w) {
+      var g = tpls.filter(function (t) { return t.audience === a; });
+      return g.length ? (other ? '<optgroup label="' + w + '">' : '') + g.map(function (t) {
+        return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('') + (other ? '</optgroup>' : '') : '';
+    };
+    var was = $('nemTpl').value;
+    $('nemTpl').innerHTML = '<option value="">Custom message</option>' + group('client', 'Clients') + group('supplier', 'Suppliers');
+    $('nemTpl').value = tpls.some(function (t) { return t.id === was; }) ? was : '';
+    if ($('nemTpl').value !== was) neTpl();
+    neRecipients();
+  }
+  function neRecipients() {
+    var aud = $('nemFor').value, id = $('nemParty').value, seq = ++ne.seq;
+    ne.opts = [];
+    if (aud === 'other') return;
+    var paint = function (note) {
+      $('nemTo').innerHTML = ne.opts.length ? ne.opts.map(function (o) { return '<option value="' + esc(o.email) + '">' + esc(neWord(o)) + '</option>'; }).join('')
+        : '<option value="">' + esc(note) + '</option>';
+      $('nemTo').disabled = !ne.opts.length;
+      neCc();
+    };
+    if (!id) { paint(aud === 'supplier' ? 'Choose a supplier first' : 'Choose a client first'); return; }
+    paint('Loading…');
+    rpc('email_recipients', aud === 'supplier' ? { p_client: null, p_supplier: id } : { p_client: id, p_supplier: null }).then(function (d) {
+      if (seq !== ne.seq) return;
+      ne.opts = d.options || [];
+      paint('No email address on record');
+    }).catch(function (e) { if (seq !== ne.seq) return; paint('Could not load the addresses'); neMsg(neSaid(e), 'err'); });
+  }
+  function neCc() {
+    var to = String($('nemTo').value || '').toLowerCase();
+    var had = {};
+    Array.prototype.forEach.call($('nemCc').querySelectorAll('input:checked'), function (b) { had[b.value.toLowerCase()] = 1; });
+    var rest = ne.opts.filter(function (o) { return o.email.toLowerCase() !== to; });
+    $('nemCcRow').hidden = !rest.length;
+    $('nemCc').innerHTML = rest.map(function (o) {
+      return '<label class="tickline"><input type="checkbox" value="' + esc(o.email) + '"' + (had[o.email.toLowerCase()] ? ' checked' : '') + '> ' + esc(neWord(o)) + '</label>';
+    }).join('');
+    neCcCap();
+  }
+  function neCcCap() {
+    var boxes = $('nemCc').querySelectorAll('input'), on = $('nemCc').querySelectorAll('input:checked').length;
+    Array.prototype.forEach.call(boxes, function (b) { b.disabled = !b.checked && on >= 5; });
+  }
+  /* A template fills the subject and the message; Custom message clears
+     them only while they still hold the last template's words. */
+  function neTpl() {
+    var t = (ne.tpls || []).filter(function (x) { return x.id === $('nemTpl').value; })[0] || null;
+    var last = ne.lastTpl;
+    var untouched = !last || ($('nemSubject').value === last.subject && $('nemBody').value === last.body);
+    if (t) { $('nemSubject').value = t.subject; $('nemBody').value = t.body; }
+    else if (untouched && last) { $('nemSubject').value = ''; $('nemBody').value = ''; }
+    ne.lastTpl = t;
+  }
+  function neFile() {
+    $('nemFileName').textContent = ne.file ? ne.file.name : 'None';
+    $('nemFileOff').hidden = !ne.file;
+    $('nemFilePick').hidden = !!ne.file;
+  }
+  function neSend() {
+    if (ne.busy) return;
+    var aud = $('nemFor').value, W = window.ADspaceWords;
+    var to, ccs, party = aud === 'other' ? null : $('nemParty').value;
+    if (aud === 'other') {
+      to = String($('nemToTyped').value || '').trim();
+      var cc = String($('nemCcTyped').value || '').trim();
+      if (!(W && W.emailOk ? W.emailOk(to) : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to))) { neMsg(NE_SAID['bad-email'], 'err'); $('nemToTyped').focus(); return; }
+      if (cc && !(W && W.emailOk ? W.emailOk(cc) : /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cc))) { neMsg(NE_SAID['bad-email'], 'err'); $('nemCcTyped').focus(); return; }
+      ccs = cc ? [cc] : [];
+    } else {
+      if (!party) { neMsg(aud === 'supplier' ? 'Choose a supplier.' : 'Choose a client.', 'err'); $('nemParty').focus(); return; }
+      to = $('nemTo').value;
+      if (!to) { neMsg('This record holds no email address. Add one to its contacts first.', 'err'); return; }
+      ccs = Array.prototype.map.call($('nemCc').querySelectorAll('input:checked'), function (b) { return b.value; });
+    }
+    var subject = String($('nemSubject').value || '').trim(), body = String($('nemBody').value || '').trim();
+    if (subject.length < 2) { neMsg('Enter a subject.', 'err'); $('nemSubject').focus(); return; }
+    if (body.length < 2) { neMsg('Enter a message.', 'err'); $('nemBody').focus(); return; }
+    neMsg('');
+    window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
+      body: 'To ' + to + (ccs.length ? ', a copy to ' + ccs.join(', ') : '') + (ne.file ? '. Attached: ' + ne.file.name : '') + '.' }, function () {
+      var go = $('nemSend');
+      ne.busy = true; go.disabled = true;
+      if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);
+      var done = function () { ne.busy = false; go.disabled = false; if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, false); };
+      (ne.file ? toB64(ne.file).then(function (b) { return { name: ne.file.name, data: b }; }) : Promise.resolve(null)).then(function (file) {
+        return db().functions.invoke('supplier-mail', { body: { manual: true, audience: aud,
+          client: aud === 'client' ? party : null, supplier: aud === 'supplier' ? party : null, template: $('nemTpl').value || null,
+          to: to, ccs: ccs, subject: subject, body: body, key: ne.key, file: file } });
+      }).then(function (res) {
+        var d = res && res.data;
+        if (!d && res && res.error) return API.fnRefusal(res).then(function (code) { throw { code: code || 'failed' }; });
+        ne.key = neKey();
+        if (!d || d.error) throw { code: (d && d.error) || 'failed' };
+        done();
+        window.ADspaceSheet.close();
+        mlLoad();
+      }).catch(function (e) { done(); neMsg(neSaid(e), 'err'); });
+    });
+  }
+  function neWire() {
+    if (ne.wired) return;
+    ne.wired = true;
+    $('nemFor').addEventListener('change', neFor);
+    $('nemParty').addEventListener('change', neRecipients);
+    $('nemTo').addEventListener('change', neCc);
+    $('nemCc').addEventListener('change', neCcCap);
+    $('nemTpl').addEventListener('change', neTpl);
+    $('nemFilePick').addEventListener('click', function () { $('nemFile').click(); });
+    $('nemFile').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      this.value = '';
+      if (!f) return;
+      if (!NE_EXT.test(f.name)) { neMsg(NE_SAID['bad-file'], 'err'); return; }
+      if (f.size > 10 * 1024 * 1024) { neMsg(NE_SAID['too-big'], 'err'); return; }
+      ne.file = f; neMsg(''); neFile();
+    });
+    $('nemFileOff').addEventListener('click', function () { ne.file = null; neFile(); $('nemFilePick').focus(); });
+    $('nemSend').addEventListener('click', neSend);
+    $('nemCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+    $('nemClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  }
+
+  /* Settings, Templates: Email templates (2026-11-04): the saved words a
+     New email starts from, for clients or for suppliers. */
+  var et = { wired: false };
+  function etMsg(t, tone) { $('etplMsg').textContent = t || ''; $('etplMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
+  function emailTemplates(opener) {
+    if (!et.wired) {
+      et.wired = true;
+      $('etplClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      $('etplAdd').addEventListener('click', function () { etEdit(null, this); });
+      document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#etplList .team-act')) etShut(); });
+    }
+    etMsg('');
+    window.ADspaceSheet.show($('etplSheet'), { opener: opener || null });
+    etPaint();
+  }
+  function etShut() {
+    Array.prototype.forEach.call(document.querySelectorAll('#etplList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#etplList [data-a="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function etPaint() {
+    var box = $('etplList'), S = window.ADspaceState;
+    if (S && S.skeleton) S.skeleton(box, 2);
+    rpc('email_templates_list').then(function (d) {
+      var rows = d.rows || [], byId = {};
+      rows.forEach(function (t) { byId[t.id] = t; });
+      if (!rows.length) { box.innerHTML = '<p class="emptyline">No templates.</p>'; return; }
+      var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+      box.innerHTML = '<div class="ann-list">' + rows.map(function (t) {
+        return '<div class="ann-row etpl-row" data-id="' + esc(t.id) + '">' +
+          '<div class="ann-what"><p class="ann-text">' + esc(t.name) + '</p>' +
+            '<p class="ann-meta">' + esc([t.audience === 'supplier' ? 'Suppliers' : 'Clients', t.subject].join(' · ')) + '</p></div>' +
+          '<div class="ann-acts"><button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>' +
+            '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+              '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button></div></span></div></div>';
+      }).join('') + '</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('.etpl-row'), function (rw) {
+        var t = byId[rw.getAttribute('data-id')];
+        rw.querySelector('[data-a="edit"]').addEventListener('click', function () { etEdit(t, this); });
+        var mb = rw.querySelector('[data-a="menu"]'), mn = rw.querySelector('[data-menu]');
+        mb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = mn.hidden;
+          etShut();
+          mn.hidden = !open;
+          mb.setAttribute('aria-expanded', String(open));
+          if (open) window.ADspaceMenu.place(mb, mn);
+        });
+        rw.querySelector('[data-a="delete"]').addEventListener('click', function () {
+          etShut();
+          window.ADspaceConfirm.ask({ title: 'Delete this template?', body: '“' + t.name + '” will no longer be offered. Emails already sent keep their words. This cannot be undone.',
+            go: 'Delete', tone: 'danger' }, function () {
+            rpc('email_template_delete', { p_id: t.id }).then(function () { etMsg('Deleted.', 'ok'); etPaint(); })
+              .catch(function (e) { etMsg(neSaid(e), 'err'); });
+          });
+        });
+      });
+    }).catch(function (e) { if (S && S.failLine) S.failLine(box, 'The templates', neSaid(e), etPaint); });
+  }
+  function etEdit(t, btn) {
+    var fields = [];
+    if (!t) fields.push({ name: 'audience', label: 'For', choices: [['client', 'Clients'], ['supplier', 'Suppliers']], seg: true, value: 'client' });
+    fields.push({ name: 'name', label: 'Name', value: t ? t.name : '' },
+      { name: 'subject', label: 'Subject', value: t ? t.subject : '' },
+      { name: 'body', label: 'Message', rows: 10, value: t ? t.body : '',
+        note: '{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled when the email is sent.' });
+    window.ADspaceConfirm.ask({ title: t ? 'Edit template' : 'Add template', go: 'Save', fields: fields, wait: true,
+      check: function (v) {
+        if (String(v.name || '').trim().length < 2) return NE_SAID['bad-name'];
+        if (String(v.subject || '').trim().length < 2) return NE_SAID['bad-subject'];
+        if (String(v.body || '').trim().length < 2) return NE_SAID['bad-body'];
+        return '';
+      } }, function (v) {
+      return rpc('email_template_save', { p_id: t ? t.id : null, p_audience: t ? t.audience : v.audience, p_name: v.name, p_subject: v.subject, p_body: v.body })
+        .then(function () { etMsg('Saved.', 'ok'); etPaint(); return ''; })
+        .catch(function (e) { return neSaid(e); });
+    });
+  }
+  function emailTemplatesLine() {
+    return rpc('email_templates_list').then(function (d) { var n = (d.rows || []).length; return n + (n === 1 ? ' template' : ' templates'); });
+  }
+
   window.ADspaceWhatsApp = {
     enter: enter,
+    newEmail: newEmail,
+    emailTemplates: emailTemplates,
+    emailTemplatesLine: emailTemplatesLine,
     manage: manage,
     urlState: function () { return st.tab === 'email' ? { tab: 'email' } : {}; },
     compose: function (o) { wireComposer(); compose(o); },
