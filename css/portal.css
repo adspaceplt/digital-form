@@ -1559,7 +1559,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    (2026-11-03: a client's supplier stood centred in two lines over its
    profile chips). */
 dd > .linkbtn {
-  display: inline-block; max-width: calc(100% + 8px); margin: -6px 0 -6px -8px; padding-block: 6px; min-height: 0;
+  /* The target is a control's height at any type size, given back to the
+     line evenly (gate 2026-11-05: 33px in the email sheet's 13px facts). */
+  display: inline-block; box-sizing: border-box; max-width: calc(100% + 8px);
+  margin: calc((1lh - var(--ctl-h)) / 2) 0 calc((1lh - var(--ctl-h)) / 2) -8px;
+  padding-block: calc((var(--ctl-h) - 1lh) / 2); min-height: var(--ctl-h);
   font-size: inherit; text-align: start; color: var(--ink); line-height: inherit;
 }
 dd > .linkbtn .ovgo-chev { vertical-align: -2px; margin-inline-start: 4px; color: var(--ink-soft); }
