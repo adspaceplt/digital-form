@@ -108,6 +108,7 @@
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
     /* Overdue reminder (2026-10-28): who last changed the words. */
     overdue: function () { return window.ADspaceInvoices && window.ADspaceInvoices.templateLine(); },
+    invoicemail: function () { return window.ADspaceInvoices && window.ADspaceInvoices.templateLine('invoice'); },
     /* Demo access (2026-10-27): on or off, and whether a PIN is held. */
     demo: function () {
       return db.rpc('demo_state').then(function (r) {
@@ -297,6 +298,7 @@
       /* The email an overdue invoice is reminded with, sent from Clients'
          Overdue invoices (2026-10-28). */
       biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
+      biz && window.ADspaceInvoices && { id: 'invoicemail', name: 'Invoice email', kind: 'edit', meta: line('invoicemail') },
       /* The content meeting's message to the client, copied from a month's
          card (2026-10-29). */
       biz && window.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg') },
@@ -513,6 +515,7 @@
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
+    if (a === 'invoicemail') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('invoicemail'), 'invoice'); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
     if (a.indexOf('perf-') === 0) { if (window.ADspacePerf && window.ADspacePerf.openSettings) window.ADspacePerf.openSettings(a.slice(5), btn); return; }
     if (a === 'meetmsg') { if (window.ADspaceOps && window.ADspaceOps.openMeetMessage) window.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); return; }

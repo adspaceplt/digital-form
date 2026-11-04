@@ -275,6 +275,7 @@
     meeting_message_get: '', meeting_message_save: 'p_body',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
+    invoice_send_template_get: '', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_email_begin: 'p_actor p_client p_contact p_name p_email p_invoices p_cc p_subject p_body p_again', invoice_email_done: 'p_id p_status p_provider p_error',
     supplier_email_prepare: 'p_supplier p_purpose p_document', supplier_email_begin: 'p_supplier p_purpose p_document p_cc p_subject p_body p_again',
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
@@ -2828,6 +2829,11 @@ function cardSlugFree(name, self, email) {
       disclaimer: 'This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.',
       updated_at: '2026-10-28T00:00:00Z', updated_by: null };
   }
+  function invSendSeed() {
+    return { id: 1, subject_one: 'Invoice {invoice no} · ADspace', subject_many: '{count} invoices · ADspace',
+      body: 'Dear {contact name},\n\nPlease find below the details of invoice {invoice no} for {client}, with a total of {total} due.\n\n{invoices}\n\nThe invoice may be viewed and downloaded through View PDF. Kindly arrange payment by the due date.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
+      legal: '', disclaimer: invTemplateSeed().disclaimer, updated_at: '2026-11-04T00:00:00Z', updated_by: null };
+  }
   function invRecipient(cid) {
     var c = DB.clients.filter(function (x) { return x.id === cid; })[0];
     if (!c) return null;
@@ -2994,17 +3000,19 @@ function cardSlugFree(name, self, email) {
   }
   function invMoney(n, c) { return (c === 'MYR' ? 'RM\u00a0' : c === 'SGD' ? 'S$\u00a0' : c + '\u00a0') + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-  function invBegin(actor, cid, contact, name, email, invoices, cc, subject, body, again) {
+  function invBegin(actor, cid, contact, name, email, invoices, cc, subject, body, again, purpose) {
+    purpose = purpose === 'invoice' ? 'invoice' : 'reminder';
     var me = DB.team_members.filter(function (x) { return x.id === actor && x.active !== false; })[0];
     if (!me) return { error: 'denied' };
     DB.invoice_emails = DB.invoice_emails || [];
     DB.invoice_email_template = DB.invoice_email_template || [invTemplateSeed()];
+    DB.invoice_send_template = DB.invoice_send_template || [invSendSeed()];
     var now = Date.now();
     var mine = DB.invoice_emails.filter(function (e) { return Number(e.bukku_contact) === contact; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; });
     if (mine.some(function (e) { return e.status === 'sending' && now - Date.parse(e.created_at) < 6e5; })) return { error: 'sending' };
     var hours = appSet('wa_repeat_hours', appToday()); if (hours == null) hours = 24;
     if (hours > 0 && !again) {
-      var r = mine.filter(function (e) { return e.status !== 'failed' && now - Date.parse(e.created_at) < hours * 36e5; })[0];
+      var r = mine.filter(function (e) { return (e.purpose || 'reminder') === purpose && e.status !== 'failed' && now - Date.parse(e.created_at) < hours * 36e5; })[0];
       if (r) { var rb = DB.team_members.filter(function (x) { return x.id === r.sent_by; })[0]; return { error: 'recent', recent: { at: r.created_at, to: r.to_email, by: rb ? rb.name : null } }; }
     }
     var rcp = cid ? recipientFor(cid, contact) : null;
@@ -3019,14 +3027,14 @@ function cardSlugFree(name, self, email) {
     var vals = { 'contact name': who, client: co, 'invoice no': n === 1 ? nos[0] : nos.slice(0, -1).join(', ') + ' and ' + nos[n - 1], count: String(n),
       total: Object.keys(by).sort().map(function (c) { return invMoney(by[c], c); }).join(' and '), 'sign off': rcp && rcp.name ? 'Yours sincerely' : 'Yours faithfully' };
     var fill = function (t) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { var v = vals[k.toLowerCase().replace(/\s+/g, ' ')]; return v != null ? v : m; }); };
-    var t = DB.invoice_email_template[0];
+    var t = purpose === 'invoice' ? DB.invoice_send_template[0] : DB.invoice_email_template[0];
     var s = fill(String(subject || '').trim() || (n === 1 ? t.subject_one : t.subject_many)).replace(/\s+/g, ' ').trim();
     var b = fill(String(body || '').trim() || t.body).replace(/\r/g, '').trim();
     if (s.length < 2 || s.length > 200) return { error: 'bad-subject' };
     if (b.length < 2 || b.length > 5000) return { error: 'bad-body' };
     if (!/\{\s*invoices\s*\}/i.test(b)) return { error: 'no-invoices' };
     var row = { id: nid('ie'), client_id: cid, bukku_contact: contact, client_name: co, invoices: invoices, to_email: to, cc_email: ccTo,
-      subject: s, body: b, sent_by: me.id, created_at: new Date().toISOString(), status: 'sending' };
+      subject: s, body: b, sent_by: me.id, created_at: new Date().toISOString(), status: 'sending', purpose: purpose };
     DB.invoice_emails.push(row);
     return { ok: true, id: row.id, to: to, cc: ccTo, subject: s, body: b, legal: t.legal, disclaimer: t.disclaimer };
   }
@@ -3037,7 +3045,7 @@ function cardSlugFree(name, self, email) {
     var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
     var co = e.client_id ? DB.clients.filter(function (x) { return x.id === e.client_id; })[0] : null;
     DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name,
-      detail: 'Overdue reminder ' + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed, not confirmed, to ' : 'not emailed to ') +
+      detail: (e.purpose === 'invoice' ? 'Invoice ' : 'Overdue reminder ') + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed, not confirmed, to ' : 'not emailed to ') +
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }
   function billMarket(c) { return c && String(c.market || "").toUpperCase() === "SG" && c.bill_sgd ? "SG" : "MY"; }
@@ -10330,7 +10338,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           reference: e.reference, to_name: ck ? ck.name : null }));
       });
       if (opsAllowed('clients.billing', 'view')) (DB.invoice_emails || []).filter(function (e) { return mlIn(e) && mlSeen(e.client_id); }).forEach(function (e) {
-        mlItems.push(Object.assign(mlBase(e), { source: 'invoice', kind: 'reminder', client_id: e.client_id || null, client: mlCl(e.client_id) || e.client_name,
+        mlItems.push(Object.assign(mlBase(e), { source: 'invoice', kind: e.purpose || 'reminder', client_id: e.client_id || null, client: mlCl(e.client_id) || e.client_name,
           reference: (e.invoices || []).map(function (i) { return i.number; }).join(', ') }));
       });
       if (opsAllowed('clients.quotes', 'view')) (DB.quote_sign_codes || []).filter(mlIn).forEach(function (g) {
@@ -10763,19 +10771,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ivOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var ivNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return ivNo(window.__refuseRpc[name]);
-      if (name === 'invoice_email_begin' || name === 'invoice_email_done' || name === 'invoice_recipient' || name === 'invoice_money')
+      if (name === 'invoice_email_begin' || name === 'invoice_send_begin' || name === 'invoice_mail_begin' || name === 'invoice_email_done' || name === 'invoice_recipient' || name === 'invoice_money')
         return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
       var ivMe = opsMe();
       DB.invoice_emails = DB.invoice_emails || [];
       DB.invoice_email_template = DB.invoice_email_template || [invTemplateSeed()];
-      if (name === 'invoice_email_template_get') {
+      DB.invoice_send_template = DB.invoice_send_template || [invSendSeed()];
+      var ivTpl = /^invoice_send_template_/.test(name) ? DB.invoice_send_template : DB.invoice_email_template;
+      if (name === 'invoice_email_template_get' || name === 'invoice_send_template_get') {
         if (!ivMe || !(opsAllowed('clients.billing', 'view') || opsGranted('team.settings', 'view'))) return ivNo('denied');
-        var tg = DB.invoice_email_template[0];
+        var tg = ivTpl[0];
         var tby = tg.updated_by ? DB.team_members.filter(function (m) { return m.id === tg.updated_by; })[0] : null;
         return ivOk({ subject_one: tg.subject_one, subject_many: tg.subject_many, body: tg.body, legal: tg.legal, disclaimer: tg.disclaimer,
           updated_at: tg.updated_at, updated_by: tby ? tby.name : null });
       }
-      if (name === 'invoice_email_template_save') {
+      if (name === 'invoice_email_template_save' || name === 'invoice_send_template_save') {
         if (!ivMe || !opsGranted('team.settings', 'work')) return ivNo('denied');
         var sq = function (v) { return String(v || '').replace(/\s+/g, ' ').trim(); };
         var v1 = sq(args.p_subject_one), vn = sq(args.p_subject_many), vb = String(args.p_body || '').replace(/\r/g, '').trim(),
@@ -10784,7 +10794,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (vb.length < 2 || vb.length > 5000) return ivNo('bad-body');
         if (!/\{\s*invoices\s*\}/i.test(vb)) return ivNo('no-invoices');
         if (vl.length > 1000 || vd.length > 1000) return ivNo('too-long');
-        var ts = DB.invoice_email_template[0], moved = [];
+        var ts = ivTpl[0], moved = [];
         if (ts.subject_one !== v1) moved.push('Subject, one invoice: ' + ts.subject_one + ' → ' + v1);
         if (ts.subject_many !== vn) moved.push('Subject, several invoices: ' + ts.subject_many + ' → ' + vn);
         if (ts.body !== vb) moved.push('Message');
@@ -10792,7 +10802,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (ts.disclaimer !== vd) moved.push('Disclaimer');
         if (!moved.length) return ivOk();
         Object.assign(ts, { subject_one: v1, subject_many: vn, body: vb, legal: vl, disclaimer: vd, updated_at: new Date().toISOString(), updated_by: ivMe.id });
-        DB.activity_log.unshift({ id: nid('al'), actor: ivMe.name, action: 'team.changed', subject: 'Overdue reminder', detail: moved.join(' · '), created_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: ivMe.name, action: 'team.changed', subject: name === 'invoice_send_template_save' ? 'Invoice email' : 'Overdue reminder', detail: moved.join(' · '), created_at: new Date().toISOString() });
         return ivOk();
       }
       if (!ivMe || !opsAllowed('clients.billing', 'view')) return ivNo('denied');
@@ -10832,7 +10842,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return want.indexOf(Number(e.bukku_contact)) > -1 && (e.client_id ? ivSeen(e.client_id) : ivAll);
         }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; }).slice(0, 500).map(function (e) {
           var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
-          return { id: e.id, contact: e.bukku_contact, client: e.client_id, invoices: e.invoices, to: e.to_email, cc: e.cc_email, subject: e.subject,
+          return { id: e.id, purpose: e.purpose || 'reminder', contact: e.bukku_contact, client: e.client_id, invoices: e.invoices, to: e.to_email, cc: e.cc_email, subject: e.subject,
             status: e.status, error: e.error || null, at: e.created_at, delivered_at: e.delivered_at || null, opened_at: e.opened_at || null,
             bounced_at: e.bounced_at || null, by: m ? m.name : null };
         });
@@ -12698,7 +12708,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 reg_no: x.reg_no || null, held: lk.indexOf(Number(x.id)) > -1 }; }) });
             });
           }
-          if (bkb.action === 'invoices' || bkb.action === 'remind') {
+          if (bkb.action === 'invoices' || bkb.action === 'remind' || bkb.action === 'deliver') {
             var ivT = appToday();
             var ivAdd = function (n) { var d = new Date(Date.parse(ivT + 'T00:00:00Z') + n * 864e5); return d.toISOString().slice(0, 10); };
             var ivAll = window.__bukkuInvoices = window.__bukkuInvoices || [
@@ -12769,21 +12779,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var contact = Number(bkb.contact), ids = (bkb.invoices || []).map(Number);
               if (!(contact > 0) || !ids.length || ids.length > 50) return bkR({ error: 'bad-request' });
               if (!mayC(contact)) return bkR({ error: 'denied' });
-              var lines = [], paid = [];
+              var lines = [], paid = [], ivSend = bkb.action === 'deliver';
+              var ivDue2 = function (inv) {
+                if (!(ivCents(inv.balance) > 0) || (inv.status && inv.status !== 'ready')) return null;
+                var t = (inv.term_items || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; })
+                  .filter(function (x) { return x.balance == null || ivCents(x.balance) > 0; });
+                return { amount: ivCents(inv.balance), due: (t[0] && t[0].date) || inv.date, part: null };
+              };
               for (var q = 0; q < ids.length; q++) {
                 var inv = ivAll.filter(function (x) { return x.id === ids[q]; })[0];
                 if (!inv || inv.contact_id !== contact) return bkR({ error: 'bad-request' });
-                var od = (window.__invPaid || []).indexOf(inv.id) > -1 ? null : ivOver(inv);
+                var od = (window.__invPaid || []).indexOf(inv.id) > -1 ? null : ivSend ? ivDue2(inv) : ivOver(inv);
                 if (!od) { paid.push(inv.number); continue; }
                 lines.push(ivLine(inv, od));
               }
-              if (!lines.length) return bkR({ error: 'nothing-overdue', paid: paid });
+              if (!lines.length) return bkR({ error: ivSend ? 'nothing-unpaid' : 'nothing-overdue', paid: paid });
               lines.sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
               var lc = links[contact];
               var from = lc && bkb.client && (lc.client === bkb.client || (lc.clients || []).indexOf(bkb.client) > -1) ? bkb.client : null;
               var b = invBegin(sc.me && sc.me.id, from || (lc ? lc.client : null), contact, lines[0].contact_name, lines[0].contact_email,
                 lines.map(function (l) { return { id: l.id, number: l.number, date: l.date, due: l.due, amount: l.amount, currency: l.currency, link: l.link, part: l.part }; }),
-                bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true);
+                bkb.cc !== false, bkb.subject, bkb.body, bkb.again === true, ivSend ? 'invoice' : 'reminder');
               if (b.error) return bkR(Object.assign(b, { paid: paid }));
               var st2 = window.__mailFail === 'not-confirmed' ? 'unknown' : window.__mailFail ? 'failed' : 'sent';
               invDone(b.id, st2, st2 === 'sent' ? 're_' + b.id : null, window.__mailFail || null);

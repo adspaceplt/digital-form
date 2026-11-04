@@ -778,7 +778,9 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
       reminders: (rem.data && rem.data.rows) || [] }, 200, origin);
   }
 
-  // action === 'remind'
+  // action === 'remind', or 'deliver': an unpaid invoice sent by email
+  // (2026-11-04), due or not, its own words and its own Sent recently.
+  const deliver = action === 'deliver';
   if (scope.send !== true) return json({ error: 'denied' }, 200, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
   const contact = Number(body.contact);
@@ -793,7 +795,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   for (let i = 0; i < uniq.length; i++) {
     const inv = read[i], id = uniq[i];
     if (!inv || Number(inv.contact_id) !== contact) return json({ error: 'bad-request' }, 400, origin);
-    let od = overdueOf(inv, today);
+    let od = deliver ? dueOf(inv) : overdueOf(inv, today);
     if (od === undefined) od = overdueWhole(inv, today);
     if (!od) {
       const no = String(inv.number || id);
@@ -805,7 +807,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     lines.push(lineOf(inv, od, today));
   }
   const left = { paid, voided, not_due: notDue };
-  if (!lines.length) return json({ error: 'nothing-overdue', ...left }, 200, origin);
+  if (!lines.length) return json({ error: deliver ? 'nothing-unpaid' : 'nothing-overdue', ...left }, 200, origin);
   lines.sort((a, b) => a.due.localeCompare(b.due) || a.number.localeCompare(b.number));
   const link = links.get(contact);
   /* Filed under the client it was sent from, where that client's company
@@ -813,7 +815,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const fromClient = link && /^[0-9a-f-]{36}$/i.test(String(body.client || '')) && billsFor(link, String(body.client)) ? String(body.client) : null;
   const bc = await bukku('GET', `/contacts/${contact}`).then((r) => (r && r.contact) || null).catch(() => null);
   const svc = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-  const begun = await svc.rpc('invoice_email_begin', {
+  const begun = await svc.rpc(deliver ? 'invoice_send_begin' : 'invoice_email_begin', {
     p_actor: scope.me && scope.me.id, p_client: fromClient || (link ? link.client : null), p_contact: contact,
     p_name: String((bc && (bc.legal_name || bc.other_name)) || lines[0].contact_name || ''),
     p_email: String((bc && bc.email) || lines[0].contact_email || ''),
@@ -823,7 +825,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   if (begun.error) return json({ error: 'needs-update' }, 200, origin);
   const b = begun.data || {};
   if (b.error) return json({ ...b, ...left }, 200, origin);
-  const heading = String(b.subject || '').split(/\s+·\s+/)[0].trim() || 'Payment reminder';
+  const heading = String(b.subject || '').split(/\s+·\s+/)[0].trim() || (deliver ? 'Invoice' : 'Payment reminder');
   const html = layout({ heading, body: String(b.body || ''), preheader: String(b.subject || ''), block: invoiceTable(lines),
     fine: [String(b.legal || ''), String(b.disclaimer || '')] });
   const text = String(b.body || '').replace(/\{\s*invoices\s*\}/i, lines.map((l) => l.number + '  ' + money(l.amount, l.currency) +
@@ -834,7 +836,7 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
   const sent = await resend(msg, String(b.id), secret('RESEND_API_KEY'));
   const done = await svc.rpc('invoice_email_done', { p_id: b.id, p_status: sent.status, p_provider: sent.provider || null, p_error: sent.error || null });
   if (done.error) console.error('bukku-sync: reminder not closed', done.error.message);
-  if (sent.status !== 'sent') console.error('bukku-sync: reminder', sent.status, sent.error);
+  if (sent.status !== 'sent') console.error('bukku-sync: ' + (deliver ? 'invoice email' : 'reminder'), sent.status, sent.error);
   return json(sent.status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null, ...left }
     : { error: sent.status === 'unknown' ? 'not-confirmed' : 'not-sent', ...left }, 200, origin);
 }
@@ -891,7 +893,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, codes: list }, 200, origin);
     }
 
-    if (action === 'invoices' || action === 'remind') return await invoiceAction(action, body, db, origin);
+    if (action === 'invoices' || action === 'remind' || action === 'deliver') return await invoiceAction(action, body, db, origin);
     if (action === 'read' || action === 'hold' || action === 'save') {
       const k = String(body.kind || ''), rid = String(body.id || '');
       if (!['client', 'entity'].includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);
