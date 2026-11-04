@@ -671,7 +671,7 @@
         paintHol(); paint(); say(''); holMsg(was ? 'Saved.' : 'Added.', 'ok');
         if (!was) { var n = $('holNewName'); if (n) n.focus(); }
       });
-    }).catch(function (e) { holMsg((e && e.message) || 'Not saved.'); if (btn) btn.disabled = false; });
+    }).catch(function (e) { holMsg((e && e.message) || 'Not saved. Please try again.'); if (btn) btn.disabled = false; });
   }
   /* Shuts a list's ⋯ menus (`#depList`, `#taxList`). */
   function shutMenus(list, k) {
