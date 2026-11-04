@@ -831,7 +831,7 @@
     denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
     'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
     'not-found': 'This industry no longer exists. The latest list is now shown.',
-    fixed: 'Other stays on the list as the last choice. Its Chinese name can be changed.'
+    fixed: 'Other cannot be renamed or deleted. Only its Chinese name can be changed.'
   };
   function indSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
