@@ -9801,7 +9801,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           sq2.signed_at = pp.day + 'T04:00:00.000Z';
           sq2.signed = { via: 'paper', company: p1.company, contact: p2.contact, signer: pn, signature: null, scan: scan || null,
             record: { at: sq2.signed_at, by: qtMe.name, entered_at: qtNow.toISOString() } };
-          qtLog(sq2.brand, sq2.ref + ' signed on paper by ' + pn.name + ' for ' + p1.company.legal_name + ' on ' + pp.day + ' · entered by ' + qtMe.name);
+          qtLog(sq2.brand, sq2.ref + ' signed on paper by ' + pn.name + ' for ' + p1.company.legal_name + ' on ' + pp.day + ' · keyed in by ' + qtMe.name);
           return qtOk({ ok: true });
         }
         if (!sq2.signed_at) return qtOk({ error: 'not-signed' });
@@ -9833,7 +9833,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
           }
           Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
-          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return x.field + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered name', company_no: 'Registration no.', company_no_old: 'Old registration no.', tin: 'TIN', sst_no: 'SST no.', billing_address: 'Billing address', finance_email: 'Finance email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
@@ -9874,7 +9874,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           Object.assign(sq2, { reviewed_at: qtNow.toISOString(), reviewed_by: qtMe.name, reviewed_role: qtMe.designation || null });
           if (sc2) sc2.updated_at = qtNow.toISOString();
           qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
-            ' · ' + have.length + ' lines confirmed · Billing ' + { filled: 'filled from the signing', held: 'held in Bukku, left as Bukku holds it', kept: 'kept as it was' }[billing]);
+            ' · ' + have.length + (have.length === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
+            { filled: 'Billing filled from the signed quotation', held: 'Billing not changed: Bukku holds the billing details', kept: 'Billing not changed' }[billing]);
           qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
             'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true, billing: billing, lines: have.length });

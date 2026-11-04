@@ -22,6 +22,9 @@
 --     `quotation_reviewers` lists, and `quotation_submit` takes, only a
 --     reviewer it reaches (`bad-reviewer`).
 --   * `quotation_paper`: a day that is no date is `bad-day`.
+--   * The Activity record names a corrected field by its label, counts
+--     service lines in the singular for one, says Billing not changed in
+--     words, and a signature on paper keyed in by (its panel's word).
 --   * `quote_sign_code`, `quote_sign_finish`: the link read again once the
 --     row is held; the signing record keeps `in_contacts`, whether the
 --     address the code went to is a live contact's or the website contact's.
@@ -207,7 +210,9 @@ begin
       if (v_fix->'company'->>v_k) is distinct from (q.signed->'company'->>v_k) then
         v_moved := v_moved || jsonb_build_array(jsonb_build_object('field', v_k, 'from', q.signed->'company'->v_k,
                      'to', v_fix->'company'->v_k, 'by', me.name, 'at', now()));
-        v_words := v_words || '; ' || v_k || ': ' || coalesce(q.signed->'company'->>v_k, 'not set') || ' → ' || coalesce(v_fix->'company'->>v_k, 'not set');
+        v_words := v_words || '; ' || case v_k when 'legal_name' then 'Registered name' when 'company_no' then 'Registration no.'
+                                          when 'company_no_old' then 'Old registration no.' when 'tin' then 'TIN' when 'sst_no' then 'SST no.'
+                                          when 'billing_address' then 'Billing address' when 'finance_email' then 'Finance email' else v_k end || ': ' || coalesce(q.signed->'company'->>v_k, 'not set') || ' → ' || coalesce(v_fix->'company'->>v_k, 'not set');
       end if;
     end loop;
     if jsonb_array_length(v_moved) > 0 then
@@ -312,8 +317,9 @@ begin
   values (me.name, 'client.quotation', q.brand,
           q.ref || ' · reviewed and approved by ' || me.name ||
           case when q.reviewer_id is distinct from me.id then ' in place of ' || coalesce(q.reviewer_name, 'the reviewer') else '' end ||
-          ' · ' || v_lines || ' lines confirmed · Billing ' ||
-          case v_billing when 'filled' then 'filled from the signing' when 'held' then 'held in Bukku, left as Bukku holds it' else 'kept as it was' end);
+          ' · ' || v_lines || case when v_lines = 1 then ' service line confirmed · ' else ' service lines confirmed · ' end ||
+          case v_billing when 'filled' then 'Billing filled from the signed quotation' when 'held' then 'Billing not changed: Bukku holds the billing details'
+               else 'Billing not changed' end);
   perform public.quote_sign_tell(array_remove(array[public.quote_sign_member(q.submitted_by), public.quote_sign_member(c.owner)], me.id),
     'quote.reviewed', 'Quotation approved · ' || q.brand, q.ref || ' · by ' || me.name, q.client_id, q.id::text);
   return jsonb_build_object('ok', true, 'billing', v_billing, 'lines', v_lines);
@@ -371,7 +377,7 @@ begin
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'client.quotation', q.brand,
           q.ref || ' signed on paper by ' || v_name || ' for ' || (c1->'company'->>'legal_name') || ' on ' ||
-          public.register_day(v_d) || ' · entered by ' || me.name);
+          public.register_day(v_d) || ' · keyed in by ' || me.name);
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.quotation_paper(uuid, jsonb) from public, anon;
