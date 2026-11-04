@@ -27,7 +27,7 @@
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
-    'not-proceeding': 'Restore this quotation before issuing a Letter of Offer from it.', 'bad-budget': 'Choose an advertising budget.',
+    'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Duplicate it to quote again.',
@@ -222,7 +222,9 @@
             if (!q.no_contact_at) acts.push('<button class="btn btn-sm" data-a="send" data-wa-ready hidden type="button">Send quotation</button>');
             acts.push('<button class="btn btn-sm" data-a="publish" type="button">Publish</button>');
           }
-          if (maySet && !q.removed_at && q.source === 'website' && !q._revised && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
+          /* A signed quotation is the contract: asked again, never revised
+             over (audit 2026-11-04). */
+          if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
           /* Signed: the colleague checks the entries and submits them to a
@@ -267,14 +269,14 @@
                 ? '<button class="kmenu-item" data-g="4" data-a="contact" type="button" role="menuitem">Allow contact</button>'
                 : '<button class="kmenu-item" data-g="4" data-a="no_contact" type="button" role="menuitem">Do not contact</button>');
             }
-            /* An accepted quotation is the client's record: no Cancel or
-               Remove. */
-            if (!q.reviewed_at) {
-              items.push(q.status === 'not_proceeding'
-                ? '<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>'
-                : '<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
-              items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            /* A signed quotation is the client's record: no Cancel or Remove
+               (Request again sets the signature aside; audit 2026-11-04). */
+            if (!q.reviewed_at && q.status === 'not_proceeding') {
+              items.push('<button class="kmenu-item" data-g="5" data-a="proceeding" type="button" role="menuitem">Restore</button>');
+            } else if (!q.signed_at) {
+              items.push('<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
             }
+            if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
@@ -651,7 +653,9 @@
         fact('Keyed in by', esc((rec.by || '') + (rec.entered_at ? ' · ' + when(rec.entered_at) : ''))) +
         (s.scan && window.ADspaceWords.absUrl(s.scan) ? fact('Scan', '<a class="plink" href="' + esc(window.ADspaceWords.absUrl(s.scan)) + '" target="_blank" rel="noopener">Open scan</a>') : '')
       : fact('Signed', 'On the quotation link') +
-        (rec.email ? fact('Code sent to', esc(rec.email)) : '') +
+        /* The code proves only the address it went to: one outside Contacts
+           is said, so the reviewer checks who signed (audit 2026-11-04). */
+        (rec.email ? fact('Code sent to', esc(rec.email) + (rec.in_contacts === false ? '<small class="qsg-was"><span class="chip-state is-warn">Not in Contacts</span></small>' : '')) : '') +
         (rec.ip ? fact('Signed from', esc(rec.ip + (rec.country ? ' · ' + rec.country : ''))) : '') +
         (rec.fingerprint ? fact('Record', '<span class="mono">' + esc(rec.fingerprint) + '</span>') : '');
     return '<section class="fsec"><h4 class="fsec-h">Company</h4><dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +

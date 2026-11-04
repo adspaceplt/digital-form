@@ -9741,7 +9741,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           sq.ref + JSON.stringify(sq.lines) + JSON.stringify(sq.totals) + JSON.stringify(sfr.payload) + at);
         sq.signed_at = at;
         sq.signed = Object.assign({ via: 'online' }, JSON.parse(JSON.stringify(sfr.payload)),
-          { record: { at: at, email: sfr.email, ip: window.__signIp || '203.0.113.24', country: 'MY', agent: navigator.userAgent.slice(0, 300), fingerprint: fp } });
+          { record: { at: at, email: sfr.email,
+            in_contacts: (DB.client_contacts || []).some(function (k) { return k.client_id === sq.client_id && !k.archived_at &&
+              String(k.email || '').trim().toLowerCase() === String(sfr.email || '').trim().toLowerCase(); }) ||
+              String((sq.contact || {}).email || '').trim().toLowerCase() === String(sfr.email || '').trim().toLowerCase(),
+            ip: window.__signIp || '203.0.113.24', country: 'MY', agent: navigator.userAgent.slice(0, 300), fingerprint: fp } });
         sq.returned_at = null; sq.return_note = null;
         var sc = DB.clients.filter(function (c) { return c.id === sq.client_id; })[0];
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: sq.brand,
@@ -9763,6 +9767,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var a = m.access || {};
           return (a['clients.quotes'] || a.clients) === 'manage';
         };
+
+        var revSees = function (m) {
+          if (m.is_admin || m.role === 'admin' || (m.client_scope || 'all') !== 'own' || !sc2) return true;
+          if (sc2.sales_by && sc2.sales_by === m.id) return true;
+          if (!String(sc2.owner || '').trim()) return ['lead', 'contacted', 'proposal'].indexOf(sc2.stage) >= 0;
+          return String(sc2.owner).trim().toLowerCase() === String(m.name || '').trim().toLowerCase();
+        };
+        var qsLater = DB.quotations.some(function (x) { return x.replaces === sq2.id && !x.removed_at; });
         if (name === 'quotation_link') {
           if (!sq2.access_key) sq2.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
           return qtOk({ ok: true, key: sq2.access_key });
@@ -9770,7 +9782,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'quotation_reviewers') {
           var last = DB.quotations.filter(function (q) { return q.client_id === sq2.client_id && q.reviewer_id && q.id !== sq2.id; })
             .sort(function (a, b) { return a.submitted_at < b.submitted_at ? 1 : -1; })[0];
-          return qtOk({ reviewers: DB.team_members.filter(function (m) { return mayRev(m) && m.id !== qtMe.id; })
+          return qtOk({ reviewers: DB.team_members.filter(function (m) { return mayRev(m) && revSees(m) && m.id !== qtMe.id; })
             .sort(function (a, b) { return String(a.staff_code || 'zz').localeCompare(String(b.staff_code || 'zz')) || a.name.localeCompare(b.name); })
             .map(function (m) { return { id: m.id, name: m.name, code: m.staff_code || null, designation: m.designation || null,
               last: m.id === (sq2.reviewer_id || (last && last.reviewer_id)) }; }) });
@@ -9783,7 +9795,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var pn = { name: String((pp.signer || {}).name || '').trim(), designation: String((pp.signer || {}).designation || '').trim() };
           if (pn.name.length < 2 || pn.name.length > 80) return qtOk({ error: 'bad-signer_name' });
           if (pn.designation.length < 2 || pn.designation.length > 80) return qtOk({ error: 'bad-signer_designation' });
-          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(pp.day || '')) || pp.day > qtToday || pp.day < String(sq2.issued_at).slice(0, 10)) return qtOk({ error: 'bad-day' });
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(pp.day || '')) || new Date(pp.day + 'T00:00:00Z').toISOString().slice(0, 10) !== pp.day || pp.day > qtToday || pp.day < String(sq2.issued_at).slice(0, 10)) return qtOk({ error: 'bad-day' });
           var scan = String(pp.scan || '').trim();
           if (scan && !/^https:\/\/[^\s"'<>`\\]+$/.test(scan)) return qtOk({ error: 'bad-scan' });
           sq2.signed_at = pp.day + 'T04:00:00.000Z';
@@ -9801,10 +9813,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return qtOk({ ok: true });
         }
         if (name === 'quotation_submit') {
+          if (sq2.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+          if (qsLater) return qtOk({ error: 'revised' });
           if (sq2.reviewed_at) return qtOk({ error: 'reviewed' });
           if (sq2.submitted_at && !sq2.returned_at) return qtOk({ error: 'in-review' });
           var rv = DB.team_members.filter(function (m) { return m.id === args.p_reviewer; })[0];
-          if (!mayRev(rv)) return qtOk({ error: 'bad-reviewer' });
+          if (!mayRev(rv) || !revSees(rv)) return qtOk({ error: 'bad-reviewer' });
           if (rv.id === qtMe.id) return qtOk({ error: 'own' });
           var moved = [];
           if (args.p_company) {
@@ -9837,6 +9851,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             qsNotify([sub && sub.id], 'quote.returned', 'Quotation sent back · ' + sq2.brand, sq2.ref + ' · ' + note, sq2.id, sq2.client_id);
             return qtOk({ ok: true, returned: true });
           }
+          if (sq2.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+          if (qsLater) return qtOk({ error: 'revised' });
           var co = sq2.signed.company, held = (DB.bukku_links || []).some(function (b) { return b.kind === 'client' && b.record_id === sq2.client_id && b.held_at; });
           var billing = 'kept';
           var empty = sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
@@ -9922,10 +9938,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
               company: wsh.signed.company, contact: wsh.signed.contact, record: wsh.signed.via === 'online' ? wsh.signed.record : null } : null,
             prepared: (function () { var pm = qsMember(wsh.made_by) || (wsh.source === 'website' && wrep); return pm ? { name: pm.name, title: pm.designation || null } : (wsh.made_by ? { name: wsh.made_by, title: null } : null); })(),
             reviewed: wsh.reviewed_at ? { name: wsh.reviewed_by, title: wsh.reviewed_role || null, at: wsh.reviewed_at } : null,
-            prefill: !wsh.signed_at && wqc ? (function () {
-              var pc = (DB.client_contacts || []).filter(function (k) { return k.client_id === wqc.id && !k.archived_at && k.is_primary; })[0];
-              return { company: { legal_name: wqc.legal_name || '', company_no: wqc.company_no || '', billing_address: wqc.billing_address || '',
-                sst_no: wqc.sst_no || '', tin: wqc.tin || '' },
+
+            prefill: !wsh.signed_at && wqc && !wUnsent && wstage !== 'closed' && wstage !== 'expired' ? (function () {
+              var own = wq.source !== 'website' || (new Date(wqc.created_at) >= new Date(new Date(wq.issued_at).getTime() - 60000) &&
+                !DB.quotations.some(function (o) { return o.client_id === wq.client_id && o.id !== wq.id && o.issued_at < wq.issued_at; }));
+              var pc = own && (DB.client_contacts || []).filter(function (k) { return k.client_id === wqc.id && !k.archived_at && k.is_primary; })[0];
+              return { company: own ? { legal_name: wqc.legal_name || '', company_no: wqc.company_no || '', billing_address: wqc.billing_address || '',
+                sst_no: wqc.sst_no || '', tin: wqc.tin || '' } : { legal_name: '', company_no: '', billing_address: '', sst_no: '', tin: '' },
                 contact: pc ? { salutation: pc.salutation || '', name: pc.name || '', phone: pc.phone || (/^@/.test(String(pc.whatsapp || '')) ? '' : pc.whatsapp || ''), email: pc.email || '' }
                   : { salutation: (wq.contact || {}).salutation || '', name: (wq.contact || {}).name || '', phone: (wq.contact || {}).whatsapp || '', email: (wq.contact || {}).email || '' } };
             })() : null })));
@@ -10011,6 +10030,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qold = DB.quotations.filter(function (q) { return q.id === args.p_old; })[0];
         if (!qold || qold.client_id !== qq.client_id || qold.id === qq.id || qq.removed_at || qold.removed_at) return qtOk({ error: 'not-found' });
         if (qq.source !== 'console' || qq.replaces) return qtOk({ error: 'bad-quotation' });
+        if (qold.signed_at || qold.reviewed_at) return qtOk({ error: 'signed' });
         qq.replaces = qold.id;
         qtLog(qq.brand, qq.ref + ' revises ' + qold.ref);
         return qtOk({ ok: true });
@@ -10071,6 +10091,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'quotation_set') {
         var qw = args.p_what, word;
+        if ((qw === 'not_proceeding' || qw === 'remove') && qq.signed_at) return qtOk({ error: 'signed' });
         if (qw === 'not_proceeding') { qq.status = 'not_proceeding'; word = ' cancelled'; }
         else if (qw === 'proceeding') { qq.status = qq.requested_at ? 'requested' : 'sent'; word = ' restored'; }
         else if (qw === 'remove') { qq.removed_at = new Date().toISOString(); qq.removed_by = qtMe.name; word = ' removed'; }
