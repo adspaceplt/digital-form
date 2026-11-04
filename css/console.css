@@ -3012,12 +3012,11 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .wfy-acts { display: flex; gap: 8px; justify-content: flex-end; }
 .wfy-age { font-size: 12.5px; color: var(--ink-mute); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .is-narrow .wfy-row { grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; }
-/* Where it stands over how long it has waited, over who handed it over
-   (2026-11-04): each line on the title's and the meta's, top aligned. */
+/* Where it stands over how long it has waited (2026-11-04): each line on
+   the title's and the meta's, top aligned. */
 .wfy-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; min-width: 0; }
 .wfy-end > .tone { line-height: 22px; padding-block: 0; white-space: nowrap; }
 .wfy-what small .nb { white-space: nowrap; }
-.wfy-who { font-size: 12.5px; color: var(--ink-mute); text-align: right; white-space: nowrap; }
 .wfy-what { align-content: start; min-height: 0; }
 .wfy-tile { margin-top: 3px; }
 .is-narrow .wfy-end { grid-column: 3; grid-row: 1; }
