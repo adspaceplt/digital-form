@@ -7567,11 +7567,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-check.is-late .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--err); }
 .rp-vrow .rp-name .nb { white-space: nowrap; }
 .rh-row.crm-head { padding: 12px 15px 8px; }
-.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "name upd" "name sent"; gap: 4px 12px; }
+.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "name upd" ". sent"; gap: 0 12px; align-items: start; }
+/* The right column's lines stand on the name's (2026-11-04: v1 sat above the
+   brand name, centred over three rows): the version on the name's line, the
+   date on the type's line under it, Sent under both, so an empty Sent row
+   never stretches the name. */
+.is-narrow .rh-row .rp-line { min-height: 22px; }
+.is-narrow .rh-row > .rh-vno { line-height: 22px; }
+.is-narrow .rh-row > .rh-upd, .is-narrow .rh-row > .rh-sent { line-height: calc(12px * 1.55); }
 /* Select (2026-10-06): a tick leads each row; the row is its label. */
 .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) 64px 110px 20px; cursor: pointer; }
 .rh-row.is-picked { background: var(--line-soft); }
-.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd" "pick name sent"; }
+.is-narrow .rh-row.is-picking { grid-template-columns: 24px minmax(0, 1fr) auto; grid-template-areas: "pick name ver" "pick name upd" "pick . sent"; }
 /* =========================================================================
    THE PHONE'S OWN EDGES (2026-09-26)
    =========================================================================

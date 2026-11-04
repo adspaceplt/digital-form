@@ -282,7 +282,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A phone list row is a two-column table, top aligned: who over meta on the
   left, state over age on the right. Two or three lines, never a stack of
   fields. Cells on one line share its baseline: a record beside an outlined
-  chip reads on the chip's text (`.cr-record`).
+  chip reads on the chip's text (`.cr-record`). The right column's lines stand on
+  the left's, line for line (the same line heights), never centred over a
+  taller column (2026-11-04: a report's v1 sat above its brand name).
 - A phone template names every cell it keeps and hides the rest, including the
   restatement lower in the file.
 - An empty grid cell keeps its column on a desk. `display:none` slides the rest
