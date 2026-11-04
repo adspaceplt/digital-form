@@ -442,7 +442,7 @@
     row.type = 'button';
     row.className = 'wam-row eml-row';
     row.setAttribute('data-id', x.id);
-    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'an address deleted after 12 months') + ', ' + s[0]);
+    row.setAttribute('aria-label', (onRecord ? x.subject : ML_KIND[x.kind] || 'Email') + ' to ' + (x.to_name || x.to_email || 'a deleted address') + ', ' + s[0]);
     var parts = function (list) {
       return list.filter(Boolean).map(function (w, i) {
         return i ? '<wbr><span class="wam-part"><span class="wam-sep"> · </span>' + esc(w) + '</span>' : '<span class="wam-part">' + esc(w) + '</span>';
@@ -451,8 +451,8 @@
     row.innerHTML =
       (onRecord
         ? '<span class="wam-to"><b>' + esc(x.subject) + '</b>' +
-            '<small class="wam-parts">' + parts([x.to_name || x.to_email || 'Address deleted', x.reference]) + '</small></span>'
-        : '<span class="wam-to"><b>' + esc(x.to_name || x.to_email || 'Address deleted') + '</b>' +
+            '<small class="wam-parts">' + parts([x.to_name || x.to_email || window.ADspaceWords.line.addrGone, x.reference]) + '</small></span>'
+        : '<span class="wam-to"><b>' + esc(x.to_name || x.to_email || window.ADspaceWords.line.addrGone) + '</b>' +
             '<small class="wam-parts">' + parts([ML_KIND[x.kind] || 'Email', mlWho(x), x.to_name ? x.to_email : '']) + '</small></span>') +
       /* A New email leads with its subject, its file under it. */
       '<span class="wam-tpl"><span>' + esc(x.source === 'manual' ? x.subject : ML_KIND[x.kind] || 'Email') + '</span>' +
@@ -478,7 +478,7 @@
       '<dl class="ovfacts eml-facts">' +
         fact('Type', ML_KIND[x.kind] || 'Email') +
         fact('From', x.source === 'manual' ? ML_FROM[x.supplier_id ? 'supplier' : 'client'] : ML_FROM[x.source]) +
-        fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : 'Deleted after 12 months') +
+        fact('To', x.to_email ? (x.to_name ? x.to_name + ' · ' : '') + x.to_email : window.ADspaceWords.line.addrGoneWhen) +
         fact('Copy', x.cc_email) +
         fact(x.supplier_id ? 'Supplier' : 'Client', rec, true) +
         fact(x.source === 'manual' ? 'Attachment' : 'Reference', x.reference) +
@@ -489,7 +489,7 @@
       '</dl>' +
       (x.body ? '<div class="eml-body">' + esc(x.body) + '</div>'
         : x.source === 'signing' ? '<p class="emptyline">The message is not kept, as it contained a signing code.</p>'
-        : '<p class="emptyline">The message was deleted after 12 months.</p>') +
+        : '<p class="emptyline">' + window.ADspaceWords.line.bodyGone + '</p>') +
       /* A New email sent again opens filled, its file to attach again. */
       (x.source === 'manual' && x.to_email && may('whatsapp', 'work')
         ? '<div class="row acts"><button class="btn" type="button" data-a="again">Send again</button></div>' : '');
@@ -1264,14 +1264,14 @@
     'bad-recipient': 'That address is no longer listed for this client or supplier. Choose another address.',
     'bad-copy': 'Copy up to five addresses, none the same as the recipient.',
     'bad-email': 'Enter a valid email address.',
-    'bad-subject': 'Enter a subject of 2 to 200 characters.',
-    'bad-body': 'Enter a message of 2 to 5,000 characters.',
+    'bad-subject': window.ADspaceWords.line.subject,
+    'bad-body': window.ADspaceWords.line.message,
     'bad-file': 'The file could not be attached. Attach a PDF, a picture, or a Word, Excel, PowerPoint or CSV file.',
     'too-big': 'The file is over 10 MB. Attach a smaller file.',
     'too-many': 'You have reached the limit of 100 emails in 24 hours. Please try again later.',
     again: 'This email has already been sent. Refresh the page to see it under Email.',
     'bad-template': 'That template no longer exists. Choose another.',
-    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. The email service did not accept the email. Please try again later.',
     'not-confirmed': 'Not confirmed. Check the Email tab before sending it again.',
     'not-found': 'This client or supplier no longer exists.',
@@ -1411,7 +1411,7 @@
     } else {
       if (!party) { neMsg(aud === 'supplier' ? 'Choose a supplier.' : 'Choose a client.', 'err'); $('nemParty').focus(); return; }
       to = $('nemTo').value;
-      if (!to) { neMsg(aud === 'supplier' ? 'No email address is held for this supplier. Add one to its record first.' : 'No email address is held for this client. Add one to its contacts first.', 'err'); return; }
+      if (!to) { neMsg(aud === 'supplier' ? 'This supplier has no email address. Add one to the supplier first.' : 'This client has no email address. Add one to its contacts first.', 'err'); return; }
       ccs = Array.prototype.map.call($('nemCc').querySelectorAll('input:checked'), function (b) { return b.value; });
     }
     var subject = String($('nemSubject').value || '').trim(), body = String($('nemBody').value || '').trim();
@@ -1419,7 +1419,7 @@
     if (body.length < 2) { neMsg('Enter a message.', 'err'); $('nemBody').focus(); return; }
     neMsg('');
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
-      body: 'To ' + to + (ccs.length ? ', with a copy to ' + ccs.join(', ') : '') + (ne.file ? ', with ' + ne.file.name + ' attached' : '') + '.' }, function () {
+      body: window.ADspaceWords.line.sendTo(to, ccs.join(', '), ne.file && ne.file.name) + '.' }, function () {
       var go = $('nemSend');
       ne.busy = true; go.disabled = true;
       if (window.ADspaceActs && window.ADspaceActs.busy) window.ADspaceActs.busy(go, true);

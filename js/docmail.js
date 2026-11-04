@@ -44,13 +44,13 @@
     'no-file': 'A document added by hand has no letter to send.',
     'no-email': 'None of this client\'s contacts has an email address. Add one in Contacts.',
     'bad-contact': 'Choose a contact with an email address.',
-    'bad-subject': 'Enter a subject of 2 to 200 characters.',
-    'bad-body': 'Enter a message of 2 to 5,000 characters.',
+    'bad-subject': window.ADspaceWords.line.subject,
+    'bad-body': window.ADspaceWords.line.message,
     'bad-kind': 'Refresh the page and try again.',
     'bad-request': 'Refresh the page and try again.',
     'bad-file': 'The PDF could not be attached. Preview it to check, then try again.',
     sending: 'This email is on its way. Wait a minute before sending again.',
-    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'not-sent': 'Not sent. Try again.',
     'not-confirmed': 'Not confirmed. Check with the client before sending again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
@@ -196,7 +196,7 @@
     if (f.body.length < 2) { msg('dmMsg', SAID['bad-body'], 'err'); $('dmBody').focus(); return; }
     var to = (p.contacts || []).filter(function (k) { return k.id === f.contact; })[0] || p.to;
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
-      body: (cx.o.doc && cx.o.doc.title ? cx.o.doc.title + ' to ' : 'To ') + to.email + (f.cc ? ', with a copy to ' + p.cc : '') + '.' },
+      body: window.ADspaceWords.line.sendTo(to.email, f.cc && p.cc, null, cx.o.doc && cx.o.doc.title ? cx.o.doc.title + ' to' : '') + '.' },
       function () { send(false); });
   }
   function send(again) {

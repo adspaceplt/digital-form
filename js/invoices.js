@@ -38,12 +38,12 @@
     'bukku-refused': 'Bukku refused the request.',
     'mail-not-set-up': 'Email is not set up. Add the Resend key to the portal\'s secrets.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'no-email': 'This client has no email address on record. Add one to its billing contact.',
+    'no-email': 'This client has no email address. Add one to its billing contact.',
     'nothing-overdue': 'These invoices are no longer overdue.',
     'nothing-unpaid': 'This invoice is paid or voided in Bukku, so it was not sent.',
     sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
-    'bad-subject': 'Enter a subject of 2 to 200 characters.',
-    'bad-body': 'Enter a message of 2 to 5,000 characters.',
+    'bad-subject': window.ADspaceWords.line.subject,
+    'bad-body': window.ADspaceWords.line.message,
     'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
     'too-long': 'The legal note and the disclaimer hold 1,000 characters each.',
     'not-sent': 'Not sent. Resend refused the email.',
@@ -52,7 +52,7 @@
     failed: 'The request failed. Try again.'
   };
   SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
-  SAID['bad-recipient'] = 'That address is not among this client\'s contacts. Refresh the page, then choose again.';
+  SAID['bad-recipient'] = 'That address is no longer listed for this client. Refresh the page, then choose another address.';
   SAID['bad-copy'] = 'A copy can go to five of this client\'s contacts at most, each once and not to the recipient.';
   function said(d) { return (d && SAID[d.error]) || SAID.failed; }
   /* The instalments a line covers, as the email names them. */
@@ -579,7 +579,7 @@
         subject: ed.subject || '', body: ed.body || '', again: recent.indexOf(g) > -1 }).then(function (d) {
         if (rv.run !== token) { next(); return; }
         var paid = leftOut(d);
-        if (d.ok) rv.done[g.contact] = { ok: true, text: 'Sent to ' + d.to + (d.cc ? ', with a copy to ' + d.cc : '') + '.' + paid };
+        if (d.ok) rv.done[g.contact] = { ok: true, text: window.ADspaceWords.line.sendTo(d.to, d.cc, null, 'Sent to') + '.' + paid };
         else if (d.error === 'recent') {
           /* Sent meanwhile by somebody else: kept here, so the next Send asks
              Send again for this client alone. */

@@ -185,7 +185,7 @@
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
     'bad-period': 'Invalid content month.',
-    'bad-week': 'Week must be 1 to 5.',
+    'bad-week': 'Choose a week from 1 to 5.',
     'skip-reason-required': 'Skipping a step needs a reason.',
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',

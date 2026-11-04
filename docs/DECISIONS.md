@@ -8034,3 +8034,29 @@ for the new Messages section together with its email". Read against DESIGN.md
   WORDING, only where the seed's words stand). The overdue reminder and the
   supplier approval words, both edited by a colleague, were left alone.
 Review and send for invoices took the same two refusals and the same "No email address held". `docmail` asked that no ⋯ held `data-a="mail"`, which a contact's Send email (#905) also carries; it now asks that no item reads Send by email. Each retired phrase joined `tests/words.js`.
+
+### 2026-11-04 · Wording checked by a second reader, kinds of wording stopped
+The user asked why "every new build didnt follow your tone etc. rules". Four
+causes: the session that writes a line was its only reader; `tests/words.js`
+stopped only phrases already rejected, so every new phrase passed; each
+feature typed its own messages (one refusal stood in four versions across
+four scripts); and the copy step was one line among hundreds of rules under
+a merge-at-once pace. The user approved all three fixes ("ok"):
+- A. `ADspaceWords.line` holds the lines two screens say (the subject and
+  message refusals, email not set up, the address and message deleted after
+  12 months, `sendTo`), read by New email, Send by email, supplier emails
+  and Review and send; `tests/words.js` fails a script that types one.
+- B. `tests/words.js` PATTERNS stop kinds of wording: "must be n to N"
+  (an instruction instead), "on record", a log named for a tab, "not
+  among", "is held for this", "The client, on the …", a system word's
+  possessive. Their first run found six more lines (a BRN refusal's title,
+  three "on record", the week refusal, a quotation's "kept on record"),
+  each rewritten.
+- C. The `/copy-review` skill: `tests/copyscan.js` lists every new word a
+  branch adds (pages, scripts, edge functions, seeded templates), and a
+  fresh agent that did not build the change reads them against DESIGN.md
+  §6 alone before the merge; CLAUDE.md §1 makes it a step of every release.
+  Its first run, on this release itself, found six console lines the
+  writer had passed (a system word, two refusals with no next step, a
+  present tense for a wait, a screen-reader name out of word order, a
+  button repeating its object); each was rewritten.
