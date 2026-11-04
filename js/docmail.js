@@ -36,7 +36,7 @@
   var FIELDS = ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name'];
   var SAID = {
     denied: 'You do not have permission to send this document. Please ask an admin.',
-    'not-found': 'This document is no longer available.',
+    'not-found': 'This document no longer exists.',
     'void-quotation': 'A cancelled quotation cannot be sent. Restore it first.',
     void: 'A voided or replaced letter cannot be sent.',
     unreleased: 'Send or publish the quotation first.',
@@ -44,8 +44,8 @@
     'no-file': 'A document added by hand has no letter to send.',
     'no-email': 'None of this client\'s contacts has an email address. Add one in Contacts.',
     'bad-contact': 'Choose a contact with an email address.',
-    'bad-subject': 'Enter a subject, 2 to 200 characters.',
-    'bad-body': 'Enter the message, 2 to 5,000 characters.',
+    'bad-subject': 'Enter a subject of 2 to 200 characters.',
+    'bad-body': 'Enter a message of 2 to 5,000 characters.',
     'bad-kind': 'Refresh the page and try again.',
     'bad-request': 'Refresh the page and try again.',
     'bad-file': 'The PDF could not be attached. Preview it to check, then try again.',
@@ -196,7 +196,7 @@
     if (f.body.length < 2) { msg('dmMsg', SAID['bad-body'], 'err'); $('dmBody').focus(); return; }
     var to = (p.contacts || []).filter(function (k) { return k.id === f.contact; })[0] || p.to;
     window.ADspaceConfirm.ask({ title: 'Send email?', go: 'Send',
-      body: (cx.o.doc && cx.o.doc.title ? cx.o.doc.title + ' to ' : 'To ') + to.email + (f.cc ? ', a copy to ' + p.cc : '') + '.' },
+      body: (cx.o.doc && cx.o.doc.title ? cx.o.doc.title + ' to ' : 'To ') + to.email + (f.cc ? ', with a copy to ' + p.cc : '') + '.' },
       function () { send(false); });
   }
   function send(again) {

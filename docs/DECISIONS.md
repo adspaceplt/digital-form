@@ -8003,3 +8003,34 @@ right on To's label line, though it changes the subject and the message,
 not the recipient. It now stands on the Subject's line at its right edge,
 centred on it (`.inv-rv-subj`); `tests/overdue.js` measures it at 1280 and
 390.
+
+### 2026-11-04 · Messages and its emails: the wording reviewed
+The user asked, once the Messages session had merged, to "check the tone etc.
+for the new Messages section together with its email". Read against DESIGN.md
+§6, How copy is drafted:
+- A signing code's email read "The message held the signing code and is not
+  kept." and "Sent by: The client, on the quotation link", its status Used and
+  Requested. It now reads "The message is not kept, as it contained a signing
+  code.", "Requested by: Client", and Code sent, Signed or Expired (distinct
+  from an email's Sent in the Status filter).
+- An address or message removed after 12 months read "Address cleared",
+  "Cleared after 12 months" and "The message is cleared after 12 months":
+  a system word, and a removal that is gone for good is Delete by §6. Now
+  "Address deleted", "Deleted after 12 months", "The message was deleted
+  after 12 months."
+- New email: the template select's first option read "Custom message" (now
+  "No template"); its refusals spoke of "this record's addresses", "the
+  Email log" (no tab bears that name) and "already held for these
+  recipients", and two read "The subject must be …" beside "Enter a …";
+  each now says what to do in the reader's words. The confirm reads "To x,
+  with a copy to y, with file attached." (Send by email's alike); the note
+  under Message names every field the email fills, as the template sheet's
+  does.
+- The Team panel's Work line for Messages named WhatsApp alone, though Work
+  also sends New email.
+- The invoice email read "with a total of {total} due" and "may be viewed
+  and downloaded through View PDF": now "amounting to {total}." and "To view
+  or download the invoice, please select View PDF above." (INVOICE EMAIL
+  WORDING, only where the seed's words stand). The overdue reminder and the
+  supplier approval words, both edited by a colleague, were left alone.
+Each retired phrase joined `tests/words.js`.

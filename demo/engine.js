@@ -2831,7 +2831,7 @@ function cardSlugFree(name, self, email) {
   }
   function invSendSeed() {
     return { id: 1, subject_one: 'Invoice {invoice no} · ADspace', subject_many: '{count} invoices · ADspace',
-      body: 'Dear {contact name},\n\nPlease find below the details of invoice {invoice no} for {client}, with a total of {total} due.\n\n{invoices}\n\nThe invoice may be viewed and downloaded through View PDF. Kindly arrange payment by the due date.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
+      body: 'Dear {contact name},\n\nPlease find below invoice {invoice no} for {client}, amounting to {total}.\n\n{invoices}\n\nTo view or download the invoice, please select View PDF above. Kindly arrange payment by the due date.\n\nShould you have any questions, please reply to this email.\n\nThank you for your continued support.\n\n{sign off},\nADspace Finance',
       legal: '', disclaimer: invTemplateSeed().disclaimer, updated_at: '2026-11-04T00:00:00Z', updated_by: null };
   }
   function invRecipient(cid) {

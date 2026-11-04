@@ -289,7 +289,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
-| `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL and INVOICE RECIPIENTS CHOSEN sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
+| `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
@@ -6766,7 +6766,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   of Offer or client letter at its kind's part (`client_email_may`) on a
   client in scope, overdue reminders at Clients: Billing View, a
   quotation's signing code at Clients: Quotations View, never the code,
-  read Requested, Used or Expired), the month's sent, delivered, opened and
+  read Code sent, Signed or Expired, Requested by Client), the month's sent, delivered, opened and
   not delivered above it, filtered by Type and Status; a row is one button
   opening the email as sent (`#emlSheet`: From, To, Copy, the client or
   supplier opening its record, Reference, Sent by, Status, each step's
