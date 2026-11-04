@@ -611,7 +611,7 @@
         var st = MAIL_STATE[e.status] || [e.status, ''];
         return '<div><dt>' + esc(day(e.created_at)) + '</dt><dd>' + esc(e.subject) +
           ' <span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
-          '<span class="sup-mail-meta">To ' + esc(e.to) + (e.cc ? ', copy to ' + esc(e.cc) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
+          '<span class="sup-mail-meta">' + (e.to ? 'To ' + esc(e.to) : 'Address cleared') + (e.cc ? ', copy to ' + esc(e.cc) : '') + (e.document && e.purpose === 'message' ? ' · ' + esc(e.document) : '') + (e.by ? ' · ' + esc(e.by) : '') + '</span></dd></div>';
       }).join('') + '</dl>';
     });
   }

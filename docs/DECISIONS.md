@@ -7968,3 +7968,38 @@ deploy, and no statement needed a drop. A finance email chosen as To is
 greeted Sir or Madam. The client document emails (`js/docmail.js`) already
 choose To among the contacts; their Copy stays the finance email for now.
 
+### 2026-11-04 · New email from Messages, with saved templates and a file
+The user asked for a New email on the Email tab, to send by hand to others,
+"remember the email template", then chose: recipients by selection (a
+client's contacts, a supplier) or typed freely; saved templates for clients
+or for suppliers, else a custom message in the branded layout; one file
+optional, never the invoice email. Built on supplier-mail's existing sender
+(a `manual` branch) and the shared layout, so every portal email keeps one
+look. The database holds the choice: a client's or supplier's email goes only
+to that record's own addresses (`invoice_recipient_options`,
+`email_supplier_options`), a typed one must be an address, and a hundred a
+colleague a day is the ceiling against misuse of the company's sender.
+`team_emails` carries no foreign key so removing a client never removes the
+record of what was sent to it, and the connector's migration holds no drop or
+delete: `activity_section` (which names deleted tags) and
+`email_template_delete` are the SQL Editor's part.
+
+A review of the Messages section the same day found six gaps, and the user
+asked to "fix all and then merge it": a client's email asked Messages alone,
+so a colleague with no sight of a client's contacts could still write to
+them (now Clients: Contacts View too, as invoice recipients ask Billing);
+the email reached the log only, never the client's or supplier's record
+(now under Contacts and in the supplier's Emails); an email's addresses and
+words were kept for ever, where WhatsApp's are cleared after a year (now
+`mail_retention`, all four email logs, PDPA 2010); the 10- and 11-argument
+invoice begin wrappers stood unused once bukku-sync v26 called the
+13-argument form (dropped in the SQL Editor part); a bounced email had no
+way to go again but retyping it (Send again); and New email was reachable
+from Messages alone (a contact's ⋯ Send email).
+
+### 2026-11-04 · Review and send: Edit on the Subject's line
+The user asked "edit button mismatches row?": Edit stood at the head's
+right on To's label line, though it changes the subject and the message,
+not the recipient. It now stands on the Subject's line at its right edge,
+centred on it (`.inv-rv-subj`); `tests/overdue.js` measures it at 1280 and
+390.

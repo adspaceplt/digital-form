@@ -4470,7 +4470,47 @@
       loadContacts();
     }).catch(function () { loadContacts(); });
   }
+  /* New email from a client's record: Messages at Work and the Contacts
+     part read, as `email_new_begin` asks. */
+  function mayMail() {
+    return Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.newEmail &&
+      ADspaceAdmin.may('whatsapp', 'work') && mayPart('clients.contacts', 'view'));
+  }
+  /* The emails written to this client (`team_emails_of`): one read a visit
+     to the pane, a row opening the email as the log does. */
+  function loadEmails() {
+    var head = $('crmEmailsHead'), box = $('crmEmails'), id = state.client && state.client.id;
+    var canLog = window.ADspaceWhatsApp && window.ADspaceWhatsApp.emailRow && mayPart('clients.contacts', 'view');
+    $('crmNewEmail').hidden = !mayMail();
+    if (!canLog || !id) { head.hidden = box.hidden = true; return; }
+    db.rpc('team_emails_of', { p_client: id }).then(function (r) {
+      if (!state.client || state.client.id !== id) return;
+      if (r.error || (r.data && r.data.error)) {
+        /* A database before this function, or a part refused: no Emails part. */
+        var m = r.error ? r.error.message : r.data.error;
+        if (/denied|could not find|does not exist|PGRST202/i.test(m)) { head.hidden = box.hidden = true; return; }
+        head.hidden = box.hidden = false;
+        failLine(box, 'Emails', m, loadEmails);
+        return;
+      }
+      var rows = (r.data && r.data.rows) || [];
+      head.hidden = box.hidden = !rows.length && !mayMail();
+      if (!rows.length) { box.innerHTML = '<p class="emptyline">No emails.</p>'; return; }
+      box.innerHTML = '';
+      var table = document.createElement('div');
+      table.className = 'crm-table';
+      rows.forEach(function (x) {
+        x.client = state.client.name;
+        table.appendChild(window.ADspaceWhatsApp.emailRow(x, true));
+      });
+      box.appendChild(table);
+    });
+  }
+  $('crmNewEmail').addEventListener('click', function () {
+    window.ADspaceWhatsApp.newEmail($('crmNewEmail'), { audience: 'client', party: state.client && state.client.id });
+  });
   function loadContacts() {
+    loadEmails();
     var box = $('crmContacts');
     if (!box.querySelector('.crm-table')) skeleton(box, 3);
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
@@ -4563,6 +4603,7 @@
 
   function contactRow(ct, removed) {
     var waMsg = Boolean(window.ADspaceWhatsApp && window.ADspaceWhatsApp.may && window.ADspaceWhatsApp.may('message'));
+    var mailMsg = mayMail();
     var row = document.createElement('div');
     row.className = 'svc-row ct-row' + (removed ? ' is-off' : '');
 
@@ -4598,7 +4639,9 @@
                 [ct.portal_access && { a: 'invite', label: 'Send invitation' },
                  /* A template message to this contact, sent at the press
                     (2026-10-31): the composer opens on them. */
-                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp' }],
+                 waMsg && (ct.whatsapp || ct.phone) && { a: 'wa', label: 'Send on WhatsApp' },
+                 /* Messages' New email, opened on this contact (2026-11-04). */
+                 mailMsg && ct.email && { a: 'mail', label: 'Send email' }],
                 [],
                 [ct.portal_access ? { a: 'unportal', label: 'Revoke access' } : { a: 'portal', label: 'Enable access' }],
                 [{ a: 'del', label: 'Remove', need: 'clients.contacts:work', attrs: 'data-soft' }]])) +
@@ -4613,6 +4656,10 @@
     on('wa',       function () {
       window.ADspaceWhatsApp.compose({ purpose: 'message', clientId: ct.client_id || (state.client && state.client.id), contactId: ct.id,
         opener: row.querySelector('.kmenu-btn'), onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
+    });
+    on('mail',     function () {
+      window.ADspaceWhatsApp.newEmail(row.querySelector('.kmenu-btn'),
+        { audience: 'client', party: ct.client_id || (state.client && state.client.id), to: ct.email });
     });
     on('unportal', function () { setPortal(ct, false); });
     /* One listener for Delete: on a removed contact it was also wired to

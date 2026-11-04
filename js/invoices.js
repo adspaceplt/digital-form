@@ -464,8 +464,10 @@
         '<dt>To</dt><dd>' + (to ? esc((whoOf(g) ? whoOf(g) + ' · ' : '') + to) : '<span class="err-ink">No email address on record</span>') + '</dd>' +
         (g.pick ? (g.pick.ccs.length ? '<dt>Copy</dt><dd>' + g.pick.ccs.map(esc).join('<br>') + '</dd>' : '') :
           cc ? '<dt>Copy</dt><dd><label class="tickline"><input type="checkbox" data-cc' + (g.cc ? ' checked' : '') + '> ' + esc(cc) + '</label></dd>' : '')) +
-        '<dt>Subject</dt><dd>' + esc(f.subject) + '</dd></dl>' +
-        (d ? '' : '<button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>') + '</div>' +
+        /* Edit changes the subject and the message, so it stands on the
+           subject's line, never beside To (the user, 2026-11-04). */
+        '<dt>Subject</dt><dd class="inv-rv-subj"><span>' + esc(f.subject) + '</span>' +
+        (d ? '' : '<button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>') + '</dd></dl></div>' +
       (d ? '<p class="msg ' + (d.ok ? 'ok' : 'err') + '">' + esc(d.text) + '</p>' : '') +
       mail + log;
     var ccBox = pv.querySelector('[data-cc]');

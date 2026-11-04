@@ -2574,6 +2574,7 @@
        template chosen or switched. */
     'wa.sent':               ['Sent on WhatsApp', '', 'whatsapp'],
     'wa.template':           ['Template changed', '', 'whatsapp'],
+    'email.sent':            ['Email sent', '', 'whatsapp'],
     'client.review_on':      ['Added to review', 'is-ok', 'clients'],
     'contact.portal_on':     ['Portal enabled', 'is-ok', 'clients'],
     'contact.portal_off':    ['Portal revoked', 'is-warn', 'clients'],

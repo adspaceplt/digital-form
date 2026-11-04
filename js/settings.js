@@ -158,6 +158,8 @@
       });
     },
     clientmail: function () { return window.ADspaceDocMail && window.ADspaceDocMail.templatesLine(); },
+    /* A New email's saved words (2026-11-04). */
+    emailtpl: function () { return window.ADspaceWhatsApp && window.ADspaceWhatsApp.emailTemplatesLine(); },
     /* The meeting message (2026-10-29): who last changed its words. */
     meetmsg: function () { return window.ADspaceOps && window.ADspaceOps.meetMessageLine && window.ADspaceOps.meetMessageLine(); },
     /* Task templates (2026-10-29): the families, and how many fill a task. */
@@ -295,6 +297,7 @@
       /* A quotation's, a Letter of Offer's and a client letter's email, sent
          by Send by email (2026-10-31). */
       biz && window.ADspaceDocMail && { id: 'clientmail', name: 'Client emails', kind: 'open', meta: line('clientmail') },
+      biz && window.ADspaceWhatsApp && { id: 'emailtpl', name: 'Email templates', kind: 'open', meta: line('emailtpl') },
       /* The email an overdue invoice is reminded with, sent from Clients'
          Overdue invoices (2026-10-28). */
       biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
@@ -508,6 +511,7 @@
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }
     if (a === 'clientmail') { if (window.ADspaceDocMail) window.ADspaceDocMail.openTemplates(btn); return; }
+    if (a === 'emailtpl') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.emailTemplates(btn); return; }
     if (a === 'suptpl') { if (window.ADspaceSuppliers && window.ADspaceSuppliers.openTemplates) window.ADspaceSuppliers.openTemplates(btn); return; }
     if (a === 'holidays') { openHol(btn); return; }
     if (a === 'demo') { openDemo(); return; }

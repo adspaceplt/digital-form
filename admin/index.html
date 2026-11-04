@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261104e">
-<link rel="stylesheet" href="/css/console.css?v=20261104i">
+<link rel="stylesheet" href="/css/console.css?v=20261104k">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104g"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104k"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -155,7 +155,7 @@
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
 <script src="/js/notice.js?v=20261103l"></script>
-<script src="/js/whatsapp.js?v=20261104g"></script>
+<script src="/js/whatsapp.js?v=20261104k"></script>
 <script src="/js/docmail.js?v=20261031w"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261029a"></script>
@@ -996,6 +996,13 @@
         </div>
       </div>
         <div id="crmContacts"></div>
+        <!-- Emails written to this client from Messages' New email
+             (2026-11-04): who, when, whether it arrived, opening it whole. -->
+        <div class="viewhead" id="crmEmailsHead" hidden>
+          <span class="headmark"><h2>Emails</h2></span>
+          <button class="btn" id="crmNewEmail" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
+        </div>
+        <div id="crmEmails" hidden></div>
           </div>
 
           <div class="rec-pane" data-pane="billing" hidden>
@@ -4367,10 +4374,83 @@
           <select class="select select-sm" id="emlStatus" aria-label="Status"></select>
           <span class="cmdbar-end">
             <span class="cmdbar-quiet"><span class="cmdbar-count" id="emlCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="emlNew" type="button" data-need="whatsapp:work" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New email</span></button>
+            </span>
           </span>
         </div>
         <div class="tally wam-heads" id="emlHeads" hidden></div>
         <div id="emlList" data-narrow="760"></div>
+      </div>
+    </div>
+    <!-- A New email (2026-11-04): to a client's contacts, a supplier, or an
+         address typed; a saved template or a message written here; one file
+         optional. js/whatsapp.js, supplier-mail's manual branch. -->
+    <div class="sheet" id="nemSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="nemTitle" data-narrow="560">
+        <div class="sheet-head">
+          <h3 id="nemTitle">New email</h3>
+          <button class="iconbtn" id="nemClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <section class="fsec">
+            <h4 class="fsec-h">Recipient</h4>
+            <div class="row"><div><label class="field-label" for="nemFor">For</label>
+              <select class="select" id="nemFor" data-seg data-nodraft><option value="client">Client</option><option value="supplier">Supplier</option><option value="other">Other</option></select></div></div>
+            <div class="row" id="nemPartyRow"><div><label class="field-label" for="nemParty" id="nemPartyLabel">Client</label>
+              <select class="select" id="nemParty" aria-required="true" data-nodraft data-find-hint="Name or code"></select></div></div>
+            <div class="row" id="nemToRow"><div><label class="field-label" for="nemTo">To</label>
+              <select class="select" id="nemTo" aria-required="true" data-nodraft></select></div></div>
+            <div class="row" id="nemCcRow" hidden><div><span class="field-label" id="nemCcLabel">Copy</span>
+              <div class="nem-cc" id="nemCc" role="group" aria-labelledby="nemCcLabel"></div></div></div>
+            <div class="row fgrid" id="nemTypedRow" hidden>
+              <div><label class="field-label" for="nemToTyped">To</label>
+                <input class="input" id="nemToTyped" type="email" inputmode="email" autocomplete="off" placeholder="email@adspace.me" aria-required="true" data-nodraft></div>
+              <div><label class="field-label" for="nemCcTyped">Copy</label>
+                <input class="input" id="nemCcTyped" type="email" inputmode="email" autocomplete="off" placeholder="Optional" data-nodraft></div>
+            </div>
+          </section>
+          <section class="fsec">
+            <h4 class="fsec-h">Message</h4>
+            <div class="row"><div><label class="field-label" for="nemTpl">Template</label>
+              <select class="select" id="nemTpl" data-nodraft></select></div></div>
+            <div class="row"><div><label class="field-label" for="nemSubject">Subject</label>
+              <textarea class="input" id="nemSubject" rows="1" data-oneline maxlength="200" aria-required="true" data-nodraft></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="nemBody">Message</label>
+              <textarea class="textarea" id="nemBody" rows="10" maxlength="5000" aria-required="true" aria-describedby="nemFields" data-nodraft></textarea>
+              <p class="asknote" id="nemFields">{contact name}, {company name} and {sender name} are filled when the email is sent.</p></div></div>
+            <div class="row"><div><span class="field-label" id="nemFileLabel">Attachment</span>
+              <div class="dm-attach nem-attach" role="group" aria-labelledby="nemFileLabel">
+                <span id="nemFileName">None</span>
+                <span class="nem-file-acts">
+                  <button class="btn btn-sm" id="nemFilePick" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Attach file</button>
+                  <button class="btn btn-sm btn-quiet" id="nemFileOff" type="button" hidden>Remove</button>
+                </span>
+                <input id="nemFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv" hidden data-nodraft>
+              </div></div></div>
+          </section>
+          <div class="msg" id="nemMsg" role="status"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="nemSend" type="button">Send</button>
+          <button class="btn btn-quiet" id="nemCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Email templates (2026-11-04): the team's saved words for a New
+         email, for clients or for suppliers; Settings, Templates. -->
+    <div class="sheet" id="etplSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="etplTitle">
+        <div class="sheet-head">
+          <h3 id="etplTitle">Email templates</h3>
+          <button class="iconbtn" id="etplClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="readgroup-head etpl-head"><h4 class="fsec-h">Templates</h4>
+            <button class="btn btn-sm" id="etplAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add template</button></div>
+          <div id="etplList"></div>
+          <div class="msg" id="etplMsg" role="status"></div>
+        </div>
       </div>
     </div>
     <!-- An email as it was sent (2026-11-04): who it went to, its copy, who
@@ -6140,14 +6220,14 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/smreport.js?v=20261103e"></script>
 <script src="/js/reports.js?v=20261103l"></script>
 <script src="/js/register.js?v=20261103l"></script>
-<script src="/js/suppliers.js?v=20261103j"></script>
+<script src="/js/suppliers.js?v=20261104k"></script>
 <script src="/js/bukku.js?v=20261031w"></script>
-<script src="/js/invoices.js?v=20261104i"></script>
+<script src="/js/invoices.js?v=20261104k"></script>
 <script src="/js/engage.js?v=20261103l"></script>
 <script src="/js/quotes.js?v=20261104e"></script>
 <script src="/js/quotepdf.js?v=20261104e"></script>
 <script src="/js/checklists.js?v=20261031w"></script>
-<script src="/js/crm.js?v=20261104d"></script>
+<script src="/js/crm.js?v=20261104k"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261104f"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
@@ -6162,6 +6242,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261031w"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261104g"></script>
+<script src="/js/settings.js?v=20261104j"></script>
 </body>
 </html>
