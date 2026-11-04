@@ -178,13 +178,15 @@
     var taxed = window.ADspaceMoney.sstOf(q.lines, t.sst_pct);
     (q.lines || []).forEach(function (l) {
       var name = wrap(l.label, wD, TB, reg);
-      var small = [];
-      (l.detail || []).forEach(function (d, i) {
-        /* The first inclusion on its own line, the rest run together. */
-        if (i < 2) small.push(String(d)); else small[1] += ' · ' + d;
+      /* Each inclusion a point of its own, as the service lists it, its
+         words hung under its first (the user, 2026-11-04: one run of
+         points read as one lump). */
+      var IND = 9, sub = [];
+      (l.detail || []).forEach(function (d) {
+        d = String(d == null ? '' : d).replace(/^\s*[-•·]\s*/, '').trim();
+        if (!d) return;
+        wrap(d, wD - IND, SM, book).forEach(function (s, k) { sub.push({ s: s, dot: !k }); });
       });
-      var sub = [];
-      small.forEach(function (s) { sub = sub.concat(wrap(s, wD, SM, book)); });
       var under = [];
       if (l.basis === 'once') under.push('one-off');
       else if (l.basis === 'month') under.push(l.months && Number(l.months) !== Number(t.term) ? l.months + (Number(l.months) === 1 ? ' month' : ' months') : 'per month');
@@ -194,7 +196,11 @@
       if (room(h + 4)) headRow();
       var top = y - 7;
       name.forEach(function (s, k) { text(s, M, top - 10 - k * 13, TB, reg); });
-      sub.forEach(function (s, k) { text(s, M, top - 10 - name.length * 13 + 2 - k * 11, SM, book, mute); });
+      sub.forEach(function (s, k) {
+        var yy = top - 10 - name.length * 13 + 2 - k * 11;
+        if (s.dot) text('•', M + 1, yy, SM, book, mute);
+        text(s.s, M + IND, yy, SM, book, mute);
+      });
       right(String(l.qty), xQ, top - 10, TB);
       right(amt(l.rate, q), xR, top - 10, TB);
       right(amt(l.amount, q), xA, top - 10, TB);
