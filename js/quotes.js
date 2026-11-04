@@ -783,7 +783,7 @@
     window.ADspaceSheet.show($('qsgReviewSheet'), { opener: opener || null, onClose: function () { RV = null; } });
     requestAnimationFrame(function () { fitSig(host); });
   }
-  var BILLING_SAID = { filled: 'Billing filled from the signed quotation.', held: 'Billing not changed: Bukku holds the billing details.', kept: 'Billing not changed.' };
+  var BILLING_SAID = { filled: 'Billing filled from the signed quotation.', held: 'Billing not changed, as Bukku keeps this client\'s billing details.', kept: 'Billing not changed.' };
   function approve() {
     if (!RV) return;
     var q = RV.q, ctx = RV.ctx, me = meNow(), go = $('qsgApprove');
@@ -793,7 +793,7 @@
     window.ADspaceConfirm.ask({
       title: place ? 'Approve in place of ' + q.reviewer_name + '?' : 'Approve ' + q.ref + '?',
       body: (place ? q.reviewer_name + ' was asked to review it; the approval is filed under your name in their place. ' : '') +
-        'Its lines become confirmed service lines' + (empty ? ', and Billing is filled from the signed quotation.' : '. Billing is not changed.'),
+        'Its lines will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
       go: 'Approve' }, function () {
       go.disabled = true;
       ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: true, p_note: null }).then(function (r) {

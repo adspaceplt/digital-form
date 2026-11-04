@@ -26,7 +26,7 @@
   var FAMILY_WORD = {
     quote_cover: 'Quotation Cover', client: 'Client Letter', hr: 'HR Letter', other: 'Other'
   };
-  var LANG_WORD = { en: 'English', zh: 'Chinese', ms: 'Malay' };
+  var LANG_WORD = { en: 'English', zh: 'Chinese', ms: 'Bahasa Melayu' };
 
   /* The database answers in one word; the console says what it means. */
   var WORD = {

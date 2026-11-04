@@ -12,7 +12,7 @@
 -- never the address. Every refusal of each function before stays. Safe to
 -- run twice. Rollback: remove the column and run each function from its
 -- earlier file (2026-11-04-new-email.sql, 2026-11-04-email-audit-fixes.sql,
--- 2026-11-04-invoices-sent-by-email.sql, the SUPPLIER EMAILS section).
+-- 2026-11-04-invoices-sent-by-email.sql, 2026-11-04-activity-record-wording.sql).
 -- ===========================================================================
 
 alter table public.team_emails add column if not exists finance boolean not null default false;
@@ -256,7 +256,7 @@ begin
           coalesce(s.code, '') || ' · ' ||
           case e.purpose when 'approved' then 'Supplier approved'
             else coalesce((select d.kind || ' ' || d.serial from public.documents d where d.id = e.document_id), 'Document') end ||
-          case p_status when 'sent' then ' emailed to ' when 'unknown' then ' emailed, not confirmed, to ' else ' not emailed to ' end ||
+          case p_status when 'sent' then ' emailed to ' when 'unknown' then ' emailed (not confirmed) to ' else ' not emailed to ' end ||
           case when lower(btrim(coalesce(s.email, ''))) = lower(btrim(e.to_email)) then coalesce(nullif(btrim(s.contact_name), ''), 'the supplier')
                when lower(btrim(coalesce(s.finance_email, ''))) = lower(btrim(e.to_email)) then 'the finance email' else 'the supplier' end ||
           case when nullif(e.cc_email, '') is not null then ' with a copy to the finance email' else '' end);
@@ -283,15 +283,15 @@ begin
   values (coalesce(m.name, 'system'), 'client.edited',
           coalesce((select c.name from public.clients c where c.id = e.client_id), e.client_name),
           case e.purpose when 'invoice' then 'Invoice ' else 'Overdue reminder ' end ||
-          case p_status when 'sent' then 'emailed to ' when 'unknown' then 'emailed, not confirmed, to ' else 'not emailed to ' end ||
+          case p_status when 'sent' then 'emailed to ' when 'unknown' then 'emailed (not confirmed) to ' else 'not emailed to ' end ||
           coalesce((select nullif(public.contact_named(k.salutation, k.name), '') from public.client_contacts k
                      where k.client_id = e.client_id and lower(btrim(coalesce(k.email, ''))) = lower(btrim(e.to_email))
                      order by k.archived_at nulls first limit 1),
                    case when exists (select 1 from public.clients c where c.id = e.client_id and lower(btrim(coalesce(c.finance_email, ''))) = lower(btrim(e.to_email)))
                         then 'the finance email' else 'the client' end) ||
-          case when nullif(e.cc_email, '') is not null then ', copied to ' ||
-            case when array_length(string_to_array(e.cc_email, ','), 1) = 1 then '1 contact' else array_length(string_to_array(e.cc_email, ','), 1) || ' contacts' end
-          else '' end || ' · ' ||
+          case when nullif(e.cc_email, '') is null then ''
+               when array_length(string_to_array(e.cc_email, ','), 1) = 1 then ', with a copy to 1 other address'
+               else ', with a copy to ' || array_length(string_to_array(e.cc_email, ','), 1) || ' other addresses' end || ' · ' ||
           (select string_agg(x->>'number', ', ') from jsonb_array_elements(e.invoices) x));
   return jsonb_build_object('ok', true);
 end $$;
@@ -328,9 +328,9 @@ begin
   -- lines alone (emailed to …), never a contact or supplier edit's from
   -- and to, which the record keeps its three years (audit 2026-11-04, 4).
   update public.activity_log x
-     set detail = regexp_replace(x.detail, '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+', 'a deleted address', 'g')
+     set detail = regexp_replace(x.detail, '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+', '(address deleted)', 'g')
    where x.action in ('email.sent', 'client.edited', 'supplier.edited') and x.created_at < now() - interval '12 months'
-     and (x.action = 'email.sent' or x.detail ~ '(^| )(not )?emailed(, not confirmed,)? to ')
+     and (x.action = 'email.sent' or x.detail ~ '(^| )(not )?emailed(, not confirmed,| \(not confirmed\))? to ')
      and x.detail ~ '[^@\s,;<>()]+@[^@\s,;<>()]+\.[^@\s,;<>()]+';
   get diagnostics k = row_count; n := n + k;
   return n;

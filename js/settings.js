@@ -893,7 +893,7 @@
             : '<input class="input input-sm" id="indEdName" maxlength="40" aria-label="Industry in English" value="' + esc(i.name) + '">') +
           '<input class="input input-sm" id="indEdZh" maxlength="40" aria-label="Industry in Chinese" value="' + esc(i.name_zh || '') + '">' +
           indCount(i.clients) +
-          (i.clients ? '<p class="ind-note">Renaming it also changes the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
+          (i.clients ? '<p class="ind-note">Saving a new name will also change the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
           '<span class="ind-acts">' +
             (i.clients || i.name === 'Other' ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
             '<button class="btn btn-quiet btn-sm" type="button" data-i="cancel">Cancel</button>' +
