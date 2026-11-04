@@ -284,7 +284,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   fields. Cells on one line share its baseline: a record beside an outlined
   chip reads on the chip's text (`.cr-record`). The right column's lines stand on
   the left's, line for line (the same line heights), never centred over a
-  taller column (2026-11-04: a report's v1 sat above its brand name).
+  taller column (2026-11-04: a report's v1 sat above its brand name). A token that
+  names the row (a Client ID) leads its meta line rather than taking a line
+  of its own (2026-11-04: the Clients list read three lines against two).
 - A phone template names every cell it keeps and hides the rest, including the
   restatement lower in the file.
 - An empty grid cell keeps its column on a desk. `display:none` slides the rest
