@@ -95390,7 +95390,9 @@ end $$;
 -- WHAT IT ADDS
 --   * `industries` (name, name_zh, active, on_website, position): RLS on, no
 --     policy, no grant. Seeded once, into an empty table, with the nine the
---     portal offered (their Chinese words the website's), then any other
+--     portal offered, F&B and Tech by the names the website gave them
+--     (their clients moving with them), their Chinese words the website's,
+--     then any other
 --     industry a client already holds, set inactive.
 --   * `industries_list()`: to the team every industry in its order, with
 --     how many clients hold it; to anyone else (the quotation website) the
@@ -95435,9 +95437,13 @@ do $$
 begin
   if exists (select 1 from public.industries) then return; end if;
   insert into public.industries (name, name_zh, position) values
-    ('Property', '房地产', 1), ('F&B', '餐饮', 2), ('Retail', '零售', 3), ('Wellness', '健康养生', 4),
-    ('Lifestyle', '生活方式', 5), ('Automotive', '汽车', 6), ('Tech', '科技', 7), ('Education', '教育', 8),
+    ('Property', '房地产', 1), ('Food and beverage', '餐饮', 2), ('Retail', '零售', 3), ('Wellness', '健康养生', 4),
+    ('Lifestyle', '生活方式', 5), ('Automotive', '汽车', 6), ('Technology', '科技', 7), ('Education', '教育', 8),
     ('Other', '其他', 9);
+  -- The website read F&B and Tech in full; the list takes those names, and
+  -- the clients holding the short ones move with them, as a rename does.
+  update public.clients c set industry = case c.industry when 'F&B' then 'Food and beverage' else 'Technology' end
+   where c.industry in ('F&B', 'Tech');
   insert into public.industries (name, active, on_website, position)
   select distinct btrim(c.industry), false, false, 50
     from public.clients c
@@ -95510,7 +95516,7 @@ begin
   end if;
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'team.changed', 'Industries', v_name || ' · ' || array_to_string(v_moved, ' · ') ||
-          case when v_n = 1 then ' · 1 client moved' when v_n > 1 then ' · ' || v_n || ' clients moved' else '' end);
+          case when v_n = 1 then ' · 1 client updated' when v_n > 1 then ' · ' || v_n || ' clients updated' else '' end);
   return jsonb_build_object('ok', true, 'name', v_name, 'clients', v_n);
 end $$;
 revoke all on function public.industry_save(text, text, text, boolean) from public, anon;

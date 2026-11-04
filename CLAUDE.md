@@ -1831,7 +1831,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-11-04-industries-editor.sql`; the user, 2026-11-04: "can do a
   setting for industry?", then "A"): `industries` (name, name_zh, active,
   on_website, position; RLS on, no policy, no grant), seeded with the nine
-  the portal offered. `industries_list()` answers the team every industry
+  the portal offered (F&B and Tech as Food and beverage and Technology,
+  their clients moving with them). `industries_list()` answers the team every industry
   with how many clients hold it, and anyone else (the quotation website)
   the active ones on the website, their names alone; the console's
   Industry and `/quote/` read it once a visit, and `quote_website_create`

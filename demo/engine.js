@@ -8169,7 +8169,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (iWas.on_website !== iWeb) iMv.push('On the quotation website: ' + (iWas.on_website ? 'on → off' : 'off → on'));
           if (iMv.length) {
             if (iWas.name !== iName) (DB.clients || []).forEach(function (c) { if (c.industry === iWas.name) { c.industry = iName; iN++; } });
-            logAct('team.changed', 'Industries', iName + ' · ' + iMv.join(' · ') + (iN === 1 ? ' · 1 client moved' : iN > 1 ? ' · ' + iN + ' clients moved' : ''));
+            logAct('team.changed', 'Industries', iName + ' · ' + iMv.join(' · ') + (iN === 1 ? ' · 1 client updated' : iN > 1 ? ' · ' + iN + ' clients updated' : ''));
             iWas.name = iName; iWas.name_zh = iZh; iWas.on_website = iWeb;
           }
           iOut = { ok: true, name: iName, clients: iN };

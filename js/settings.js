@@ -830,14 +830,14 @@
   var IND_SAID = {
     denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
     'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
-    'not-found': 'This industry was removed in the meantime. The latest list is now shown.'
+    'not-found': 'This industry no longer exists. The latest list is now shown.'
   };
   function indSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
     if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
-    if (e === 'in-use') return plural(d.clients || 0, 'client holds', 'clients hold') + ' this industry. Set it inactive instead.';
-    return IND_SAID[e] || 'Not saved.';
+    if (e === 'in-use') return 'This industry cannot be deleted, as ' + plural(d.clients || 0, 'client is', 'clients are') + ' in it. Set it inactive instead.';
+    return IND_SAID[e] || (r && r.deleting ? 'Not deleted. Please try again.' : 'Not saved. Please try again.');
   }
   function indMsg(text, tone) { var m = $('indMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function readInd(done) {
@@ -885,8 +885,8 @@
   function indShut() { shutMenus('#indList', 'i'); }
   function indAsk(i) {
     window.ADspaceConfirm.ask({
-      title: i ? 'Edit industry' : 'Add industry', go: 'Save', wait: true,
-      body: i && i.clients ? 'A new name moves ' + plural(i.clients, 'client', 'clients') + ' with it.' : '',
+      title: i ? 'Edit industry' : 'Add industry', go: i ? 'Save' : 'Add industry', wait: true,
+      body: i && i.clients ? 'Renaming it also changes the industry of ' + plural(i.clients, 'client', 'clients') + '.' : '',
       fields: [{ name: 'name', label: 'Name', value: i ? i.name : '', placeholder: 'Property', required: true },
         { name: 'zh', label: 'Chinese name', value: i ? (i.name_zh || '') : '', placeholder: '房地产', required: false,
           note: 'Shown on the quotation website in Chinese.' },
@@ -896,7 +896,7 @@
         var said = indSaid(r);
         if (said) return said;
         var moved = r.data && r.data.clients;
-        return indChanged(moved ? 'Saved. ' + plural(moved, 'client', 'clients') + ' moved to ' + r.data.name + '.' : 'Saved.');
+        return indChanged(moved ? 'Saved. ' + plural(moved, 'client', 'clients') + ' updated.' : 'Saved.');
       }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
     });
   }
@@ -908,9 +908,10 @@
     }).catch(function (e) { indMsg((e && e.message) || 'Not saved.'); });
   }
   function indDelete(i) {
-    window.ADspaceConfirm.ask({ title: 'Delete', body: i.name + ' is removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete', body: i.name + ' will be deleted from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('industry_delete', { p_name: i.name }).then(function (r) {
+          if (r) r.deleting = true;
           return indSaid(r) || indChanged('Deleted.');
         }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
       });
@@ -947,7 +948,7 @@
       indShut(); indMsg('');
       if (k === 'edit') indAsk(i);
       if (k === 'up' || k === 'down') indDo('industry_move', { p_name: i.name, p_up: k === 'up' }, 'Moved.');
-      if (k === 'active') indDo('industry_set_active', { p_name: i.name, p_on: !i.active }, i.active ? 'Set inactive.' : 'Set active.');
+      if (k === 'active') indDo('industry_set_active', { p_name: i.name, p_on: !i.active }, i.active ? 'Now inactive.' : 'Now active.');
       if (k === 'delete') indDelete(i);
     });
   }

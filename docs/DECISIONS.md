@@ -8122,8 +8122,9 @@ in it, the user chose A, every client moving with it, so the Clients list
 and Analytics never hold two names for one industry. INDUSTRIES keeps the
 list, seeded with the nine and any other industry a client held (none
 live), each with its Chinese name and whether the website offers it;
-Delete is the SQL Editor part. The website now shows each name as Settings
-keeps it, so F&B and Tech read so in English where they read Food and
-beverage and Technology before; renaming either in Settings changes it
-everywhere. `sql`, `industries` and `quotesite` hold it.
+Delete is the SQL Editor part. The website shows each name as Settings
+keeps it, so the seed takes Food and beverage and Technology, the names the
+website gave F&B and Tech (the copy review: a prospect reads formal English),
+and the clients holding the short names move with them as a rename does.
+`sql`, `industries` and `quotesite` hold it.
 
