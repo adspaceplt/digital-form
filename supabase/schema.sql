@@ -95383,38 +95383,34 @@ end $$;
 -- (2026-11-04)
 -- ===========================================================================
 -- WHY (the user, 2026-11-04: "can do a setting for industry? currently its
--- hardcoded?", then "A": a rename carries onto every client): the nine
+-- hardcoded?", then "A": a rename carries onto every client; then "option 1
+-- ... 3 or 4 columns": English, Chinese, clients and the pen): the nine
 -- industries stood typed in three places, the console's pickers, the
 -- quotation website and `quote_website_create`'s check.
 --
 -- WHAT IT ADDS
---   * `industries` (name, name_zh, active, on_website, position): RLS on, no
---     policy, no grant. Seeded once, into an empty table, with the nine the
---     portal offered, F&B and Tech by the names the website gave them
---     (their clients moving with them), their Chinese words the website's,
---     then any other
---     industry a client already holds, set inactive.
---   * `industries_list()`: to the team every industry in its order, with
---     how many clients hold it; to anyone else (the quotation website) the
---     active ones the website offers, their names alone.
---   * `industry_save(p_was, p_name, p_name_zh, p_website)` (Business
---     settings): adds an industry (p_was null, at the list's end) or changes
---     one. A name of 2 to 40 characters, unique in any case (`bad-name`,
---     `taken`), a Chinese name of 40 at most (`bad-name-zh`). A rename
---     carries onto every client holding the old name. Filed `team.changed`
---     under Industries, from and to.
---   * `industry_set_active(p_name, p_on)` (Business settings): an inactive
---     industry is offered to nobody; its clients keep it. Never asks; filed.
---   * `industry_move(p_name, p_up)` (Business settings): one place up or
---     down; the list's order is every picker's.
---   * `quote_website_create` takes an industry the website offers.
+--   * `industries` (name, name_zh): RLS on, no policy, no grant. Seeded
+--     once, into an empty table, with the nine the portal offered, F&B and
+--     Tech by the names the website gave them (their clients moving with
+--     them), their Chinese words the website's, then any other industry a
+--     client already holds.
+--   * `industries_list()`: A to Z with Other last; to the team each with how
+--     many clients hold it, to anyone else (the quotation website) the
+--     names alone.
+--   * `industry_save(p_was, p_name, p_name_zh)` (Business settings): adds an
+--     industry (p_was null) or changes one. A name of 2 to 40 characters,
+--     unique in any case (`bad-name`, `taken`), a Chinese name of 40 at most
+--     (`bad-name-zh`). A rename carries onto every client holding the old
+--     name. Filed `team.changed` under Industries, from and to.
+--   * `quote_website_create` takes an industry the list holds.
 --   * Removing one no client holds is the SQL Editor part
 --     (2026-11-04-industries-editor.sql).
 --
 -- ORDER: 2026-10-07-function-hygiene.sql again (its `open_to_anon` now
 -- names `industries_list`), this file (connector), the pages, then the SQL
--- Editor part. A page served before reads its own nine and writes one the
--- list holds. Safe to run twice.
+-- Editor part. A page served before reads its own nine; the website's
+-- refusal of F&B or Tech is named in words it already holds. Safe to run
+-- twice.
 --
 -- ROLLBACK: run QUOTATION WEBSITE COMMENCE's quote_website_create again;
 -- the table and its functions are then unused.
@@ -95423,9 +95419,6 @@ end $$;
 create table if not exists public.industries (
   name text primary key check (length(btrim(name)) between 2 and 40),
   name_zh text check (name_zh is null or length(name_zh) <= 40),
-  active boolean not null default true,
-  on_website boolean not null default true,
-  position int not null default 100,
   updated_at timestamptz not null default now(),
   updated_by uuid
 );
@@ -95436,40 +95429,41 @@ create unique index if not exists industries_name_idx on public.industries (lowe
 do $$
 begin
   if exists (select 1 from public.industries) then return; end if;
-  insert into public.industries (name, name_zh, position) values
-    ('Property', '房地产', 1), ('Food and beverage', '餐饮', 2), ('Retail', '零售', 3), ('Wellness', '健康养生', 4),
-    ('Lifestyle', '生活方式', 5), ('Automotive', '汽车', 6), ('Technology', '科技', 7), ('Education', '教育', 8),
-    ('Other', '其他', 9);
+  insert into public.industries (name, name_zh) values
+    ('Property', '房地产'), ('Food and beverage', '餐饮'), ('Retail', '零售'), ('Wellness', '健康养生'),
+    ('Lifestyle', '生活方式'), ('Automotive', '汽车'), ('Technology', '科技'), ('Education', '教育'),
+    ('Other', '其他');
   -- The website read F&B and Tech in full; the list takes those names, and
   -- the clients holding the short ones move with them, as a rename does.
   update public.clients c set industry = case c.industry when 'F&B' then 'Food and beverage' else 'Technology' end
    where c.industry in ('F&B', 'Tech');
-  insert into public.industries (name, active, on_website, position)
-  select distinct btrim(c.industry), false, false, 50
+  insert into public.industries (name)
+  select distinct btrim(c.industry)
     from public.clients c
    where length(btrim(coalesce(c.industry, ''))) between 2 and 40
      and not exists (select 1 from public.industries i where lower(i.name) = lower(btrim(c.industry)))
   on conflict do nothing;
 end $$;
 
-/* Every industry for the team; the website's for anyone else. */
+/* A to Z with Other last; how many clients hold each for the team, the
+   names alone for anyone else. */
 create or replace function public.industries_list()
 returns jsonb
 language plpgsql stable security definer set search_path = public as $$
 begin
   if public.is_team() then
-    return coalesce((select jsonb_agg(jsonb_build_object('name', i.name, 'name_zh', i.name_zh, 'active', i.active,
-        'website', i.on_website, 'clients', (select count(*)::int from public.clients c where c.industry = i.name))
-        order by i.position, lower(i.name))
+    return coalesce((select jsonb_agg(jsonb_build_object('name', i.name, 'name_zh', i.name_zh,
+        'clients', (select count(*)::int from public.clients c where c.industry = i.name))
+        order by (i.name = 'Other'), lower(i.name))
       from public.industries i), '[]'::jsonb);
   end if;
-  return coalesce((select jsonb_agg(jsonb_build_object('name', i.name, 'name_zh', i.name_zh) order by i.position, lower(i.name))
-    from public.industries i where i.active and i.on_website), '[]'::jsonb);
+  return coalesce((select jsonb_agg(jsonb_build_object('name', i.name, 'name_zh', i.name_zh) order by (i.name = 'Other'), lower(i.name))
+    from public.industries i), '[]'::jsonb);
 end $$;
 revoke all on function public.industries_list() from public;
 grant execute on function public.industries_list() to anon, authenticated;
 
-create or replace function public.industry_save(p_was text, p_name text, p_name_zh text, p_website boolean)
+create or replace function public.industry_save(p_was text, p_name text, p_name_zh text)
 returns jsonb
 language plpgsql volatile security definer set search_path = public as $$
 declare
@@ -95492,21 +95486,16 @@ begin
     return jsonb_build_object('error', 'taken');
   end if;
   if v_was.name is null then
-    insert into public.industries (name, name_zh, on_website, position, updated_by)
-    values (v_name, v_zh, coalesce(p_website, true),
-            coalesce((select max(i.position) from public.industries i), 0) + 1, me.id);
+    insert into public.industries (name, name_zh, updated_by) values (v_name, v_zh, me.id);
     insert into public.activity_log (actor, action, subject, detail)
     values (me.name, 'team.changed', 'Industries', 'Added: ' || v_name);
     return jsonb_build_object('ok', true, 'name', v_name);
   end if;
   v_moved := array_remove(array[
     case when v_was.name <> v_name then 'Name: ' || v_was.name || ' → ' || v_name end,
-    case when v_was.name_zh is distinct from v_zh then 'Chinese name: ' || coalesce(v_was.name_zh, 'not set') || ' → ' || coalesce(v_zh, 'not set') end,
-    case when v_was.on_website is distinct from coalesce(p_website, v_was.on_website)
-         then 'On the quotation website: ' || case when v_was.on_website then 'on → off' else 'off → on' end end], null);
+    case when v_was.name_zh is distinct from v_zh then 'Chinese name: ' || coalesce(v_was.name_zh, 'not set') || ' → ' || coalesce(v_zh, 'not set') end], null);
   if cardinality(v_moved) = 0 then return jsonb_build_object('ok', true, 'name', v_name, 'clients', 0); end if;
-  update public.industries i set name = v_name, name_zh = v_zh, on_website = coalesce(p_website, i.on_website),
-         updated_at = now(), updated_by = me.id
+  update public.industries i set name = v_name, name_zh = v_zh, updated_at = now(), updated_by = me.id
    where i.name = v_was.name;
   -- A rename carries onto every client holding the old name (the user,
   -- 2026-11-04: "A").
@@ -95519,53 +95508,8 @@ begin
           case when v_n = 1 then ' · 1 client updated' when v_n > 1 then ' · ' || v_n || ' clients updated' else '' end);
   return jsonb_build_object('ok', true, 'name', v_name, 'clients', v_n);
 end $$;
-revoke all on function public.industry_save(text, text, text, boolean) from public, anon;
-grant execute on function public.industry_save(text, text, text, boolean) to authenticated;
-
-create or replace function public.industry_set_active(p_name text, p_on boolean)
-returns jsonb
-language plpgsql volatile security definer set search_path = public as $$
-declare
-  me public.team_members := public.ops_me();
-  v  public.industries;
-begin
-  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
-  select * into v from public.industries i where i.name = p_name for update;
-  if v.name is null then return jsonb_build_object('error', 'not-found'); end if;
-  if v.active = coalesce(p_on, false) then return jsonb_build_object('ok', true); end if;
-  update public.industries i set active = coalesce(p_on, false), updated_at = now(), updated_by = me.id where i.name = v.name;
-  insert into public.activity_log (actor, action, subject, detail)
-  values (me.name, 'team.changed', 'Industries', v.name || ' · ' || case when p_on then 'Inactive → Active' else 'Active → Inactive' end);
-  return jsonb_build_object('ok', true);
-end $$;
-revoke all on function public.industry_set_active(text, boolean) from public, anon;
-grant execute on function public.industry_set_active(text, boolean) to authenticated;
-
-/* One place up or down, the neighbour taking its place. */
-create or replace function public.industry_move(p_name text, p_up boolean)
-returns jsonb
-language plpgsql volatile security definer set search_path = public as $$
-declare
-  me public.team_members := public.ops_me();
-  v_names text[];
-  v_at int;
-  v_to int;
-begin
-  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
-  perform pg_advisory_xact_lock(hashtextextended('industries', 0));
-  select array_agg(i.name order by i.position, lower(i.name)) into v_names from public.industries i;
-  v_at := array_position(v_names, p_name);
-  if v_at is null then return jsonb_build_object('error', 'not-found'); end if;
-  v_to := v_at + case when coalesce(p_up, false) then -1 else 1 end;
-  if v_to < 1 or v_to > cardinality(v_names) then return jsonb_build_object('ok', true); end if;
-  v_names[v_at] := v_names[v_to]; v_names[v_to] := p_name;
-  update public.industries i set position = array_position(v_names, i.name) where i.position is distinct from array_position(v_names, i.name);
-  insert into public.activity_log (actor, action, subject, detail)
-  values (me.name, 'team.changed', 'Industries', p_name || ' · moved ' || case when p_up then 'up' else 'down' end);
-  return jsonb_build_object('ok', true);
-end $$;
-revoke all on function public.industry_move(text, boolean) from public, anon;
-grant execute on function public.industry_move(text, boolean) to authenticated;
+revoke all on function public.industry_save(text, text, text) from public, anon;
+grant execute on function public.industry_save(text, text, text) to authenticated;
 
 create or replace function public.quote_website_create(p_sel jsonb, p_contact jsonb, p_idem text)
 returns jsonb
@@ -95605,10 +95549,8 @@ begin
   -- prospect is sent from ADspace's number (2026-10-26, audit).
   if v_name ~* public.quote_link_like() then return jsonb_build_object('error', 'bad-name'); end if;
   if v_brand ~* public.quote_link_like() then return jsonb_build_object('error', 'bad-brand'); end if;
-  -- An industry the website offers, from the list kept in Settings
-  -- (INDUSTRIES, 2026-11-04).
-  if v_ind is not null and not exists (select 1 from public.industries i
-                                        where i.name = v_ind and i.active and i.on_website) then
+  -- An industry on the list kept in Settings (INDUSTRIES, 2026-11-04).
+  if v_ind is not null and not exists (select 1 from public.industries i where i.name = v_ind) then
     return jsonb_build_object('error', 'bad-industry');
   end if;
   if v_sal is not null and v_sal not in ('Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', 'Dato''', 'Datin', 'Datuk',
@@ -95728,7 +95670,7 @@ grant execute on function public.quote_website_create(jsonb, jsonb, text) to ser
 -- ===========================================================================
 -- Run in the Supabase SQL Editor after 2026-11-04-industries.sql (the
 -- connector holds a statement naming delete). Until it runs, Delete reads
--- "This feature is not available yet."; Set inactive works.
+-- "This feature is not available yet."; adding and renaming work.
 --
 -- `industry_delete(p_name)` (Business settings): removes an industry no
 -- client holds (`in-use` with the count), filed `team.changed` under

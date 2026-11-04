@@ -26,7 +26,7 @@
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
     public_holidays: 'day name updated_at updated_by',
     departments: 'key name active in_prize criteria position updated_at updated_by',
-    industries: 'name name_zh active on_website position updated_at updated_by',
+    industries: 'name name_zh updated_at updated_by',
     client_checklists: 'id client_id kind version template answers sections_na status prepared_by prepared_name prepared_at reviewed_by reviewed_name reviewed_at history created_at updated_at',
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
@@ -548,8 +548,7 @@
     quote_catalogue: '',
     public_holidays_between: 'p_from p_to',
     departments_list: '',
-    industries_list: '', industry_save: 'p_was p_name p_name_zh p_website', industry_set_active: 'p_name p_on',
-    industry_move: 'p_name p_up', industry_delete: 'p_name',
+    industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
     department_save: 'p_key p_name p_in_prize p_criteria',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
@@ -8138,17 +8137,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: tList(), error: null });
     }
 
-    if (/^industr(ies_list|y_save|y_set_active|y_move|y_delete)$/.test(name)) {
+    if (/^industr(ies_list|y_save|y_delete)$/.test(name)) {
       var ir = window.__refuseRpc && window.__refuseRpc[name];
       if (ir) return Promise.resolve({ data: null, error: { message: ir } });
       var ia = args || {}, iMe = opsMe(), iOut;
       DB.industries = DB.industries || [];
-      var iSorted = function () { return DB.industries.slice().sort(function (a, b) { return (a.position - b.position) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); }); };
+      var iSorted = function () { return DB.industries.slice().sort(function (a, b) { return ((a.name === 'Other') - (b.name === 'Other')) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); }); };
       var iUse = function (n) { return (DB.clients || []).filter(function (c) { return c.industry === n; }).length; };
       var iOf = function (n) { return DB.industries.filter(function (x) { return x.name === n; })[0]; };
       if (name === 'industries_list') {
-        iOut = iMe ? iSorted().map(function (x) { return { name: x.name, name_zh: x.name_zh || null, active: x.active, website: x.on_website, clients: iUse(x.name) }; })
-          : iSorted().filter(function (x) { return x.active && x.on_website; }).map(function (x) { return { name: x.name, name_zh: x.name_zh || null }; });
+        iOut = iMe ? iSorted().map(function (x) { return { name: x.name, name_zh: x.name_zh || null, clients: iUse(x.name) }; })
+          : iSorted().map(function (x) { return { name: x.name, name_zh: x.name_zh || null }; });
       } else if (!opsGranted('team.settings', 'work')) iOut = { error: 'denied' };
       else if (name === 'industry_save') {
         var iName = String(ia.p_name || '').replace(/\s+/g, ' ').trim(), iZh = String(ia.p_name_zh || '').replace(/\s+/g, ' ').trim() || null;
@@ -8158,38 +8157,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else if (ia.p_was && !iWas) iOut = { error: 'not-found' };
         else if (DB.industries.some(function (x) { return x.name.toLowerCase() === iName.toLowerCase() && x !== iWas; })) iOut = { error: 'taken' };
         else if (!iWas) {
-          DB.industries.push({ name: iName, name_zh: iZh, active: true, on_website: ia.p_website !== false,
-            position: DB.industries.reduce(function (m, x) { return Math.max(m, x.position || 0); }, 0) + 1 });
+          DB.industries.push({ name: iName, name_zh: iZh });
           logAct('team.changed', 'Industries', 'Added: ' + iName);
           iOut = { ok: true, name: iName };
         } else {
-          var iMv = [], iN = 0, iWeb = ia.p_website == null ? iWas.on_website : Boolean(ia.p_website);
+          var iMv = [], iN = 0;
           if (iWas.name !== iName) iMv.push('Name: ' + iWas.name + ' → ' + iName);
           if ((iWas.name_zh || null) !== iZh) iMv.push('Chinese name: ' + (iWas.name_zh || 'not set') + ' → ' + (iZh || 'not set'));
-          if (iWas.on_website !== iWeb) iMv.push('On the quotation website: ' + (iWas.on_website ? 'on → off' : 'off → on'));
           if (iMv.length) {
             if (iWas.name !== iName) (DB.clients || []).forEach(function (c) { if (c.industry === iWas.name) { c.industry = iName; iN++; } });
             logAct('team.changed', 'Industries', iName + ' · ' + iMv.join(' · ') + (iN === 1 ? ' · 1 client updated' : iN > 1 ? ' · ' + iN + ' clients updated' : ''));
-            iWas.name = iName; iWas.name_zh = iZh; iWas.on_website = iWeb;
+            iWas.name = iName; iWas.name_zh = iZh;
           }
           iOut = { ok: true, name: iName, clients: iN };
         }
       } else {
-        var iOne = iOf(ia.p_name);
+        var iOne = iOf(ia.p_name), iU = iOne ? iUse(iOne.name) : 0;
         if (!iOne) iOut = { error: 'not-found' };
-        else if (name === 'industry_set_active') {
-          if (iOne.active !== Boolean(ia.p_on)) { iOne.active = Boolean(ia.p_on); logAct('team.changed', 'Industries', iOne.name + ' · ' + (ia.p_on ? 'Inactive → Active' : 'Active → Inactive')); }
-          iOut = { ok: true };
-        } else if (name === 'industry_move') {
-          var iL = iSorted(), iAt = iL.indexOf(iOne), iTo = iAt + (ia.p_up ? -1 : 1);
-          if (iTo >= 0 && iTo < iL.length) { iL[iAt] = iL[iTo]; iL[iTo] = iOne; iL.forEach(function (x, k) { x.position = k + 1; });
-            logAct('team.changed', 'Industries', iOne.name + ' · moved ' + (ia.p_up ? 'up' : 'down')); }
-          iOut = { ok: true };
-        } else {
-          var iU = iUse(iOne.name);
-          if (iU) iOut = { error: 'in-use', clients: iU };
-          else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
-        }
+        else if (iU) iOut = { error: 'in-use', clients: iU };
+        else { DB.industries = DB.industries.filter(function (x) { return x !== iOne; }); logAct('team.changed', 'Industries', 'Deleted: ' + iOne.name); iOut = { ok: true }; }
       }
       persist();
       return Promise.resolve({ data: iOut, error: null });
@@ -9636,7 +9622,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wlink = /(https?:|www\.|[a-z0-9-]+\.(com|net|org|info|biz|me|io|co|xyz|top|link|click|ly|my|sg|app|site|online|shop)(\b|\/))/i;
         if (wlink.test(wn)) return qtOk({ error: 'bad-name' });
         if (wlink.test(wb)) return qtOk({ error: 'bad-brand' });
-        if (wi && !(DB.industries || []).some(function (x) { return x.name === wi && x.active && x.on_website; })) return qtOk({ error: 'bad-industry' });
+        if (wi && !(DB.industries || []).some(function (x) { return x.name === wi; })) return qtOk({ error: 'bad-industry' });
 
         var wsal = String(wc.salutation || '').trim() || null;
         if (wsal && ['Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof', "Dato'", 'Datin', 'Datuk', "Dato' Sri", 'Datin Sri', 'Tan Sri', 'Puan Sri', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'].indexOf(wsal) < 0) return qtOk({ error: 'bad-salutation' });

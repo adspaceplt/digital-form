@@ -4,7 +4,7 @@
 -- ===========================================================================
 -- Run in the Supabase SQL Editor after 2026-11-04-industries.sql (the
 -- connector holds a statement naming delete). Until it runs, Delete reads
--- "This feature is not available yet."; Set inactive works.
+-- "This feature is not available yet."; adding and renaming work.
 --
 -- `industry_delete(p_name)` (Business settings): removes an industry no
 -- client holds (`in-use` with the count), filed `team.changed` under

@@ -210,8 +210,8 @@
   var GRP = window.ADspaceGroup;
   function bandShut(key, lone) { return GRP.shut('clients', key, SHUT_BY_DEFAULT[key], lone); }
   /* The industries a client is put in, from the list kept in Settings
-     (`industries_list`, 2026-11-04): the active ones, in the list's order,
-     read once a visit as the form first opens. */
+     (`industries_list`, 2026-11-04): A to Z with Other last, read once a
+     visit as the form first opens. */
   var industries = { rows: null, asked: null };
   function readIndustries() {
     if (!industries.asked) {
@@ -222,10 +222,10 @@
     }
     return industries.asked;
   }
-  /* The picker holds the active industries, and the one this client holds
-     where it is inactive or no longer listed, so a save never clears it. */
+  /* The picker holds the list, and the one this client holds where the
+     list no longer does, so a save never clears it. */
   function fillIndustry(keep) {
-    var on = (industries.rows || []).filter(function (i) { return i.active; }).map(function (i) { return i.name; });
+    var on = (industries.rows || []).map(function (i) { return i.name; });
     if (keep && on.indexOf(keep) < 0) on.push(keep);
     $('crmIndustry').innerHTML = '<option value="">Not set</option>' +
       on.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');

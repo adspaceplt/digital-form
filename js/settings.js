@@ -109,9 +109,7 @@
     industries: function () {
       return db.rpc('industries_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('industries');
-        var on = r.data.filter(function (i) { return i.active; });
-        return parts([plural(on.length, 'industry', 'industries'),
-          plural(on.filter(function (i) { return i.website; }).length, 'on the quotation website', 'on the quotation website')]);
+        return plural(r.data.length, 'industry', 'industries');
       });
     },
     bukku: function () { return window.ADspaceBukku && window.ADspaceBukku.configLine(); },
@@ -823,10 +821,12 @@
   /* ---- Industries (2026-11-04) ------------------------------------------
      The industries a client is put in (the user, 2026-11-04: "can do a
      setting for industry?"): the console's pickers and the quotation
-     website read this list. A rename carries onto every client holding the
-     old name ("A"); one no client holds can be deleted, one in use set
-     inactive (offered to nobody, its clients keeping it). */
-  var ind = { rows: null, err: null };
+     website read this list. One table, A to Z with Other last (the user:
+     "option 1 ... 3 or 4 columns": English, 中文, Clients, the pen): the
+     pen turns its row into the two fields, a rename carrying onto every
+     client holding the old name ("A"); Delete stands in that row only for
+     an industry no client holds; the last row adds one. */
+  var ind = { rows: null, err: null, editing: null };
   var IND_SAID = {
     denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
     'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
@@ -836,7 +836,7 @@
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
     if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
-    if (e === 'in-use') return 'This industry cannot be deleted, as ' + plural(d.clients || 0, 'client is', 'clients are') + ' in it. Set it inactive instead.';
+    if (e === 'in-use') return 'This industry cannot be deleted, as ' + plural(d.clients || 0, 'client is', 'clients are') + ' in it.';
     return IND_SAID[e] || (r && r.deleting ? 'Not deleted. Please try again.' : 'Not saved. Please try again.');
   }
   function indMsg(text, tone) { var m = $('indMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
@@ -846,15 +846,18 @@
       ind.rows = r.data; ind.err = null;
     }).catch(function (e) { ind.rows = null; ind.err = e; }).then(function () { if (done) done(); });
   }
-  function indChanged(text) {
-    return new Promise(function (ok) {
-      readInd(function () {
-        paintInd(); readLine('industries'); indMsg(text, 'ok');
-        if (window.ADspaceCRM && window.ADspaceCRM.industriesReload) window.ADspaceCRM.industriesReload();
-        ok('');
-      });
+  function indChanged(text, focus) {
+    ind.editing = null;
+    readInd(function () {
+      paintInd(); readLine('industries'); indMsg(text, 'ok');
+      if (window.ADspaceCRM && window.ADspaceCRM.industriesReload) window.ADspaceCRM.industriesReload();
+      var f = focus && $(focus); if (f) f.focus();
     });
   }
+  function indOne(name) { return (ind.rows || []).filter(function (x) { return x.name === name; })[0]; }
+  /* The figure alone under its Clients head; the word too where the heads
+     leave (a phone). */
+  function indCount(n) { return '<span class="ind-n">' + (n || 0) + '<span class="ind-unit"> ' + (n === 1 ? 'client' : 'clients') + '</span></span>'; }
   function paintInd() {
     var box = $('indList');
     if (!box) return;
@@ -864,61 +867,60 @@
     }
     if (!ind.rows) { window.ADspaceState.skeleton(box, 3); return; }
     $('indCount').textContent = plural(ind.rows.length, 'industry', 'industries');
-    if (!ind.rows.length) { box.innerHTML = ''; window.ADspaceState.emptyLine(box, 'No industries.'); return; }
-    var n = ind.rows.length;
-    box.innerHTML = ind.rows.map(function (i, at) {
-      var meta = [i.name_zh || '', plural(i.clients || 0, 'client', 'clients'), i.website ? '' : 'Not on the quotation website'].filter(Boolean)
-        .map(function (x) { return '<span class="team-part">' + esc(x) + '</span>'; }).join(' · ');
-      return '<div class="dtrow ind-row' + (i.active ? '' : ' is-off') + '" data-name="' + esc(i.name) + '">' +
-        '<span class="dtrow-name"><b>' + esc(i.name) + (i.active ? '' : ' <span class="chip">Inactive</span>') + '</b><small>' + meta + '</small></span>' +
-        '<span class="hol-acts"><button class="btn btn-quiet btn-sm" type="button" data-i="edit">' + PEN + 'Edit</button>' +
-        '<span class="team-act"><button class="kmenu-btn" type="button" data-i="menu" aria-label="More actions for ' + esc(i.name) + '" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden role="menu">' +
-          (at > 0 ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-i="up">Move up</button>' : '') +
-          (at < n - 1 ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-i="down">Move down</button>' : '') +
-          '<button class="kmenu-item" data-g="5" type="button" role="menuitem" data-i="active">' + (i.active ? 'Set inactive' : 'Set active') + '</button>' +
-          (i.clients ? '' : '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-i="delete">Delete</button>') +
-        '</div></span></span></div>';
+    var rows = ind.rows.map(function (i) {
+      if (i.name === ind.editing) {
+        return '<div class="ind-row is-edit" data-name="' + esc(i.name) + '">' +
+          '<input class="input input-sm" id="indEdName" maxlength="40" aria-label="Industry in English" value="' + esc(i.name) + '">' +
+          '<input class="input input-sm" id="indEdZh" maxlength="40" aria-label="Industry in Chinese" value="' + esc(i.name_zh || '') + '">' +
+          indCount(i.clients) +
+          (i.clients ? '<p class="ind-note">Renaming it also changes the industry of ' + esc(plural(i.clients, 'client', 'clients')) + '.</p>' : '') +
+          '<span class="ind-acts">' +
+            (i.clients ? '' : '<button class="btn btn-danger btn-sm" type="button" data-i="delete">Delete</button>') +
+            '<button class="btn btn-quiet btn-sm" type="button" data-i="cancel">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" type="button" data-i="save">Save</button></span>' +
+          '</div>';
+      }
+      return '<div class="ind-row" data-name="' + esc(i.name) + '">' +
+        '<span class="ind-name">' + esc(i.name) + '</span>' +
+        '<span class="ind-zh">' + (i.name_zh ? esc(i.name_zh) : '<span class="ind-none">—</span>') + '</span>' +
+        indCount(i.clients) +
+        '<span class="ind-acts"><button class="iconbtn" type="button" data-i="edit" aria-label="Edit ' + esc(i.name) + '" title="Edit">' + PEN + '</button></span></div>';
     }).join('');
+    box.innerHTML = '<div class="ind-row ind-head" aria-hidden="true"><span>English</span><span>中文</span><span>Clients</span><span></span></div>' + rows +
+      '<div class="ind-row ind-add">' +
+        '<input class="input input-sm" id="indNewName" maxlength="40" placeholder="Add industry" aria-label="New industry in English">' +
+        '<input class="input input-sm" id="indNewZh" maxlength="40" placeholder="中文" aria-label="New industry in Chinese">' +
+        '<span class="ind-acts"><button class="btn btn-sm" type="button" data-i="add">Add</button></span></div>';
+    if (ind.editing) { var f = $('indEdName'); if (f) f.focus(); }
   }
-  function indShut() { shutMenus('#indList', 'i'); }
-  function indAsk(i) {
-    window.ADspaceConfirm.ask({
-      title: i ? 'Edit industry' : 'Add industry', go: i ? 'Save' : 'Add industry', wait: true,
-      body: i && i.clients ? 'Renaming it also changes the industry of ' + plural(i.clients, 'client', 'clients') + '.' : '',
-      fields: [{ name: 'name', label: 'Name', value: i ? i.name : '', placeholder: 'Property', required: true },
-        { name: 'zh', label: 'Chinese name', value: i ? (i.name_zh || '') : '', placeholder: '房地产', required: false,
-          note: 'Shown on the quotation website in Chinese.' },
-        { name: 'web', label: 'On the quotation website', tick: true, value: !i || i.website ? 'on' : '' }]
-    }, function (v) {
-      return db.rpc('industry_save', { p_was: i ? i.name : null, p_name: v.name, p_name_zh: v.zh || null, p_website: v.web === 'on' }).then(function (r) {
-        var said = indSaid(r);
-        if (said) return said;
-        var moved = r.data && r.data.clients;
-        return indChanged(moved ? 'Saved. ' + plural(moved, 'client', 'clients') + ' updated.' : 'Saved.');
-      }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
-    });
-  }
-  function indDo(fn, args, word) {
-    db.rpc(fn, args).then(function (r) {
+  function indSave(was) {
+    var nm = $(was ? 'indEdName' : 'indNewName'), zh = $(was ? 'indEdZh' : 'indNewZh');
+    var name = (nm.value || '').replace(/\s+/g, ' ').trim();
+    if (!name) { indMsg('Enter the industry\'s name.'); nm.focus(); return; }
+    var btn = $('indList').querySelector(was ? '.is-edit [data-i="save"]' : '[data-i="add"]');
+    if (btn) btn.disabled = true;
+    db.rpc('industry_save', { p_was: was || null, p_name: name, p_name_zh: (zh.value || '').trim() || null }).then(function (r) {
       var said = indSaid(r);
-      if (said) { indMsg(said); return; }
-      indChanged(word);
-    }).catch(function (e) { indMsg((e && e.message) || 'Not saved.'); });
+      if (said) { indMsg(said); if (btn) btn.disabled = false; nm.focus(); return; }
+      var moved = r.data && r.data.clients;
+      indChanged(!was ? 'Added.' : moved ? 'Saved. ' + plural(moved, 'client', 'clients') + ' updated.' : 'Saved.', was ? null : 'indNewName');
+    }).catch(function (e) { indMsg((e && e.message) || 'Not saved. Please try again.'); if (btn) btn.disabled = false; });
   }
   function indDelete(i) {
     window.ADspaceConfirm.ask({ title: 'Delete', body: i.name + ' will be deleted from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('industry_delete', { p_name: i.name }).then(function (r) {
           if (r) r.deleting = true;
-          return indSaid(r) || indChanged('Deleted.');
-        }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+          var said = indSaid(r);
+          if (said) return said;
+          indChanged('Deleted.');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not deleted. Please try again.'; });
       });
   }
   function openInd(opener) {
     if (!biz()) return;
-    indMsg('');
+    indMsg(''); ind.editing = null;
     paintInd();
     window.ADspaceSheet.show($('indSheet'), { opener: opener });
     readInd(paintInd);
@@ -929,28 +931,28 @@
     indWired = true;
     $('indCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('indClose').addEventListener('click', function () { $('indCancel').click(); });
-    $('indAdd').addEventListener('click', function () { indMsg(''); indAsk(null); });
-    $('indList').addEventListener('click', function (e) {
+    var list = $('indList');
+    list.addEventListener('click', function (e) {
       var b = e.target.closest('[data-i]');
       if (!b) return;
-      var row = b.closest('.ind-row'), name = row && row.getAttribute('data-name');
-      var i = (ind.rows || []).filter(function (x) { return x.name === name; })[0];
+      var k = b.getAttribute('data-i'), row = b.closest('.ind-row'), name = row && row.getAttribute('data-name');
+      if (k === 'add') { indMsg(''); indSave(null); return; }
+      var i = indOne(name);
       if (!i) return;
-      var k = b.getAttribute('data-i');
-      if (k === 'menu') {
-        e.stopPropagation();
-        var mn = row.querySelector('[data-menu]'), open = mn.hidden;
-        indShut();
-        mn.hidden = !open; b.setAttribute('aria-expanded', String(open));
-        if (open) window.ADspaceMenu.place(b, mn);
-        return;
-      }
-      indShut(); indMsg('');
-      if (k === 'edit') indAsk(i);
-      if (k === 'up' || k === 'down') indDo('industry_move', { p_name: i.name, p_up: k === 'up' }, 'Moved.');
-      if (k === 'active') indDo('industry_set_active', { p_name: i.name, p_on: !i.active }, i.active ? 'Now inactive.' : 'Now active.');
-      if (k === 'delete') indDelete(i);
+      if (k === 'edit') { indMsg(''); ind.editing = i.name; paintInd(); }
+      else if (k === 'cancel') { ind.editing = null; paintInd(); var p = list.querySelector('.ind-row[data-name="' + CSS.escape(i.name) + '"] [data-i="edit"]'); if (p) p.focus(); }
+      else if (k === 'save') indSave(i.name);
+      else if (k === 'delete') indDelete(i);
     });
+    /* Enter saves the row it is typed in, Escape leaves an edit (before the
+       sheet's own capture hears it). */
+    window.addEventListener('keydown', function (e) {
+      if (e.isComposing || e.keyCode === 229) return;
+      var row = e.target.closest && list.contains(e.target) && e.target.closest('.ind-row');
+      if (!row || e.target.tagName !== 'INPUT') return;
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); if (row.classList.contains('ind-add')) indSave(null); else indSave(row.getAttribute('data-name')); }
+      else if (e.key === 'Escape' && row.classList.contains('is-edit')) { e.preventDefault(); e.stopPropagation(); row.querySelector('[data-i="cancel"]').click(); }
+    }, true);
   }
 
   /* ---- Page availability (2026-10-29) ------------------------------------
@@ -1371,7 +1373,6 @@
   document.addEventListener('click', function (e) {
     if (!e.target.closest('#holList .team-act')) holShut();
     if (!e.target.closest('#depList .team-act')) depShut();
-    if (!e.target.closest('#indList .team-act')) indShut();
     if (!e.target.closest('#taxList .team-act')) taxShut();
   });
 

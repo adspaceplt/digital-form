@@ -1829,21 +1829,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   the new record (2026-10-19).
 - Industries (`2026-11-04-industries.sql`, its SQL Editor part
   `2026-11-04-industries-editor.sql`; the user, 2026-11-04: "can do a
-  setting for industry?", then "A"): `industries` (name, name_zh, active,
-  on_website, position; RLS on, no policy, no grant), seeded with the nine
-  the portal offered (F&B and Tech as Food and beverage and Technology,
-  their clients moving with them). `industries_list()` answers the team every industry
-  with how many clients hold it, and anyone else (the quotation website)
-  the active ones on the website, their names alone; the console's
+  setting for industry?", then "A", then "option 1 … 3 or 4 columns"):
+  `industries` (name, name_zh; RLS on, no policy, no grant), seeded with
+  the nine the portal offered (F&B and Tech as Food and beverage and
+  Technology, their clients moving with them). `industries_list()`, A to Z
+  with Other last, answers the team each with how many clients hold it and
+  anyone else (the quotation website) the names alone; the console's
   Industry and `/quote/` read it once a visit, and `quote_website_create`
-  takes only one the website offers (`bad-industry`). Settings, Clients:
-  Industries (`#indSheet`, `team.settings`): Add industry, Edit (Name,
-  Chinese name, On the quotation website), the ⋯ Move up / Move down, Set
-  inactive / Set active (never asks; offered to nobody, its clients keep
-  it) and Delete where no client holds it (`in-use`); `industry_save`
-  (`bad-name`, `bad-name-zh`, `taken`), a rename carrying onto every client
-  holding the old name; each filed `team.changed` under Industries. A
-  client holding an inactive industry keeps it in its picker.
+  takes only one it holds (`bad-industry`). Settings, Clients: Industries
+  (`#indSheet`, `team.settings`): one table, English · 中文 · Clients · the
+  pen; the pen turns its row into the two fields (Enter saves, Escape
+  leaves), Delete in that row only where no client holds it (asked,
+  `in-use`); the last row adds one; `industry_save(p_was, p_name,
+  p_name_zh)` (`bad-name`, `bad-name-zh`, `taken`, a rename onto another
+  name included), a rename carrying onto every client holding the old
+  name; each filed `team.changed` under Industries. A client holding a
+  name the list no longer holds keeps it in its picker.
 - The Clients list, and every read of all clients (`bridge.active`,
   `uniqueSlug`, the Dashboard), is read a thousand at a time
   (`ADspaceAPI.readPages`, the one copy; 2026-10-19); past its cap it
