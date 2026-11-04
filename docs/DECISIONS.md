@@ -8184,3 +8184,23 @@ leaves by Back first. Its column check counted Build quote's inclusions as
 a cell the head lacked; moving them into the name's cell squeezed them to
 the name's width on a phone, so the layout stayed and the check now leaves
 out `ul.incl`, a list under a name that holds no column.
+
+### 2026-11-04 · Releases #908 to #913: the wording reviewed
+The user asked to "check since last sessions tone etc.". `/copy-review`
+listed 175 new strings; its second reader found ten lines against §6, each
+fixed: /quote/ named the language Malay and the console Bahasa Malaysia
+where Video Scripts and Write caption say Bahasa Melayu (one name now, in
+/quote/, the contact sheet, Build quote and the letters' table); Approve's
+question said what its press does in the present tense ("Its lines
+become …"), now will; "Billing not changed: Bukku holds the billing
+details" reads "…, as Bukku keeps this client's billing details"; an
+industry's rename note reads "Saving a new name will also change …". In
+the Activity record (ACTIVITY RECORD WORDING, the functions restated with
+their words alone changed): a billing entity "already held · main" reads
+"(already in the portal) · primary"; "emailed, not confirmed, to" reads
+"emailed (not confirmed) to"; a New email to Other reads "another
+address" and "a copy to n other addresses"; an address past its year
+reads "(address deleted)"; the quotation review files a corrected field
+by Billing's own label; a website lead is filed under Quotation website,
+as the rest of the quotation website is. The retired phrases joined
+`tests/words.js`.

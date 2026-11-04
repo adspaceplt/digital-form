@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104l"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104m"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -983,7 +983,7 @@
                 <select class="select" id="ctLang" data-seg>
                   <option value="en">English</option>
                   <option value="zh">中文</option>
-                  <option value="ms">Bahasa Malaysia</option>
+                  <option value="ms">Bahasa Melayu</option>
                 </select></div>
             </div>
           </section>
@@ -1485,7 +1485,7 @@
                   <div class="tickstack" id="qbLangs" role="group" aria-labelledby="qbLangsLabel">
                     <label class="tickline"><input type="checkbox" value="en" checked> <span>English</span></label>
                     <label class="tickline"><input type="checkbox" value="zh"> <span>Chinese</span></label>
-                    <label class="tickline"><input type="checkbox" value="ms"> <span>Malay</span></label>
+                    <label class="tickline"><input type="checkbox" value="ms"> <span>Bahasa Melayu</span></label>
                   </div>
                   <p class="qb-hint">Shared across content pieces at no charge</p>
                   <label class="tickline qb-translate"><input type="checkbox" id="qbTranslate"> <span>Make every content piece bilingual <small class="qb-rate" id="qbTrRate"></small></span></label>
@@ -6237,7 +6237,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/passkey.js?v=20261031w"></script>
 <script src="/js/admin.js?v=20261104f"></script>
 <script src="/js/documents.js?v=20261031w"></script>
-<script src="/js/letters.js?v=20261031w"></script>
+<script src="/js/letters.js?v=20261104"></script>
 <script src="/js/smreport.js?v=20261103e"></script>
 <script src="/js/reports.js?v=20261103l"></script>
 <script src="/js/register.js?v=20261103l"></script>
@@ -6245,10 +6245,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261031w"></script>
 <script src="/js/invoices.js?v=20261104n"></script>
 <script src="/js/engage.js?v=20261103l"></script>
-<script src="/js/quotes.js?v=20261104n"></script>
+<script src="/js/quotes.js?v=20261104o"></script>
 <script src="/js/quotepdf.js?v=20261104e"></script>
 <script src="/js/checklists.js?v=20261031w"></script>
-<script src="/js/crm.js?v=20261104t"></script>
+<script src="/js/crm.js?v=20261104u"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261104s"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
@@ -6263,6 +6263,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261031w"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261104t"></script>
+<script src="/js/settings.js?v=20261104u"></script>
 </body>
 </html>
