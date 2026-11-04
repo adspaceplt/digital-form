@@ -3043,8 +3043,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   a bounce with Open contacts, Open in Bukku (Bukku's own host alone). At
   Clients: Billing Work the rows are ticks: Send reminders opens Review and
   send (`#odSheet`): one email a client, the clients at the left, the
-  email at the right as it arrives, Edit changing that client's subject
-  and message alone, Sent before as a table (When, Channel, Sent by,
+  email at the right as it arrives, Edit (on the Subject's line, at its
+  right edge) changing that client's subject and message alone, Sent before as a table (When, Channel, Sent by,
   Status). Send asks first (Send again where a client was reminded within
   `wa_repeat_hours`, asked again for that client alone; one reminded by a
   colleague meanwhile is refused `recent` and asked about at the next

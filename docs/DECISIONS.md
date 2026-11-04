@@ -7997,3 +7997,9 @@ invoice begin wrappers stood unused once bukku-sync v26 called the
 way to go again but retyping it (Send again); and New email was reachable
 from Messages alone (a contact's ⋯ Send email).
 
+### 2026-11-04 · Review and send: Edit on the Subject's line
+The user asked "edit button mismatches row?": Edit stood at the head's
+right on To's label line, though it changes the subject and the message,
+not the recipient. It now stands on the Subject's line at its right edge,
+centred on it (`.inv-rv-subj`); `tests/overdue.js` measures it at 1280 and
+390.

@@ -4164,6 +4164,11 @@ span.inv-amt { font-weight: 600; }
 /* To and Copy chosen among the client's contacts (2026-11-04). */
 .inv-rv-head .inv-rv-to { width: 100%; max-width: 100%; }
 .inv-rv-head .inv-rv-cc { display: grid; gap: 6px; }
+/* The subject with Edit at its right edge, the button overflowing the line
+   evenly so the facts keep their pitch. */
+.inv-rv-head .inv-rv-subj { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.inv-rv-head .inv-rv-subj > span { min-width: 0; }
+.inv-rv-head .inv-rv-subj > .btn { flex: 0 0 auto; margin-block: calc((1.55em - var(--ctl-h-sm)) / 2); }
 .inv-rv-pane .err-ink { color: var(--err); }
 .inv-mail { background: #f4f4f2; border-radius: var(--radius); padding: 14px; }
 .inv-mail-card { background: #fff; color: #1b1a17; border-radius: 12px; padding: 20px 22px; display: grid; gap: 10px; font-size: 13.5px; line-height: 1.55; }
