@@ -1365,7 +1365,7 @@
           var A = window.ADspaceAdmin, isVic = Boolean(r.client && A && A.vic && A.vic(r.client));
           return '<div class="wfy-row" data-i="' + i + '">' +
             '<span class="wfy-tile' + (isVic ? ' is-vic' : '') + '">' + g +
-              (isVic ? '<span class="wfy-crown" aria-hidden="true">' + (A.vicCrown || '') + '</span>' : '') + '</span>' +
+              (isVic && A.vicBadge ? A.vicBadge(r.client) : '') + '</span>' +
             '<button class="wfy-what" type="button" data-a="open"><b>' + esc(r.title) + '</b>' +
               (isVic ? '<span class="sr">VIC, Very Important Client.</span>' : '') +
               /* A line of parts wraps between its parts, never inside one. */

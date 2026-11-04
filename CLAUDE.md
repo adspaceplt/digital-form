@@ -2235,8 +2235,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   note; VIC since {day} · set by {name}) on a desk's hover, a press or the
   keyboard's focus, docked on a phone, Escape first; inside a row that is
   one button it is part of that button and shows its card on hover alone.
-  Where it shows: the Clients list (the tag, the logo's gold ring, a VICs
-  view drawn while any is held), the record head (tag and ring; the ⋯'s
+  Where it shows: the Clients list (the logo's gold ring with the crown on
+  it, `ADspaceAdmin.vicBadge`, its card on a desk's hover, the name
+  carrying no tag; a VICs view drawn while any is held), the record head (tag and ring; the ⋯'s
   Mark as VIC, asking VIC since and a note, or Remove VIC, never asked,
   Undo where it happened; VIC since under Key dates, its pen at the part),
   Content Review's list and client head, My Work's rows, board cards and

@@ -845,6 +845,12 @@
       : '<button class="chip-vic" type="button" data-vic="' + esc(id) + '" aria-haspopup="dialog" aria-expanded="false" ' +
           'aria-label="VIC, Very Important Client">' + CROWN + 'VIC</button>';
   }
+  /* The crown on a client's mark or a row's tile, where the tag would crowd
+     the name (the Clients list, Waiting for you): decorative, the row names
+     VIC to a screen reader; a desk's hover shows the card as the tag's does. */
+  function vicBadge(id) {
+    return vicOf(id) ? '<span class="vic-crown" data-vic="' + esc(id) + '" aria-hidden="true">' + CROWN + '</span>' : '';
+  }
   /* VIC clients first, keeping the order otherwise (Array.sort is stable). */
   function vicFirst(list, idOf) {
     return list.map(function (x, i) { return [vicOf(idOf(x)) ? 0 : 1, i, x]; })
@@ -890,7 +896,7 @@
   });
   document.addEventListener('mouseover', function (e) {
     if (!fineHover || !fineHover.matches) return;
-    var tag = e.target.closest && e.target.closest('.chip-vic');
+    var tag = e.target.closest && e.target.closest('.chip-vic, .vic-crown');
     if (tag) { if (vicHeld.tag !== tag || $('vicPop').hidden) vicHeld.timer = setTimeout(function () { vicOpen(tag); }, 150); else clearTimeout(vicHeld.timer); return; }
     if (e.target.closest && e.target.closest('#vicPop')) { clearTimeout(vicHeld.timer); return; }
     if (vicHeld.tag) { clearTimeout(vicHeld.timer); vicHeld.timer = setTimeout(function () { vicShut(false); }, 200); }
@@ -5877,6 +5883,7 @@
     vicTag: vicTag,
     /* The crown alone, for a mark worn on a tile (Waiting for you, 2026-11-04). */
     vicCrown: CROWN,
+    vicBadge: vicBadge,
     vicFirst: vicFirst,
     vicByName: vicByName,
     vicReload: loadVic,

@@ -641,10 +641,15 @@
       '<span class="crm-c crm-c-name">' +
         (picking ? '<input class="trow-pick cl-pick" type="checkbox"' + (state.pick[c.id] ? ' checked' : '') +
           ' aria-label="Select ' + esc(c.name || '') + '">' : '') +
-        '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + (isVic(c.id) ? ' is-vic' : '') + '" aria-hidden="true">' +
-          (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">' : esc(initialsOf(c.name || ''))) +
+        /* A VIC's mark carries the crown on its ring, as Waiting for you's
+           tile does; the name keeps no tag (2026-11-04). */
+        '<span class="cl-markbox">' +
+          '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + (isVic(c.id) ? ' is-vic' : '') + '" aria-hidden="true">' +
+            (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">' : esc(initialsOf(c.name || ''))) +
+          '</span>' + vicBadgeOf(c.id) +
         '</span>' +
-        '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') + vicTagOf(c.id, true) + '</span>' +
+        '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') +
+          (isVic(c.id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span>' +
           (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
         '</span>' +
       '</span>' +
@@ -1735,6 +1740,7 @@
   function vicOf(id) { var A = window.ADspaceAdmin; return A && A.vic ? A.vic(id) : null; }
   function isVic(id) { return Boolean(vicOf(id)); }
   function vicTagOf(id, inRow) { var A = window.ADspaceAdmin; return A && A.vicTag ? A.vicTag(id, inRow) : ''; }
+  function vicBadgeOf(id) { var A = window.ADspaceAdmin; return A && A.vicBadge ? A.vicBadge(id) : ''; }
   var VIC_SAID = { denied: 'Not saved. Only an admin marks a client VIC.', 'not-found': 'Not saved. This client is no longer available.',
     'too-long': 'The note is 300 characters at most.', 'bad-date': 'VIC since is today or earlier.' };
   function paintVic(c) {
