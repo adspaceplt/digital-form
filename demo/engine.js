@@ -3080,7 +3080,7 @@ function cardSlugFree(name, self, email) {
     var m = DB.team_members.filter(function (x) { return x.id === e.sent_by; })[0];
     var co = e.client_id ? DB.clients.filter(function (x) { return x.id === e.client_id; })[0] : null;
     DB.activity_log.unshift({ id: nid('al'), actor: m ? m.name : 'system', action: 'client.edited', subject: (co && co.name) || e.client_name,
-      detail: (e.purpose === 'invoice' ? 'Invoice ' : 'Overdue reminder ') + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed, not confirmed, to ' : 'not emailed to ') +
+      detail: (e.purpose === 'invoice' ? 'Invoice ' : 'Overdue reminder ') + (status === 'sent' ? 'emailed to ' : status === 'unknown' ? 'emailed (not confirmed) to ' : 'not emailed to ') +
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }
   function billMarket(c) { return c && String(c.market || "").toUpperCase() === "SG" && c.bill_sgd ? "SG" : "MY"; }
@@ -7937,7 +7937,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.client_entities.push({ client_id: cid0, entity_id: eid, is_main: isMain, added_at: new Date().toISOString(), added_by: enMe.id || null });
         if (isMain) entPut(eid, cid0);
         if (enOf(eid).orphan_of) enOf(eid).orphan_of = null;
-        enFile(cid0, (made ? 'Billing entity added' : 'Billing entity added, already held') + (isMain ? ' · main' : ''));
+        enFile(cid0, (made ? 'Billing entity added' : 'Billing entity added (already in the portal)') + (isMain ? ' · primary' : ''));
         return enAns({ ok: true, id: eid, main: isMain });
       }
       if (!link0) return enAns({ error: 'not-found' });
@@ -9662,10 +9662,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           DB.clients.unshift(wcl);
           DB.client_contacts.push({ id: nid('cc'), client_id: wcl.id, salutation: wsal, name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en',
             is_primary: true, created_at: new Date().toISOString(), archived_at: null });
-          DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
+          DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.added', subject: wb, detail: 'Website · ' + (wsal ? wsal + ' ' : '') + wn, created_at: new Date().toISOString() });
         } else if (wstart && wcl.commence !== wstart) {
           var wsw = { '1_3': 'Within 3 months', '3_6': '3 to 6 months', '6_plus': 'More than 6 months' };
-          DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.edited', subject: wcl.name,
+          DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.edited', subject: wcl.name,
             detail: 'Urgency to commence: ' + (wsw[wcl.commence] || 'not set') + ' → ' + wsw[wstart], created_at: new Date().toISOString() });
           wcl.commence = wstart; wcl.updated_at = new Date().toISOString();
         }
@@ -9681,7 +9681,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           released_at: null, released_by: null, reply_due: qtReplyBy().toISOString() };
         DB.quotations.push(wrow);
-        DB.activity_log.unshift({ id: nid('al'), actor: 'Website', action: 'client.quotation', subject: wcl.name,
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: wcl.name,
           detail: wrow.ref + ' sent · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · rate card v.' + wrow.version, created_at: new Date().toISOString() });
         qtTell(wcl.id, 'quote.website', 'Quotation to review · ' + wcl.name,
           wrow.ref + ' · ' + (wp.totals.month ? 'Monthly incl. SST RM ' + wp.totals.month.incl.toFixed(2) : 'one-off') + ' · ' + wn +
@@ -9884,7 +9884,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
           }
           Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
-          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered name', company_no: 'Registration no.', company_no_old: 'Old registration no.', tin: 'TIN', sst_no: 'SST no.', billing_address: 'Billing address', finance_email: 'Finance email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Company name as registered', company_no: 'Business registration no.', company_no_old: 'Old registration no.', tin: 'TIN', sst_no: 'SST registration no.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
@@ -9926,7 +9926,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (sc2) sc2.updated_at = qtNow.toISOString();
           qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
             ' · ' + have.length + (have.length === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
-            { filled: 'Billing filled from the signed quotation', held: 'Billing not changed: Bukku holds the billing details', kept: 'Billing not changed' }[billing]);
+            { filled: 'Billing filled from the signed quotation', held: 'Billing not changed, as Bukku keeps this client\'s billing details', kept: 'Billing not changed' }[billing]);
           qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
             'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true, billing: billing, lines: have.length });
@@ -10537,9 +10537,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         var ncc0 = te0.cc_email ? String(te0.cc_email).split(', ').length : 0;
         DB.activity_log.unshift({ id: nid('al'), actor: emMe.name, action: 'email.sent', subject: subj0,
-          detail: te0.subject + ({ sent: ' · emailed to ', unknown: ' · emailed, not confirmed, to ' }[args.p_status] || ' · not emailed to ') +
-            (te0.to_name || ({ client: 'the client', supplier: 'the supplier' }[te0.audience] || 'an address outside the portal')) +
-            (ncc0 === 1 ? ', with a copy to 1 other' : ncc0 > 1 ? ', with a copy to ' + ncc0 + ' others' : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
+          detail: te0.subject + ({ sent: ' · emailed to ', unknown: ' · emailed (not confirmed) to ' }[args.p_status] || ' · not emailed to ') +
+            (te0.to_name || ({ client: 'the client', supplier: 'the supplier' }[te0.audience] || 'another address')) +
+            (ncc0 === 1 ? ', with a copy to 1 other address' : ncc0 > 1 ? ', with a copy to ' + ncc0 + ' other addresses' : '') + (te0.attachment ? ' · ' + te0.attachment : ''), created_at: new Date().toISOString() });
         return emOk();
       }
     }
@@ -11489,7 +11489,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cdc = (DB.clients || []).filter(function (x) { return x.id === cdr.client_id; })[0];
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'client.edited', subject: cdc ? cdc.name : 'Client',
           detail: ({ quotation: 'Quotation ', offer: 'Letter of Offer ' }[cdr.kind] || '') + cdr.reference +
-            (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed, not confirmed, to ' : ' not emailed to ') +
+            (cdr.status === 'sent' ? ' emailed to ' : cdr.status === 'unknown' ? ' emailed (not confirmed) to ' : ' not emailed to ') +
             ((function () { var k = (DB.client_contacts || []).filter(function (x) { return x.client_id === cdr.client_id && String(x.email || '').trim().toLowerCase() === String(cdr.to_email || '').trim().toLowerCase(); })[0]; return k ? cmNamed(k) : 'the client'; })()) +
             (cdr.cc_email ? ' with a copy to the finance email' : ''), created_at: new Date().toISOString() });
         persist();

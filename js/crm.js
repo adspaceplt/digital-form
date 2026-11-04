@@ -239,7 +239,7 @@
     m.hidden = !on;
     if (on) m.innerHTML = 'Could not load the industries. <button class="linkbtn" type="button" id="crmIndRetry">Try again</button>';
   }
-  var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
+  var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Melayu' };
   var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
                     whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
 
