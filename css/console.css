@@ -2003,7 +2003,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-lack-t small { font-size: 12.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .rp-lack-acts { display: inline-flex; align-items: center; gap: 8px; }
 .rp-lack .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
-.rp-lack.is-delayed .rp-lack-t small { color: var(--err); }
+.rp-lack.is-short .rp-lack-t small { color: var(--err); }
 .is-narrow .rp-lacks { padding-left: 16px; }
 /* Versions (2026-10-07): a row a version, its file at the right edge; the
    meta (who published it, and why it came off) wraps, being words a person

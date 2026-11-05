@@ -2053,7 +2053,7 @@
             '<circle cx="15" cy="18" r="1.6"/></svg></span>'
           : '') + '</div>' +
       '<button class="bcard-title" type="button">' + esc(t.title) + vicTag(t.client_id, true) + '</button>' +
-      (delayed(t) ? '<span class="tone is-danger task-pri">Delayed</span>' : '') +
+      (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
@@ -2450,7 +2450,7 @@
          at its right end, where every card in the portal puts its chip. */
       '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
         (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
-        (delayed(t) ? '<span class="tone is-danger task-pri">Delayed</span>' : '') +
+        (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
@@ -3080,7 +3080,7 @@
     var dyBox = $('dwDelayed');
     if (dyBox) {
       dyBox.hidden = !delayed(t);
-      dyBox.innerHTML = delayed(t) ? '<span class="tone is-danger task-pri">Delayed</span><span>Marked ' + esc(shortDate(t.delayed_at)) +
+      dyBox.innerHTML = delayed(t) ? '<span class="tone is-off task-pri">Delayed</span><span>Marked ' + esc(shortDate(t.delayed_at)) +
         (nameOf(t.delayed_by) ? ' by ' + esc(nameOf(t.delayed_by)) : '') + ' in its Accounts Report · ' +
         esc(reasonWord(t.delayed_reason)) + (t.delayed_note ? ' · ' + esc(t.delayed_note) : '') + '</span>' : '';
     }

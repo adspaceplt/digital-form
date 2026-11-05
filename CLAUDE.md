@@ -5067,7 +5067,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     time (the report task's). Check and submit shows it as rows under the
     report's checks (Month in My Work, Report task with Open where My Work
     is readable, Posts live with a line a task short of it, Open on each,
-    Due). Submit is
+    a planned post with no task said in red, Due). Mark delayed on a
+    post's line (a draft at Reports Work; `sm_report_post_delay`, a date
+    move's reason and a note of 300; `not-draft`, `not-in-month`,
+    `posted`, `bad-reason`, `too-long`; Clear, Undo where it happened;
+    filed on the task and the report, its owner told, kind `delayed`)
+    counts it toward the posts planned; a planned post with no task can
+    never be marked. The task keeps its dates (On-time posting still reads
+    it late) and reads Delayed (the grey dot, beside the name on its row,
+    its board card and its card's next step) until it goes live; the
+    Dashboard's Needs attention lists it (Delayed posts). No band of its
+    own. Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /

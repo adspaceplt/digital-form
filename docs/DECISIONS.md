@@ -8281,4 +8281,13 @@ the four dates not null), names `posted` while under the posts planned
 and lists the tasks short of it with what each lacks. The rule is a count
 against Posts planned, not a post a week (the user asked; offered as a
 later rule if wanted). An Advertising Report is never held to the posts.
+Then (the user, the same day): a post that dragged past its month, still
+short of its stage when the report is due, is marked delayed from the
+report so the count passes, and the task carries it for attention into
+the next month. Chosen: the report's writer marks it (Reports Work), its
+dates stay as planned so On-time posting still reads it late, the tag is
+grey like Urgent delivery's (the grey dot, Delayed) with no band of its
+own, and the Dashboard lists it until it goes live. A planned post with
+no task cannot be marked, so 6 tasks against 8 planned stays refused
+until the 2 are added in My Work.
 

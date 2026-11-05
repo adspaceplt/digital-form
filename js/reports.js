@@ -1966,14 +1966,14 @@
     var short = g && g.planned > g.made ? g.planned - g.made : 0;
     if ((!list || !list.length) && !short) return '';
     var mark = r && r.status === 'draft' && may('work');
-    return '<div class="rp-lacks">' + (short ? '<div class="rp-lack is-delayed"><span class="rp-lack-t"><b>' + short + (short === 1 ? ' planned post has' : ' planned posts have') + ' no task</b>' +
+    return '<div class="rp-lacks">' + (short ? '<div class="rp-lack is-short"><span class="rp-lack-t"><b>' + short + (short === 1 ? ' planned post has' : ' planned posts have') + ' no task</b>' +
       '<small>Add ' + (short === 1 ? 'it' : 'them') + ' in My Work to count or mark delayed.</small></span><span class="rp-lack-acts">' +
       (open && st.client && st.client.slug ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openmonth">Open' + ICON.go + '</button>' : '') + '</span></div>' : '') +
       (list || []).map(function (t) {
       var dates = (t.needs || []).filter(function (k) { return LACK[k]; }).map(function (k) { return LACK[k]; });
       var said = t.delayed ? ['Delayed', delayWord(t.delayed_reason), t.delayed_note || ''].filter(Boolean).join(' · ')
         : [(t.needs || []).indexOf('stage') > -1 ? 'Not live' : '', dates.length ? dates.join(', ') + ' not set' : ''].filter(Boolean).join(' · ');
-      return '<div class="rp-lack' + (t.delayed ? ' is-delayed' : '') + '"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
+      return '<div class="rp-lack"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
         '<small>' + esc(said) + '</small></span><span class="rp-lack-acts">' +
         (mark ? '<button class="btn btn-sm" type="button" data-a="' + (t.delayed ? 'undelay' : 'delay') + '" data-id="' + esc(t.id) + '">' +
           (t.delayed ? 'Clear' : 'Mark delayed') + '</button>' : '') +
