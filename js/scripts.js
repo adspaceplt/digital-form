@@ -540,7 +540,7 @@
     if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + sc.photo_by : 'Photo', kind: 'photo' };
     if (sc.ai_url) return { url: sc.ai_url, tag: 'Drawn with AI', kind: 'ai' };
     var f = window.ADspaceFrames ? window.ADspaceFrames.svg(sc, st.open && st.open.aspect) : '';
-    return f ? { svg: f, tag: 'Sketch from shot', kind: 'frame' } : null;
+    return f ? { svg: f, tag: 'Sketch from the shot', kind: 'frame' } : null;
   }
   function picCell(sc, i, s, work) {
     var p = picOf(sc);
@@ -908,7 +908,7 @@
       choices.push(['all', 'All scenes (' + st.scenes.length + ')']);
       window.ADspaceConfirm.ask({
         title: 'Draw with AI',
-        body: 'Draws a storyboard picture for each scene from its shot. Each scene counts as one picture; ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
+        body: 'A storyboard picture is drawn for each scene from its shot. ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
         go: 'Draw', field: { label: 'Scenes', choices: choices, seg: true, value: choices[0][0] }
       }, function (v) {
         var list = (v === 'all' ? st.scenes : missing).slice(0, 30);
