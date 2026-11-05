@@ -136,8 +136,11 @@ Deno.serve(async (req) => {
         if (!res.ok) {
           const t = await res.text().catch(() => '');
           console.error('script-pictures: Gemini refused', res.status, t.slice(0, 300));
+          /* 402: the project's prepaid credits are spent; a 429 naming billing,
+             credits or the free tier is the same fault, never a busy service. */
           refused = res.status === 401 || res.status === 403 ? 'ai-key' : res.status === 404 ? 'ai-model'
-            : res.status === 429 ? (/billing|free.?tier|quota/i.test(t) ? 'ai-billing' : 'ai-busy') : 'ai-failed';
+            : res.status === 402 ? 'ai-billing'
+            : res.status === 429 ? (/billing|free.?tier|quota|credit|prepay/i.test(t) ? 'ai-billing' : 'ai-busy') : 'ai-failed';
           await done(press, false);
           return;
         }
