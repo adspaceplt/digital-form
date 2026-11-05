@@ -8257,3 +8257,14 @@ while the task card's Add carried the plus; a table's add row is not a
 form, so its Add takes the plus as Reports' does. The Messages strip
 (`msgViews`, #902) was met by the walk but never named in its list.
 Industries (2026-11-04) had joined no walk; it is walked now.
+
+**2026-11-05 — Two suites that read the calendar, not the code.**
+The two defects logged on 2026-11-03 were the suites' own dates. `ops`
+created an ad hoc task with no content month, which took the month the
+suite ran in; from 1 November it held 2611W101, so the month generator's
+dry run began at 02 and two concurrent runs made nine numbers. The task
+now names September. `overview` seeded its only lead five days back, so on
+the 1st to the 4th of a month By person in charge read Nothing moved this
+month; a lead lost this hour now gives the month a move on any day. Both
+were checked on a fixed clock (2 December): the old overview suite fails,
+the new one passes. The rule: a suite names every month it counts on.
