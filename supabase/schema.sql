@@ -97536,8 +97536,7 @@ grant execute on function public.get_scripts(text) to authenticated;
 --   ai_draft_set_limit and ai_cap_default from AI LIMITS EACH USE, and drop
 --   video_script_picture, ai_picture_claim and ai_picture_left in the SQL
 --   Editor. The columns and the purpose may stay.
--- ====================================================================
-
+-- ===========================================================================
 
 alter table public.video_script_scenes add column if not exists photo_url text;
 alter table public.video_script_scenes add column if not exists photo_by text;
