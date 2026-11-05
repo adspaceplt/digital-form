@@ -430,7 +430,7 @@
      field whose own `min` is later (a meeting from today, an end after its
      start) keeps it; the floor only raises a lower one. */
   var FLOOR = '2023-08-14', CEIL = '2099-12-31';
-  var FLOOR_WORD = 'Choose a date from 14 Aug 2023.';
+  var FLOOR_WORD = window.ADspaceWords.line.dateFloor;
   function isDate(el) {
     return !!el && el.tagName === 'INPUT' && (el.__dmy || /^(date|month|datetime-local)$/.test(el.type)) &&
       !el.hasAttribute('data-any-date');

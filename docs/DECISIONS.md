@@ -8329,3 +8329,20 @@ past it. A second reader of the new words found eight lines (a plan field,
 two calls to action under one label, On screen beside On-screen text,
 Locations twice, cleared, flagged, as read, Possible); each was fixed.
 
+### 2026-11-06 · The Content meeting sheet: any day unless the calendar books it
+The user, on My Work's Content meeting sheet: "this window ui abit ugly",
+and On site still refused a date before today. Found: the sheet opened on
+Google Meet with its date held from the next half hour, and the date sat
+above the channel, so a past day was refused (and the date cleared, its
+note left standing) before On site could be chosen; the database refused a
+past first meeting on every channel but On site (`meeting-in-past`).
+Chosen: only a Google Meet whose link the shared calendar creates (or whose
+event is already there) waits for the next half hour, on the page alone
+(the database never knows which link the calendar will make); a pasted
+link, Zoom, Other and On site take any day from the portal's floor, which
+is now the database's one refusal (`meeting-before-floor`). The sheet reads
+the tick (the rest leaving while ticked), the channel, Create link / Paste
+link as a segment in place of the calendar tick and the box always shown,
+the date, a time select of quarter hours (8:00am to 10:00pm) and the
+length, then Led by and the notes, no fold (it sat half under the foot). A
+new meeting opens on the next free half hour.
