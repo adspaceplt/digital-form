@@ -8291,6 +8291,22 @@ own, and the Dashboard lists it until it goes live. A planned post with
 no task cannot be marked, so 6 tasks against 8 planned stays refused
 until the 2 are added in My Work.
 
+
+### 2026-11-05 · A label is a noun
+The user flagged "Why it goes now" on Reports' Submit question ("should this
+be just Reason") and asked for a sweep of the same kind. Two readers swept
+every label, heading, option and refusal in the console's markup and
+scripts: about 90 were clauses or coined phrases (Why it is late, What needs
+changing, Note for them, Kept as, Week in the code, Say why., Submit past the
+month's gate?). Each now names the thing (Reason, Changes, Note, Type, Week,
+Enter a reason., Submit anyway?). Left as approved: the report's section
+names (What worked, Areas to improve, Why it stood out), Brand analysis's,
+Analytics' What changed, Health's company words, the reflection's three
+prompts, /quote/'s questions to a prospect, Team's Their work, and the Script
+(read here) heading, which the database's Activity lines also name. The rule
+is DESIGN.md §6 item 11, and tests/words.js PATTERNS fails a label that
+opens Why it…, What needs changing, Say why… or Note for them.
+
 ### 2026-11-05 · Video scripts as a shot table, read cold by a second AI call
 
 The user shared the Video Script Generator spec (a writer and a fresh
@@ -8329,3 +8345,20 @@ before Draw with AI is drawn, so the button waits for the key. The picture
 price joins `app_settings_set`'s keys in an SQL Editor part, the function
 holding a delete the connector does not run.
 
+### 2026-11-06 · The Content meeting sheet: any day unless the calendar books it
+The user, on My Work's Content meeting sheet: "this window ui abit ugly",
+and On site still refused a date before today. Found: the sheet opened on
+Google Meet with its date held from the next half hour, and the date sat
+above the channel, so a past day was refused (and the date cleared, its
+note left standing) before On site could be chosen; the database refused a
+past first meeting on every channel but On site (`meeting-in-past`).
+Chosen: only a Google Meet whose link the shared calendar creates (or whose
+event is already there) waits for the next half hour, on the page alone
+(the database never knows which link the calendar will make); a pasted
+link, Zoom, Other and On site take any day from the portal's floor, which
+is now the database's one refusal (`meeting-before-floor`). The sheet reads
+the tick (the rest leaving while ticked), the channel, Create link / Paste
+link as a segment in place of the calendar tick and the box always shown,
+the date, a time select of quarter hours (8:00am to 10:00pm) and the
+length, then Led by and the notes, no fold (it sat half under the foot). A
+new meeting opens on the next free half hour.

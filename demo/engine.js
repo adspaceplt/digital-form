@@ -5907,8 +5907,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!args.p_at) return { error: 'no-date' };
       if (args.p_channel && ['onsite', 'google_meet', 'zoom', 'other'].indexOf(args.p_channel) < 0) return { error: 'bad-channel' };
 
-      if (!em.meeting_at && String(args.p_at).slice(0, 10) < nowIso().slice(0, 10) &&
-          (args.p_channel || em.meeting_channel || '') !== 'onsite') return { error: 'meeting-in-past' };
+      if (new Date(new Date(args.p_at).getTime() + 8 * 3600000).toISOString().slice(0, 10) < '2023-08-14') return { error: 'meeting-before-floor' };
       if (args.p_minutes != null && (args.p_minutes < 15 || args.p_minutes > 240)) return { error: 'bad-minutes' };
       var lk = args.p_link == null ? null : String(args.p_link).trim();
       if (lk && !/^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(lk)) return { error: 'bad-meeting-link' };

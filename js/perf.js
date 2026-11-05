@@ -145,7 +145,7 @@
     'bad-category': 'Pick a category.',
     'bad-client': 'Pick a client from the list.',
     'bad-severity': 'Choose a lower level than the issue has now.',
-    'what-needed': 'Say what happened.',
+    'what-needed': 'Enter a description.',
     'reason-needed': 'A reason is needed.',
     'cannot-return': 'Only a shared month with no query can go back to draft.',
     'open-dispute': 'Answer the query first.',
@@ -1024,7 +1024,7 @@
         '<small>' + esc([dateWord(b.occurred_on), BREACH_CAT[b.category], b.client_name].concat(flags).filter(Boolean).join(' · ')) + '</small>' +
         (b.evidence && manage() ? '<small class="perf-breach-ev">' + esc(b.evidence) + '</small>' : '') +
         (draft && !voiding ? '<button class="btn btn-quiet btn-sm perf-void" type="button" data-void="' + esc(b.id) + '">Withdraw</button>' : '') +
-        (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Why is it withdrawn?</label>' +
+        (voiding ? '<form class="qform" id="pvVoidForm" autocomplete="off"><label class="field-label" for="pvVoidWhy">Reason</label>' +
           '<textarea class="input" id="pvVoidWhy" rows="1" data-oneline maxlength="300"></textarea><div class="qform-acts">' +
           '<button class="btn btn-sm btn-warn" type="submit">Withdraw</button><button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>' : '') +
       '</div>';
@@ -1422,7 +1422,7 @@
           items.push(it);
         });
         if (!items.length) { msg('pvMsg', said({ error: 'nothing-disputed' }), 'err'); return; }
-        if (missing) { msg('pvMsg', 'Say why for every item ticked.', 'err'); missing.focus(); return; }
+        if (missing) { msg('pvMsg', 'Enter a reason for each item ticked.', 'err'); missing.focus(); return; }
         call('perf_dispute', { p_review: r.id, p_items: items }, function (d) {
           if (d.error === 'code-needed') { msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
@@ -2065,7 +2065,7 @@
     'critical-breach': 'Level 4 issue', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
     'few-b-months': 'Under {months_b} months at B' };
   var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'no-departments': 'No department in the prize', 'scores-needed': 'Scores needed', 'below-b': 'Under {min_total}',
-    'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
+    'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the minimum',
     'no-pool': 'No pool set', 'no-budget': 'No budget set' };
   var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', 'is-off'], pending: ['Pending', 'is-warn'] };
   var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under {min}', breach: 'Level 3 or 4 issue' };

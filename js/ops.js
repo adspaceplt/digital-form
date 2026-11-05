@@ -210,6 +210,7 @@
     'bad-state': 'Invalid status.',
     'no-such-check': 'Check not found.',
     'meeting-in-past': 'Meeting date must be today or later.',
+    'meeting-before-floor': window.ADspaceWords.line.dateFloor,
     'bad-minutes': 'A meeting runs 15 minutes to 4 hours.',
     'bad-meeting-link': 'Paste a Google Meet, Zoom or Teams link.',
     'bad-channel': 'Choose where the meeting is held.',
@@ -228,7 +229,7 @@
     'needs-schedule': 'Set the post date first.',
     'needs-live-date': 'Confirm the date it went live.',
     'live-in-future': 'A post cannot go live after today.',
-    'live-reason-required': 'Say why it went live on a different date.',
+    'live-reason-required': 'Enter the reason the post went live on another date.',
     'not-finished': 'Only a finished task can be rated.',
     'bad-rating': 'Choose one to five.',
     'none-selected': 'No tasks selected.',
@@ -2895,10 +2896,7 @@
     if (old) old.remove();
     var to = labelOfStage(t, next);
     var q = window.ADspaceAsk.note(el, {
-      label: how === 'back' ? 'Why it goes back to ' + to
-        : how === 'skip' ? 'Why the steps before ' + to + ' are skipped'
-        : next === 'cancelled' ? 'Why it is cancelled'
-        : 'Why it is reopened',
+      label: 'Reason',
       send: 'Move to ' + to, once: true,
       save: function (why) {
         moveTo(t, el, next, null, after, how === 'skip' ? { skip: why } : { note: why });
@@ -3348,7 +3346,7 @@
     if (!c) return;
     ADspaceConfirm.ask({
       title: 'Rename item', go: 'Save',
-      field: { label: 'Item', value: c.label, need: 'Say what needs doing.' }
+      field: { label: 'Item', value: c.label, need: 'Enter the item.' }
     }, function (v) {
       call('ops_edit_checklist_item', { p_item: c.id, p_label: v }, msgHere(), function () {
         readTask(t.id, function () { msg(msgHere(), 'Item renamed.', 'ok'); });
@@ -3805,7 +3803,7 @@
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
     if (!perf && keep && !handsToColleague(mv, t)) def = '__keep';
     b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
-    b.lab.textContent = perf ? 'Performance review by' : 'Assign to';
+    b.lab.textContent = perf ? 'Reviewer' : 'Assign to';
     b.lab.hidden = false;
     b.to.hidden = false;
   }
@@ -3826,7 +3824,7 @@
     if (!show) return;
     var r = Number(t.rating) || 0;
     var can = may('ops', 'work');
-    b.rate.innerHTML = '<p class="qrate-lab">' + (r ? 'Rated ' + r + ' of 5' + (t.rated_by ? ' by ' + esc(nameOf(t.rated_by) || '') : '') : 'How did it go?') + '</p>' +
+    b.rate.innerHTML = '<p class="qrate-lab">' + (r ? 'Rated ' + r + ' of 5' + (t.rated_by ? ' by ' + esc(nameOf(t.rated_by) || '') : '') : 'Not rated') + '</p>' +
       '<div class="qstars" role="group" aria-label="Rating">' + [1, 2, 3, 4, 5].map(function (k) {
         return '<button class="qstar' + (k <= r ? ' is-on' : '') + '" type="button" data-star="' + k + '" aria-pressed="' + (k === r) + '"' +
           (can ? '' : ' disabled') + ' aria-label="' + k + (k === 1 ? ' star' : ' stars') + '">' + STAR + '</button>';
@@ -3889,10 +3887,7 @@
     stepDateChanged();
     var toClient = key === 'client_review' && o.note != null;
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
-    $('stepNoteLabel').textContent = g === 'revision' ? 'What needs to change'
-      : key === 'taken_down' ? 'Why it is taken down'
-      : toClient ? 'How it was sent'
-      : live ? 'Note (where it is posted, if there is no link)' : 'Note';
+    $('stepNoteLabel').textContent = g === 'revision' ? 'Changes' : key === 'taken_down' ? 'Reason' : 'Note';
     $('stepNote').placeholder = needNote ? 'Required' : 'Optional';
     $('stepNote').value = '';
     /* A draft sent with no link: WhatsApp is the choice already made; Others
@@ -3904,7 +3899,7 @@
     /* One picker, never a switch beside it (the user, 2026-10-11): the one
        who has it now is the first choice, Me where that is the reader. */
     var keepIt = !perf && cur ? '<option value="__keep">' + esc(cur === myId() ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
-    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
+    $('stepHandLabel').textContent = perf ? 'Reviewer' : 'Assign to';
     $('stepHandTo').innerHTML = keepIt + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
@@ -3938,7 +3933,7 @@
     var show = Boolean(c && c.key === 'live' && c.t.publish_at && $('stepDate').value &&
       $('stepDate').value !== dateValue(c.t.publish_at));
     $('stepWhyRow').hidden = !show;
-    if (show) $('stepWhyLabel').textContent = 'Why not on ' + niceDate(c.t.publish_at) + ', the scheduled date';
+    if (show) $('stepWhyLabel').textContent = 'Reason';
   }
   function doStep() {
     var c = stepCtx;
@@ -3950,7 +3945,7 @@
     var note = toClient && $('stepVia').value === 'whatsapp' ? WA_NOTE : String($('stepNote').value || '').trim();
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     if (needNote && !note) {
-      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how it was sent.' : 'Say why it is taken down.', 'err');
+      msg('stepMsg', g === 'revision' ? 'Enter the changes.' : toClient ? 'Enter a note.' : 'Enter a reason.', 'err');
       $('stepNote').focus();
       return;
     }
@@ -5670,7 +5665,7 @@
       title: 'Reopen task',
       body: 'It goes back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
       go: 'Reopen',
-      field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
+      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(to, why); });
   }
   // ---- The way back, drawn where the act happened --------------------------
@@ -7453,41 +7448,60 @@
     return new Date(Math.floor(Date.now() / half) * half + half);
   }
   function dayKey(d) { return CK.day(d); }
-  /* The meeting's date and time offer nothing before the next slot. A meeting
-     already held keeps its own date: the sheet still opens on it to change the
-     note or the link, and only a new time is held to the floor. */
-  /* An on-site meeting may be written down after it was held (the user,
-     2026-10-09), so its date keeps only the portal's own floor. */
-  function meetOnsite() { return $('meetChannel').value === 'onsite'; }
+  /* Only a meeting the shared calendar books waits for the next half hour:
+     a Google Meet whose link the calendar creates, or one whose event is
+     already there and moves with it. A pasted link, Zoom, Other and On site
+     take any day from the portal's floor, today's earlier hours and a
+     meeting held and written down after included (the user, 2026-11-06). */
+  function meetBooks() {
+    var e = meetEditing;
+    if ($('meetChannel').value !== 'google_meet') return false;
+    return Boolean(e && e.meeting_event_id) || $('meetMode').value === 'create';
+  }
+  /* A meeting already held keeps its own date: the sheet still opens on it
+     to change the note or the link, and only a new time is held to the
+     floor. */
   function meetFloor() {
     var e = meetEditing;
     var held = e && e.meeting_at && new Date(e.meeting_at).getTime() < Date.now();
-    var slot = nextSlot();
-    if (held || meetOnsite()) {
-      $('meetDate').removeAttribute('min'); $('meetTime').removeAttribute('min');
-      if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
-      return;
-    }
-    $('meetDate').setAttribute('min', dayKey(slot));
-    if ($('meetDate').value === dayKey(slot)) {
-      $('meetTime').setAttribute('min', CK.time(slot));
-    } else $('meetTime').removeAttribute('min');
+    var d = $('meetDate');
+    if (held || !meetBooks()) {
+      d.removeAttribute('min');
+      if (window.ADspaceForm) ADspaceForm.floor(d);
+    } else d.setAttribute('min', dayKey(nextSlot()));
+    /* A refusal said under the date while the floor stood goes with it. */
+    var note = d.closest('.field') && d.closest('.field').querySelector('.date-note');
+    if (note && (!d.value || d.value >= (d.getAttribute('min') || ''))) { note.remove(); d.removeAttribute('aria-invalid'); }
+  }
+  /* The time is a quarter hour from 8:00am to 10:00pm, written as the
+     message to the client writes it (2:30pm); a time held off those steps
+     stays offered as it is. */
+  function meetTimes(keep) {
+    var list = [];
+    for (var m = 8 * 60; m <= 22 * 60; m += 15) list.push(('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2));
+    if (keep && list.indexOf(keep) < 0) { list.push(keep); list.sort(); }
+    $('meetTime').innerHTML = list.map(function (v) {
+      var h = Number(v.slice(0, 2));
+      return '<option value="' + v + '">' + ((h % 12) || 12) + ':' + v.slice(3) + (h < 12 ? 'am' : 'pm') + '</option>';
+    }).join('');
+    $('meetTime').value = keep || '10:00';
   }
   function openMeet(e) {
     if (!may('ops', 'work')) return;
     meetEditing = e;
     meetWarn = null;
     meetAfter = null;
-    var at = e.meeting_at ? new Date(e.meeting_at) : null;
-    $('meetDate').value = at ? CK.day(at) : '';
-    $('meetTime').value = at ? CK.time(at) : '';
+    /* A new meeting opens on the next free half hour. */
+    var at = e.meeting_at ? new Date(e.meeting_at) : nextSlot();
+    $('meetDate').value = CK.day(at);
+    meetTimes(CK.time(at));
     $('meetChannel').value = e.meeting_channel || 'google_meet';
-    meetFloor();
-    if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
     $('meetMinutes').value = String(e.meeting_minutes || 30);
     if (!$('meetMinutes').value) $('meetMinutes').value = '30';
     $('meetLink').value = e.meeting_link || '';
-    $('meetBook').checked = true;
+    /* A Google Meet link typed in before reads as pasted; else the calendar
+       creates it. */
+    $('meetMode').value = e.meeting_link && !e.meeting_event_id ? 'paste' : 'create';
     var me = bridge.me && bridge.me();
     $('meetOwner').innerHTML = pickable().map(function (m) {
       var pick = e.meeting_owner_id ? m.id === e.meeting_owner_id : (me && me.id === m.id);
@@ -7500,25 +7514,20 @@
     msg('meetMsg', '');
     sheet('meetSheet', true);
   }
+  /* No meeting this month leaves the rest out of the sheet. */
   function meetNaChanged() {
-    var na = $('meetNa').checked;
-    ['meetDate', 'meetTime', 'meetMinutes', 'meetChannel', 'meetOwner', 'meetLink', 'meetBook'].forEach(function (id) { $(id).disabled = na; });
-    meetBookShown();
+    $('meetFields').hidden = $('meetNa').checked;
   }
-  /* A meeting at the client's has no link to ask for. */
+  /* A meeting at the client's has no link to ask for; a Google Meet asks
+     whether the calendar creates it or one is pasted, until its event is on
+     the calendar, which a moved meeting then moves without being asked. */
   function meetChannelChanged() {
-    $('meetLinkRow').hidden = meetOnsite();
-    meetFloor();
-    meetBookShown();
-  }
-  /* The calendar is offered only where it can do something: a Google Meet
-     meeting with no link typed and no event on the calendar yet. Once there
-     is an event, a moved meeting moves it without being asked. */
-  function meetBookShown() {
     var e = meetEditing;
-    var show = !$('meetNa').checked && $('meetChannel').value === 'google_meet' &&
-      !String($('meetLink').value || '').trim() && !(e && e.meeting_event_id);
-    $('meetBookLine').hidden = !show;
+    var ch = $('meetChannel').value;
+    var asks = ch === 'google_meet' && !(e && e.meeting_event_id);
+    $('meetModeRow').hidden = !asks;
+    $('meetLinkRow').hidden = ch === 'onsite' || (asks && $('meetMode').value === 'create');
+    meetFloor();
   }
   /* What the edge function answered, in the team's words. */
   function meetSaid(d) {
@@ -7557,7 +7566,9 @@
     var na = $('meetNa').checked;
     var args = { p_engagement: e.id, p_note: String($('meetNote').value || '').trim() || null, p_na: na };
     var channel = $('meetChannel').value || null;
-    var link = channel === 'onsite' ? '' : String($('meetLink').value || '').trim();
+    /* A link the calendar is to create is never typed: what the box held
+       goes only where it is shown. */
+    var link = $('meetLinkRow').hidden ? '' : String($('meetLink').value || '').trim();
     if (!na) {
       if (!$('meetDate').value) { msg('meetMsg', said('no-date'), 'err'); $('meetDate').focus(); return; }
       if (link && !/^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(link)) {
@@ -7565,10 +7576,11 @@
       }
       /* The date and time typed are Malaysia's, whatever the device's clock. */
       var when = CK.at($('meetDate').value, $('meetTime').value || '10:00');
-      /* A time before the next free slot is refused unless it is the one the
-         meeting already had (a held meeting, opened to change its note). */
+      /* A time before the next free slot is refused only where the calendar
+         books it, and never the one the meeting already had (a held
+         meeting, opened to change its note). */
       var kept = e.meeting_at && new Date(e.meeting_at).getTime() === when.getTime();
-      if (!kept && channel !== 'onsite' && when.getTime() < nextSlot().getTime()) {
+      if (!kept && meetBooks() && when.getTime() < nextSlot().getTime()) {
         msg('meetMsg', 'Choose a time from ' + niceTime(nextSlot()) + '.', 'err');
         $($('meetDate').value < dayKey(nextSlot()) ? 'meetDate' : 'meetTime').focus();
         return;
@@ -7584,7 +7596,7 @@
        and book it where somebody asked for a link. */
     var calendar = null;
     if (e.meeting_event_id && (na || channel !== 'google_meet')) calendar = 'delete';
-    else if (!na && channel === 'google_meet' && (e.meeting_event_id || (!link && $('meetBook').checked))) calendar = 'create';
+    else if (!na && channel === 'google_meet' && (e.meeting_event_id || $('meetMode').value === 'create')) calendar = 'create';
     var btn = $('meetGo');
     btn.disabled = true;
     /* Opened from a task, the task repaints; from the month, the month. */
@@ -7614,7 +7626,6 @@
            it already shows the save. */
         btn.disabled = false;
         msg('meetMsg', 'Saved. ' + meetSaid(d), 'warn');
-        meetBookShown();
         repaint();
         /* The line sits under Led by, below the sheet's fold: it is brought
            into sight, or the sheet reads as stuck open for no reason. */
@@ -7640,10 +7651,10 @@
     $('giveNote').value = '';
     var open = state.detail.checklist.filter(function (c) { return !c.completed_at; });
     $('giveFacts').innerHTML =
-      frow('Assigned now', esc(ownerName(t) || 'Unassigned')) +
+      frow('Assigned to', esc(ownerName(t) || 'Unassigned')) +
       frow('Stage', esc(stageLabel(t)) + ' <span class="mute">stays as it is</span>') +
       frow('Due date', t.current_final_due_at ? esc(niceDate(t.current_final_due_at)) : '<span class="mute">Not set</span>') +
-      (open.length ? frow('Still to do', '<ul class="givelist">' + open.map(function (c) {
+      (open.length ? frow('Open items', '<ul class="givelist">' + open.map(function (c) {
         return '<li>' + esc(c.label) + '</li>'; }).join('') + '</ul>') : '');
     msg('giveMsg', '');
     sheet('giveSheet', true);
@@ -7887,7 +7898,7 @@
       var t = state.task, inp = $('dwCheckAdd');
       var label = String(inp.value || '').trim();
       if (!t) return;
-      if (!label) { msg('dwMsg', 'Say what needs doing.', 'err'); inp.focus(); return; }
+      if (!label) { msg('dwMsg', 'Enter the item.', 'err'); inp.focus(); return; }
       call('ops_add_checklist_item', { p_task: t.id, p_label: label }, 'dwMsg', function () {
         inp.value = '';
         /* The form stays open for the next item, the way a list is typed. */
@@ -8116,8 +8127,8 @@
     if (meetGoBtn) meetGoBtn.addEventListener('click', saveMeet);
     var meetNaTick = $('meetNa');
     if (meetNaTick) meetNaTick.addEventListener('change', meetNaChanged);
-    var meetLinkBox = $('meetLink');
-    if (meetLinkBox) meetLinkBox.addEventListener('input', meetBookShown);
+    var meetModeSeg = $('meetMode');
+    if (meetModeSeg) meetModeSeg.addEventListener('change', meetChannelChanged);
     var meetChan = $('meetChannel');
     if (meetChan) meetChan.addEventListener('change', meetChannelChanged);
     var meetDay = $('meetDate');
@@ -8535,6 +8546,8 @@
 
   wire();
   window.ADspaceOps = {
+    /* A date move's reason in words, for a report's delayed post too (2026-11-05). */
+    reasonWord: function (k) { return reasonWord(k); },
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
     /* The message to a client for a meeting outside a month (2026-10-31). */

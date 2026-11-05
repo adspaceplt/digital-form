@@ -232,7 +232,7 @@
     };
     /* What the video stands on (2026-11-05): each part the plan holds, a
        label beside its words. */
-    var PLAN = [['core_message', 'Core Message'], ['hook', 'Hook (0 to 3s)'], ['concept', 'Concept'], ['cta', 'Call to Action in the Video'],
+    var PLAN = [['core_message', 'Core Message'], ['hook', 'Hook (0 to 3 Seconds)'], ['concept', 'Concept'], ['cta', 'Call to Action in the Video'],
                 ['cast', 'Cast Roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music Mood']];
     var plan = function (v) {
       var p = v.plan || {};

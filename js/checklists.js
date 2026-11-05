@@ -484,7 +484,7 @@
           { name: 'budget', label: 'Monthly ad budget (RM)', type: 'number', required: false, placeholder: 'Optional', value: was.budget || '' },
           { name: 'objective', label: 'Main objective', required: false, value: was.objective || '',
             choices: [['', 'Not decided'], ['Leads', 'Leads'], ['Sales', 'Sales'], ['Traffic', 'Traffic'], ['Awareness', 'Awareness']] },
-          { name: 'destination', label: 'Ads send people to', required: false, value: was.destination || '',
+          { name: 'destination', label: 'Destination', required: false, value: was.destination || '',
             choices: [['', 'Not decided'], ['Instant Form', 'An instant form'], ['WhatsApp', 'WhatsApp'], ['Messenger', 'Messenger'], ['Website', 'The website']] },
           { name: 'account', label: 'Ad account', required: false, seg: true, value: was.account || '',
             choices: [['', 'Not known'], ['new', 'New'], ['mature', 'Mature']] },
@@ -551,7 +551,7 @@
     }
     box.querySelector('[data-m="body"]').innerHTML =
       (row.hypothesis ? '<p class="msg warn ck-ba-hyp">A starting hypothesis to test</p>' : '') +
-      sec('Brand positioning', fact([['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
+      sec('Brand positioning', fact([['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         ['Competitors', esc((p.competitors || []).join(', '))]])) +
       sec('Target audiences', fact((a.audiences || []).map(function (x) { return [x.name, esc([x.who, x.pains].filter(Boolean).join(' · '))]; }))) +
       sec('SWOT', fact([['Strengths', lst(sw.strengths)], ['Weaknesses', lst(sw.weaknesses)], ['Opportunities', lst(sw.opportunities)], ['Threats', lst(sw.threats)]])) +

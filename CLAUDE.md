@@ -2009,7 +2009,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact, a press opening its facts in place, remembered under
     `client-entities`, one just saved or added open; its ⋯ Edit, Make
     primary, Remove; the user, 2026-10-29: "how long is this"), read on each visit (`client_entities_list`); Add
-    entity (`#entAddSheet`, Find a company) finds one held, every word
+    entity (`#entAddSheet`, Company) finds one held, every word
     typed in its registered name or the name or Client ID of a brand it
     bills, or its BRN digits (`billing_entities_find`, ten, only those
     billing a client the reader sees, or none; In the portal), a customer
@@ -4391,10 +4391,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
 - Time records: one stage table in workflow order (Stage, Visits, Time, a
   Total row); the sheet shows it open, with Recorded only where there is any.
-- A draft link is optional. Without one the step asks Sent on (`#stepVia`,
-  WhatsApp / Others; the user, 2026-10-11: "no need type in where to send
-  every single time"): WhatsApp files Sent to the client on WhatsApp., Others
-  asks How it was sent; the database accepts the link or a note.
+- A draft link is optional. Without one the step asks Channel (`#stepVia`,
+  WhatsApp / Other; the user, 2026-10-11: "no need type in where to send
+  every single time"): WhatsApp files Sent to the client on WhatsApp., Other
+  asks a Note; the database accepts the link or a note.
 - A task is one card beside the list (`#taskDrawer`, `.sheet-side`,
   `open=`; the user, 2026-10-09: the full record was little used): an
   older `task=` address, a new task and a copy open it there; there is no
@@ -4576,11 +4576,21 @@ Each line is a rule that broke once. Its reason is in the archive.
     as open. A task moves into production on the ticks and the meeting, never
     on the stored word.
   - The meeting is `meeting_minutes` (15–240) plus a link (Meet, Zoom or Teams
-    only). It is booked no earlier than the next half hour (`nextSlot()`: at
-    3:00pm or 3:10pm the first slot is 3:30pm); the date and time fields
-    start there and an earlier time is refused on the sheet. A meeting
-    already held keeps its time when its sheet is opened. An On site
-    meeting asks for no link and may be written down after the day
+    only). The sheet (`#meetSheet`; the user, 2026-11-06) reads No meeting
+    this month (ticked, the rest leaves, `#meetFields`), Channel, then for
+    Google Meet Create link / Paste link (`#meetMode`; gone once its event
+    is on the calendar, which a moved meeting moves), the link only where
+    pasted or on Zoom or Other, then Date, Time (a select of quarter hours,
+    8:00am to 10:00pm, a stored time off them kept as an option) and
+    Length, Led by and Notes, nothing folded; a new meeting opens on the
+    next free half hour. Only a meeting the calendar books (Create link, or
+    an event already held) waits for the next half hour (`nextSlot()`: at
+    3:00pm or 3:10pm the first slot is 3:30pm; `meetBooks()`), its date
+    starting there and an earlier time refused on the sheet; a pasted link,
+    Zoom, Other and On site take any day from the portal's floor, and the
+    database refuses only a day before 14 Aug 2023 (`meeting-before-floor`,
+    `2026-11-06-meetings-on-any-day.sql`). A meeting already held keeps its
+    time when its sheet is opened. An On site meeting asks for no link
     (`2026-10-09-on-site-meetings.sql`; the user, 2026-10-09); once it has
     ended, whoever led it (else the month's manager) is told once to submit
     the outstation record (`ops_outstation_remind()`, pg_cron
@@ -5962,7 +5972,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   never printed. The Add-ons table opens on `addons_included`
   (`2026-10-13-rate-card-included-revisions.sql`, Wording).
 - What a quote reads of a line is `services.spec` (`service_spec_ok`), set in
-  the line's sheet under In quotes: a plan (letter, with or without ads,
+  the line's sheet under Quotation details: a plan (letter, with or without ads,
   platforms, contents a month, its content options, the ad budget it
   covers, Best for), a platform's management fee, Meta advertising and an
   ads booster (the budget each covers), translation (an added language), a
