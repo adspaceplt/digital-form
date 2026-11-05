@@ -65,7 +65,6 @@ language sql stable security definer set search_path = public as $$
   select coalesce(public.app_setting('report_post_links', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) = 1
 $$;
 revoke all on function public.report_links_on() from public, anon, authenticated;
-grant execute on function public.report_links_on() to authenticated;
 
 create or replace function public.report_links_set(p_on boolean)
 returns jsonb
