@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261105">
-<link rel="stylesheet" href="/css/console.css?v=20261105a">
+<link rel="stylesheet" href="/css/portal.css?v=20261105a">
+<link rel="stylesheet" href="/css/console.css?v=20261105b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4661,6 +4661,42 @@
               <div><label class="field-label" for="vsPlatform">Platform</label><select class="select" id="vsPlatform"></select></div>
               <div><label class="field-label" for="vsLang">Language</label><select class="select" id="vsLang"></select></div>
             </div>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsAspect">Aspect ratio</label>
+                <select class="select" id="vsAspect" data-seg><option value="">Not set</option><option value="9:16">9:16</option><option value="1:1">1:1</option><option value="16:9">16:9</option></select></div>
+              <div><label class="field-label" for="vsLength">Video length</label>
+                <select class="select" id="vsLength" data-seg><option value="">Not set</option><option value="15">15s</option><option value="30">30s</option><option value="60">60s</option><option value="120">120s</option></select></div>
+            </div>
+          </section>
+          <!-- The brief the script is written to (2026-11-05): Write with AI
+               and its reviewer read it; the limits are this shoot's. -->
+          <section class="fsec">
+            <h4 class="fsec-h">Brief</h4>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsObjective">Objective</label><select class="select" id="vsObjective"></select></div>
+              <div><label class="field-label" for="vsFormat">Format</label><select class="select" id="vsFormat"></select></div>
+            </div>
+            <div class="row"><div><label class="field-label" for="vsOffer">Product or offer</label>
+              <textarea class="input" id="vsOffer" rows="1" data-oneline maxlength="500" placeholder="11.11 bundle, 30% off" autocomplete="off"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsAudience">Target audience</label>
+              <textarea class="input" id="vsAudience" rows="1" data-oneline maxlength="500" placeholder="Working parents, 28 to 40, Klang Valley" autocomplete="off"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsKey">Key message</label>
+              <textarea class="input" id="vsKey" rows="1" data-oneline maxlength="500" placeholder="One sentence" autocomplete="off"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsCta">Call to action</label>
+              <textarea class="input" id="vsCta" rows="1" data-oneline maxlength="500" placeholder="WhatsApp us now" autocomplete="off"></textarea></div></div>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsInclude">Must include</label>
+                <textarea class="input" id="vsInclude" rows="1" data-oneline maxlength="500" placeholder="Optional" autocomplete="off"></textarea></div>
+              <div><label class="field-label" for="vsAvoid">Must avoid</label>
+                <textarea class="input" id="vsAvoid" rows="1" data-oneline maxlength="500" placeholder="Optional" autocomplete="off"></textarea></div>
+            </div>
+            <div class="row"><div><label class="field-label" for="vsTone">Tone</label>
+              <textarea class="input" id="vsTone" rows="1" data-oneline maxlength="500" placeholder="Optional" autocomplete="off"></textarea></div></div>
+            <div class="row fgrid-3">
+              <div><label class="field-label" for="vsMaxLoc">Locations</label><input class="input" id="vsMaxLoc" type="number" inputmode="numeric" min="1" max="10" step="1" placeholder="Not set"></div>
+              <div><label class="field-label" for="vsMaxCast">On-screen talent</label><input class="input" id="vsMaxCast" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="Not set"></div>
+              <div><label class="field-label" for="vsMaxHours">Shoot hours</label><input class="input" id="vsMaxHours" type="number" inputmode="numeric" min="1" max="24" step="1" placeholder="Not set"></div>
+            </div>
           </section>
           <section class="fsec">
             <h4 class="fsec-h">Shoot</h4>
@@ -4686,12 +4722,36 @@
               <button class="btn btn-sm btn-icon" id="vsWrite" type="button">Write with AI</button>
             </div>
             <div class="msg capmsg" id="vsWriteMsg" role="status"></div>
+            <div class="vs-review" id="vsEditReview" hidden></div>
+            <div class="row"><div><label class="field-label" for="vsCore">Core message</label>
+              <textarea class="input" id="vsCore" rows="1" data-oneline maxlength="2000" placeholder="Optional" autocomplete="off"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsHook">Hook (0 to 3 seconds)</label>
+              <textarea class="input" id="vsHook" rows="2" maxlength="2000" placeholder="Optional"></textarea></div></div>
+            <div class="row"><div><label class="field-label" for="vsConcept">Concept</label>
+              <textarea class="input" id="vsConcept" rows="2" maxlength="2000" placeholder="Optional"></textarea></div></div>
             <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
               <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
             <div id="vsScenes"></div>
             <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add scene</button></div></div>
             <div class="row" id="vsVoRow" hidden><div><label class="field-label" for="vsVo">Script (read here)</label>
               <textarea class="input" id="vsVo" rows="4" maxlength="4000"></textarea></div></div>
+          </section>
+          <section class="fsec">
+            <h4 class="fsec-h">Production</h4>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsRoles">Cast roles</label>
+                <textarea class="input" id="vsRoles" rows="2" maxlength="2000" placeholder="One per line"></textarea></div>
+              <div><label class="field-label" for="vsLocs">Locations</label>
+                <textarea class="input" id="vsLocs" rows="2" maxlength="2000" placeholder="One per line"></textarea></div>
+            </div>
+            <div class="row fgrid">
+              <div><label class="field-label" for="vsProps">Props</label>
+                <textarea class="input" id="vsProps" rows="2" maxlength="2000" placeholder="One per line"></textarea></div>
+              <div><label class="field-label" for="vsMusic">Music mood</label>
+                <textarea class="input" id="vsMusic" rows="2" maxlength="2000" placeholder="Optional"></textarea></div>
+            </div>
+            <div class="row"><div><label class="field-label" for="vsPlanCta">Call to action in the video</label>
+              <textarea class="input" id="vsPlanCta" rows="1" data-oneline maxlength="2000" placeholder="Optional" autocomplete="off"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsNotes">Notes</label>
               <textarea class="input" id="vsNotes" rows="2" maxlength="4000" placeholder="Optional"></textarea></div></div>
           </section>
@@ -6253,8 +6313,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/team.js?v=20261104s"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
-<script src="/js/scripts.js?v=20261103l"></script>
-<script src="/js/scriptpdf.js?v=20261010a"></script>
+<script src="/js/scripts.js?v=20261105a"></script>
+<script src="/js/scriptpdf.js?v=20261105a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261103l"></script>
 <script src="/js/ops.js?v=20261105a"></script>

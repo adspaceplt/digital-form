@@ -214,6 +214,7 @@
 
   function factsOf(s) {
     var f = [['Platform', s.platform], ['Language', s.language === 'Malay' ? 'Bahasa Melayu' : s.language],
+             ['Aspect ratio', s.aspect], ['Video length', s.length_seconds ? s.length_seconds + 's' : ''],
              ['Shooting date', [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')],
              ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]];
     var ref = s.reference_url
@@ -224,6 +225,27 @@
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
     }).join('') + ref + '</dl>';
   }
+  /* A scene's timing and camera on one line over what is seen, the
+     on-screen text and the sound under it (2026-11-05). */
+  function clockOf(n) { n = Number(n); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
+  function shotCell(sc) {
+    var t = sc.t_from == null && sc.t_to == null ? ''
+      : (sc.t_from == null ? '' : clockOf(sc.t_from)) + (sc.t_to == null ? '' : '\u2013' + clockOf(sc.t_to));
+    var cam = [t, sc.shot_size, sc.angle, sc.camera_move].filter(Boolean).join(' \u00b7 ');
+    return (cam ? '<span class="vs-cam">' + esc(cam) + '</span>' : '') + esc(sc.visual || '') +
+      (sc.on_screen ? '<span class="vs-extra"><b>On screen</b> ' + esc(sc.on_screen) + '</span>' : '') +
+      (sc.sound ? '<span class="vs-extra"><b>Sound</b> ' + esc(sc.sound) + '</span>' : '');
+  }
+  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action'],
+              ['cast', 'Cast roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music mood']];
+  function planOf(s) {
+    var p = s.plan || {};
+    var rows = PLAN.filter(function (x) { return p[x[0]]; });
+    if (!rows.length) return '';
+    return '<section class="vs-block"><h4 class="fsec-h">Plan</h4><dl class="vs-plan">' + rows.map(function (x) {
+      return '<div><dt>' + esc(x[1]) + '</dt><dd>' + esc(p[x[0]]) + '</dd></div>';
+    }).join('') + '</dl></section>';
+  }
   function scenesOf(s) {
     var two = s.kind === 'scenes';
     var head = '<div class="crm-head vs-scene"><span>#</span><span>' + (two ? 'Visual' : 'Scene') + '</span>' +
@@ -231,7 +253,7 @@
     return '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' +
       '<div class="crm-table vs-scenes is-read' + (two ? ' is-two' : '') + '">' + head +
       (s.scenes.length ? s.scenes.map(function (sc, i) {
-        return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span><span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
+        return '<div class="vs-scene"><span class="vs-n">' + (i + 1) + '</span><span class="vs-text vs-vis">' + shotCell(sc) + '</span>' +
           (two ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') + '</div>';
       }).join('') : '<p class="vs-empty">No scenes.</p>') + '</div></section>';
   }
@@ -245,7 +267,7 @@
     el.setAttribute('data-id', s.id);
     var html = '<div class="panel vs-card"><div class="vs-cardhead"><div class="vs-cardwho"><h3>' + esc(label(s)) + '</h3><p>' +
       esc(KIND_WORD[s.kind] || '') + '</p></div></div>' + factsOf(s) + '</div>';
-    var body = '';
+    var body = planOf(s);
     if (CONTEXT_WORD[s.kind]) {
       body += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4><p class="vs-prose">' +
         (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';

@@ -3297,6 +3297,36 @@ button.vs-row {
 .vs-edit-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 .vs-edit-head .field-label { margin: 0; }
 .vs-edit-acts { display: flex; gap: 4px; }
+/* A scene's time is a pair of second fields under one label. */
+.vs-edit-time { display: grid; gap: 0; min-width: 0; }
+.vs-edit-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+/* The brief in the facts card: a hairline over it, as a group of facts. */
+.vs-factcard > .facts + .vs-brief { padding-top: 16px; border-top: 1px solid var(--line-soft); }
+/* The AI review (2026-11-05): its heading with the verdict at the right
+   edge; the story and core message as read; each problem a row: its scene,
+   the problem over its fix, the severity at the right. */
+.vs-review { display: grid; gap: 12px; min-width: 0; }
+#vsEditReview { padding: 16px; margin-top: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
+.vs-rvhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.vs-rvhead .fsec-h { margin: 0; }
+.vs-rvnote { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.vs-issues { display: grid; min-width: 0; }
+.vs-issue {
+  display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; align-items: start; gap: 4px 12px;
+  padding: 10px 0; border-top: 1px solid var(--line-soft);
+}
+.vs-issue:first-child { border-top: 0; padding-top: 0; }
+.vs-all { font-size: 12px; font-weight: 600; }
+.vs-issue-text { display: grid; gap: 2px; min-width: 0; font-size: 14px; overflow-wrap: anywhere; }
+.vs-issue-fix { font-size: 13px; color: var(--ink-soft); }
+.vs-issue-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.is-narrow .vs-issue { grid-template-columns: 24px minmax(0, 1fr); }
+.is-narrow .vs-issue-tags { grid-column: 2; justify-content: flex-start; }
+.vs-rvfold > summary { display: flex; align-items: center; gap: 8px; min-height: var(--ctl-h-sm); font-size: 13px; font-weight: 600; cursor: pointer; }
+.vs-rvfold[open] > summary { margin-bottom: 8px; }
+.vs-rvq > .field-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+.vs-rvq ul { margin: 4px 0 0; padding-left: 18px; font-size: 14px; }
+.vs-rvq li + li { margin-top: 4px; }
 
 .vs-shot-msg { margin: 0; }
 .vs-shot-msg:empty { display: none; }
