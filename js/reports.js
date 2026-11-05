@@ -598,7 +598,7 @@
       st.ads = [];
       var more = [db.from('clients').select('id, name, market, bill_sgd, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs, white_label, logo_url').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
-      return Promise.all(more.concat([loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
+      return Promise.all(more.concat([loadPostLinks(st.open), loadNames(), metaOf(st.open.client_id, st.open.brand_id), labelOf(st.open.label_client, st.open.brand_id)])).then(function (x) {
         st.partner = x[x.length - 1] || null;
         st.metaLinks = x[x.length - 2] || null;
         st.meta = metaOn() ? st.metaLinks : null;
@@ -1946,7 +1946,7 @@
       else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
       else if (k === 'no-task') out.push('Its month has no report task.');
       else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
-      else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + ' planned posts are live with every date set.');
+      else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + (g.links ? ' planned posts are linked to their posts with every date set.' : ' planned posts are live with every date set.'));
     });
     return out;
   }
@@ -1959,6 +1959,10 @@
   var DELAY_WHY = [['client_request', 'Client request'], ['scope_change', 'Scope change'], ['capacity', 'Internal capacity'],
     ['pending_assets', 'Pending assets'], ['pending_confirmation', 'Pending confirmation']];
   function delayWord(k) { var w = DELAY_WHY.filter(function (x) { return x[0] === k; })[0]; return w ? w[1] : ''; }
+  var STAGE_WORD = { ready: 'Ready to start', in_progress: 'In progress', aqc_review: 'AQC review', revision_internal: 'Revision (Internal)',
+    client_review: 'Client review', revision_client: 'Revision (Client)', approved: 'Approved', scheduled: 'Scheduled', live: 'Live',
+    performance_review: 'Performance review', completed: 'Completed', on_hold: 'On hold', blocked: 'Blocked' };
+  function stageWord(k) { return STAGE_WORD[k] || (k ? String(k).replace(/_/g, ' ').replace(/^./, function (c) { return c.toUpperCase(); }) : ''); }
   function lackHtml(list, r, g) {
     var open = bridge.may && bridge.may('ops', 'view');
     /* A planned post with no task has nothing to mark: the month is short
@@ -1971,10 +1975,14 @@
       (open && st.client && st.client.slug ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openmonth">Open' + ICON.go + '</button>' : '') + '</span></div>' : '') +
       (list || []).map(function (t) {
       var dates = (t.needs || []).filter(function (k) { return LACK[k]; }).map(function (k) { return LACK[k]; });
+      var unlinked = (t.needs || []).indexOf('link') > -1;
       var said = t.delayed ? ['Delayed', delayWord(t.delayed_reason), t.delayed_note || ''].filter(Boolean).join(' · ')
-        : [(t.needs || []).indexOf('stage') > -1 ? 'Not live' : '', dates.length ? dates.join(', ') + ' not set' : ''].filter(Boolean).join(' · ');
+        : [unlinked ? stageWord(t.stage_key) : '', unlinked ? 'Not linked to a post' : '', (t.needs || []).indexOf('stage') > -1 ? 'Not live' : '',
+           dates.length ? dates.join(', ') + ' not set' : ''].filter(Boolean).join(' · ');
       return '<div class="rp-lack"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
         '<small>' + esc(said) + '</small></span><span class="rp-lack-acts">' +
+        (mark && unlinked && linkable() && st.posts.some(function (p) { return p.posted_on && !linkOf(p.id); }) ?
+          '<button class="btn btn-sm" type="button" data-a="linkfrom" data-id="' + esc(t.id) + '">Link</button>' : '') +
         (mark ? '<button class="btn btn-sm" type="button" data-a="' + (t.delayed ? 'undelay' : 'delay') + '" data-id="' + esc(t.id) + '">' +
           (t.delayed ? 'Clear' : 'Mark delayed') + '</button>' : '') +
         (open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openpost" data-id="' + esc(t.id) + '">Open' + ICON.go + '</button>' : '') + '</span></div>';
@@ -2061,6 +2069,20 @@
       if (om) om.addEventListener('click', function () {
         history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(st.client.slug));
         if (bridge.show) bridge.show('work');
+      });
+      box.querySelectorAll('[data-a="linkfrom"]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-id'), row = (g.lacking || []).filter(function (x) { return x.id === id; })[0] || {};
+          var posts = st.posts.filter(function (p) { return p.posted_on && !linkOf(p.id); });
+          window.ADspaceConfirm.ask({ title: 'Link to a post', go: 'Link',
+            body: taskCode(row) + '. The task takes the post\'s date as the day it went live and moves to Performance review.',
+            fields: [{ name: 'post', label: 'Post', required: true, choices: [['', 'Choose a post']].concat(posts.map(function (p) {
+              return [p.id, postName(p) + ' · ' + dayWord(p.posted_on)];
+            })) }] }, function (v) {
+            var p = st.posts.filter(function (x) { return x.id === v.post; })[0];
+            if (p) linkPost(p, id, b, function () { paintCheck(box); });
+          });
+        });
       });
       box.querySelectorAll('[data-a="delay"], [data-a="undelay"]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -2890,6 +2912,80 @@
   /* Select (the user, 2026-10-02, as on the Ads step): a tick on every row
      and a bar over the list, which moves the ticked posts to another account
      or removes them, each with its Undo. */
+  /* REPORT POSTS LINKED TO THEIR TASKS (2026-11-06; the user: "link it
+     with 2610W4_ABContent … close the loop"): a post of a monthly Accounts
+     Report takes its My Work task, whose name it then reads; the task takes
+     the post's day as its live date and moves to Performance review, then
+     Completed once the report is published. A Business setting turns it off;
+     white label is left out. */
+  function loadPostLinks(r) {
+    st.postLinks = null;
+    if (!r || (r.kind || 'social') !== 'social') return Promise.resolve();
+    return db.rpc('sm_report_post_tasks', { p_report: r.id }).then(function (res) {
+      var d = res && res.data;
+      st.postLinks = d && !res.error && !d.error ? d : null;
+    }).catch(function () { st.postLinks = null; });
+  }
+  function linkOf(postId) { return st.postLinks && (st.postLinks.links || []).filter(function (l) { return l.post_id === postId; })[0] || null; }
+  function linkable() { return !!(st.postLinks && st.postLinks.on && st.postLinks.applies && editable() && may('work')); }
+  function taskCode(t) { return t.code || ('#WT' + String(t.task_no).padStart(5, '0')); }
+  var LINK_SAID = {
+    'not-draft': 'This report is no longer a draft. Refresh the page.',
+    'links-off': 'Linking posts to tasks is turned off in Settings.',
+    'not-linkable': 'Posts in this report are not linked to tasks.',
+    'no-date': 'Set the post\'s date first.',
+    'not-in-month': 'This task is not in the report\'s month. Refresh the page.',
+    denied: 'You do not have permission to link a post. Please ask an admin.'
+  };
+  function linkSaid(d, e) {
+    if (d && d.error === 'linked') return 'This task is already linked to a post in the report for ' + (d.period || 'another period') + '.';
+    return LINK_SAID[(d && d.error) || ''] || said(e || (d && d.error));
+  }
+  function sendLink(p, taskId) {
+    return db.rpc('sm_report_post_link', { p_post: p.id, p_task: taskId || null }).then(function (res) {
+      var d = res.data || {};
+      if (res.error || d.error) throw { said: linkSaid(d, res.error) };
+      return Promise.all([
+        db.from('sm_report_posts').select('*').eq('id', p.id).maybeSingle(),
+        loadPostLinks(st.open)
+      ]).then(function (x) {
+        var row = x[0] && x[0].data;
+        if (row) st.posts = st.posts.map(function (q) { return q.id === row.id ? row : q; });
+        if (st.gate && st.open && st.gate.id === st.open.id) st.gate = null;
+        paintPosts();
+        return d;
+      });
+    });
+  }
+  function linkPost(p, taskId, btn, then) {
+    var host = st.host.querySelector('.rp-posts') || st.host;
+    var go = function (id) {
+      return sendLink(p, id).then(function (d) {
+        undoBar(d.moved ? 'Linked. The task is at Performance review.' : 'Linked.', host, function () { unlinkPost(p, true); });
+        if (then) then();
+      }).catch(function (e) { alertLine(host, e.said || said(e)); });
+    };
+    if (taskId) return go(taskId);
+    var free = ((st.postLinks && st.postLinks.tasks) || []).filter(function (t) { return !t.linked; });
+    if (!free.length) { alertLine(host, 'No task of this month is left to link. Add it in My Work.'); return; }
+    window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
+      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task takes this date as the day it went live and moves to Performance review.',
+      fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {
+        return [t.id, [taskCode(t), t.title || '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
+      })) }] }, function (v) { go(v.task); });
+  }
+  function unlinkPost(p, quiet) {
+    var host = st.host.querySelector('.rp-posts') || st.host;
+    var was = linkOf(p.id);
+    sendLink(p, null).then(function () {
+      if (!quiet && was) undoBar('Unlinked.', host, function () { linkPost(p, was.task_id); });
+    }).catch(function (e) { alertLine(host, e.said || said(e)); });
+  }
+  function alertLine(host, text) {
+    var m = host.querySelector('.msg[data-m="link"]');
+    if (!m) { m = document.createElement('div'); m.className = 'msg'; m.setAttribute('data-m', 'link'); host.insertBefore(m, host.firstChild); }
+    say(m, text, 'err');
+  }
   function paintPosts() {
     paintSteps();
     var box = st.host.querySelector('.rp-posts');
@@ -2935,17 +3031,19 @@
           return '<div class="crm-row rp-post-row' + (pick && pick[p.id] ? ' is-picked' : '') + '" data-id="' + esc(p.id) + '">' +
             (pick ? tick(p.id, 'Select ' + postName(p), !!pick[p.id]) : '') +
             '<span class="rp-thumb' + (p.thumb_data ? '' : ' is-empty') + '">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
+            '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([linkOf(p.id) ? taskCode(linkOf(p.id)) : '', line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
             '<span class="rp-date">' + esc(dayWord(p.posted_on)) + '</span>' +
             '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) + unit(String(METRIC_WORD[m[0]] || '').toLowerCase()) : '') + '</span>' +
             '<span class="rp-num rp-n2">' + (m[1] ? fmt(p[m[1]]) + unit(String(METRIC_WORD[m[1]] || '').toLowerCase()) : '') + '</span>' +
-            (ed && !pick ? rowMenu(['Edit', 'Remove']) : '<span></span>') + '</div>';
+            (ed && !pick ? rowMenu(['Edit', linkable() ? (linkOf(p.id) ? 'Unlink task' : 'Link task') : null, 'Remove'].filter(Boolean)) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join('');
     if (pick) { wirePostPick(box); return; }
     if (ed) wireRows(box, function (id, act, btn) {
       var p = st.posts.filter(function (x) { return x.id === id; })[0];
       if (act === 'Edit') postSheet(p, btn);
+      if (act === 'Link task') linkPost(p, null, btn);
+      if (act === 'Unlink task') unlinkPost(p);
       if (act === 'Remove') removePost(p);
     });
   }

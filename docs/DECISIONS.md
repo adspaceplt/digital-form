@@ -8269,6 +8269,29 @@ month; a lead lost this hour now gives the month a move on any day. Both
 were checked on a fixed clock (2 December): the old overview suite fails,
 the new one passes. The rule: a suite names every month it counts on.
 
+### 2026-11-06 · A report's posts linked to their My Work tasks
+The user: a post added to the Accounts Report with its figures should be
+linked to the task it came from (2610W4_ABContent), take the task's name
+so nothing is typed twice, and close the loop: the task moves to
+Performance review, then Completed once the report is published; a post
+that slipped is marked delayed and linked in the next month's report.
+Agreed: the report's date wins ("the report is accurate … the work task
+is inaccurate alr even though 14 oct the task owner marked live"), so the
+link sets the task's live date to the post's day and On-time posting and
+the Dashboard read the true day; the gate counts links once on; stages
+follow the report as its own report task's do, a hand move left alone;
+every forward move walked back (Unlink, a report taken out of published);
+admins pass the gate with a reason as before; white label left out (its
+accounts are not ADspace's); a Business setting turns it all off in case
+of a fault (the user: "worried there were bugs"), the 2026-11-05 rule
+then standing. Built as its own table, never a column of the post: a
+post's columns go whole into the published snapshot the client portal
+reads. Unlinking ends the row rather than deleting it, keeping the
+migration free of words the connector holds; the restatement of
+app_settings_set (which holds a delete) is the SQL Editor part.
+Also: the Report audit's Findings fold sat on the card's edge; it now
+stands on the check's words.
+
 ### 2026-11-05 · An Accounts Report waits on its posts going live
 The user, on an Accounts Report reading 0 of 8 planned at Check and submit
 yet still prompting Submit: every planned post must be a My Work task at

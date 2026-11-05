@@ -5077,7 +5077,31 @@ Each line is a rule that broke once. Its reason is in the archive.
     it late) and reads Delayed (the grey dot, beside the name on its row,
     its board card and its card's next step) until it goes live; the
     Dashboard's Needs attention lists it (Delayed posts). No band of its
-    own. Submit is
+    own. Report posts linked to their tasks
+    (`2026-11-06-report-posts-linked-to-tasks.sql`, its SQL Editor part
+    `-editor.sql`; the user, 2026-11-06: "close the loop"): with the
+    Business setting `report_post_links` on (Settings, Reports: Posts
+    linked to tasks, seeded On, `report_links_set`), a monthly Accounts
+    Report's post takes its My Work task from its ⋯ (Link task, Unlink
+    task; a lacking task's Link on Check and submit), the month's tasks
+    and any marked delayed offered (an admin or Reports Full Access any of
+    the client's), through `sm_report_post_link` (Reports Work, a draft,
+    the post dated; `links-off`, `not-linkable`, `no-date`,
+    `not-in-month`, `linked`), one task a post: the post takes the task's
+    description as its name and shows its code; the task takes the post's
+    day as its live date (the report is right where the task was not),
+    its delay cleared, its views and engagements from the post, and moves
+    to Performance review, then Completed once the report is published
+    and back with a report taken out of published (trigger
+    `sm_reports_posts_follow`, a task moved by hand left alone); Unlink
+    puts back what it changed (`sm_report_post_links`, RLS on, no policy,
+    no grant, kept and ended, never in the snapshot); a post removed
+    counts for nothing. The gate then counts a planned post once linked
+    with its three dates set, naming one not linked (Live · Not linked to
+    a post); off, the stage rule above stands. A white-label report is
+    held to no post and links none. The task card reads In the Accounts
+    Report · {month} · Posted {day} · n days after its post date, Open
+    report (`ops_task_report_post`). Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /
