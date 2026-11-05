@@ -59,7 +59,7 @@
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send code',
       sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in code and link have been sent to it. Enter the code, or open the link.'; },
-      code: 'Code from the email', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
+      code: 'Sign-in code', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
       emailNeeded: 'Please enter your email address.',

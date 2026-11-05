@@ -388,7 +388,7 @@
     var linking = me.mode === 'link' && !!me.contact;
     $('bkGo').textContent = linking ? 'Link' : me.mode === 'link' ? 'Create in Bukku' : me.linked || !me.contact ? 'Send' : 'Link and send';
     $('bkLink').hidden = me.mode === 'link' || !!me.linked || !me.contact; $('bkLink').disabled = true;
-    $('bkRowsH').textContent = linking ? 'How the details differ' : 'What changes';
+    $('bkRowsH').textContent = linking ? 'Differences' : 'Changes';
     $('bkRows').innerHTML = '<p class="muted">Reading.</p>';
     say('');
     call({ action: 'preview', kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {

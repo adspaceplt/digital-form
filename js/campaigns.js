@@ -2100,9 +2100,9 @@
       /* The caption is part of what the client approves, so its absence is
          said rather than drawn as nothing (2026-09-27: a draft went to the
          client with no caption, past a check that asks about the caption). */
-      (mayWork() ? '<label class="kfield kfield-wide"><span>Their caption</span>' +
+      (mayWork() ? '<label class="kfield kfield-wide"><span>Caption</span>' +
         '<textarea class="input textarea" rows="3" data-f="draft_caption">' +
-        esc(o.draft_caption || '') + '</textarea></label>' : readKfield('Their caption', o.draft_caption)) +
+        esc(o.draft_caption || '') + '</textarea></label>' : readKfield('Caption', o.draft_caption)) +
       (o.draft_caption ? '' : '<p class="msg warn kcap-none">No caption.</p>') +
       '</div>';
   }
@@ -2870,7 +2870,7 @@
     var db = $('campDateBlock');
     if (db) {
       var dates = [];
-      if (c.deadline) dates.push(['Campaign due', niceDate(c.deadline)]);
+      if (c.deadline) dates.push(['Due date', niceDate(c.deadline)]);
       /* "Next" has to mean next. This took the earliest date of every live
          booking and called it the next one, so the moment the first shoot
          passed the rail went on promising a date that was already behind us —
@@ -3285,7 +3285,7 @@
         '<span class="slugfield"><span class="slugfield-pre">' + esc(MON.sign(mkt())) + '</span>' +
         '<input class="input input-sm is-pre pickrate" type="number" inputmode="decimal" min="0" step="10" data-nodraft ' +
         'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" placeholder="360" value="' + esc(p.rate) + '"></span></div>' +
-      '<div class="ac-platfield"><span class="field-label">Posts on</span>' + platformBoxes(p.plats, true) + '</div>';
+      '<div class="ac-platfield"><span class="field-label">Platforms</span>' + platformBoxes(p.plats, true) + '</div>';
     var have = {};
     (c.creator_profiles || []).forEach(function (pr) { have[PLATFORM_LABEL[pr.platform] || pr.platform] = true; });
     var askLinks = function () {
@@ -4546,7 +4546,7 @@
     'not-changes': 'There is no request to take back.',
     'not-reviewing': 'Only a draft at Client review can be confirmed.',
     'not-scheduled': 'There is no approval to take back.',
-    'note-required': 'Say what needs changing.',
+    'note-required': 'Enter the changes.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
     'qc-required': 'Release to client needs the quality check completed.'
   };
@@ -4623,8 +4623,8 @@
     if (!btn) return;
     if (btn._ask) { btn._ask.open(); return; }
     btn._ask = window.ADspaceAsk.note(btn.closest('.kactions') || btn, {
-      label: 'What needs changing', send: 'Send to creator',
-      placeholder: 'What needs changing? The creator reads this.',
+      label: 'Changes', send: 'Send to creator',
+      placeholder: 'The creator reads this.',
       save: function (why) { sendBackNow(o, card, why); }
     });
     btn._ask.open();
@@ -5100,10 +5100,10 @@
       go: kind === 'withdrawn' ? 'Withdraw' : 'Replace',
       tone: 'warn',
       field: {
-        label: kind === 'withdrawn' ? 'Reason for withdrawal' : 'Reason for replacement',
+        label: kind === 'withdrawn' ? 'Reason' : 'Reason',
         placeholder: 'Describe what happened. It is recorded in the activity history.',
         rows: 3,
-        need: 'Say why. This is the only note the record keeps.'
+        need: 'Enter a reason.'
       }
     }, function (why) {
       db.from('campaign_options')

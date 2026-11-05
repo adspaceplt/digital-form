@@ -228,7 +228,7 @@
     'needs-schedule': 'Set the post date first.',
     'needs-live-date': 'Confirm the date it went live.',
     'live-in-future': 'A post cannot go live after today.',
-    'live-reason-required': 'Say why it went live on a different date.',
+    'live-reason-required': 'Enter the reason the post went live on another date.',
     'not-finished': 'Only a finished task can be rated.',
     'bad-rating': 'Choose one to five.',
     'none-selected': 'No tasks selected.',
@@ -2895,10 +2895,7 @@
     if (old) old.remove();
     var to = labelOfStage(t, next);
     var q = window.ADspaceAsk.note(el, {
-      label: how === 'back' ? 'Why it goes back to ' + to
-        : how === 'skip' ? 'Why the steps before ' + to + ' are skipped'
-        : next === 'cancelled' ? 'Why it is cancelled'
-        : 'Why it is reopened',
+      label: 'Reason',
       send: 'Move to ' + to, once: true,
       save: function (why) {
         moveTo(t, el, next, null, after, how === 'skip' ? { skip: why } : { note: why });
@@ -3374,7 +3371,7 @@
     if (!c) return;
     ADspaceConfirm.ask({
       title: 'Rename item', go: 'Save',
-      field: { label: 'Item', value: c.label, need: 'Say what needs doing.' }
+      field: { label: 'Item', value: c.label, need: 'Enter the item.' }
     }, function (v) {
       call('ops_edit_checklist_item', { p_item: c.id, p_label: v }, msgHere(), function () {
         readTask(t.id, function () { msg(msgHere(), 'Item renamed.', 'ok'); });
@@ -3831,7 +3828,7 @@
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
     if (!perf && keep && !handsToColleague(mv, t)) def = '__keep';
     b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
-    b.lab.textContent = perf ? 'Performance review by' : 'Assign to';
+    b.lab.textContent = perf ? 'Reviewer' : 'Assign to';
     b.lab.hidden = false;
     b.to.hidden = false;
   }
@@ -3852,7 +3849,7 @@
     if (!show) return;
     var r = Number(t.rating) || 0;
     var can = may('ops', 'work');
-    b.rate.innerHTML = '<p class="qrate-lab">' + (r ? 'Rated ' + r + ' of 5' + (t.rated_by ? ' by ' + esc(nameOf(t.rated_by) || '') : '') : 'How did it go?') + '</p>' +
+    b.rate.innerHTML = '<p class="qrate-lab">' + (r ? 'Rated ' + r + ' of 5' + (t.rated_by ? ' by ' + esc(nameOf(t.rated_by) || '') : '') : 'Not rated') + '</p>' +
       '<div class="qstars" role="group" aria-label="Rating">' + [1, 2, 3, 4, 5].map(function (k) {
         return '<button class="qstar' + (k <= r ? ' is-on' : '') + '" type="button" data-star="' + k + '" aria-pressed="' + (k === r) + '"' +
           (can ? '' : ' disabled') + ' aria-label="' + k + (k === 1 ? ' star' : ' stars') + '">' + STAR + '</button>';
@@ -3915,10 +3912,7 @@
     stepDateChanged();
     var toClient = key === 'client_review' && o.note != null;
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
-    $('stepNoteLabel').textContent = g === 'revision' ? 'What needs to change'
-      : key === 'taken_down' ? 'Why it is taken down'
-      : toClient ? 'How it was sent'
-      : live ? 'Note (where it is posted, if there is no link)' : 'Note';
+    $('stepNoteLabel').textContent = g === 'revision' ? 'Changes' : key === 'taken_down' ? 'Reason' : 'Note';
     $('stepNote').placeholder = needNote ? 'Required' : 'Optional';
     $('stepNote').value = '';
     /* A draft sent with no link: WhatsApp is the choice already made; Others
@@ -3930,7 +3924,7 @@
     /* One picker, never a switch beside it (the user, 2026-10-11): the one
        who has it now is the first choice, Me where that is the reader. */
     var keepIt = !perf && cur ? '<option value="__keep">' + esc(cur === myId() ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
-    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Assign to';
+    $('stepHandLabel').textContent = perf ? 'Reviewer' : 'Assign to';
     $('stepHandTo').innerHTML = keepIt + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
@@ -3964,7 +3958,7 @@
     var show = Boolean(c && c.key === 'live' && c.t.publish_at && $('stepDate').value &&
       $('stepDate').value !== dateValue(c.t.publish_at));
     $('stepWhyRow').hidden = !show;
-    if (show) $('stepWhyLabel').textContent = 'Why not on ' + niceDate(c.t.publish_at) + ', the scheduled date';
+    if (show) $('stepWhyLabel').textContent = 'Reason';
   }
   function doStep() {
     var c = stepCtx;
@@ -3976,7 +3970,7 @@
     var note = toClient && $('stepVia').value === 'whatsapp' ? WA_NOTE : String($('stepNote').value || '').trim();
     var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
     if (needNote && !note) {
-      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how it was sent.' : 'Say why it is taken down.', 'err');
+      msg('stepMsg', g === 'revision' ? 'Enter the changes.' : toClient ? 'Enter a note.' : 'Enter a reason.', 'err');
       $('stepNote').focus();
       return;
     }
@@ -5698,7 +5692,7 @@
       title: 'Reopen task',
       body: 'It goes back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
       go: 'Reopen',
-      field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
+      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(to, why); });
   }
   // ---- The way back, drawn where the act happened --------------------------
@@ -7668,10 +7662,10 @@
     $('giveNote').value = '';
     var open = state.detail.checklist.filter(function (c) { return !c.completed_at; });
     $('giveFacts').innerHTML =
-      frow('Assigned now', esc(ownerName(t) || 'Unassigned')) +
+      frow('Assigned to', esc(ownerName(t) || 'Unassigned')) +
       frow('Stage', esc(stageLabel(t)) + ' <span class="mute">stays as it is</span>') +
       frow('Due date', t.current_final_due_at ? esc(niceDate(t.current_final_due_at)) : '<span class="mute">Not set</span>') +
-      (open.length ? frow('Still to do', '<ul class="givelist">' + open.map(function (c) {
+      (open.length ? frow('Open items', '<ul class="givelist">' + open.map(function (c) {
         return '<li>' + esc(c.label) + '</li>'; }).join('') + '</ul>') : '');
     msg('giveMsg', '');
     sheet('giveSheet', true);
@@ -7915,7 +7909,7 @@
       var t = state.task, inp = $('dwCheckAdd');
       var label = String(inp.value || '').trim();
       if (!t) return;
-      if (!label) { msg('dwMsg', 'Say what needs doing.', 'err'); inp.focus(); return; }
+      if (!label) { msg('dwMsg', 'Enter the item.', 'err'); inp.focus(); return; }
       call('ops_add_checklist_item', { p_task: t.id, p_label: label }, 'dwMsg', function () {
         inp.value = '';
         /* The form stays open for the next item, the way a list is typed. */
@@ -8563,6 +8557,8 @@
 
   wire();
   window.ADspaceOps = {
+    /* A date move's reason in words, for a report's delayed post too (2026-11-05). */
+    reasonWord: function (k) { return reasonWord(k); },
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
     /* The message to a client for a meeting outside a month (2026-10-31). */

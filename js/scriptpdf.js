@@ -205,9 +205,31 @@
       rows.push([{ w: full, text: '', minH: S(7) }]);
       table([{ w: full, text: 'Notes / Remarks', head: true, f: reg }], rows);
     };
+    /* What the video stands on (2026-11-05): each part the plan holds, a
+       label beside its words. */
+    var PLAN = [['core_message', 'Core Message'], ['hook', 'Hook (0 to 3 Seconds)'], ['concept', 'Concept'], ['cta', 'Call to Action in the Video'],
+                ['cast', 'Cast Roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music Mood']];
+    var plan = function (v) {
+      var p = v.plan || {};
+      var rows = PLAN.filter(function (x) { return String(p[x[0]] || '').trim(); }).map(function (x) {
+        return [{ w: labW, text: x[1], head: true, f: reg }, { w: full - labW, text: p[x[0]] }];
+      });
+      if (!rows.length) return;
+      table(null, rows);
+      y -= S(2);
+    };
+    /* What is seen: the timing and camera over it, the on-screen text and
+       the sound under it. */
+    var seen = function (sc) {
+      return [sc.cam || '', sc.visual || '', sc.on_screen ? 'On-screen text: ' + sc.on_screen : '', sc.sound ? 'Sound: ' + sc.sound : '']
+        .filter(Boolean).join('\n');
+    };
     var video = function (v, many) {
-      var sub = [many ? v.kind_word : '', v.reference_url ? 'Reference: ' + v.reference_url : ''].filter(Boolean).join(' · ');
+      /* Each video's own shape (2026-11-05): its aspect ratio and length
+         under its name, so videos of one shoot keep one header table. */
+      var sub = [many ? v.kind_word : '', v.aspect || '', v.length_word || '', v.reference_url ? 'Reference: ' + v.reference_url : ''].filter(Boolean).join(' · ');
       blockHead(v.code + (v.title ? ' · ' + v.title : ''), sub);
+      plan(v);
       var list = v.scenes.length ? v.scenes : [{}];
       if (v.kind === 'scenes') {
         /* What is seen in the book face; the words said in the heavier one,
@@ -215,14 +237,14 @@
         var vis = (full - noW - vcW - shotW) / 2;
         table([H2('Scene', noW, 'center'), H2('Visual', vis), H2('Script', vis)].concat(tail),
           list.map(function (sc, i) {
-            return [NO(i), { w: vis, text: sc.visual || '' }, { w: vis, text: sc.line || '', f: reg }, SHOT(sc.shot_at), VC(sc.vc)];
+            return [NO(i), { w: vis, text: seen(sc) }, { w: vis, text: sc.line || '', f: reg }, SHOT(sc.shot_at), VC(sc.vc)];
           }));
       } else {
         table([H2(v.kind === 'products' ? 'Products/Context' : 'Hook/Story', full)], [[{ w: full, text: v.context || '' }]]);
         y -= S(2);
         var wide = full - noW - vcW - shotW;
         table([H2('Scene', noW, 'center'), H2('Visual', wide)].concat(tail),
-          list.map(function (sc, i) { return [NO(i), { w: wide, text: sc.visual || '' }, SHOT(sc.shot_at), VC(sc.vc)]; }));
+          list.map(function (sc, i) { return [NO(i), { w: wide, text: seen(sc) }, SHOT(sc.shot_at), VC(sc.vc)]; }));
         if (v.kind === 'story') {
           y -= S(2);
           var vo = full - vcW - shotW;
