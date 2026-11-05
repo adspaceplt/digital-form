@@ -210,7 +210,7 @@
     'bad-state': 'Invalid status.',
     'no-such-check': 'Check not found.',
     'meeting-in-past': 'Meeting date must be today or later.',
-    'meeting-before-floor': 'Choose a date from 14 Aug 2023.',
+    'meeting-before-floor': window.ADspaceWords.line.dateFloor,
     'bad-minutes': 'A meeting runs 15 minutes to 4 hours.',
     'bad-meeting-link': 'Paste a Google Meet, Zoom or Teams link.',
     'bad-channel': 'Choose where the meeting is held.',
