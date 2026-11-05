@@ -9220,6 +9220,21 @@ body.is-maint { overflow: hidden; }
 .vs-vc .input { width: 100%; }
 .vs-shot input { width: 20px; height: 20px; margin: 6px 0 0; accent-color: var(--accent); }
 .vs-empty { margin: 0; padding: 12px 15px; color: var(--ink-mute); }
+/* A scene's timing and camera on one mute line over what is seen, its
+   on-screen text and sound under it (2026-11-05, the shot table); the
+   console and the client's page alike. */
+.vs-cam { display: block; margin-bottom: 2px; font-size: 12.5px; color: var(--ink-mute); white-space: normal; }
+.vs-extra { display: block; margin-top: 4px; font-size: 13px; color: var(--ink-soft); white-space: normal; }
+.vs-extra b { font-weight: 600; color: var(--ink-mute); margin-right: 4px; }
+/* What a script stands on (core message, hook, cast, props): a label over
+   its words, one under the other. */
+.vs-plan { display: grid; gap: 8px; margin: 0; min-width: 0; }
+.vs-plan > div { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 0 12px; min-width: 0; }
+.vs-plan dt { font-size: 13px; color: var(--ink-mute); }
+.is-narrow .vs-plan { gap: 12px; }
+.is-narrow .vs-plan > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+@media (max-width: 640px) { .vs-plan { gap: 12px; } .vs-plan > div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.vs-plan dd { margin: 0; font-size: 14px; white-space: pre-line; overflow-wrap: anywhere; }
 .is-narrow .crm-head.vs-scene { display: none; }
 .is-narrow .vs-scene, .is-narrow .vs-scenes.is-two .vs-scene {
   grid-template-columns: 24px minmax(0, 1fr) auto auto;

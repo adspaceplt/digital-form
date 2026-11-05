@@ -40,6 +40,27 @@
   /* The stored word stays; the page says Bahasa Melayu, as Write caption does. */
   function langWord(v) { return v === 'Malay' ? 'Bahasa Melayu' : v; }
   var DURATIONS = [30, 60, 90, 120, 180, 240, 300, 360, 480, 600, 720];
+  /* The brief's lists and a shot's words (2026-11-05, the shot table). The
+     stored keys never move; the page says the words. */
+  var OBJECTIVES = [['awareness', 'Awareness'], ['traffic', 'Traffic'], ['leads', 'Leads'], ['sales', 'Sales'], ['app_install', 'App install']];
+  var FORMATS = [['talking_head', 'Talking head'], ['skit', 'Skit'], ['ugc', 'UGC style'], ['demo', 'Product demo'],
+                 ['testimonial', 'Testimonial'], ['montage', 'Voiceover montage']];
+  var SHOT_SIZES = ['Extreme wide', 'Wide', 'Medium', 'Medium close-up', 'Close-up', 'Extreme close-up', 'Insert'];
+  var ANGLES = ['Eye level', 'High angle', 'Low angle', 'Overhead', 'From behind', 'Over the shoulder', 'Through objects', 'Point of view'];
+  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action in the video'],
+              ['cast', 'Cast roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music mood']];
+  var BRIEF_WORDS = [['offer', 'Product or offer'], ['objective', 'Objective'], ['audience', 'Target audience'], ['key_message', 'Key message'],
+                     ['cta', 'Call to action'], ['must_include', 'Must include'], ['must_avoid', 'Must avoid'], ['tone', 'Tone'], ['format', 'Format']];
+  function wordOf(list, k) { var m = list.filter(function (x) { return x[0] === k; })[0]; return m ? m[1] : k; }
+  /* A second into the video as the crew reads it: 0:03. */
+  function clockOf(n) { n = Number(n); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
+  function timeOf(sc) {
+    if (sc.t_from == null && sc.t_to == null) return '';
+    return (sc.t_from == null ? '' : clockOf(sc.t_from)) + (sc.t_to == null ? '' : '\u2013' + clockOf(sc.t_to));
+  }
+  /* A scene's timing and camera on one line over what is seen. */
+  function camOf(sc) { return [timeOf(sc), sc.shot_size, sc.angle, sc.camera_move].filter(Boolean).join(' \u00b7 '); }
+  function lengthWord(n) { return n ? n + 's' : ''; }
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   var STATE = { draft: ['Draft', 'is-off'], shared: ['Published', 'is-live'] };
   var ICON = {
@@ -120,6 +141,12 @@
     'too-long': 'A field is too long to save.',
     'too-many': 'A month can have up to 99 scripts, and a script up to 60 scenes.',
     'bad-scenes': 'The scenes could not be read.',
+    'bad-time': 'Enter each scene\'s time in whole seconds from 0 to 600, the end after the start.',
+    'bad-aspect': 'Choose the aspect ratio.',
+    'bad-length': 'Choose the video length.',
+    'bad-brief': 'The brief could not be saved. Check each field and try again.',
+    'bad-plan': 'Enter up to 2,000 characters in each field.',
+    'bad-review': 'The AI review could not be saved. Write with AI again.',
     stale: 'Not saved. This script was changed by someone else. The latest version is now shown. Please enter your change again.',
     'denied-delete': 'You do not have permission to delete scripts. Please ask an admin.',
     name: 'The name does not match.'
@@ -345,7 +372,7 @@
       if (!r.data) throw new Error('not-found');
       st.open = r.data;
       return Promise.all([
-        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by').eq('script_id', id).order('position'),
+        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by, t_from, t_to, shot_size, angle, camera_move, on_screen, sound').eq('script_id', id).order('position'),
         db.from('video_scripts').select('id, code, seq, video_no, title, status, kind, shoot_on, venue').eq('client_id', st.open.client_id)
           .eq('period', st.open.period).order('seq')
       ]);
@@ -396,6 +423,8 @@
     var f = [];
     f.push(['Platform', s.platform || '']);
     f.push(['Language', langWord(s.language) || '']);
+    f.push(['Aspect ratio', s.aspect || '']);
+    f.push(['Video length', lengthWord(s.length_seconds)]);
     f.push(['Shooting date', [dayWord(s.shoot_on), timeWord(s.shoot_time)].filter(Boolean).join(', ')]);
     f.push(['Venue', s.venue || '']);
     f.push(['Estimated duration', durWord(s.duration_minutes)]);
@@ -406,7 +435,69 @@
       : '';
     return '<dl class="facts vs-facts">' + f.map(function (x) {
       return '<div><dt>' + esc(x[0]) + '</dt><dd>' + (x[1] ? esc(x[1]) : '<span class="mute">Not set</span>') + '</dd></div>';
-    }).join('') + ref + '</dl>';
+    }).join('') + ref + '</dl>' + briefHtml(s);
+  }
+  /* The brief the script is written to, the team's alone: only what is
+     set, the shoot's limits on one line. */
+  function briefHtml(s) {
+    var b = s.brief || {};
+    var rows = BRIEF_WORDS.filter(function (x) { return b[x[0]]; }).map(function (x) {
+      var v = x[0] === 'objective' ? wordOf(OBJECTIVES, b.objective) : x[0] === 'format' ? wordOf(FORMATS, b.format) : b[x[0]];
+      return [x[1], v];
+    });
+    var lim = [b.max_locations ? b.max_locations + (b.max_locations === 1 ? ' location' : ' locations') : '',
+               b.max_cast ? b.max_cast + ' on screen' : '', b.max_shoot_hours ? b.max_shoot_hours + (b.max_shoot_hours === 1 ? ' hour' : ' hours') : '']
+      .filter(Boolean).join(' \u00b7 ');
+    if (lim) rows.push(['Shoot limits', lim]);
+    if (!rows.length) return '';
+    return '<section class="vs-block vs-brief"><h4 class="fsec-h">Brief</h4>' + planList(rows) + '</section>';
+  }
+  function planList(rows) {
+    return '<dl class="vs-plan">' + rows.map(function (x) {
+      return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+  function planHtml(s) {
+    var p = s.plan || {};
+    var rows = PLAN.filter(function (x) { return p[x[0]]; }).map(function (x) { return [x[1], p[x[0]]]; });
+    return rows.length ? '<section class="vs-block"><h4 class="fsec-h">Plan</h4>' + planList(rows) + '</section>' : '';
+  }
+
+  /* THE AI REVIEW (2026-11-05): what a fresh reader found in the script Write
+     with AI drafted, kept with the version it was saved at: Passed, or Check
+     needed where a critical problem stood after the one rewrite; the story
+     and the core message as the reviewer read them; each problem with its
+     scene, the fix, its severity and, where unsure, Possible; what the first
+     reading found that the rewrite fixed; and the facts the brief lacked. */
+  function issueRows(list) {
+    return '<div class="vs-issues">' + list.map(function (x) {
+      return '<div class="vs-issue"><span class="vs-n">' + (x.shot ? esc(String(x.shot)) : '<span class="vs-all">All</span>') + '</span>' +
+        '<span class="vs-issue-text"><span>' + esc(x.problem || '') + '</span>' +
+        (x.fix ? '<span class="vs-issue-fix">Fix: ' + esc(x.fix) + '</span>' : '') + '</span>' +
+        '<span class="vs-issue-tags">' + (x.severity === 'critical' ? '<span class="chip chip-state is-danger">Critical</span>' : '<span class="chip">Minor</span>') +
+        (x.certainty === 'possible' ? '<span class="chip">Not certain</span>' : '') + '</span></div>';
+    }).join('') + '</div>';
+  }
+  function reviewHtml(rv, stale) {
+    if (!rv) return '';
+    var pass = rv.verdict === 'pass';
+    var issues = Array.isArray(rv.issues) ? rv.issues : [];
+    var first = rv.first && Array.isArray(rv.first.issues) ? rv.first.issues : [];
+    var qs = Array.isArray(rv.questions) ? rv.questions.filter(Boolean) : [];
+    var notes = [first.length ? 'Rewritten once after the first review.' : '', stale ? 'The script changed after this review.' : ''].filter(Boolean).join(' ');
+    var out = '<div class="vs-rvhead"><h4 class="fsec-h">AI review</h4>' +
+      '<span class="chip chip-state ' + (pass ? 'is-ok' : 'is-warn') + '">' + (pass ? 'Passed' : 'Check needed') + '</span></div>';
+    if (notes) out += '<p class="vs-rvnote">' + esc(notes) + '</p>';
+    var read = [rv.story ? ['Story', rv.story] : null, rv.core_message ? ['Core message', rv.core_message] : null].filter(Boolean);
+    if (read.length) out += planList(read);
+    out += issues.length ? issueRows(issues) : '<p class="vs-rvnote">No problems found.</p>';
+    if (first.length) {
+      out += '<details class="vs-rvfold"><summary>Fixed in the rewrite <span class="tab-n">' + first.length + '</span></summary>' + issueRows(first) + '</details>';
+    }
+    if (qs.length) {
+      out += '<div class="vs-rvq"><span class="field-label">Open questions</span><ul>' + qs.map(function (q) { return '<li>' + esc(q) + '</li>'; }).join('') + '</ul></div>';
+    }
+    return out;
   }
 
   /* ON THE DAY (the user, 2026-10-09: "make it simple to enter"): each
@@ -440,6 +531,14 @@
 
   /* The script as the team reads it, with the crew's tick and clip number on
      each scene. */
+  /* What is seen: the timing and camera over it, the on-screen text and the
+     sound under it, each only where set. */
+  function shotCell(sc) {
+    var cam = camOf(sc);
+    return (cam ? '<span class="vs-cam">' + esc(cam) + '</span>' : '') + esc(sc.visual || '') +
+      (sc.on_screen ? '<span class="vs-extra"><b>On-screen text</b> ' + esc(sc.on_screen) + '</span>' : '') +
+      (sc.sound ? '<span class="vs-extra"><b>Sound</b> ' + esc(sc.sound) + '</span>' : '');
+  }
   var NOT_SHOT = '<span class="mute vs-dash">—</span><span class="mute vs-notshot">Not shot</span>';
   function sceneRows(s) {
     var work = may('work');
@@ -452,7 +551,7 @@
     return '<div class="crm-table vs-scenes' + (kind === 'scenes' ? ' is-two' : '') + '">' + head + st.scenes.map(function (sc, i) {
       return '<div class="vs-scene" data-scene="' + esc(sc.id) + '">' +
         '<span class="vs-n">' + (i + 1) + '</span>' +
-        '<span class="vs-text vs-vis">' + esc(sc.visual || '') + '</span>' +
+        '<span class="vs-text vs-vis">' + shotCell(sc) + '</span>' +
         (kind === 'scenes' ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
         '<span class="vs-vc"><span class="vs-lbl" aria-hidden="true">VC#</span>' +
           (work ? clipField(sc.vc, 'Clip number for scene ' + (i + 1)) : (sc.vc ? esc(sc.vc) : '<span class="mute">—</span>')) + '</span>' +
@@ -466,7 +565,7 @@
     }).join('') + '</div>';
   }
   function scriptBody(s) {
-    var out = '';
+    var out = planHtml(s);
     if (CONTEXT_WORD[s.kind]) {
       out += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4>' +
         '<p class="vs-prose">' + (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
@@ -494,6 +593,7 @@
             : (s.vo_shot_at ? '<span class="vs-shotword">Shot</span>' : NOT_SHOT)) + '</span>' +
         '</div></div></section>';
     }
+    if (s.review) out += '<section class="vs-block vs-review">' + reviewHtml(s.review, s.review_version !== s.version) + '</section>';
     out += '<section class="vs-block"><h4 class="fsec-h">Notes</h4><p class="vs-prose">' +
       (s.remarks ? esc(s.remarks) : '<span class="mute">None</span>') + '</p></section>';
     return out;
@@ -858,7 +958,46 @@
     return JSON.stringify([$('vsKind').value, $('vsMonth').value, $('vsTitle').value, $('vsRef').value,
       $('vsPlatform').value, $('vsLang').value, $('vsDate').value, $('vsTime').value, $('vsVenue').value,
       $('vsDur').value, $('vsCast').value, $('vsContext').value, $('vsVo').value, $('vsNotes').value,
-      st.draft.map(function (x) { return [x.visual, x.line]; })]);
+      $('vsAspect').value, $('vsLength').value, briefIn(), planIn(), st.rev && st.rev.set ? st.rev.value : 'kept',
+      st.draft.map(function (x) { return SCENE_KEYS.map(function (k) { return x[k]; }); })]);
+  }
+  /* A scene as the editor holds it: every field a string. */
+  var SCENE_KEYS = ['visual', 'line', 't_from', 't_to', 'shot_size', 'angle', 'camera_move', 'on_screen', 'sound'];
+  function sceneIn(x) {
+    var o = { id: (x && x.id) || null };
+    SCENE_KEYS.forEach(function (k) { o[k] = x && x[k] != null ? String(x[k]) : ''; });
+    return o;
+  }
+  var BRIEF_FIELDS = [['offer', 'vsOffer'], ['audience', 'vsAudience'], ['key_message', 'vsKey'], ['cta', 'vsCta'],
+                      ['must_include', 'vsInclude'], ['must_avoid', 'vsAvoid'], ['tone', 'vsTone'], ['objective', 'vsObjective'],
+                      ['format', 'vsFormat'], ['max_locations', 'vsMaxLoc'], ['max_cast', 'vsMaxCast'], ['max_shoot_hours', 'vsMaxHours']];
+  var PLAN_FIELDS = [['core_message', 'vsCore'], ['hook', 'vsHook'], ['concept', 'vsConcept'], ['cta', 'vsPlanCta'],
+                     ['cast', 'vsRoles'], ['locations', 'vsLocs'], ['props', 'vsProps'], ['music', 'vsMusic']];
+  function briefIn() {
+    var o = {};
+    BRIEF_FIELDS.forEach(function (f) {
+      var v = $(f[1]).value.trim();
+      if (!v) return;
+      o[f[0]] = /^max_/.test(f[0]) ? Number(v) : v;
+    });
+    return o;
+  }
+  function planIn() {
+    var o = {};
+    PLAN_FIELDS.forEach(function (f) { var v = $(f[1]).value.trim(); if (v) o[f[0]] = v; });
+    return o;
+  }
+  function putPlan(p) {
+    PLAN_FIELDS.forEach(function (f) { $(f[1]).value = (p && p[f[0]]) || ''; });
+    if (window.ADspaceGrow && window.ADspaceGrow.fit) PLAN_FIELDS.forEach(function (f) { window.ADspaceGrow.fit($(f[1])); });
+  }
+  /* The review of a draft just written, shown under Write with AI until it
+     is saved with the script or undone. */
+  function paintEditReview() {
+    var box = $('vsEditReview');
+    var rv = st.rev && st.rev.set ? st.rev.value : null;
+    box.hidden = !rv;
+    box.innerHTML = rv ? reviewHtml(rv, false) : '';
   }
   function dirty() { return Boolean(st.editing) && snapshot() !== st.base; }
   function showEditor() {
@@ -909,8 +1048,18 @@
     $('vsContext').value = s.context || '';
     $('vsVo').value = s.vo || '';
     $('vsNotes').value = s.remarks || '';
-    st.draft = (st.pending ? [] : st.scenes).map(function (x) { return { id: x.id, visual: x.visual || '', line: x.line || '' }; });
-    if (!st.draft.length) st.draft.push({ id: null, visual: '', line: '' });
+    $('vsAspect').value = s.aspect || '';
+    $('vsLength').value = s.length_seconds ? String(s.length_seconds) : '';
+    ['vsAspect', 'vsLength'].forEach(function (id) { $(id).dispatchEvent(new Event('change', { bubbles: true })); });
+    var b = s.brief || {};
+    fillSelect($('vsObjective'), OBJECTIVES.map(function (x) { return x[0]; }), b.objective, function (k) { return wordOf(OBJECTIVES, k); });
+    fillSelect($('vsFormat'), FORMATS.map(function (x) { return x[0]; }), b.format, function (k) { return wordOf(FORMATS, k); });
+    BRIEF_FIELDS.forEach(function (f) { if (f[0] !== 'objective' && f[0] !== 'format') $(f[1]).value = b[f[0]] != null ? String(b[f[0]]) : ''; });
+    putPlan(s.plan || {});
+    st.rev = { set: false };
+    paintEditReview();
+    st.draft = (st.pending ? [] : st.scenes).map(sceneIn);
+    if (!st.draft.length) st.draft.push(sceneIn(null));
     kindPaint();
     sayWrite('');
     var ub = $('vsWriteMsg').parentNode.querySelector(':scope > .undobar-here');
@@ -946,17 +1095,32 @@
           '<button class="iconbtn" type="button" data-m="down" aria-label="Move scene ' + n + ' down"' + (i < st.draft.length - 1 ? '' : ' disabled') + '>' + ICON.down + '</button>' +
           '<button class="iconbtn" type="button" data-m="x" aria-label="Remove scene ' + n + '">' + ICON.x + '</button>' +
         '</span></div>' +
+        '<div class="row fgrid-3 vs-edit-shot">' +
+          '<div class="vs-edit-time"><span class="field-label" id="vsTl' + i + '">Time (seconds)</span><span class="vs-edit-pair">' +
+            '<input class="input" id="vsTa' + i + '" type="number" inputmode="numeric" min="0" max="600" step="1" data-f="t_from" value="' + esc(x.t_from) + '" aria-labelledby="vsTl' + i + '" aria-label="Starts at" placeholder="From">' +
+            '<input class="input" id="vsTb' + i + '" type="number" inputmode="numeric" min="1" max="600" step="1" data-f="t_to" value="' + esc(x.t_to) + '" aria-label="Ends at" placeholder="To"></span></div>' +
+          '<div><label class="field-label" for="vsSz' + i + '">Shot size</label><select class="select" id="vsSz' + i + '" data-f="shot_size">' + optsOf(SHOT_SIZES, x.shot_size) + '</select></div>' +
+          '<div><label class="field-label" for="vsAn' + i + '">Angle</label><select class="select" id="vsAn' + i + '" data-f="angle">' + optsOf(ANGLES, x.angle) + '</select></div>' +
+        '</div>' +
+        '<div class="row"><div><label class="field-label" for="vsMv' + i + '">Camera move</label>' +
+          '<textarea class="input" id="vsMv' + i + '" rows="1" data-oneline maxlength="60" data-f="camera_move" placeholder="Slow push in">' + esc(x.camera_move) + '</textarea></div></div>' +
         '<div class="row' + (two ? ' fgrid' : '') + '">' +
           '<div><label class="field-label" for="vsV' + i + '">' + esc(SCENE_WORD[$('vsKind').value] || 'Visual') + '</label>' +
             '<textarea class="input" id="vsV' + i + '" rows="2" data-f="visual">' + esc(x.visual) + '</textarea></div>' +
           (two ? '<div><label class="field-label" for="vsL' + i + '">Script</label>' +
             '<textarea class="input" id="vsL' + i + '" rows="2" data-f="line">' + esc(x.line) + '</textarea></div>' : '') +
+        '</div>' +
+        '<div class="row fgrid">' +
+          '<div><label class="field-label" for="vsOs' + i + '">On-screen text</label>' +
+            '<textarea class="input" id="vsOs' + i + '" rows="1" data-oneline maxlength="120" data-f="on_screen" placeholder="Optional">' + esc(x.on_screen) + '</textarea></div>' +
+          '<div><label class="field-label" for="vsSd' + i + '">Sound</label>' +
+            '<textarea class="input" id="vsSd' + i + '" rows="1" data-oneline maxlength="200" data-f="sound" placeholder="Optional">' + esc(x.sound) + '</textarea></div>' +
         '</div></div>';
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('.vs-edit-scene'), function (row) {
       var i = Number(row.getAttribute('data-i'));
       Array.prototype.forEach.call(row.querySelectorAll('[data-f]'), function (t) {
-        t.addEventListener('input', function () { st.draft[i][t.getAttribute('data-f')] = t.value; });
+        ['input', 'change'].forEach(function (ev) { t.addEventListener(ev, function () { st.draft[i][t.getAttribute('data-f')] = t.value; }); });
       });
       Array.prototype.forEach.call(row.querySelectorAll('[data-m]'), function (b) {
         b.addEventListener('click', function () {
@@ -971,9 +1135,18 @@
       });
     });
   }
+  /* A select's options, the value held kept where the list lacks it (a
+     word Write with AI chose). */
+  function optsOf(list, cur) {
+    var o = list.slice();
+    if (cur && o.indexOf(cur) < 0) o.push(cur);
+    return '<option value="">Not set</option>' + o.map(function (v) {
+      return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(v) + '</option>';
+    }).join('');
+  }
   $('vsAddScene').addEventListener('click', function () {
     if (st.draft.length >= 60) { say($('vsMsg'), SAID['too-many']); return; }
-    st.draft.push({ id: null, visual: '', line: '' });
+    st.draft.push(sceneIn(null));
     paintDraftScenes();
     var last = $('vsV' + (st.draft.length - 1));
     if (last) last.focus();
@@ -1000,10 +1173,26 @@
       duration_minutes: $('vsDur').value, cast_names: $('vsCast').value.trim(),
       context: CONTEXT_WORD[$('vsKind').value] ? $('vsContext').value.trim() : s.context || '',
       vo: $('vsKind').value === 'story' ? $('vsVo').value.trim() : s.vo || '',
-      remarks: $('vsNotes').value.trim(), period: $('vsMonth').value
+      remarks: $('vsNotes').value.trim(), period: $('vsMonth').value,
+      aspect: $('vsAspect').value, length_seconds: $('vsLength').value, brief: briefIn(), plan: planIn()
     };
+    if (st.rev && st.rev.set) head.review = st.rev.value || null;
+    var lim = [['vsMaxLoc', 10], ['vsMaxCast', 50], ['vsMaxHours', 24]].filter(function (f) {
+      var v = $(f[0]).value.trim();
+      return v && !(/^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= f[1]);
+    })[0];
+    if (lim) { say(m, 'Enter a whole number from 1 to ' + lim[1] + '.'); $(lim[0]).focus(); return; }
+    var bad = -1;
     var scenes = st.draft.filter(function (x) { return x.visual.trim() || x.line.trim(); })
-      .map(function (x) { return { id: x.id, visual: x.visual.trim(), line: $('vsKind').value === 'scenes' ? x.line.trim() : '' }; });
+      .map(function (x, i) {
+        var a = x.t_from.trim(), b2 = x.t_to.trim();
+        if ((a && !/^\d{1,3}$/.test(a)) || (b2 && !/^\d{1,3}$/.test(b2)) || Number(a) > 600 || Number(b2) > 600 ||
+            (b2 && Number(b2) < 1) || (a && b2 && Number(b2) <= Number(a))) { if (bad < 0) bad = i; }
+        return { id: x.id, visual: x.visual.trim(), line: $('vsKind').value === 'scenes' ? x.line.trim() : '',
+                 t_from: a, t_to: b2, shot_size: x.shot_size, angle: x.angle, camera_move: x.camera_move.trim(),
+                 on_screen: x.on_screen.trim(), sound: x.sound.trim() };
+      });
+    if (bad > -1) { say(m, SAID['bad-time']); var tf = $('vsTa' + st.draft.indexOf(st.draft.filter(function (x) { return x.visual.trim() || x.line.trim(); })[bad])); if (tf) tf.focus(); return; }
     btn.disabled = true;
     say(m, '');
     var sid = null;
@@ -1013,6 +1202,7 @@
     }).then(function (d) {
       btn.disabled = false;
       if (declared) st.ai = null;
+      st.rev = { set: false };
       closeEditor();
       if (fresh) {
         /* The new script opens on its own page, its number assigned. */
@@ -1083,8 +1273,9 @@
   }
   function sheetWords() {
     return {
-      kind: $('vsKind').value, context: $('vsContext').value, vo: $('vsVo').value,
-      scenes: st.draft.map(function (x) { return { id: x.id, visual: x.visual, line: x.line }; })
+      kind: $('vsKind').value, context: $('vsContext').value, vo: $('vsVo').value, plan: planIn(),
+      rev: st.rev ? { set: st.rev.set, value: st.rev.value } : { set: false },
+      scenes: st.draft.map(sceneIn)
     };
   }
   function putWords(w) {
@@ -1094,8 +1285,10 @@
     }
     $('vsContext').value = w.context || '';
     $('vsVo').value = w.vo || '';
-    st.draft = w.scenes.length ? w.scenes.map(function (x) { return { id: x.id || null, visual: x.visual || '', line: x.line || '' }; })
-      : [{ id: null, visual: '', line: '' }];
+    putPlan(w.plan || {});
+    st.rev = w.rev || { set: false };
+    paintEditReview();
+    st.draft = w.scenes.length ? w.scenes.map(sceneIn) : [sceneIn(null)];
     paintDraftScenes();
   }
   function hasWords(kind) {
@@ -1109,9 +1302,19 @@
     var fill = function (t) {
       return String(t || '').replace(/\{\s*brand\s*\}/gi, nm).replace(/\{\s*handle\s*\}/gi, d.handle || nm);
     };
+    var plan = {};
+    Object.keys(d.draft.plan || {}).forEach(function (k) { plan[k] = fill(d.draft.plan[k]); });
+    /* The review's words are filled the same way, so the colleague reads
+       the client's name where the reviewer read {brand}. */
+    var rv = d.review ? JSON.parse(JSON.stringify(d.review), function (k, v) { return typeof v === 'string' ? fill(v) : v; }) : null;
     return {
-      kind: kind, context: fill(d.draft.context), vo: fill(d.draft.vo),
-      scenes: (d.draft.scenes || []).map(function (x) { return { id: null, visual: fill(x.visual), line: fill(x.line) }; })
+      kind: kind, context: fill(d.draft.context), vo: fill(d.draft.vo), plan: plan, rev: { set: true, value: rv },
+      scenes: (d.draft.scenes || []).map(function (x) {
+        var o = sceneIn(x);
+        SCENE_KEYS.forEach(function (k) { o[k] = fill(o[k]); });
+        o.id = null;
+        return o;
+      })
     };
   }
   function sayWrite(text) {
@@ -1141,8 +1344,11 @@
       if (both[1]) { AD.brandSay($('vsWriteMsg'), both[1].text, s.client_id); return; }
       if (!left.left) { sayWrite(writeLimit(left)); return; }
       var kind = $('vsKind').value, plat = $('vsPlatform').value;
-      var fields = [{ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
-        value: keep('adspace-script-length:' + noteKey) || '30' }];
+      /* The length and aspect ratio are the script's own (2026-11-05): asked
+         here only where the editor holds none, and put in its field. */
+      var fields = [];
+      if (!$('vsLength').value) fields.push({ name: 'length', label: 'Video length', choices: LENGTHS, seg: true,
+        value: keep('adspace-script-length:' + noteKey) || '30' });
       if (plat === 'rednote') fields.push({ name: 'safe', label: 'XHS Safe Mode', tick: true, value: false });
       fields.push({ name: 'notes', label: 'Notes for the script', rows: 4, required: false,
         placeholder: 'What the video is for, the product or offer, the call to action',
@@ -1153,6 +1359,11 @@
         go: 'Write', fields: fields
       }, function (v) {
         var notes = String(v.notes || '').trim();
+        if (v.length && !$('vsLength').value) {
+          $('vsLength').value = String(v.length);
+          $('vsLength').dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        var length = Number($('vsLength').value) || 30;
         var before = sheetWords();
         var cur = sheetWords();
         var sid = null;
@@ -1168,15 +1379,20 @@
         made().then(function (id) {
           sid = id;
           keep('adspace-script-notes:' + id, notes);
-          keep('adspace-script-length:' + id, String(v.length || '30'));
+          keep('adspace-script-length:' + id, String(length));
           st.writing = id;
           return db.functions.invoke('script-draft', { body: {
           script_id: id, kind: kind, title: $('vsTitle').value.trim(), platform: plat, language: $('vsLang').value,
-          length: Number(v.length) || 30, venue: $('vsVenue').value.trim(),
+          length: length, aspect: $('vsAspect').value, venue: $('vsVenue').value.trim(), brief: briefIn(),
           cast: $('vsCast').value.split(/[,，;\n]+/).filter(function (x) { return x.trim(); }).length,
           notes: notes, safe: plat === 'rednote' && v.safe === 'on',
           current: { context: CONTEXT_WORD[kind] ? cur.context : '', vo: kind === 'story' ? cur.vo : '',
-                     scenes: cur.scenes.map(function (x) { return { visual: x.visual, line: kind === 'scenes' ? x.line : '' }; }) }
+                     scenes: cur.scenes.map(function (x) {
+                       var o = sceneIn(x);
+                       delete o.id;
+                       if (kind !== 'scenes') o.line = '';
+                       return o;
+                     }) }
         } });
         }).then(function (res) {
           var d = res && res.data;
@@ -1235,7 +1451,7 @@
   function gather(ids) {
     return Promise.all([
       db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
-      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at').in('script_id', ids).order('position')
+      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at, t_from, t_to, shot_size, angle, camera_move, on_screen, sound').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       var by = {};
@@ -1247,6 +1463,8 @@
         s.when = [dayWord(s.shoot_on), timeWord(s.shoot_time)].filter(Boolean).join(', ');
         s.duration = durWord(s.duration_minutes);
         s.month_word = monthWord(s.period);
+        s.length_word = lengthWord(s.length_seconds);
+        s.scenes.forEach(function (sc) { sc.cam = camOf(sc); });
         return s;
       });
     });

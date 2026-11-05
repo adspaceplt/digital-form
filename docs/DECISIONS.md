@@ -8292,6 +8292,43 @@ no task cannot be marked, so 6 tasks against 8 planned stays refused
 until the 2 are added in My Work.
 
 
+### 2026-11-05 · A label is a noun
+The user flagged "Why it goes now" on Reports' Submit question ("should this
+be just Reason") and asked for a sweep of the same kind. Two readers swept
+every label, heading, option and refusal in the console's markup and
+scripts: about 90 were clauses or coined phrases (Why it is late, What needs
+changing, Note for them, Kept as, Week in the code, Say why., Submit past the
+month's gate?). Each now names the thing (Reason, Changes, Note, Type, Week,
+Enter a reason., Submit anyway?). Left as approved: the report's section
+names (What worked, Areas to improve, Why it stood out), Brand analysis's,
+Analytics' What changed, Health's company words, the reflection's three
+prompts, /quote/'s questions to a prospect, Team's Their work, and the Script
+(read here) heading, which the database's Activity lines also name. The rule
+is DESIGN.md §6 item 11, and tests/words.js PATTERNS fails a label that
+opens Why it…, What needs changing, Say why… or Note for them.
+
+### 2026-11-05 · Video scripts as a shot table, read cold by a second AI call
+
+The user shared the Video Script Generator spec (a writer and a fresh
+reviewer, a brief form, a shot-table schema) and chose "Full shot table".
+Asked for the crew's limits, the user answered they vary by project, so the
+locations, cast and shoot-hour limits are fields on each script's brief
+rather than Business settings; blank, the writer keeps to one shoot day and
+says what it assumed as an open question. Each scene gained its timing,
+shot size, angle, camera move, on-screen text and sound; the script gained
+its aspect ratio, length, brief, plan and AI review. `script-draft` now
+writes, then sends the brief and the script alone (never the writer's
+reasoning) to a fresh call; a FAIL is sent back once for a rewrite and read
+again, and the review comes back with the first reading where it rewrote.
+The page saves the review with the script; the record shows it beside the
+scenes, and says when the script changed after it. Each press stays one
+script (a script is one video, 2026-10-09); the spec's variants are Add
+script. The answer is streamed with a space every 8 seconds, as Brand
+analysis is, 140 seconds at most, the rewrite left out where it would run
+past it. A second reader of the new words found eight lines (a plan field,
+two calls to action under one label, On screen beside On-screen text,
+Locations twice, cleared, flagged, as read, Possible); each was fixed.
+
 ### 2026-11-06 · The Content meeting sheet: any day unless the calendar books it
 The user, on My Work's Content meeting sheet: "this window ui abit ugly",
 and On site still refused a date before today. Found: the sheet opened on

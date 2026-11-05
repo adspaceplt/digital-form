@@ -84,7 +84,7 @@
         '<span class="qs-part">Supplier ID ' + esc(info.code) + '</span></p></div>' +
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
-        field('sfKind', 'Registered as', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Registered as')) +
+        field('sfKind', 'Supplier type', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Supplier type')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
         field('sfBrn', 'Business registration no.', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
         (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +

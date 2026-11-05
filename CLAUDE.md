@@ -2009,7 +2009,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     contact, a press opening its facts in place, remembered under
     `client-entities`, one just saved or added open; its ⋯ Edit, Make
     primary, Remove; the user, 2026-10-29: "how long is this"), read on each visit (`client_entities_list`); Add
-    entity (`#entAddSheet`, Find a company) finds one held, every word
+    entity (`#entAddSheet`, Company) finds one held, every word
     typed in its registered name or the name or Client ID of a brand it
     bills, or its BRN digits (`billing_entities_find`, ten, only those
     billing a client the reader sees, or none; In the portal), a customer
@@ -4391,10 +4391,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
 - Time records: one stage table in workflow order (Stage, Visits, Time, a
   Total row); the sheet shows it open, with Recorded only where there is any.
-- A draft link is optional. Without one the step asks Sent on (`#stepVia`,
-  WhatsApp / Others; the user, 2026-10-11: "no need type in where to send
-  every single time"): WhatsApp files Sent to the client on WhatsApp., Others
-  asks How it was sent; the database accepts the link or a note.
+- A draft link is optional. Without one the step asks Channel (`#stepVia`,
+  WhatsApp / Other; the user, 2026-10-11: "no need type in where to send
+  every single time"): WhatsApp files Sent to the client on WhatsApp., Other
+  asks a Note; the database accepts the link or a note.
 - A task is one card beside the list (`#taskDrawer`, `.sheet-side`,
   `open=`; the user, 2026-10-09: the full record was little used): an
   older `task=` address, a new task and a copy open it there; there is no
@@ -5972,7 +5972,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   never printed. The Add-ons table opens on `addons_included`
   (`2026-10-13-rate-card-included-revisions.sql`, Wording).
 - What a quote reads of a line is `services.spec` (`service_spec_ok`), set in
-  the line's sheet under In quotes: a plan (letter, with or without ads,
+  the line's sheet under Quotation details: a plan (letter, with or without ads,
   platforms, contents a month, its content options, the ad budget it
   covers, Best for), a platform's management fee, Meta advertising and an
   ads booster (the budget each covers), translation (an added language), a
@@ -6451,6 +6451,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   ("Save or cancel the changes first."), and closing the tab asks
   (`beforeunload`). Saved by `video_script_save` (from and to, `stale` with
   the row).
+- The shot table (`2026-11-05-script-shot-table.sql`; the user, 2026-11-05:
+  the Video Script Generator spec, "Full shot table"): each scene keeps its
+  time (`t_from`, `t_to`, seconds, the end after the start), Shot size,
+  Angle, Camera move, On-screen text and Sound, read as one mute line over
+  what is seen; a script keeps its Aspect ratio and Video length, its Brief
+  (`brief`: offer, objective, audience, key message, call to action, must
+  include, must avoid, tone, format, and the Location, Cast and Hour limits,
+  the script's own, never a setting: the crew's limits vary a project), its
+  Plan (`plan`: core message, hook, concept, call to action in the video,
+  cast roles, locations, props, music mood) and its AI review (`review`,
+  `review_version`, kept as Save keeps it). Add script copies the aspect,
+  length and brief. The client link reads the plan and the shot fields,
+  never the brief or the review. One press writes one script (one script is
+  one video); a second variant is Add script and Write with AI again.
 - Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
