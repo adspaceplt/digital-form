@@ -5057,11 +5057,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The month's gate (`2026-10-04-report-month-gate.sql`, reports from
     October 2026): `sm_report_gate` finds the client's month whose span
     holds the report's last day and names what it lacks (`no-month`,
-    `not-ticked`, `no-task`, `content`: content tasks fewer than planned,
-    report and cancelled tasks not counted) and the due time (the report
-    task's). Check and submit shows it as rows under the report's checks
-    (Month in My Work, Report task with Open where My Work is readable,
-    Content, Due). Submit is
+    `not-ticked`, `no-task`; for an Accounts Report alone `content`:
+    content tasks fewer than planned, report and cancelled tasks not
+    counted, and `posted`: fewer planned posts at Live, Performance review
+    or Completed holding Draft due, Due date, Post date and the live date,
+    `lacking` naming each task short of it and what it lacks, twenty at
+    most; `2026-11-05-accounts-report-needs-posts-live.sql`, the user,
+    2026-11-05; posts planned is a count, never a week each) and the due
+    time (the report task's). Check and submit shows it as rows under the
+    report's checks (Month in My Work, Report task with Open where My Work
+    is readable, Posts live with a line a task short of it, Open on each,
+    Due). Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /

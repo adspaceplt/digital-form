@@ -6756,7 +6756,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (x.client_id !== r.client_id || x.status === 'cancelled') return false;
       var sp = span(x); return r.period_end >= sp[0] && r.period_end <= sp[1];
     }).sort(function (x, y) { return y.period.localeCompare(x.period); })[0];
-    var missing = [], made = 0, task = null, due, sp2 = null;
+    var missing = [], made = 0, posted = 0, lacking = [], task = null, due, sp2 = null;
     if (!e) { missing.push('no-month'); due = dueOf(r.period_end); }
     else {
       sp2 = span(e); due = dueOf(sp2[1]);
@@ -6768,11 +6768,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       made = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); }).length;
 
-      if (r.kind !== 'ads' && made < (e.planned_count || 0)) missing.push('content');
+      if (r.kind !== 'ads') {
+        var pl = e.planned_count || 0, LIVE = ['live', 'performance_review', 'completed'];
+        var content = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); });
+        var needsOf = function (x) {
+          return [LIVE.indexOf(x.stage_key) < 0 ? 'stage' : null, x.current_first_draft_due_at ? null : 'draft',
+            x.current_final_due_at ? null : 'due', x.publish_at ? null : 'post', x.live_at ? null : 'live'].filter(Boolean);
+        };
+        posted = content.filter(function (x) { return !needsOf(x).length; }).length;
+        if (made < pl) missing.push('content');
+        if (posted < pl) {
+          missing.push('posted');
+          lacking = content.filter(function (x) { return needsOf(x).length; })
+            .sort(function (a, b) { return a.task_no - b.task_no; }).slice(0, 20)
+            .map(function (x) { return { id: x.id, task_no: x.task_no, code: x.code || null, needs: needsOf(x) }; });
+        }
+      }
     }
     return { applies: true, ok: !missing.length, missing: missing,
       month: e ? { id: e.id, period: e.period, start_day: e.start_day || 1, starts: sp2[0], ends: sp2[1], reports: e.reports || [] } : null,
-      planned: e ? e.planned_count || 0 : 0, made: made,
+      planned: e ? e.planned_count || 0 : 0, made: made, posted: posted, lacking: lacking,
       task: task ? { id: task.id, task_no: task.task_no, stage_key: task.stage_key } : null,
       due: due, late: Date.now() > Date.parse(due), may_override: may };
   }

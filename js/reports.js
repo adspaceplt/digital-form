@@ -1946,8 +1946,24 @@
       else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
       else if (k === 'no-task') out.push('Its month has no report task.');
       else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
+      else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + ' planned posts are live with every date set.');
     });
     return out;
+  }
+  /* An Accounts Report waits on every planned post being live with its
+     dates in (2026-11-05): each task not yet counted, and what it lacks. */
+  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Live date' };
+  function lackHtml(list) {
+    if (!list || !list.length) return '';
+    var open = bridge.may && bridge.may('ops', 'view');
+    return '<div class="rp-lacks">' + list.map(function (t) {
+      var dates = (t.needs || []).filter(function (k) { return LACK[k]; }).map(function (k) { return LACK[k]; });
+      var said = [(t.needs || []).indexOf('stage') > -1 ? 'Not live' : '', dates.length ? dates.join(', ') + ' not set' : '']
+        .filter(Boolean).join(' · ');
+      return '<div class="rp-lack"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
+        '<small>' + esc(said) + '</small></span>' +
+        (open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openpost" data-id="' + esc(t.id) + '">Open' + ICON.go + '</button>' : '') + '</div>';
+    }).join('') + '</div>';
   }
   function loadGate(box, r) {
     db.rpc('sm_report_gate', { p_id: r.id }).then(function (res) {
@@ -1970,14 +1986,20 @@
           g.task && bridge.may && bridge.may('ops', 'view') ? '<button class="btn btn-sm btn-quiet" type="button" data-a="opentask">Open' + ICON.go + '</button>' : '') : '') +
         /* Planned content holds an Accounts Report alone: an Advertising
            Report reports the ads (2026-11-02). */
-        (mo && r.kind !== 'ads' ? row(!has('content'), 'Content', g.planned ? g.made + ' of ' + g.planned + ' planned' : 'None planned') : '') +
+        (mo && r.kind !== 'ads' ? row(!has('content') && !has('posted'), 'Posts live',
+          !g.planned ? 'None planned' : (g.posted == null ? g.made : g.posted) + ' of ' + g.planned + ' planned' +
+            (has('content') ? ' · ' + g.made + (g.made === 1 ? ' task' : ' tasks') + ' in the month' : '')) + lackHtml(g.lacking) : '') +
         row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late · Reason required' : ''), '', g.late);
       var card = box.querySelector('.rp-checks');
       if (card) card.insertAdjacentHTML('beforeend', html);
-      var open = box.querySelector('[data-a="opentask"]');
-      if (open) open.addEventListener('click', function () {
-        history.replaceState(null, '', '/admin/?s=work&open=' + encodeURIComponent(g.task.id));
+      var openTask = function (id) {
+        history.replaceState(null, '', '/admin/?s=work&open=' + encodeURIComponent(id));
         if (bridge.show) bridge.show('work');
+      };
+      var open = box.querySelector('[data-a="opentask"]');
+      if (open) open.addEventListener('click', function () { openTask(g.task.id); });
+      box.querySelectorAll('[data-a="openpost"]').forEach(function (b) {
+        b.addEventListener('click', function () { openTask(b.getAttribute('data-id')); });
       });
       if (!g.ok && !g.may_override) {
         var sub = box.querySelector('[data-a="submit"]');
