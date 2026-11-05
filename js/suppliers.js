@@ -221,7 +221,7 @@
     });
   }
   var GROUPS = [
-    ['Billing details', [['kind', 'Registered as'], ['brn', 'BRN'], ['nric', 'NRIC', 1], ['tin', 'TIN'], ['sst_no', 'SST no.'], ['phone', 'Office / mobile'], ['address', 'Billing address']]],
+    ['Billing details', [['kind', 'Supplier type'], ['brn', 'BRN'], ['nric', 'NRIC', 1], ['tin', 'TIN'], ['sst_no', 'SST no.'], ['phone', 'Office / mobile'], ['address', 'Billing address']]],
     ['Person in charge', [['contact_name', 'Legal name'], ['designation', 'Designation'], ['email', 'Email'], ['mobile', 'Mobile / WhatsApp']]],
     ['Payment details', [['payment_term', 'Payment term'], ['currency', 'Currency'], ['finance_email', 'Finance email'],
       ['payee_name', 'Payee name', 1], ['bank_name', 'Bank', 1], ['bank_account', 'Account number', 1], ['swift', 'SWIFT code', 1], ['bank_address', 'Bank address', 1]]]

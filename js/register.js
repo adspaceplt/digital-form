@@ -1164,7 +1164,7 @@
           staff_code: (memberOf($('docMember').value) || {}).staff_code || '', ic: $('docIc').value.trim() }
       : { name: $('docTo').value.trim(), address: $('docAddr').value.trim(),
           attn: $('docAttn').value.trim(), attn_role: $('docAttnRole').value.trim() };
-    if (!hr && !agreeing && !recipient.name) { msg('docMsg', 'Say who the letter is to.', 'err'); $('docTo').focus(); return; }
+    if (!hr && !agreeing && !recipient.name) { msg('docMsg', 'Enter the recipient.', 'err'); $('docTo').focus(); return; }
     var signed = $('docSigned').checked;
     var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
     if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }

@@ -362,8 +362,8 @@
     ['crmTin',          'tin',             'TIN'],
     ['crmSstNo',        'sst_no',          'SST registration no.'],
     ['crmBillContact',  'bill_contact_id', 'Billing contact', true],
-    ['crmFinanceEmail', 'finance_email',   'Finance department email'],
-    ['crmBillAddr',     'billing_address', 'Company billing address', true]
+    ['crmFinanceEmail', 'finance_email',   'Finance email'],
+    ['crmBillAddr',     'billing_address', 'Billing address', true]
   ];
   var BILLING_REQUIRED = BILLING.filter(function (f) { return f[3]; });
   /* The billing contact follows the main contact unless somebody else is
@@ -3640,7 +3640,7 @@
   var BRIEF = [['crmBrAudience', 'audience', 'Audience'], ['crmBrPains', 'pains', 'Pain points'],
     ['crmBrPillars', 'pillars', 'Content pillars'], ['crmBrTone', 'tone', 'Tone of voice'],
     ['crmBrAvoid', 'avoid', 'Topics and words to avoid'], ['crmBrRivals', 'competitors', 'Competitors'],
-    ['crmBrHooks', 'hooks', 'Hooks that worked']];
+    ['crmBrHooks', 'hooks', 'Proven hooks']];
   function briefOf(c) { return (c && c.brief && typeof c.brief === 'object') ? c.brief : {}; }
   function paintBrandRead(c) {
     var box = $('crmBrandRead');
@@ -3962,19 +3962,19 @@
       ].filter(function (r) { return r[0] !== 'Confirmed' || v.confirmed_at; })) +
       (v.hypothesis ? '<p class="msg warn ba-hypo">A starting hypothesis to test</p>' : '') +
       baPlaybook(a) +
-      baSec('Brand positioning', [['Stands for now', esc(p.now || '')], ['Could own', esc(p.could_own || '')],
+      baSec('Brand positioning', [['Current position', esc(p.now || '')], ['Potential position', esc(p.could_own || '')],
         (p.map || []).length ? ['Competitors', baMap(p.map)] : ['Compared with', esc((p.competitors || []).join(', '))]],
         p.could_own ? 'Could own: ' + p.could_own : (p.now || '')) +
       baFold('Target audiences', (a.audiences || []).map(function (s) { return s.name; }).filter(Boolean).join(' · '),
         baFacts((a.audiences || []).map(function (s) {
-          return [s.name, [['Who they are', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
+          return [s.name, [['Profile', s.who], ['Pain points', s.pains], ['Motivations', s.motivations], ['Platforms and times', s.reach]]
             .filter(function (x) { return x[1]; }).map(function (x) { return '<p class="ba-line"><span class="ba-k">' + esc(x[0]) + '</span>' + esc(x[1]) + '</p>'; }).join('')];
         }))) +
       baSec('SWOT', [['Strengths', baList(sw.strengths)], ['Weaknesses', baList(sw.weaknesses)],
         ['Opportunities', baList(sw.opportunities)], ['Threats', baList(sw.threats)]],
         [baN(len(sw.strengths), 'strength'), baN(len(sw.weaknesses), 'weakness', 'weaknesses'),
           baN(len(sw.opportunities), 'opportunity', 'opportunities'), baN(len(sw.threats), 'threat')].filter(Boolean).join(' · ')) +
-      baSec('Content', [['What worked', baList(ct.worked)], ['What did not', baList(ct.not_worked)],
+      baSec('Content', [['What worked', baList(ct.worked)], ['What did not work', baList(ct.not_worked)],
         ['Pillars', baList(ct.pillars)], ['Formats', baList(ct.formats)]],
         [baN(len(ct.pillars), 'pillar'), baN(len(ct.formats), 'format')].filter(Boolean).join(' · ')) +
       baSec('Ad targeting', [['Objectives', baList(ad.objectives)], ['Age bands', esc((ad.ages || []).join(' · '))],
@@ -5195,7 +5195,7 @@
   function openTouch(tc) {
     editingTouch = tc || null;
     openSheet('crmTouchBox');
-    $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'New entry';
+    $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'Log call';
     $('tcSave').textContent = 'Save';
     $('tcKind').value = tc ? (tc.kind || 'call') : 'call';
     $('tcDate').value = tc ? (tc.happened_at || today()) : today();
@@ -5706,8 +5706,7 @@
         fields: [
           { name: 'state', label: 'State', value: 'confirmed',
             choices: Object.keys(SV_STATE).map(function (k) { return [k, SV_STATE[k][0]]; }) },
-          { name: 'why', label: 'Why it is being set by hand', rows: 3,
-            placeholder: 'What the checks cannot see.',
+          { name: 'why', label: 'Reason', rows: 3,
             need: 'A reason is required.' }
         ]
       }, function (a) {
@@ -7120,7 +7119,7 @@
     var said = window.ADspaceRecords.changes(view(was), view(now), [['name', 'Name'], ['category', 'Category'], ['rate', 'Rate'],
       ['unit', 'Unit'], ['min_months', 'Minimum months'], ['active', 'State'], ['detail', 'Inclusions'], ['note', 'Note']]);
     var more = [];
-    if (canon(was.spec) !== canon(now.spec)) more.push('In quotes changed');
+    if (canon(was.spec) !== canon(now.spec)) more.push('Quotation details changed');
     if (canon(was.position) !== canon(now.position)) more.push('Order changed');
     return [said].concat(more).filter(Boolean).join('; ');
   }
@@ -7524,7 +7523,7 @@
       sp.platforms = n('svcPlatforms');
       if (!(sp.platforms >= 1 && sp.platforms <= 99 && sp.platforms % 1 === 0)) return { err: 'Platforms is required.', at: 'svcPlatforms' };
       sp.contents = n('svcContents');
-      if (!(sp.contents >= 1 && sp.contents <= 99 && sp.contents % 1 === 0)) return { err: 'Contents a month is required.', at: 'svcContents' };
+      if (!(sp.contents >= 1 && sp.contents <= 99 && sp.contents % 1 === 0)) return { err: 'Enter the content pieces per month.', at: 'svcContents' };
       sp.mix = mixOf(val('svcMix'));
       if (!sp.mix || !sp.mix.length || sp.mix.length > 3) return { err: 'Write each content option as 1 graphic + 3 reels, one per line, three at most.', at: 'svcMix' };
       if (sp.ads) {
@@ -7921,7 +7920,7 @@
       log(editingSvc ? 'service.changed' : 'service.added', name, editingSvc
         ? changed(Object.assign({}, editingSvc, { spec: specWord(editingSvc.spec) }), Object.assign({}, row, { spec: specWord(row.spec) }),
             [['category', 'Category'], ['name', 'Name'], ['sku', 'SKU'], ['rate', 'Rate'], ['unit', 'Unit'],
-            ['min_months', 'Minimum months'], ['detail', 'Inclusions'], ['spec', 'In quotes']])
+            ['min_months', 'Minimum months'], ['detail', 'Inclusions'], ['spec', 'Quotation details']])
         : row.category);
       var was = editingSvc;
       shutSheet('svcBox'); editingSvc = null;

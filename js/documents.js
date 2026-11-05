@@ -416,7 +416,7 @@
     'serial-taken': 'That reference belongs to a document that still stands.',
     'serial-shape': 'A reference is 3 to 40 characters: letters, numbers and / . _ -',
     'no-serial': 'No free reference was found for this client this month. Type one.',
-    'reason-required': 'Say why.',
+    'reason-required': 'Enter a reason.',
     'not-verified': 'Only a verified letter is voided. An issued or signed letter is deleted instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',

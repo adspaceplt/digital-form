@@ -976,7 +976,7 @@
     if (v === '1') return 'Greeting';
     if (v === '2') return r.kind === 'creator' ? 'Campaign' : 'Client';
     if (v === '3' && doc) return cx.o.doc ? 'Reference' : 'Report';
-    if (v === '3' && approving(r)) return 'What waits';
+    if (v === '3' && approving(r)) return 'Pending item';
     if (v === '4' && approving(r)) return 'Link';
     return 'Variable ' + v;
   }

@@ -8291,6 +8291,22 @@ own, and the Dashboard lists it until it goes live. A planned post with
 no task cannot be marked, so 6 tasks against 8 planned stays refused
 until the 2 are added in My Work.
 
+
+### 2026-11-05 · A label is a noun
+The user flagged "Why it goes now" on Reports' Submit question ("should this
+be just Reason") and asked for a sweep of the same kind. Two readers swept
+every label, heading, option and refusal in the console's markup and
+scripts: about 90 were clauses or coined phrases (Why it is late, What needs
+changing, Note for them, Kept as, Week in the code, Say why., Submit past the
+month's gate?). Each now names the thing (Reason, Changes, Note, Type, Week,
+Enter a reason., Submit anyway?). Left as approved: the report's section
+names (What worked, Areas to improve, Why it stood out), Brand analysis's,
+Analytics' What changed, Health's company words, the reflection's three
+prompts, /quote/'s questions to a prospect, Team's Their work, and the Script
+(read here) heading, which the database's Activity lines also name. The rule
+is DESIGN.md §6 item 11, and tests/words.js PATTERNS fails a label that
+opens Why it…, What needs changing, Say why… or Note for them.
+
 ### 2026-11-05 · Video scripts as a shot table, read cold by a second AI call
 
 The user shared the Video Script Generator spec (a writer and a fresh

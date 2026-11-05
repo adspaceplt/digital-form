@@ -657,7 +657,7 @@
            is said, so the reviewer checks who signed (audit 2026-11-04). */
         (rec.email ? fact('Code sent to', esc(rec.email) + (rec.in_contacts === false ? '<small class="qsg-was"><span class="chip-state is-warn">Not in Contacts</span></small>' : '')) : '') +
         (rec.ip ? fact('Signed from', esc(rec.ip + (rec.country ? ' · ' + rec.country : ''))) : '') +
-        (rec.fingerprint ? fact('Record', '<span class="mono">' + esc(rec.fingerprint) + '</span>') : '');
+        (rec.fingerprint ? fact('Fingerprint', '<span class="mono">' + esc(rec.fingerprint) + '</span>') : '');
     return '<section class="fsec"><h4 class="fsec-h">Company</h4><dl class="ovfacts qsg-facts">' + rows + '</dl></section>' +
       '<section class="fsec"><h4 class="fsec-h">Billing contact</h4><dl class="ovfacts qsg-facts">' +
         fact('Name', esc(window.ADspaceWords.person ? window.ADspaceWords.person(ct.salutation, ct.name) : ct.name || '')) +
@@ -814,7 +814,7 @@
     window.ADspaceConfirm.ask({
       title: 'Send back?', go: 'Send back', wait: true,
       body: (q.submitted_by || 'The colleague who submitted it') + ' is told, and may correct the details or ask the client to sign again.',
-      field: { label: 'What needs correcting', rows: 3, need: SAID['note-required'] }
+      field: { label: 'Corrections', rows: 3, need: SAID['note-required'] }
     }, function (note) {
       return ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: false, p_note: String(note || '').trim() }).then(function (r) {
         var d = r.data || {};

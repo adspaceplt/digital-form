@@ -882,12 +882,18 @@ screenshotted, and the push names any line it could not settle.
    guessing who asked (Not asked for; the user, 2026-11-02). A label cut to fit a column, a
    tile or a button (Qty × rate, Per engagement) stays short (the user,
    2026-10-31: "sometimes are cut short due to the width compatibility").
-11. **Retire it for good.** A word the user rejects joins
+11. **A label is a noun** (the user, 2026-11-05: "Why it goes now" should
+   be Reason). A field, a heading, a column or an option names the thing
+   (Reason, Changes, Note, Enquiry), never a clause or question
+   about it (Why it is late, What needs changing, Note for them); a refusal
+   names what to enter (Enter a reason.), never Say why. Approved section
+   names stay (What worked, Areas to improve, Why it stood out).
+12. **Retire it for good.** A word the user rejects joins
    `tests/words.js` (RETIRED, with the word to use) in the same push, so it
    can never return, and its rule joins this section; a kind of wording
    joins its PATTERNS, and a line said on two screens joins
    `ADspaceWords.line` and is read from there.
-12. **A second reader.** The writer's own read is not the check: before
+13. **A second reader.** The writer's own read is not the check: before
    merge the `/copy-review` skill hands the change's new words, with this
    section alone, to a reader who did not write them (CLAUDE.md §1).
 
