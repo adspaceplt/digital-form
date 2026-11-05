@@ -106,7 +106,7 @@
     'no-posts': 'Add the month\'s posts before submitting.',
     'no-ads': 'Add the period\'s ads before submitting.',
     'bad-kind': 'This feature is not available yet. Please contact an admin.',
-    'note-required': 'Say what needs changing.',
+    'note-required': 'Enter the changes.',
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
     'self-confirm': 'Somebody else confirms a report you submitted.',
@@ -941,7 +941,7 @@
       box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
           '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' +
           secMore([['pickposts', 'Select'], st.meta && (st.meta.page || st.meta.instagram) ? ['metaposts', 'Import from Meta'] : null]) : '') +
-        (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
+        (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Rank by</label><select class="select select-sm" id="rpRank">' +
           ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
           '</select><span class="msg" data-m="rank"></span></div>' : '') +
         '<div class="rp-posts"></div></div>' + foot;
@@ -1943,8 +1943,8 @@
     var out = [];
     (g.missing || []).forEach(function (k) {
       if (k === 'no-month') out.push('No month in My Work covers this period.');
-      else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
-      else if (k === 'no-task') out.push('Its month has no report task.');
+      else if (k === 'not-ticked') out.push('Its month in My Work does not include this report.');
+      else if (k === 'no-task') out.push('Its month in My Work has no report task.');
       else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
       else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + ' planned posts are live with every date set.');
     });
@@ -1952,7 +1952,7 @@
   }
   /* An Accounts Report waits on every planned post being live with its
      dates in (2026-11-05): each task not yet counted, and what it lacks. */
-  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Date it went live' };
+  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Live date' };
   /* A post that dragged past its month is marked delayed from a draft
      (Reports Work), so the count passes; the task carries it until it goes
      live (2026-11-05). The reasons are a date move's. */
@@ -2337,7 +2337,7 @@
         function () { stepCall('sm_report_revise', { p_id: r.id }, 'Version ' + (r.version_no + 1) + ' is a draft.', b, m); });
     });
     on('return', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Send back to draft?', go: 'Send back', field: { label: 'What needs changing', rows: 3, need: 'Say what needs changing.' } },
+      window.ADspaceConfirm.ask({ title: 'Send back to draft?', go: 'Send back', field: { label: 'Changes', rows: 3, need: 'Enter the changes.' } },
         function (note) { stepCall('sm_report_return', { p_id: r.id, p_note: note }, 'Sent back to draft.', b, m); });
     });
   }
@@ -2758,7 +2758,7 @@
         '<div><label class="field-label" for="rpAccName">Handle</label><input class="input" id="rpAccName" type="text" autocapitalize="off" spellcheck="false" placeholder="@adspace.advertising"></div></div>' +
         '<div class="row" id="rpAccPlatNameRow" hidden><div><label class="field-label" for="rpAccPlatName">Platform name</label>' +
           '<input class="input" id="rpAccPlatName" type="text" maxlength="40" aria-required="true" autocomplete="off"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccGroup">Report together as</label><input class="input" id="rpAccGroup" type="text" placeholder="Facebook and Instagram"></div></div></section>' +
+        '<div class="row"><div><label class="field-label" for="rpAccGroup">Group</label><input class="input" id="rpAccGroup" type="text" placeholder="Facebook and Instagram"></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Followers</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccStart">At start of period</label><input class="input" id="rpAccStart" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAccEnd">At end of period</label><input class="input" id="rpAccEnd" data-num="int" type="text" inputmode="numeric"></div></div>' +
@@ -3430,7 +3430,7 @@
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPasteText">Copy the rows from your spreadsheet, with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPasteText" rows="8" placeholder="Date&#9;Title&#9;Views&#9;Interactions"></textarea></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPasteFile">Or choose the CSV file</label>' +
+      '<div class="row"><div><label class="field-label" for="rpPasteFile">CSV file</label>' +
         '<input class="input" type="file" id="rpPasteFile" accept=".csv,.tsv,.txt,text/csv,text/plain"></div></div>' +
       '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Import'));
     var acc = $('rpPasteAcc');
@@ -4507,7 +4507,7 @@
         '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdReach">Reach</label><input class="input" id="rpAdReach" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" data-num="money" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost per result is</label><select class="select" id="rpAdBasis" data-seg>' +
+        '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost basis</label><select class="select" id="rpAdBasis" data-seg>' +
           '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reach</option></select></div></div>' +
         /* A Sales ad's purchase value, as Meta reports it (2026-10-25): its
            ROAS is worked out from it, never typed. */
@@ -5232,7 +5232,7 @@
     var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAPlat">Platform</label><select class="select" id="rpPAPlat" data-seg>' +
         AD_PLATS.map(function (x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPAObj">Objective if the rows do not say</label><select class="select" id="rpPAObj">' +
+      '<div class="row"><div><label class="field-label" for="rpPAObj">Default objective</label><select class="select" id="rpPAObj">' +
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPAText">Export from Ads Manager, copy the rows with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +

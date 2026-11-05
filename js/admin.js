@@ -6185,8 +6185,8 @@
     if (!list.length) return;
     window.ADspaceConfirm.ask({
       title: 'Request re-approval for ' + postsWord(list.length) + '?', go: 'Request re-approval',
-      field: { label: 'Reason for re-approval', rows: 3, need: 'Say why the client is asked again.',
-        placeholder: 'Why the client is being asked again. They read this.' }
+      field: { label: 'Reason', rows: 3, need: 'Enter a reason.',
+        placeholder: 'The client reads this.' }
     }, function (why) {
       eachPost(list, function (p) {
         return db.from('posts').update({ review_reset_at: new Date().toISOString(), review_reset_note: why })
@@ -6639,8 +6639,8 @@
         if (reask._ask) { reask._ask.open(); return; }
         /* The note opens under the post it is about, not inside the menu. */
         reask._ask = window.ADspaceAsk.note(row.querySelector('.saved-body'), {
-          label: 'Reason for re-approval', send: 'Request re-approval',
-          placeholder: 'Why the client is being asked again. They read this.',
+          label: 'Reason', send: 'Request re-approval',
+          placeholder: 'The client reads this.',
           save: function (why) {
             db.from('posts').update({
               review_reset_at: new Date().toISOString(),
