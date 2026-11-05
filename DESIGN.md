@@ -884,7 +884,7 @@ screenshotted, and the push names any line it could not settle.
    2026-10-31: "sometimes are cut short due to the width compatibility").
 11. **A label is a noun** (the user, 2026-11-05: "Why it goes now" should
    be Reason). A field, a heading, a column or an option names the thing
-   (Reason, Changes, Note, Enquiry, Live date), never a clause or question
+   (Reason, Changes, Note, Enquiry), never a clause or question
    about it (Why it is late, What needs changing, Note for them); a refusal
    names what to enter (Enter a reason.), never Say why. Approved section
    names stay (What worked, Areas to improve, Why it stood out).
