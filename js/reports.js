@@ -1946,7 +1946,7 @@
       else if (k === 'not-ticked') out.push('Its month does not ask for this report.');
       else if (k === 'no-task') out.push('Its month has no report task.');
       else if (k === 'content') out.push(g.made + ' of ' + g.planned + ' planned content tasks are in the month.');
-      else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + (g.links ? ' planned posts are linked to their posts with every date set.' : ' planned posts are live with every date set.'));
+      else if (k === 'posted') out.push((g.posted || 0) + ' of ' + g.planned + (g.links ? ' planned posts are linked to a report post with every date set.' : ' planned posts are live with every date set.'));
     });
     return out;
   }
@@ -1982,7 +1982,7 @@
       return '<div class="rp-lack"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
         '<small>' + esc(said) + '</small></span><span class="rp-lack-acts">' +
         (mark && unlinked && linkable() && st.posts.some(function (p) { return p.posted_on && !linkOf(p.id); }) ?
-          '<button class="btn btn-sm" type="button" data-a="linkfrom" data-id="' + esc(t.id) + '">Link</button>' : '') +
+          '<button class="btn btn-sm" type="button" data-a="linkfrom" data-id="' + esc(t.id) + '">Link post</button>' : '') +
         (mark ? '<button class="btn btn-sm" type="button" data-a="' + (t.delayed ? 'undelay' : 'delay') + '" data-id="' + esc(t.id) + '">' +
           (t.delayed ? 'Clear' : 'Mark delayed') + '</button>' : '') +
         (open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openpost" data-id="' + esc(t.id) + '">Open' + ICON.go + '</button>' : '') + '</span></div>';
@@ -2074,7 +2074,7 @@
         b.addEventListener('click', function () {
           var id = b.getAttribute('data-id'), row = (g.lacking || []).filter(function (x) { return x.id === id; })[0] || {};
           var posts = st.posts.filter(function (p) { return p.posted_on && !linkOf(p.id); });
-          window.ADspaceConfirm.ask({ title: 'Link to a post', go: 'Link',
+          window.ADspaceConfirm.ask({ title: 'Link post', go: 'Link',
             body: taskCode(row) + '. The task takes the post\'s date as the day it went live and moves to Performance review.',
             fields: [{ name: 'post', label: 'Post', required: true, choices: [['', 'Choose a post']].concat(posts.map(function (p) {
               return [p.id, postName(p) + ' · ' + dayWord(p.posted_on)];
@@ -2931,14 +2931,14 @@
   function taskCode(t) { return t.code || ('#WT' + String(t.task_no).padStart(5, '0')); }
   var LINK_SAID = {
     'not-draft': 'This report is no longer a draft. Refresh the page.',
-    'links-off': 'Linking posts to tasks is turned off in Settings.',
+    'links-off': 'Posts linked to tasks is off in Settings. Please ask an admin to turn it on.',
     'not-linkable': 'Posts in this report are not linked to tasks.',
     'no-date': 'Set the post\'s date first.',
     'not-in-month': 'This task is not in the report\'s month. Refresh the page.',
     denied: 'You do not have permission to link a post. Please ask an admin.'
   };
   function linkSaid(d, e) {
-    if (d && d.error === 'linked') return 'This task is already linked to a post in the report for ' + (d.period || 'another period') + '.';
+    if (d && d.error === 'linked') return 'This task is already linked to a post in the report for ' + (d.period || 'another period') + '. Unlink it there first.';
     return LINK_SAID[(d && d.error) || ''] || said(e || (d && d.error));
   }
   function sendLink(p, taskId) {
@@ -2967,7 +2967,7 @@
     };
     if (taskId) return go(taskId);
     var free = ((st.postLinks && st.postLinks.tasks) || []).filter(function (t) { return !t.linked; });
-    if (!free.length) { alertLine(host, 'No task of this month is left to link. Add it in My Work.'); return; }
+    if (!free.length) { alertLine(host, 'No task of this month is left to link. Add the task in My Work.'); return; }
     window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
       body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task takes this date as the day it went live and moves to Performance review.',
       fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {

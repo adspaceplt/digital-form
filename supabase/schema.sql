@@ -97152,7 +97152,7 @@ begin
   if v_back then
     perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', t.stage_key),
       jsonb_build_object('stage_key', p ->> 'stage_key'),
-      jsonb_build_object('note', 'No longer linked to its Accounts Report post', 'report_id', l.report_id));
+      jsonb_build_object('note', 'Unlinked from its Accounts Report post', 'report_id', l.report_id));
   end if;
   perform public.ops_log(t.id, 'report_unlinked', jsonb_build_object('live_at', t.live_at),
     jsonb_build_object('live_at', case when t.live_at is not distinct from l.live_set then p ->> 'live_at' else to_jsonb(t.live_at) #>> '{}' end),
@@ -97289,7 +97289,7 @@ begin
   perform public.sm_report_log(r.id, 'report.saved',
     v_code || ' linked to its post of ' || public.register_day(p.posted_on)
     || case when v_was_day is not null and v_was_day <> p.posted_on
-            then ' · live date ' || public.register_day(v_was_day) || ' → ' || public.register_day(p.posted_on) else '' end);
+            then ' · date it went live ' || public.register_day(v_was_day) || ' → ' || public.register_day(p.posted_on) else '' end);
   return jsonb_build_object('ok', true, 'id', t.id, 'moved', v_moved, 'title', v_name,
     'was_live', v_was_day, 'live', p.posted_on);
 end $$;

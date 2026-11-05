@@ -6786,7 +6786,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (!t.delayed_at) ['delayed_at', 'delayed_by', 'delayed_reason', 'delayed_note', 'delayed_report'].forEach(function (k) { t[k] = p[k] == null ? null : p[k]; });
     if (t.result_at === l.results_at) ['result_views', 'result_engagements', 'result_at', 'result_by'].forEach(function (k) { t[k] = p[k] == null ? null : p[k]; });
     t.version = (t.version || 1) + 1; t.updated_at = new Date().toISOString();
-    if (back) opsLog(t.id, 'stage_changed', { stage_key: wasStage }, { stage_key: p.stage_key }, 'No longer linked to its Accounts Report post', { report_id: l.report_id });
+    if (back) opsLog(t.id, 'stage_changed', { stage_key: wasStage }, { stage_key: p.stage_key }, 'Unlinked from its Accounts Report post', { report_id: l.report_id });
     opsLog(t.id, 'report_unlinked', { live_at: wasLive }, { live_at: t.live_at }, null, { report_id: l.report_id });
   }
 
@@ -7020,7 +7020,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       opsLog(lt.id, 'report_linked', { live_at: wasLive }, { live_at: live, posted_on: lp.posted_on }, null, { report_id: lr.id, post_id: lp.id });
       var rd = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
       smLog(lr, 'report.saved', lcode + ' linked to its post of ' + rd(lp.posted_on) +
-        (wasDay && wasDay !== lp.posted_on ? ' · live date ' + rd(wasDay) + ' → ' + rd(lp.posted_on) : ''));
+        (wasDay && wasDay !== lp.posted_on ? ' · date it went live ' + rd(wasDay) + ' → ' + rd(lp.posted_on) : ''));
       persist();
       return { ok: true, id: lt.id, moved: moved, title: lname || null, was_live: wasDay, live: lp.posted_on };
     }

@@ -5063,7 +5063,7 @@
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
     delayed: 'Marked delayed', delay_cleared: 'No longer marked delayed',
-    report_linked: 'Linked to its report post', report_unlinked: 'No longer linked to its report post',
+    report_linked: 'Linked to its Accounts Report post', report_unlinked: 'Unlinked from its Accounts Report post',
     comment_edited: 'Remark edited', comment_removed: 'Remark removed', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
@@ -5151,7 +5151,7 @@
       return bits.join(' · ');
     }
     if (e.event_type === 'delayed') return reasonWord(to.reason) + (to.note ? ' · ' + to.note : '');
-    if (e.event_type === 'report_linked') return 'Posted ' + niceDate(to.live_at) + (from.live_at && CK.day(from.live_at) !== CK.day(to.live_at) ? ' · live date was ' + niceDate(from.live_at) : '');
+    if (e.event_type === 'report_linked') return 'Posted ' + niceDate(to.live_at) + (from.live_at && CK.day(from.live_at) !== CK.day(to.live_at) ? ' · Date it went live was ' + niceDate(from.live_at) : '');
     if (e.event_type === 'results_set') {
       var rw = function (x) { return x && x.views != null ? numWord(x.views) + ' views, ' + numWord(x.engagements) + ' engagements' : 'not recorded'; };
       return rw(from) + ' to ' + rw(to);
