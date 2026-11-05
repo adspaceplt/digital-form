@@ -1967,7 +1967,7 @@
     if ((!list || !list.length) && !short) return '';
     var mark = r && r.status === 'draft' && may('work');
     return '<div class="rp-lacks">' + (short ? '<div class="rp-lack is-short"><span class="rp-lack-t"><b>' + short + (short === 1 ? ' planned post has' : ' planned posts have') + ' no task</b>' +
-      '<small>Add ' + (short === 1 ? 'it' : 'them') + ' in My Work to count or mark delayed.</small></span><span class="rp-lack-acts">' +
+      '<small>' + (short === 1 ? 'Add its task in My Work.' : 'Add their tasks in My Work.') + '</small></span><span class="rp-lack-acts">' +
       (open && st.client && st.client.slug ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openmonth">Open' + ICON.go + '</button>' : '') + '</span></div>' : '') +
       (list || []).map(function (t) {
       var dates = (t.needs || []).filter(function (k) { return LACK[k]; }).map(function (k) { return LACK[k]; });
@@ -1989,7 +1989,7 @@
         if (res.error || d.error) {
           if (btn) btn.disabled = false;
           var e = d.error || '';
-          say(m, e === 'not-draft' ? 'Only a draft report marks a post delayed.' :
+          say(m, e === 'not-draft' ? 'This report is no longer a draft. Refresh the page.' :
             e === 'posted' ? 'This post is already live with every date set. Refresh the page.' :
             e === 'not-in-month' ? 'This post is no longer in the report\'s month. Refresh the page.' :
             e === 'too-long' ? 'Keep the note to 300 characters.' :
@@ -2003,7 +2003,7 @@
     if (!on) {
       var was = prevDelay;
       send(false).then(function (ok) {
-        if (ok) undoBar('Delay cleared.', box.querySelector('.rp-checks'), function () { send(true, was.why, was.note); });
+        if (ok) undoBar('No longer marked delayed.', box.querySelector('.rp-checks'), function () { send(true, was.why, was.note); });
       }).catch(function (e) { say(m, said(e), 'err'); });
       return;
     }
