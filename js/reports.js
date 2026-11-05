@@ -1791,7 +1791,7 @@
       if (bridge.show) bridge.show('clients');
     });
     on('metaskip', function (x) {
-      window.ADspaceConfirm.ask({ title: 'Continue without Meta?', body: 'Meta did not answer, so the figures were not read. The reason is kept with the report and filed.', go: 'Continue',
+      window.ADspaceConfirm.ask({ title: 'Continue without Meta?', body: 'Meta did not answer, so the figures were not read. The reason is saved with the report.', go: 'Continue',
         field: { label: 'Reason', rows: 2, need: 'A reason is required.' } }, function (why) {
         x.disabled = true;
         fileMeta(r, 'override', [], why).then(function () { return reloadAudit(r, ''); }).catch(function (e) { x.disabled = false; say(m, said(e), 'err'); });
@@ -1956,9 +1956,10 @@
   /* A post that dragged past its month is marked delayed from a draft
      (Reports Work), so the count passes; the task carries it until it goes
      live (2026-11-05). The reasons are a date move's. */
-  var DELAY_WHY = [['client_request', 'Client request'], ['scope_change', 'Scope change'], ['capacity', 'Internal capacity'],
-    ['pending_assets', 'Pending assets'], ['pending_confirmation', 'Pending confirmation']];
-  function delayWord(k) { var w = DELAY_WHY.filter(function (x) { return x[0] === k; })[0]; return w ? w[1] : ''; }
+  var DELAY_KEYS = ['client_request', 'scope_change', 'capacity', 'pending_assets', 'pending_confirmation'];
+  /* The words are My Work's own (reasonWord), read when asked: ops.js loads after this file. */
+  function delayWord(k) { return k && window.ADspaceOps && ADspaceOps.reasonWord ? ADspaceOps.reasonWord(k) : ''; }
+  function delayWhy() { return DELAY_KEYS.map(function (k) { return [k, delayWord(k)]; }); }
   function lackHtml(list, r, g) {
     var open = bridge.may && bridge.may('ops', 'view');
     /* A planned post with no task has nothing to mark: the month is short
@@ -2008,9 +2009,9 @@
       return;
     }
     window.ADspaceConfirm.ask({ title: 'Mark delayed?', go: 'Mark delayed',
-      body: 'The post counts toward this report and stays marked Delayed in My Work until it goes live. Its dates stay as planned.',
+      body: 'The post counts towards this report and stays marked Delayed in My Work until it goes live. Its dates stay as planned.',
       fields: [
-        { name: 'why', label: 'Reason', choices: [['', 'Choose a reason']].concat(DELAY_WHY), required: true },
+        { name: 'why', label: 'Reason', choices: [['', 'Choose a reason']].concat(delayWhy()), required: true },
         { name: 'note', label: 'Note', rows: 2, required: false }
       ] },
       function (v) {
@@ -2249,10 +2250,10 @@
       var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
       var ask = { title: 'Submit?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
       if (past || late) {
-        ask.title = past ? 'Submit past the month\'s gate?' : 'Submit late?';
+        ask.title = past ? 'Submit anyway?' : 'Submit late?';
         ask.body = (past ? gateWords(g).join(' ') + ' ' : '') + (late ? 'It was due ' + dueWord(g.due) + '. ' : '') +
-          'The reason is kept with the report.';
-        ask.reason = past && late ? 'Reason' : past ? 'Why it goes now' : 'Why it is late';
+          'The reason is saved with the report.';
+        ask.reason = 'Reason';
       }
       /* Commentary written with AI is declared read in the same question
          (2026-10-10): the database says whether Write with AI drafted it. */

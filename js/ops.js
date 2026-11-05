@@ -8535,6 +8535,8 @@
 
   wire();
   window.ADspaceOps = {
+    /* A date move's reason in words, for a report's delayed post too (2026-11-05). */
+    reasonWord: function (k) { return reasonWord(k); },
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
     meetSaid: function (d) { return meetSaid(d); },
     /* The message to a client for a meeting outside a month (2026-10-31). */
