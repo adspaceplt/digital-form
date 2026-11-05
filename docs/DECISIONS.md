@@ -8385,3 +8385,12 @@ link as a segment in place of the calendar tick and the box always shown,
 the date, a time select of quarter hours (8:00am to 10:00pm) and the
 length, then Led by and the notes, no fold (it sat half under the foot). A
 new meeting opens on the next free half hour.
+
+### 2026-11-05 · Scene pictures: Google's 402 said as billing
+- What broke: Draw with AI answered "No pictures were drawn. Try again." for
+  every scene. Google answered 402 (the AI Studio project's prepaid credits
+  depleted); `script-pictures` mapped only 429 to `ai-billing`, so 402 fell
+  through to `ai-failed`. Found from the function's log on the user's report.
+- Fix: 402, and a 429 naming credits or prepay, read `ai-billing` (Draw with AI
+  is not available at the moment. Please contact an admin.). Nothing counted:
+  every refused press was marked failed.
