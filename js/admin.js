@@ -5658,7 +5658,8 @@
       ['task_start_days', 'Remind of tasks not started (days before the due date, 0 turns this off)', 'ahead', '', 'Not started', per('day')]] },
     prices: { title: 'AI prices', keys: [['ai_price_in', 'Input price per million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
       ['ai_price_out', 'Output price per million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
-      ['ai_price_search', 'Web search price per thousand searches', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
+      ['ai_price_search', 'Web search price per thousand searches', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }],
+      ['ai_price_image', 'Scene picture price per picture', 'usd', '', 'Scene pictures', function (v) { return 'US$ ' + v; }]] },
     reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach allowance against Meta (%)', 'allow', '', 'Reach within', pctOf]] },
     /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
        against (2026-10-15, the client analysis playbook). */

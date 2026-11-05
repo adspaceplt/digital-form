@@ -51,7 +51,7 @@
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
     video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
-    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound',
+    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
     ops_revisions: 'id task_id round_no requested_by_type reason_category summary requested_by assigned_to requested_at completed_at source_review_id idem_key',
@@ -126,6 +126,9 @@
     ai_caption_claim: 'p_batch',
     ai_caption_left: '',
     ai_script_claim: 'p_script',
+    ai_picture_claim: 'p_script p_count',
+    ai_picture_left: '',
+    video_script_picture: 'p_script p_scene p_kind p_url p_press p_thumb',
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
@@ -6434,7 +6437,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return row && row.daily != null ? row.daily : dflt;
   }
 
-  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
+  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
   var AI_USES = ['drafts', 'checks', 'caption', 'script', 'analysis', 'checklist', 'analytics'];
   function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
   function aiPurpose(x) { return x.purpose || 'draft'; }
@@ -7183,6 +7186,59 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'ai_caption_left') {
       if (!me || !opsAllowed('review.sets', 'work')) return { error: 'denied' };
       return aiCaptionRoom(me);
+    }
+
+    if (name === 'ai_picture_left' || name === 'ai_picture_claim') {
+      if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
+      var picSince = aiDay(), picLim = aiCap(me.id, 'picture');
+      var picUsed = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === me.id && x.purpose === 'picture' && x.outcome !== 'failed' &&
+        new Date(x.created_at).getTime() >= picSince; }).length;
+      var picLeft = Math.max(0, picLim - picUsed);
+      var picNext = picLeft > 0 || picLim === 0 ? null : new Date(picSince + 864e5).toISOString();
+      if (name === 'ai_picture_left') return { left: picLeft, limit: picLim, scope: picLim === 0 ? 'stopped' : 'picture', next: picNext };
+      var picV = (DB.video_scripts || []).filter(function (x) { return x.id === a.p_script; })[0];
+      if (!picV) return { error: 'not-found' };
+      var picN = Number(a.p_count);
+      if (!(picN >= 1 && picN <= 60)) return { error: 'bad-count' };
+      if (picLim === 0) return { error: 'ai-limit', scope: 'stopped', limit: 0 };
+      if (picUsed + picN > picLim) return { error: 'ai-limit', scope: 'picture', limit: picLim, left: picLeft, next: new Date(picSince + 864e5).toISOString() };
+      var picIds = [];
+      for (var pi = 0; pi < picN; pi++) {
+        var pr = { id: nid('aid'), report_id: null, team_member_id: me.id, client_id: picV.client_id, script_id: picV.id,
+          purpose: 'picture', outcome: 'pending', created_at: new Date().toISOString() };
+        (DB.ai_drafts = DB.ai_drafts || []).push(pr);
+        picIds.push(pr.id);
+      }
+      return { ids: picIds, left: picLim - picUsed - picN, limit: picLim };
+    }
+    if (name === 'video_script_picture') {
+      if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
+      var vpS = (DB.video_scripts || []).filter(function (x) { return x.id === a.p_script; })[0];
+      var vpC = vpS && (DB.video_script_scenes || []).filter(function (x) { return x.id === a.p_scene && x.script_id === vpS.id; })[0];
+      if (!vpC) return { error: 'not-found' };
+      if (['photo', 'ai'].indexOf(a.p_kind) < 0) return { error: 'bad-kind' };
+      var vpU = a.p_url ? String(a.p_url).trim() : null;
+      if (vpU && (!/^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9\/._-]+$/.test(vpU) || vpU.indexOf('/' + vpS.client_id + '/') < 0)) return { error: 'bad-url' };
+      var vpT = a.p_thumb ? String(a.p_thumb) : null;
+      if (vpT && (!/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(vpT) || vpT.length > 200000)) return { error: 'bad-thumb' };
+      var vpCl = (DB.clients || []).filter(function (c) { return c.id === vpS.client_id; })[0] || {};
+      var vpLabel = (vpS.code || '') + (vpS.title ? ' · ' + vpS.title : '');
+      var vpLog = function (d) { DB.activity_log.push({ id: nid('a'), actor: me.name, action: 'script.saved', subject: vpCl.name, detail: vpLabel + ' · ' + d, created_at: new Date().toISOString() }); };
+      if (a.p_kind === 'ai') {
+        if (!vpU) return { error: 'bad-url' };
+        if (!(DB.ai_drafts || []).some(function (d) { return d.id === a.p_press && d.team_member_id === me.id && d.purpose === 'picture' && d.script_id === vpS.id; })) return { error: 'bad-press' };
+        vpC.ai_url = vpU; vpC.ai_at = new Date().toISOString(); vpC.ai_thumb = vpT;
+        vpLog('Scene ' + vpC.position + ' picture drawn with AI');
+      } else if (!vpU) {
+        if (!vpC.photo_url) return { ok: true, changed: false };
+        vpC.photo_url = null; vpC.photo_by = null; vpC.photo_at = null; vpC.photo_thumb = null;
+        vpLog('Scene ' + vpC.position + ' photo removed');
+      } else {
+        var vpWas = vpC.photo_url;
+        vpC.photo_url = vpU; vpC.photo_by = me.name; vpC.photo_at = new Date().toISOString(); vpC.photo_thumb = vpT;
+        vpLog('Scene ' + vpC.position + ' photo ' + (vpWas ? 'replaced' : 'added'));
+      }
+      return { ok: true, changed: true };
     }
     if (name === 'ai_script_left') {
       if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
@@ -8431,7 +8487,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: baOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^video_script_picture$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -13446,6 +13502,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           return Promise.resolve({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context: { status: 400 } } });
         }
+
+        if (name === 'script-pictures') {
+          var sp0 = (opts && opts.body) || {};
+          window.__picturesAsked = JSON.parse(JSON.stringify(sp0));
+          if (sp0.ping) return Promise.resolve({ data: { ready: Boolean(window.__aiPictures) }, error: null });
+          if (!window.__aiPictures) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['GEMINI_API_KEY'] }, error: null });
+          if (window.__aiPictures.error) return Promise.resolve({ data: { error: window.__aiPictures.error }, error: null });
+          return window.__rpc('ai_picture_claim', { p_script: sp0.script_id, p_count: (sp0.scenes || []).length }).then(function (r) {
+            var cl = (r && r.data) || {};
+            if (cl.error) return { data: cl, error: null };
+            var PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAIAAABLKsIUAAAAEUlEQVR4nGM4gxswjMoNejkAS2NYUFNR4dYAAAAASUVORK5CYII=';
+            var fail = window.__aiPictures.fail || [];
+            var outP = [];
+            (sp0.scenes || []).forEach(function (id, k) {
+              var row = (DB.ai_drafts || []).filter(function (d) { return d.id === cl.ids[k]; })[0];
+              if (fail.indexOf(id) > -1) { if (row) row.outcome = 'failed'; return; }
+              if (row) { row.outcome = 'drafted'; row.input_tokens = 0; row.output_tokens = 0; row.model = 'gemini-3.1-flash-image-preview'; }
+              outP.push({ scene: id, press: cl.ids[k], mime: 'image/png', data: PNG });
+            });
+            persist();
+            return { data: outP.length ? { pictures: outP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
+          });
+        }
         if (name === 'script-draft') {
           var sb0 = (opts && opts.body) || {};
           window.__scriptAsked = JSON.parse(JSON.stringify(sb0));
@@ -13712,7 +13791,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             invoice: ['campaignId', function (id) { var c = (DB.campaigns || []).filter(function (r) { return r.id === id; })[0]; return c && c.client_id; }, ['campaigns.finance']],
             report: ['versionId', function (id) {
               var v = (DB.sm_report_versions || []).filter(function (r) { return r.id === id; })[0];
-              var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']]
+              var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']],
+            script: ['scriptId', function (id) { var x = (DB.video_scripts || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['scripts']]
           }[bd.purpose];
           if (!upFor) return upRefuse('Reload the page to upload.');
           if (!bd.clientId || upFor[1](bd[upFor[0]]) !== bd.clientId) return upRefuse('bad_parent');
@@ -13726,6 +13806,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var hex = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
           var pk = 'private/' + (bd.clientId || 'c1') + '/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.pdf';
           return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType }, error: null });
+        }
+        if (bd.purpose === 'script') {
+          var sk = 'content/' + bd.clientId + '/pic-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8) + '.' + bd.ext;
+          return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + sk, publicUrl: 'https://mycdn.adspace.me/' + sk, key: sk, contentType: upType }, error: null });
         }
         return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/inv.pdf',
           publicUrl: 'https://mycdn.adspace.me/content/c1/inv-' + Date.now() + '.pdf', contentType: upType }, error: null });

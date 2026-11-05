@@ -2840,7 +2840,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .aiu-head .btn { flex: 0 0 auto; }
 .aiu-note { color: var(--ink-mute); font-size: 12.5px; }
 .aiu-tbl { display: grid; }
-.aiu-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(7, 76px) 16px; align-items: center; column-gap: 8px;
+.aiu-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(8, 76px) 16px; align-items: center; column-gap: 8px;
   padding: 10px 0; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
 .aiu-th { padding-top: 0; border-top: 0; align-items: end; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .aiu-th > span:not(:first-child) { text-align: right; }
@@ -3330,6 +3330,37 @@ button.vs-row {
 
 .vs-shot-msg { margin: 0; }
 .vs-shot-msg:empty { display: none; }
+/* Scene pictures (2026-11-05): a picture column after the scene's number,
+   the picture over where it came from and its one act. */
+.vs-scenes.has-pics .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr) 104px 48px; }
+.vs-scenes.has-pics.is-two .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr) minmax(0, 1fr) 104px 48px; }
+.vs-pic { display: grid; gap: 6px; justify-items: start; align-content: start; min-width: 0; }
+.vs-pic-box {
+  display: grid; place-items: center; width: 90px; overflow: hidden;
+  border-radius: var(--radius-ctl-sm); background: var(--sunk); color: var(--ink-soft);
+}
+.vs-pic-box.is-none { height: 48px; }
+.vs-pic-box img { display: block; width: 90px; height: auto; max-height: 160px; object-fit: cover; }
+.vs-pic-box svg { display: block; width: 90px; height: auto; max-height: 160px; }
+.vs-pic-tag { font-size: 11.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.vs-pic-add.is-busy { opacity: .6; pointer-events: none; }
+.vs-pic .btn { min-width: 0; padding: 0 10px; white-space: nowrap; }
+.vs-scenehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.vs-scenehead .fsec-h { margin: 0; }
+.vs-draw { display: flex; align-items: center; gap: 8px; }
+.vs-draw-left { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+.vs-pic-msg { margin: 0; }
+.vs-pic-msg:empty { display: none; }
+.is-narrow .vs-scenes.has-pics .vs-scene, .is-narrow .vs-scenes.has-pics.is-two .vs-scene {
+  grid-template-columns: 24px 112px minmax(0, 1fr) auto;
+  grid-template-areas: "n pic text text" "n pic line line" "n pic vc shot";
+}
+.is-narrow .vs-scenes.has-pics .vs-scene > .vs-pic { grid-area: pic; }
+.is-narrow .vs-scenes.has-pics .vs-scene > .vs-vc { grid-area: vc; }
+.is-tight .vs-scenes.has-pics .vs-scene, .is-tight .vs-scenes.has-pics.is-two .vs-scene {
+  grid-template-columns: 24px minmax(0, 1fr) auto auto;
+  grid-template-areas: "n pic pic pic" "n text text text" "n line line line" "n . vc shot";
+}
 /* =========================================================================
    WHATSAPP (2026-10-10, js/whatsapp.js): every message the portal sent, in
    one card under the month's count of templates by category. A row is who

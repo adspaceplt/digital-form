@@ -48,6 +48,19 @@
         return docs.embedFonts(pdf, PDF, { cjk: needCjk });
       }).then(function (fonts) {
         if (needCjk && !fonts.cjk) throw new Error('The Chinese typeface could not be loaded.');
+        /* Each scene's picture (2026-11-05), embedded before the pages are
+           laid out. */
+        var jobs = [];
+        videos.forEach(function (v) {
+          (v.scenes || []).forEach(function (sc) {
+            var m = /^data:image\/(jpeg|png);base64,(.+)$/.exec(sc.pic || '');
+            if (!m) return;
+            var bytes = Uint8Array.from(atob(m[2]), function (ch) { return ch.charCodeAt(0); });
+            jobs.push((m[1] === 'png' ? pdf.embedPng(bytes) : pdf.embedJpg(bytes)).then(function (im) { sc.picImg = im; }, function () {}));
+          });
+        });
+        return Promise.all(jobs).then(function () { return fonts; });
+      }).then(function (fonts) {
         layout(pdf, PDF, fonts, videos);
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
@@ -128,6 +141,11 @@
         box(x, y, c.w, hgt, c.head ? grey : null);
         /* A Shot box: a square to tick by pen, ticked where the console
            recorded the scene as shot. */
+        /* A scene's picture, fitted inside its cell. */
+        if (c.img) {
+          var iw = c.w - PAD * 2, ih = iw * c.img.height / c.img.width;
+          page.drawImage(c.img, { x: x + PAD, y: y - PAD - ih, width: iw, height: ih });
+        }
         if (c.tick != null) {
           var q = S(1), bx = x + (c.w - q) / 2, by = y - PAD - q;
           page.drawRectangle({ x: bx, y: by, width: q, height: q, borderColor: mute, borderWidth: 0.8 });
@@ -197,6 +215,13 @@
     var VC = function (t) { return { w: vcW, text: t || '', align: 'center' }; };
     var SHOT = function (on) { return { w: shotW, text: '', tick: Boolean(on) }; };
     var NO = function (i) { return { w: noW, text: String(i + 1), align: 'center' }; };
+    /* The picture column, drawn where any scene of the video has one. */
+    var picW = S(10);
+    var PIC = function (sc) {
+      if (!sc.picImg) return { w: picW, text: '' };
+      var ih = (picW - PAD * 2) * sc.picImg.height / sc.picImg.width;
+      return { w: picW, text: '', img: sc.picImg, minH: ih + PAD * 2 };
+    };
     var tail = [H2('Shot', shotW, 'center'), H2('VC#', vcW, 'center')];
     /* Each script's own notes: what the team typed, then room to write on
        the day. */
@@ -231,20 +256,24 @@
       blockHead(v.code + (v.title ? ' · ' + v.title : ''), sub);
       plan(v);
       var list = v.scenes.length ? v.scenes : [{}];
+      var pics = list.some(function (sc) { return sc.picImg; });
+      var pw = pics ? picW : 0;
+      var pHead = pics ? [H2('Picture', picW, 'center')] : [];
+      var pCell = function (sc) { return pics ? [PIC(sc)] : []; };
       if (v.kind === 'scenes') {
         /* What is seen in the book face; the words said in the heavier one,
            so the talent finds their line at a glance. */
-        var vis = (full - noW - vcW - shotW) / 2;
-        table([H2('Scene', noW, 'center'), H2('Visual', vis), H2('Script', vis)].concat(tail),
+        var vis = (full - noW - pw - vcW - shotW) / 2;
+        table([H2('Scene', noW, 'center')].concat(pHead, [H2('Visual', vis), H2('Script', vis)], tail),
           list.map(function (sc, i) {
-            return [NO(i), { w: vis, text: seen(sc) }, { w: vis, text: sc.line || '', f: reg }, SHOT(sc.shot_at), VC(sc.vc)];
+            return [NO(i)].concat(pCell(sc), [{ w: vis, text: seen(sc) }, { w: vis, text: sc.line || '', f: reg }, SHOT(sc.shot_at), VC(sc.vc)]);
           }));
       } else {
         table([H2(v.kind === 'products' ? 'Products/Context' : 'Hook/Story', full)], [[{ w: full, text: v.context || '' }]]);
         y -= S(2);
-        var wide = full - noW - vcW - shotW;
-        table([H2('Scene', noW, 'center'), H2('Visual', wide)].concat(tail),
-          list.map(function (sc, i) { return [NO(i), { w: wide, text: seen(sc) }, SHOT(sc.shot_at), VC(sc.vc)]; }));
+        var wide = full - noW - pw - vcW - shotW;
+        table([H2('Scene', noW, 'center')].concat(pHead, [H2('Visual', wide)], tail),
+          list.map(function (sc, i) { return [NO(i)].concat(pCell(sc), [{ w: wide, text: seen(sc) }, SHOT(sc.shot_at), VC(sc.vc)]); }));
         if (v.kind === 'story') {
           y -= S(2);
           var vo = full - vcW - shotW;
