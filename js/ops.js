@@ -3877,7 +3877,7 @@
     $('stepWhat').textContent = stageLabel(t) + ' to ' + labelOfStage(t, key) + '.';
     var live = key === 'live', sched = key === 'scheduled';
     $('stepDateRow').hidden = !(live || sched);
-    $('stepDateLabel').textContent = live ? 'Live date' : 'Post date';
+    $('stepDateLabel').textContent = live ? 'Date it went live' : 'Post date';
     $('stepDate').value = live ? dateValue(new Date()) : dateValue(t.publish_at);
     if (live) $('stepDate').setAttribute('max', dateValue(new Date())); else $('stepDate').removeAttribute('max');
     $('stepWhy').value = '';

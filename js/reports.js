@@ -1952,7 +1952,7 @@
   }
   /* An Accounts Report waits on every planned post being live with its
      dates in (2026-11-05): each task not yet counted, and what it lacks. */
-  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Live date' };
+  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Date it went live' };
   /* A post that dragged past its month is marked delayed from a draft
      (Reports Work), so the count passes; the task carries it until it goes
      live (2026-11-05). The reasons are a date move's. */
