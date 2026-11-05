@@ -4693,9 +4693,9 @@
             <div class="row"><div><label class="field-label" for="vsTone">Tone</label>
               <textarea class="input" id="vsTone" rows="1" data-oneline maxlength="500" placeholder="Optional" autocomplete="off"></textarea></div></div>
             <div class="row fgrid-3">
-              <div><label class="field-label" for="vsMaxLoc">Locations</label><input class="input" id="vsMaxLoc" type="number" inputmode="numeric" min="1" max="10" step="1" placeholder="Not set"></div>
-              <div><label class="field-label" for="vsMaxCast">On-screen talent</label><input class="input" id="vsMaxCast" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="Not set"></div>
-              <div><label class="field-label" for="vsMaxHours">Shoot hours</label><input class="input" id="vsMaxHours" type="number" inputmode="numeric" min="1" max="24" step="1" placeholder="Not set"></div>
+              <div><label class="field-label" for="vsMaxLoc">Location limit</label><input class="input" id="vsMaxLoc" type="number" inputmode="numeric" min="1" max="10" step="1" placeholder="Not set"></div>
+              <div><label class="field-label" for="vsMaxCast">Cast limit</label><input class="input" id="vsMaxCast" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="Not set"></div>
+              <div><label class="field-label" for="vsMaxHours">Hour limit</label><input class="input" id="vsMaxHours" type="number" inputmode="numeric" min="1" max="24" step="1" placeholder="Not set"></div>
             </div>
           </section>
           <section class="fsec">
@@ -4715,29 +4715,13 @@
         </section>
         <section class="panel vs-editform vs-editscript">
           <section class="fsec">
-            <!-- Write script (2026-10-09): AI drafts the script into these
-                 fields from the colleague's notes; Save keeps it. -->
-            <div class="readgroup-head vs-writehead">
-              <h4 class="fsec-h">Script</h4>
-              <button class="btn btn-sm btn-icon" id="vsWrite" type="button">Write with AI</button>
-            </div>
-            <div class="msg capmsg" id="vsWriteMsg" role="status"></div>
-            <div class="vs-review" id="vsEditReview" hidden></div>
+            <h4 class="fsec-h">Plan</h4>
             <div class="row"><div><label class="field-label" for="vsCore">Core message</label>
               <textarea class="input" id="vsCore" rows="1" data-oneline maxlength="2000" placeholder="Optional" autocomplete="off"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsHook">Hook (0 to 3 seconds)</label>
               <textarea class="input" id="vsHook" rows="2" maxlength="2000" placeholder="Optional"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsConcept">Concept</label>
               <textarea class="input" id="vsConcept" rows="2" maxlength="2000" placeholder="Optional"></textarea></div></div>
-            <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
-              <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
-            <div id="vsScenes"></div>
-            <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add scene</button></div></div>
-            <div class="row" id="vsVoRow" hidden><div><label class="field-label" for="vsVo">Script (read here)</label>
-              <textarea class="input" id="vsVo" rows="4" maxlength="4000"></textarea></div></div>
-          </section>
-          <section class="fsec">
-            <h4 class="fsec-h">Production</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="vsRoles">Cast roles</label>
                 <textarea class="input" id="vsRoles" rows="2" maxlength="2000" placeholder="One per line"></textarea></div>
@@ -4752,6 +4736,22 @@
             </div>
             <div class="row"><div><label class="field-label" for="vsPlanCta">Call to action in the video</label>
               <textarea class="input" id="vsPlanCta" rows="1" data-oneline maxlength="2000" placeholder="Optional" autocomplete="off"></textarea></div></div>
+          </section>
+          <section class="fsec">
+            <!-- Write script (2026-10-09): AI drafts the script into these
+                 fields from the colleague's notes; Save keeps it. -->
+            <div class="readgroup-head vs-writehead">
+              <h4 class="fsec-h">Script</h4>
+              <button class="btn btn-sm btn-icon" id="vsWrite" type="button">Write with AI</button>
+            </div>
+            <div class="msg capmsg" id="vsWriteMsg" role="status"></div>
+            <div class="vs-review" id="vsEditReview" hidden></div>
+            <div class="row" id="vsContextRow" hidden><div><label class="field-label" for="vsContext" id="vsContextLabel"></label>
+              <textarea class="input" id="vsContext" rows="3" maxlength="4000"></textarea></div></div>
+            <div id="vsScenes"></div>
+            <div class="row"><div><button class="btn btn-sm" id="vsAddScene" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add scene</button></div></div>
+            <div class="row" id="vsVoRow" hidden><div><label class="field-label" for="vsVo">Script (read here)</label>
+              <textarea class="input" id="vsVo" rows="4" maxlength="4000"></textarea></div></div>
             <div class="row"><div><label class="field-label" for="vsNotes">Notes</label>
               <textarea class="input" id="vsNotes" rows="2" maxlength="4000" placeholder="Optional"></textarea></div></div>
           </section>

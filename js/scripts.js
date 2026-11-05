@@ -47,7 +47,7 @@
                  ['testimonial', 'Testimonial'], ['montage', 'Voiceover montage']];
   var SHOT_SIZES = ['Extreme wide', 'Wide', 'Medium', 'Medium close-up', 'Close-up', 'Extreme close-up', 'Insert'];
   var ANGLES = ['Eye level', 'High angle', 'Low angle', 'Overhead', 'From behind', 'Over the shoulder', 'Through objects', 'Point of view'];
-  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action'],
+  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action in the video'],
               ['cast', 'Cast roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music mood']];
   var BRIEF_WORDS = [['offer', 'Product or offer'], ['objective', 'Objective'], ['audience', 'Target audience'], ['key_message', 'Key message'],
                      ['cta', 'Call to action'], ['must_include', 'Must include'], ['must_avoid', 'Must avoid'], ['tone', 'Tone'], ['format', 'Format']];
@@ -145,7 +145,7 @@
     'bad-aspect': 'Choose the aspect ratio.',
     'bad-length': 'Choose the video length.',
     'bad-brief': 'The brief could not be saved. Check each field and try again.',
-    'bad-plan': 'A plan field is 2,000 characters at most.',
+    'bad-plan': 'Enter up to 2,000 characters in each field.',
     'bad-review': 'The AI review could not be saved. Write with AI again.',
     stale: 'Not saved. This script was changed by someone else. The latest version is now shown. Please enter your change again.',
     'denied-delete': 'You do not have permission to delete scripts. Please ask an admin.',
@@ -475,7 +475,7 @@
         '<span class="vs-issue-text"><span>' + esc(x.problem || '') + '</span>' +
         (x.fix ? '<span class="vs-issue-fix">Fix: ' + esc(x.fix) + '</span>' : '') + '</span>' +
         '<span class="vs-issue-tags">' + (x.severity === 'critical' ? '<span class="chip chip-state is-danger">Critical</span>' : '<span class="chip">Minor</span>') +
-        (x.certainty === 'possible' ? '<span class="chip">Possible</span>' : '') + '</span></div>';
+        (x.certainty === 'possible' ? '<span class="chip">Not certain</span>' : '') + '</span></div>';
     }).join('') + '</div>';
   }
   function reviewHtml(rv, stale) {
@@ -488,7 +488,7 @@
     var out = '<div class="vs-rvhead"><h4 class="fsec-h">AI review</h4>' +
       '<span class="chip chip-state ' + (pass ? 'is-ok' : 'is-warn') + '">' + (pass ? 'Passed' : 'Check needed') + '</span></div>';
     if (notes) out += '<p class="vs-rvnote">' + esc(notes) + '</p>';
-    var read = [rv.story ? ['Story as read', rv.story] : null, rv.core_message ? ['Core message as read', rv.core_message] : null].filter(Boolean);
+    var read = [rv.story ? ['Story', rv.story] : null, rv.core_message ? ['Core message', rv.core_message] : null].filter(Boolean);
     if (read.length) out += planList(read);
     out += issues.length ? issueRows(issues) : '<p class="vs-rvnote">No problems found.</p>';
     if (first.length) {
@@ -536,7 +536,7 @@
   function shotCell(sc) {
     var cam = camOf(sc);
     return (cam ? '<span class="vs-cam">' + esc(cam) + '</span>' : '') + esc(sc.visual || '') +
-      (sc.on_screen ? '<span class="vs-extra"><b>On screen</b> ' + esc(sc.on_screen) + '</span>' : '') +
+      (sc.on_screen ? '<span class="vs-extra"><b>On-screen text</b> ' + esc(sc.on_screen) + '</span>' : '') +
       (sc.sound ? '<span class="vs-extra"><b>Sound</b> ' + esc(sc.sound) + '</span>' : '');
   }
   var NOT_SHOT = '<span class="mute vs-dash">—</span><span class="mute vs-notshot">Not shot</span>';

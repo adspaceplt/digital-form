@@ -233,10 +233,10 @@
       : (sc.t_from == null ? '' : clockOf(sc.t_from)) + (sc.t_to == null ? '' : '\u2013' + clockOf(sc.t_to));
     var cam = [t, sc.shot_size, sc.angle, sc.camera_move].filter(Boolean).join(' \u00b7 ');
     return (cam ? '<span class="vs-cam">' + esc(cam) + '</span>' : '') + esc(sc.visual || '') +
-      (sc.on_screen ? '<span class="vs-extra"><b>On screen</b> ' + esc(sc.on_screen) + '</span>' : '') +
+      (sc.on_screen ? '<span class="vs-extra"><b>On-screen text</b> ' + esc(sc.on_screen) + '</span>' : '') +
       (sc.sound ? '<span class="vs-extra"><b>Sound</b> ' + esc(sc.sound) + '</span>' : '');
   }
-  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action'],
+  var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action in the video'],
               ['cast', 'Cast roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music mood']];
   function planOf(s) {
     var p = s.plan || {};

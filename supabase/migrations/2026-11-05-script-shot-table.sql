@@ -366,12 +366,12 @@ begin
   if n.cast_names is distinct from v.cast_names then v_moves := v_moves || 'Cast'::text; end if;
   if n.brief is distinct from v.brief then
     v_parts := public.video_script_parts_moved(v.brief, n.brief,
-      '[["offer","Product or offer"],["objective","Objective"],["audience","Target audience"],["key_message","Key message"],["cta","Call to action"],["must_include","Must include"],["must_avoid","Must avoid"],["tone","Tone"],["format","Format"],["max_locations","Locations"],["max_cast","Cast limit"],["max_shoot_hours","Shoot hours"]]'::jsonb);
+      '[["offer","Product or offer"],["objective","Objective"],["audience","Target audience"],["key_message","Key message"],["cta","Call to action"],["must_include","Must include"],["must_avoid","Must avoid"],["tone","Tone"],["format","Format"],["max_locations","Location limit"],["max_cast","Cast limit"],["max_shoot_hours","Hour limit"]]'::jsonb);
     v_moves := v_moves || ('Brief: ' || coalesce(v_parts, 'changed'));
   end if;
   if n.plan is distinct from v.plan then
     v_parts := public.video_script_parts_moved(v.plan, n.plan,
-      '[["core_message","Core message"],["concept","Concept"],["hook","Hook"],["cast","Cast roles"],["locations","Locations"],["props","Props"],["music","Music mood"],["cta","Call to action"]]'::jsonb);
+      '[["core_message","Core message"],["concept","Concept"],["hook","Hook"],["cast","Cast roles"],["locations","Locations"],["props","Props"],["music","Music mood"],["cta","Call to action in the video"]]'::jsonb);
     v_moves := v_moves || ('Plan: ' || coalesce(v_parts, 'changed'));
   end if;
   if n.context is distinct from v.context then v_moves := v_moves || v_kindw; end if;
@@ -431,9 +431,9 @@ begin
     end if;
   end if;
   if v_rev_set and v_rev is distinct from v.review then
-    v_moves := v_moves || ('AI review: ' || case when v_rev is null then 'cleared'
+    v_moves := v_moves || ('AI review: ' || case when v_rev is null then 'removed'
                                                  when v_rev ->> 'verdict' = 'pass' then 'passed'
-                                                 else 'flagged for a check' end);
+                                                 else 'check needed' end);
   end if;
 
   if coalesce(array_length(v_moves, 1), 0) = 0 then

@@ -207,7 +207,7 @@
     };
     /* What the video stands on (2026-11-05): each part the plan holds, a
        label beside its words. */
-    var PLAN = [['core_message', 'Core Message'], ['hook', 'Hook (0 to 3s)'], ['concept', 'Concept'], ['cta', 'Call to Action'],
+    var PLAN = [['core_message', 'Core Message'], ['hook', 'Hook (0 to 3s)'], ['concept', 'Concept'], ['cta', 'Call to Action in the Video'],
                 ['cast', 'Cast Roles'], ['locations', 'Locations'], ['props', 'Props'], ['music', 'Music Mood']];
     var plan = function (v) {
       var p = v.plan || {};
@@ -221,7 +221,7 @@
     /* What is seen: the timing and camera over it, the on-screen text and
        the sound under it. */
     var seen = function (sc) {
-      return [sc.cam || '', sc.visual || '', sc.on_screen ? 'On screen: ' + sc.on_screen : '', sc.sound ? 'Sound: ' + sc.sound : '']
+      return [sc.cam || '', sc.visual || '', sc.on_screen ? 'On-screen text: ' + sc.on_screen : '', sc.sound ? 'Sound: ' + sc.sound : '']
         .filter(Boolean).join('\n');
     };
     var video = function (v, many) {

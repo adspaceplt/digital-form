@@ -12107,7 +12107,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if ((n.length_seconds || null) !== (vs0.length_seconds || null)) moves.push('Video length: ' + (vs0.length_seconds ? vs0.length_seconds + 's' : 'not set') + ' → ' + (n.length_seconds ? n.length_seconds + 's' : 'not set'));
         if (JSON.stringify(n.brief || {}) !== JSON.stringify(vs0.brief || {})) moves.push('Brief');
         if (JSON.stringify(n.plan || {}) !== JSON.stringify(vs0.plan || {})) moves.push('Plan');
-        if (vsRevSet && JSON.stringify(vsRev) !== JSON.stringify(vs0.review || null)) moves.push('AI review: ' + (!vsRev ? 'cleared' : vsRev.verdict === 'pass' ? 'passed' : 'flagged for a check'));
+        if (vsRevSet && JSON.stringify(vsRev) !== JSON.stringify(vs0.review || null)) moves.push('AI review: ' + (!vsRev ? 'removed' : vsRev.verdict === 'pass' ? 'passed' : 'check needed'));
         if (n.context !== vs0.context) { creat = true; moves.push(n.kind === 'products' ? 'Products and context' : n.kind === 'story' ? 'Hook and story' : 'Context'); }
         if (n.vo !== vs0.vo) { creat = true; moves.push('Script (read here)'); }
         if (n.remarks !== vs0.remarks) moves.push('Notes');
