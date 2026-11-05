@@ -540,7 +540,7 @@
     if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + sc.photo_by : 'Photo', kind: 'photo' };
     if (sc.ai_url) return { url: sc.ai_url, tag: 'Drawn with AI', kind: 'ai' };
     var f = window.ADspaceFrames ? window.ADspaceFrames.svg(sc, st.open && st.open.aspect) : '';
-    return f ? { svg: f, tag: 'Drawn', kind: 'frame' } : null;
+    return f ? { svg: f, tag: 'Sketch from shot', kind: 'frame' } : null;
   }
   function picCell(sc, i, s, work) {
     var p = picOf(sc);
@@ -776,22 +776,23 @@
   /* ---- Scene pictures --------------------------------------------------- */
   function sayPic(text, tone) { say($('vsPicMsg'), text, tone); }
   var PIC_SAID = {
-    'bad-url': 'The picture could not be kept. Try again.',
-    'bad-press': 'The picture could not be kept. Draw with AI again.',
+    'bad-url': 'The picture could not be saved. Try again.',
+    'bad-press': 'The picture could not be saved. Draw with AI again.',
     'ai-not-set-up': 'Draw with AI is not set up yet. Please contact an admin.',
     'ai-key': 'Draw with AI is not available at the moment. Please contact an admin.',
     'ai-model': 'Draw with AI is not available at the moment. Please contact an admin.',
-    'ai-billing': 'Draw with AI needs billing turned on for the Google AI Studio project. Please contact an admin.',
+    'ai-billing': 'Draw with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
-    'ai-failed': 'No pictures came back. Try again.',
-    'ai-incomplete': 'No pictures came back. Try again.'
+    'ai-failed': 'No pictures were drawn. Try again.',
+    'ai-incomplete': 'No pictures were drawn. Try again.'
   };
   function picSaid(e) {
     var m = String((e && e.message) || '');
     if (m === 'ai-limit') {
       var d = (e && (e.data || e.d)) || {};
-      return d.scope === 'stopped' ? 'Scene pictures with AI are turned off for you. An admin can turn them on.'
-        : 'You have ' + (d.left || 0) + ' of your ' + (d.limit || 0) + ' scene pictures left today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
+      if (d.scope === 'stopped') return 'Draw with AI is turned off for you. Please ask an admin to turn it on.';
+      if (d.left) return d.left + (d.left === 1 ? ' scene picture' : ' scene pictures') + ' left today. Choose fewer scenes.';
+      return 'You have used all ' + (d.limit || 0) + ' scene pictures for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
     }
     return PIC_SAID[m] || said(e);
   }
@@ -825,10 +826,10 @@
       body: { ext: 'jpg', clientId: s.client_id, size: blob.size, purpose: 'script', scriptId: s.id }
     }).then(function (r) {
       if (!r.error && r.data && r.data.uploadUrl) return r;
-      return API.fnRefusal(r).then(function (code) { throw new Error(code === 'not_allowed' ? SAID.denied : 'The picture could not be stored. Try again.'); });
+      return API.fnRefusal(r).then(function (code) { throw new Error(code === 'not_allowed' ? SAID.denied : 'The picture could not be saved. Try again.'); });
     }).then(function (r) {
       return fetch(r.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': r.data.contentType || 'image/jpeg' }, body: blob })
-        .then(function (res) { if (!res.ok) throw new Error('The picture could not be stored. Try again.'); return r.data.publicUrl; });
+        .then(function (res) { if (!res.ok) throw new Error('The picture could not be saved. Try again.'); return r.data.publicUrl; });
     });
   }
   function scenePos(id) { var sc = st.scenes.filter(function (x) { return x.id === id; })[0]; return sc ? st.scenes.indexOf(sc) + 1 : ''; }
@@ -904,7 +905,7 @@
       if (!left.left) { sayPic(picSaid({ message: 'ai-limit', data: left })); return; }
       var choices = [];
       if (missing.length) choices.push(['missing', 'Scenes with no picture (' + missing.length + ')']);
-      choices.push(['all', 'Every scene (' + st.scenes.length + ')']);
+      choices.push(['all', 'All scenes (' + st.scenes.length + ')']);
       window.ADspaceConfirm.ask({
         title: 'Draw with AI',
         body: 'Draws a storyboard picture for each scene from its shot. Each scene counts as one picture; ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
@@ -934,7 +935,7 @@
             .then(function () { return readScript(sid); })
             .then(function () {
               repaintScenes(r.n + (r.n === 1 ? ' picture drawn.' : ' pictures drawn.') +
-                (r.missed ? ' No picture came back for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : ''), r.missed ? 'warn' : 'ok');
+                (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : ''), r.missed ? 'warn' : 'ok');
             });
         }).catch(function (e) {
           if (!st.open || st.open.id !== sid) return;

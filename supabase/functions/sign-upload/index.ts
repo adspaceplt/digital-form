@@ -75,7 +75,7 @@ const PURPOSES: Record<string, {
       const c = r && (r.sm_reports as Record<string, unknown> | null);
       return c ? { client: String(c.client_id) } : null; } },
   /* A video script scene's picture (2026-11-05): a colleague's photo or
-     sketch, or one Write with AI drew, under the client's folder, asked of
+     sketch, or one Draw with AI drew, under the client's folder, asked of
      the script's client at Work. */
   script: { field: 'scriptId', sections: ['scripts'], kind: 'client', level: 'work',
     clientOf: async (a, id) => { const r = await one(a.from('video_scripts').select('client_id').eq('id', id).maybeSingle());

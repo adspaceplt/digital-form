@@ -97,7 +97,7 @@ begin
         when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
         when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
         when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
-        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'ai_price_image' then 'AI price per scene picture' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email'
         when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
         when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
         when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
