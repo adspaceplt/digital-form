@@ -1952,19 +1952,74 @@
   }
   /* An Accounts Report waits on every planned post being live with its
      dates in (2026-11-05): each task not yet counted, and what it lacks. */
-  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Live date' };
-  function lackHtml(list) {
-    if (!list || !list.length) return '';
+  var LACK = { draft: 'Draft due', due: 'Due date', post: 'Post date', live: 'Date it went live' };
+  /* A post that dragged past its month is marked delayed from a draft
+     (Reports Work), so the count passes; the task carries it until it goes
+     live (2026-11-05). The reasons are a date move's. */
+  var DELAY_WHY = [['client_request', 'Client request'], ['scope_change', 'Scope change'], ['capacity', 'Internal capacity'],
+    ['pending_assets', 'Pending assets'], ['pending_confirmation', 'Pending confirmation']];
+  function delayWord(k) { var w = DELAY_WHY.filter(function (x) { return x[0] === k; })[0]; return w ? w[1] : ''; }
+  function lackHtml(list, r, g) {
     var open = bridge.may && bridge.may('ops', 'view');
-    return '<div class="rp-lacks">' + list.map(function (t) {
+    /* A planned post with no task has nothing to mark: the month is short
+       until the task is added in My Work (2026-11-05). */
+    var short = g && g.planned > g.made ? g.planned - g.made : 0;
+    if ((!list || !list.length) && !short) return '';
+    var mark = r && r.status === 'draft' && may('work');
+    return '<div class="rp-lacks">' + (short ? '<div class="rp-lack is-delayed"><span class="rp-lack-t"><b>' + short + (short === 1 ? ' planned post has' : ' planned posts have') + ' no task</b>' +
+      '<small>Add ' + (short === 1 ? 'it' : 'them') + ' in My Work to count or mark delayed.</small></span><span class="rp-lack-acts">' +
+      (open && st.client && st.client.slug ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openmonth">Open' + ICON.go + '</button>' : '') + '</span></div>' : '') +
+      (list || []).map(function (t) {
       var dates = (t.needs || []).filter(function (k) { return LACK[k]; }).map(function (k) { return LACK[k]; });
-      var said = [(t.needs || []).indexOf('stage') > -1 ? 'Not live' : '', dates.length ? dates.join(', ') + ' not set' : '']
-        .filter(Boolean).join(' · ');
-      return '<div class="rp-lack"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
-        '<small>' + esc(said) + '</small></span>' +
-        (open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openpost" data-id="' + esc(t.id) + '">Open' + ICON.go + '</button>' : '') + '</div>';
+      var said = t.delayed ? ['Delayed', delayWord(t.delayed_reason), t.delayed_note || ''].filter(Boolean).join(' · ')
+        : [(t.needs || []).indexOf('stage') > -1 ? 'Not live' : '', dates.length ? dates.join(', ') + ' not set' : ''].filter(Boolean).join(' · ');
+      return '<div class="rp-lack' + (t.delayed ? ' is-delayed' : '') + '"><span class="rp-lack-t"><b>' + esc(t.code || ('#WT' + String(t.task_no).padStart(5, '0'))) + '</b>' +
+        '<small>' + esc(said) + '</small></span><span class="rp-lack-acts">' +
+        (mark ? '<button class="btn btn-sm" type="button" data-a="' + (t.delayed ? 'undelay' : 'delay') + '" data-id="' + esc(t.id) + '">' +
+          (t.delayed ? 'Clear' : 'Mark delayed') + '</button>' : '') +
+        (open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openpost" data-id="' + esc(t.id) + '">Open' + ICON.go + '</button>' : '') + '</span></div>';
     }).join('') + '</div>';
   }
+  function markDelay(box, r, id, on, btn) {
+    var m = box.querySelector('[data-m="check"]');
+    var send = function (onNow, why, note) {
+      if (btn) btn.disabled = true;
+      return db.rpc('sm_report_post_delay', { p_report: r.id, p_task: id, p_reason: why || null, p_note: note || null, p_on: onNow }).then(function (res) {
+        var d = res.data || {};
+        if (res.error || d.error) {
+          if (btn) btn.disabled = false;
+          var e = d.error || '';
+          say(m, e === 'not-draft' ? 'Only a draft report marks a post delayed.' :
+            e === 'posted' ? 'This post is already live with every date set. Refresh the page.' :
+            e === 'not-in-month' ? 'This post is no longer in the report\'s month. Refresh the page.' :
+            e === 'too-long' ? 'Keep the note to 300 characters.' :
+            e === 'denied' ? 'You do not have permission to mark a post delayed. Please ask an admin.' : said(res.error || e), 'err');
+          return false;
+        }
+        paintCheck(box);
+        return true;
+      });
+    };
+    if (!on) {
+      var was = prevDelay;
+      send(false).then(function (ok) {
+        if (ok) undoBar('Delay cleared.', box.querySelector('.rp-checks'), function () { send(true, was.why, was.note); });
+      }).catch(function (e) { say(m, said(e), 'err'); });
+      return;
+    }
+    window.ADspaceConfirm.ask({ title: 'Mark delayed?', go: 'Mark delayed',
+      body: 'The post counts toward this report and stays marked Delayed in My Work until it goes live. Its dates stay as planned.',
+      fields: [
+        { name: 'why', label: 'Reason', choices: [['', 'Choose a reason']].concat(DELAY_WHY), required: true },
+        { name: 'note', label: 'Note', rows: 2, required: false }
+      ] },
+      function (v) {
+        send(true, v.why, v.note).then(function (ok) {
+          if (ok) undoBar('Marked delayed.', box.querySelector('.rp-checks'), function () { send(false); });
+        }).catch(function (e) { say(m, said(e), 'err'); });
+      });
+  }
+  var prevDelay = {};
   function loadGate(box, r) {
     db.rpc('sm_report_gate', { p_id: r.id }).then(function (res) {
       var g = res && res.data;
@@ -1988,7 +2043,8 @@
            Report reports the ads (2026-11-02). */
         (mo && r.kind !== 'ads' ? row(!has('content') && !has('posted'), 'Posts live',
           !g.planned ? 'None planned' : (g.posted == null ? g.made : g.posted) + ' of ' + g.planned + ' planned' +
-            (has('content') ? ' · ' + g.made + (g.made === 1 ? ' task' : ' tasks') + ' in the month' : '')) + lackHtml(g.lacking) : '') +
+            (g.delayed ? ' · ' + g.delayed + ' delayed' : '') +
+            '') + lackHtml(g.lacking, r, g) : '') +
         row(!g.late, 'Due', dueWord(g.due) + (g.late ? ' · Late · Reason required' : ''), '', g.late);
       var card = box.querySelector('.rp-checks');
       if (card) card.insertAdjacentHTML('beforeend', html);
@@ -2000,6 +2056,19 @@
       if (open) open.addEventListener('click', function () { openTask(g.task.id); });
       box.querySelectorAll('[data-a="openpost"]').forEach(function (b) {
         b.addEventListener('click', function () { openTask(b.getAttribute('data-id')); });
+      });
+      var om = box.querySelector('[data-a="openmonth"]');
+      if (om) om.addEventListener('click', function () {
+        history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(st.client.slug));
+        if (bridge.show) bridge.show('work');
+      });
+      box.querySelectorAll('[data-a="delay"], [data-a="undelay"]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id = b.getAttribute('data-id'), on = b.getAttribute('data-a') === 'delay';
+          var row = (g.lacking || []).filter(function (x) { return x.id === id; })[0] || {};
+          prevDelay = { why: row.delayed_reason, note: row.delayed_note };
+          markDelay(box, r, id, on, b);
+        });
       });
       if (!g.ok && !g.may_override) {
         var sub = box.querySelector('[data-a="submit"]');
