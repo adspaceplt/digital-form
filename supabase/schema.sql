@@ -97038,9 +97038,12 @@ grant execute on function public.sm_report_post_delay(uuid, uuid, text, text, bo
 --   counting for nothing, and the task free to be linked again.
 --   `sm_report_post_tasks(p_report)`: the links and the tasks a post may
 --   take. `ops_task_report_post(p_task)`: the task card's line.
---   Trigger `sm_reports_posts_follow`: a report published moves its linked
---   tasks from Performance review to Completed (and takes the figures
---   again); a report back from published moves them back.
+--   Trigger `sm_reports_posts_follow`: a report moved into published moves
+--   its linked tasks from Performance review to Completed (and takes the
+--   figures again); moved out of published, those it completed go back.
+--   A task moved by hand, or held (On hold, Blocked, Taken down), is left
+--   where it is; with the switch off nothing moves, and a link may still
+--   be taken off.
 --   `sm_report_gate`: with links on, a planned post counts once it is linked
 --   to a post and holds its Draft due, Due date and Post date; a task not
 --   linked is named `link` in `lacking` with its stage. Off, the rule of
@@ -97103,8 +97106,10 @@ create table if not exists public.sm_report_post_links (
   linked_by    uuid,
   linked_at    timestamptz not null default now(),
   unlinked_at  timestamptz,
-  unlinked_by  uuid
+  unlinked_by  uuid,
+  done_at      timestamptz
 );
+alter table public.sm_report_post_links add column if not exists done_at timestamptz;
 create unique index if not exists sm_report_post_links_task_idx on public.sm_report_post_links (task_id) where unlinked_at is null;
 create unique index if not exists sm_report_post_links_post_idx on public.sm_report_post_links (post_id) where unlinked_at is null;
 create index if not exists sm_report_post_links_report_idx on public.sm_report_post_links (report_id);
@@ -97132,11 +97137,15 @@ begin
   p := l.prev;
   select * into t from public.ops_tasks where id = l.task_id for update;
   if t.id is null then return; end if;
-  v_back := l.moved and t.stage_key in ('performance_review', 'completed')
+  /* The stage goes back only where it still stands where the link put
+     it: a task moved by hand since (Completed included) is left there. */
+  v_back := l.moved and t.stage_key = 'performance_review'
             and coalesce(p ->> 'stage_key', '') <> '' and t.stage_key is distinct from p ->> 'stage_key';
   update public.ops_tasks set
     stage_key = case when v_back then p ->> 'stage_key' else stage_key end,
     completed_at = case when v_back then (p ->> 'completed_at')::timestamptz else completed_at end,
+    blocked_at = case when v_back then (p ->> 'blocked_at')::timestamptz else blocked_at end,
+    blocked_category = case when v_back then p ->> 'blocked_category' else blocked_category end,
     live_at = case when live_at is not distinct from l.live_set then (p ->> 'live_at')::timestamptz else live_at end,
     delayed_at = case when delayed_at is null then (p ->> 'delayed_at')::timestamptz else delayed_at end,
     delayed_by = case when delayed_at is null then (p ->> 'delayed_by')::uuid else delayed_by end,
@@ -97149,6 +97158,10 @@ begin
     result_at = case when result_at is not distinct from l.results_at then (p ->> 'result_at')::timestamptz else result_at end,
     version = version + 1, updated_at = now()
    where id = t.id;
+  /* The post's name the link took from the task goes back to the one
+     typed, where nobody renamed it since. */
+  update public.sm_report_posts q set title = p ->> 'post_title'
+   where q.id = l.post_id and p ? 'post_title' and q.title is not distinct from nullif(btrim(coalesce(t.content_desc, '')), '');
   if v_back then
     perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', t.stage_key),
       jsonb_build_object('stage_key', p ->> 'stage_key'),
@@ -97197,12 +97210,10 @@ begin
   select * into r from public.sm_reports where id = p.report_id for update;
   select * into c from public.clients where id = r.client_id;
   if not public.client_row_seen_by(c.stage, c.owner, c.sales_by, 'work') then return jsonb_build_object('error', 'denied'); end if;
-  if not public.report_links_on() then return jsonb_build_object('error', 'links-off'); end if;
   if r.status <> 'draft' then return jsonb_build_object('error', 'not-draft'); end if;
-  if r.kind <> 'social' or r.on_request or r.brand_id is not null or coalesce(c.white_label, false) then
-    return jsonb_build_object('error', 'not-linkable');
-  end if;
 
+  /* Taking a link off works with the switch off too, so Off can be
+     walked back post by post. */
   select * into l from public.sm_report_post_links where post_id = p.id and unlinked_at is null;
   if p_task is null then
     if l.id is not null then
@@ -97211,6 +97222,10 @@ begin
       perform public.sm_report_log(r.id, 'report.saved', coalesce(v_code, 'A task') || ' no longer linked to its post');
     end if;
     return jsonb_build_object('ok', true);
+  end if;
+  if not public.report_links_on() then return jsonb_build_object('error', 'links-off'); end if;
+  if r.kind <> 'social' or r.on_request or r.brand_id is not null or coalesce(c.white_label, false) then
+    return jsonb_build_object('error', 'not-linkable');
   end if;
   if l.task_id = p_task then return jsonb_build_object('ok', true, 'id', p_task); end if;
 
@@ -97245,11 +97260,14 @@ begin
   v_was_day := (t.live_at at time zone 'Asia/Kuala_Lumpur')::date;
   v_live := case when v_was_day = p.posted_on then t.live_at
                  else (p.posted_on + time '12:00') at time zone 'Asia/Kuala_Lumpur' end;
-  v_moved := t.stage_key not in ('performance_review', 'completed')
+  /* A task held (On hold, Blocked, Taken down) stays where it is: only
+     the line short of the review moves. */
+  v_moved := t.stage_key not in ('performance_review', 'completed', 'on_hold', 'blocked', 'taken_down', 'cancelled')
              and exists (select 1 from public.ops_workflow_stages s
                           where s.workflow_id = t.workflow_id and s.key = 'performance_review');
-  v_views := least(p.views, 2147483647)::integer;
-  v_eng := least(coalesce(p.engagements, p.interactions), 2147483647)::integer;
+  v_views := case when p.views is null then null else least(p.views, 2147483647)::integer end;
+  v_eng := case when coalesce(p.engagements, p.interactions) is null then null
+                else least(coalesce(p.engagements, p.interactions), 2147483647)::integer end;
   v_res := v_views is not null or v_eng is not null;
   v_name := nullif(btrim(coalesce(t.content_desc, '')), '');
 
@@ -97259,7 +97277,8 @@ begin
             'delayed_at', t.delayed_at, 'delayed_by', t.delayed_by, 'delayed_reason', t.delayed_reason,
             'delayed_note', t.delayed_note, 'delayed_report', t.delayed_report,
             'result_views', t.result_views, 'result_engagements', t.result_engagements,
-            'result_at', t.result_at, 'result_by', t.result_by),
+            'result_at', t.result_at, 'result_by', t.result_by,
+            'blocked_at', t.blocked_at, 'blocked_category', t.blocked_category, 'post_title', p.title),
           v_moved, v_live, case when v_res then now() end, me.id);
   update public.ops_tasks set
     live_at = v_live,
@@ -97364,16 +97383,20 @@ begin
     from public.sm_report_post_links l
     join public.sm_report_posts p on p.id = l.post_id and p.report_id = l.report_id
     join public.sm_reports r on r.id = l.report_id
-   where l.task_id = p_task and l.unlinked_at is null;
+    join public.clients c on c.id = r.client_id
+   where l.task_id = p_task and l.unlinked_at is null
+     and public.client_row_seen_by(c.stage, c.owner, c.sales_by, 'view');
   return jsonb_build_object('ok', true, 'post', v);
 end $$;
 revoke all on function public.ops_task_report_post(uuid) from public, anon, authenticated;
 grant execute on function public.ops_task_report_post(uuid) to authenticated;
 
 /* The report keeps its linked tasks' stage, as it keeps its own report
-   task: published, Completed (the figures taken again as published);
-   anywhere else, Performance review. A task moved by hand off those two is
-   left where it is. */
+   task: moved into published, a task at Performance review is Completed
+   (the figures taken again as published); moved out of published, a task
+   that move completed goes back to Performance review. Any other step of
+   the report, or a task moved by hand, is left alone; nothing moves while
+   the switch is off. */
 create or replace function public.sm_reports_posts_follow()
 returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -97381,35 +97404,43 @@ declare
   l public.sm_report_post_links;
   t public.ops_tasks;
   p public.sm_report_posts;
-  v_to text := case when new.status = 'published' then 'completed' else 'performance_review' end;
-  v_res boolean;
+  v_in boolean := new.status = 'published' and old.status is distinct from 'published';
+  v_out boolean := old.status = 'published' and new.status is distinct from 'published';
+  v_eng integer;
 begin
-  if new.status is not distinct from old.status then return null; end if;
+  if not (v_in or v_out) or not public.report_links_on() then return null; end if;
   for l in select k.* from public.sm_report_post_links k
              join public.sm_report_posts q on q.id = k.post_id and q.report_id = k.report_id
             where k.report_id = new.id and k.moved and k.unlinked_at is null loop
     select * into t from public.ops_tasks where id = l.task_id for update;
-    if t.id is null or t.stage_key not in ('performance_review', 'completed') then continue; end if;
-    select * into p from public.sm_report_posts where id = l.post_id;
-    v_res := v_to = 'completed' and (p.views is not null or coalesce(p.engagements, p.interactions) is not null);
-    update public.ops_tasks set
-      stage_key = v_to,
-      completed_at = case when v_to = 'completed' then coalesce(completed_at, now()) else null end,
-      result_views = case when v_res then least(p.views, 2147483647)::integer else result_views end,
-      result_engagements = case when v_res then least(coalesce(p.engagements, p.interactions), 2147483647)::integer else result_engagements end,
-      result_at = case when v_res then now() else result_at end,
-      version = version + 1, updated_at = now()
-     where id = t.id;
-    if v_res then update public.sm_report_post_links set results_at = now() where id = l.id; end if;
-    if t.stage_key is distinct from v_to then
-      perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', t.stage_key),
-        jsonb_build_object('stage_key', v_to),
-        jsonb_build_object('note', case when v_to = 'completed' then 'Accounts Report published' else 'Accounts Report back in draft' end,
-                           'report_id', new.id));
+    if t.id is null then continue; end if;
+    if v_in and t.stage_key = 'performance_review' then
+      select * into p from public.sm_report_posts where id = l.post_id;
+      v_eng := case when coalesce(p.engagements, p.interactions) is null then null
+                    else least(coalesce(p.engagements, p.interactions), 2147483647)::integer end;
+      update public.ops_tasks set
+        stage_key = 'completed', completed_at = coalesce(completed_at, now()),
+        result_views = coalesce(case when p.views is null then null else least(p.views, 2147483647)::integer end, result_views),
+        result_engagements = coalesce(v_eng, result_engagements),
+        result_at = case when p.views is not null or v_eng is not null then now() else result_at end,
+        version = version + 1, updated_at = now()
+       where id = t.id returning result_at into t.result_at;
+      update public.sm_report_post_links set done_at = now(),
+             results_at = case when p.views is not null or v_eng is not null then t.result_at else results_at end
+       where id = l.id;
+      perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', 'performance_review'),
+        jsonb_build_object('stage_key', 'completed'), jsonb_build_object('note', 'Accounts Report published', 'report_id', new.id));
+    elsif v_out and l.done_at is not null and t.stage_key = 'completed' then
+      update public.ops_tasks set stage_key = 'performance_review', completed_at = null, version = version + 1, updated_at = now()
+       where id = t.id;
+      update public.sm_report_post_links set done_at = null where id = l.id;
+      perform public.ops_log(t.id, 'stage_changed', jsonb_build_object('stage_key', 'completed'),
+        jsonb_build_object('stage_key', 'performance_review'), jsonb_build_object('note', 'Accounts Report no longer published', 'report_id', new.id));
     end if;
   end loop;
   return null;
 exception when others then
+  raise warning 'sm_reports_posts_follow: %', sqlerrm;
   return null;
 end $$;
 revoke all on function public.sm_reports_posts_follow() from public, anon, authenticated;
@@ -97614,8 +97645,11 @@ grant execute on function public.sm_report_post_delay(uuid, uuid, text, text, bo
 -- from a later day waits on this.
 --
 -- `app_settings_set`, restated whole from SETTINGS WORDS IN THE RECORD with
--- `report_post_links` among its keys (0 or 1, On / Off in the record). Safe
--- to run twice. Rollback: the restatement before it.
+-- `report_post_links` among its keys (0 or 1, On / Off in the record); and
+-- trigger `sm_report_post_removed`: a post removed takes its link off, the
+-- task put back as the link found it (its delay included). Until it runs a
+-- removed post's link counts for nothing and its task stays as linked.
+-- Safe to run twice. Rollback: the restatement before it; drop the trigger.
 -- ===========================================================================
 
 create or replace function public.app_settings_set(p_from date, p_values jsonb)
@@ -97755,6 +97789,18 @@ begin
 end $$;
 revoke all on function public.app_settings_set(date, jsonb) from public, anon;
 grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+create or replace function public.sm_report_post_removed()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.sm_report_post_revert(k.id) from public.sm_report_post_links k
+   where k.post_id = old.id and k.unlinked_at is null;
+  return null;
+end $$;
+revoke all on function public.sm_report_post_removed() from public, anon, authenticated;
+create or replace trigger sm_report_post_removed after delete on public.sm_report_posts
+  for each row execute function public.sm_report_post_removed();
 
 -- END OF REPORT POSTS LINKED TO THEIR TASKS, THE SQL EDITOR PART -----------
 

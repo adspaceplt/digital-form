@@ -5091,12 +5091,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     description as its name and shows its code; the task takes the post's
     day as its live date (the report is right where the task was not),
     its delay cleared, its views and engagements from the post, and moves
-    to Performance review, then Completed once the report is published
-    and back with a report taken out of published (trigger
-    `sm_reports_posts_follow`, a task moved by hand left alone); Unlink
-    puts back what it changed (`sm_report_post_links`, RLS on, no policy,
-    no grant, kept and ended, never in the snapshot); a post removed
-    counts for nothing. The gate then counts a planned post once linked
+    to Performance review (a task On hold, Blocked or Taken down stays),
+    then Completed as the report moves into published and back as it
+    leaves it, no other step of the report moving it (trigger
+    `sm_reports_posts_follow`, nothing while the switch is off); a post
+    with no figures writes none. Unlink (open with the switch off too)
+    puts back what it changed where nothing changed it since, the stage
+    only from Performance review, the post's typed name too
+    (`sm_report_post_links`, RLS on, no policy, no grant, kept and ended,
+    never in the snapshot); a post removed takes its link off (trigger
+    `sm_report_post_removed`, the SQL Editor part). Reports Work moves a
+    colleague's task here, as a report moves its own report task. The gate then counts a planned post once linked
     with its three dates set, naming one not linked (Live · Not linked to
     a post); off, the stage rule above stands. A white-label report is
     held to no post and links none. The task card reads In the Accounts

@@ -8,8 +8,11 @@
 -- from a later day waits on this.
 --
 -- `app_settings_set`, restated whole from SETTINGS WORDS IN THE RECORD with
--- `report_post_links` among its keys (0 or 1, On / Off in the record). Safe
--- to run twice. Rollback: the restatement before it.
+-- `report_post_links` among its keys (0 or 1, On / Off in the record); and
+-- trigger `sm_report_post_removed`: a post removed takes its link off, the
+-- task put back as the link found it (its delay included). Until it runs a
+-- removed post's link counts for nothing and its task stays as linked.
+-- Safe to run twice. Rollback: the restatement before it; drop the trigger.
 -- ===========================================================================
 
 create or replace function public.app_settings_set(p_from date, p_values jsonb)
@@ -149,5 +152,17 @@ begin
 end $$;
 revoke all on function public.app_settings_set(date, jsonb) from public, anon;
 grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+create or replace function public.sm_report_post_removed()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  perform public.sm_report_post_revert(k.id) from public.sm_report_post_links k
+   where k.post_id = old.id and k.unlinked_at is null;
+  return null;
+end $$;
+revoke all on function public.sm_report_post_removed() from public, anon, authenticated;
+create or replace trigger sm_report_post_removed after delete on public.sm_report_posts
+  for each row execute function public.sm_report_post_removed();
 
 select public.functions_tidy();
