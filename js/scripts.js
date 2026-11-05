@@ -44,7 +44,7 @@
      stored keys never move; the page says the words. */
   var OBJECTIVES = [['awareness', 'Awareness'], ['traffic', 'Traffic'], ['leads', 'Leads'], ['sales', 'Sales'], ['app_install', 'App install']];
   var FORMATS = [['talking_head', 'Talking head'], ['skit', 'Skit'], ['ugc', 'UGC style'], ['demo', 'Product demo'],
-                 ['testimonial', 'Testimonial'], ['montage', 'Voiceover montage']];
+                 ['testimonial', 'Testimonial'], ['montage', 'Voice-over montage']];
   var SHOT_SIZES = ['Extreme wide', 'Wide', 'Medium', 'Medium close-up', 'Close-up', 'Extreme close-up', 'Insert'];
   var ANGLES = ['Eye level', 'High angle', 'Low angle', 'Overhead', 'From behind', 'Over the shoulder', 'Through objects', 'Point of view'];
   var PLAN = [['core_message', 'Core message'], ['hook', 'Hook (0 to 3 seconds)'], ['concept', 'Concept'], ['cta', 'Call to action in the video'],
@@ -446,7 +446,7 @@
       return [x[1], v];
     });
     var lim = [b.max_locations ? b.max_locations + (b.max_locations === 1 ? ' location' : ' locations') : '',
-               b.max_cast ? b.max_cast + ' on screen' : '', b.max_shoot_hours ? b.max_shoot_hours + (b.max_shoot_hours === 1 ? ' hour' : ' hours') : '']
+               b.max_cast ? b.max_cast + ' cast' : '', b.max_shoot_hours ? b.max_shoot_hours + (b.max_shoot_hours === 1 ? ' hour' : ' hours') : '']
       .filter(Boolean).join(' \u00b7 ');
     if (lim) rows.push(['Shoot limits', lim]);
     if (!rows.length) return '';
@@ -484,13 +484,13 @@
     var issues = Array.isArray(rv.issues) ? rv.issues : [];
     var first = rv.first && Array.isArray(rv.first.issues) ? rv.first.issues : [];
     var qs = Array.isArray(rv.questions) ? rv.questions.filter(Boolean) : [];
-    var notes = [first.length ? 'Rewritten once after the first review.' : '', stale ? 'The script changed after this review.' : ''].filter(Boolean).join(' ');
+    var notes = ['', stale ? 'The script changed after this review.' : ''].filter(Boolean).join(' ');
     var out = '<div class="vs-rvhead"><h4 class="fsec-h">AI review</h4>' +
       '<span class="chip chip-state ' + (pass ? 'is-ok' : 'is-warn') + '">' + (pass ? 'Passed' : 'Check needed') + '</span></div>';
     if (notes) out += '<p class="vs-rvnote">' + esc(notes) + '</p>';
     var read = [rv.story ? ['Story', rv.story] : null, rv.core_message ? ['Core message', rv.core_message] : null].filter(Boolean);
     if (read.length) out += planList(read);
-    out += issues.length ? issueRows(issues) : '<p class="vs-rvnote">No problems found.</p>';
+    out += issues.length ? issueRows(issues) : '<p class="vs-rvnote">No problems.</p>';
     if (first.length) {
       out += '<details class="vs-rvfold"><summary>Fixed in the rewrite <span class="tab-n">' + first.length + '</span></summary>' + issueRows(first) + '</details>';
     }
