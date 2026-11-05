@@ -67,6 +67,7 @@
     dots: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+    camera: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>',
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>',
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
@@ -353,7 +354,7 @@
     window.scrollTo(0, 0);
     if (push && bridge.pushUrl) bridge.pushUrl(); else if (bridge.setUrl) bridge.setUrl();
     UI.skeleton($('vsRecBody'), 3);
-    return readScript(id).then(function () {
+    return readScript(id).then(pingDraw).then(function () {
       paintRecord();
       if (edit && may('work')) openEdit($('vsRecBody').querySelector('[data-a="edit"]'), push);
       else if (!month) bringShot();
@@ -372,7 +373,7 @@
       if (!r.data) throw new Error('not-found');
       st.open = r.data;
       return Promise.all([
-        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by, t_from, t_to, shot_size, angle, camera_move, on_screen, sound').eq('script_id', id).order('position'),
+        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_url, photo_by, photo_thumb, ai_url').eq('script_id', id).order('position'),
         db.from('video_scripts').select('id, code, seq, video_no, title, status, kind, shoot_on, venue').eq('client_id', st.open.client_id)
           .eq('period', st.open.period).order('seq')
       ]);
@@ -531,6 +532,34 @@
 
   /* The script as the team reads it, with the crew's tick and clip number on
      each scene. */
+  /* SCENE PICTURES (2026-11-05; the user: all three, the team's alone): the
+     best picture a scene has, the colleague's photo or sketch, else the one
+     AI drew, else the frame drawn from its shot (js/frames.js); Add photo
+     opens the camera on a phone, Remove takes the photo away with Undo. */
+  function picOf(sc) {
+    if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + sc.photo_by : 'Photo', kind: 'photo' };
+    if (sc.ai_url) return { url: sc.ai_url, tag: 'Drawn with AI', kind: 'ai' };
+    var f = window.ADspaceFrames ? window.ADspaceFrames.svg(sc, st.open && st.open.aspect) : '';
+    return f ? { svg: f, tag: 'Sketch from shot', kind: 'frame' } : null;
+  }
+  function picCell(sc, i, s, work) {
+    var p = picOf(sc);
+    var box = !p ? '<span class="vs-pic-box is-none" aria-hidden="true"></span>'
+      : p.svg ? '<span class="vs-pic-box">' + p.svg + '</span>'
+      : '<a class="vs-pic-box" href="' + esc(p.url) + '" target="_blank" rel="noopener" aria-label="Open the picture for scene ' + (i + 1) + '">' +
+        '<img src="' + esc(p.url) + '" alt="" loading="lazy" decoding="async"></a>';
+    var act = !work ? '' : sc.photo_url
+      ? '<button class="btn btn-sm" type="button" data-pic="remove">Remove</button>'
+      : '<label class="btn btn-sm vs-pic-add">' + ICON.camera + 'Add photo<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-pic="add" hidden></label>';
+    return '<span class="vs-pic">' + box + (p ? '<span class="vs-pic-tag">' + esc(p.tag) + '</span>' : '') + act + '</span>';
+  }
+  /* Draw with AI on the Scenes heading: drawn only where the picture
+     writer answers that it is set up, with what is left today. */
+  function drawAct() {
+    if (!may('work') || !st.drawReady) return '';
+    return '<span class="vs-draw"><span class="vs-draw-left" id="vsDrawLeft">' + (st.drawLeft == null ? '' : esc(String(st.drawLeft)) + ' left today') + '</span>' +
+      '<button class="btn btn-sm btn-icon" type="button" id="vsDraw">' + AI_GLYPH + 'Draw with AI</button></span>';
+  }
   /* What is seen: the timing and camera over it, the on-screen text and the
      sound under it, each only where set. */
   function shotCell(sc) {
@@ -544,13 +573,13 @@
     var work = may('work');
     var kind = s.kind;
     var head = '<div class="crm-head vs-scene">' +
-      '<span>#</span><span>' + esc(SCENE_WORD[kind]) + '</span>' + (kind === 'scenes' ? '<span>Script</span>' : '') +
+      '<span>#</span><span>Picture</span><span>' + esc(SCENE_WORD[kind]) + '</span>' + (kind === 'scenes' ? '<span>Script</span>' : '') +
       '<span>VC#</span><span>Shot</span></div>';
-    if (!st.scenes.length) return '<div class="crm-table vs-scenes' + (kind === 'scenes' ? ' is-two' : '') + '">' + head +
-      '<p class="vs-empty">No scenes.</p></div>';
-    return '<div class="crm-table vs-scenes' + (kind === 'scenes' ? ' is-two' : '') + '">' + head + st.scenes.map(function (sc, i) {
+    var cls = 'crm-table vs-scenes has-pics' + (kind === 'scenes' ? ' is-two' : '');
+    if (!st.scenes.length) return '<div class="' + cls + '">' + head + '<p class="vs-empty">No scenes.</p></div>';
+    return '<div class="' + cls + '">' + head + st.scenes.map(function (sc, i) {
       return '<div class="vs-scene" data-scene="' + esc(sc.id) + '">' +
-        '<span class="vs-n">' + (i + 1) + '</span>' +
+        '<span class="vs-n">' + (i + 1) + '</span>' + picCell(sc, i, s, work) +
         '<span class="vs-text vs-vis">' + shotCell(sc) + '</span>' +
         (kind === 'scenes' ? '<span class="vs-text vs-line">' + esc(sc.line || '') + '</span>' : '') +
         '<span class="vs-vc"><span class="vs-lbl" aria-hidden="true">VC#</span>' +
@@ -570,7 +599,8 @@
       out += '<section class="vs-block"><h4 class="fsec-h">' + esc(CONTEXT_WORD[s.kind]) + '</h4>' +
         '<p class="vs-prose">' + (s.context ? esc(s.context) : '<span class="mute">Not written</span>') + '</p></section>';
     }
-    out += '<section class="vs-block"><h4 class="fsec-h">Scenes</h4>' + sceneRows(s) +
+    out += '<section class="vs-block"><div class="vs-scenehead"><h4 class="fsec-h">Scenes</h4>' + drawAct() + '</div>' +
+      '<p class="msg vs-pic-msg" id="vsPicMsg" role="status"></p>' + sceneRows(s) +
       '<p class="msg vs-shot-msg" id="vsShotMsg" role="status"></p></section>';
     /* A voice-over not yet written is no row to shoot: its clip number and
        Shot wait for its words (2026-10-27, VS-11). */
@@ -743,6 +773,180 @@
     onAct($('vsRecCtl'), 'pdf', function (b) { drawPdf(b, false); });
     wireMenu('vsRecMore');
   }
+  /* ---- Scene pictures --------------------------------------------------- */
+  function sayPic(text, tone) { say($('vsPicMsg'), text, tone); }
+  var PIC_SAID = {
+    'bad-url': 'The picture could not be saved. Try again.',
+    'bad-press': 'The picture could not be saved. Draw with AI again.',
+    'ai-not-set-up': 'Draw with AI is not set up yet. Please contact an admin.',
+    'ai-key': 'Draw with AI is not available at the moment. Please contact an admin.',
+    'ai-model': 'Draw with AI is not available at the moment. Please contact an admin.',
+    'ai-billing': 'Draw with AI is not available at the moment. Please contact an admin.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-failed': 'No pictures were drawn. Try again.',
+    'ai-incomplete': 'No pictures were drawn. Try again.'
+  };
+  function picSaid(e) {
+    var m = String((e && e.message) || '');
+    if (m === 'ai-limit') {
+      var d = (e && (e.data || e.d)) || {};
+      if (d.scope === 'stopped') return 'Draw with AI is turned off for you. Please ask an admin to turn it on.';
+      if (d.left) return d.left + (d.left === 1 ? ' scene picture' : ' scene pictures') + ' left today. Choose fewer scenes.';
+      return 'You have used all ' + (d.limit || 0) + ' scene pictures for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
+    }
+    return PIC_SAID[m] || said(e);
+  }
+  /* A picture as a JPEG no wider than `max` (1280) on its longer side; with
+     `data` its data URL (the thumbnail the crew PDF draws). */
+  function jpegOf(src, max, data) {
+    max = max || 1280;
+    return new Promise(function (resolve, reject) {
+      var url = typeof src === 'string' ? src : URL.createObjectURL(src);
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+        var g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        if (typeof src !== 'string') URL.revokeObjectURL(url);
+        if (data) { resolve(c.toDataURL('image/jpeg', 0.75)); return; }
+        c.toBlob(function (b) { if (b) resolve(b); else reject(new Error('The picture could not be read.')); }, 'image/jpeg', 0.85);
+      };
+      img.onerror = function () { if (typeof src !== 'string') URL.revokeObjectURL(url); reject(new Error('The picture could not be read.')); };
+      img.src = url;
+    });
+  }
+  /* Stored in the client's own folder through sign-upload (purpose script). */
+  function storePic(blob) {
+    var s = st.open;
+    var cfg = window.ADSPACE_CONFIG || {};
+    return db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
+      body: { ext: 'jpg', clientId: s.client_id, size: blob.size, purpose: 'script', scriptId: s.id }
+    }).then(function (r) {
+      if (!r.error && r.data && r.data.uploadUrl) return r;
+      return API.fnRefusal(r).then(function (code) { throw new Error(code === 'not_allowed' ? SAID.denied : 'The picture could not be saved. Try again.'); });
+    }).then(function (r) {
+      return fetch(r.data.uploadUrl, { method: 'PUT', headers: { 'Content-Type': r.data.contentType || 'image/jpeg' }, body: blob })
+        .then(function (res) { if (!res.ok) throw new Error('The picture could not be saved. Try again.'); return r.data.publicUrl; });
+    });
+  }
+  function scenePos(id) { var sc = st.scenes.filter(function (x) { return x.id === id; })[0]; return sc ? st.scenes.indexOf(sc) + 1 : ''; }
+  function setPic(id, kind, url, press, thumb) {
+    return rpc('video_script_picture', { p_script: st.open.id, p_scene: id, p_kind: kind, p_url: url, p_press: press || null,
+                                         p_thumb: thumb || null }).then(function () {
+      var sc = st.scenes.filter(function (x) { return x.id === id; })[0];
+      if (sc && kind === 'ai') { sc.ai_url = url; sc.ai_at = new Date().toISOString(); }
+      if (sc && kind === 'photo') { sc.photo_url = url; if (!url) sc.photo_by = null; }
+    });
+  }
+  function repaintScenes(msg, tone) {
+    var y = window.pageYOffset;
+    paintScript();
+    window.scrollTo(0, y);
+    if (msg) sayPic(msg, tone);
+  }
+  function wirePics(body) {
+    Array.prototype.forEach.call(body.querySelectorAll('[data-scene] input[data-pic="add"]'), function (inp) {
+      var id = inp.closest('[data-scene]').getAttribute('data-scene');
+      inp.addEventListener('change', function () {
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        var lab = inp.closest('label');
+        if (lab) lab.classList.add('is-busy');
+        sayPic('Adding the photo…', 'ok');
+        Promise.all([jpegOf(f).then(storePic), jpegOf(f, 360, true)]).then(function (two) { return setPic(id, 'photo', two[0], null, two[1]); })
+          .then(function () { return readScript(st.open.id); })
+          .then(function () { repaintScenes('Photo added to scene ' + scenePos(id) + '.', 'ok'); })
+          .catch(function (e) { if (lab) lab.classList.remove('is-busy'); sayPic(picSaid(e)); });
+      });
+    });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-scene] [data-pic="remove"]'), function (b) {
+      var id = b.closest('[data-scene]').getAttribute('data-scene');
+      b.addEventListener('click', function () {
+        var sc = st.scenes.filter(function (x) { return x.id === id; })[0] || {};
+        var was = sc.photo_url, wasThumb = sc.photo_thumb;
+        b.disabled = true;
+        setPic(id, 'photo', null).then(function () {
+          repaintScenes();
+          undoBar('Photo removed from scene ' + scenePos(id) + '.', function () {
+            setPic(id, 'photo', was, null, wasThumb).then(function () { return readScript(st.open.id); }).then(function () { repaintScenes(); })
+              .catch(function (e) { sayPic(picSaid(e)); });
+          }, $('vsPicMsg'));
+        }).catch(function (e) { b.disabled = false; sayPic(picSaid(e)); });
+      });
+    });
+    if ($('vsDraw')) $('vsDraw').addEventListener('click', function () { drawWithAi($('vsDraw')); });
+  }
+  /* Is the picture writer set up? Asked once a visit, counting nothing. */
+  function pingDraw() {
+    if (!may('work') || st.drawAsked) return Promise.resolve();
+    st.drawAsked = true;
+    return db.functions.invoke('script-pictures', { body: { ping: true } }).then(function (r) {
+      st.drawReady = Boolean(r && r.data && r.data.ready);
+      if (!st.drawReady) return null;
+      return rpc('ai_picture_left', {}).then(function (d) { st.drawLeft = d.left; }).catch(function () {});
+    }).catch(function () { st.drawReady = false; });
+  }
+  function base64Blob(b64, mime) {
+    var bin = atob(b64), n = bin.length, u = new Uint8Array(n);
+    for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+    return new Blob([u], { type: mime || 'image/png' });
+  }
+  function drawWithAi(btn) {
+    var s = st.open;
+    var missing = st.scenes.filter(function (x) { return !x.photo_url && !x.ai_url; });
+    sayPic('');
+    btn.disabled = true;
+    rpc('ai_picture_left', {}).then(function (left) {
+      btn.disabled = false;
+      st.drawLeft = left.left;
+      if (!left.left) { sayPic(picSaid({ message: 'ai-limit', data: left })); return; }
+      var choices = [];
+      if (missing.length) choices.push(['missing', 'Scenes with no picture (' + missing.length + ')']);
+      choices.push(['all', 'All scenes (' + st.scenes.length + ')']);
+      window.ADspaceConfirm.ask({
+        title: 'Draw with AI',
+        body: 'Draws a storyboard picture for each scene from its shot. Each scene counts as one picture; ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
+        go: 'Draw', field: { label: 'Scenes', choices: choices, seg: true, value: choices[0][0] }
+      }, function (v) {
+        var list = (v === 'all' ? st.scenes : missing).slice(0, 30);
+        if (list.length > left.left) { sayPic(picSaid({ message: 'ai-limit', data: left })); return; }
+        var sid = s.id;
+        btn.disabled = true;
+        btn.innerHTML = AI_GLYPH + 'Drawing';
+        sayPic('Drawing ' + list.length + (list.length === 1 ? ' picture' : ' pictures') + '. This can take a minute.', 'ok');
+        db.functions.invoke('script-pictures', { body: { script_id: sid, scenes: list.map(function (x) { return x.id; }) } }).then(function (res) {
+          var d = res && res.data;
+          if (res.error || !d || d.error || !d.pictures) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; x.data = d; throw x; }
+          /* Each picture stored and kept on its scene in turn. */
+          return d.pictures.reduce(function (p, pic) {
+            return p.then(function (n) {
+              var src = 'data:' + (pic.mime || 'image/png') + ';base64,' + pic.data;
+              return Promise.all([jpegOf(src).then(storePic), jpegOf(src, 360, true)])
+                .then(function (two) { return setPic(pic.scene, 'ai', two[0], pic.press, two[1]); })
+                .then(function () { return n + 1; }, function () { return n; });
+            });
+          }, Promise.resolve(0)).then(function (n) { return { n: n, missed: (d.missed || 0) + d.pictures.length - n }; });
+        }).then(function (r) {
+          if (!st.open || st.open.id !== sid) return;
+          return rpc('ai_picture_left', {}).then(function (l) { st.drawLeft = l.left; }, function () {})
+            .then(function () { return readScript(sid); })
+            .then(function () {
+              repaintScenes(r.n + (r.n === 1 ? ' picture drawn.' : ' pictures drawn.') +
+                (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : ''), r.missed ? 'warn' : 'ok');
+            });
+        }).catch(function (e) {
+          if (!st.open || st.open.id !== sid) return;
+          btn.disabled = false;
+          btn.innerHTML = AI_GLYPH + 'Draw with AI';
+          sayPic(picSaid(e));
+        });
+      });
+    }).catch(function (e) { btn.disabled = false; sayPic(picSaid(e)); });
+  }
+
   function wireRecord() {
     var on = onAct;
     var body = $('vsRecBody');
@@ -783,6 +987,7 @@
       shot.addEventListener('change', function () { tick(id, shot.checked, null, null, shot); });
     });
     if ($('vsVoShot')) $('vsVoShot').addEventListener('change', function () { tick(null, $('vsVoShot').checked, null, null, $('vsVoShot')); });
+    wirePics(body);
     suggest();
   }
   function shutMenu() {
@@ -1451,7 +1656,7 @@
   function gather(ids) {
     return Promise.all([
       db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
-      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at, t_from, t_to, shot_size, angle, camera_move, on_screen, sound').in('script_id', ids).order('position')
+      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_thumb, ai_thumb').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       var by = {};
@@ -1467,6 +1672,36 @@
         s.scenes.forEach(function (sc) { sc.cam = camOf(sc); });
         return s;
       });
+    }).then(function (videos) {
+      /* Each scene's picture for the crew: its thumbnail, else its frame
+         drawn to a PNG (2026-11-05). */
+      var jobs = [];
+      videos.forEach(function (v) {
+        v.scenes.forEach(function (sc) {
+          sc.pic = sc.photo_thumb || sc.ai_thumb || null;
+          if (sc.pic || !window.ADspaceFrames) return;
+          var svg = window.ADspaceFrames.svg(sc, v.aspect);
+          if (svg) jobs.push(framePng(svg).then(function (d) { sc.pic = d; }, function () {}));
+        });
+      });
+      return Promise.all(jobs).then(function () { return videos; });
+    });
+  }
+  /* A drawn frame as a PNG data URL, in ink on white, twice its size. */
+  function framePng(svg) {
+    return new Promise(function (resolve, reject) {
+      var src = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement('canvas');
+        c.width = img.naturalWidth * 2; c.height = img.naturalHeight * 2;
+        var g = c.getContext('2d');
+        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/png'));
+      };
+      img.onerror = reject;
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
     });
   }
 
@@ -1480,6 +1715,7 @@
     return st.editing === st.open.id ? { script: st.open.id, edit: '1' } : { script: st.open.id };
   }
   function enter() {
+    st.drawAsked = false;
     say($('vsListMsg'), '');
     say($('vsRecMsg'), '');
     /* An editor holding changes is never left by an address: Back, the rail

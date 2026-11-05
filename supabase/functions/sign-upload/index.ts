@@ -73,7 +73,13 @@ const PURPOSES: Record<string, {
   report: { field: 'versionId', sections: ['reports'], kind: 'report', level: 'view', private: 'must',
     clientOf: async (a, id) => { const r = await one(a.from('sm_report_versions').select('report_id, sm_reports(client_id)').eq('id', id).maybeSingle());
       const c = r && (r.sm_reports as Record<string, unknown> | null);
-      return c ? { client: String(c.client_id) } : null; } }
+      return c ? { client: String(c.client_id) } : null; } },
+  /* A video script scene's picture (2026-11-05): a colleague's photo or
+     sketch, or one Draw with AI drew, under the client's folder, asked of
+     the script's client at Work. */
+  script: { field: 'scriptId', sections: ['scripts'], kind: 'client', level: 'work',
+    clientOf: async (a, id) => { const r = await one(a.from('video_scripts').select('client_id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.client_id) } : null; } }
 };
 const MAX_BYTES = 2 * 1024 * 1024 * 1024;   // 2 GB, a sane ceiling for a review copy
 
@@ -85,7 +91,7 @@ Deno.serve(async (req) => {
   let body: {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
-    purpose?: string; batchId?: string; campaignId?: string; versionId?: string;
+    purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -156,8 +162,10 @@ Deno.serve(async (req) => {
       if (ok === true) { mayUpload = true; break; }
     }
     if (!mayUpload) return json({ error: 'not_allowed' }, 403, origin);
+    /* A purpose asked of the client itself names the client, never its
+       record (a script's picture). */
     const { data: inScope, error: scopeErr } = await supa.rpc('client_scope_ok',
-      { p_kind: rule.kind, p_id: parent, p_level: rule.level });
+      { p_kind: rule.kind, p_id: rule.kind === 'client' ? owner.client : parent, p_level: rule.level });
     if (scopeErr || inScope !== true) return json({ error: 'not_allowed' }, 403, origin);
     if (body.private === true && !rule.private) return json({ error: 'bad_private' }, 400, origin);
     if (rule.private === 'must' && body.private !== true) return json({ error: 'bad_private' }, 400, origin);
