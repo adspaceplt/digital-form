@@ -6441,6 +6441,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   ("Save or cancel the changes first."), and closing the tab asks
   (`beforeunload`). Saved by `video_script_save` (from and to, `stale` with
   the row).
+- The shot table (`2026-11-05-script-shot-table.sql`; the user, 2026-11-05:
+  the Video Script Generator spec, "Full shot table"): each scene keeps its
+  time (`t_from`, `t_to`, seconds, the end after the start), Shot size,
+  Angle, Camera move, On-screen text and Sound, read as one mute line over
+  what is seen; a script keeps its Aspect ratio and Video length, its Brief
+  (`brief`: offer, objective, audience, key message, call to action, must
+  include, must avoid, tone, format, and the Location, Cast and Hour limits,
+  the script's own, never a setting: the crew's limits vary a project), its
+  Plan (`plan`: core message, hook, concept, call to action in the video,
+  cast roles, locations, props, music mood) and its AI review (`review`,
+  `review_version`, kept as Save keeps it). Add script copies the aspect,
+  length and brief. The client link reads the plan and the shot fields,
+  never the brief or the review. One press writes one script (one script is
+  one video); a second variant is Add script and Write with AI again.
 - Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS

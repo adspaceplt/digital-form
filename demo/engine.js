@@ -50,8 +50,8 @@
     ops_engagement_events: 'id engagement_id event_type actor_id actor_email detail created_at',
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
-    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name',
-    video_script_scenes: 'id script_id position visual line vc shot_at shot_by',
+    video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
+    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
     ops_revisions: 'id task_id round_no requested_by_type reason_category summary requested_by assigned_to requested_at completed_at source_review_id idem_key',
@@ -11908,11 +11908,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 id: x.id, code: vsCode(x.period, x.seq), period: x.period, kind: x.kind, title: x.title,
                 reference_url: x.reference_url, platform: x.platform, language: x.language, shoot_on: x.shoot_on,
                 shoot_time: x.shoot_time, venue: x.venue, duration_minutes: x.duration_minutes, cast_names: x.cast_names,
+                aspect: x.aspect || null, length_seconds: x.length_seconds || null, plan: x.plan || {},
                 context: x.context, vo: x.vo, remarks: x.remarks,
                 shared_at: x.shared_at, updated_at: x.updated_at,
                 scenes: DB.video_script_scenes.filter(function (sc) { return sc.script_id === x.id; })
                   .sort(function (p, q) { return p.position - q.position; })
-                  .map(function (sc) { return { id: sc.id, position: sc.position, visual: sc.visual, line: sc.line }; })
+                  .map(function (sc) { return { id: sc.id, position: sc.position, visual: sc.visual, line: sc.line, t_from: sc.t_from == null ? null : sc.t_from,
+                    t_to: sc.t_to == null ? null : sc.t_to, shot_size: sc.shot_size || null, angle: sc.angle || null, camera_move: sc.camera_move || null,
+                    on_screen: sc.on_screen || null, sound: sc.sound || null }; })
               };
             })
           })), error: null });
@@ -11969,6 +11972,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           platform: from ? from.platform : null, language: from ? from.language : null, shoot_on: from ? from.shoot_on : null,
           shoot_time: from ? from.shoot_time : null, venue: from ? from.venue : null,
           duration_minutes: from ? from.duration_minutes : null, cast_names: from ? from.cast_names : null,
+          aspect: from ? from.aspect || null : null, length_seconds: from ? from.length_seconds || null : null,
+          brief: from ? JSON.parse(JSON.stringify(from.brief || {})) : {}, plan: {}, review: null, review_version: null,
           context: null, vo: null, vo_vc: null, vo_shot_at: null, vo_shot_by: null, remarks: null, status: 'draft',
           shared_at: null, round: 1, version: 1, idem_key: args.p_idem || null, created_by: vsMe.id, created_by_name: vsWho,
           created_at: vsNow, updated_at: vsNow, updated_by_name: vsWho };
@@ -12025,6 +12030,36 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if ('shoot_time' in h) n.shoot_time = h.shoot_time ? (String(h.shoot_time).length === 5 ? h.shoot_time + ':00' : h.shoot_time) : null;
         if ('duration_minutes' in h) n.duration_minutes = h.duration_minutes === '' || h.duration_minutes == null ? null : Number(h.duration_minutes);
         if ('period' in h && String(h.period || '').trim()) n.period = String(h.period).trim();
+
+        if ('aspect' in h) n.aspect = vsBlank(h.aspect);
+        if ('length_seconds' in h) {
+          if (!/^\d{0,3}$/.test(String(h.length_seconds == null ? '' : h.length_seconds))) return vsNo('bad-length');
+          n.length_seconds = h.length_seconds === '' || h.length_seconds == null ? null : Number(h.length_seconds);
+        }
+        var vsObj = function (o, keys, max) {
+          if (o == null) return {};
+          if (typeof o !== 'object' || Array.isArray(o)) return null;
+          var out = {};
+          for (var k in o) {
+            var v = o[k];
+            if (v == null || String(v).trim() === '') continue;
+            if (keys.indexOf(k) < 0) return null;
+            if (/^max_/.test(k)) {
+              var lim = { max_locations: 10, max_cast: 50, max_shoot_hours: 24 }[k];
+              if (!/^\d{1,3}$/.test(String(v)) || Number(v) < 1 || Number(v) > lim) return null;
+              out[k] = Number(v);
+            } else if (k === 'objective' && ['awareness', 'traffic', 'leads', 'sales', 'app_install'].indexOf(v) < 0) return null;
+            else if (k === 'format' && ['talking_head', 'skit', 'ugc', 'demo', 'testimonial', 'montage'].indexOf(v) < 0) return null;
+            else { if (typeof v !== 'string' || v.length > max) return null; out[k] = v.trim(); }
+          }
+          return out;
+        };
+        if ('brief' in h) { n.brief = vsObj(h.brief, ['offer', 'objective', 'audience', 'key_message', 'cta', 'must_include', 'must_avoid', 'tone', 'format', 'max_locations', 'max_cast', 'max_shoot_hours'], 500); if (!n.brief) return vsNo('bad-brief'); }
+        if ('plan' in h) { n.plan = vsObj(h.plan, ['core_message', 'concept', 'hook', 'cast', 'locations', 'props', 'music', 'cta'], 2000); if (!n.plan) return vsNo('bad-plan'); }
+        var vsRevSet = 'review' in h, vsRev = vsRevSet && h.review && typeof h.review === 'object' ? h.review : null;
+        if (vsRevSet && h.review != null && (!vsRev || ['pass', 'fail'].indexOf(vsRev.verdict) < 0 || JSON.stringify(vsRev).length > 40000)) return vsNo('bad-review');
+        if (n.aspect && ['9:16', '1:1', '16:9'].indexOf(n.aspect) < 0) return vsNo('bad-aspect');
+        if (n.length_seconds != null && (n.length_seconds < 5 || n.length_seconds > 600)) return vsNo('bad-length');
         if (!vsKind[n.kind]) return vsNo('bad-kind');
         if (!vsPerOk(n.period)) return vsNo('bad-period');
         if (n.title.length > 200) return vsNo('bad-title');
@@ -12037,7 +12072,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (scs != null) {
           if (!Array.isArray(scs)) return vsNo('bad-scenes');
           if (scs.length > 60) return vsNo('too-many');
-          if (scs.some(function (e) { return String(e.visual || '').length > 2000 || String(e.line || '').length > 2000; })) return vsNo('too-long');
+          if (scs.some(function (e) { return String(e.visual || '').length > 2000 || String(e.line || '').length > 2000 ||
+              Math.max(String(e.shot_size || '').length, String(e.angle || '').length, String(e.camera_move || '').length) > 60 ||
+              String(e.on_screen || '').length > 120 || String(e.sound || '').length > 200; })) return vsNo('too-long');
+          var vsSec = function (v) { return v == null || v === '' ? null : String(v); };
+          if (scs.some(function (e) {
+            var a = vsSec(e.t_from), b = vsSec(e.t_to);
+            return (a != null && (!/^\d{1,3}$/.test(a) || Number(a) > 600)) || (b != null && (!/^\d{1,3}$/.test(b) || Number(b) < 1 || Number(b) > 600)) ||
+              (a != null && b != null && Number(b) <= Number(a));
+          })) return vsNo('bad-time');
         }
         var moves = [], creat = false;
         var w = function (k) { return vsKind[k]; };
@@ -12060,13 +12103,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (n.venue !== vs0.venue) moves.push('Venue: ' + nv(vs0.venue) + ' → ' + nv(n.venue));
         if (n.duration_minutes !== vs0.duration_minutes) moves.push('Duration: ' + nv(vs0.duration_minutes) + ' → ' + nv(n.duration_minutes));
         if (n.cast_names !== vs0.cast_names) moves.push('Cast');
+        if ((n.aspect || null) !== (vs0.aspect || null)) moves.push('Aspect ratio: ' + nv(vs0.aspect) + ' → ' + nv(n.aspect));
+        if ((n.length_seconds || null) !== (vs0.length_seconds || null)) moves.push('Video length: ' + (vs0.length_seconds ? vs0.length_seconds + 's' : 'not set') + ' → ' + (n.length_seconds ? n.length_seconds + 's' : 'not set'));
+        if (JSON.stringify(n.brief || {}) !== JSON.stringify(vs0.brief || {})) moves.push('Brief');
+        if (JSON.stringify(n.plan || {}) !== JSON.stringify(vs0.plan || {})) moves.push('Plan');
+        if (vsRevSet && JSON.stringify(vsRev) !== JSON.stringify(vs0.review || null)) moves.push('AI review: ' + (!vsRev ? 'removed' : vsRev.verdict === 'pass' ? 'passed' : 'check needed'));
         if (n.context !== vs0.context) { creat = true; moves.push(n.kind === 'products' ? 'Products and context' : n.kind === 'story' ? 'Hook and story' : 'Context'); }
         if (n.vo !== vs0.vo) { creat = true; moves.push('Script (read here)'); }
         if (n.remarks !== vs0.remarks) moves.push('Notes');
         if (scs != null) {
           var old = DB.video_script_scenes.filter(function (sc) { return sc.script_id === vs0.id; }).sort(function (a, b) { return a.position - b.position; });
-          var oldJ = JSON.stringify(old.map(function (sc) { return { visual: sc.visual || '', line: sc.line || '' }; }));
-          var newJ = JSON.stringify(scs.map(function (e) { return { visual: String(e.visual || '').trim(), line: String(e.line || '').trim() }; }));
+          var SHK = ['shot_size', 'angle', 'camera_move', 'on_screen', 'sound'];
+          var shotOf = function (sc, raw) {
+            var o = { visual: String(sc.visual || '').trim(), line: String(sc.line || '').trim(),
+              t_from: sc.t_from == null || sc.t_from === '' ? null : Number(sc.t_from), t_to: sc.t_to == null || sc.t_to === '' ? null : Number(sc.t_to) };
+            SHK.forEach(function (k) { o[k] = String(sc[k] || '').trim(); });
+            return o;
+          };
+          var oldJ = JSON.stringify(old.map(function (sc) { return shotOf(sc); }));
+          var newJ = JSON.stringify(scs.map(function (e) { return shotOf(e); }));
           if (oldJ !== newJ) {
             creat = true;
             moves.push('Scenes' + (old.length !== scs.length ? ': ' + old.length + ' → ' + scs.length : ''));
@@ -12075,6 +12130,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var hit = e.id ? old.filter(function (sc) { return sc.id === e.id; })[0] : null;
               if (!hit) { hit = { id: nid('sc'), script_id: vs0.id, vc: null, shot_at: null, shot_by: null }; DB.video_script_scenes.push(hit); }
               hit.position = ix + 1; hit.visual = vsBlank(e.visual); hit.line = vsBlank(e.line);
+              var sh = shotOf(e);
+              hit.t_from = sh.t_from; hit.t_to = sh.t_to;
+              SHK.forEach(function (k) { hit[k] = sh[k] || null; });
               keep.push(hit.id);
             });
             DB.video_script_scenes = DB.video_script_scenes.filter(function (sc) { return sc.script_id !== vs0.id || keep.indexOf(sc.id) > -1; });
@@ -12085,6 +12143,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           shoot_on: n.shoot_on, shoot_time: n.shoot_time, venue: n.venue, duration_minutes: n.duration_minutes,
           cast_names: n.cast_names, context: n.context, vo: n.vo, remarks: n.remarks, period: n.period, seq: n.seq,
           code: vsCode(n.period, n.seq), engagement_id: n.engagement_id,
+          aspect: n.aspect || null, length_seconds: n.length_seconds == null ? null : n.length_seconds,
+          brief: n.brief || {}, plan: n.plan || {},
+          review: vsRevSet ? vsRev : vs0.review || null,
+          review_version: vsRevSet ? (vsRev ? vs0.version + 1 : null) : (vs0.review_version == null ? null : vs0.review_version),
           version: vs0.version + 1, updated_at: vsNow, updated_by_name: vsWho });
         vsLog('script.saved', vsCn, vsLabel(vs0) + ' · ' + moves.join('; '));
         return vsOk({ version: vs0.version, round: vs0.round, changed: true, code: vs0.code });
@@ -13401,15 +13463,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
             purpose: 'script', outcome: 'drafted', input_tokens: 1800, output_tokens: 900, model: 'claude-opus-5-5', created_at: new Date().toISOString() });
           persist();
           var sbK = ['scenes', 'products', 'story'].indexOf(sb0.kind) > -1 ? sb0.kind : 'scenes';
+
           var sbScenes = (window.__aiScript.scenes || [
-            { visual: 'Close up of a hand reaching for the morning coffee. On screen: "Mornings, sorted."', line: 'Busy morning? Start it softer with {brand}.' },
-            { visual: 'Wide shot of the counter as the host turns to camera.', line: 'Follow {handle} for more.' }
-          ]).map(function (x) { return { visual: x.visual, line: sbK === 'scenes' ? (x.line || '') : '' }; });
-          var sbOut = { scenes: sbScenes, handle: window.__aiScript.handle === undefined ? '@adspace.advertising' : window.__aiScript.handle };
+            { t_from: 0, t_to: 3, shot_size: 'Close-up', angle: 'Low angle', camera_move: 'Slow push in',
+              visual: 'A hand reaches for the morning coffee.', line: 'Busy morning? Start it softer with {brand}.', on_screen: 'Mornings, sorted.', sound: 'Kettle click' },
+            { t_from: 3, t_to: 8, shot_size: 'Wide', angle: 'Over the shoulder', camera_move: 'Pull back to reveal',
+              visual: 'The host turns to camera at the counter.', line: 'Follow {handle} for more.', on_screen: '', sound: '' }
+          ]).map(function (x) { var o = Object.assign({ t_from: null, t_to: null, shot_size: '', angle: '', camera_move: '', on_screen: '', sound: '' }, x); o.line = sbK === 'scenes' ? (x.line || '') : ''; return o; });
+          var sbOut = { scenes: sbScenes, handle: window.__aiScript.handle === undefined ? '@adspace.advertising' : window.__aiScript.handle,
+            plan: window.__aiScript.plan || { core_message: 'Mornings feel calmer with {brand}.', hook: 'A hand reaches for coffee as the alarm rings.',
+              concept: 'A busy morning slows down.', cast: 'Host, 30s', locations: 'Kitchen counter', props: 'Coffee mug', music: 'Warm acoustic', cta: 'Follow {handle}' },
+            questions: window.__aiScript.questions || ['The price of the bundle.'] };
           if (sbK !== 'scenes') sbOut.context = window.__aiScript.context || 'Two products from {brand}, each for a calmer morning.';
           if (sbK === 'story') sbOut.vo = window.__aiScript.vo || 'Every morning starts here, with {brand}.';
           var sbHandle = sbOut.handle; delete sbOut.handle;
-          return Promise.resolve({ data: { draft: sbOut, handle: sbHandle, left: sbR.left - 1 }, error: null });
+          var sbRev = window.__aiScript.review === null ? null : Object.assign({ verdict: 'pass', story: 'A host makes a busy morning calmer with {brand}.',
+            core_message: 'Mornings feel calmer.', issues: [{ shot: 2, problem: 'The call to action is not on screen.', fix: 'Add Follow {handle} as on-screen text.', severity: 'minor', certainty: 'possible' }],
+            first: null }, window.__aiScript.review || {}, { questions: sbOut.questions });
+          return Promise.resolve({ data: { draft: sbOut, review: sbRev, handle: sbHandle, left: sbR.left - 1 }, error: null });
         }
 
         if (name === 'analytics-read') {
