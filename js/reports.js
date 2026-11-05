@@ -2076,7 +2076,7 @@
           var id = b.getAttribute('data-id'), row = (g.lacking || []).filter(function (x) { return x.id === id; })[0] || {};
           var posts = st.posts.filter(function (p) { return p.posted_on && !linkOf(p.id); });
           window.ADspaceConfirm.ask({ title: 'Link post', go: 'Link',
-            body: taskCode(row) + '. The task takes the post\'s date as the day it went live and moves to Performance review.',
+            body: taskCode(row) + '. The task will take the post\'s date as the date it went live and move to Performance review.',
             fields: [{ name: 'post', label: 'Post', required: true, choices: [['', 'Choose a post']].concat(posts.map(function (p) {
               return [p.id, postName(p) + ' · ' + dayWord(p.posted_on)];
             })) }] }, function (v) {
@@ -2933,7 +2933,7 @@
   var LINK_SAID = {
     'not-draft': 'This report is no longer a draft. Refresh the page.',
     'links-off': 'Posts linked to tasks is off in Settings. Please ask an admin to turn it on.',
-    'not-linkable': 'Posts in this report are not linked to tasks.',
+    'not-linkable': 'Only a monthly Accounts Report links its posts to tasks. Ad hoc and white-label reports do not.',
     'no-date': 'Set the post\'s date first.',
     'not-in-month': 'This task is not in the report\'s month. Refresh the page.',
     denied: 'You do not have permission to link a post. Please ask an admin.'
@@ -2962,7 +2962,7 @@
     var host = st.host.querySelector('.rp-posts') || st.host;
     var go = function (id) {
       return sendLink(p, id).then(function (d) {
-        undoBar(d.moved ? 'Linked. The task is at Performance review.' : 'Linked.', host, function () { unlinkPost(p, true); });
+        undoBar(d.moved ? 'Linked. The task moved to Performance review.' : 'Linked.', host, function () { unlinkPost(p, true); });
         if (then) then();
       }).catch(function (e) { alertLine(host, e.said || said(e)); });
     };
@@ -2970,7 +2970,7 @@
     var free = ((st.postLinks && st.postLinks.tasks) || []).filter(function (t) { return !t.linked; });
     if (!free.length) { alertLine(host, 'No task of this month is left to link. Add the task in My Work.'); return; }
     window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
-      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task takes this date as the day it went live and moves to Performance review.',
+      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task will take this date as the date it went live and move to Performance review.',
       fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {
         return [t.id, [taskCode(t), t.title || '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
       })) }] }, function (v) { go(v.task); });
