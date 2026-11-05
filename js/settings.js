@@ -267,6 +267,10 @@
     add('reports', 'Reports', [
       biz && { id: 'meta', name: 'Meta checks', kind: 'switch', on: meta,
         meta: meta ? 'On · Import from Meta, Report audit' : 'Off' },
+      /* Report posts linked to their My Work tasks (2026-11-06), a switch
+         kept in case the link misbehaves: off, the gate counts by stage. */
+      biz && { id: 'postlinks', name: 'Posts linked to tasks', kind: 'switch', on: num('report_post_links') === 1,
+        meta: num('report_post_links') === 1 ? 'On · Accounts Reports' : 'Off' },
       biz && { id: 'reach', name: 'Reach allowance', kind: 'edit',
         meta: num('reach_allowance_pct') == null ? '' : 'Within ' + num('reach_allowance_pct') + '% of Meta' },
       biz && { id: 'bench', name: 'Ad benchmarks', kind: 'edit',
@@ -478,11 +482,12 @@
 
   /* Send by email (2026-10-31): on or off from today through its own
      function, saved at the press and put back on a refusal. */
-  function flipMail(sw) {
+  function flipMail(sw) { flipOwn(sw, 'clientmailon', 'client_email_set', 'Send by email'); }
+  function flipOwn(sw, id, fn, word) {
     var to = sw.getAttribute('aria-checked') !== 'true';
     sw.setAttribute('aria-checked', to ? 'true' : 'false');
     sw.disabled = true;
-    db.rpc('client_email_set', { p_on: to }).then(function (r) {
+    db.rpc(fn, { p_on: to }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
         throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
@@ -490,11 +495,11 @@
       }
       return window.ADspaceMoney.load(true);
     }).then(function () {
-      rowSay('clientmailon')(to ? 'Send by email is on.' : 'Send by email is off.', 'ok');
+      rowSay(id)(word + (to ? ' is on.' : ' is off.'), 'ok');
     }).catch(function (e) {
       sw.setAttribute('aria-checked', to ? 'false' : 'true');
       sw.disabled = false;
-      rowSay('clientmailon')(String((e && e.message) || e), 'err');
+      rowSay(id)(String((e && e.message) || e), 'err');
     });
   }
 
@@ -518,6 +523,7 @@
     if (a === 'notice') { if (window.ADspaceNotice) window.ADspaceNotice.manage(btn); return; }
     if (a === 'meta') { flipMeta(btn); return; }
     if (a === 'clientmailon') { flipMail(btn); return; }
+    if (a === 'postlinks') { flipOwn(btn, 'postlinks', 'report_links_set', 'Posts linked to tasks'); return; }
     if (a === 'whatsapp') { if (window.ADspaceWhatsApp) window.ADspaceWhatsApp.manage(btn); return; }
     if (a === 'aiuse') { if (window.ADspaceReports && window.ADspaceReports.aiUsage) window.ADspaceReports.aiUsage(btn); return; }
     if (a === 'types') { if (window.ADspaceRegister && window.ADspaceRegister.openTypes) window.ADspaceRegister.openTypes(btn); return; }

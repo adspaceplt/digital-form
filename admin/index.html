@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261105a">
-<link rel="stylesheet" href="/css/console.css?v=20261105c">
+<link rel="stylesheet" href="/css/console.css?v=20261106c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261104m"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261106"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -145,7 +145,7 @@
 <script src="/js/form.js?v=20261106"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261103a"></script>
+<script src="/js/menu.js?v=20261106"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -3351,6 +3351,7 @@
               <p class="qnext-line" id="dwNextLine"></p>
               <p class="task-deadline" id="dwDeadline" hidden></p>
               <p class="task-deadline" id="dwDelayed" hidden></p>
+            <p class="task-deadline task-post" id="dwPost" hidden></p>
               <ul class="tnext-list" id="dwNextList" hidden></ul>
               <p class="tnext-late" id="dwNextLate" hidden></p>
               <div class="qhand" id="dwHand" hidden>
@@ -6309,7 +6310,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20261105c"></script>
 <script src="/js/letters.js?v=20261105c"></script>
 <script src="/js/smreport.js?v=20261103e"></script>
-<script src="/js/reports.js?v=20261105e"></script>
+<script src="/js/reports.js?v=20261106c"></script>
 <script src="/js/register.js?v=20261105c"></script>
 <script src="/js/suppliers.js?v=20261105c"></script>
 <script src="/js/bukku.js?v=20261105c"></script>
@@ -6328,12 +6329,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261105e"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261105c"></script>
-<script src="/js/ops.js?v=20261106a"></script>
+<script src="/js/ops.js?v=20261106b"></script>
 <script src="/js/perf.js?v=20261105c"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261105a"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261105"></script>
+<script src="/js/settings.js?v=20261106"></script>
 </body>
 </html>

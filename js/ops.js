@@ -2990,7 +2990,7 @@
     $('dwCtx').hidden = true;
     ['taskPeople', 'taskDates', 'taskFacts', 'taskMore', 'dwSteps', 'dwVideo'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
     ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg', 'dwVideoMsg'].forEach(function (x) { msg(x, ''); });
-    ['dwSteps', 'dwVideo', 'dwVideoH', 'dwDeadline', 'dwDelayed'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
+    ['dwSteps', 'dwVideo', 'dwVideoH', 'dwDeadline', 'dwDelayed', 'dwPost'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
     if ($('dueAsk')) $('dueAsk').hidden = true;
     if ($('dwReport')) $('dwReport').hidden = true;
     $('dwNextTitle').textContent = '';
@@ -3082,6 +3082,8 @@
         (nameOf(t.delayed_by) ? ' by ' + esc(nameOf(t.delayed_by)) : '') + ' in its Accounts Report · ' +
         esc(reasonWord(t.delayed_reason)) + (t.delayed_note ? ' · ' + esc(t.delayed_note) : '') + '</span>' : '';
     }
+
+    paintPostRow(t);
 
     $('dwTitleEdit').hidden = !work || fin;
 
@@ -3232,6 +3234,30 @@
     closeDrawer(true);
     history.replaceState(null, '', '/admin/?s=reports&report=' + encodeURIComponent(id));
     if (bridge.show) bridge.show('reports');
+  }
+  /* The Accounts Report post a content task is linked to (2026-11-06):
+     the report's month, the day it went out, how far after its post date,
+     and the report itself one press away. Read once a task opens. */
+  var postSeq = 0;
+  function paintPostRow(t) {
+    var box = $('dwPost');
+    if (!box) return;
+    box.hidden = true; box.innerHTML = '';
+    if (!t || /^report_/.test(t.source_type || '') || !t.client_id) return;
+    var seq = ++postSeq;
+    db.rpc('ops_task_report_post', { p_task: t.id }).then(function (res) {
+      var p = res && res.data && !res.error && !res.data.error ? res.data.post : null;
+      if (seq !== postSeq || !p) return;
+      var mo = String(p.period_start || '');
+      var late = p.posted_on && t.publish_at ? Math.round((Date.parse(p.posted_on + 'T00:00:00Z') - Date.parse(CK.day(t.publish_at) + 'T00:00:00Z')) / 864e5) : 0;
+      box.innerHTML = '<span>In the Accounts Report · ' + esc(MON_SHORT[Number(mo.slice(5, 7)) - 1] + ' ' + mo.slice(0, 4)) +
+        ' · Posted ' + esc(niceDate(p.posted_on + 'T04:00:00Z')) +
+        (late > 0 ? ' · ' + late + (late === 1 ? ' day' : ' days') + ' after its post date' : '') + '</span>' +
+        (p.may_open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openreport">Open report' + CHEV_S + '</button>' : '');
+      box.hidden = false;
+      var b = box.querySelector('[data-a="openreport"]');
+      if (b) b.addEventListener('click', function () { openReportRoute(p.report_id); });
+    }).catch(function () {});
   }
   var reportSeq = 0;
   function paintReportRow(t) {
@@ -5032,6 +5058,7 @@
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
     delayed: 'Marked delayed', delay_cleared: 'No longer marked delayed',
+    report_linked: 'Linked to its Accounts Report post', report_unlinked: 'Unlinked from its Accounts Report post',
     comment_edited: 'Remark edited', comment_removed: 'Remark removed', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
@@ -5119,6 +5146,7 @@
       return bits.join(' · ');
     }
     if (e.event_type === 'delayed') return reasonWord(to.reason) + (to.note ? ' · ' + to.note : '');
+    if (e.event_type === 'report_linked') return 'Posted ' + niceDate(to.live_at) + (from.live_at && CK.day(from.live_at) !== CK.day(to.live_at) ? ' · Date it went live was ' + niceDate(from.live_at) : '');
     if (e.event_type === 'results_set') {
       var rw = function (x) { return x && x.views != null ? numWord(x.views) + ' views, ' + numWord(x.engagements) + ' engagements' : 'not recorded'; };
       return rw(from) + ' to ' + rw(to);
