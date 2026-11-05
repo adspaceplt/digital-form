@@ -198,7 +198,7 @@
     openTasks: function () {
       return once('open', function () {
         return API.readPages(function () {
-          return db.from('ops_tasks').select('id, task_no, title, current_final_due_at, client_id, clients(name, stage)')
+          return db.from('ops_tasks').select('id, task_no, title, stage_key, current_final_due_at, delayed_at, delayed_reason, client_id, clients(name, stage)')
             .is('completed_at', null).is('cancelled_at', null).is('archived_at', null).order('id');
         }).then(rows).then(function (l) { return l || []; });
       });
@@ -355,6 +355,18 @@
           return { name: taskName(t), meta: [t.clients.name, 'Urgent delivery'].join(' · '), tag: 'Task', who: '', client: t.client_id,
                    late: n > 0, days: n > 0 ? n : 0, since: n === null ? 'No due date' : n > 0 ? daysWord(n) + ' late' : 'Due ' + dateWord(t.current_final_due_at),
                    tone: n > 0 ? '' : 'warn', taskId: t.id, src: 'urgent', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
+        });
+      });
+    } },
+    /* A post marked delayed from its month's Accounts Report, until it
+       goes live (2026-11-05). */
+    { key: 'delayed', word: 'Delayed', title: 'Delayed posts', can: function () { return may('ops', 'manage') && may('ops.all'); }, load: function () {
+      return R.openTasks().then(function (list) {
+        return list.filter(function (t) { return t.delayed_at && ['live', 'performance_review'].indexOf(t.stage_key) < 0; }).map(function (t) {
+          var n = daysSince(t.delayed_at);
+          return { name: taskName(t), meta: [(t.clients && t.clients.name) || 'Internal', 'Delayed'].join(' · '), tag: 'Task', who: '', client: t.client_id,
+                   late: true, days: n, since: sinceWord(t.delayed_at), taskId: t.id, src: 'delayed',
+                   url: '/admin/?s=work&open=' + encodeURIComponent(t.id), section: 'work' };
         });
       });
     } },

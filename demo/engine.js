@@ -61,7 +61,7 @@
     ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at',
     ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
-    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from',
+    ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
     ops_template_variants: 'id template_id format estimate_minutes created_at',
     ops_video_details: 'task_id output_duration_seconds footage_duration_seconds subtitle_required motion_graphics_required aspect_ratios script_ready footage_ready shoot_required shoot_at variant_count',
     ops_work_sessions: 'id task_id team_member_id started_at ended_at minutes note source corrected_at corrected_by correction_reason created_at',
@@ -510,6 +510,7 @@
     sm_report_version_delete: 'p_version',
     sm_report_snapshot: 'p_id p_final',
     sm_report_gate: 'p_id',
+    sm_report_post_delay: 'p_report p_task p_reason p_note p_on',
     sm_report_history: 'p_id',
     sm_reports_owed: 'p_period',
     sm_report_submit: 'p_id p_reviewer p_reason',
@@ -6756,7 +6757,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (x.client_id !== r.client_id || x.status === 'cancelled') return false;
       var sp = span(x); return r.period_end >= sp[0] && r.period_end <= sp[1];
     }).sort(function (x, y) { return y.period.localeCompare(x.period); })[0];
-    var missing = [], made = 0, task = null, due, sp2 = null;
+    var missing = [], made = 0, posted = 0, delayed = 0, lacking = [], task = null, due, sp2 = null;
     if (!e) { missing.push('no-month'); due = dueOf(r.period_end); }
     else {
       sp2 = span(e); due = dueOf(sp2[1]);
@@ -6768,11 +6769,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       made = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); }).length;
 
-      if (r.kind !== 'ads' && made < (e.planned_count || 0)) missing.push('content');
+      if (r.kind !== 'ads') {
+        var pl = e.planned_count || 0, LIVE = ['live', 'performance_review', 'completed'];
+        var content = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); });
+        var needsOf = function (x) {
+          return [LIVE.indexOf(x.stage_key) < 0 ? 'stage' : null, x.current_first_draft_due_at ? null : 'draft',
+            x.current_final_due_at ? null : 'due', x.publish_at ? null : 'post', x.live_at ? null : 'live'].filter(Boolean);
+        };
+        posted = content.filter(function (x) { return !needsOf(x).length; }).length;
+        delayed = content.filter(function (x) { return needsOf(x).length && x.delayed_at; }).length;
+        if (made < pl) missing.push('content');
+        if (posted + delayed < pl) missing.push('posted');
+        if (posted < pl) {
+          lacking = content.filter(function (x) { return needsOf(x).length; })
+            .sort(function (a, b) { return a.task_no - b.task_no; }).slice(0, 20)
+            .map(function (x) { return { id: x.id, task_no: x.task_no, code: x.code || null, delayed: !!x.delayed_at, delayed_reason: x.delayed_reason || null, delayed_note: x.delayed_note || null, needs: needsOf(x) }; });
+        }
+      }
     }
     return { applies: true, ok: !missing.length, missing: missing,
       month: e ? { id: e.id, period: e.period, start_day: e.start_day || 1, starts: sp2[0], ends: sp2[1], reports: e.reports || [] } : null,
-      planned: e ? e.planned_count || 0 : 0, made: made,
+      planned: e ? e.planned_count || 0 : 0, made: made, posted: posted, delayed: delayed, lacking: lacking,
       task: task ? { id: task.id, task_no: task.task_no, stage_key: task.stage_key } : null,
       due: due, late: Date.now() > Date.parse(due), may_override: may };
   }
@@ -6893,6 +6910,40 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var me = smMe();
     var r = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_id; })[0];
     var now = new Date().toISOString();
+
+    if (name === 'sm_report_post_delay') {
+      var dr = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_report; })[0];
+      if (!me || !smCan('work')) return { error: 'denied' };
+      if (!dr) return { error: 'not-found' };
+      if (!scopeSeen(dr.client_id, 'work')) return { error: 'denied' };
+      if (dr.status !== 'draft') return { error: 'not-draft' };
+      var dg = smGate(dr), dt = opsTask(a.p_task);
+      if (!dt || !dg.month || (dr.kind || 'social') !== 'social' || dt.engagement_id !== dg.month.id || dt.cancelled_at || dt.archived_at ||
+          /^report_/.test(dt.source_type || '')) return { error: 'not-in-month' };
+      var dword = { client_request: 'Client request', scope_change: 'Scope change', capacity: 'Internal capacity',
+        pending_assets: 'Pending assets', pending_confirmation: 'Pending confirmation' };
+      var dcode = dt.code || ('#WT' + String(dt.task_no).padStart(5, '0'));
+      if (a.p_on === false) {
+        if (!dt.delayed_at) return { ok: true, id: dt.id };
+        var was = dt.delayed_reason;
+        Object.assign(dt, { delayed_at: null, delayed_by: null, delayed_reason: null, delayed_note: null, delayed_report: null, updated_at: now });
+        opsLog(dt.id, 'delay_cleared', { reason: was }, {}, null, { report_id: dr.id });
+        smLog(dr, 'report.saved', dcode + ' no longer marked delayed');
+        persist(); return { ok: true, id: dt.id };
+      }
+      var LIVE = ['live', 'performance_review', 'completed'];
+      if (LIVE.indexOf(dt.stage_key) > -1 && dt.current_first_draft_due_at && dt.current_final_due_at && dt.publish_at && dt.live_at) return { error: 'posted' };
+      if (!dword[a.p_reason]) return { error: 'bad-reason' };
+      var dnote = String(a.p_note || '').trim() || null;
+      if (dnote && dnote.length > 300) return { error: 'too-long' };
+      Object.assign(dt, { delayed_at: now, delayed_by: me.id, delayed_reason: a.p_reason, delayed_note: dnote, delayed_report: dr.id, updated_at: now });
+      opsLog(dt.id, 'delayed', {}, { reason: a.p_reason, note: dnote }, null, { report_id: dr.id });
+      smLog(dr, 'report.saved', dcode + ' marked delayed: ' + dword[a.p_reason] + (dnote ? ' · ' + dnote : ''));
+      var down = opsOwner(dt.id);
+      if (down && down.team_member_id !== me.id) DB.ops_notifications.push({ id: opsId('nt'), team_member_id: down.team_member_id, task_id: dt.id, kind: 'delayed',
+        title: '#WT' + String(dt.task_no).padStart(5, '0'), body: 'Marked delayed in the Accounts Report by ' + (me.name || me.email) + ': ' + dword[a.p_reason] + '.', created_at: now });
+      persist(); return { ok: true, id: dt.id };
+    }
     if (name === 'sm_report_snapshot') { if (!r) return { error: 'not-found' }; return smSnap(r, a.p_final); }
 
     if (name === 'sm_report_keep_file') {

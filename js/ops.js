@@ -1040,6 +1040,12 @@
     var st = t && t.clients && t.clients.stage;
     return (st === 'paused' || st === 'past') && !isFinished(t);
   }
+  /* DELAYED (2026-11-05): a post marked delayed from its month's Accounts
+     Report stays marked for attention until it goes live; its dates are
+     left as planned, so it still reads late. */
+  function delayed(t) {
+    return !!(t && t.delayed_at) && !isFinished(t) && ['live', 'performance_review'].indexOf(t.stage_key) < 0;
+  }
   function takeable(t) {
     return offered(t) && may('ops', 'work') && (state.ownerIds[t.id] || ownerId(t)) !== myId();
   }
@@ -2047,6 +2053,7 @@
             '<circle cx="15" cy="18" r="1.6"/></svg></span>'
           : '') + '</div>' +
       '<button class="bcard-title" type="button">' + esc(t.title) + vicTag(t.client_id, true) + '</button>' +
+      (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
@@ -2443,6 +2450,7 @@
          at its right end, where every card in the portal puts its chip. */
       '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
         (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
+        (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
@@ -2984,7 +2992,7 @@
     $('dwCtx').hidden = true;
     ['taskPeople', 'taskDates', 'taskFacts', 'taskMore', 'dwSteps', 'dwVideo'].forEach(function (x) { if ($(x)) $(x).innerHTML = ''; });
     ['taskOwnerMsg', 'taskDatesMsg', 'taskFactsMsg', 'dueAskMsg', 'dwReportMsg', 'dwVideoMsg'].forEach(function (x) { msg(x, ''); });
-    ['dwSteps', 'dwVideo', 'dwVideoH', 'dwDeadline'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
+    ['dwSteps', 'dwVideo', 'dwVideoH', 'dwDeadline', 'dwDelayed'].forEach(function (x) { if ($(x)) $(x).hidden = true; });
     if ($('dueAsk')) $('dueAsk').hidden = true;
     if ($('dwReport')) $('dwReport').hidden = true;
     $('dwNextTitle').textContent = '';
@@ -3067,6 +3075,14 @@
       dlBox.innerHTML = dl ? priorityChip(t, dl) + '<span>Set to ' + esc(dl.word) + ' ' + esc(niceTime(dl.set)) + ' · deliver within ' +
         dl.hours + ' hours, by ' + esc(niceTime(dl.by)) + '</span>' : '';
       dlBox.hidden = !dl;
+    }
+
+    var dyBox = $('dwDelayed');
+    if (dyBox) {
+      dyBox.hidden = !delayed(t);
+      dyBox.innerHTML = delayed(t) ? '<span class="tone is-off task-pri">Delayed</span><span>Marked ' + esc(shortDate(t.delayed_at)) +
+        (nameOf(t.delayed_by) ? ' by ' + esc(nameOf(t.delayed_by)) : '') + ' in its Accounts Report · ' +
+        esc(reasonWord(t.delayed_reason)) + (t.delayed_note ? ' · ' + esc(t.delayed_note) : '') + '</span>' : '';
     }
 
     $('dwTitleEdit').hidden = !work || fin;
@@ -5020,6 +5036,7 @@
     publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
+    delayed: 'Marked delayed', delay_cleared: 'No longer marked delayed',
     comment_edited: 'Remark edited', comment_removed: 'Remark removed', comment_restored: 'Remark restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
@@ -5106,6 +5123,7 @@
       if ('estimate_minutes' in to) bits.push('Estimate ' + (from.estimate_minutes ? minutesWord(from.estimate_minutes) : 'not set') + ' to ' + (to.estimate_minutes ? minutesWord(to.estimate_minutes) : 'not set'));
       return bits.join(' · ');
     }
+    if (e.event_type === 'delayed') return reasonWord(to.reason) + (to.note ? ' · ' + to.note : '');
     if (e.event_type === 'results_set') {
       var rw = function (x) { return x && x.views != null ? numWord(x.views) + ' views, ' + numWord(x.engagements) + ' engagements' : 'not recorded'; };
       return rw(from) + ' to ' + rw(to);
