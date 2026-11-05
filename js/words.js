@@ -299,6 +299,7 @@
      and read by each, never typed again (`tests/words.js` fails a script
      that types one). A new line said on a second screen joins it. */
   W.line = {
+    dateFloor: 'Choose a date from 14 Aug 2023.',
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
     mailOff: 'Email is not set up yet. Please contact an admin.',
