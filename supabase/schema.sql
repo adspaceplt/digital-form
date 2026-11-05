@@ -97802,7 +97802,6 @@ create or replace trigger sm_report_post_removed after delete on public.sm_repor
   for each row execute function public.sm_report_post_removed();
 
 -- END OF REPORT POSTS LINKED TO THEIR TASKS, THE SQL EDITOR PART -----------
-=======
 -- SCRIPT SHOT TABLE — a video script as the crew films it: each scene's
 -- timing, shot size, angle, camera move, on-screen text and sound; the
 -- script's brief and production limits; what it stands on (core message,
