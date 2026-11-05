@@ -8329,6 +8329,22 @@ past it. A second reader of the new words found eight lines (a plan field,
 two calls to action under one label, On screen beside On-screen text,
 Locations twice, cleared, flagged, as read, Possible); each was fixed.
 
+### 2026-11-05 · A picture for every scene: drawn, AI and the team's own
+
+Asked whether the scenes could be pictures rather than text, the user chose
+all three: the frame the page draws from the shot (free), a picture drawn
+by AI counted with the other AI uses, and a section for the team to capture
+and upload. Claude draws no pictures, so the AI pictures are Google Gemini's
+(Flash, chosen for price: about US$0.04 to 0.07 a picture, no free tier for
+image models, so billing must be on); the team only sees them, never the
+client. The mockup was approved with a limit of 30 a person a day. The CDN
+answers uploads across origins but no reads, so a picture cannot be read
+back into the crew PDF: each keeps a 360px JPEG thumbnail in the database,
+as a report's post does. The picture writer is asked whether it is set up
+before Draw with AI is drawn, so the button waits for the key. The picture
+price joins `app_settings_set`'s keys in an SQL Editor part, the function
+holding a delete the connector does not run.
+
 ### 2026-11-06 · The Content meeting sheet: any day unless the calendar books it
 The user, on My Work's Content meeting sheet: "this window ui abit ugly",
 and On site still refused a date before today. Found: the sheet opened on

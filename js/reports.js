@@ -5347,9 +5347,9 @@
      admin; a person pressed sets their own figure for any use; then what
      this calendar month cost. Read again on every open. */
   var AI_USES = [['drafts', 'Report drafts', 'draft'], ['checks', 'Commentary checks', 'check'], ['caption', 'Captions', 'caption'],
-    ['script', 'Scripts', 'script'], ['analysis', 'Brand analyses', 'analysis'], ['checklist', 'Checklists', 'checklist'],
+    ['script', 'Scripts', 'script'], ['picture', 'Scene pictures', 'picture'], ['analysis', 'Brand analyses', 'analysis'], ['checklist', 'Checklists', 'checklist'],
     ['analytics', 'Analytics analyses', 'analytics']];
-  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
+  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
@@ -5429,6 +5429,9 @@
           (cost ? '<section class="fsec aiu-cost"><div class="aiu-head"><h4 class="fsec-h">This month</h4><span class="aiu-note">Estimated, US$</span></div>' +
             (spent.length ? '<div class="aiu-costs">' + spent.map(function (u) {
               var b = by[u[2]];
+              /* A scene picture is priced a picture, never by tokens (2026-11-05). */
+              if (u[0] === 'picture') return '<div class="aiu-crow"><span>' + esc(u[1]) + '</span><span class="aiu-tok">' + fmt(b.uses) + (b.uses === 1 ? ' picture' : ' pictures') +
+                '</span><span class="aiu-usd">' + aiUsd(b.usd) + '</span></div>';
               return '<div class="aiu-crow"><span>' + esc(u[1]) + '</span><span class="aiu-tok">' + aiTokens((b.input || 0) + (b.output || 0)) + ' tokens' +
                 (b.searches ? ' · ' + fmt(b.searches) + (b.searches === 1 ? ' search' : ' searches') : '') + '</span><span class="aiu-usd">' + aiUsd(b.usd) + '</span></div>';
             }).join('') +

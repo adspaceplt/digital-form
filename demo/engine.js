@@ -51,7 +51,7 @@
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
     video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
-    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound',
+    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
     ops_revisions: 'id task_id round_no requested_by_type reason_category summary requested_by assigned_to requested_at completed_at source_review_id idem_key',
@@ -126,6 +126,9 @@
     ai_caption_claim: 'p_batch',
     ai_caption_left: '',
     ai_script_claim: 'p_script',
+    ai_picture_claim: 'p_script p_count',
+    ai_picture_left: '',
+    video_script_picture: 'p_script p_scene p_kind p_url p_press p_thumb',
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
@@ -511,6 +514,7 @@
     sm_report_snapshot: 'p_id p_final',
     sm_report_gate: 'p_id',
     sm_report_post_delay: 'p_report p_task p_reason p_note p_on',
+    sm_report_post_link: 'p_post p_task', sm_report_post_tasks: 'p_report', ops_task_report_post: 'p_task', report_links_set: 'p_on',
     sm_report_history: 'p_id',
     sm_reports_owed: 'p_period',
     sm_report_submit: 'p_id p_reviewer p_reason',
@@ -2784,6 +2788,8 @@ function cardSlugFree(name, self, email) {
     meta_checks: 1, reach_allowance_pct: 0.5,
 
     client_email_on: 1,
+
+    report_post_links: 1,
 
     approval_reminder_days: 3,
 
@@ -5381,6 +5387,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Object.assign({}, ci);
     }
+
+    if (name === 'ops_task_report_post') {
+      var otp = opsTask(args.p_task);
+      if (!otp || !opsAllowed('ops', 'view') || !(scopeTaskMine(otp) || scopeSeen(otp.client_id, 'view'))) return { error: 'denied' };
+      var otl = liveLinks().filter(function (l) { return l.task_id === otp.id; })[0];
+      if (!otl) return { ok: true, post: null };
+      var otpp = DB.sm_report_posts.filter(function (p) { return p.id === otl.post_id; })[0] || {};
+      var otr = DB.sm_reports.filter(function (r) { return r.id === otl.report_id; })[0] || {};
+      return { ok: true, post: { report_id: otr.id, status: otr.status, period_start: otr.period_start, period_end: otr.period_end,
+        posted_on: otpp.posted_on, url: otpp.url || null, views: otpp.views == null ? null : otpp.views, may_open: opsAllowed('reports', 'view') } };
+    }
     if (name === 'ops_set_results') {
       if (!opsAllowed('ops', 'work')) return { error: 'denied' };
       t = opsTask(args.p_task);
@@ -6433,7 +6450,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return row && row.daily != null ? row.daily : dflt;
   }
 
-  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
+  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
   var AI_USES = ['drafts', 'checks', 'caption', 'script', 'analysis', 'checklist', 'analytics'];
   function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
   function aiPurpose(x) { return x.purpose || 'draft'; }
@@ -6742,6 +6759,64 @@ function opsCodeRange(cid, period, ty, src, seq) {
       usd: r2(sum(rows, usd)), by: by };
   }
 
+  function linksOn() { return Number(appSet('report_post_links', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) === 1; }
+  function liveLinks() {
+    DB.sm_report_post_links = DB.sm_report_post_links || [];
+    return DB.sm_report_post_links.filter(function (l) {
+      return !l.unlinked_at && (DB.sm_report_posts || []).some(function (p) { return p.id === l.post_id && p.report_id === l.report_id; });
+    });
+  }
+  function taskLinked(id) { return liveLinks().some(function (l) { return l.task_id === id; }); }
+  function smWl(r) { var c = (DB.clients || []).filter(function (x) { return x.id === r.client_id; })[0] || {}; return !!(r.brand_id || c.white_label); }
+  function smNeeds(x, links) {
+    var LIVE = ['live', 'performance_review', 'completed'];
+    return [links && !taskLinked(x.id) ? 'link' : null, !links && LIVE.indexOf(x.stage_key) < 0 ? 'stage' : null,
+      x.current_first_draft_due_at ? null : 'draft', x.current_final_due_at ? null : 'due', x.publish_at ? null : 'post',
+      !links && !x.live_at ? 'live' : null].filter(Boolean);
+  }
+  function mytDay(ts) { return ts ? new Date(Date.parse(ts) + 8 * 3600e3).toISOString().slice(0, 10) : null; }
+  function linkRevert(l) {
+    if (!l || l.unlinked_at) return;
+    var me = smMe();
+    l.unlinked_at = new Date().toISOString(); l.unlinked_by = me ? me.id : null;
+    var t = opsTask(l.task_id), p = l.prev || {};
+    if (!t) return;
+    var back = l.moved && t.stage_key === 'performance_review' && p.stage_key && t.stage_key !== p.stage_key;
+    var wasStage = t.stage_key, wasLive = t.live_at;
+    if (back) { t.stage_key = p.stage_key; t.completed_at = p.completed_at || null; t.blocked_at = p.blocked_at || null; t.blocked_category = p.blocked_category || null; }
+    var lpost = (DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0];
+    if (lpost && 'post_title' in p && lpost.title === (String(t.content_desc || '').trim() || null)) lpost.title = p.post_title;
+    if (t.live_at === l.live_set) t.live_at = p.live_at || null;
+    if (!t.delayed_at) ['delayed_at', 'delayed_by', 'delayed_reason', 'delayed_note', 'delayed_report'].forEach(function (k) { t[k] = p[k] == null ? null : p[k]; });
+    if (t.result_at === l.results_at) ['result_views', 'result_engagements', 'result_at', 'result_by'].forEach(function (k) { t[k] = p[k] == null ? null : p[k]; });
+    t.version = (t.version || 1) + 1; t.updated_at = new Date().toISOString();
+    if (back) opsLog(t.id, 'stage_changed', { stage_key: wasStage }, { stage_key: p.stage_key }, 'Unlinked from its Accounts Report post', { report_id: l.report_id });
+    opsLog(t.id, 'report_unlinked', { live_at: wasLive }, { live_at: t.live_at }, null, { report_id: l.report_id });
+  }
+
+  function smPostsFollow(r, was) {
+    var into = r.status === 'published' && was !== 'published', out = was === 'published' && r.status !== 'published';
+    if (!(into || out) || !linksOn()) return;
+    liveLinks().filter(function (l) { return l.report_id === r.id && l.moved; }).forEach(function (l) {
+      var t = opsTask(l.task_id); if (!t) return;
+      var at = new Date().toISOString();
+      if (into && t.stage_key === 'performance_review') {
+        var p = (DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0] || {};
+        var eng = p.engagements != null ? p.engagements : p.interactions;
+        t.stage_key = 'completed'; t.completed_at = t.completed_at || at;
+        if (p.views != null || eng != null) {
+          if (p.views != null) t.result_views = p.views;
+          if (eng != null) t.result_engagements = eng;
+          t.result_at = at; l.results_at = at;
+        }
+        l.done_at = at; t.version = (t.version || 1) + 1; t.updated_at = at;
+        opsLog(t.id, 'stage_changed', { stage_key: 'performance_review' }, { stage_key: 'completed' }, 'Accounts Report published', { report_id: r.id });
+      } else if (out && l.done_at && t.stage_key === 'completed') {
+        t.stage_key = 'performance_review'; t.completed_at = null; l.done_at = null; t.version = (t.version || 1) + 1; t.updated_at = at;
+        opsLog(t.id, 'stage_changed', { stage_key: 'completed' }, { stage_key: 'performance_review' }, 'Accounts Report no longer published', { report_id: r.id });
+      }
+    });
+  }
   function smGate(r) {
     var me = opsMe ? opsMe() : null;
     var may = !!(me && (me.is_admin || me.role === 'admin')) || (smCan('manage') && opsAllowed('reports', 'manage'));
@@ -6757,6 +6832,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var sp = span(x); return r.period_end >= sp[0] && r.period_end <= sp[1];
     }).sort(function (x, y) { return y.period.localeCompare(x.period); })[0];
     var missing = [], made = 0, posted = 0, delayed = 0, lacking = [], task = null, due, sp2 = null;
+    var links = linksOn(), wl = smWl(r);
     if (!e) { missing.push('no-month'); due = dueOf(r.period_end); }
     else {
       sp2 = span(e); due = dueOf(sp2[1]);
@@ -6769,26 +6845,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
       made = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); }).length;
 
       if (r.kind !== 'ads') {
-        var pl = e.planned_count || 0, LIVE = ['live', 'performance_review', 'completed'];
+        var pl = e.planned_count || 0;
         var content = DB.ops_tasks.filter(function (x) { return x.engagement_id === e.id && !x.cancelled_at && !x.archived_at && !/^report_/.test(x.source_type || ''); });
-        var needsOf = function (x) {
-          return [LIVE.indexOf(x.stage_key) < 0 ? 'stage' : null, x.current_first_draft_due_at ? null : 'draft',
-            x.current_final_due_at ? null : 'due', x.publish_at ? null : 'post', x.live_at ? null : 'live'].filter(Boolean);
-        };
-        posted = content.filter(function (x) { return !needsOf(x).length; }).length;
-        delayed = content.filter(function (x) { return needsOf(x).length && x.delayed_at; }).length;
         if (made < pl) missing.push('content');
-        if (posted + delayed < pl) missing.push('posted');
-        if (posted < pl) {
-          lacking = content.filter(function (x) { return needsOf(x).length; })
-            .sort(function (a, b) { return a.task_no - b.task_no; }).slice(0, 20)
-            .map(function (x) { return { id: x.id, task_no: x.task_no, code: x.code || null, delayed: !!x.delayed_at, delayed_reason: x.delayed_reason || null, delayed_note: x.delayed_note || null, needs: needsOf(x) }; });
+
+        if (!wl) {
+          posted = content.filter(function (x) { return !smNeeds(x, links).length; }).length;
+          delayed = content.filter(function (x) { return smNeeds(x, links).length && x.delayed_at; }).length;
+          if (posted + delayed < pl) missing.push('posted');
+          if (posted < pl) {
+            lacking = content.filter(function (x) { return smNeeds(x, links).length; })
+              .sort(function (a, b) { return a.task_no - b.task_no; }).slice(0, 20)
+              .map(function (x) { return { id: x.id, task_no: x.task_no, code: x.code || null, stage_key: x.stage_key || null, delayed: !!x.delayed_at, delayed_reason: x.delayed_reason || null, delayed_note: x.delayed_note || null, needs: smNeeds(x, links) }; });
+          }
         }
       }
     }
     return { applies: true, ok: !missing.length, missing: missing,
       month: e ? { id: e.id, period: e.period, start_day: e.start_day || 1, starts: sp2[0], ends: sp2[1], reports: e.reports || [] } : null,
       planned: e ? e.planned_count || 0 : 0, made: made, posted: posted, delayed: delayed, lacking: lacking,
+      links: links && !wl, white_label: wl,
       task: task ? { id: task.id, task_no: task.task_no, stage_key: task.stage_key } : null,
       due: due, late: Date.now() > Date.parse(due), may_override: may };
   }
@@ -6910,6 +6986,82 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var r = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_id; })[0];
     var now = new Date().toISOString();
 
+    if (name === 'sm_report_post_link') {
+      if (!me || !smCan('work')) return { error: 'denied' };
+      var lp = (DB.sm_report_posts || []).filter(function (x) { return x.id === a.p_post; })[0];
+      if (!lp) return { error: 'not-found' };
+      var lr = (DB.sm_reports || []).filter(function (x) { return x.id === lp.report_id; })[0];
+      if (!scopeSeen(lr.client_id, 'work')) return { error: 'denied' };
+      if (lr.status !== 'draft') return { error: 'not-draft' };
+      var held = liveLinks().filter(function (l) { return l.post_id === lp.id; })[0];
+      if (!a.p_task) {
+        if (held) { linkRevert(held); var ht = opsTask(held.task_id); smLog(lr, 'report.saved', ((ht && ht.code) || 'A task') + ' no longer linked to its post'); persist(); }
+        return { ok: true };
+      }
+      if (!linksOn()) return { error: 'links-off' };
+      if ((lr.kind || 'social') !== 'social' || lr.on_request || smWl(lr)) return { error: 'not-linkable' };
+      if (held && held.task_id === a.p_task) return { ok: true, id: a.p_task };
+      if (!lp.posted_on) return { error: 'no-date' };
+      var lt = opsTask(a.p_task);
+      if (!lt || lt.client_id !== lr.client_id || lt.cancelled_at || lt.archived_at || /^report_/.test(lt.source_type || '')) return { error: 'not-in-month' };
+      var lg = smGate(lr);
+      if (!((lg.month && lt.engagement_id === lg.month.id) || lt.delayed_at || smMayOverride(me))) return { error: 'not-in-month' };
+      var other = liveLinks().filter(function (l) { return l.task_id === lt.id; })[0];
+      if (other) { var orr = DB.sm_reports.filter(function (x) { return x.id === other.report_id; })[0] || {}; return { error: 'linked', period: smWord(orr.period_start, orr.period_end) }; }
+      if (held) linkRevert(held);
+      DB.sm_report_post_links.filter(function (l) { return l.task_id === lt.id && !l.unlinked_at; }).forEach(linkRevert);
+      var wasDay = mytDay(lt.live_at);
+      var live = wasDay === lp.posted_on ? lt.live_at : new Date(Date.parse(lp.posted_on + 'T04:00:00Z')).toISOString();
+      var moved = ['performance_review', 'completed', 'on_hold', 'blocked', 'taken_down', 'cancelled'].indexOf(lt.stage_key) < 0 && !!lt.workflow_id &&
+        (!(DB.ops_workflow_stages || []).length || DB.ops_workflow_stages.some(function (x) { return x.workflow_id === lt.workflow_id && x.key === 'performance_review'; }));
+      var eng = lp.engagements != null ? lp.engagements : lp.interactions;
+      var res = lp.views != null || eng != null;
+      var prev = {};
+      ['stage_key', 'completed_at', 'live_at', 'delayed_at', 'delayed_by', 'delayed_reason', 'delayed_note', 'delayed_report',
+        'result_views', 'result_engagements', 'result_at', 'result_by', 'blocked_at', 'blocked_category'].forEach(function (k) { prev[k] = lt[k] == null ? null : lt[k]; });
+      prev.post_title = lp.title == null ? null : lp.title;
+      var wasStage = lt.stage_key, wasLive = lt.live_at;
+      var link = { id: nid('spl'), post_id: lp.id, report_id: lr.id, task_id: lt.id, prev: prev, moved: moved, live_set: live,
+        results_at: res ? now : null, linked_by: me.id, linked_at: now, unlinked_at: null };
+      DB.sm_report_post_links.push(link);
+      Object.assign(lt, { live_at: live, delayed_at: null, delayed_by: null, delayed_reason: null, delayed_note: null, delayed_report: null,
+        version: (lt.version || 1) + 1, updated_at: now });
+      if (moved) Object.assign(lt, { stage_key: 'performance_review', completed_at: null, blocked_at: null, blocked_category: null });
+      if (res) Object.assign(lt, { result_views: lp.views != null ? lp.views : null, result_engagements: eng != null ? eng : null, result_at: now, result_by: me.id });
+      var lname = String(lt.content_desc || '').trim();
+      if (lname) lp.title = lname;
+      var lcode = lt.code || ('#WT' + String(lt.task_no).padStart(5, '0'));
+      if (moved) opsLog(lt.id, 'stage_changed', { stage_key: wasStage }, { stage_key: 'performance_review' }, 'Linked to its Accounts Report post', { report_id: lr.id });
+      opsLog(lt.id, 'report_linked', { live_at: wasLive }, { live_at: live, posted_on: lp.posted_on }, null, { report_id: lr.id, post_id: lp.id });
+      var rd = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
+      smLog(lr, 'report.saved', lcode + ' linked to its post of ' + rd(lp.posted_on) +
+        (wasDay && wasDay !== lp.posted_on ? ' · date it went live ' + rd(wasDay) + ' → ' + rd(lp.posted_on) : ''));
+      persist();
+      return { ok: true, id: lt.id, moved: moved, title: lname || null, was_live: wasDay, live: lp.posted_on };
+    }
+    if (name === 'sm_report_post_tasks') {
+      var tr = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_report; })[0];
+      if (!me || !smCan('view')) return { error: 'denied' };
+      if (!tr) return { error: 'not-found' };
+      if (!scopeSeen(tr.client_id, 'view')) return { error: 'denied' };
+      var on = linksOn();
+      if ((tr.kind || 'social') !== 'social' || tr.on_request || smWl(tr)) return { ok: true, on: on, applies: false, links: [], tasks: [] };
+      var tg = smGate(tr), mid = tg.month ? tg.month.id : null, all = smMayOverride(me), cut3 = Date.now() - 92 * 864e5;
+      return { ok: true, on: on, applies: true,
+        links: liveLinks().filter(function (l) { return l.report_id === tr.id; }).map(function (l) {
+          var t = opsTask(l.task_id) || {};
+          return { post_id: l.post_id, task_id: t.id, task_no: t.task_no, code: t.code || null, title: t.content_desc || null, stage_key: t.stage_key };
+        }),
+        tasks: !on ? [] : DB.ops_tasks.filter(function (t) {
+          return t.client_id === tr.client_id && !t.cancelled_at && !t.archived_at && !/^report_/.test(t.source_type || '') && t.publish_at &&
+            ((mid && t.engagement_id === mid) || t.delayed_at || (all && (!t.completed_at || Date.parse(t.publish_at) > cut3)));
+        }).sort(function (x, y) { return ((y.engagement_id === mid) - (x.engagement_id === mid)) || (x.task_no - y.task_no); })
+          .map(function (t) {
+            return { id: t.id, task_no: t.task_no, code: t.code || null, title: t.content_desc || null, stage_key: t.stage_key,
+              publish_at: t.publish_at, live_at: t.live_at || null, delayed: !!t.delayed_at, month: !!mid && t.engagement_id === mid, linked: taskLinked(t.id) };
+          }) };
+    }
+
     if (name === 'sm_report_post_delay') {
       var dr = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_report; })[0];
       if (!me || !smCan('work')) return { error: 'denied' };
@@ -6930,8 +7082,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         smLog(dr, 'report.saved', dcode + ' no longer marked delayed');
         persist(); return { ok: true, id: dt.id };
       }
-      var LIVE = ['live', 'performance_review', 'completed'];
-      if (LIVE.indexOf(dt.stage_key) > -1 && dt.current_first_draft_due_at && dt.current_final_due_at && dt.publish_at && dt.live_at) return { error: 'posted' };
+      if (!smNeeds(dt, linksOn()).length) return { error: 'posted' };
       if (!dword[a.p_reason]) return { error: 'bad-reason' };
       var dnote = String(a.p_note || '').trim() || null;
       if (dnote && dnote.length > 300) return { error: 'too-long' };
@@ -7182,6 +7333,59 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'ai_caption_left') {
       if (!me || !opsAllowed('review.sets', 'work')) return { error: 'denied' };
       return aiCaptionRoom(me);
+    }
+
+    if (name === 'ai_picture_left' || name === 'ai_picture_claim') {
+      if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
+      var picSince = aiDay(), picLim = aiCap(me.id, 'picture');
+      var picUsed = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === me.id && x.purpose === 'picture' && x.outcome !== 'failed' &&
+        new Date(x.created_at).getTime() >= picSince; }).length;
+      var picLeft = Math.max(0, picLim - picUsed);
+      var picNext = picLeft > 0 || picLim === 0 ? null : new Date(picSince + 864e5).toISOString();
+      if (name === 'ai_picture_left') return { left: picLeft, limit: picLim, scope: picLim === 0 ? 'stopped' : 'picture', next: picNext };
+      var picV = (DB.video_scripts || []).filter(function (x) { return x.id === a.p_script; })[0];
+      if (!picV) return { error: 'not-found' };
+      var picN = Number(a.p_count);
+      if (!(picN >= 1 && picN <= 60)) return { error: 'bad-count' };
+      if (picLim === 0) return { error: 'ai-limit', scope: 'stopped', limit: 0 };
+      if (picUsed + picN > picLim) return { error: 'ai-limit', scope: 'picture', limit: picLim, left: picLeft, next: new Date(picSince + 864e5).toISOString() };
+      var picIds = [];
+      for (var pi = 0; pi < picN; pi++) {
+        var pr = { id: nid('aid'), report_id: null, team_member_id: me.id, client_id: picV.client_id, script_id: picV.id,
+          purpose: 'picture', outcome: 'pending', created_at: new Date().toISOString() };
+        (DB.ai_drafts = DB.ai_drafts || []).push(pr);
+        picIds.push(pr.id);
+      }
+      return { ids: picIds, left: picLim - picUsed - picN, limit: picLim };
+    }
+    if (name === 'video_script_picture') {
+      if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
+      var vpS = (DB.video_scripts || []).filter(function (x) { return x.id === a.p_script; })[0];
+      var vpC = vpS && (DB.video_script_scenes || []).filter(function (x) { return x.id === a.p_scene && x.script_id === vpS.id; })[0];
+      if (!vpC) return { error: 'not-found' };
+      if (['photo', 'ai'].indexOf(a.p_kind) < 0) return { error: 'bad-kind' };
+      var vpU = a.p_url ? String(a.p_url).trim() : null;
+      if (vpU && (!/^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9\/._-]+$/.test(vpU) || vpU.indexOf('/' + vpS.client_id + '/') < 0)) return { error: 'bad-url' };
+      var vpT = a.p_thumb ? String(a.p_thumb) : null;
+      if (vpT && (!/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(vpT) || vpT.length > 200000)) return { error: 'bad-thumb' };
+      var vpCl = (DB.clients || []).filter(function (c) { return c.id === vpS.client_id; })[0] || {};
+      var vpLabel = (vpS.code || '') + (vpS.title ? ' · ' + vpS.title : '');
+      var vpLog = function (d) { DB.activity_log.push({ id: nid('a'), actor: me.name, action: 'script.saved', subject: vpCl.name, detail: vpLabel + ' · ' + d, created_at: new Date().toISOString() }); };
+      if (a.p_kind === 'ai') {
+        if (!vpU) return { error: 'bad-url' };
+        if (!(DB.ai_drafts || []).some(function (d) { return d.id === a.p_press && d.team_member_id === me.id && d.purpose === 'picture' && d.script_id === vpS.id; })) return { error: 'bad-press' };
+        vpC.ai_url = vpU; vpC.ai_at = new Date().toISOString(); vpC.ai_thumb = vpT;
+        vpLog('Scene ' + vpC.position + ' picture drawn with AI');
+      } else if (!vpU) {
+        if (!vpC.photo_url) return { ok: true, changed: false };
+        vpC.photo_url = null; vpC.photo_by = null; vpC.photo_at = null; vpC.photo_thumb = null;
+        vpLog('Scene ' + vpC.position + ' photo removed');
+      } else {
+        var vpWas = vpC.photo_url;
+        vpC.photo_url = vpU; vpC.photo_by = me.name; vpC.photo_at = new Date().toISOString(); vpC.photo_thumb = vpT;
+        vpLog('Scene ' + vpC.position + ' photo ' + (vpWas ? 'replaced' : 'added'));
+      }
+      return { ok: true, changed: true };
     }
     if (name === 'ai_script_left') {
       if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
@@ -7598,6 +7802,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         withdrawn_at: null, withdrawn_by: null, withdraw_reason: null };
       DB.sm_report_versions.push(v);
       r.status = 'published';
+      smPostsFollow(r, 'confirmed');
 
       var pCl = (DB.clients || []).filter(function (c) { return c.id === r.client_id; })[0] || {};
       var pPic = (DB.team_members || []).filter(function (t) { return t.active !== false && pCl.owner &&
@@ -7610,6 +7815,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!me || !smCan('work')) return { error: 'denied' };
       if (r.status !== 'published') return { error: 'not-published' };
       Object.assign(r, { status: 'draft', version_no: r.version_no + 1, return_note: null, submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null });
+      smPostsFollow(r, 'published');
       smLog(r, 'report.revised'); return { ok: true, status: 'draft', version_no: r.version_no };
     }
     if (name === 'sm_report_unpublish') {
@@ -7618,7 +7824,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var live = DB.sm_report_versions.filter(function (x) { return x.report_id === r.id && !x.withdrawn_at; });
       if (!live.length) return { error: 'not-published' };
       live.forEach(function (x) { x.withdrawn_at = now; x.withdrawn_by = me.name; x.withdraw_reason = a.p_reason; });
-      if (r.status === 'published') r.status = 'confirmed';
+      if (r.status === 'published') { r.status = 'confirmed'; smPostsFollow(r, 'published'); }
       smLog(r, 'report.unpublished', a.p_reason); return { ok: true };
     }
     if (name === 'sm_report_delete') {
@@ -8430,7 +8636,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: baOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^video_script_picture$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -11462,6 +11668,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
         persist();
         return spOk();
       }
+
+      if (name === 'report_links_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var rlDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), rlTo = args.p_on ? 1 : 0;
+        var rlWas = Number(appSet('report_post_links', rlDay));
+        if (rlWas === rlTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === 'report_post_links' && x.from_date === rlDay); });
+        DB.app_settings.push({ key: 'report_post_links', from_date: rlDay, value: rlTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: 'Posts linked to tasks: ' + (rlWas === 1 ? 'On' : 'Off') + ' → ' + (rlTo ? 'On' : 'Off') + ' · from ' + rlDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
       if (name === 'client_email_set') {
         if (!opsGranted('team.settings', 'work')) return spNo('denied');
         var ceDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), ceTo = args.p_on ? 1 : 0;
@@ -13445,6 +13663,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
           return Promise.resolve({ data: null, error: { message: 'Edge Function returned a non-2xx status code', context: { status: 400 } } });
         }
+
+        if (name === 'script-pictures') {
+          var sp0 = (opts && opts.body) || {};
+          window.__picturesAsked = JSON.parse(JSON.stringify(sp0));
+          if (sp0.ping) return Promise.resolve({ data: { ready: Boolean(window.__aiPictures) }, error: null });
+          if (!window.__aiPictures) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['GEMINI_API_KEY'] }, error: null });
+          if (window.__aiPictures.error) return Promise.resolve({ data: { error: window.__aiPictures.error }, error: null });
+          return window.__rpc('ai_picture_claim', { p_script: sp0.script_id, p_count: (sp0.scenes || []).length }).then(function (r) {
+            var cl = (r && r.data) || {};
+            if (cl.error) return { data: cl, error: null };
+            var PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAIAAABLKsIUAAAAEUlEQVR4nGM4gxswjMoNejkAS2NYUFNR4dYAAAAASUVORK5CYII=';
+            var fail = window.__aiPictures.fail || [];
+            var outP = [];
+            (sp0.scenes || []).forEach(function (id, k) {
+              var row = (DB.ai_drafts || []).filter(function (d) { return d.id === cl.ids[k]; })[0];
+              if (fail.indexOf(id) > -1) { if (row) row.outcome = 'failed'; return; }
+              if (row) { row.outcome = 'drafted'; row.input_tokens = 0; row.output_tokens = 0; row.model = 'gemini-3.1-flash-image-preview'; }
+              outP.push({ scene: id, press: cl.ids[k], mime: 'image/png', data: PNG });
+            });
+            persist();
+            return { data: outP.length ? { pictures: outP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
+          });
+        }
         if (name === 'script-draft') {
           var sb0 = (opts && opts.body) || {};
           window.__scriptAsked = JSON.parse(JSON.stringify(sb0));
@@ -13711,7 +13952,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             invoice: ['campaignId', function (id) { var c = (DB.campaigns || []).filter(function (r) { return r.id === id; })[0]; return c && c.client_id; }, ['campaigns.finance']],
             report: ['versionId', function (id) {
               var v = (DB.sm_report_versions || []).filter(function (r) { return r.id === id; })[0];
-              var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']]
+              var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']],
+            script: ['scriptId', function (id) { var x = (DB.video_scripts || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['scripts']]
           }[bd.purpose];
           if (!upFor) return upRefuse('Reload the page to upload.');
           if (!bd.clientId || upFor[1](bd[upFor[0]]) !== bd.clientId) return upRefuse('bad_parent');
@@ -13725,6 +13967,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var hex = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
           var pk = 'private/' + (bd.clientId || 'c1') + '/' + [hex(8), hex(4), hex(4), hex(4), hex(12)].join('-') + '.pdf';
           return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + pk, publicUrl: null, key: pk, contentType: upType }, error: null });
+        }
+        if (bd.purpose === 'script') {
+          var sk = 'content/' + bd.clientId + '/pic-' + Date.now() + '-' + Math.random().toString(16).slice(2, 8) + '.' + bd.ext;
+          return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + sk, publicUrl: 'https://mycdn.adspace.me/' + sk, key: sk, contentType: upType }, error: null });
         }
         return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/inv.pdf',
           publicUrl: 'https://mycdn.adspace.me/content/c1/inv-' + Date.now() + '.pdf', contentType: upType }, error: null });
