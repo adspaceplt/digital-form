@@ -608,14 +608,8 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `overview` (2026-11-03, on main 03e7720 too): By person in charge reads
-  Nothing moved this month in a month's first five days, because the seeded
-  lead is five days old (`day(5)`) and the cold-lead checks need it over 48
-  hours; the suite needs a mover dated inside the current month.
-- `ops` (2026-11-03, on main 4179b72 too): three task-numbering checks fail,
-  a dry run answering codes from 02 and two runs at once numbering 01 to 09
-  for eight tasks (`ops_code_of` / the planned slot under a run of the
-  month's report task). Not yet traced.
+- None open (2026-11-05: `overview` and `ops` were the suites' own dates;
+  both fixed).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside

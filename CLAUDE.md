@@ -119,6 +119,11 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
     Malaysia's, never `toISOString().slice(0, 10)` (the UTC day, yesterday
     before 8am here; 2026-10-29: `overview` read a booking 5 days late,
     not 4, after midnight).
+  - A suite names every month it counts on: a task's content month is
+    given, never left to the month the suite runs in, and a figure read
+    for this month holds a record made this hour, never days back
+    (2026-11-05: `ops` held 2611W101 once November came, `overview` read
+    nothing moved on the 1st to the 4th).
   - A `cut()` of `schema.sql` always ends at the next banner.
   - A full-page screenshot under a finger drops the touch pointer and a
     reload does not bring it back: uxaudit and uxsection shoot through
