@@ -3135,71 +3135,81 @@
             </button>
           </div>
           <div class="sheet-body">
-            <!-- When, then where and who: two sections, the channel a segment,
-                 the notes folded with what they hold on the line (the form
-                 audit of 2026-09-24). -->
-            <!-- The one tick that makes the rest not apply comes first, so the
-                 fields it shuts are read after the reason they are shut. -->
+            <!-- The one tick that makes the rest not apply comes first, and the
+                 rest leaves while it is ticked. Then the channel, since it
+                 decides which days may be chosen: only a Google Meet link the
+                 shared calendar creates waits for the next half hour (the
+                 user, 2026-11-06). -->
             <label class="tickline meet-na"><input type="checkbox" id="meetNa"> <span>No meeting this month</span></label>
-            <section class="fsec">
-              <h4 class="fsec-h">Date and time</h4>
-              <div class="row fgrid-3">
-                <div class="field">
-                  <label class="field-label" for="meetDate">Date</label>
-                  <input class="input" id="meetDate" type="date">
+            <div id="meetFields">
+              <section class="fsec">
+                <h4 class="fsec-h">Meeting channel</h4>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="meetChannel">Channel</label>
+                    <select class="select" id="meetChannel" data-seg>
+                      <option value="onsite">On site</option>
+                      <option value="google_meet">Google Meet</option>
+                      <option value="zoom">Zoom</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="field">
-                  <label class="field-label" for="meetTime">Time</label>
-                  <input class="input" id="meetTime" type="time">
+                <div class="row" id="meetModeRow">
+                  <div class="field">
+                    <label class="field-label" for="meetMode">Google Meet link</label>
+                    <select class="select" id="meetMode" data-seg>
+                      <option value="create">Create link</option>
+                      <option value="paste">Paste link</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="field">
-                  <label class="field-label" for="meetMinutes">Length</label>
-                  <select class="select" id="meetMinutes">
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">1 hour</option>
-                    <option value="90">1.5 hours</option>
-                    <option value="120">2 hours</option>
-                  </select>
+                <div class="row" id="meetLinkRow">
+                  <div class="field">
+                    <label class="field-label" for="meetLink">Meeting link</label>
+                    <textarea class="input" id="meetLink" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://meet.google.com/abc-defg-hij"></textarea>
+                  </div>
                 </div>
-              </div>
-            </section>
-            <section class="fsec">
-              <h4 class="fsec-h">Meeting channel</h4>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="meetChannel">Channel</label>
-                  <select class="select" id="meetChannel" data-seg>
-                    <option value="onsite">On site</option>
-                    <option value="google_meet">Google Meet</option>
-                    <option value="zoom">Zoom</option>
-                    <option value="other">Other</option>
-                  </select>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Date and time</h4>
+                <div class="row fgrid-3">
+                  <div class="field">
+                    <label class="field-label" for="meetDate">Date</label>
+                    <input class="input" id="meetDate" type="date">
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="meetTime">Time</label>
+                    <select class="select" id="meetTime" data-nofind></select>
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="meetMinutes">Length</label>
+                    <select class="select" id="meetMinutes">
+                      <option value="30">30 minutes</option>
+                      <option value="45">45 minutes</option>
+                      <option value="60">1 hour</option>
+                      <option value="90">1.5 hours</option>
+                      <option value="120">2 hours</option>
+                    </select>
+                  </div>
                 </div>
-              </div>
-              <div class="row" id="meetLinkRow">
-                <div class="field">
-                  <label class="field-label" for="meetLink">Meeting link</label>
-                  <textarea class="input" id="meetLink" rows="1" data-oneline inputmode="url" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://meet.google.com/abc-defg-hij"></textarea>
+              </section>
+              <section class="fsec">
+                <h4 class="fsec-h">Details</h4>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="meetOwner">Led by</label>
+                    <select class="select" id="meetOwner"></select>
+                  </div>
                 </div>
-              </div>
-              <label class="tickline" id="meetBookLine"><input type="checkbox" id="meetBook" checked> <span>Create the Google Meet link on the shared calendar</span></label>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="meetOwner">Led by</label>
-                  <select class="select" id="meetOwner"></select>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="meetNote">Notes</label>
+                    <textarea class="input textarea" id="meetNote" rows="3" placeholder="Optional"></textarea>
+                  </div>
                 </div>
-              </div>
-            </section>
-            <details class="fmore" id="meetMore">
-              <summary>More details <span class="fmore-sum"></span></summary>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="meetNote">Notes</label>
-                  <textarea class="input textarea" id="meetNote" rows="3" placeholder="Optional" data-some="Notes" data-none="No notes"></textarea>
-                </div>
-              </div>
-            </details>
+              </section>
+            </div>
             <div class="msg" id="meetMsg"></div>
           </div>
           <div class="sheet-foot">
@@ -6257,7 +6267,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261010a"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261103l"></script>
-<script src="/js/ops.js?v=20261105a"></script>
+<script src="/js/ops.js?v=20261106"></script>
 <script src="/js/perf.js?v=20261102"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>

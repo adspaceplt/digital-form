@@ -4576,11 +4576,21 @@ Each line is a rule that broke once. Its reason is in the archive.
     as open. A task moves into production on the ticks and the meeting, never
     on the stored word.
   - The meeting is `meeting_minutes` (15–240) plus a link (Meet, Zoom or Teams
-    only). It is booked no earlier than the next half hour (`nextSlot()`: at
-    3:00pm or 3:10pm the first slot is 3:30pm); the date and time fields
-    start there and an earlier time is refused on the sheet. A meeting
-    already held keeps its time when its sheet is opened. An On site
-    meeting asks for no link and may be written down after the day
+    only). The sheet (`#meetSheet`; the user, 2026-11-06) reads No meeting
+    this month (ticked, the rest leaves, `#meetFields`), Channel, then for
+    Google Meet Create link / Paste link (`#meetMode`; gone once its event
+    is on the calendar, which a moved meeting moves), the link only where
+    pasted or on Zoom or Other, then Date, Time (a select of quarter hours,
+    8:00am to 10:00pm, a stored time off them kept as an option) and
+    Length, Led by and Notes, nothing folded; a new meeting opens on the
+    next free half hour. Only a meeting the calendar books (Create link, or
+    an event already held) waits for the next half hour (`nextSlot()`: at
+    3:00pm or 3:10pm the first slot is 3:30pm; `meetBooks()`), its date
+    starting there and an earlier time refused on the sheet; a pasted link,
+    Zoom, Other and On site take any day from the portal's floor, and the
+    database refuses only a day before 14 Aug 2023 (`meeting-before-floor`,
+    `2026-11-06-meetings-on-any-day.sql`). A meeting already held keeps its
+    time when its sheet is opened. An On site meeting asks for no link
     (`2026-10-09-on-site-meetings.sql`; the user, 2026-10-09); once it has
     ended, whoever led it (else the month's manager) is told once to submit
     the outstation record (`ops_outstation_remind()`, pg_cron
