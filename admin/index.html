@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261106g">
-<link rel="stylesheet" href="/css/console.css?v=20261106g">
+<link rel="stylesheet" href="/css/console.css?v=20261106h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4804,6 +4804,28 @@
       </div>
     </div>
 
+    <!-- The animatic (2026-11-06, js/animatic.js): a script's scenes played
+         in order, each picture moved as its camera moves, with its words. -->
+    <div class="sheet" id="vsPlaySheet" hidden>
+      <div class="sheet-card formsheet vs-playcard" role="dialog" aria-modal="true" aria-labelledby="vsPlayTitle">
+        <div class="sheet-head">
+          <h3 id="vsPlayTitle">Play</h3>
+          <button class="iconbtn" id="vsPlayClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body vs-play">
+          <div class="vs-playstage"><canvas id="vsPlayCanvas" width="720" height="1280" role="img" aria-label="Scenes in order"></canvas></div>
+          <div class="vs-playbar" id="vsPlayBar" aria-hidden="true"><span></span></div>
+          <p class="vs-playtime" id="vsPlayTime" aria-live="off"></p>
+          <p class="msg" id="vsPlayMsg" role="status"></p>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary btn-icon" id="vsPlayGo" type="button">Play</button>
+          <button class="btn" id="vsPlaySave" type="button">Download</button>
+          <button class="btn btn-quiet" id="vsPlayCancel" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionMine" hidden>
       <!-- A member's own reviews open only for a session verified by a code
            emailed to them in the last 15 minutes. -->
@@ -6325,8 +6347,9 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/team.js?v=20261104s"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
-<script src="/js/frames.js?v=20261105a"></script>
-<script src="/js/scripts.js?v=20261106d"></script>
+<script src="/js/frames.js?v=20261106a"></script>
+<script src="/js/animatic.js?v=20261106a"></script>
+<script src="/js/scripts.js?v=20261106e"></script>
 <script src="/js/scriptpdf.js?v=20261105e"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261105c"></script>

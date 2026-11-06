@@ -3344,6 +3344,39 @@ button.vs-row {
 .vs-pic-tag { font-size: 11.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
 .vs-pic-add.is-busy { opacity: .6; pointer-events: none; }
 .vs-pic .btn { min-width: 0; padding: 0 10px; white-space: nowrap; }
+/* A frame Claude drew (2026-11-06, js/frames.js `draw`): its tones in the
+   box's own colours, light in both themes as the post mockups are, and its
+   camera's move played once as the scene is shown. */
+.vs-pic-box:has(> .vf) { background: #ffffff; }
+.vf .vf-ink { fill: none; stroke: #1b1a17; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.vf .vf-light { fill: none; stroke: #8e8e8e; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
+.vf .vf-fill { fill: #e6e6e6; stroke: none; }
+.vf .vf-paper { fill: #ffffff; stroke: #1b1a17; stroke-width: 1.6; stroke-linejoin: round; }
+.vf .vf-edge { fill: none; stroke: #1b1a17; stroke-width: 1.2; }
+.vf-shot { transform-box: view-box; transform-origin: 50% 50%; animation: 4s var(--ease) 1 both; }
+.vf-shot.vf-push { animation-name: vf-push; }
+.vf-shot.vf-pull { animation-name: vf-pull; }
+.vf-shot.vf-panr { animation-name: vf-panr; }
+.vf-shot.vf-panl { animation-name: vf-panl; }
+.vf-shot.vf-tiltu { animation-name: vf-tiltu; }
+.vf-shot.vf-tiltd { animation-name: vf-tiltd; }
+@keyframes vf-push { from { transform: scale(1); } to { transform: scale(1.15); } }
+@keyframes vf-pull { from { transform: scale(1.15); } to { transform: scale(1); } }
+@keyframes vf-panr { from { transform: scale(1.12) translateX(4%); } to { transform: scale(1.12) translateX(-4%); } }
+@keyframes vf-panl { from { transform: scale(1.12) translateX(-4%); } to { transform: scale(1.12) translateX(4%); } }
+@keyframes vf-tiltu { from { transform: scale(1.12) translateY(-4%); } to { transform: scale(1.12) translateY(4%); } }
+@keyframes vf-tiltd { from { transform: scale(1.12) translateY(4%); } to { transform: scale(1.12) translateY(-4%); } }
+@media (prefers-reduced-motion: reduce) { .vf-shot { animation: none; } }
+/* The animatic's sheet: the canvas as large as the screen allows, a thin
+   track of how far it has played, and the time and scene under it. */
+.vs-playcard { width: min(560px, 100%); }
+.vs-play { display: grid; gap: 8px; justify-items: center; }
+.vs-playstage { display: grid; place-items: center; width: 100%; padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
+.vs-play canvas { display: block; width: 100%; height: auto; max-height: min(58dvh, 680px); object-fit: contain; border-radius: 4px; }
+.vs-playbar { width: 100%; height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.vs-playbar span { display: block; height: 100%; width: 100%; background: var(--fill); transform-origin: left; transform: scaleX(var(--p, 0)); }
+.vs-playtime { margin: 0; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.vs-play .msg:empty { display: none; }
 .vs-scenehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .vs-scenehead .fsec-h { margin: 0; }
 .vs-draw { display: flex; align-items: center; gap: 8px; }

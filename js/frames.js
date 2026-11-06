@@ -94,5 +94,46 @@
       [sc.shot_size, sc.angle, sc.camera_move].filter(Boolean).join(', ').replace(/"/g, '') + '">' + out.join('') + '</svg>';
   }
 
-  window.ADspaceFrames = { svg: svg };
+  /* A frame Claude drew (2026-11-06, video_script_scenes.ai_frame): kept
+     as data, each shape a path of path commands and numbers alone and a
+     tone; built here, its path held to the same rule again, so nothing in
+     it is ever drawn as markup. On screen each tone is a class (the box's
+     own colours) and the camera's move plays once; `print` writes the
+     colours themselves on white, for the crew PDF and the animatic. */
+  var BOX = { '9:16': [180, 320], '1:1': [240, 240], '16:9': [320, 180] };
+  var PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9 .,eE+-]{2,4000}$/;
+  var INK = 'stroke-linecap="round" stroke-linejoin="round"';
+  var PRINT = {
+    ink: 'fill="none" stroke="#1b1a17" stroke-width="1.6" ' + INK,
+    light: 'fill="none" stroke="#8e8e8e" stroke-width="1" ' + INK,
+    fill: 'fill="#e6e6e6" stroke="none"',
+    paper: 'fill="#ffffff" stroke="#1b1a17" stroke-width="1.6" ' + INK
+  };
+  var MOVE = { 'push in': 'push', 'pull out': 'pull', 'pan left': 'panl', 'pan right': 'panr', 'tilt up': 'tiltu', 'tilt down': 'tiltd' };
+  function plain(v) { return String(v || '').replace(/["'<>&]/g, ''); }
+  function draw(f, aspect, print) {
+    if (!f || !Array.isArray(f.shapes)) return '';
+    var b = BOX[aspect] || BOX['9:16'];
+    var paths = f.shapes.filter(function (x) { return x && PATH.test(String(x.d || '')) && PRINT[x.t]; }).map(function (x) {
+      return print ? '<path d="' + x.d + '" ' + PRINT[x.t] + '/>' : '<path class="vf-' + x.t + '" d="' + x.d + '"/>';
+    });
+    if (!paths.length) return '';
+    var mv = !print && MOVE[f.move];
+    return '<svg class="vs-frame-svg vf"' + (print ? ' xmlns="http://www.w3.org/2000/svg"' : '') + ' viewBox="0 0 ' + b[0] + ' ' + b[1] + '" width="' + b[0] + '" height="' + b[1] +
+      '" role="img" aria-label="' + plain([f.shot_size, f.angle, f.move].filter(Boolean).join(', ')) + '">' +
+      (print ? '<rect width="' + b[0] + '" height="' + b[1] + '" fill="#ffffff"/>' : '<rect class="vf-edge" x="1" y="1" width="' + (b[0] - 2) + '" height="' + (b[1] - 2) + '" rx="4"/>') +
+      '<g class="vf-shot' + (mv ? ' vf-' + mv : '') + '">' + paths.join('') + '</g></svg>';
+  }
+  /* The move a frame plays, as the animatic reads it. */
+  function moveOf(f, sc) {
+    var m = String((f && f.move) || (sc && sc.camera_move) || '').toLowerCase();
+    if (MOVE[m]) return m;
+    if (/pull|out|reveal/.test(m)) return 'pull out';
+    if (/push|dolly in|zoom in/.test(m)) return 'push in';
+    if (/pan|track|follow|truck|slide/.test(m)) return /left/.test(m) ? 'pan left' : 'pan right';
+    if (/tilt|crane|jib/.test(m)) return /down/.test(m) ? 'tilt down' : 'tilt up';
+    return 'static';
+  }
+
+  window.ADspaceFrames = { svg: svg, draw: draw, moveOf: moveOf, box: function (a) { return BOX[a] || BOX['9:16']; } };
 })();

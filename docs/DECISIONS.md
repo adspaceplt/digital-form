@@ -8538,3 +8538,21 @@ client on any stamp, so `quotes` passed. The trigger now runs on every
 write, a paper signature and a Letter of Offer move the lead too, through
 one function, and `tests/sql.js` drives the real triggers.
 
+
+### 2026-11-06 · Scene frames drawn by Claude, and the animatic
+The user, after Gemini refused every picture (its prepaid credits spent):
+"Claude couldnt draw but able to generate motions n clips right why not do
+that replace gemini". A sample of four scenes from the Wellness script,
+drawn as line art, was approved as a draft; asked about clips, the user
+chose the animatic over AI video ("1 yes": AI video is priced per second,
+several US dollars a script, and its people and places change between
+clips). Draw with AI now asks Claude for each frame by structured output:
+the drawing comes back as data (paths of path commands and numbers and a
+tone each), checked by the function, by `video_script_frame` and again by
+the page, so nothing the model writes is ever drawn as markup (a frame
+holding `<script>` or an attribute break draws nothing; `tests/vs.js`).
+Frames are priced by their tokens; `ai_price_image` stays for a row Gemini
+drew. The animatic plays the scenes on one canvas with each camera move
+and on-screen text, and Download records it in the browser
+(MediaRecorder), so nothing is stored or sent anywhere. Where a scene names
+no shot, Claude chooses one, said under the frame in its label.

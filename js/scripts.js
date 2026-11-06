@@ -71,7 +71,9 @@
     up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 14 6-6 6 6"/></svg>',
     down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 10 6 6 6-6"/></svg>',
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>'
   };
 
   var st = { list: [], clients: [], loaded: false, open: null, scenes: [],
@@ -373,7 +375,7 @@
       if (!r.data) throw new Error('not-found');
       st.open = r.data;
       return Promise.all([
-        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_url, photo_by, photo_thumb, ai_url').eq('script_id', id).order('position'),
+        db.from('video_script_scenes').select('id, position, visual, line, vc, shot_at, shot_by, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_url, photo_by, photo_thumb, ai_url, ai_thumb, ai_frame').eq('script_id', id).order('position'),
         db.from('video_scripts').select('id, code, seq, video_no, title, status, kind, shoot_on, venue').eq('client_id', st.open.client_id)
           .eq('period', st.open.period).order('seq')
       ]);
@@ -533,11 +535,18 @@
   /* The script as the team reads it, with the crew's tick and clip number on
      each scene. */
   /* SCENE PICTURES (2026-11-05; the user: all three, the team's alone): the
-     best picture a scene has, the colleague's photo or sketch, else the one
-     AI drew, else the frame drawn from its shot (js/frames.js); Add photo
-     opens the camera on a phone, Remove takes the photo away with Undo. */
+     best picture a scene has, the colleague's photo or sketch, else the
+     frame Claude drew (2026-11-06, kept as data and built by js/frames.js,
+     its camera's move played once), else a picture drawn before by Gemini,
+     else the frame drawn from its shot; Add photo opens the camera on a
+     phone, Remove takes the photo away with Undo. */
   function picOf(sc) {
     if (sc.photo_url) return { url: sc.photo_url, tag: sc.photo_by ? 'Photo by ' + sc.photo_by : 'Photo', kind: 'photo' };
+    var drawn = sc.ai_frame && window.ADspaceFrames && window.ADspaceFrames.draw ? window.ADspaceFrames.draw(sc.ai_frame, st.open && st.open.aspect) : '';
+    /* Where the scene names no shot, the shot Claude chose is said with it. */
+    var chose = !sc.shot_size && !sc.camera_move && sc.ai_frame ? [sc.ai_frame.shot_size, sc.ai_frame.move !== 'static' && sc.ai_frame.move].filter(Boolean)
+      .map(function (w) { w = String(w); return w.charAt(0).toUpperCase() + w.slice(1); }) : [];
+    if (drawn) return { svg: drawn, tag: ['Drawn with AI'].concat(chose).join(' \u00b7 '), kind: 'ai' };
     if (sc.ai_url) return { url: sc.ai_url, tag: 'Drawn with AI', kind: 'ai' };
     var f = window.ADspaceFrames ? window.ADspaceFrames.svg(sc, st.open && st.open.aspect) : '';
     return f ? { svg: f, tag: 'Sketch from the shot', kind: 'frame' } : null;
@@ -556,9 +565,11 @@
   /* Draw with AI on the Scenes heading: drawn only where the picture
      writer answers that it is set up, with what is left today. */
   function drawAct() {
-    if (!may('work') || !st.drawReady) return '';
+    /* Play: the scenes as an animatic, for anyone who reads the script. */
+    var play = st.scenes.length ? '<button class="btn btn-sm btn-icon" type="button" id="vsPlay">' + ICON.play + 'Play</button>' : '';
+    if (!may('work') || !st.drawReady) return play ? '<span class="vs-draw">' + play + '</span>' : '';
     return '<span class="vs-draw"><span class="vs-draw-left" id="vsDrawLeft">' + (st.drawLeft == null ? '' : esc(String(st.drawLeft)) + ' left today') + '</span>' +
-      '<button class="btn btn-sm btn-icon" type="button" id="vsDraw">' + AI_GLYPH + 'Draw with AI</button></span>';
+      play + '<button class="btn btn-sm btn-icon" type="button" id="vsDraw">' + AI_GLYPH + 'Draw with AI</button></span>';
   }
   /* What is seen: the timing and camera over it, the on-screen text and the
      sound under it, each only where set. */
@@ -781,7 +792,6 @@
     'ai-not-set-up': 'Draw with AI is not set up yet. Please contact an admin.',
     'ai-key': 'Draw with AI is not available at the moment. Please contact an admin.',
     'ai-model': 'Draw with AI is not available at the moment. Please contact an admin.',
-    'ai-billing': 'Draw with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
     'ai-failed': 'No pictures were drawn. Try again.',
     'ai-incomplete': 'No pictures were drawn. Try again.'
@@ -878,6 +888,7 @@
       });
     });
     if ($('vsDraw')) $('vsDraw').addEventListener('click', function () { drawWithAi($('vsDraw')); });
+    if ($('vsPlay')) $('vsPlay').addEventListener('click', function () { openPlay($('vsPlay')); });
   }
   /* Is the picture writer set up? Asked once a visit, counting nothing. */
   function pingDraw() {
@@ -889,14 +900,9 @@
       return rpc('ai_picture_left', {}).then(function (d) { st.drawLeft = d.left; }).catch(function () {});
     }).catch(function () { st.drawReady = false; });
   }
-  function base64Blob(b64, mime) {
-    var bin = atob(b64), n = bin.length, u = new Uint8Array(n);
-    for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
-    return new Blob([u], { type: mime || 'image/png' });
-  }
   function drawWithAi(btn) {
     var s = st.open;
-    var missing = st.scenes.filter(function (x) { return !x.photo_url && !x.ai_url; });
+    var missing = st.scenes.filter(function (x) { return !x.photo_url && !x.ai_frame && !x.ai_url; });
     sayPic('');
     btn.disabled = true;
     rpc('ai_picture_left', {}).then(function (left) {
@@ -919,16 +925,9 @@
         sayPic('Drawing ' + list.length + (list.length === 1 ? ' picture' : ' pictures') + '. This can take a minute.', 'ok');
         db.functions.invoke('script-pictures', { body: { script_id: sid, scenes: list.map(function (x) { return x.id; }) } }).then(function (res) {
           var d = res && res.data;
-          if (res.error || !d || d.error || !d.pictures) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; x.data = d; throw x; }
-          /* Each picture stored and kept on its scene in turn. */
-          return d.pictures.reduce(function (p, pic) {
-            return p.then(function (n) {
-              var src = 'data:' + (pic.mime || 'image/png') + ';base64,' + pic.data;
-              return Promise.all([jpegOf(src).then(storePic), jpegOf(src, 360, true)])
-                .then(function (two) { return setPic(pic.scene, 'ai', two[0], pic.press, two[1]); })
-                .then(function () { return n + 1; }, function () { return n; });
-            });
-          }, Promise.resolve(0)).then(function (n) { return { n: n, missed: (d.missed || 0) + d.pictures.length - n }; });
+          if (res.error || !d || d.error || !d.drawn) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; x.data = d; throw x; }
+          /* Each frame is kept on its scene by the function as it is drawn. */
+          return { n: d.drawn.length, missed: d.missed || 0 };
         }).then(function (r) {
           if (!st.open || st.open.id !== sid) return;
           return rpc('ai_picture_left', {}).then(function (l) { st.drawLeft = l.left; }, function () {})
@@ -946,6 +945,85 @@
       });
     }).catch(function (e) { btn.disabled = false; sayPic(picSaid(e)); });
   }
+
+  /* ---- The animatic (2026-11-06; the user: short clips, "1 yes") ------- */
+  /* The scenes played in order on one canvas (js/animatic.js), each for its
+     own time (its from and to, else the video's length shared out, else
+     three seconds), its best picture moved as its camera moves, with its
+     on-screen text. Download records the same in the browser. */
+  var PLAY = { player: null, rec: false };
+  function clockOf(t) { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); }
+  function playItems(s) {
+    var n = st.scenes.length, F = window.ADspaceFrames;
+    var each = s.length_seconds && n ? s.length_seconds / n : 3;
+    return st.scenes.map(function (sc, i) {
+      var secs = sc.t_to != null && sc.t_from != null && Number(sc.t_to) > Number(sc.t_from) ? Number(sc.t_to) - Number(sc.t_from) : each;
+      var drawn = sc.ai_frame && F && F.draw ? F.draw(sc.ai_frame, s.aspect, true) : '';
+      var sketch = !drawn && F ? F.svg(sc, s.aspect) : '';
+      var src = sc.photo_thumb || (drawn ? svgFile(drawn) : '') || sc.ai_thumb || (sketch ? svgFile(sketch) : '') || null;
+      return { n: i + 1, src: src, move: F && F.moveOf ? F.moveOf(sc.ai_frame, sc) : 'static',
+               secs: Math.max(1.5, Math.min(12, secs)), text: sc.on_screen || '' };
+    });
+  }
+  function playSay(text, tone) { say($('vsPlayMsg'), text, tone); }
+  function playTick(t, T, on, i) {
+    $('vsPlayTime').textContent = clockOf(t) + ' of ' + clockOf(T) + (i != null ? ' \u00b7 Scene ' + (i + 1) + ' of ' + st.scenes.length : '');
+    $('vsPlayBar').style.setProperty('--p', T ? String(Math.min(1, t / T)) : '0');
+    if (!PLAY.rec) $('vsPlayGo').innerHTML = (on ? ICON.pause + 'Pause' : ICON.play + 'Play');
+  }
+  function openPlay(opener) {
+    var s = st.open;
+    if (!s || !st.scenes.length || !window.ADspaceAnimatic) return;
+    var A = window.ADspaceAnimatic, sz = A.size(s.aspect), c = $('vsPlayCanvas');
+    c.width = sz[0]; c.height = sz[1];
+    c.style.aspectRatio = sz[0] + ' / ' + sz[1];
+    $('vsPlayTitle').textContent = [s.code, s.title].filter(Boolean).join(' \u00b7 ') || 'Play';
+    $('vsPlaySave').hidden = !A.canRecord();
+    $('vsPlaySave').disabled = true; $('vsPlayGo').disabled = true;
+    playSay('');
+    PLAY.player = null; PLAY.scenes = null;
+    window.ADspaceSheet.show($('vsPlaySheet'), { opener: opener || null });
+    A.prepare(playItems(s), s.aspect).then(function (scenes) {
+      if ($('vsPlaySheet').hidden) return;
+      PLAY.scenes = scenes;
+      PLAY.player = A.player(c, scenes, playTick);
+      $('vsPlaySave').disabled = false; $('vsPlayGo').disabled = false;
+    });
+  }
+  function shutPlay() {
+    if (PLAY.player) PLAY.player.pause();
+    if (PLAY.rec) return;
+    window.ADspaceSheet.close();
+  }
+  $('vsPlayGo').addEventListener('click', function () {
+    var p = PLAY.player;
+    if (!p || PLAY.rec) return;
+    if (p.playing()) p.pause(); else p.play();
+  });
+  $('vsPlayCancel').addEventListener('click', shutPlay);
+  $('vsPlayClose').addEventListener('click', shutPlay);
+  $('vsPlaySave').addEventListener('click', function () {
+    var s = st.open, b = $('vsPlaySave');
+    if (!PLAY.scenes || PLAY.rec) return;
+    if (PLAY.player) PLAY.player.pause();
+    PLAY.rec = true;
+    b.disabled = true; $('vsPlayGo').disabled = true;
+    window.ADspaceAnimatic.record(PLAY.scenes, s.aspect, function (t, T) {
+      playSay('Recording ' + clockOf(t) + ' of ' + clockOf(T) + '. Keep this tab open.', 'ok');
+    }).then(function (out) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(out.blob);
+      a.download = [s.code, s.title, 'animatic'].filter(Boolean).join(' ').replace(/[\\/:*?"<>|]+/g, '-') + '.' + out.ext;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
+      playSay('Downloaded.', 'ok');
+    }).catch(function () {
+      playSay('This browser cannot record the video. Open this page in Chrome or Safari.');
+    }).then(function () {
+      PLAY.rec = false;
+      b.disabled = false; $('vsPlayGo').disabled = false;
+    });
+  });
 
   function wireRecord() {
     var on = onAct;
@@ -1656,7 +1734,7 @@
   function gather(ids) {
     return Promise.all([
       db.from('video_scripts').select('*, clients(name)').in('id', ids).order('seq'),
-      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_thumb, ai_thumb').in('script_id', ids).order('position')
+      db.from('video_script_scenes').select('script_id, position, visual, line, vc, shot_at, t_from, t_to, shot_size, angle, camera_move, on_screen, sound, photo_thumb, ai_thumb, ai_frame').in('script_id', ids).order('position')
     ]).then(function (rs) {
       rs.forEach(function (x) { if (x.error) throw x.error; });
       var by = {};
@@ -1673,24 +1751,31 @@
         return s;
       });
     }).then(function (videos) {
-      /* Each scene's picture for the crew: its thumbnail, else its frame
-         drawn to a PNG (2026-11-05). */
+      /* Each scene's picture for the crew: its photo's thumbnail, else the
+         frame Claude drew, else a picture drawn before, else its frame from
+         the shot, a drawing turned to a PNG (2026-11-05, 2026-11-06). */
       var jobs = [];
       videos.forEach(function (v) {
         v.scenes.forEach(function (sc) {
-          sc.pic = sc.photo_thumb || sc.ai_thumb || null;
+          sc.pic = sc.photo_thumb || null;
           if (sc.pic || !window.ADspaceFrames) return;
-          var svg = window.ADspaceFrames.svg(sc, v.aspect);
+          var drawn = sc.ai_frame && window.ADspaceFrames.draw ? window.ADspaceFrames.draw(sc.ai_frame, v.aspect, true) : '';
+          if (!drawn && sc.ai_thumb) { sc.pic = sc.ai_thumb; return; }
+          var svg = drawn || window.ADspaceFrames.svg(sc, v.aspect);
           if (svg) jobs.push(framePng(svg).then(function (d) { sc.pic = d; }, function () {}));
         });
       });
       return Promise.all(jobs).then(function () { return videos; });
     });
   }
+  /* A drawing as an image's SVG: its own namespace, in ink on white. */
+  function svgFile(svg) {
+    return svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
+  }
   /* A drawn frame as a PNG data URL, in ink on white, twice its size. */
   function framePng(svg) {
     return new Promise(function (resolve, reject) {
-      var src = svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
+      var src = svgFile(svg);
       var img = new Image();
       img.onload = function () {
         var c = document.createElement('canvas');
