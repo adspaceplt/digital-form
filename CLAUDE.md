@@ -6247,7 +6247,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Publish (`quotation_publish`, the Publish glyph, tonal beside it, the
   blue where Send is not drawn) shows the rates on the link alone, nothing
   queued, filed published on the quotation link;
-  Adjust and send beside them, no Send on WhatsApp; the managers are told
+  Edit beside them (in place, below), no Send on WhatsApp; the managers are told
   six hours before the reply is owed while it waits (`quote_proceed_remind`).
   Once sent, the rates show, with Download (the A4 PDF); the website asks no
   billing and never a Letter of Offer, which the team sends after a
@@ -6294,6 +6294,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   contact (`quotation_set`, a website quotation's alone; no reminder
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
+- A quotation is edited in place until the portal sends it out
+  (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
+  "Quotation is a serious one so it must be accurate", Download never
+  locks it): `quotations.sent_out_at`, stamped by trigger when a website
+  quotation is released, a team's quotation is given its link, or a
+  WhatsApp or an email is filed for it. Until then a team's quotation's ⋯
+  and an awaiting website quotation's row offer Edit, Build quote opened
+  as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
+  Quotations at Work, in scope; priced again from the live card into the
+  same row, its reference and link kept, a team's re-dated; `sent`,
+  `signed`, `revised`, `not-proceeding`, `removed`; filed `{ref} edited ·
+  RM a → RM b`), as often as needed; once sent out, Edit opens as Revise
+  {ref} and makes the next quotation (`quotation_replace`).
 
 - A website quotation's ⋯ Preview (`quotes.js`, any reader of it; the
   user, 2026-10-30) opens `/quote/?q={key}&preview=1`: the prospect's page
