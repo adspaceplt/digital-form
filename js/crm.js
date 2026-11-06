@@ -6631,6 +6631,9 @@
       pickBlock('Confirmed', e.confirmed, false,
         'Tick one only for a renewal, a variation or a replacement.') +
       (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>') +
+      /* What the ticked lines come to, as the letter's summary prints it
+         (the user, 2026-11-06: only the term's total was shown). */
+      '<dl class="qb-tot lpicktot" id="pickTotals" aria-live="polite" hidden></dl>' +
       /* The reference is the database's to make and the office's to override.
          Blank is the everyday case and the placeholder says so without a
          sentence; a reference is typed to fill a gap a deleted letter left,
@@ -6781,8 +6784,39 @@
     var h = q ? window.ADspaceQuotes.headline(q) : null;
     $('pickSum').textContent = !rows.length ? 'Nothing chosen'
       : h && h[1] ? h[0] + ' ' + h[1].charAt(0).toLowerCase() + h[1].slice(1) + (q.totals && q.totals.month && q.totals.term ? ' · ' + q.totals.term + ' months' : '')
-      : rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, MON.curOf(c));
+      : rows.length + (rows.length === 1 ? ' service' : ' services');
+    pickTotals(rows, price, h && h[1]);
     $('pickGo').disabled = !rows.length;
+  }
+
+  /* The letter's own summary rows for the lines ticked: the month's
+     subtotal, one-off items, SST, what is due first, each month and the
+     whole term, the term's total the one in weight. */
+  function pickTotals(rows, price, quoted) {
+    var box = $('pickTotals');
+    if (!box) return;
+    if (!rows.length || !price || quoted) { box.hidden = true; box.innerHTML = ''; return; }
+    var cur = MON.curOf(state.client), m = function (v) { return MON.money2(v, cur); };
+    var on = Number(price.tax) > 0;
+    var incl = on ? ' incl. SST' : '';
+    var word = on && MON.sstOf ? MON.sstOf(rows, price.sstPct != null ? price.sstPct : MON.setting('sst_pct')).word : (MON.SST_NONE || 'SST not applicable');
+    var once = Number(price.once) > 0, out = [];
+    if (price.term) {
+      out.push(['Monthly subtotal', m(price.each)]);
+      if (once) out.push(['One-off subtotal', m(price.once)]);
+      out.push([word, on ? m(Number(price.eachTax) + Number(price.onceTax || 0)) : '']);
+      if (once) out.push(['First month due', m(Number(price.eachTotal) + Number(price.onceTotal || 0))]);
+      out.push(['Monthly' + incl, m(price.eachTotal)]);
+      out.push(['Total for ' + price.term + ' months' + incl, m(price.total), 1]);
+    } else {
+      out.push(['Subtotal', m(price.subtotal)]);
+      out.push([word, on ? m(price.tax) : '']);
+      out.push(['Total' + incl, m(price.total), 1]);
+    }
+    box.innerHTML = out.map(function (x) {
+      return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
+    }).join('');
+    box.hidden = false;
   }
 
   function pickClosed() {
