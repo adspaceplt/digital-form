@@ -99407,6 +99407,8 @@ drop index if exists public.sm_report_post_links_task_idx;
 -- QUOTATION EDITED UNTIL SENT -----------------------------------------------
 
 alter table public.quotations add column if not exists sent_out_at timestamptz;
+-- Read by the Services pane: the table is read through column grants.
+grant select (sent_out_at) on table public.quotations to authenticated;
 
 update public.quotations q set sent_out_at = coalesce(q.released_at,
          (select min(w.created_at) from public.wa_outbox w where w.ref_kind = 'quotation' and w.ref_id = q.id and coalesce(w.state, '') <> 'failed'),
