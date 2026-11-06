@@ -650,7 +650,17 @@
       var out = q.released_at || (q.source === 'console' && q.access_key) ||
         (DB.wa_outbox || []).some(function (w) { return w.ref_id === q.id && w.state !== 'failed' && w.status !== 'failed'; }) ||
         (DB.client_emails || []).some(function (e) { return e.ref_id === q.id && e.kind === 'quotation'; });
-      if (out) q.sent_out_at = new Date().toISOString();
+      if (!out) return;
+      q.sent_out_at = new Date().toISOString();
+
+      if (q.removed_at) return;
+      var c = (DB.clients || []).find(function (x) { return x.id === q.client_id; });
+      if (!c || (c.stage !== 'lead' && c.stage !== 'contacted')) return;
+      var patch = { stage: 'proposal' };
+      stageClock('clients', c, patch);
+      Object.assign(c, patch, { updated_at: q.sent_out_at });
+      (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name,
+        detail: 'Proposal sent · ' + q.ref + ' sent out', created_at: q.sent_out_at });
     });
   }
   function persist() {
