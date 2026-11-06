@@ -345,7 +345,8 @@
     plan.detail = (plan.detail || []).concat(into.map(function (l) {
       /* "7 × Translation into Chinese": the count says what "per content
          piece" said. */
-      return Number(l.qty) > 1 ? l.qty + ' × ' + String(l.label).replace(/, per [^,]+$/, '') : l.label;
+      var name = String(l.label).replace(/, per [^,]+$/, '');
+      return Number(l.qty) > 1 ? l.qty + ' × ' + name : name;
     }));
     return lines.filter(function (l) { return !(l.in_plan && l !== plan); });
   }
