@@ -8394,3 +8394,16 @@ new meeting opens on the next free half hour.
 - Fix: 402, and a 429 naming credits or prepay, read `ai-billing` (Draw with AI
   is not available at the moment. Please contact an admin.). Nothing counted:
   every refused press was marked failed.
+
+### 2026-11-06 · Gate: a conflict line and a settings key lost between two releases
+- What broke: the day's gate on a5e6963 read six problems. `schema.sql` held a
+  `=======` line between Scene pictures and Meetings on any day (#923 and #925
+  merged together). #925's SQL Editor part restated `app_settings_set` with
+  `ai_price_image` but without #924's `report_post_links`, the live function
+  too, and #924's own Editor part (not yet run) would have taken
+  `ai_price_image` away again. Four suites were not updated for Scene
+  pictures (caption, analysis, vs, mailfn), and the walk's Video Scripts seed
+  wrote bare `\n` inside its template literal, crashing uxaudit at sign-in.
+- Fix: the line removed; #924's Editor part holds both keys and its band moved
+  after Scene pictures' so it is the schema's last word; run on the live
+  database; the suites and the seed corrected in the tests repo.

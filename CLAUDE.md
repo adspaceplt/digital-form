@@ -1460,6 +1460,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A merge leaves no conflict marker in the schema or a migration
   (2026-10-18: a `=======` line from #491 stood in `schema.sql`;
   `tests/sql.js`).
+- Two releases restating one function merge in turn: the later one's
+  restatement holds the other's change and its band follows the other's in
+  `schema.sql` (2026-11-06: #925 restated `app_settings_set` without
+  #924's `report_post_links`).
 
 ### Access
 - Access is a level per section, **none < view < work < manage**, in
