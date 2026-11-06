@@ -5101,26 +5101,38 @@ Each line is a rule that broke once. Its reason is in the archive.
     and any marked delayed offered (an admin or Reports Full Access any of
     the client's), through `sm_report_post_link` (Reports Work, a draft,
     the post dated; `links-off`, `not-linkable`, `no-date`,
-    `not-in-month`, `linked`), one task a post: the post takes the task's
-    description as its name and shows its code; the task takes the post's
-    day as its live date (the report is right where the task was not),
-    its delay cleared, its views and engagements from the post, and moves
+    `not-in-month`, `linked` for a link in another report), one task a
+    post and one post an account a task (`same-account`, the account
+    named; `2026-11-06-report-posts-many-accounts.sql`, its SQL Editor part
+    dropping the one-link-a-task index; the user, 2026-11-06: one content
+    on Instagram and Facebook): the post takes the task's
+    description as its name and shows its code; the task takes the
+    earliest linked post's day as its live date (the report is right where
+    the task was not), its delay cleared, its views and engagements added
+    up over its linked posts (`sm_report_task_sync`), and moves
     to Performance review (a task On hold, Blocked or Taken down stays),
     then Completed as the report moves into published and back as it
     leaves it, no other step of the report moving it (trigger
     `sm_reports_posts_follow`, nothing while the switch is off); a post
     with no figures writes none. Unlink (open with the switch off too)
     puts back what it changed where nothing changed it since, the stage
-    only from Performance review, the post's typed name too
+    only from Performance review, the post's typed name too, once its last
+    link goes (one of several taken off works the date and figures out
+    again from the posts left)
     (`sm_report_post_links`, RLS on, no policy, no grant, kept and ended,
     never in the snapshot); a post removed takes its link off (trigger
     `sm_report_post_removed`, the SQL Editor part). Reports Work moves a
     colleague's task here, as a report moves its own report task. The gate then counts a planned post once linked
     with its three dates set, naming one not linked (Live · Not linked to
     a post); off, the stage rule above stands. A white-label report is
-    held to no post and links none. The task card reads In the Accounts
-    Report · {month} · Posted {day} · n days after its post date, Open
-    report (`ops_task_report_post`). Submit is
+    held to no post and links none. Link task offers a task linked on
+    another account (Linked: {account}), never one already on this post's
+    account, and once linked offers the same day's posts on the report's
+    other accounts no task holds, ticked (Link on other accounts; never
+    linked by itself). The task card reads In the Accounts
+    Report · {month} · Posted {day} (on several accounts, each account and
+    its day, earliest first) · n days after its post date, Open
+    report (`ops_task_report_post` `posts`). Submit is
     refused `month-gate` unless an admin or Reports Full Access gives a
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /

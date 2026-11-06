@@ -8407,3 +8407,17 @@ new meeting opens on the next free half hour.
 - Fix: the line removed; #924's Editor part holds both keys and its band moved
   after Scene pictures' so it is the schema's last word; run on the live
   database; the suites and the seed corrected in the tests repo.
+
+### 2026-11-06 · One task, its posts on several accounts
+- What broke: a client posts one piece of content on Instagram and Facebook,
+  but a task took one link in all (`sm_report_post_links_task_idx`), so once
+  linked on Instagram it left the Facebook post's picker (the user: "the
+  linking option is gone").
+- Fix (approved): one link an account a task. The task's live date is the
+  earliest linked post's day and its figures add up over its posts; the
+  picker names the accounts it is on; a link offers the same day's posts on
+  the other accounts, ticked, never linked by itself; the task card names
+  each account. The first link keeps the task's earlier state and hands it
+  on when taken off, so only the last link puts the task back.
+- Also: a line under a section's head (`.viewhead + .msg`) touched the card
+  under it (Sent on WhatsApp over Quotations); it now stands 12px from both.

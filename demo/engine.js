@@ -5391,12 +5391,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'ops_task_report_post') {
       var otp = opsTask(args.p_task);
       if (!otp || !opsAllowed('ops', 'view') || !(scopeTaskMine(otp) || scopeSeen(otp.client_id, 'view'))) return { error: 'denied' };
-      var otl = liveLinks().filter(function (l) { return l.task_id === otp.id; })[0];
-      if (!otl) return { ok: true, post: null };
-      var otpp = DB.sm_report_posts.filter(function (p) { return p.id === otl.post_id; })[0] || {};
-      var otr = DB.sm_reports.filter(function (r) { return r.id === otl.report_id; })[0] || {};
-      return { ok: true, post: { report_id: otr.id, status: otr.status, period_start: otr.period_start, period_end: otr.period_end,
-        posted_on: otpp.posted_on, url: otpp.url || null, views: otpp.views == null ? null : otpp.views, may_open: opsAllowed('reports', 'view') } };
+      var otls = liveLinks().filter(function (l) { return l.task_id === otp.id; });
+      if (!otls.length) return { ok: true, post: null, posts: [] };
+      var otposts = otls.map(function (otl) {
+        var otpp = DB.sm_report_posts.filter(function (p) { return p.id === otl.post_id; })[0] || {};
+        var otr = DB.sm_reports.filter(function (r) { return r.id === otl.report_id; })[0] || {};
+        var ota = (DB.sm_report_platforms || []).filter(function (a) { return a.id === otpp.platform_id; })[0] || {};
+        return { report_id: otr.id, status: otr.status, period_start: otr.period_start, period_end: otr.period_end,
+          posted_on: otpp.posted_on, url: otpp.url || null, views: otpp.views == null ? null : otpp.views,
+          platform: ota.platform || null, platform_name: ota.platform_name || null, account_name: ota.account_name || null, handle: ota.handle || null,
+          position: ota.position || 0, may_open: opsAllowed('reports', 'view') };
+      }).sort(function (x, y) { return String(x.posted_on).localeCompare(String(y.posted_on)) || (x.position - y.position); });
+      return { ok: true, post: otposts[0], posts: otposts };
     }
     if (name === 'ops_set_results') {
       if (!opsAllowed('ops', 'work')) return { error: 'denied' };
@@ -6775,12 +6781,50 @@ function opsCodeRange(cid, period, ty, src, seq) {
       !links && !x.live_at ? 'live' : null].filter(Boolean);
   }
   function mytDay(ts) { return ts ? new Date(Date.parse(ts) + 8 * 3600e3).toISOString().slice(0, 10) : null; }
+
+  function linkPosts(taskId) {
+    return liveLinks().filter(function (k) { return k.task_id === taskId; })
+      .sort(function (x, y) { return String(x.linked_at).localeCompare(String(y.linked_at)); });
+  }
+  function linkSync(taskId) {
+    var t = opsTask(taskId), ls = linkPosts(taskId);
+    if (!t || !ls.length) return;
+    var posts = ls.map(function (k) { return (DB.sm_report_posts || []).filter(function (q) { return q.id === k.post_id; })[0] || {}; });
+    var days = posts.map(function (q) { return q.posted_on; }).filter(Boolean).sort();
+    if (!days.length) return;
+    var engOf = function (q) { return q.engagements != null ? q.engagements : q.interactions; };
+    var res = posts.some(function (q) { return q.views != null || engOf(q) != null; });
+    var sum = function (f) { var any = false, n = 0; posts.forEach(function (q) { var v = f(q); if (v != null) { any = true; n += Number(v); } }); return any ? n : null; };
+    var first = ls[0], prev = (ls.filter(function (k) { return k.prev && 'stage_key' in k.prev; })[0] || {}).prev || {};
+    var lset = t.live_at === first.live_set, rset = res && t.result_at === first.results_at;
+    var rback = !res && first.results_at && t.result_at === first.results_at;
+    var now = new Date().toISOString();
+    var live = mytDay(t.live_at) === days[0] ? t.live_at : new Date(Date.parse(days[0] + 'T04:00:00Z')).toISOString();
+    if (lset) t.live_at = live;
+    if (rset) { t.result_views = sum(function (q) { return q.views; }); t.result_engagements = sum(engOf); t.result_at = now; t.result_by = (smMe() || {}).id || t.result_by; }
+    if (rback) ['result_views', 'result_engagements', 'result_at', 'result_by'].forEach(function (k) { t[k] = prev[k] == null ? null : prev[k]; });
+    t.version = (t.version || 1) + 1; t.updated_at = now;
+    ls.forEach(function (k) { if (lset) k.live_set = live; if (rset) k.results_at = now; if (rback) k.results_at = null; });
+  }
   function linkRevert(l) {
     if (!l || l.unlinked_at) return;
     var me = smMe();
     l.unlinked_at = new Date().toISOString(); l.unlinked_by = me ? me.id : null;
     var t = opsTask(l.task_id), p = l.prev || {};
     if (!t) return;
+    var left = linkPosts(t.id);
+    if (left.length) {
+      var lpost0 = (DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0];
+      if (lpost0 && 'post_title' in p && lpost0.title === (String(t.content_desc || '').trim() || null)) lpost0.title = p.post_title;
+      if ('stage_key' in p) {
+        var nx = left[0], keep = nx.prev && 'post_title' in nx.prev ? nx.prev.post_title : null;
+        nx.prev = Object.assign({}, p, { post_title: keep }); nx.moved = l.moved; nx.done_at = nx.done_at || l.done_at || null;
+      }
+      var wasLive0 = t.live_at;
+      linkSync(t.id);
+      opsLog(t.id, 'report_unlinked', { live_at: wasLive0 }, { live_at: t.live_at }, null, { report_id: l.report_id, post_id: l.post_id });
+      return;
+    }
     var back = l.moved && t.stage_key === 'performance_review' && p.stage_key && t.stage_key !== p.stage_key;
     var wasStage = t.stage_key, wasLive = t.live_at;
     if (back) { t.stage_key = p.stage_key; t.completed_at = p.completed_at || null; t.blocked_at = p.blocked_at || null; t.blocked_category = p.blocked_category || null; }
@@ -6801,13 +6845,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var t = opsTask(l.task_id); if (!t) return;
       var at = new Date().toISOString();
       if (into && t.stage_key === 'performance_review') {
-        var p = (DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0] || {};
-        var eng = p.engagements != null ? p.engagements : p.interactions;
+        var fp = linkPosts(t.id).map(function (k) { return (DB.sm_report_posts || []).filter(function (x) { return x.id === k.post_id; })[0] || {}; });
+        var fsum = function (f) { var any = false, n = 0; fp.forEach(function (q) { var v = f(q); if (v != null) { any = true; n += Number(v); } }); return any ? n : null; };
+        var fv = fsum(function (q) { return q.views; }), fe = fsum(function (q) { return q.engagements != null ? q.engagements : q.interactions; });
         t.stage_key = 'completed'; t.completed_at = t.completed_at || at;
-        if (p.views != null || eng != null) {
-          if (p.views != null) t.result_views = p.views;
-          if (eng != null) t.result_engagements = eng;
-          t.result_at = at; l.results_at = at;
+        if (fv != null || fe != null) {
+          if (fv != null) t.result_views = fv;
+          if (fe != null) t.result_engagements = fe;
+          t.result_at = at;
+          linkPosts(t.id).forEach(function (k) { k.results_at = at; });
         }
         l.done_at = at; t.version = (t.version || 1) + 1; t.updated_at = at;
         opsLog(t.id, 'stage_changed', { stage_key: 'performance_review' }, { stage_key: 'completed' }, 'Accounts Report published', { report_id: r.id });
@@ -7006,10 +7052,30 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!lt || lt.client_id !== lr.client_id || lt.cancelled_at || lt.archived_at || /^report_/.test(lt.source_type || '')) return { error: 'not-in-month' };
       var lg = smGate(lr);
       if (!((lg.month && lt.engagement_id === lg.month.id) || lt.delayed_at || smMayOverride(me))) return { error: 'not-in-month' };
-      var other = liveLinks().filter(function (l) { return l.task_id === lt.id; })[0];
+      var other = liveLinks().filter(function (l) { return l.task_id === lt.id && l.report_id !== lr.id; })[0];
       if (other) { var orr = DB.sm_reports.filter(function (x) { return x.id === other.report_id; })[0] || {}; return { error: 'linked', period: smWord(orr.period_start, orr.period_end) }; }
+      var same = liveLinks().filter(function (l) {
+        if (l.task_id !== lt.id || l.report_id !== lr.id || l.post_id === lp.id) return false;
+        var q = DB.sm_report_posts.filter(function (x) { return x.id === l.post_id; })[0] || {};
+        return q.platform_id === lp.platform_id;
+      })[0];
+      if (same) { var sa = (DB.sm_report_platforms || []).filter(function (x) { return x.id === lp.platform_id; })[0] || {}; return { error: 'same-account', account: sa.account_name || sa.handle || sa.platform }; }
       if (held) linkRevert(held);
-      DB.sm_report_post_links.filter(function (l) { return l.task_id === lt.id && !l.unlinked_at; }).forEach(linkRevert);
+      DB.sm_report_post_links.filter(function (l) {
+        return l.task_id === lt.id && !l.unlinked_at && !(DB.sm_report_posts || []).some(function (q) { return q.id === l.post_id && q.report_id === l.report_id; });
+      }).forEach(linkRevert);
+      var first = linkPosts(lt.id)[0];
+      if (first) {
+        var xname = String(lt.content_desc || '').trim(), xWas = lt.live_at;
+        DB.sm_report_post_links.push({ id: nid('spl'), post_id: lp.id, report_id: lr.id, task_id: lt.id, prev: { post_title: lp.title == null ? null : lp.title },
+          moved: false, live_set: first.live_set, results_at: first.results_at, linked_by: me.id, linked_at: new Date(Date.parse(now) + 1).toISOString(), unlinked_at: null });
+        if (xname) lp.title = xname;
+        linkSync(lt.id);
+        opsLog(lt.id, 'report_linked', { live_at: xWas }, { live_at: lt.live_at, posted_on: lp.posted_on }, null, { report_id: lr.id, post_id: lp.id });
+        smLog(lr, 'report.saved', (lt.code || ('#WT' + String(lt.task_no).padStart(5, '0'))) + ' linked to its post of ' + lp.posted_on + ' on another account');
+        persist();
+        return { ok: true, id: lt.id, moved: false, extra: true, title: xname || null, live: lp.posted_on };
+      }
       var wasDay = mytDay(lt.live_at);
       var live = wasDay === lp.posted_on ? lt.live_at : new Date(Date.parse(lp.posted_on + 'T04:00:00Z')).toISOString();
       var moved = ['performance_review', 'completed', 'on_hold', 'blocked', 'taken_down', 'cancelled'].indexOf(lt.stage_key) < 0 && !!lt.workflow_id &&
@@ -7050,7 +7116,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { ok: true, on: on, applies: true,
         links: liveLinks().filter(function (l) { return l.report_id === tr.id; }).map(function (l) {
           var t = opsTask(l.task_id) || {};
-          return { post_id: l.post_id, task_id: t.id, task_no: t.task_no, code: t.code || null, title: t.content_desc || null, stage_key: t.stage_key };
+          var lq = (DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0] || {};
+          return { post_id: l.post_id, platform_id: lq.platform_id, task_id: t.id, task_no: t.task_no, code: t.code || null, title: t.content_desc || null, stage_key: t.stage_key };
         }),
         tasks: !on ? [] : DB.ops_tasks.filter(function (t) {
           return t.client_id === tr.client_id && !t.cancelled_at && !t.archived_at && !/^report_/.test(t.source_type || '') && t.publish_at &&
@@ -7058,7 +7125,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }).sort(function (x, y) { return ((y.engagement_id === mid) - (x.engagement_id === mid)) || (x.task_no - y.task_no); })
           .map(function (t) {
             return { id: t.id, task_no: t.task_no, code: t.code || null, title: t.content_desc || null, stage_key: t.stage_key,
-              publish_at: t.publish_at, live_at: t.live_at || null, delayed: !!t.delayed_at, month: !!mid && t.engagement_id === mid, linked: taskLinked(t.id) };
+              publish_at: t.publish_at, live_at: t.live_at || null, delayed: !!t.delayed_at, month: !!mid && t.engagement_id === mid,
+              linked: liveLinks().some(function (l) { return l.task_id === t.id && l.report_id !== tr.id; }),
+              on: liveLinks().filter(function (l) { return l.task_id === t.id && l.report_id === tr.id; }).map(function (l) {
+                return ((DB.sm_report_posts || []).filter(function (x) { return x.id === l.post_id; })[0] || {}).platform_id;
+              }).filter(function (v, i, arr) { return v && arr.indexOf(v) === i; }) };
           }) };
     }
 
