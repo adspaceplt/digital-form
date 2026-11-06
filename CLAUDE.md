@@ -2491,8 +2491,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Person in charge (`owner` holds a name as text):
   - Changed from one colleague to another only at Clients Full Access, or by
     Team Full Access carrying a stand-down or a rename (`clients_owner_guard`,
-    `owner-change`); a lead nobody holds is taken with Take lead in the
-    record's ⋯ (Leads at Manage).
+    `owner-change`). A lead is sold, not run: during the lead stages only
+    Sales by is set, and Person in charge is the operations colleague named
+    once the client is near confirmed (the user, 2026-11-06). Take lead
+    (`#crmTake`, under the name on the record head, at its own width) makes
+    the colleague Sales by on a lead nobody sells or runs, at Leads Work
+    (`clients_sales_by_guard`, `2026-11-06-take-lead-as-sales-by.sql`),
+    filed `Sales by: not set → name`; the head's meta reads Sales by while
+    no Person in charge is set, and /quote/ names the Sales by colleague as
+    the prospect's representative until a Person in charge is set.
   - The stage select greys a stage whose band the colleague cannot work, and
     New lead needs `clients.leads:work`.
   - Standing a colleague down, or Delete, asks who takes each kind of their

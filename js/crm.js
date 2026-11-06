@@ -1223,8 +1223,10 @@
     $('crmClientStageRead').hidden = !sel.disabled;
     $('crmClientStageRead').className = 'chip-state ' + (w[2] || '');
     $('crmClientStageRead').textContent = w[1];
-    /* A lead nobody is in charge of is anybody's to take who may work leads. */
-    $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() &&
+    /* A lead nobody holds is anybody's to take who may work leads; one the
+       salesperson brought in (Sales by) is held, its Person in charge left
+       for whoever runs the account (the user, 2026-11-06). */
+    $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() && !c.sales_by &&
                             bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
     /* Edit and Brand's Edit change the record, so they ask its band at Work
        as the database does; a View group was offered both, and its save was
@@ -1555,6 +1557,7 @@
     var bits = [];
     if (main && main.lang && LANG_WORD[main.lang]) bits.push('Prefers ' + LANG_WORD[main.lang]);
     if (c.owner) bits.push('Person in charge: ' + c.owner);
+    else if (c.sales_by) bits.push('Sales by: ' + salesByName(c.sales_by));
     var meta = $('crmIdMeta');
     if (meta) {
       meta.textContent = bits.join('  ·  ');
@@ -2443,13 +2446,16 @@
   function takeLead(c) {
     var me = bridge.me && bridge.me();
     if (!c || !me || !me.name) return;
-    db.from('clients').update({ owner: me.name }).eq('id', c.id).select('id').then(function (r) {
+    /* Taking a lead is selling it (the user, 2026-11-06: "Take lead … its
+       equivalent to sales by"): Sales by is theirs, Person in charge left
+       for whoever runs the account. */
+    db.from('clients').update({ sales_by: me.id }).eq('id', c.id).select('id').then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       if (!r.data || !r.data.length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
-      c.owner = me.name;
+      c.sales_by = me.id;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
-      if (mine) mine.owner = me.name;
-      log('client.edited', c.name, 'Person in charge: not set → ' + me.name);
+      if (mine) mine.sales_by = me.id;
+      log('client.edited', c.name, 'Sales by: not set → ' + me.name);
       msg('crmWorkMsg', 'Taken.', 'ok');
       openClient(c);
     }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });

@@ -3149,11 +3149,10 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* A head under 300px (a 320 phone) has no room beside the stage: Calls and
    visits offers it there. */
 .rec-id.is-narrow .crm-logcall { display: none; }
-/* Take lead beside them on a phone widened the record past the screen
-   (425px at 390; 2026-10-29, audit CLI-1): there it takes the head's whole
-   control column on a line of its own under the stage and the ⋯. */
-.console-body.is-narrow .rec-ctl:has(> #crmTake:not([hidden])) { flex-wrap: wrap; justify-content: flex-end; row-gap: 8px; }
-.console-body.is-narrow #crmTake { order: 9; flex: 1 0 100%; }
+/* Take lead stands under the name at its own width (2026-11-06): in the
+   control column it took a row of its own on a phone and pushed the name
+   under it (2026-10-29's fix). */
+.rec-who > .rec-take { justify-self: start; margin-top: 4px; }
 /* A My Work row swiped left shows its next step (js/ops.js `rowSwipe`, the
    user, 2026-10-11): the row's cells slide with the finger and the step
    waits at the right edge, the one blue act while it stands open. */
