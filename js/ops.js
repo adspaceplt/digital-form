@@ -3246,12 +3246,21 @@
     if (!t || /^report_/.test(t.source_type || '') || !t.client_id) return;
     var seq = ++postSeq;
     db.rpc('ops_task_report_post', { p_task: t.id }).then(function (res) {
-      var p = res && res.data && !res.error && !res.data.error ? res.data.post : null;
+      var d = res && res.data && !res.error && !res.data.error ? res.data : null;
+      var p = d ? d.post : null;
       if (seq !== postSeq || !p) return;
       var mo = String(p.period_start || '');
       var late = p.posted_on && t.publish_at ? Math.round((Date.parse(p.posted_on + 'T00:00:00Z') - Date.parse(CK.day(t.publish_at) + 'T00:00:00Z')) / 864e5) : 0;
+      /* Linked on several accounts (2026-11-06): each account and its day,
+         earliest first; one post reads as before. */
+      var all = (d.posts && d.posts.length) ? d.posts : [p];
+      var PLAT = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', xhs: 'rednote', rednote: 'rednote' };
+      var acct = function (x) { return x.platform === 'other' ? (x.platform_name || x.account_name || 'Other account') : (PLAT[x.platform] || x.platform_name || x.platform || ''); };
+      var posted = all.length > 1
+        ? all.map(function (x) { return acct(x) + ' ' + niceDate(x.posted_on + 'T04:00:00Z'); }).join(' · ')
+        : 'Posted ' + niceDate(p.posted_on + 'T04:00:00Z');
       box.innerHTML = '<span>In the Accounts Report · ' + esc(MON_SHORT[Number(mo.slice(5, 7)) - 1] + ' ' + mo.slice(0, 4)) +
-        ' · Posted ' + esc(niceDate(p.posted_on + 'T04:00:00Z')) +
+        ' · ' + esc(posted) +
         (late > 0 ? ' · ' + late + (late === 1 ? ' day' : ' days') + ' after its post date' : '') + '</span>' +
         (p.may_open ? '<button class="btn btn-sm btn-quiet" type="button" data-a="openreport">Open report' + CHEV_S + '</button>' : '');
       box.hidden = false;

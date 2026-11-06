@@ -2940,6 +2940,7 @@
   };
   function linkSaid(d, e) {
     if (d && d.error === 'linked') return 'This task is already linked to a post in the report for ' + (d.period || 'another period') + '. Unlink it there first.';
+    if (d && d.error === 'same-account') return 'This task is already linked to another post on ' + (d.account || 'this account') + '. Unlink that post first.';
     return LINK_SAID[(d && d.error) || ''] || said(e || (d && d.error));
   }
   function sendLink(p, taskId) {
@@ -2958,22 +2959,63 @@
       });
     });
   }
+  /* A task is linked once an account (2026-11-06): one piece of content
+     posted on Instagram and Facebook is linked to each post. */
+  function accOf(id) { return st.platforms.filter(function (a) { return a.id === id; })[0] || null; }
+  function onWord(t) {
+    return (t.on || []).map(function (id) { var a = accOf(id); return a ? accLabel(a) : ''; }).filter(Boolean).join(', ');
+  }
+  /* The other accounts' posts of the same day no task holds, for the task
+     just linked: offered to link in one step, never linked by themselves. */
+  function sameDayPosts(p, taskId) {
+    var t = ((st.postLinks && st.postLinks.tasks) || []).filter(function (x) { return x.id === taskId; })[0];
+    var on = (t && t.on) || [p.platform_id];
+    return st.posts.filter(function (q) {
+      return q.id !== p.id && q.posted_on && q.posted_on === p.posted_on && on.indexOf(q.platform_id) < 0 && !linkOf(q.id);
+    });
+  }
   function linkPost(p, taskId, btn, then) {
     var host = st.host.querySelector('.rp-posts') || st.host;
-    var go = function (id) {
+    var go = function (id, quiet) {
       return sendLink(p, id).then(function (d) {
         undoBar(d.moved ? 'Linked. The task moved to Performance review.' : 'Linked.', host, function () { unlinkPost(p, true); });
         if (then) then();
+        if (!quiet) offerOthers(p, id, host);
       }).catch(function (e) { alertLine(host, e.said || said(e)); });
     };
-    if (taskId) return go(taskId);
-    var free = ((st.postLinks && st.postLinks.tasks) || []).filter(function (t) { return !t.linked; });
+    if (taskId) return go(taskId, true);
+    var free = ((st.postLinks && st.postLinks.tasks) || []).filter(function (t) {
+      return !t.linked && (t.on || []).indexOf(p.platform_id) < 0;
+    });
     if (!free.length) { alertLine(host, 'No task of this month is left to link. Add the task in My Work.'); return; }
     window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
-      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task will take this date as the date it went live and move to Performance review.',
+      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task takes the earliest date of its linked posts as the date it went live, adds up their views and engagements, and moves to Performance review.',
       fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {
-        return [t.id, [taskCode(t), t.title || '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
+        var on = onWord(t);
+        return [t.id, [taskCode(t), t.title || '', on ? 'Linked: ' + on : '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
       })) }] }, function (v) { go(v.task); });
+  }
+  function offerOthers(p, taskId, host) {
+    var more = sameDayPosts(p, taskId);
+    if (!more.length) return;
+    var t = ((st.postLinks && st.postLinks.tasks) || []).filter(function (x) { return x.id === taskId; })[0] || {};
+    window.ADspaceConfirm.ask({ title: 'Link on other accounts', go: 'Link', cancel: 'Not now',
+      body: (t.code ? taskCode(t) + ' · ' : '') + 'Posts of ' + dayWord(p.posted_on) + ' on the report\'s other accounts.',
+      fields: more.map(function (q) {
+        var a = accOf(q.platform_id);
+        return { name: q.id, label: (a ? accLabel(a) + ' · ' : '') + postName(q), tick: true, value: 'on' };
+      }) }, function (v) {
+      var picked = more.filter(function (q) { return v[q.id]; });
+      var step = function (i) {
+        if (i >= picked.length) return Promise.resolve();
+        return sendLink(picked[i], taskId).then(function () { return step(i + 1); });
+      };
+      step(0).then(function () {
+        if (picked.length) undoBar('Linked on ' + picked.length + (picked.length === 1 ? ' more account.' : ' more accounts.'), host, function () {
+          picked.reduce(function (pr, q) { return pr.then(function () { return sendLink(q, null); }); }, Promise.resolve()).catch(function (e) { alertLine(host, e.said || said(e)); });
+        });
+      }).catch(function (e) { alertLine(host, e.said || said(e)); });
+    });
   }
   function unlinkPost(p, quiet) {
     var host = st.host.querySelector('.rp-posts') || st.host;

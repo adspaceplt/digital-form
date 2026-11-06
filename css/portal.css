@@ -1510,6 +1510,11 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 .fmore:has(> summary[hidden]) { border-top: 0; margin-top: 0; }
 .muted { color: var(--ink-mute); font-size: 12.5px; }
 .msg { font-size: 13px; margin-top: 12px; }
+/* A line under a section's head stands one step from the head and one
+   from what follows it, and takes no room while empty (2026-11-06: Sent
+   on WhatsApp touched the quotations card). */
+.viewhead + .msg { margin-top: 0; }
+.viewhead + .msg:not(:empty) { margin-bottom: 12px; }
 .msg.err { color: var(--err); }
 .msg.ok  { color: var(--ok); }
 .msg.mute { color: var(--ink-mute); }
