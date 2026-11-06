@@ -8527,6 +8527,17 @@ Paused and Past are never touched. The migration moved the two leads
 already sent a quotation (Faire Development, Dr Goh Yi Pei). `tests/quotes.js`
 holds it on the stand-in.
 
+### 2026-11-06 · Proposal sent from every route
+The review of the first move found it ran only on `update of sent_out_at`.
+A release or a signing link changes `released_at` or `access_key`, and
+`quotations_sent_out` (a BEFORE trigger) stamps `sent_out_at`; Postgres runs
+a column trigger only for columns the statement names, so Send quotation,
+Publish and a signing link left the lead at Contacted (checked live in a
+rolled-back block: stamped, the trigger ran 0 times). The stand-in moved the
+client on any stamp, so `quotes` passed. The trigger now runs on every
+write, a paper signature and a Letter of Offer move the lead too, through
+one function, and `tests/sql.js` drives the real triggers.
+
 
 ### 2026-11-06 · Scene frames drawn by Claude, and the animatic
 The user, after Gemini refused every picture (its prepaid credits spent):
