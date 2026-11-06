@@ -1297,6 +1297,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   from its own ⋯ and several at once through Select (the user, 2026-10-22:
   Read from Bukku took 32 tax codes and offered no Delete, "mentioned many
   times").
+- A column added to a table a page reads through column grants
+  (`clients`, `team_members`, `quotations`) is granted in the same file
+  (2026-11-06: `quotations.sent_out_at` without its grant refused the
+  whole Quotations list; `tests/sql.js` reads the list's columns against
+  the schema's grants).
 - A security definer function replaced keeps every refusal of the one
   before it (2026-10-17: `delete_client` lost its own and refused no one).
 - A guard trigger holds an insert as it holds an update, a page's insert

@@ -8462,3 +8462,13 @@ new meeting opens on the next free half hour.
   or email filed), `quotation_edit` writing into the same row, Edit on a
   team's quotation's ⋯ and on an awaiting website quotation's row, Revise
   Edit making the next quotation once sent. Live: F02's figures folded into F01 and F02 removed.
+
+### 2026-11-06 · Quotations could not be loaded after sent_out_at
+- Reported (the user's screenshot): Services read "Quotations could not be
+  loaded. permission denied for table quotations" right after #933.
+- Why: `quotations` is read through column grants; the new column
+  `sent_out_at` was added without one, and the page names it in its read.
+  The stand-in does not hold quotations' column grants, so no suite saw it.
+- Fixed: granted live at once, the grant added to the migration and the
+  schema, and `tests/sql.js` checks every column the list reads against the
+  schema's grants. Rule in CLAUDE.md.
