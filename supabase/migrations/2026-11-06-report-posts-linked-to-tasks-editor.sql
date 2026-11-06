@@ -7,8 +7,8 @@
 -- Settings' switch works through report_links_set; only a planned change
 -- from a later day waits on this.
 --
--- `app_settings_set`, restated whole from SETTINGS WORDS IN THE RECORD with
--- `report_post_links` among its keys (0 or 1, On / Off in the record); and
+-- `app_settings_set`, restated whole from SCENE PICTURES, THE SQL EDITOR PART
+-- (`ai_price_image` kept) with `report_post_links` among its keys (0 or 1, On / Off in the record); and
 -- trigger `sm_report_post_removed`: a post removed takes its link off, the
 -- task put back as the link found it (its delay included). Until it runs a
 -- removed post's link counts for nothing and its task stays as linked.
@@ -30,7 +30,7 @@ declare
     'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
     'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
     'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
-    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'report_post_links'];
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links'];
   v_moved text[] := '{}';
   v_drop boolean; v_fw text; v_fv text;
 begin
@@ -98,7 +98,7 @@ begin
         when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
         when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
         when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
-        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email' when 'report_post_links' then 'Posts linked to tasks'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'ai_price_image' then 'AI price per scene picture' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email' when 'report_post_links' then 'Posts linked to tasks'
         when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
         when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
         when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
