@@ -51,7 +51,7 @@
     ops_engagements: 'id client_id period manager_id planned_count drive_url status meeting_at meeting_channel meeting_owner_id meeting_note meeting_na created_by created_at updated_at version meeting_minutes meeting_link meeting_event_id reports start_day outstation_told_at',
     ops_notifications: 'id team_member_id task_id kind title body read_at created_at dedupe_key report_id notice_id from_name hidden_at link script_id client_id supplier_id',
     video_scripts: 'id client_id period seq code engagement_id series_id video_no kind title reference_url platform language shoot_on shoot_time venue duration_minutes cast_names context vo vo_vc vo_shot_at vo_shot_by remarks status shared_at round version idem_key created_by created_by_name created_at updated_at updated_by_name aspect length_seconds brief plan review review_version',
-    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb',
+    video_script_scenes: 'id script_id position visual line vc shot_at shot_by t_from t_to shot_size angle camera_move on_screen sound photo_url photo_by photo_at photo_thumb ai_url ai_at ai_thumb ai_frame',
     ops_recurring_made: 'rule_id source_task_id on_date made_at',
     ops_recurring_rules: 'id name client_id template_id owner_id frequency day_of_month publish_rule active last_generated_period created_at updated_at source_task_id interval_days ends_on max_count generated_count code_week created_by last_error last_error_at',
     ops_revisions: 'id task_id round_no requested_by_type reason_category summary requested_by assigned_to requested_at completed_at source_review_id idem_key',
@@ -129,6 +129,7 @@
     ai_picture_claim: 'p_script p_count',
     ai_picture_left: '',
     video_script_picture: 'p_script p_scene p_kind p_url p_press p_thumb',
+    video_script_frame: 'p_script p_scene p_frame p_press',
     wa_templates_read: '',
     wa_messages: 'p_month',
     mail_log: 'p_month',
@@ -7483,6 +7484,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       return { ok: true, changed: true };
     }
+
+    if (name === 'video_script_frame') {
+      if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
+      var vfS = (DB.video_scripts || []).filter(function (x) { return x.id === a.p_script; })[0];
+      var vfC = vfS && (DB.video_script_scenes || []).filter(function (x) { return x.id === a.p_scene && x.script_id === vfS.id; })[0];
+      if (!vfC) return { error: 'not-found' };
+      if (!(DB.ai_drafts || []).some(function (d) { return d.id === a.p_press && d.team_member_id === me.id && d.purpose === 'picture' && d.script_id === vfS.id; })) return { error: 'bad-press' };
+      var vfF = a.p_frame || {}, vfSh = Array.isArray(vfF.shapes) ? vfF.shapes : null;
+      var vfMoves = ['', 'static', 'push in', 'pull out', 'pan left', 'pan right', 'tilt up', 'tilt down'];
+      if (!vfSh || !vfSh.length || vfSh.length > 160 || JSON.stringify(vfF).length > 80000 || vfMoves.indexOf(String(vfF.move || '')) < 0 ||
+          vfSh.some(function (x) { return !x || ['ink', 'light', 'fill', 'paper'].indexOf(x.t) < 0 || !/^[MmLlHhVvCcSsQqTtAaZz0-9 .,eE+-]{2,4000}$/.test(String(x.d || '')); })) return { error: 'bad-frame' };
+      vfC.ai_frame = { v: 1, shot_size: String(vfF.shot_size || '').trim().slice(0, 60), angle: String(vfF.angle || '').trim().slice(0, 60),
+                       move: vfF.move || 'static', shapes: vfSh.map(function (x) { return { d: x.d, t: x.t }; }) };
+      vfC.ai_at = new Date().toISOString();
+      var vfCl = (DB.clients || []).filter(function (c) { return c.id === vfS.client_id; })[0] || {};
+      DB.activity_log.push({ id: nid('a'), actor: me.name, action: 'script.saved', subject: vfCl.name,
+        detail: (vfS.code || '') + (vfS.title ? ' · ' + vfS.title : '') + ' · Scene ' + vfC.position + ' picture drawn with AI', created_at: new Date().toISOString() });
+      return { ok: true };
+    }
     if (name === 'ai_script_left') {
       if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
       return aiScriptRoom(me);
@@ -8732,7 +8752,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: baOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^video_script_picture$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -13808,22 +13828,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var sp0 = (opts && opts.body) || {};
           window.__picturesAsked = JSON.parse(JSON.stringify(sp0));
           if (sp0.ping) return Promise.resolve({ data: { ready: Boolean(window.__aiPictures) }, error: null });
-          if (!window.__aiPictures) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['GEMINI_API_KEY'] }, error: null });
+          if (!window.__aiPictures) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, error: null });
           if (window.__aiPictures.error) return Promise.resolve({ data: { error: window.__aiPictures.error }, error: null });
           return window.__rpc('ai_picture_claim', { p_script: sp0.script_id, p_count: (sp0.scenes || []).length }).then(function (r) {
             var cl = (r && r.data) || {};
             if (cl.error) return { data: cl, error: null };
-            var PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAkAAAAQCAIAAABLKsIUAAAAEUlEQVR4nGM4gxswjMoNejkAS2NYUFNR4dYAAAAASUVORK5CYII=';
+            var FRAME = window.__aiPictures.frame || { shot_size: 'Medium', angle: 'Eye level', move: 'push in', shapes: [
+              { d: 'M0 230 L180 230', t: 'light' }, { d: 'M20 70 H90 V170 H20 Z', t: 'paper' },
+              { d: 'M126 128 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0', t: 'ink' }, { d: 'M126 137 C120 150 118 175 120 200 L134 200 C136 175 134 150 128 137', t: 'ink' },
+              { d: 'M150 190 h70 v34 h-70 z', t: 'fill' } ] };
             var fail = window.__aiPictures.fail || [];
             var outP = [];
-            (sp0.scenes || []).forEach(function (id, k) {
-              var row = (DB.ai_drafts || []).filter(function (d) { return d.id === cl.ids[k]; })[0];
-              if (fail.indexOf(id) > -1) { if (row) row.outcome = 'failed'; return; }
-              if (row) { row.outcome = 'drafted'; row.input_tokens = 0; row.output_tokens = 0; row.model = 'gemini-3.1-flash-image-preview'; }
-              outP.push({ scene: id, press: cl.ids[k], mime: 'image/png', data: PNG });
+            return (sp0.scenes || []).reduce(function (p, id, k) {
+              return p.then(function () {
+                var row = (DB.ai_drafts || []).filter(function (d) { return d.id === cl.ids[k]; })[0];
+                if (fail.indexOf(id) > -1) { if (row) row.outcome = 'failed'; return null; }
+                if (row) { row.input_tokens = 1400; row.output_tokens = 2600; row.model = 'claude-opus-5-5'; }
+                return window.__rpc('video_script_frame', { p_script: sp0.script_id, p_scene: id, p_frame: FRAME, p_press: cl.ids[k] }).then(function (v) {
+                  var ok = v && v.data && v.data.ok;
+                  if (row) row.outcome = ok ? 'drafted' : 'failed';
+                  if (ok) outP.push(id);
+                });
+              });
+            }, Promise.resolve()).then(function () {
+              persist();
+              return { data: outP.length ? { drawn: outP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
             });
-            persist();
-            return { data: outP.length ? { pictures: outP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
           });
         }
         if (name === 'script-draft') {

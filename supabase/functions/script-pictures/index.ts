@@ -1,42 +1,66 @@
 /*
- * script-pictures — draws a picture for scenes of a video script with
- * Google's Gemini image model (2026-11-05; the user: the drawn frame, an AI
- * picture and the team's own photo, the AI pictures "together with … AI
- * usages"; Gemini Flash; the team's alone).
+ * script-pictures — draws a frame for scenes of a video script: a line
+ * drawing written by Claude (2026-11-06; the user: "Claude couldnt draw but
+ * able to generate motions n clips right why not do that replace gemini",
+ * the sample approved as a draft; it replaced Gemini's picture of
+ * 2026-11-05).
  *
  * Draw with AI on a script's Scenes (js/scripts.js) posts the script's id and
  * the scenes to draw. The function reads the script, its scenes and its
  * client as the caller (Video Scripts at Work, the client in scope), counts
- * one picture a scene before Gemini is asked (`ai_picture_claim`), and asks
- * for each scene one storyboard sketch at the script's aspect ratio from what
- * the scene says: its shot size, angle and camera move, what is seen, the
- * setting and the cast's roles. Never the client's name, a handle, a contact
- * or a cast member's name: the client's name and handles in the words read
- * as "the brand". A picture that comes back is answered as base64 with the
- * press it was counted under; one that does not is marked failed and not
- * counted. The page stores each picture in the client's folder and keeps it
- * on its scene (`video_script_picture`, kind `ai`).
+ * one picture a scene before Claude is asked (`ai_picture_claim`), and asks
+ * for each scene one storyboard frame at the script's aspect ratio from what
+ * the scene says: its shot size, angle and camera move (chosen by Claude
+ * where the scene names none), what is seen, the setting and the cast's
+ * roles. Never the client's name, a handle, a contact or a cast member's
+ * name: the client's name and handles in the words read as "the brand".
+ *
+ * Claude answers by structured output: the shot it drew, the camera's move
+ * from a fixed list, and the drawing as shapes, each a path of path commands
+ * and numbers and a tone. Nothing is ever kept or drawn as markup: the frame
+ * is kept as that data by `video_script_frame` (which checks it again) and
+ * the page builds the drawing from it. A frame kept is answered with its
+ * scene; one that did not come back is marked failed and not counted.
  *
  * `{ ping: true }` answers whether the function is set up, counting nothing,
  * so the page draws Draw with AI only where it can work.
  *
- * Pictures are drawn three at a time, inside 130 seconds; a scene the time
+ * Frames are drawn four at a time, inside 130 seconds; a scene the time
  * leaves out is not counted. The answer is streamed, a space every few
  * seconds holding the connection open.
  *
- * Secrets: GEMINI_API_KEY (Google AI Studio, a project with billing on: the
- *          image models have no free tier), GEMINI_IMAGE_MODEL (unset,
- *          gemini-3.1-flash-image-preview), plus the platform's SUPABASE_URL
- *          and SUPABASE_ANON_KEY. Verify JWT off: the caller is asked here.
+ * Secrets: ANTHROPIC_API_KEY, and FRAME_MODEL (the model id; unset, it is
+ *          claude-opus-5-5), plus the platform's SUPABASE_URL and
+ *          SUPABASE_ANON_KEY. Verify JWT off: the caller is asked here.
  */
+import Anthropic from 'npm:@anthropic-ai/sdk';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const text = (v: unknown, n: number) => String(v ?? '').replace(/\r/g, '').trim().slice(0, n);
 const escRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const ASPECTS = ['9:16', '1:1', '16:9'];
+const ASPECTS: Record<string, [number, number]> = { '9:16': [180, 320], '1:1': [240, 240], '16:9': [320, 180] };
+const MOVES = ['static', 'push in', 'pull out', 'pan left', 'pan right', 'tilt up', 'tilt down'];
+const TONES = ['ink', 'light', 'fill', 'paper'];
+const PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9 .,eE+-]{2,4000}$/;
 const BUDGET_MS = 130000;
+
+const SYSTEM = `You draw storyboard frames for short social media videos made in Malaysia and Singapore, the way a storyboard artist sketches them: clean black line drawings on white paper.
+You draw with shapes alone. Each shape is one SVG path: its "d" holds path commands (M, L, H, V, C, S, Q, T, A, Z, upper or lower case) and numbers only, and its tone is one of:
+- ink: the main lines, people, furniture, objects (a 1.6 unit stroke, no fill);
+- light: secondary lines, background detail, light rays, horizon, hatching (a thin grey stroke);
+- fill: a soft grey shape for shadow, a screen, food or cloth (filled, no stroke);
+- paper: a white shape with an ink edge, for something that sits in front of what is behind it.
+Rules:
+- The frame is the viewBox given; keep everything inside it, with a margin.
+- Draw people as simple figures: a circle head, a body shape, simple arms and legs, no faces, no fingers, never a real or famous person. Draw what the scene says they do.
+- Compose for the shot: a wide shows the whole place and small figures; a medium shows people from the waist; a close-up fills the frame with the subject; an over-the-shoulder puts a back in the foreground. Use the angle (low, high, eye level, overhead) for where the horizon and floor sit.
+- Show the setting with a few telling objects (a window, a bed, a counter, a car), never a cluttered room.
+- No words, letters, numbers, logos or signs anywhere.
+- 20 to 80 shapes; keep the lines simple and the same style for every frame.
+- Draw paper shapes before the ink lines that sit on them, background before foreground.
+- Choose the camera's move from the list; where the scene names one, use the nearest. Where the scene names no shot size or angle, choose what suits it and say so.`;
 
 function held(work: Promise<unknown>, origin: string | null) {
   const enc = new TextEncoder();
@@ -54,12 +78,12 @@ Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
-  const key = secret('GEMINI_API_KEY');
-  const model = secret('GEMINI_IMAGE_MODEL') || 'gemini-3.1-flash-image-preview';
+  const key = secret('ANTHROPIC_API_KEY');
+  const model = secret('FRAME_MODEL') || 'claude-opus-5-5';
   const started = Date.now();
   const body = await req.json().catch(() => ({}));
   if (body && body.ping) return json({ ready: Boolean(key) }, 200, origin);
-  if (!key) return json({ error: 'ai-not-set-up', missing: ['GEMINI_API_KEY'] }, 200, origin);
+  if (!key) return json({ error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, 200, origin);
 
   const scriptId = String(body && body.script_id || '');
   if (!/^[0-9a-f-]{36}$/i.test(scriptId)) return json({ error: 'bad-request' }, 400, origin);
@@ -77,7 +101,7 @@ Deno.serve(async (req) => {
   const cl = await db.from('clients').select('name, industry, handle_ig, handle_fb, handle_tiktok, handle_xhs')
     .eq('id', vs.data.client_id as string).maybeSingle();
   if (cl.error || !cl.data) return json({ error: 'client-scope' }, 200, origin);
-  const scs = await db.from('video_script_scenes').select('id, position, visual, shot_size, angle, camera_move')
+  const scs = await db.from('video_script_scenes').select('id, position, visual, line, shot_size, angle, camera_move')
     .eq('script_id', scriptId).in('id', want).order('position');
   if (scs.error) return json({ error: 'not-found' }, 200, origin);
   const scenes = (scs.data || []) as Record<string, unknown>[];
@@ -89,9 +113,11 @@ Deno.serve(async (req) => {
     .map((x) => x.trim()).filter((x) => x.length > 1).sort((a, b) => b.length - a.length);
   const mask = (s: string) => names.reduce((t, n) => t.replace(new RegExp('@?' + escRe(n), 'gi'), 'the brand'), s);
   const plan = (vs.data.plan && typeof vs.data.plan === 'object' ? vs.data.plan : {}) as Record<string, unknown>;
-  const aspect = ASPECTS.includes(String(vs.data.aspect || '')) ? String(vs.data.aspect) : '9:16';
+  const aspect = ASPECTS[String(vs.data.aspect || '')] ? String(vs.data.aspect) : '9:16';
+  const [W, H] = ASPECTS[aspect];
   const setting = mask(text(plan.locations, 300));
   const cast = mask(text(plan.cast, 300));
+  const props = mask(text(plan.props, 300));
   const industry = text(c.industry, 60);
 
   const claim = await db.rpc('ai_picture_claim', { p_script: scriptId, p_count: scenes.length });
@@ -100,69 +126,82 @@ Deno.serve(async (req) => {
   if (got.error) return json(got, 200, origin);
   const ids = (Array.isArray(got.ids) ? got.ids : []) as string[];
 
-  /* One storyboard sketch: a line drawing, so a set of frames reads as one
-     storyboard, never a photograph of a real person or a product. */
   const promptOf = (sc: Record<string, unknown>) => [
-    'A storyboard frame for a short social media video shoot in Malaysia.',
-    'Style: a loose pencil sketch in black and grey line work on white paper, simple shading, the same style for every frame of this storyboard.',
-    'No words, letters, captions, logos or watermarks in the picture. Draw people as simple sketched figures, never a real or famous person.',
-    'Shot size: ' + (text(sc.shot_size, 60) || 'medium') + '. Camera angle: ' + (text(sc.angle, 60) || 'eye level') + '.' +
-      (text(sc.camera_move, 60) ? ' Camera move (show it with a small arrow at the frame\'s edge): ' + text(sc.camera_move, 60) + '.' : ''),
-    'What is seen: ' + mask(text(sc.visual, 900)),
-    setting ? 'Setting: ' + setting : '',
+    'Frame: viewBox 0 0 ' + W + ' ' + H + ' (' + aspect + ').',
+    industry ? 'The business is in ' + industry + '.' : '',
+    setting ? 'Locations: ' + setting : '',
     cast ? 'Cast roles: ' + cast : '',
-    industry ? 'The business is in ' + industry + '.' : ''
+    props ? 'Props: ' + props : '',
+    'Scene ' + sc.position + '.',
+    'Shot size: ' + (text(sc.shot_size, 60) || 'not set') + '. Angle: ' + (text(sc.angle, 60) || 'not set') + '. Camera move: ' + (text(sc.camera_move, 60) || 'not set') + '.',
+    'What is seen: ' + mask(text(sc.visual, 900)),
+    text(sc.line, 1) ? 'What is said: ' + mask(text(sc.line, 600)) : ''
   ].filter(Boolean).join('\n');
 
+  const format = {
+    type: 'object',
+    properties: {
+      shot_size: { type: 'string', description: 'The shot size drawn, two or three words' },
+      angle: { type: 'string', description: 'The camera angle drawn, two or three words' },
+      move: { type: 'string', enum: MOVES },
+      shapes: { type: 'array', items: { type: 'object', properties: {
+        d: { type: 'string', description: 'SVG path data: commands and numbers only' },
+        t: { type: 'string', enum: TONES }
+      }, required: ['d', 't'], additionalProperties: false } }
+    },
+    required: ['shot_size', 'angle', 'move', 'shapes'], additionalProperties: false
+  };
+
   const done = (id: string, ok: boolean) => db.rpc('ai_draft_done', { p_id: id, p_ok: ok }).then(() => null, () => null);
-  const kept = (id: string) => db.rpc('ai_draft_tokens', { p_id: id, p_in: 0, p_out: 0, p_model: model }).then(() => null, () => null);
+  const kept = (id: string, i: number, o: number) => db.rpc('ai_draft_tokens', { p_id: id, p_in: i, p_out: o, p_model: model }).then(() => null, () => null);
 
   return held((async () => {
-    const out: Record<string, unknown>[] = [];
+    const client = new Anthropic({ apiKey: key });
+    const out: string[] = [];
     let refused = '';
     const one = async (sc: Record<string, unknown>, press: string) => {
       const left = BUDGET_MS - (Date.now() - started);
-      if (left < 15000) { await done(press, false); return; }
+      if (left < 20000) { await done(press, false); return; }
       try {
-        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-          signal: AbortSignal.timeout(Math.min(left - 5000, 90000)),
-          body: JSON.stringify({
-            contents: [{ role: 'user', parts: [{ text: promptOf(sc) }] }],
-            generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: aspect, imageSize: '1K' } }
-          })
-        });
-        if (!res.ok) {
-          const t = await res.text().catch(() => '');
-          console.error('script-pictures: Gemini refused', res.status, t.slice(0, 300));
-          /* 402: the project's prepaid credits are spent; a 429 naming billing,
-             credits or the free tier is the same fault, never a busy service. */
-          refused = res.status === 401 || res.status === 403 ? 'ai-key' : res.status === 404 ? 'ai-model'
-            : res.status === 402 ? 'ai-billing'
-            : res.status === 429 ? (/billing|free.?tier|quota|credit|prepay/i.test(t) ? 'ai-billing' : 'ai-busy') : 'ai-failed';
+        const res = await client.messages.create({
+          model, max_tokens: 12000,
+          system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+          output_config: { effort: 'low', format: { type: 'json_schema', schema: format } },
+          messages: [{ role: 'user', content: promptOf(sc) }]
+        } as Anthropic.MessageCreateParamsNonStreaming, { timeout: Math.max(10000, left - 5000) });
+        const u = (res.usage || {}) as unknown as Record<string, number | null | undefined>;
+        await kept(press, (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0), u.output_tokens || 0);
+        if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') { await done(press, false); return; }
+        const said = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+        // deno-lint-ignore no-explicit-any
+        let f: any = null;
+        try { f = JSON.parse(said); } catch { f = null; }
+        // deno-lint-ignore no-explicit-any
+        const shapes = (f && Array.isArray(f.shapes) ? f.shapes : []).filter((x: any) => x && PATH.test(String(x.d || '')) && TONES.includes(String(x.t)))
+          // deno-lint-ignore no-explicit-any
+          .slice(0, 160).map((x: any) => ({ d: String(x.d), t: String(x.t) }));
+        if (shapes.length < 3) { await done(press, false); return; }
+        const frame = { shot_size: text(f.shot_size, 60), angle: text(f.angle, 60), move: MOVES.includes(String(f.move)) ? String(f.move) : 'static', shapes };
+        const saved = await db.rpc('video_script_frame', { p_script: scriptId, p_scene: sc.id, p_frame: frame, p_press: press });
+        if (saved.error || !saved.data || saved.data.error) {
+          console.error('script-pictures: not kept', JSON.stringify(saved.error || saved.data));
           await done(press, false);
           return;
         }
-        // deno-lint-ignore no-explicit-any
-        const j: any = await res.json();
-        // deno-lint-ignore no-explicit-any
-        const parts: any[] = (((j.candidates || [])[0] || {}).content || {}).parts || [];
-        const img = parts.find((p) => p && p.inlineData && /^image\//.test(String(p.inlineData.mimeType || '')));
-        if (!img) { await done(press, false); return; }
-        await kept(press);
         await done(press, true);
-        out.push({ scene: sc.id, press, mime: String(img.inlineData.mimeType), data: String(img.inlineData.data) });
+        out.push(String(sc.id));
       } catch (e) {
-        console.error('script-pictures: no answer', String((e as Error)?.message || e));
+        const st = Number((e as { status?: number })?.status || 0);
+        console.error('script-pictures: no answer', st, String((e as Error)?.message || e).slice(0, 300));
+        refused = st === 401 || st === 403 ? 'ai-key' : st === 404 ? 'ai-model' : st === 429 || st === 529 ? 'ai-busy' : refused;
         await done(press, false);
       }
     };
-    /* Three at a time. */
-    for (let i = 0; i < scenes.length; i += 3) {
-      await Promise.all(scenes.slice(i, i + 3).map((sc, k) => one(sc, ids[i + k])));
+    /* Four at a time. */
+    for (let i = 0; i < scenes.length; i += 4) {
+      await Promise.all(scenes.slice(i, i + 4).map((sc, k) => one(sc, ids[i + k])));
     }
     if (!out.length) return { error: refused || 'ai-incomplete' };
-    return { pictures: out, missed: scenes.length - out.length, left: got.left };
+    return { drawn: out, missed: scenes.length - out.length, left: got.left };
   })(), origin);
 });

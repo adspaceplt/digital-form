@@ -6550,21 +6550,37 @@ Each line is a rule that broke once. Its reason is in the archive.
   never the brief or the review. One press writes one script (one script is
   one video); a second variant is Add script and Write with AI again.
 - Scene pictures (`2026-11-05-scene-pictures.sql`, its SQL Editor part,
-  `script-pictures`, `js/frames.js`; the user, 2026-11-05: all three, Gemini
-  Flash, the team's alone, 30 a day): each scene in the console and the crew
-  PDF shows its best picture, the colleague's photo (Add photo, the camera
-  on a phone; Remove with Undo), else the one Draw with AI drew, else the
-  frame `ADspaceFrames.svg` draws from its shot size, angle and move; the
-  client link shows none. A picture is stored in the client's folder
-  through `sign-upload` (`purpose` script) and kept by
-  `video_script_picture` with a 360px JPEG data URL (`photo_thumb`,
-  `ai_thumb`): the CDN serves no read across origins, so the PDF draws the
-  thumbnail. Draw with AI is drawn only where `script-pictures` answers its
-  ping ready (secret `GEMINI_API_KEY`, `GEMINI_IMAGE_MODEL`; billing on, the
-  image models have no free tier); each picture is one `ai_drafts` row
-  (`picture`, `ai_picture_claim`), 30 a person a day by default, set on AI
-  usage (Scene pictures) and priced at `ai_price_image` (US$ 0.07, AI
-  prices), never by tokens.
+  `2026-11-06-scene-frames-by-claude.sql`, `script-pictures`,
+  `js/frames.js`; the user, 2026-11-05: all three, the team's alone, 30 a
+  day; 2026-11-06: Claude's frames in place of Gemini's): each scene in the
+  console and the crew PDF shows its best picture, the colleague's photo
+  (Add photo, the camera on a phone; Remove with Undo), else the frame
+  Draw with AI drew, else a picture Gemini drew before, else the frame
+  `ADspaceFrames.svg` draws from its shot size, angle and move; the client
+  link shows none. A photo is stored in the client's folder through
+  `sign-upload` (`purpose` script) and kept by `video_script_picture` with a
+  360px JPEG data URL (`photo_thumb`): the CDN serves no read across
+  origins, so the PDF draws the thumbnail. Draw with AI (drawn where
+  `script-pictures` answers its ping ready: `ANTHROPIC_API_KEY`,
+  `FRAME_MODEL`) asks Claude for each scene's frame by structured output,
+  four at a time: the shot it drew, a camera move from a fixed list and
+  shapes, each a path of path commands and numbers alone and a tone (ink,
+  light, fill, paper); the function keeps it as data through
+  `video_script_frame` (`ai_frame`, `bad-frame` for anything else, the
+  press its caller's own) and the page builds the drawing
+  (`ADspaceFrames.draw`, the path held to the rule again), never markup
+  from the model, white in both themes, its move played once. Each frame is
+  one `ai_drafts` row (`picture`, `ai_picture_claim`), 30 a person a day by
+  default, set on AI usage (Scene pictures), priced by its tokens
+  (`ai_price_image` prices a Gemini row alone).
+- The animatic (`js/animatic.js`, `#vsPlaySheet`; the user, 2026-11-06:
+  short clips, "1 yes"): Play on the Scenes heading, for anyone who reads
+  the script, plays its scenes in order on one canvas at the script's
+  ratio, each for its own from and to (else the video's length shared out,
+  else 3 seconds; 1.5 to 12), its best picture (a photo's thumbnail, a
+  drawn frame) moved as its camera moves, its number and its on-screen
+  text; Download records the same in the browser (MediaRecorder: MP4, else
+  WebM; in real time, the tab kept open), nothing stored, no service asked.
 - Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
