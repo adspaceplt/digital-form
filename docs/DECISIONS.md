@@ -8500,3 +8500,20 @@ new meeting opens on the next free half hour.
   Review listing it under Tax and terms. `tests/ratecard.js` changes a term
   alone and asks for Publish.
 
+### 2026-11-06 · Take lead makes you Sales by, and stands under the name
+- Reported (iPhone): a lead's head put Take lead on a row of its own in the
+  control column, pushing the name below it; and Take lead stayed on a lead
+  whose Sales by was set, though "person in charge unassigned as its the key
+  accounts personnel instead of the salesperson". Then: "Take lead … its
+  equivalent to sales by", and "during leads … its only sales by, person in
+  charge for operations either almost confirmed or confirmed".
+- Why: Take lead wrote Person in charge, a field the team keeps for the
+  operations colleague; and 2026-10-29's fix for a too-wide head gave the
+  button the control column's whole width on a phone.
+- Fixed: Take lead sets Sales by (the guard now lets a colleague at Leads
+  Work take a lead nobody sells or runs as their own), is offered only
+  while neither is set, and stands under the name at its own width; the
+  head reads Sales by while no Person in charge is set; /quote/ names the
+  Sales by colleague as the representative until then. `tests/scope.js`
+  and `tests/quotesite.js` hold it.
+

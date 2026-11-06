@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261106g">
-<link rel="stylesheet" href="/css/console.css?v=20261106e">
+<link rel="stylesheet" href="/css/console.css?v=20261106g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -835,6 +835,10 @@
                 <span id="crmVicTag"></span>
               </div>
               <p class="rec-id-meta" id="crmIdMeta"></p>
+              <!-- A lead nobody holds is taken on the head, where it is seen
+                   (MENU-3, 2026-10-22), under the name at its own width, so
+                   the head keeps its two rows on a phone (2026-11-06). -->
+              <button class="btn btn-sm rec-take" id="crmTake" type="button" hidden>Take lead</button>
             </div>
             <!-- The stage and everything that acts on the record itself, in
                  the card's right part, the shape the campaign head has. The
@@ -845,9 +849,6 @@
                  once and cannot be undone, so it sits last and behind the
                  section's manage level. -->
             <div class="rec-ctl">
-              <!-- A lead nobody holds is taken on the head, where it is seen
-                   (the menu review, MENU-3, 2026-10-22). -->
-              <button class="btn btn-sm" id="crmTake" type="button" hidden>Take lead</button>
               <!-- A call or a visit logged from wherever the record is open
                    (2026-10-11); the glyph alone on a narrow pane. -->
               <button class="btn btn-sm crm-logcall" id="crmLogCall" data-need="clients.calls:work" type="button" aria-label="Log call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg><span class="crm-logcall-word">Log call</span></button>
@@ -6319,7 +6320,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261106e"></script>
 <script src="/js/quotepdf.js?v=20261106e"></script>
 <script src="/js/checklists.js?v=20261105c"></script>
-<script src="/js/crm.js?v=20261106f"></script>
+<script src="/js/crm.js?v=20261106g"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261104s"></script>
 <script src="/js/namecard.js?v=20261102a"></script>

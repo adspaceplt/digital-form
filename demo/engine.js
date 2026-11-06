@@ -988,6 +988,9 @@
     if (table !== 'clients' || !patch || !('sales_by' in patch)) return false;
     var m = opsMe(); if (!m || opsAllowed('clients', 'manage')) return false;
     if (!r) return !(patch.sales_by == null || patch.sales_by === m.id);
+
+    if (!r.sales_by && patch.sales_by === m.id && ['lead', 'contacted', 'proposal'].indexOf(r.stage) >= 0 &&
+        !String(r.owner || '').trim() && opsAllowed('clients.leads', 'work')) return false;
     return (patch.sales_by || null) !== (r.sales_by || null);
   }
   function scopeTaskMine(t) {
@@ -10306,6 +10309,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
             .sort(function (a, b) { return a.issued_at < b.issued_at ? 1 : -1; })[0])) wsh = wnx;
           var wrep = wqc && String(wqc.owner || '').trim() && DB.team_members.filter(function (m) {
             return m.active && !m.system && !m.removed_at && m.name === wqc.owner; })[0];
+
+          if (!wrep && wqc && wqc.sales_by) wrep = DB.team_members.filter(function (m) {
+            return m.active && !m.system && !m.removed_at && m.id === wqc.sales_by; })[0];
 
           var wUnsent = wsh.source === 'website' && !wsh.released_at;
           var wlines = DB.client_services.filter(function (l) { return l.quotation_id === wsh.id; }).map(function (l) { return l.id; });
