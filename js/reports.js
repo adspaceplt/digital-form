@@ -2989,7 +2989,7 @@
     });
     if (!free.length) { alertLine(host, 'No task of this month is left to link. Add the task in My Work.'); return; }
     window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
-      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task takes the earliest date of its linked posts as the date it went live, adds up their views and engagements, and moves to Performance review.',
+      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task will take the earliest date of its linked posts as its live date, add up their views and engagements, and move to Performance review.',
       fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {
         var on = onWord(t);
         return [t.id, [taskCode(t), t.title || '', on ? 'Linked: ' + on : '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
@@ -3000,7 +3000,7 @@
     if (!more.length) return;
     var t = ((st.postLinks && st.postLinks.tasks) || []).filter(function (x) { return x.id === taskId; })[0] || {};
     window.ADspaceConfirm.ask({ title: 'Link on other accounts', go: 'Link', cancel: 'Not now',
-      body: (t.code ? taskCode(t) + ' · ' : '') + 'Posts of ' + dayWord(p.posted_on) + ' on the report\'s other accounts.',
+      body: 'Choose the posts of ' + dayWord(p.posted_on) + ' on the report\'s other accounts to link to ' + (t.task_no ? taskCode(t) : 'this task') + '.',
       fields: more.map(function (q) {
         var a = accOf(q.platform_id);
         return { name: q.id, label: (a ? accLabel(a) + ' · ' : '') + postName(q), tick: true, value: 'on' };
