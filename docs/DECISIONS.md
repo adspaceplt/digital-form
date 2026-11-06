@@ -8430,3 +8430,11 @@ new meeting opens on the next free half hour.
   name 4px, and the ⋯ sat between the lines.
 - Now: the ⋯ takes the name line's height (22px) and its target overflows
   it evenly, as a quotation row's does; every line stands 6px from its rate.
+
+### 2026-11-06 · My Work's calendar on a phone: a card of days
+- Reported: a month holding holidays and no tasks drew the holidays as a
+  grey box with a drawn edge, touching No tasks this month. under it.
+- Why: the phone list kept the desk grid's outline and its weekend and
+  holiday shading, and the empty line stood flush under it.
+- Now: under `is-narrow` the days are a white card of rows (no edge, a soft
+  rule between days, a row's padding) and the empty line stands 12px under.
