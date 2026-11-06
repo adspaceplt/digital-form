@@ -8448,3 +8448,17 @@ new meeting opens on the next free half hour.
   SST (the one in weight); with no term, Subtotal, SST, Total. The foot
   keeps the count alone. Lines all from one quotation keep the quotation's
   own line in the foot and draw no summary (QT-1).
+
+### 2026-11-06 · A quotation is edited in place until it is sent
+- Reported (the user): Adjust and send on a website quotation never sent
+  made ADP/QT2611-F02 beside F01, and once made there was no way to adjust
+  it again ("Quotation is a serious one so it must be accurate and correct,
+  not always one shot").
+- Decided (the user, asked): edited in place until the portal sends it out;
+  a Download does not lock it (Preview PDF and Download are the team's own
+  checks), so a PDF pasted by hand into a client's WhatsApp group may differ
+  from the portal's copy if edited after.
+- Built: `sent_out_at` stamped by trigger (released, link given, WhatsApp
+  or email filed), `quotation_edit` writing into the same row, Edit on a
+  team's quotation's ⋯ and on an awaiting website quotation's row, Revise
+  Edit making the next quotation once sent. Live: F02's figures folded into F01 and F02 removed.

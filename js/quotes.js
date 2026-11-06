@@ -31,6 +31,8 @@
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Duplicate it to quote again.',
+    sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
+    removed: 'This quotation has been removed. Restore it first.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
     'no-number': 'This prospect has no WhatsApp number. Add one in Contacts first.',
@@ -103,6 +105,15 @@
     if (q.proceed_at) return ['Ready to proceed', 'is-warn', 'Contact by ' + window.ADspaceClock.date(window.ADspaceClock.day(q.proceed_due)).replace(/ \d{4}$/, '')];
     return ['Valid until ' + window.ADspaceClock.date(q.valid_until).replace(/ \d{4}$/, ''), 'is-live'];
   }
+  /* QUOTATION EDITED UNTIL SENT (2026-11-06; the user: "Quotation is a
+     serious one so it must be accurate"): a quotation is edited in place,
+     its number and link kept, until the portal sends it out (released, its
+     link given, a WhatsApp or an email); after that Edit makes its next
+     revision. Download never locks it. */
+  function sentOut(q) { return Boolean(q.sent_out_at || q.released_at); }
+  function editable(q) {
+    return !q.removed_at && !q.signed_at && !q.reviewed_at && q.status !== 'not_proceeding' && !q._revised;
+  }
   function awaiting(q) { return q.source === 'website' && !q.released_at && !q._revised && !q.removed_at && q.status !== 'not_proceeding'; }
   /* A quotation that can still become a Letter of Offer: valid, or the
      client has asked for the letter (2026-10-22, QT-M1). */
@@ -131,7 +142,7 @@
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
-    'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history';
+    'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -224,7 +235,9 @@
           }
           /* A signed quotation is the contract: asked again, never revised
              over (audit 2026-11-04). */
-          if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
+          if (maySet && awaiting(q) && editable(q)) {
+            acts.push('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
+          } else if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
           /* Signed: the colleague checks the entries and submits them to a
@@ -237,6 +250,12 @@
           /* No Letter of Offer is issued from a quotation (2026-10-31): the
              client signs the quotation itself, which is the contract. */
           if (maySet && !q.removed_at) {
+            /* A team's quotation is edited from its ⋯: in place until sent
+               out, else its revision (2026-11-06). A website one is the
+               row's Edit or Adjust and send. */
+            if (q.source !== 'website' && editable(q)) {
+              items.push('<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
+            }
             items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
@@ -548,6 +567,7 @@
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
+    if (a === 'edit') { if (sentOut(q)) build(ctx, q.selection, btn, q); else build(ctx, q.selection, btn, null, q); return; }
     if (a === 'delete') { remove(q, ctx); return; }
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
     set(q, a, ctx, function () {
@@ -950,12 +970,19 @@
 
   /* `revises`: a website quotation this one revises (Adjust and send): once
      made it is linked to it and the WhatsApp composer opens on it. */
-  function build(ctx, sel, opener, revises) {
+  function build(ctx, sel, opener, revises, editing) {
     sel = sel || {};
+    /* `editing`: a quotation not yet sent out, saved into itself
+       (`quotation_edit`, 2026-11-06). */
+    /* The title reads as the button that opened it (Edit, or Adjust and
+       send); only its commit says whether it saves or makes the next. */
+    $('qbTitle').textContent = editing ? 'Edit ' + editing.ref
+      : revises ? (opener && /^Adjust/.test(String(opener.textContent || '').trim()) ? 'Adjust ' : 'Edit ') + revises.ref : 'Build quote';
+    $('qbSave').textContent = editing ? 'Save' : 'Create quotation';
     /* `edits`: a line's quantity, rate and months the team typed, by the
        line's key (2026-10-15, the user: "fully customised for the rates qty
        and months"); priced and kept by the database as typed. */
-    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})), revises: revises || null, opener: opener };
+    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})), revises: revises || null, editing: editing || null, opener: opener };
     /* The tax codes a line may take (2026-10-22), drawn once read. */
     MON.taxCodes().then(function (list) {
       if (!B) return;
@@ -1366,6 +1393,19 @@
       var go = this;
       B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)));
       go.disabled = true;
+      if (B.editing) {
+        var ed = B.editing;
+        B.ctx.db.rpc('quotation_edit', { p_id: ed.id, p_sel: B.sel }).then(function (r) {
+          var d = r.data || {};
+          go.disabled = false;
+          if (r.error || d.error) { $('qbMsg').textContent = said(r.error || d.error); $('qbMsg').className = 'msg err'; return; }
+          var ctx = B.ctx;
+          window.ADspaceSheet.close();
+          B = null;
+          ctx.reload(function () { ctx.msg('qtMsg', ed.ref + ' saved.', 'ok'); markNew(ed.ref); });
+        }).catch(function (e) { go.disabled = false; $('qbMsg').textContent = said(e); $('qbMsg').className = 'msg err'; });
+        return;
+      }
       B.ctx.db.rpc('quotation_create', { p_client: B.ctx.client.id, p_sel: B.sel, p_idem: B.idem }).then(function (r) {
         var d = r.data || {};
         go.disabled = false;
