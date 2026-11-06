@@ -653,16 +653,18 @@
         (DB.client_emails || []).some(function (e) { return e.ref_id === q.id && e.kind === 'quotation'; });
       if (!out) return;
       q.sent_out_at = new Date().toISOString();
-
-      if (q.removed_at) return;
-      var c = (DB.clients || []).find(function (x) { return x.id === q.client_id; });
-      if (!c || (c.stage !== 'lead' && c.stage !== 'contacted')) return;
-      var patch = { stage: 'proposal' };
-      stageClock('clients', c, patch);
-      Object.assign(c, patch, { updated_at: q.sent_out_at });
-      (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name,
-        detail: 'Proposal sent · ' + q.ref + ' sent out', created_at: q.sent_out_at });
+      if (!q.removed_at && !q.signed_at) proposalSent(q.client_id, q.ref + ' sent out');
     });
+  }
+
+  function proposalSent(clientId, detail) {
+    var c = (DB.clients || []).find(function (x) { return x.id === clientId; });
+    if (!c || (c.stage !== 'lead' && c.stage !== 'contacted')) return;
+    var at = new Date().toISOString(), patch = { stage: 'proposal' };
+    stageClock('clients', c, patch);
+    Object.assign(c, patch, { updated_at: at });
+    (DB.activity_log = DB.activity_log || []).push({ id: nid('a'), actor: whoNow(), action: 'client.stage', subject: c.name,
+      detail: 'Proposal sent · ' + detail, created_at: at });
   }
   function persist() {
     try { qtStampOut(); } catch (e) {}
@@ -2311,6 +2313,7 @@ function cardSlugFree(name, self, email) {
     if (prior) prior.superseded_by = doc.id;
     DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name,
       detail: num + ' · ' + ids.length + ' line' + (ids.length === 1 ? '' : 's'), created_at: new Date().toISOString() });
+    if (doc.kind === 'offer') proposalSent(cl.id, num + ' issued');
     persist();
     return { ok: true, id: doc.id, number: num };
   }
@@ -10246,6 +10249,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           sq2.signed_at = pp.day + 'T04:00:00.000Z';
           sq2.signed = { via: 'paper', company: p1.company, contact: p2.contact, signer: pn, signature: null, scan: scan || null,
             record: { at: sq2.signed_at, by: qtMe.name, entered_at: qtNow.toISOString() } };
+          if (!sq2.sent_out_at) proposalSent(sq2.client_id, sq2.ref + ' signed');
           qtLog(sq2.brand, sq2.ref + ' signed on paper by ' + pn.name + ' for ' + p1.company.legal_name + ' on ' + pp.day + ' · keyed in by ' + qtMe.name);
           return qtOk({ ok: true });
         }
