@@ -19,3 +19,4 @@ exclude:
   - STANDARD.md
   - README.md
   - .gitignore
+  - skills-lock.json
