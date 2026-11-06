@@ -8487,3 +8487,16 @@ new meeting opens on the next free half hour.
   page needs no selection. A quotation priced before keeps its rows until
   it is edited.
 
+### 2026-11-06 · A term changed in Settings applies to quotations at once
+- Reported: 1 to 3 months set from 25% to 15% in Settings, yet F01 kept
+  25%, and Services offered no Publish ("I cant just publish to 2.0.9
+  without any changes to the services").
+- Why: `quote_card()` gave the live version's snapshot, settings and all,
+  so a term reached quotes only after a publish; and the Services page's
+  change count compared lines and wording alone, though `rate_card_publish`
+  counts SST and the terms too, so the button never showed.
+- Fixed: `quote_card()` lays today's SST and term percentages over the
+  version's; the Services page counts a changed term or SST as a change,
+  Review listing it under Tax and terms. `tests/ratecard.js` changes a term
+  alone and asks for Publish.
+

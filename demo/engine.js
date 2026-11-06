@@ -9780,7 +9780,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
-        var set = snap.settings || {}, text = snap.text || {};
+
+        var set = Object.assign({}, snap.settings || {}), text = snap.text || {};
+        ['term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24'].forEach(function (k) {
+          var v = appSet(k, appToday()); if (v != null) set[k] = v;
+        });
         var by = function (slug) { return svc.filter(function (x) { return x.slug === slug; })[0]; };
         var role = function (r) { return svc.filter(function (x) { return x.spec && x.spec.role === r; }); };
         var fee = function (p) { var x = role('platform').filter(function (y) { return y.spec.platform === p; })[0]; return x ? x : null; };
