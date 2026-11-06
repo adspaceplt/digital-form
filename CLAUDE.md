@@ -2387,9 +2387,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     18–23 and 24+ months, each percentage a setting (`term_1_3` 25,
     `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
     from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
-    terms at `team.settings` alone, 0 for none; a quotation takes them from
-    the live rate card version, so a change reaches quotes once the card is
-    published again (a version without 18's takes 12's).
+    terms at `team.settings` alone, 0 for none; a quotation takes them, and
+    SST, as in force today over the live version's (`quote_card`,
+    `2026-11-06-quotations-priced-on-todays-terms.sql`; the user,
+    2026-11-06: a setting changed applies at once, never waiting for a
+    publish); a changed term or SST is a change the card's Publish counts,
+    Review listing it under Tax and terms.
   - The field follows the card only while it still holds the card's figure
     (`svPctCard`).
   - `rateFor(rate, months, adjust, pct)`: a percentage bills the rate × pct;

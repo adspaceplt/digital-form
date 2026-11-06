@@ -7015,12 +7015,23 @@
     if (typeof v === 'number' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v))) return String(Number(v));
     return JSON.stringify(v);
   }
+  var SVC_TERMS = [['sst_pct', 'SST'], ['term_1_3', '1 to 3 months'], ['term_4_5', '4 and 5 months'], ['term_6_11', '6 to 11 months'],
+    ['term_12_23', '12 to 17 months'], ['term_18_23', '18 to 23 months'], ['term_24', '24 months and more']];
+  function pctWord(v) { return v == null || v === '' ? 'not set' : Number(v) + '%'; }
   var SVC_CMP = ['category', 'name', 'rate', 'unit', 'position', 'active', 'note', 'detail', 'min_months', 'spec'];
   /* What the draft holds that the live version does not: each line New or
      Changed, a line gone, each block of words changed. */
   function svcDiff() {
-    var out = { lines: {}, was: {}, gone: 0, goneNames: [], words: {}, n: 0 };
+    var out = { lines: {}, was: {}, gone: 0, goneNames: [], words: {}, terms: [], n: 0 };
     if (!live) return out;
+    /* SST and the term percentages publish with the card, as
+       rate_card_publish counts them (2026-11-06: a term changed in Settings
+       drew no Publish). */
+    var had = live.snapshot.settings || {}, today = window.ADspaceClock.today();
+    SVC_TERMS.forEach(function (t) {
+      var now = MON.setting(t[0], today), was = had[t[0]];
+      if (canon(now) !== canon(was)) { out.terms.push(t[1] + ': ' + pctWord(was) + ' → ' + pctWord(now)); out.n++; }
+    });
     var was = {};
     (live.snapshot.services || []).forEach(function (x) { was[x.slug] = x; });
     (catalog || []).forEach(function (s) {
@@ -7167,6 +7178,7 @@
     (svcText || []).forEach(function (b) {
       if (d.words[b.key]) out.push(String(b.label || b.key).replace(/\s*\([^)]*\|[^)]*\)\s*$/, '') + ': wording changed');
     });
+    (d.terms || []).forEach(function (t) { out.push(t); });
     return out;
   }
   function reviewCard(on) {
@@ -7184,6 +7196,7 @@
     if (lines) parts.push(lines + ' line' + (lines === 1 ? '' : 's') + ' changed');
     if (d.gone) parts.push(d.gone + ' line' + (d.gone === 1 ? '' : 's') + ' removed');
     if (words) parts.push(words + ' block' + (words === 1 ? '' : 's') + ' of wording changed');
+    if (d.terms.length) parts.push(d.terms.length + ' tax or term figure' + (d.terms.length === 1 ? '' : 's') + ' changed');
     var said = parts.length < 2 ? parts.join('') : parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1];
     /* The same changes Review shows, five, then how many more (SVC2-M1). */
     var list = changeList(d), more = list.length - SVC_LIST;
@@ -7726,6 +7739,12 @@
           return table;
         }
       }));
+    }
+    if (d.terms.length) {
+      var terms = document.createElement('div');
+      terms.className = 'softpanel';
+      terms.innerHTML = '<div class="emptyline"><b>Tax and terms</b><span class="muted">' + esc(d.terms.join(' · ')) + '</span></div>';
+      box.appendChild(terms);
     }
   }
 
