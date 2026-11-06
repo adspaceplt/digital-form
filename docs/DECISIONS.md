@@ -8461,4 +8461,4 @@ new meeting opens on the next free half hour.
 - Built: `sent_out_at` stamped by trigger (released, link given, WhatsApp
   or email filed), `quotation_edit` writing into the same row, Edit on a
   team's quotation's ⋯ and on an awaiting website quotation's row, Revise
-  {ref} once sent. Live: F02's figures folded into F01 and F02 removed.
+  Edit making the next quotation once sent. Live: F02's figures folded into F01 and F02 removed.

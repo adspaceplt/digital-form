@@ -31,7 +31,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -571,6 +571,7 @@
     quote_proceed: 'p_key p_start p_decider',
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
+    quotation_edit: 'p_id p_sel',
     quotation_send: 'p_id',
     quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
@@ -642,7 +643,18 @@
   });
 
   (DB.team_members || []).concat(DB.team_roles || []).forEach(function (x) { if (!x.updated_at) x.updated_at = '2026-10-01T00:00:00.000Z'; });
+
+  function qtStampOut() {
+    (DB.quotations || []).forEach(function (q) {
+      if (q.sent_out_at) return;
+      var out = q.released_at || (q.source === 'console' && q.access_key) ||
+        (DB.wa_outbox || []).some(function (w) { return w.ref_id === q.id && w.state !== 'failed' && w.status !== 'failed'; }) ||
+        (DB.client_emails || []).some(function (e) { return e.ref_id === q.id && e.kind === 'quotation'; });
+      if (out) q.sent_out_at = new Date().toISOString();
+    });
+  }
   function persist() {
+    try { qtStampOut(); } catch (e) {}
 
   }
   window.__DB = DB;
@@ -10414,6 +10426,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qq = DB.quotations.filter(function (q) { return q.id === (name === 'quotation_replace' ? args.p_new : args.p_id); })[0];
       var qcl = qq && DB.clients.filter(function (c) { return c.id === qq.client_id; })[0];
       if (!qq || (qcl && !scopeRowOk(qcl.stage, qcl.owner, 'work', qcl.sales_by))) return qtOk({ error: 'not-found' });
+
+      if (name === 'quotation_edit') {
+        qtStampOut();
+        if (!args.p_sel || typeof args.p_sel !== 'object') return qtOk({ error: 'bad-request' });
+        if (qq.removed_at) return qtOk({ error: 'removed' });
+        if (qq.signed_at || qq.reviewed_at) return qtOk({ error: 'signed' });
+        if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
+        if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
+        if (qq.sent_out_at || qq.released_at) return qtOk({ error: 'sent' });
+        if (!qtCard) return qtOk({ error: 'no-card' });
+        var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
+        if (qeFx === 0) return qtOk({ error: 'no-fx' });
+        var qe = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qeFx);
+        if (qe.error) return qtOk(qe);
+        if (!(qe.lines || []).length) return qtOk({ error: 'nothing-priced' });
+        var fig = function (t) { t = t || {}; return t.month ? t.month.incl : t.once ? t.once.incl : null; };
+        var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
+        qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
+        qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request });
+        if (qq.source === 'console') {
+          var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
+          qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
+        }
+        var m2 = function (v) { return v == null ? 'not set' : cur + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+        qtLog(qq.brand, qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
+          (qe.adjusted ? ' · ' + qe.adjusted + (qe.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
+        return qtOk({ ok: true, id: qq.id, ref: qq.ref });
+      }
       if (name === 'quotation_replace') {
         var qold = DB.quotations.filter(function (q) { return q.id === args.p_old; })[0];
         if (!qold || qold.client_id !== qq.client_id || qold.id === qq.id || qq.removed_at || qold.removed_at) return qtOk({ error: 'not-found' });

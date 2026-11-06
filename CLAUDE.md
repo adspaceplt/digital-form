@@ -6305,8 +6305,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Quotations at Work, in scope; priced again from the live card into the
   same row, its reference and link kept, a team's re-dated; `sent`,
   `signed`, `revised`, `not-proceeding`, `removed`; filed `{ref} edited ·
-  RM a → RM b`), as often as needed; once sent out, Edit opens as Revise
-  {ref} and makes the next quotation (`quotation_replace`).
+  RM a → RM b`), as often as needed; once sent out, Edit opens with
+  Create quotation and makes the next quotation (`quotation_replace`).
 
 - A website quotation's ⋯ Preview (`quotes.js`, any reader of it; the
   user, 2026-10-30) opens `/quote/?q={key}&preview=1`: the prospect's page

@@ -31,7 +31,7 @@
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Duplicate it to quote again.',
-    sent: 'This quotation was sent while it was being edited. Choose Edit again to make its revision.',
+    sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
@@ -974,7 +974,10 @@
     sel = sel || {};
     /* `editing`: a quotation not yet sent out, saved into itself
        (`quotation_edit`, 2026-11-06). */
-    $('qbTitle').textContent = editing ? 'Edit ' + editing.ref : revises ? 'Revise ' + revises.ref : 'Build quote';
+    /* The title reads as the button that opened it (Edit, or Adjust and
+       send); only its commit says whether it saves or makes the next. */
+    $('qbTitle').textContent = editing ? 'Edit ' + editing.ref
+      : revises ? (opener && /^Adjust/.test(String(opener.textContent || '').trim()) ? 'Adjust ' : 'Edit ') + revises.ref : 'Build quote';
     $('qbSave').textContent = editing ? 'Save' : 'Create quotation';
     /* `edits`: a line's quantity, rate and months the team typed, by the
        line's key (2026-10-15, the user: "fully customised for the rates qty
