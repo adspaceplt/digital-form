@@ -9900,6 +9900,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         if (taxBad) return { error: 'bad-tax', line: taxBad };
+
+        var hasPlan = lines.some(function (l) { return l.kind === 'plan'; });
+        lines.forEach(function (l) {
+          var e = rates && rates[l.key];
+          if (e && 'incl' in e && typeof e.incl !== 'boolean') editBad = l.label;
+          delete l.in_plan;
+          if (hasPlan && l.kind !== 'plan' && Number(l.rate) === 0 && !(e && e.incl === false)) l.in_plan = true;
+        });
+        if (editBad) return { error: 'bad-edit', line: editBad };
         var sub = 0, once = 0, month = false;
         lines.forEach(function (l) { l.amount = r2(l.qty * l.rate); if (l.basis === 'month') { sub += l.amount; month = true; } else once += l.amount; });
         if (month && term === 1) return { error: 'bad-term' };

@@ -8472,3 +8472,18 @@ new meeting opens on the next free half hour.
 - Fixed: granted live at once, the grant added to the migration and the
   schema, and `tests/sql.js` checks every column the list reads against the
   schema's grants. Rule in CLAUDE.md.
+
+### 2026-11-06 · Lines at RM 0 included in the plan
+- Asked: "optionally hide 0.00 so it includes together as a plan instead
+  breaking down as free". ADP/QT2611-F01 printed three RM 0.00 rows (extra
+  graphics, an extra reel, translation) that read as freebies beside a
+  custom Plan D rate.
+- Options put: A, the line folded into the plan's inclusions; B, Included
+  in place of RM 0.00; C, card rates on the extras and a lower plan rate.
+  Chosen: A.
+- Built: `quote_adjust` marks a line at RM 0 beside a plan `in_plan` unless
+  the team unticks Include in plan; one helper (`ADspaceMoney.planFold`)
+  folds it for the PDF and /quote/. Stamped by the database so the client
+  page needs no selection. A quotation priced before keeps its rows until
+  it is edited.
+

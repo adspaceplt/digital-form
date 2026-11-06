@@ -1230,6 +1230,7 @@
     /* The head holds a cell for the Tax cell where the lines carry one, so
        its cells stand over the lines' (2026-10-31). */
     var hasTax = (B && B.codes || []).some(function (c) { return c.active; });
+    var hasPlan = rows.some(function (l) { return l.kind === 'plan'; });
     var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Line</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
       '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
@@ -1255,14 +1256,19 @@
         /* The line's inclusions a point each, as the quotation prints them
            (2026-11-04). */
         var incl = (l.detail || []).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
-        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + '</span>' +
+        /* Include in plan (the user, 2026-11-06, option A): a line at RM 0
+           beside a plan is listed under the plan's inclusions on the
+           quotation, not as a row of its own; on unless unticked. */
+        var fold = hasPlan && l.kind !== 'plan' && Number(l.rate) === 0 ?
+          '<label class="tickline qb-inplan"><input type="checkbox" data-key="' + esc(l.key || '') + '"' + (l.in_plan ? ' checked' : '') + '> Include in plan</label>' : '';
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           (incl.length ? '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
           (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
             '<span class="qb-once">One-off</span>') + '</span>' +
-          '<span class="svc-rate qb-amt">' + esc(rm(l.amount)) + '</span></div>';
+          '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
        the rows are ADspaceMoney.quoteRows', one copy (QT-4). */
@@ -1338,6 +1344,14 @@
       if (e.key === 'Enter' && !e.isComposing && e.target.closest('.qb-val')) { e.preventDefault(); e.target.blur(); }
     });
     $('qbLines').addEventListener('change', function (e) {
+      var ip = e.target.closest('.qb-inplan input');
+      if (ip && B) {
+        var k2 = ip.getAttribute('data-key'), e2 = B.edits[k2] || {};
+        if (ip.checked) delete e2.incl; else e2.incl = false;
+        if (Object.keys(e2).length) B.edits[k2] = e2; else delete B.edits[k2];
+        preview();
+        return;
+      }
       var tx = e.target.closest('.qb-tax');
       if (tx && B) {
         var k0 = tx.getAttribute('data-key'), e0 = B.edits[k0] || {};
