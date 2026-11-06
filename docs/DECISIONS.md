@@ -8517,3 +8517,13 @@ new meeting opens on the next free half hour.
   Sales by colleague as the representative until then. `tests/scope.js`
   and `tests/quotesite.js` hold it.
 
+### 2026-11-06 · A quotation sent out moves the lead to Proposal sent
+The user reported a lead still at Contacted after its quotation went out
+(Faire Development, ADP/QT2611-F01). The stage moved only by hand. Now the
+moment `sent_out_at` is stamped (released, link made, WhatsApp or email
+filed), trigger `quotations_sent_moves_lead` moves a Lead or Contacted
+client to Proposal sent through the stage clock and files it; Active,
+Paused and Past are never touched. The migration moved the two leads
+already sent a quotation (Faire Development, Dr Goh Yi Pei). `tests/quotes.js`
+holds it on the stand-in.
+

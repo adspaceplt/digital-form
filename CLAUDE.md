@@ -6327,6 +6327,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `signed`, `revised`, `not-proceeding`, `removed`; filed `{ref} edited ·
   RM a → RM b`), as often as needed; once sent out, Edit opens with
   Create quotation and makes the next quotation (`quotation_replace`).
+- A quotation sent out moves its client from Lead or Contacted to
+  Proposal sent (trigger `quotations_sent_moves_lead` on `sent_out_at`,
+  `2026-11-06-quotation-sent-moves-lead.sql`; the user, 2026-11-06: a
+  quotation sent left the lead at Contacted), on its stage clock, filed
+  `client.stage` Proposal sent · {ref} sent out; a later stage is never
+  moved back, and a fault never fails the send.
 
 - A website quotation's ⋯ Preview (`quotes.js`, any reader of it; the
   user, 2026-10-30) opens `/quote/?q={key}&preview=1`: the prospect's page
