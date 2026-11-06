@@ -3648,6 +3648,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* A line's tax code, chosen under its name (2026-10-22). */
 .qb-taxc .qb-tax { display: block; width: auto; max-width: 100%; margin-top: 6px; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.lpicktot { max-width: none; margin: 4px 0 16px; }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's quantity, rate and months are typed where they are read
    (2026-10-15): each field keeps a row of words' height, its target

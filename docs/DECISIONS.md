@@ -8438,3 +8438,13 @@ new meeting opens on the next free half hour.
   holiday shading, and the empty line stood flush under it.
 - Now: under `is-narrow` the days are a white card of rows (no edge, a soft
   rule between days, a row's padding) and the empty line stands 12px under.
+
+### 2026-11-06 · The Letter of Offer sheet shows what the lines come to
+- Asked (the user): the sheet showed only the term's total
+  (`2 services · RM 36,676.80`).
+- Now: under the ticked lines, the letter's own summary as it prints it:
+  Monthly subtotal, One-off subtotal (with one-off items), SST, First month
+  due (with one-off items), Monthly incl. SST and Total for n months incl.
+  SST (the one in weight); with no term, Subtotal, SST, Total. The foot
+  keeps the count alone. Lines all from one quotation keep the quotation's
+  own line in the foot and draw no summary (QT-1).
