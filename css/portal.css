@@ -4575,6 +4575,11 @@ body > .shell { width: 100%; }
    the edge. Restated here because `.svc-row > .svc-state` comes later in the
    file and would otherwise win on the same specificity. */
 .is-narrow .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
+/* A service line's ⋯ stands on the name's first line and takes that line's
+   height, its target overflowing it evenly (as a quotation row's): its 44px
+   box set the first grid row, so a one-line name stood 26px above its rate
+   and a two-line name 4px, and the ⋯ sat between the lines (2026-11-06). */
+.is-narrow .svc-row.csv-row > .team-act { height: 22px; margin-top: 0; display: flex; align-items: center; }
 .is-narrow .ct-row > .crm-reach { grid-area: reach; }
 /* Three ways to reach one person share the row at equal widths, which is
    what the law is for. One link is not a row of links: Engagements borrows

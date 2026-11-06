@@ -8421,3 +8421,12 @@ new meeting opens on the next free half hour.
   on when taken off, so only the last link puts the task back.
 - Also: a line under a section's head (`.viewhead + .msg`) touched the card
   under it (Sent on WhatsApp over Quotations); it now stands 12px from both.
+
+### 2026-11-06 · A service line's ⋯ on its name's line
+- Reported: on a phone a service line whose name was one line stood far
+  above its rate, the next line (with a tax code under its name) close.
+- Why: the row's ⋯ is a 44px target in the name's grid row, so it set
+  that row's height; a one-line name left 26px empty under it, a two-line
+  name 4px, and the ⋯ sat between the lines.
+- Now: the ⋯ takes the name line's height (22px) and its target overflows
+  it evenly, as a quotation row's does; every line stands 6px from its rate.
