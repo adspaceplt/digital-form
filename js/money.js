@@ -330,7 +330,28 @@
     return r;
   }
 
+  /* A quotation's lines as the client reads them (the user, 2026-11-06,
+     option A: "include together as a plan instead breaking down as free"):
+     a line the database marks `in_plan` (RM 0, Include in plan ticked)
+     has no row of its own and is listed under the plan's inclusions,
+     `{qty} × {label}` where more than one. One copy for the quotation's
+     PDF and /quote/. */
+  function planFold(lines) {
+    lines = (lines || []).map(function (l) { return Object.assign({}, l); });
+    var plan = lines.filter(function (l) { return l.kind === 'plan'; })[0];
+    if (!plan) return lines;
+    var into = lines.filter(function (l) { return l.in_plan && l !== plan; });
+    if (!into.length) return lines;
+    plan.detail = (plan.detail || []).concat(into.map(function (l) {
+      /* "7 × Translation into Chinese": the count says what "per content
+         piece" said. */
+      return Number(l.qty) > 1 ? l.qty + ' × ' + String(l.label).replace(/, per [^,]+$/, '') : l.label;
+    }));
+    return lines.filter(function (l) { return !(l.in_plan && l !== plan); });
+  }
+
   window.ADspaceMoney = {
+    planFold: planFold,
     quoteRows: quoteRows,
     money: money,
     money2: money2,

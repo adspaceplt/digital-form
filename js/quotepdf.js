@@ -176,7 +176,7 @@
     };
     headRow();
     var taxed = window.ADspaceMoney.sstOf(q.lines, t.sst_pct);
-    (q.lines || []).forEach(function (l) {
+    window.ADspaceMoney.planFold(q.lines).forEach(function (l) {
       var name = wrap(l.label, wD, TB, reg);
       /* Each inclusion a point of its own, as the service lists it, its
          words hung under its first (the user, 2026-11-04: one run of

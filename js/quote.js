@@ -611,7 +611,7 @@
     var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'closed' ? ['is-off', t().closed]
       : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
-    var lines = (q.lines || []).map(function (l) {
+    var lines = window.ADspaceMoney.planFold(q.lines).map(function (l) {
       /* Every inclusion a point, as the service lists them and the PDF
          prints them (2026-11-04). */
       var d = (l.detail || []).map(function (x) { return String(x == null ? '' : x).replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
