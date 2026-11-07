@@ -2024,7 +2024,7 @@
     return '<details class="fmore filehidden"><summary>Hidden from the client · ' + hid.length + '</summary>' +
       '<div class="filepins">' + hid.map(function (f) {
         return '<span class="filepin filepin-row is-hidden" data-file="' + esc(f.id) + '">' +
-          '<a class="filepin-open" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+          '<a class="filepin-open" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
             '<span class="filepin-name">' + esc(f.name) + '</span></a>' +
           (mayWork() ? '<button class="btn btn-sm" type="button" data-a="showfile">Restore</button>' : '') +
           (del ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="hidmenu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -2077,7 +2077,7 @@
                the browser's broken image mark, which tells a reviewer the
                creator's work is gone when only the preview failed. */
             return '<div class="filecard filecard-image" data-file="' + esc(f.id) + '">' +
-              '<a class="filecard-open" href="' + esc(f.url) +
+              '<a class="filecard-open" href="' + esc(absUrl(f.url)) +
               '" target="_blank" rel="noopener" aria-label="Open submitted file">' +
               '<img src="' + esc(f.url) + '" alt="" loading="lazy" onerror="this.remove()">' +
               '<span class="filecard-kind">' + ext + '</span>' +
@@ -2088,7 +2088,7 @@
       (rest.length
         ? '<div class="filepins">' + rest.map(function (f) {
             return '<span class="filepin filepin-row" data-file="' + esc(f.id) + '">' +
-              '<a class="filepin-open" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+              '<a class="filepin-open" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
                 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
                 '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
@@ -2385,7 +2385,7 @@
       var head = '<div class="deliv-head"><b>' + esc((o.creators || {}).name || '') + '</b>' +
         '<span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></div>';
       var body = files.map(function (f) {
-        return '<a class="deliv-file" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+        return '<a class="deliv-file" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
           '<span class="deliv-name">' + esc(f.name || f.url) + '</span>' +
           '<span class="deliv-kind">' + esc((f.kind || '').split('/')[0] || 'file') + '</span></a>';
       }).join('');
@@ -4682,11 +4682,11 @@
             '<span class="qc-file-name">' + esc(f.name || '') + '</span></div>';
         }
         if (k === 'image') {
-          return '<a class="qc-file is-image" href="' + esc(f.url) + '" target="_blank" rel="noopener" aria-label="Open ' + esc(f.name || 'file') + '">' +
+          return '<a class="qc-file is-image" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener" aria-label="Open ' + esc(f.name || 'file') + '">' +
             '<img src="' + esc(f.url) + '" alt="" loading="lazy" onerror="this.remove()">' +
             '<span class="qc-file-name">' + esc(f.name || '') + '</span></a>';
         }
-        return '<a class="filepin filepin-row qc-file-row" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+        return '<a class="filepin filepin-row qc-file-row" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
           '<span class="filepin-name">' + esc(f.name || f.url) + '</span></a>';
       }).join('') +
         (!files.length && link ? '<a class="plink" href="' + esc(link) + '" target="_blank" rel="noopener">' + esc(link) + '</a>' : '');

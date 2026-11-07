@@ -564,6 +564,16 @@ section holds only what is true of the project as a whole.
   and 390 hold both sides of it; 2026-10-18, to keep the daily gate short).
 
 ### Open security findings
+- The audit of 2026-11-07 (run 1, 0a858d0): its eight confirmed findings
+  and the two `javascript:` file-link leads closed the same day
+  (`docs/DECISIONS.md`). Open: media passes and private links share one
+  CloudFront key group, so a CDN path quirk could reach `private/` (the
+  owner checks `--path-as-is` dot-segment requests, or gives `private/` its
+  own key group); and seven areas the critics accepted were not hunted
+  (other console screens, direct table writes and storage policies, the
+  WhatsApp log's colleague numbers, console sessions, anonymous write
+  volume, edge-function import pinning, the Settings, Scripts, Checklists,
+  Handbook and Invoices functions), for a second run.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
   unescaped in the console), 3 (a post link holding a quote) and 4

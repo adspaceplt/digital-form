@@ -3275,7 +3275,7 @@
       b.addEventListener('click', function () {
         var l = list[Number(b.getAttribute('data-i'))];
         if (!l) return;
-        if (b.getAttribute('data-a') === 'open') { window.open(l.file_url, '_blank', 'noopener'); return; }
+        if (b.getAttribute('data-a') === 'open') { var u = window.ADspaceWords.absUrl(l.file_url); if (u) window.open(u, '_blank', 'noopener'); return; }
         var LET = window.ADspaceLetters;
         if (!LET) { msg('mineLetterMsg', 'The letter could not be generated. Refresh the page.', 'err'); return; }
         b.disabled = true;

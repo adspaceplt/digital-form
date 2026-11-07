@@ -405,7 +405,7 @@
       if (offer) { DOCS.download(d.offer, function (warn) { if (warn) say(warn, 'err'); }); return; }
       LET.download(d, function (warn) { if (warn) say(warn, 'err'); });
     });
-    on('open', function () { window.open(d.file_url, '_blank', 'noopener'); });
+    on('open', function () { var u = window.ADspaceWords.absUrl(d.file_url); if (u) window.open(u, '_blank', 'noopener'); });
     /* The letter's own acts live on the record that priced it, so the row
        carries the way there rather than a copy of them. The address is
        written first, the way the bell opens a task, because the Clients
