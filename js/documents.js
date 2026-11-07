@@ -1438,7 +1438,7 @@
       '<div class="sheet-head"><h3 id="pdfViewTitle">' + e(name) + '</h3>' +
       '<button class="iconbtn" type="button" data-a="x" aria-label="' + (zh ? '关闭' : 'Close') + '">' +
       '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
-      '<div class="sheet-body"><iframe class="pdfview" title="' + e(name) + '" src="' + e(url) + '"></iframe></div>' +
+      '<div class="sheet-body"><div class="pdfview pdfpages" role="document" aria-label="' + e(name) + '" aria-busy="true"></div></div>' +
       '<div class="sheet-foot"><button class="btn btn-primary" type="button" data-a="dl">' + (zh ? '下载' : 'Download') + '</button>' +
       '<button class="btn btn-quiet" type="button" data-a="x">' + (zh ? '关闭' : 'Close') + '</button></div></div>';
     var gone = function () { box.remove(); URL.revokeObjectURL(url); };
@@ -1449,6 +1449,73 @@
     document.body.appendChild(box);
     if (window.ADspaceSheet) window.ADspaceSheet.show(box, { opener: document.activeElement, onClose: gone });
     else box.hidden = false;
+    paintPages(box.querySelector('.pdfpages'), file, url, name);
+  }
+  /* The viewer draws each page at the panel's width (the user, 2026-11-07:
+     an iPhone's frame showed the page at its own size, cut at the right).
+     pdf.js is fetched on the first viewing, pinned and hashed as pdf-lib
+     is, its worker read and hashed here before it runs; where it cannot be
+     had, the file is shown in a frame as before. */
+  var PDFJS = ['pdfjsLib', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js', 'sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e'];
+  var PDFJS_WORKER = ['', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js', 'sha384-SnzOobpRMLXZ52iJvZm/C0fYw0OQemTXzTjIsdsfMcrCtCEe9qgzxTd3RSklO5x2'];
+  var pdfjsWait = null;
+  function pdfjs() {
+    if (pdfjsWait) return pdfjsWait;
+    pdfjsWait = new Promise(function (ok, bad) {
+      if (window.pdfjsLib) return ok();
+      var sc = document.createElement('script');
+      if (PDFJS[2]) { sc.integrity = PDFJS[2]; sc.crossOrigin = 'anonymous'; }
+      sc.src = PDFJS[1];
+      sc.onload = ok; sc.onerror = function () { sc.remove(); bad(new Error('pdfjs')); };
+      document.head.appendChild(sc);
+    }).then(function () {
+      if (PDFJS_WORKER[2] && !(window.crypto && crypto.subtle)) throw new Error('pdfjs');
+      return fetch(PDFJS_WORKER[1], { mode: 'cors', credentials: 'omit' }).then(function (r) {
+        if (!r.ok) throw new Error('pdfjs');
+        return r.arrayBuffer();
+      }).then(function (buf) {
+        /* A suite's server empties the pinned hash (tests/serve-unpin.js),
+           as it does pdf-lib's: the check then stands aside. */
+        return (PDFJS_WORKER[2] ? crypto.subtle.digest('SHA-384', buf) : Promise.resolve(null)).then(function (d) {
+          if (d) {
+            var bin = '', b = new Uint8Array(d);
+            for (var i = 0; i < b.length; i++) bin += String.fromCharCode(b[i]);
+            if ('sha384-' + btoa(bin) !== PDFJS_WORKER[2]) throw new Error('pdfjs');
+          }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([buf], { type: 'text/javascript' }));
+          return window.pdfjsLib;
+        });
+      });
+    }).catch(function (e) { pdfjsWait = null; throw e; });
+    return pdfjsWait;
+  }
+  function paintPages(host, file, url, name) {
+    if (!host) return;
+    var frame = function () {
+      host.className = 'pdfview';
+      host.innerHTML = '<iframe class="pdfview" title="' + String(name).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }) + '" src="' + url + '"></iframe>';
+      host.removeAttribute('aria-busy');
+    };
+    var bytes = file.arrayBuffer ? file.arrayBuffer() : new Response(file).arrayBuffer();
+    Promise.all([pdfjs(), bytes]).then(function (r) {
+      return r[0].getDocument({ data: new Uint8Array(r[1]) }).promise;
+    }).then(function (doc) {
+      var w = Math.max(200, host.clientWidth - 16), dpr = Math.min(window.devicePixelRatio || 1, 3), n = 0;
+      var next = function () {
+        if (!host.isConnected) return null;
+        if (++n > doc.numPages) { host.removeAttribute('aria-busy'); return null; }
+        return doc.getPage(n).then(function (pg) {
+          var base = pg.getViewport({ scale: 1 }), vp = pg.getViewport({ scale: (w / base.width) * dpr });
+          var cv = document.createElement('canvas');
+          cv.className = 'pdfpage'; cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+          cv.style.width = w + 'px'; cv.style.height = Math.round(vp.height / dpr) + 'px';
+          cv.setAttribute('aria-label', 'Page ' + n + ' of ' + doc.numPages);
+          host.appendChild(cv);
+          return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp, background: 'rgb(255,255,255)' }).promise.then(next);
+        });
+      };
+      return next();
+    }).catch(frame);
   }
   function share(file, name, zh) {
     var go = function () {

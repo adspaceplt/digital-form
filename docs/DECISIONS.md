@@ -8644,3 +8644,14 @@ with Close and Download; Download alone uses the share sheet. iPhone Safari
 may show only a PDF's first page inside a frame; Safari cannot run here, so
 the user confirms it on a phone.
 
+### 2026-11-07 · The installed app's PDF panel draws every page at its width
+The user's iPhone showed a quotation's first page alone in the Preview
+panel, at the page's own size and cut at the right (Page 1 of 3 at its
+foot). iOS draws a PDF in a frame as one page image and does not fit it.
+The panel now draws each page itself with pdf.js (3.11.174 from jsdelivr,
+pinned by its hash as pdf-lib is; the worker fetched, hashed and run from a
+blob), at the panel's width and the screen's pixel ratio, one under
+another. Where pdf.js cannot be had the frame is shown as before.
+`tests/pwapdf.js` previews a two-page file and measures both pages within
+the panel's width.
+

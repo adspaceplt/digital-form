@@ -2553,7 +2553,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `previewTab()` (every Preview's one opener, Drawing the PDF…) open no
   window there: a Preview is read in a sheet with Close and Download
   (`#pdfViewSheet`; `previewTab()` answers a stand-in tab, `viewer`, that
-  `save` reads; the user, 2026-11-07: no download asked for a Preview), a
+  `save` reads; the user, 2026-11-07: no download asked for a Preview), its
+  pages drawn one under another at the sheet's width by pdf.js 3.11.174
+  (fetched at the first viewing, pinned by hash, its worker read and
+  hashed before it runs; `paintPages`): an iPhone's frame drew page 1
+  alone at its own size, cut at the right; a frame only where pdf.js
+  cannot be had; a
   save goes to the share sheet as a named File (a stale press asks File
   ready · Share), and with no share sheet for files it is shown in the same
   sheet; a window on another origin
