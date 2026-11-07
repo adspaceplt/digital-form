@@ -3393,6 +3393,14 @@ button.vs-row {
   grid-template-columns: 24px minmax(0, 1fr) auto auto;
   grid-template-areas: "n pic pic pic" "n text text text" "n line line line" "n . vc shot";
 }
+/* On a phone the picture stands at the left with its tag and acts beside
+   it, never a column of three under it (2026-11-07). */
+.is-tight .vs-scenes.has-pics .vs-scene > .vs-pic {
+  grid-template-columns: auto minmax(0, 1fr); grid-auto-rows: min-content;
+  column-gap: 12px; align-items: start;
+}
+.is-tight .vs-pic > .vs-pic-box { grid-column: 1; grid-row: 1 / span 4; }
+.is-tight .vs-pic > :not(.vs-pic-box) { grid-column: 2; }
 /* =========================================================================
    WHATSAPP (2026-10-10, js/whatsapp.js): every message the portal sent, in
    one card under the month's count of templates by category. A row is who
