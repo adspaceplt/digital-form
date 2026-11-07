@@ -8664,3 +8664,17 @@ share sheet the named file alone where files can be shared, and downloads
 as before where they cannot. `tests/pwapdf.js` presses it and reads one
 named file shared, no window opened.
 
+### 2026-11-07 · A quotation states every count, and a one-off line its description
+Three findings from the user on quotation ADP/QT2611-B01. Build quote's
+lines table took a Qty of 3 while the extra-content stepper above still
+read 2: the typed figure was kept as an edit beside the stepper. A Qty
+typed on a line with a stepper now sets the stepper, which prices it.
+The PDF listed an extra reel inside the plan as "Additional reels, up to
+60 seconds" with no count, so a client could read several: `planFold`
+now always states the count and names one in the singular. An outstation
+fee listed no description: `quote_price` gave one-off lines none. It now
+gives each one-off line its service's description from the live version,
+a point a line (`2026-11-07-one-off-lines-carry-their-description.sql`).
+Quotations already made keep their lines; an unsent one takes it once
+edited and saved.
+

@@ -6137,7 +6137,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   what each adds, extra contents as steppers with the plan's rate,
   languages, budget and term, one-off items as steppers two across (content,
   verifications, KOC packages, then every add-on with a rate under its
-  card group: an outstation fee, a shoot, revisions, files; 2026-11-07), the
+  card group: an outstation fee, a shoot, revisions, files; 2026-11-07; each
+  one-off line carrying its service's description, a point a line, from the
+  live version, `2026-11-07-one-off-lines-carry-their-description.sql`; a
+  line's Qty typed sets its stepper, never an edit beside it), the
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
@@ -6158,7 +6161,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`; the user, 2026-11-06, option A): no row
   of its own on the PDF or /quote/, listed under the plan's inclusions
-  (`ADspaceMoney.planFold`, `7 × Translation into Chinese`), the totals
+  (`ADspaceMoney.planFold`, its count always stated, one singular:
+  `1 × Additional reel, up to 60 seconds`), the totals
   unchanged; Build quote keeps its row, reading In plan.
   A plan card names its platforms, its contents (`6 contents: 2 graphics, 4
   reels`) and the ad budget it covers; choosing a plan ticks Meta where no

@@ -9916,7 +9916,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var c = by(o.slug);
           if (!c || !c.spec || ['content', 'verify', 'koc', 'kol', 'addon'].indexOf(c.spec.role) < 0) { onceBad = true; return; }
           if (c.rate == null) { req.push(c.name); return; }
-          L({ slug: c.slug, kind: c.spec.role, basis: 'once', label: quoteName(c), qty: Number(o.qty), rate: Number(c.rate) });
+          L({ slug: c.slug, kind: c.spec.role, basis: 'once', label: quoteName(c),
+            detail: String(c.detail || '').split('\n').map(function (d) { return d.replace(/^\s*::\s*/, '').trim(); }).filter(Boolean),
+            qty: Number(o.qty), rate: Number(c.rate) });
         });
         if (onceBad) return { error: 'bad-once' };
         if (!lines.length && !req.length) return { error: 'empty' };

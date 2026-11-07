@@ -1154,6 +1154,15 @@
     if (Array.prototype.some.call(box, function (i) { return i.checked; })) return;
     Array.prototype.forEach.call(box, function (i) { if (i.value === 'meta') i.checked = true; });
   }
+  /* The stepper that holds a line's quantity, found by the line's slug
+     (its key is kind|slug|label), else none. */
+  function stepperOf(key) {
+    var slug = String(key || '').split('|')[1] || '';
+    if (!slug) return null;
+    if (B && B.plan && slug === extraSlug('graphic')) return $('qbGraphic');
+    if (B && B.plan && slug === extraSlug('reel')) return $('qbReel');
+    return document.getElementById('qbO-' + slug);
+  }
   function selection() {
     var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6,
       platforms: [], langs: [], translate: $('qbTranslate').checked, budget: Number($('qbBudget').value) || 0, once: [] };
@@ -1374,6 +1383,18 @@
       var raw = String(i.value).replace(/[,\s]/g, '').replace(/^(RM|S\$)/i, '');
       var ok = what === 'rate' ? /^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(raw) :
         what === 'qty' ? /^[0-9]{1,4}$/.test(raw) && Number(raw) >= 1 : /^[0-9]{1,2}$/.test(raw) && Number(raw) >= 1 && Number(raw) <= 36;
+      /* A quantity a stepper above holds (an additional content piece, a
+         one-off item, an add-on) is that stepper's: typed here it moves the
+         stepper, never an override beside it, so the two never disagree
+         (the user, 2026-11-07: Qty 3 below, the stepper 2 above). */
+      var step = what === 'qty' && ok && stepperOf(k);
+      if (step) {
+        step.value = raw;
+        if (B.edits[k]) { delete B.edits[k].qty; if (!Object.keys(B.edits[k]).length) delete B.edits[k]; }
+        $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
+        preview();
+        return;
+      }
       var e1 = B.edits[k] || {};
       if (raw === '') delete e1[what];
       else if (ok) e1[what] = raw;
