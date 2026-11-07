@@ -8610,7 +8610,7 @@ The user asked to read, at one glance, a client's ID, industry, who sold it,
 who runs it and how long it has stood. The desk list adds a Sales by column
 beside Person in charge (Industry kept wide enough to read whole at 1280).
 The phone row stays two lines: a lead names who sells it, a client who runs
-it, with "Sales by {name}" only where another colleague sold it, because two
+it, with "Sales by: {name}" (the record head's own form) only where another colleague sold it, because two
 unlabelled names on one line cannot be told apart. The team list and the
 clients load side by side, so a name is drawn only once the team is read and
 the list (or the open record) repaints then; before, a live colleague could

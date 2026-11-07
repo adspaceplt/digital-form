@@ -1788,7 +1788,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     face and is searched; on a phone it leads the meta line instead
     (`.crm-meta-code`), which reads Client ID · Industry · the one person
     the stage needs (a lead its Sales by, else its Person in charge; a
-    client its Person in charge, then Sales by {name} only where another
+    client its Person in charge, then Sales by: {name} only where another
     colleague sold it; `metaPeople`), Last activity left to the desk and the
     record (the user, 2026-11-04; 2026-11-07).
   - On a phone the row is two columns: name over meta, and the chip over the

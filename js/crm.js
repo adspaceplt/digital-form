@@ -657,7 +657,7 @@
     var sold = c.sales_by ? salesByName(c.sales_by) : '';
     var lead = stageWord(c.stage || 'lead')[3] === 'leads';
     if (lead) return [c.industry, sold || c.owner];
-    return [c.industry, c.owner, sold && sold !== c.owner ? 'Sales by ' + sold : ''];
+    return [c.industry, c.owner, sold && sold !== c.owner ? 'Sales by: ' + sold : ''];
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
