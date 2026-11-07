@@ -9659,12 +9659,18 @@ body.qs-page { background: var(--card); }
 /* Squircle corners (the user, 2026-10-24: "Yes, where supported"): where the
    browser draws `corner-shape` (Chrome), the bounded surfaces and the
    controls take Apple's continuous corner, the same radius tokens; a
-   browser without it (Safari today) keeps the round corner. Pills, discs,
-   dots and rings stay round. */
+   browser without it keeps the round corner. Pills, discs, dots and rings
+   stay round. Every other rounded box takes it, so no two corners of one
+   radius read differently side by side: an icon mark beside a button, a
+   strip's sliding thumb in its squircle track, a count in its tab
+   (2026-11-07, the user: "it looks all different"). */
 @supports (corner-shape: squircle) {
   .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head,
   .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-side,
-  .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn {
+  .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn,
+  .iconbtn, .kmenu-btn, .plink, .stg-go, .navitem, .railrow, .backlink, .railnext, .railmiss, .linkbtn,
+  .empty, .sidebar, .tab-n, .chip, .tone, .rp-step, .rp-steps,
+  .cmdbar-views.has-thumb::before, .rectabs.has-thumb::before, .tabrow.has-thumb::before, .rp-steps.has-thumb::before {
     corner-shape: squircle;
   }
 }

@@ -8766,3 +8766,14 @@ holds about 170px and the shorter label alone still wrapped, so the user
 chose (of three) to leave Industry off a phone row that names a seller:
 "AC186 · Claire Teo · Sales: Qirui". Industry stays on the desk column and
 the record; `crm` measures the row at 390.
+
+### 2026-11-07 · One corner shape
+The user sent a phone screenshot of the Reports bar: the blue + read
+squarer than the search, Filters and ⋯ marks beside it, the strip's white
+highlight rounder than its track, all at near radii. The squircle list of
+2026-10-24 named `.btn`, fields and strips, but not `.iconbtn`, `.kmenu-btn`,
+the strips' sliding thumb (a `::before`), the tab count, chips, the rail's
+rows, Back and the empty line, so those kept the round corner; at one
+radius a squircle reads sharper than a circle's arc, so neighbours looked
+different. Every rounded box but a pill now takes the squircle, and
+`corners` walks nine sections at 390 and 1280 for any that does not.
