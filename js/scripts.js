@@ -1770,7 +1770,10 @@
   }
   /* A drawing as an image's SVG: its own namespace, in ink on white. */
   function svgFile(svg) {
-    return svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
+    /* A drawn frame already names its namespace: a second xmlns is a
+       repeated attribute, and the picture would not load (2026-11-07). */
+    var ns = /^<svg[^>]*\sxmlns=/.test(svg) ? '' : 'xmlns="http://www.w3.org/2000/svg" ';
+    return svg.replace('<svg ', '<svg ' + ns + 'style="color:#1b1a17" ').replace(/currentColor/g, '#1b1a17');
   }
   /* A drawn frame as a PNG data URL, in ink on white, twice its size. */
   function framePng(svg) {

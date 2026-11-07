@@ -8708,3 +8708,12 @@ Letters Work alone, a stale Preview reloads the sheet, and an Issue still
 on its way acts only on the sheet that sent it
 (`2026-11-07-letter-of-offer-fixes.sql`).
 
+
+### 2026-11-07 · Play drew blank frames
+The user pressed Play on a script whose scenes Claude had drawn and saw only
+the Scene tag on white. A drawn frame for print already names its SVG
+namespace, and `svgFile` added a second `xmlns`; a repeated attribute is not
+valid XML, so the browser refused the picture and the animatic drew none. The
+crew PDF used the same helper and quietly dropped those frames too. `vs`
+checked only for any dark pixel, which the Scene tag alone gave; it now
+looks for ink below the tag, and failed before the fix.
