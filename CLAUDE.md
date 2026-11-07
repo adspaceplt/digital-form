@@ -2558,7 +2558,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (fetched at the first viewing, pinned by hash, its worker read and
   hashed before it runs; `paintPages`): an iPhone's frame drew page 1
   alone at its own size, cut at the right; a frame only where pdf.js
-  cannot be had; a
+  cannot be had; its Download hands the share sheet the named file alone
+  where files can be shared (a link to it opened a browser window over
+  the app, offering the dead `blob:` address beside the file), else it
+  downloads; a
   save goes to the share sheet as a named File (a stale press asks File
   ready · Share), and with no share sheet for files it is shown in the same
   sheet; a window on another origin
