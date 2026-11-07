@@ -496,7 +496,7 @@ button.appver {
      belongs on that line, not under it: left showing, it was a grid item with
      no area in the template, so it took an implicit third row of its own and
      printed the same date the meta line already carried. */
-  .crm-c-ind, .crm-c-own, .crm-c-seen { display: none; }
+  .crm-c-ind, .crm-c-own, .crm-c-sales, .crm-c-seen { display: none; }
   /* The one line the phone gets is a summary, not a value cell, so it wraps
      rather than being cut: "Laman Citra · 10 creators · RM 8,640.00" came out
      as "Laman Citra · 10 creators · R…", which loses the figure that is the

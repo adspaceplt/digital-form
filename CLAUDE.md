@@ -1775,7 +1775,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Paused;
   - Past clients (shut by default, remembered, keeping their count).
   - Each band draws thirty, then Show N more.
-- Columns: Client, Stage, Industry, Person in charge, Last activity, chevron.
+- Columns: Client, Stage, Industry, Person in charge, Sales by, Last activity,
+  chevron (Sales by the colleague's name, a mute em dash where none, named
+  only once the team is read; the user, 2026-11-07).
   - No Value column and no value on a heading.
   - Rows run newest Client ID first (digits as numbers), unnumbered after,
     newest first.
@@ -1784,8 +1786,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the record head's white disc, initials only while none is held or where
     it fails to load), and the Client ID sits under the name in the token
     face and is searched; on a phone it leads the meta line instead
-    (`.crm-meta-code`), which reads Client ID · Industry · Person in charge,
-    Last activity left to the desk and the record (the user, 2026-11-04).
+    (`.crm-meta-code`), which reads Client ID · Industry · the one person
+    the stage needs (a lead its Sales by, else its Person in charge; a
+    client its Person in charge, then Sales by {name} only where another
+    colleague sold it; `metaPeople`), Last activity left to the desk and the
+    record (the user, 2026-11-04; 2026-11-07).
   - On a phone the row is two columns: name over meta, and the chip over the
     age in a fixed 120px track, top aligned. The meta omits what is not known,
     never showing a bare currency sign.

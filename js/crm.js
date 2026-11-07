@@ -442,6 +442,8 @@
   }
   function salesByName(id) {
     if (!id) return '';
+    /* Nothing is named until the team is read: the list may paint first. */
+    if (!state.teamRead) return '';
     var m = (state.team || []).filter(function (x) { return x.id === id; })[0];
     return m ? m.name : 'Former colleague';
   }
@@ -460,6 +462,9 @@
       /* A system account (2026-10-08) holds no clients and is never offered. */
       var S = window.ADspaceAdmin;
       state.team = ((r.data) || []).filter(function (m) { return !(S && S.isSystem && S.isSystem(m)); });
+      var first = !state.teamRead; state.teamRead = true;
+      if (first && state.client) { paintFacts(state.client); paintIdentity(state.client); }
+      else if (first && state.clients.length) paintList();
       peopleSelect($('crmOwnerPick'), state.team);
       fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'All people');
       if (state.due) paintDue();
@@ -621,7 +626,7 @@
         shut: !filtered && bandShut(g[0], mine.length === rows.length),
         table: function () {
           var table = GRP.table('client-row' + (state.pick ? ' is-picking' : ''),
-            ['Client', 'Stage', 'Industry', 'Person in charge', 'Last activity', ''], 'crm-register');
+            ['Client', 'Stage', 'Industry', 'Person in charge', 'Sales by', 'Last activity', ''], 'crm-register');
           /* A card draws its first thirty and offers the rest, so a book of a
              hundred and eighty opens as a page somebody can read rather than
              as a mile of rows. A filter narrows what reaches this point, so
@@ -642,6 +647,17 @@
        it is made of, not as a figure on a list. */
     var late = mine.filter(isStale).length;
     return late ? '<span class="tone is-danger crm-band-late">' + late + ' overdue</span>' : '';
+  }
+
+  /* The phone's line names the one person the stage needs (the user,
+     2026-11-07): a lead the colleague selling it, a client the colleague
+     running it, and Sales by after them only where somebody else sold it,
+     so two bare names never stand side by side unexplained. */
+  function metaPeople(c) {
+    var sold = c.sales_by ? salesByName(c.sales_by) : '';
+    var lead = stageWord(c.stage || 'lead')[3] === 'leads';
+    if (lead) return [c.industry, sold || c.owner];
+    return [c.industry, c.owner, sold && sold !== c.owner ? 'Sales by ' + sold : ''];
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
@@ -688,6 +704,10 @@
           esc(ageWord(c) + (isStale(c) ? ' · Overdue' : '')) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+      /* Who sold it beside who runs it (the user, 2026-11-07: "at one glance
+         i would be able to know all"); a mute em dash where nobody is named. */
+      '<span class="crm-c crm-c-sales">' + (c.sales_by ? esc(salesByName(c.sales_by))
+        : '<span class="muted">—</span>') + '</span>' +
       /* The last thing that happened, and under it what it was, the way the
          stage cell beside it carries its clock. Where nothing is recorded the
          cell takes the same mute mark the Industry cell uses for a value
@@ -709,7 +729,7 @@
            lines a side (the user, 2026-11-04, choosing it over a line that
            wraps). */
         [c.client_code ? '<span class="nb crm-meta-code">' + esc(c.client_code) + '</span>' : '']
-          .concat([c.industry, c.owner].filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }))
+          .concat(metaPeople(c).filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }))
           .filter(Boolean).join(' · ') +
       '</span>' +
       /* The mark that says the row goes somewhere, in the column the header
