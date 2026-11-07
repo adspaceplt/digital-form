@@ -8729,3 +8729,15 @@ drawing back under the same counted press, so no migration was needed. The
 same day the user saw the drawing's edge cut at the corners: its corner was
 a quarter of the box's, which rounds at 8px; the edge now takes the box's
 corner, which `vs` measures.
+
+### 2026-11-07 · Write with AI writes interactive local reels
+The user: Write with AI must write interactive videos in the local style of
+reels production. The writer's rules described a polished commercial: one
+eye-level shot allowed twice, a narrator, no part for the viewer. It now
+writes for the viewer to take part (spoken to them, one prompt to comment,
+vote, guess, tag or save, a loop opened in the hook and closed near the end,
+a change every 2 to 3 seconds, cards that carry it with the sound off), in
+the formats local creators use and with local speech, handheld; a host
+speaking to camera keeps eye level and changes size by jump cuts. The
+reviewer checks the same. The brief's Format list was left as it is (a
+migration); the writer names the local format in the concept.

@@ -6658,6 +6658,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   confirmed; an answer landing after the editor shut is put in at its next
   open. The house
   style and XHS Safe Mode's rules are the function's `SYSTEM` and `SAFE`.
+  Every script is an interactive video made as local reels are (the user,
+  2026-11-07): it speaks to the viewer, gives one prompt to comment, vote,
+  guess, tag or save, opens a loop it closes, changes every 2 to 3 seconds
+  and reads with the sound off, in a local creator's format (POV, street
+  interview, taste test, A or B, a local skit) and local speech, handheld
+  and phone-first; the reviewer checks the same (`INTERACTIVE`, `REELS AS
+  THEY ARE MADE HERE`, review 5a).
 - Publish (`video_script_share`, Undo where it happened; not drawn on a
   script with no scenes) shows a script on the
   client link, `/script/?k=` on the client's own key (`clients.script_key`,
