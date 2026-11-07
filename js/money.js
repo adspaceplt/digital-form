@@ -344,9 +344,13 @@
     if (!into.length) return lines;
     plan.detail = (plan.detail || []).concat(into.map(function (l) {
       /* "7 × Translation into Chinese": the count says what "per content
-         piece" said. */
+         piece" said. A quotation is a contract, so the count is stated for
+         one as for many, and one reads singular: "1 × Additional reel, up
+         to 60 seconds", never "Additional reels" (the user, 2026-11-07). */
       var name = String(l.label).replace(/, per [^,]+$/, '');
-      return Number(l.qty) > 1 ? l.qty + ' × ' + name : name;
+      var n = Math.max(1, Number(l.qty) || 1);
+      if (n === 1) name = name.replace(/^(Additional )([a-z]+[^s])s\b/i, '$1$2');
+      return n + ' × ' + name;
     }));
     return lines.filter(function (l) { return !(l.in_plan && l !== plan); });
   }
