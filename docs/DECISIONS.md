@@ -8655,3 +8655,12 @@ another. Where pdf.js cannot be had the frame is shown as before.
 `tests/pwapdf.js` previews a two-page file and measures both pages within
 the panel's width.
 
+### 2026-11-07 · The panel's Download shares the file, never a link to it
+Download in the installed app's PDF panel followed a link to the file, as a
+desk browser does. On the user's iPhone that opened a browser window over
+the app, and its share sheet offered "1 Link and 1 Document": the file and
+its `blob:` address, which opens for nobody else. Download now hands the
+share sheet the named file alone where files can be shared, and downloads
+as before where they cannot. `tests/pwapdf.js` presses it and reads one
+named file shared, no window opened.
+

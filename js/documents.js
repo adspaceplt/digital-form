@@ -1445,7 +1445,20 @@
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="x"]'), function (b) {
       b.addEventListener('click', function () { if (window.ADspaceSheet) window.ADspaceSheet.close(); else gone(); });
     });
-    box.querySelector('[data-a="dl"]').addEventListener('click', function () { anchor(url, name); });
+    /* Download in the installed app hands the share sheet the named file
+       alone: a link to it opened a browser window over the app, whose own
+       share sheet offered the dead blob: address beside the file (the
+       user, 2026-11-07). Elsewhere, or where files cannot be shared, the
+       file downloads under its name. */
+    box.querySelector('[data-a="dl"]').addEventListener('click', function () {
+      var can = installed() && navigator.share && navigator.canShare &&
+        (function () { try { return navigator.canShare({ files: [file] }); } catch (e) { return false; } })();
+      if (!can) { anchor(url, name); return; }
+      navigator.share({ files: [file] }).catch(function (e) {
+        if (e && e.name === 'AbortError') return;
+        anchor(url, name);
+      });
+    });
     document.body.appendChild(box);
     if (window.ADspaceSheet) window.ADspaceSheet.show(box, { opener: document.activeElement, onClose: gone });
     else box.hidden = false;
