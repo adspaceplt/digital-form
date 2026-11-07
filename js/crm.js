@@ -4462,7 +4462,7 @@
       }
       /* A Letter of Offer was asked for: billing now complete, the letter
          sheet opens on the lines it was asked with. */
-      if (goLetter) loadServices(function () { openPick(goLetter.only); });
+      if (goLetter) loadServices(function () { openPick(goLetter.only, goLetter.rep || undefined); });
     });
   });
 
@@ -6363,7 +6363,7 @@
       /* A signed letter's next step, Verify, stands on the row (MENU-9,
          2026-10-22); the rest is the ⋯ in the standard's order. */
       '<span class="team-act">' +
-        (canVerify ? '<button class="btn btn-sm" data-a="verify" type="button">Verify</button>' : '') +
+        (canVerify ? '<button class="btn btn-sm" data-a="verify" type="button" data-need="clients.documents:work">Verify</button>' : '') +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
@@ -6378,8 +6378,8 @@
             [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
              /* Send by email beside it (2026-10-31), optional as WhatsApp. */
              mailOffer && !d.voided_at && !d.superseded_by && { a: 'mail', label: 'Send by email' }],
-            [st === 'issued' && { a: 'sign', label: 'Mark signed' },
-             st === 'signed' && { a: 'unsign', label: 'Mark not signed' }],
+            [st === 'issued' && { a: 'sign', label: 'Mark signed', need: 'clients.documents:work' },
+             st === 'signed' && { a: 'unsign', label: 'Mark not signed', need: 'clients.documents:work' }],
             [],
             /* Void reverses a confirmation, so it is offered on a verified
                letter and nowhere else. Both acts are the section's Manage
@@ -6583,6 +6583,10 @@
      way through is to void that letter or replace it. A confirmed line sits
      apart, unticked, for a renewal somebody decides on deliberately. */
   var picking = null;
+  /* An Issue on its way: the client and the sheet it was pressed on. Issue
+     stays disabled until it answers, whatever is ticked or shut meanwhile,
+     and its answer acts only on the sheet that sent it. */
+  var pickBusy = null;
 
   /* `rep`: the letter being replaced, whose lines are open to the one that
      replaces it (issue_letter's p_replaces; 2026-10-31). */
@@ -6607,9 +6611,10 @@
     return '<div class="lpickgroup"><h4 class="svc-cat">' + esc(title) + '</h4>' +
       rows.map(function (r) {
         var l = r.line;
-        return '<label class="lpickrow' + (tick ? '' : ' is-held') + '">' +
-          '<input type="checkbox" value="' + esc(l.id) + '"' + (tick ? ' checked' : '') +
-            (tick === false && !r.on ? '' : '') + '>' +
+        /* Only a line on a live letter is held; a Confirmed line not on
+           one stays tickable for a renewal or a variation. */
+        return '<label class="lpickrow' + (!tick && r.on ? ' is-held' : '') + '">' +
+          '<input type="checkbox" value="' + esc(l.id) + '"' + (tick ? ' checked' : '') + '>' +
           '<span class="lpickname"><b>' + esc(l.label) + '</b>' +
             '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
           /* A line of more than a month reads its month, as the letter's
@@ -6631,7 +6636,7 @@
        database refuses it too (`needs-billing`). */
     var missing = billingMissing(c);
     if (missing.length) {
-      gateBilling(missing, 'a Letter of Offer', document.activeElement, function () { state.toLetter = { id: c.id, only: only || null }; });
+      gateBilling(missing, 'a Letter of Offer', document.activeElement, function () { state.toLetter = { id: c.id, only: only || null, rep: rep || null }; });
       return;
     }
     /* The Client ID is what an automatic reference is built from, so a client
@@ -6812,7 +6817,7 @@
       : h && h[1] ? h[0] + ' ' + h[1].charAt(0).toLowerCase() + h[1].slice(1) + (q.totals && q.totals.month && q.totals.term ? ' · ' + q.totals.term + ' months' : '')
       : rows.length + (rows.length === 1 ? ' service' : ' services');
     pickTotals(rows, price, h && h[1]);
-    $('pickGo').disabled = !rows.length;
+    $('pickGo').disabled = !rows.length || Boolean(pickBusy);
   }
 
   /* The letter's own summary rows for the lines ticked: the month's
@@ -6847,8 +6852,8 @@
 
   function pickClosed() {
     picking = null;
-    $('pickGo').disabled = false;
-    $('pickGo').textContent = 'Issue';
+    $('pickGo').disabled = Boolean(pickBusy);
+    $('pickGo').textContent = pickBusy ? 'Issuing…' : 'Issue';
   }
   function shutPick() {
     if (window.ADspaceSheet.isOpen($('pickSheet'))) window.ADspaceSheet.close();
@@ -6912,12 +6917,13 @@
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         b.disabled = false;
+        if (r.code === 'stale') { pickAgain(ids, r.error); return; }
         if (r.error) msg('pickMsg', r.error, 'err');
       });
   });
 
   $('pickGo').addEventListener('click', function () {
-    if (!picking || !DOCS) return;
+    if (!picking || !DOCS || pickBusy) return;
     var ids = pickedIds();
     if (!ids.length) return;
     var c = state.client;
@@ -6957,14 +6963,26 @@
        letter rather than a second one. */
     picking.idem = picking.idem || DOCS.idemKey();
     var go = $('pickGo');
+    var sent = picking, cid = c.id, key = picking.idem;
+    pickBusy = { client: cid, idem: key };
     go.disabled = true;
     go.textContent = 'Issuing…';
     DOCS.issue('offer', c, rows, deal,
-      { idem: picking.idem, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
+      { idem: key, replaces: picking.replaces, renewal: renewal, quotes: (state.quotes || []).concat(state.letterQuotes || []),
         serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
-        go.disabled = false;
+        pickBusy = null;
         go.textContent = 'Issue';
+        /* The sheet that sent it was shut, or another client opened since:
+           its answer touches no other sheet. A letter made still shows on
+           its own client's Documents. */
+        if (picking !== sent || !state.client || state.client.id !== cid) {
+          if (picking) pickSum(); else go.disabled = false;
+          if (!r.error && state.client && state.client.id === cid) loadDocuments();
+          return;
+        }
+        go.disabled = false;
+        pickSum();
         /* The services or the quotation they came from changed while the
            sheet was open (or the quotations failed to load, so the page
            priced them without their rate): both are read again and the sheet
