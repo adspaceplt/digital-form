@@ -6628,6 +6628,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   drawn frame) moved as its camera moves, its number and its on-screen
   text; Download records the same in the browser (MediaRecorder: MP4, else
   WebM; in real time, the tab kept open), nothing stored, no service asked.
+  An SVG made a file (`svgFile`) gains `xmlns` only where it has none: a
+  second one is a repeated attribute and the picture loads as nothing
+  (2026-11-07: Play drew a blank frame, the crew PDF dropped it).
 - Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS
