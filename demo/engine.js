@@ -13867,7 +13867,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               { d: 'M126 128 m-9 0 a9 9 0 1 0 18 0 a9 9 0 1 0 -18 0', t: 'ink' }, { d: 'M126 137 C120 150 118 175 120 200 L134 200 C136 175 134 150 128 137', t: 'ink' },
               { d: 'M150 190 h70 v34 h-70 z', t: 'fill' } ] };
             var fail = window.__aiPictures.fail || [];
-            var outP = [];
+            var outP = [], pressP = {};
             return (sp0.scenes || []).reduce(function (p, id, k) {
               return p.then(function () {
                 var row = (DB.ai_drafts || []).filter(function (d) { return d.id === cl.ids[k]; })[0];
@@ -13876,12 +13876,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 return window.__rpc('video_script_frame', { p_script: sp0.script_id, p_scene: id, p_frame: FRAME, p_press: cl.ids[k] }).then(function (v) {
                   var ok = v && v.data && v.data.ok;
                   if (row) row.outcome = ok ? 'drafted' : 'failed';
-                  if (ok) outP.push(id);
+                  if (ok) { outP.push(id); pressP[id] = cl.ids[k]; }
                 });
               });
             }, Promise.resolve()).then(function () {
               persist();
-              return { data: outP.length ? { drawn: outP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
+              return { data: outP.length ? { drawn: outP, presses: pressP, missed: (sp0.scenes || []).length - outP.length, left: cl.left } : { error: 'ai-incomplete' }, error: null };
             });
           });
         }

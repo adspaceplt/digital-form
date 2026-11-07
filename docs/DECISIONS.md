@@ -8717,3 +8717,15 @@ valid XML, so the browser refused the picture and the animatic drew none. The
 crew PDF used the same helper and quietly dropped those frames too. `vs`
 checked only for any dark pixel, which the Scene tag alone gave; it now
 looks for ink below the tag, and failed before the fix.
+
+### 2026-11-07 · A storyboard is redrawn round by round
+The user: once the storyboard was drawn it took no second round of changes
+or feedback until it matched what the team wanted. Draw with AI only drew
+from the scene's own words, so pressing it again gave another first try.
+Redraw on a drawn scene now asks the changes, and the function sends Claude
+the current drawing with them so it revises rather than starts over; Draw
+with AI takes one note for every scene it draws; Undo writes the earlier
+drawing back under the same counted press, so no migration was needed. The
+same day the user saw the drawing's edge cut at the corners: its corner was
+a quarter of the box's, which rounds at 8px; the edge now takes the box's
+corner, which `vs` measures.

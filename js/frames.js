@@ -43,7 +43,9 @@
     if (H > 160) { H = 160; W = n(H * r[0] / r[1]); }
     var out = [];
     var line = 'stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"';
-    out.push('<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="4" ' + line + ' stroke-width="1.2"/>');
+    /* The edge's corner is the box's own (8px, --radius-ctl-sm) less its
+       inset, so the rounded box never cuts it (2026-11-07). */
+    out.push('<rect x="1" y="1" width="' + (W - 2) + '" height="' + (H - 2) + '" rx="7" ' + line + ' stroke-width="1.2"/>');
     var ang = String(sc.angle || '');
     var hz = horizonOf(ang);
     if (hz) {
@@ -121,7 +123,7 @@
     var mv = !print && MOVE[f.move];
     return '<svg class="vs-frame-svg vf"' + (print ? ' xmlns="http://www.w3.org/2000/svg"' : '') + ' viewBox="0 0 ' + b[0] + ' ' + b[1] + '" width="' + b[0] + '" height="' + b[1] +
       '" role="img" aria-label="' + plain([f.shot_size, f.angle, f.move].filter(Boolean).join(', ')) + '">' +
-      (print ? '<rect width="' + b[0] + '" height="' + b[1] + '" fill="#ffffff"/>' : '<rect class="vf-edge" x="1" y="1" width="' + (b[0] - 2) + '" height="' + (b[1] - 2) + '" rx="4"/>') +
+      (print ? '<rect width="' + b[0] + '" height="' + b[1] + '" fill="#ffffff"/>' : '<rect class="vf-edge" x="1" y="1" width="' + (b[0] - 2) + '" height="' + (b[1] - 2) + '" rx="' + n(8 * b[0] / 90 - 1) + '"/>') +
       '<g class="vf-shot' + (mv ? ' vf-' + mv : '') + '">' + paths.join('') + '</g></svg>';
   }
   /* The move a frame plays, as the animatic reads it. */
