@@ -652,12 +652,15 @@
   /* The phone's line names the one person the stage needs (the user,
      2026-11-07): a lead the colleague selling it, a client the colleague
      running it, and Sales by after them only where somebody else sold it,
-     so two bare names never stand side by side unexplained. */
+     so two bare names never stand side by side unexplained. A row naming
+     its seller leaves Industry to the desk and the record, so the line
+     keeps to one row on a phone (the user, 2026-11-07). */
   function metaPeople(c) {
     var sold = c.sales_by ? salesByName(c.sales_by) : '';
     var lead = stageWord(c.stage || 'lead')[3] === 'leads';
     if (lead) return [c.industry, sold || c.owner];
-    return [c.industry, c.owner, sold && sold !== c.owner ? 'Sales by: ' + sold : ''];
+    if (sold && sold !== c.owner) return [c.owner, 'Sales: ' + sold];
+    return [c.industry, c.owner];
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
