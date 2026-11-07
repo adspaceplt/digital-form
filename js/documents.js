@@ -376,7 +376,10 @@
     }).then(function (r) {
       if (r.error) { fail(missingWord(r.error.message)); return; }
       var out = r.data || {};
-      if (out.error || !out.doc) { fail(ISSUE_WORD[out.error] || out.error || 'The preview could not be generated.'); return; }
+      /* The refusal's code goes with its words, as issue() hands it, so
+         a `stale` preview reads the lines again (2026-11-07). */
+      if (out.error) { shut(tab); then({ error: ISSUE_WORD[out.error] || out.error, code: out.error }); return; }
+      if (!out.doc) { fail('The preview could not be generated.'); return; }
       var doc = out.doc;
       doc.number = 'PREVIEW'; doc.draft = true;
       return render(doc).then(function (bytes) {
