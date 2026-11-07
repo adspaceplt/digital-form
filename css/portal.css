@@ -4709,7 +4709,7 @@ body > .shell { width: 100%; }
    Every table states its own tracks now, on both the header and the row. */
 .crm-head.client-row, .crm-row.client-row {
   grid-template-columns:
-    minmax(0, 1.9fr) 128px minmax(0, .9fr) minmax(0, 1fr) 104px 18px;
+    minmax(0, 1.6fr) 128px minmax(0, 1.15fr) minmax(0, .9fr) minmax(0, .9fr) 104px 18px;
 }
 /* The client's logo before the name, the record head's mark at row size:
    white disc and hairline for a logo (light in both themes, as a logo is),
