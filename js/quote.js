@@ -699,10 +699,12 @@
     var w = t(), first = String(q.rep.name || '').split(' ')[0];
     var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
       encodeURIComponent('Hi ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
-    return '<h2>' + esc(w.repT) + '</h2><div class="qs-rep"><span class="qs-rep-mark" aria-hidden="true">' + esc(initials(q.rep.name)) + '</span>' +
-      '<span class="qs-rep-who"><b>' + esc(q.rep.name) + '</b>' + (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span></div>' +
-      '<p>' + esc(f(w.repP, { n: first, b: q.brand })) + '</p>' +
-      '<a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a>';
+    /* A person card: the name and position on a white card with its way to
+       reach them, never an initials disc (no stand-in for a person's
+       picture; 2026-11-07). */
+    return '<h2>' + esc(w.repT) + '</h2><p>' + esc(f(w.repP, { n: first, b: q.brand })) + '</p>' +
+      '<div class="qs-rep"><span class="qs-rep-who"><b>' + esc(q.rep.name) + '</b>' + (q.rep.title ? '<small>' + esc(q.rep.title) + '</small>' : '') + '</span>' +
+      '<a class="btn" href="' + esc(href) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(f(w.repChat, { n: first })) + '</a></div>';
   }
   /* What stands beside the quotation (under it on a phone), by stage
      (2026-10-26). Ready to proceed asks when the prospect would start and
@@ -1038,10 +1040,6 @@
     if (!p) return '';
     var dd = C.day(iso);
     return lang === 'zh' ? day(dd) + ' ' + C.clock(iso, { zh: true }) : day(dd, true) + ', ' + C.clock(iso);
-  }
-  function initials(n) {
-    var p = String(n || '').trim().split(/\s+/);
-    return ((p[0] || '').charAt(0) + (p[1] || '').charAt(0)).toUpperCase();
   }
   function cover(title, text, start) {
     root().innerHTML = '<section class="cover" data-shown><div class="cover-inner"><div class="cover-panel"><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' +
