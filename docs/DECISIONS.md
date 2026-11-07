@@ -8757,3 +8757,12 @@ and 104), and 6px sat off the spacing scale. Now no picture draws no box
 (Add photo in its place, its own width), the acts stretch to one width,
 8px apart and 12px under a finger. `vs` measures it at 390, under a finger
 too, and failed on the old layout.
+
+### 2026-11-07 · A seller on the Clients phone row keeps it to one line
+The user sent a phone screenshot: rows naming their seller ran a third line
+("AC186 · Property · Claire Teo · / Sales by: Qirui"), and asked for "Sales:"
+after the person in charge. Measured from the screenshot, the meta track
+holds about 170px and the shorter label alone still wrapped, so the user
+chose (of three) to leave Industry off a phone row that names a seller:
+"AC186 · Claire Teo · Sales: Qirui". Industry stays on the desk column and
+the record; `crm` measures the row at 390.
