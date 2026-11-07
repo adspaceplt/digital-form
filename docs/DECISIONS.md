@@ -8747,3 +8747,13 @@ The user sent a phone screenshot of a script: each scene stood the picture,
 its tag, Redraw and Add photo in one column, so a scene ran a screen tall.
 On a tight pane the picture now holds the left of its cell with the tag and
 both acts beside it; the words follow under the row as before.
+
+### 2026-11-07 · A scene's acts held to the design laws
+Read against DESIGN.md at the user's asking, the phone layout broke four
+laws: a scene with no picture drew an empty grey box (no placeholders), the
+two stacked acts were 6px apart so under a finger their 44px presses
+overlapped (a tap under Redraw opened Add photo), they were two widths (88
+and 104), and 6px sat off the spacing scale. Now no picture draws no box
+(Add photo in its place, its own width), the acts stretch to one width,
+8px apart and 12px under a finger. `vs` measures it at 390, under a finger
+too, and failed on the old layout.

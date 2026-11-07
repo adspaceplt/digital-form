@@ -3333,12 +3333,16 @@ button.vs-row {
    the picture over where it came from and its one act. */
 .vs-scenes.has-pics .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr) 104px 48px; }
 .vs-scenes.has-pics.is-two .vs-scene { grid-template-columns: 32px 112px minmax(0, 1fr) minmax(0, 1fr) 104px 48px; }
-.vs-pic { display: grid; gap: 6px; justify-items: start; align-content: start; min-width: 0; }
+.vs-pic { display: grid; gap: 8px; justify-items: start; align-content: start; min-width: 0; }
+/* Its acts are one width, and under a finger 12px apart, so each 44px
+   press stays its own (2026-11-07). */
+.vs-pic > .btn { justify-self: stretch; }
+.is-tight .vs-pic.is-bare > .btn { justify-self: start; }
+@media (pointer: coarse) { .vs-pic { row-gap: 12px; } }
 .vs-pic-box {
   display: grid; place-items: center; width: 90px; overflow: hidden;
   border-radius: var(--radius-ctl-sm); background: var(--sunk); color: var(--ink-soft);
 }
-.vs-pic-box.is-none { height: 48px; }
 .vs-pic-box img { display: block; width: 90px; height: auto; max-height: 160px; object-fit: cover; }
 .vs-pic-box svg { display: block; width: 90px; height: auto; max-height: 160px; }
 .vs-pic-tag { font-size: 11.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
@@ -3395,12 +3399,12 @@ button.vs-row {
 }
 /* On a phone the picture stands at the left with its tag and acts beside
    it, never a column of three under it (2026-11-07). */
-.is-tight .vs-scenes.has-pics .vs-scene > .vs-pic {
+.is-tight .vs-scenes.has-pics .vs-scene > .vs-pic:not(.is-bare) {
   grid-template-columns: auto minmax(0, 1fr); grid-auto-rows: min-content;
   column-gap: 12px; align-items: start;
 }
-.is-tight .vs-pic > .vs-pic-box { grid-column: 1; grid-row: 1 / span 4; }
-.is-tight .vs-pic > :not(.vs-pic-box) { grid-column: 2; }
+.is-tight .vs-pic:not(.is-bare) > .vs-pic-box { grid-column: 1; grid-row: 1 / span 4; }
+.is-tight .vs-pic:not(.is-bare) > :not(.vs-pic-box) { grid-column: 2; }
 /* =========================================================================
    WHATSAPP (2026-10-10, js/whatsapp.js): every message the portal sent, in
    one card under the month's count of templates by category. A row is who

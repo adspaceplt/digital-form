@@ -6625,7 +6625,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`note`, `notes`, 500 each, masked); a scene already drawn goes with its
   drawing and is revised from it, and a drawing replaced comes back with
   Undo where it happened, written back under the press the function names
-  (`presses`). A drawing's edge takes the box's corner (8px less its inset). On a phone the picture stands at the left of its tag, Redraw and Add photo, the scene's words under them (2026-11-07).
+  (`presses`). A drawing's edge takes the box's corner (8px less its inset). On a phone the picture stands at the left of its tag, Redraw and Add photo, the scene's words under them; Redraw and Add photo are one width, 12px apart under a finger, and a scene with no picture draws no box, Add photo in its place (2026-11-07).
 - The animatic (`js/animatic.js`, `#vsPlaySheet`; the user, 2026-11-06:
   short clips, "1 yes"): Play on the Scenes heading, for anyone who reads
   the script, plays its scenes in order on one canvas at the script's

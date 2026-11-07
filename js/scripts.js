@@ -553,7 +553,9 @@
   }
   function picCell(sc, i, s, work) {
     var p = picOf(sc);
-    var box = !p ? '<span class="vs-pic-box is-none" aria-hidden="true"></span>'
+    /* No picture is no box: never an empty placeholder (DESIGN.md §5,
+       2026-11-07); Add photo takes its place. */
+    var box = !p ? ''
       : p.svg ? '<span class="vs-pic-box">' + p.svg + '</span>'
       : '<a class="vs-pic-box" href="' + esc(p.url) + '" target="_blank" rel="noopener" aria-label="Open the picture for scene ' + (i + 1) + '">' +
         '<img src="' + esc(p.url) + '" alt="" loading="lazy" decoding="async"></a>';
@@ -563,7 +565,7 @@
     var act = !work ? '' : sc.photo_url
       ? '<button class="btn btn-sm" type="button" data-pic="remove">Remove</button>'
       : '<label class="btn btn-sm vs-pic-add">' + ICON.camera + 'Add photo<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-pic="add" hidden></label>';
-    return '<span class="vs-pic">' + box + (p ? '<span class="vs-pic-tag">' + esc(p.tag) + '</span>' : '') + redraw + act + '</span>';
+    return '<span class="vs-pic' + (p ? '' : ' is-bare') + '">' + box + (p ? '<span class="vs-pic-tag">' + esc(p.tag) + '</span>' : '') + redraw + act + '</span>';
   }
   /* Draw with AI on the Scenes heading: drawn only where the picture
      writer answers that it is set up, with what is left today. */
