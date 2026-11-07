@@ -8556,3 +8556,37 @@ drew. The animatic plays the scenes on one canvas with each camera move
 and on-screen text, and Download records it in the browser
 (MediaRecorder), so nothing is stored or sent anywhere. Where a scene names
 no shot, Claude chooses one, said under the frame in its label.
+
+### 2026-11-07 · The security audit's fixes
+A full audit (Cloudflare's security-audit skill, run 1 on 0a858d0: 18
+hunters, two coverage critics, independent verification at two stages)
+confirmed eight boundary failures and left four leads; the user: "Ok fix
+all". Each fix, reproduced first on a throwaway Postgres or the function's
+own code run in Node:
+- The passcode lock compared the guess before counting it, so guesses sent
+  at once were all compared and a right one beside the fifth wrong one was
+  let in and cleared the lock: both rows are now taken under a row lock
+  before any compare.
+- A non-admin at Team Full Access could move themselves into a group an
+  admin had given an admin tool: only an admin changes their own group.
+- Activity record lines a page filed took their actor and time from the
+  page: a trigger stamps them from the sign-in.
+- Send by email listed a client's contacts without Clients: Contacts.
+- Erasing a colleague left their mobile in the WhatsApp log a year.
+- `sign-upload`'s report purpose asked the scope of a version id as a
+  report, found none and let any client through: it asks the client.
+- `bukku-sync` read, and could write over, any Bukku contact the page named
+  for an unlinked record: only one find offers, unless the colleague sees
+  every client.
+- `meet-create` patched or deleted whatever event id a colleague had stored
+  on their own month: only the record's own event.
+Two `javascript:` leads (a booking's file, a hand-added document's link)
+were not shown to run in Chromium (`noopener`), but are closed anyway: a
+check on each column (none of 28 files or 155 documents failed it live) and
+`absUrl` at each sink. Rejected as security findings but fixed as bugs: a
+quotation read as sent out while its message was only filed. The Gemini
+quota lead is moot since #941 (Claude draws, tokens kept). The CloudFront
+key shared by content passes and private links needs the owner (a separate
+key group in AWS). Seven areas the critics accepted were not hunted
+(budget) and wait for a second run. `tests/auditfix.js` holds the database
+fixes; `bukkufn`, `meetfn` and `signupload` the function fixes.

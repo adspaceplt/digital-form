@@ -847,6 +847,16 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
     : { error: sent.status === 'unknown' ? 'not-confirmed' : 'not-sent', ...left }, 200, origin);
 }
 
+/* Why a Bukku contact is offered for a record, or '' where it is not: the
+   same registration no., the same name, or a name inside the other. */
+function matchOf(p: Prep, c: any): string {
+  const reg = digits(p.reg_no), name = words(p.legal_name), other = words(p.other_name);
+  return reg && digits(c.reg_no) === reg ? 'brn'
+    : name && words(c.legal_name) === name ? 'name'
+    : other && (words(c.legal_name) === other || words(c.other_name) === other) ? 'name'
+    : name && name.length > 3 && (words(c.legal_name).includes(name) || name.includes(words(c.legal_name)) && words(c.legal_name).length > 3) ? 'similar' : '';
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -921,14 +931,10 @@ Deno.serve(async (req) => {
         if (cur) return json({ ok: true, linked: { id: cur.id, code: cur.contact_code, name: cur.legal_name, types: cur.types || [] } }, 200, origin);
       }
       const all = await allContacts();
-      const reg = digits(p.reg_no), name = words(p.legal_name), other = words(p.other_name);
       const seen = new Set<number>();
       const found: any[] = [];
       for (const c of all) {
-        const why = reg && digits(c.reg_no) === reg ? 'brn'
-          : name && words(c.legal_name) === name ? 'name'
-          : other && (words(c.legal_name) === other || words(c.other_name) === other) ? 'name'
-          : name && name.length > 3 && (words(c.legal_name).includes(name) || name.includes(words(c.legal_name)) && words(c.legal_name).length > 3) ? 'similar' : '';
+        const why = matchOf(p, c);
         if (why && !seen.has(c.id)) {
           seen.add(c.id);
           found.push({ id: c.id, code: c.contact_code, name: c.legal_name, reg_no: c.reg_no || null, types: c.types || [],
@@ -954,6 +960,15 @@ Deno.serve(async (req) => {
     const cur = contact ? await bukku('GET', `/contacts/${contact}`).then((r) => r && r.contact)
       .catch((e) => { if (e instanceof BukkuError && e.status === 404) return null; throw e; }) : null;
     if (contact && !cur) return json({ error: 'bukku-gone' }, 200, origin);
+    /* A contact is read or written for a record only where find offers it
+       for that record (the same registration no. or name), unless the
+       colleague sees every client (security audit 2026-11-07): the id came
+       from the page, and any other read the company's Bukku contacts
+       whatever the colleague's own access. */
+    if (cur && !p.contact_id && !matchOf(p, cur)) {
+      const sc = await db.rpc('invoice_scope');
+      if (sc.error || !sc.data || sc.data.all !== true) return json({ error: 'not-offered' }, 200, origin);
+    }
     const every = cur ? null : await allContacts();
     /* A new entity made from the portal (2026-10-30): where Bukku already
        holds a customer of its registration no., that contact is linked as

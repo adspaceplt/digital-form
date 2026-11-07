@@ -882,7 +882,7 @@
         return ADspaceMedia.tag(f.url, 'controls playsinline preload="metadata"');
       }
       if (f.kind === 'image') return '<img src="' + esc(f.url) + '" alt="" loading="lazy">';
-      return '<a class="btn btn-sm" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+      return '<a class="btn btn-sm" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
         esc(f.name || 'Open file') + '</a>';
     }).join('');
     return '<div class="client-draft-preview">' +

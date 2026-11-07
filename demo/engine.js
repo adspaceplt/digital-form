@@ -1260,7 +1260,9 @@
         }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
-            (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)))) {
+            (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)) ||
+
+            (table === 'campaign_deliverables' && 'url' in pending && !/^https:\/\/[^\s"'<>`\\]+$/i.test(String(pending.url || ''))))) {
           rows = []; api.__err = { code: '23514', message: 'new row violates check constraint' }; return api;
         }
 
@@ -1381,7 +1383,9 @@
         }
 
         if (pending && ((table === 'campaign_options' && pending.draft_url && !/^https?:\/\/[^\s"'<>`\\]+$/i.test(pending.draft_url)) ||
-            (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)))) {
+            (table === 'campaigns' && pending.invoice_url && !/^(https:\/\/|private\/)[^\s"'<>`\\]+$/i.test(pending.invoice_url)) ||
+
+            (table === 'campaign_deliverables' && 'url' in pending && !/^https:\/\/[^\s"'<>`\\]+$/i.test(String(pending.url || ''))))) {
           rows = []; api.__err = { code: '23514', message: 'new row violates check constraint' }; return api;
         }
 
@@ -4253,6 +4257,8 @@ function cardSlugFree(name, self, email) {
     if (!nw) return was ? 'admin-only' : null;
     var will = nw.role === 'admin' || DB.team_roles.some(function (g) { return g.slug === nw.role && g.is_admin; });
     if (will && !was) return 'admin-only';
+
+    if (old && nw.role !== old.role && String(old.email || '').toLowerCase() === String(m.email || '').toLowerCase()) return 'admin-only';
     if (old && was && ['role', 'is_admin', 'access', 'access_until', 'access_until_time', 'active', 'removed_at'].some(function (k) {
       return JSON.stringify(nw[k] == null ? null : nw[k]) !== JSON.stringify(old[k] == null ? null : old[k]);
     })) return 'admin-only';
@@ -11865,7 +11871,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var cmPrep = function () {
         var kind = args.p_kind, ref = args.p_ref, cid, sref, title, dday, valid;
         if (['quotation', 'offer', 'letter'].indexOf(kind) < 0) return { error: 'bad-request' };
-        if (!cmMay(kind, 'work')) return { error: 'denied' };
+        if (!cmMay(kind, 'work') || !opsAllowed('clients.contacts', 'view')) return { error: 'denied' };
         if (Number(appSet('client_email_on', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) !== 1) return { error: 'email-off' };
         if (kind === 'quotation') {
           var q = (DB.quotations || []).filter(function (x) { return x.id === ref; })[0];
