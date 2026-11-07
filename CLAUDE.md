@@ -2580,6 +2580,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`needs-billing`, as Active holds); the letter sheet opens Billing on
     its first missing field instead, offering the details form, and Billing's
     Save carries on into the letter sheet.
+  - The ticked lines are locked before they are checked against live
+    letters; a Confirmed line is tickable for a renewal; Replace is refused
+    on a letter already replaced (`superseded`) or void (`voided`), and a
+    deleted replacement revives the letter it replaced only where no other
+    live letter holds its lines (`2026-11-07-letter-of-offer-fixes.sql`).
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
     digits is a floor, not a width.
