@@ -8556,3 +8556,17 @@ drew. The animatic plays the scenes on one canvas with each camera move
 and on-screen text, and Download records it in the browser
 (MediaRecorder), so nothing is stored or sent anywhere. Where a scene names
 no shot, Claude chooses one, said under the frame in its label.
+
+### 2026-11-07 · The representative on /quote/ is a person card, no initials disc
+The user, from an iPhone: "Should we have this circle profile there since our
+admin section alr removed all profile uploads", then "make sure it fits in as
+a person card else it looks similar font n size style as the Your
+Representative". The "R" disc was a stand-in for a picture (DESIGN.md: no
+monogram or avatar placeholders), the last one left on a client page after
+the supplier and colleague records lost theirs on 2026-11-04. The disc gave
+way to a white card on the side's grey: the name at 15/600 over the
+position, Chat on WhatsApp inside it, the sentence about them above it, so
+the name never reads as a second heading (`tests/quotesite.js` measures the
+card's own ground and the name smaller than the heading). The quotesite run
+also showed one failing check on main, about a lead's Urgency to commence,
+not touched here; logged in STANDARD.md.

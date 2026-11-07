@@ -608,8 +608,9 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- None open (2026-11-05: `overview` and `ops` were the suites' own dates;
-  both fixed).
+- `quotesite`: "the lead is made with its Urgency to commence, the team told
+  when it plans to start" fails at 1280 and 390 on main (042a0a2; found
+  2026-11-07 beside the person card, which does not touch it).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
