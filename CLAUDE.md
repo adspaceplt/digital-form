@@ -6124,7 +6124,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (the user, 2026-10-27). Build quote (`#qbBox`; Preview PDF under its lines, `#qbPreview`, draws the quotation as priced under DRAFT with the reference PREVIEW, nothing made and no number spent, and a quotation's ⋯ opens with Preview PDF, the kept file in a tab; the user, 2026-10-31; as the approved
   board: plan cards under Without ads / With ads, content, platforms with
   what each adds, extra contents as steppers with the plan's rate,
-  languages, budget and term, one-off items as steppers two across, the
+  languages, budget and term, one-off items as steppers two across (content,
+  verifications, KOC packages, then every add-on with a rate under its
+  card group: an outstation fee, a shoot, revisions, files; 2026-11-07), the
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,

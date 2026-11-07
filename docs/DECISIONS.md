@@ -8616,3 +8616,13 @@ clients load side by side, so a name is drawn only once the team is read and
 the list (or the open record) repaints then; before, a live colleague could
 read Former colleague for a moment.
 
+### 2026-11-07 · Build quote offers the add-ons
+The user could not add an outstation fee or any add-on to a quotation in
+Build quote. Its One-off items offered content, verifications and KOC
+packages alone, although `quote_price` already took an add-on as a one-off
+line. Build quote now lists every add-on with a rate under its card group.
+The quotation website still offers no add-ons: they are the team's to
+quote. A line with no Quotation details (no role on its spec, as
+"[Overseas] Outstation Fee" stood) is offered nowhere until its role is set
+in Services.
+
