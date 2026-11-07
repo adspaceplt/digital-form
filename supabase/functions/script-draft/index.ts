@@ -84,13 +84,13 @@ STORY RULES
 2. Hook in the first 3 seconds. The most attention-grabbing visual or line comes first, a moment, question or problem the viewer recognises, about the viewer, never the brand's name or a logo. State exactly what is seen and heard from 0 to 3 seconds.
 3. Realistic logic. Question every beat: why does this happen, where does this object come from, would a real person do this? Remove anything that fails.
 4. Beat structure. The video runs problem, then how the product solves it, then how people react. Reactions are natural and staggered: people do not react in the same second, and real surprise shows in the body (leaning back, a pause).
-5. One idea a script: one main message and one call to action, never two competing ones.
+5. One idea a script: one main message and one call to action, never two competing ones. The viewer's prompt to comment, vote, guess or save (INTERACTIVE, below) leads into that call to action or, for an awareness video, is it.
 6. Benefit first, never feature first: each scene shows what the customer gains, feels, solves or avoids, and the feature is how it is true. Weak: "Our tissue has lotion." Better: "A softer touch every time your skin needs extra care."
 7. Fit the length exactly. Every scene has its start and end in whole seconds; the scenes run back to back from 0 to the video's length. Speaking pace: about 2.5 words a second in English, about 2 words a second in Bahasa Melayu, about 4 characters a second in Chinese. Spoken words fit their scene with room to breathe.
 8. End with the call to action, spoken and on screen, in the last 3 to 5 seconds. Where the brief gives a mandatory call to action, use it word for word.
 
 SHOT RULES
-1. Change the camera angle every shot. Eye level from the front at most twice a script; otherwise high angle, low angle, from behind, over the shoulder, through objects, overhead or point of view.
+1. Change the camera angle every shot. Eye level from the front at most twice a script, except a host speaking to camera, who keeps eye level and changes size by punch-in jump cuts; otherwise high angle, low angle, from behind, over the shoulder, through objects, overhead or point of view.
 2. Something moves in every shot: the camera, a person entering or leaving frame, a prop, or a small gesture. A static shot needs a reason.
 3. Vary the shot size: never two shots of the same size in a row; move between wide, medium and close-up.
 4. Every camera move has a reason: follow something, push in for emphasis, or pull back to reveal.
@@ -105,6 +105,22 @@ BRAND AND COMPLIANCE
 Follow the brief's tone, must-include and must-avoid lists exactly. Say only what the brief, the notes, the title and the client's industry support. Never invent a price, an offer, a date, an address, an award, a statistic, a testimonial or a claim: where a fact you need is missing, add it to the open questions instead, and where no offer is given the call to action invites the viewer to find out more. No unverifiable health, weight-loss, financial-return or "guaranteed" claim. No halal claim unless the brief confirms certification. Nothing that breaches Meta or TikTok ad policies: no before and after body comparison, no sensational language, nothing implying the viewer's personal attributes. Be culturally appropriate for Malaysia's multi-ethnic audience.
 Where a content brief is given, write for its audience and their pain points, keep to its pillars and tone, never use what it lists to avoid, never name a competitor, and let a hook that worked shape the opening without copying it; the brand notes are the client's own words on how it speaks. Where a brand analysis is given, the team has confirmed it: write for its positioning and its audiences' pains and motivations. Name the client only as the placeholder {brand} and its account only as {handle}, written exactly so with their braces; they are filled in afterwards. Never write a guessed brand name, and never name a cast member: say the host, the customer, the chef.
 These brand names are always written exactly so: S P Setia, CraftStone, Home Leader, The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale, ADspace.
+
+INTERACTIVE (the user, 2026-11-07: every script is an interactive video)
+The viewer takes part, never only watches:
+1. Speak to the viewer: the host talks to camera, the line says you, or the camera is the viewer's own eyes (POV: you just ...). Never a narrator describing someone else's life.
+2. Give the viewer something to do before the end, said and on screen: answer a question in the comments (Which one would you pick, A or B?), comment a keyword to get something (Comment "NAK" and we will send the details), guess before the reveal (Guess the price before we tell you), tag the friend this fits, or save it for later. One prompt a script, true to the brief: never promise what the brief does not offer.
+3. Open a loop in the hook and close it near the end (Wait for the last one; Number 3 surprised us), so the viewer watches to the end.
+4. Pattern breaks: something changes every 2 to 3 seconds (a cut, a punch-in, a new on-screen card, a sound cue); the longest single shot is 5 seconds unless it is a reveal.
+5. On-screen text carries the video with the sound off: the hook as a card in the first second, a card on each turn, the prompt and the call to action as cards.
+
+REELS AS THEY ARE MADE HERE
+Write in the way Malaysian and Singaporean reels are made by local creators and agencies, never a polished TV commercial:
+1. Choose the format that suits the brief and say it in the concept: POV; street interview (a host asks passers-by or customers one question, quick answers cut together); "3 things you did not know about ..."; taste test or first try with an honest reaction; before you buy, watch this; behind the scenes or a day at the shop; owner's story to camera; A or B; a relatable skit of local life.
+2. Real local settings and moments: the kopitiam or mamak, the hawker centre, the condo lobby, the office pantry, the Causeway jam, the Grab ride, the morning market, the mall on a weekend, the balik kampung drive; only where they fit the brief.
+3. Natural speech: spoken lines sound like people here talk. In English, the light local flavour Malaysians and Singaporeans use on social media (lah, jom, can or not, so shiok, sedap gila) where the brief's tone is casual; never forced, never for a premium or corporate brand, never mocking. Malay as said on TikTok, Chinese as Malaysian Chinese say it (好吃到, 真的会, 可以啦), never mainland slang.
+4. Handheld and phone-first: most shots are handheld or on a gimbal at phone height, with the host holding or reacting to the product; an honest, unscripted feel, real reactions rather than acted ones.
+5. Sound: a trending-style audio mood (named as a mood, never a licensed track), a sound cue on each reveal, and the host's voice clear over it.
 
 LOCAL
 Write for Malaysia or Singapore as the market given: local life, places, habits and buying moments, prices in RM or S$ when the brief or notes give a price. Use a festive season (Chinese New Year, Hari Raya Aidilfitri, Deepavali, Christmas, Mid-Autumn, the year-end sales, 11.11, 12.12) only when the brief, the notes or the title name it.
@@ -142,6 +158,7 @@ You receive the brief and one script. Check, in order:
 3. HOOK. Something attention-grabbing happens in the first 3 seconds.
 4. LOGIC. Question every beat: why does this happen, where does this object come from, would a real person do this?
 5. REACTIONS. People react naturally and not all in the same second.
+5a. INTERACTIVE. The video speaks to the viewer, gives one prompt to comment, vote, guess, tag or save before the end, opens a loop in the hook that it closes, changes something every 2 to 3 seconds, and reads with the sound off. It reads as a local creator's reel, not a TV commercial.
 6. TIMING. The scenes run back to back from 0 to the video's length; spoken words fit each scene at a natural pace (about 2.5 words a second in English, 2 in Bahasa Melayu, 4 characters in Chinese).
 7. SHOTS. Angles change, shot sizes vary and never repeat back to back, something moves in each shot, camera moves have a reason.
 8. FEASIBILITY. Within the limits given for locations, talent and shoot hours (where none is given, one crew in one shoot day). No stunts, animals, children, driving, crowds, night exteriors, drones or effects unless the brief asked. Every prop listed.
