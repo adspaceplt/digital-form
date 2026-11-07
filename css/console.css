@@ -2004,6 +2004,11 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-lack-acts { display: inline-flex; align-items: center; gap: 8px; }
 .rp-lack .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
 .rp-lack.is-short .rp-lack-t small { color: var(--err); }
+/* On a phone the words take the row and the acts the line under them,
+   at its right edge (2026-11-07). */
+.is-narrow .rp-lack { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.is-narrow .rp-lack-acts { justify-self: end; flex-wrap: wrap; justify-content: flex-end; }
+.is-narrow .rp-lack .btn { margin-block: 0; }
 .is-narrow .rp-lacks { padding-left: 16px; }
 /* Versions (2026-10-07): a row a version, its file at the right edge; the
    meta (who published it, and why it came off) wraps, being words a person
@@ -2872,7 +2877,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 .aiu-usd { text-align: right; white-space: nowrap; }
 .aiu-crow.is-total { font-weight: 600; }
 .is-narrow .aiu-th { display: none; }
-.is-narrow .aiu-tr { grid-template-columns: minmax(0, 1fr); row-gap: 4px; }
+/* A person is a card of labelled uses two across (2026-11-07). */
+.is-narrow .aiu-tr { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px; row-gap: 4px; }
 .is-narrow .aiu-tr.is-sum { border-top: 0; padding-top: 0; }
 .is-narrow .aiu-who { grid-column: 1 / -1; margin-bottom: 4px; }
 .is-narrow .aiu-c { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
@@ -3692,7 +3698,10 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* A line's tax code, chosen under its name (2026-10-22). */
 .qb-taxc .qb-tax { display: block; width: auto; max-width: 100%; margin-top: 6px; }
 .qb-tot { margin: 12px 0 0 auto; max-width: 340px; display: grid; gap: 6px; font-size: 13.5px; font-variant-numeric: tabular-nums; }
-.lpicktot { max-width: none; margin: 4px 0 16px; }
+/* The totals end on the lines' own right edge, inside the rows' padding
+   (2026-11-07). */
+.qb-table + .qb-tot { padding-right: 15px; }
+.lpicktot { max-width: none; margin: 12px 0 16px; }
 .qb-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 /* A line's quantity, rate and months are typed where they are read
    (2026-10-15): each field keeps a row of words' height, its target
@@ -3731,6 +3740,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .qb-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
   .qb-val { margin-block: 0; }
   .qb-tot { max-width: none; }
+  .qb-table + .qb-tot { padding-inline: 12px; }
 }
 .qb-headtext { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .qb-headtext .qb-for { margin: 0; }
@@ -4469,3 +4479,7 @@ span.inv-amt { font-weight: 600; }
    the left, Open report at the right edge. */
 .task-deadline.task-post { align-items: center; justify-content: space-between; }
 .task-deadline.task-post .btn { margin-block: -4px; }
+/* Its quiet Open report gives its padding back, so the label starts on
+   the words' edge when it wraps under them and ends on the line's edge
+   beside them (2026-11-07). */
+.task-deadline.task-post .btn-quiet { min-width: 0; margin-inline: -13px; }

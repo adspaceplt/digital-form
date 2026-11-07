@@ -925,6 +925,9 @@
         title: 'Draw with AI',
         body: 'A storyboard picture is drawn for each scene from its shot. ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
         go: 'Draw',
+        /* Under a finger the card takes focus, so the keyboard never rises over
+           the choice of scenes (2026-11-07). */
+        focus: 'changes',
         fields: [{ name: 'scope', label: 'Scenes', choices: choices, seg: true, value: choices[0][0] },
                  { name: 'changes', label: 'Changes', rows: 3, required: false, placeholder: 'Optional' }]
       }, function (v) {

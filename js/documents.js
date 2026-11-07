@@ -1128,7 +1128,7 @@
       }
       /* A letter whose terms carry its validity (`terms_own`) prints them
          as typed; one issued before prints the validity it was issued with. */
-      if (!b.terms_own) terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
+      if (!b.terms_own) terms.push('This offer is valid until ' + longDate(plusDays(doc.issued_at, k.validDays)) + '.');
       /* The letter's own terms, typed one point a line when it was issued
          (2026-10-23), after the ones it works out. */
       (Array.isArray(b.terms) ? b.terms : []).forEach(function (t) { if (String(t).trim()) terms.push(String(t).trim()); });
@@ -1590,7 +1590,7 @@
   function validLine() {
     var today = ADspaceClock.today();
     var days = Number(MON.setting('quote_valid_days', today)) || 0;
-    return days > 0 ? 'This offer is valid until ' + letterDate(plusDays(today, days)) + '.' : '';
+    return days > 0 ? 'This offer is valid until ' + longDate(plusDays(today, days)) + '.' : '';
   }
 
   window.ADspaceDocs = {

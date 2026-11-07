@@ -9556,7 +9556,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-asked > span:last-child { display: grid; gap: 2px; color: var(--ink-soft); }
 .qs-asked b { color: var(--ink); font-weight: 600; }
 .qs-asked-tick { width: 24px; height: 24px; border-radius: 50%; background: var(--ok-solid); color: var(--on-ok); display: inline-flex; align-items: center; justify-content: center; }
-.qs-rep { display: grid; gap: 14px; background: var(--card); border-radius: var(--radius); padding: 16px; }
+.qs-rep { display: grid; gap: 12px; background: var(--card); border-radius: var(--radius); padding: 16px; }
 .qs-rep-who { display: grid; gap: 2px; min-width: 0; }
 .qs-rep-who b { font-size: 15px; font-weight: 600; color: var(--ink); }
 .qs-rep-who small { font-size: 14px; color: var(--ink-mute); }
