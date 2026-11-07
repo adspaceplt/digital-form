@@ -8626,3 +8626,11 @@ quote. A line with no Quotation details (no role on its spec, as
 "[Overseas] Outstation Fee" stood) is offered nowhere until its role is set
 in Services.
 
+### 2026-11-07 · Two gate findings were the suites', not the portal's
+`quotesite` still expected a website lead to read Lead after its quotation
+was sent; since 2026-11-06 a quotation sent out moves the lead to Proposal
+sent, so the check now asks for Proposal sent. `adsreport` read the ads row
+straight after widening the window, before the pane's ResizeObserver took
+`is-narrow` off; under a loaded gate it read the narrow layout. It now
+waits for the refit, as §1 asks of every suite measuring a refit.
+
