@@ -1026,8 +1026,16 @@
       $('qbTerm').value = String(sel.term || 6);
       var once = {};
       (sel.once || []).forEach(function (o) { once[o.slug] = o.qty; });
-      $('qbOnce').innerHTML = ['content', 'verify', 'koc'].map(function (role) {
-        return svcs(c, role).filter(function (s) { return s.rate != null; }).map(function (s) {
+      /* Add-ons (an outstation fee, a shoot, a revision, files) are one-off
+         items too, each under its group on the card (the user, 2026-11-07:
+         "couldnt add the outstation fees and add ons"). */
+      var addonGroups = [];
+      svcs(c, 'addon').forEach(function (s) { var g = (s.spec && s.spec.group) || 'Add-ons'; if (addonGroups.indexOf(g) < 0) addonGroups.push(g); });
+      $('qbOnce').innerHTML = ['content', 'verify', 'koc'].concat(addonGroups.map(function (g) { return 'addon:' + g; })).map(function (role) {
+        var grp = role.indexOf('addon:') === 0 ? role.slice(6) : '';
+        var list = grp ? svcs(c, 'addon').filter(function (s) { return ((s.spec && s.spec.group) || 'Add-ons') === grp; }) : svcs(c, role);
+        list = list.filter(function (s) { return s.rate != null; });
+        return (grp && list.length ? '<p class="qb-once-h">' + esc(grp) + '</p>' : '') + list.map(function (s) {
           /* A stepper a line, as the extra contents are: a count of one-off
              work is pressed up, never typed into a tall box. */
           var id = 'qbO-' + esc(s.slug), nm = esc(s.name);
