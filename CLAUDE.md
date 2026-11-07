@@ -2550,10 +2550,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   display-mode standalone or `navigator.standalone`, on iOS or Android) no
   window is opened for a PDF: a window on the app's own address opens inside
   it with no Share, Done or Back (the user, 2026-10-22). `tabFor()` and
-  `previewTab()` (every Preview's one opener, Drawing the PDF…) answer null
-  there, the file goes to the share sheet as a named File (a stale press asks
-  File ready · Share), and with no share sheet for files it is shown in a
-  sheet with Close and Download (`#pdfViewSheet`); a window on another origin
+  `previewTab()` (every Preview's one opener, Drawing the PDF…) open no
+  window there: a Preview is read in a sheet with Close and Download
+  (`#pdfViewSheet`; `previewTab()` answers a stand-in tab, `viewer`, that
+  `save` reads; the user, 2026-11-07: no download asked for a Preview), a
+  save goes to the share sheet as a named File (a stale press asks File
+  ready · Share), and with no share sheet for files it is shown in the same
+  sheet; a window on another origin
   (the Handbook's signed link, an invoice) is left as it is (`tests/pwapdf.js`).
 - pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
   waited on by every render: letters, reports, performance records); no page
