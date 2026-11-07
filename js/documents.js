@@ -1414,18 +1414,21 @@
     if (!IOS || installed()) return null;
     try { return window.open('', '_blank'); } catch (e) { return null; }
   }
-  /* A Preview's tab, opened at the press, saying what it waits on; none in
-     the installed app, where the file goes to the share sheet. */
+  /* A Preview's tab, opened at the press, saying what it waits on. */
   function previewTab(zh) {
-    if (installed()) return null;
+    /* In the installed app a Preview is read in the panel over the page,
+       never the share sheet (the user, 2026-11-07: "not request download but
+       pull from browser preview instead"); Download keeps the share sheet.
+       A stand-in tab carries that choice to save(). */
+    if (installed()) return { viewer: true, closed: false, close: function () { this.closed = true; } };
     var tab = null;
     try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
     if (tab) { try { tab.document.title = 'PDF'; tab.document.body.textContent = zh ? '正在生成PDF…' : 'Drawing the PDF…'; } catch (e) { /* still blank */ } }
     return tab;
   }
-  /* Where the installed app has no share sheet for files: the PDF in a
-     sheet over the page, with Close and Download in its foot, so the
-     person always has a way back. */
+  /* The installed app's Preview, and its Download where there is no share
+     sheet for files: the PDF in a sheet over the page, with Close and
+     Download in its foot, so the person always has a way back. */
   function viewer(file, name, zh) {
     var url = URL.createObjectURL(file);
     var box = document.createElement('div');
@@ -1469,6 +1472,7 @@
   }
   function save(blob, name, tab, zh) {
     var file = fileOf(blob, name);
+    if (tab && tab.viewer) { if (!tab.closed) viewer(file, name, zh); return Promise.resolve(); }
     if (tab && !tab.closed) {
       return named(file, name).then(function (url) { tab.location.href = url || blobUrl(file); });
     }

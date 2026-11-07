@@ -8634,3 +8634,13 @@ straight after widening the window, before the pane's ResizeObserver took
 `is-narrow` off; under a loaded gate it read the narrow layout. It now
 waits for the refit, as §1 asks of every suite measuring a refit.
 
+### 2026-11-07 · A Preview in the installed app is read in a panel
+The user asked that Preview in the console's Home Screen app show the PDF
+rather than ask to save it. In the installed app no window is opened (it
+would have no way back), so every Preview went to the share sheet, which
+read as a download. `previewTab()` there now answers a stand-in tab that
+`save` reads as Preview, and the PDF opens in the existing `#pdfViewSheet`
+with Close and Download; Download alone uses the share sheet. iPhone Safari
+may show only a PDF's first page inside a frame; Safari cannot run here, so
+the user confirms it on a phone.
+
