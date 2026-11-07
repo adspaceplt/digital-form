@@ -8777,3 +8777,20 @@ rows, Back and the empty line, so those kept the round corner; at one
 radius a squircle reads sharper than a circle's arc, so neighbours looked
 different. Every rounded box but a pill now takes the squircle, and
 `corners` walks nine sections at 390 and 1280 for any that does not.
+
+### 2026-11-07 · Eleven design-check fixes on the newest builds
+The check of the newest builds against DESIGN.md found eleven breaks: a
+report's lacking post line squeezed its acts on a narrow pane; a
+quotation's ⋯ held ten items (DESIGN §5 allows seven); Build quote's totals
+stood off the amount column and a one-off line's column was headed Months;
+its first three one-off groups had no heading; AI usage's person card cut
+use names on a phone; Draw with AI raised the keyboard over its scene
+list; the task card's report line pulled its Open off the facts' edge; the
+bulk total and the representative card broke the 12px step; /quote/ still
+promised a Letter of Offer the portal no longer issues; the Letter of
+Offer's validity read 7th December in prose. Each is fixed where it was
+built: Preview PDF and the step a quotation waits on now stand on the row,
+the totals share the amount column, every one-off group has its heading,
+the validity is written as prose dates are, and /quote/ names the
+quotation for signing (EN and 中文).
+

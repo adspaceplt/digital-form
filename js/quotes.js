@@ -207,13 +207,9 @@
           var st = stateOf(q, live), h = headline(q);
           var items = [];
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
-          /* Preview PDF (2026-10-31): the file in a tab to read before it is
-             sent, beside the row's Download. */
-          else items.push('<button class="kmenu-item" data-g="1" data-a="view" type="button" role="menuitem">Preview PDF</button>');
           /* The prospect's own page (2026-10-30): Preview opens it read only,
              for any reader of the quotation; Preview is the team's view,
              Copy link the prospect's. */
-          if (q.access_key && !q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
           /* Its own link, to send the prospect again by hand, once the team
              has sent the quotation (2026-10-30); a team's quotation has one
              too, made at the first Copy link, so the client signs on it
@@ -221,6 +217,8 @@
           if (!q.removed_at && !awaiting(q) && !q._revised && q.status !== 'not_proceeding' && (q.access_key || maySet)) {
             items.push('<button class="kmenu-item" data-g="1" data-a="link" type="button" role="menuitem">Copy link</button>');
           }
+          /* Copy link and Preview stand together (2026-11-07). */
+          if (q.access_key && !q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
           var acts = [];
@@ -277,7 +275,9 @@
             if (!awaiting(q) && !q._revised && !q.no_contact_at && q.status !== 'not_proceeding' &&
                 !(q.valid_until && q.valid_until < window.ADspaceClock.today()) &&
                 (q.source === 'website' ? !!q.access_key : !q.signed_at)) {
-              items.push('<button class="kmenu-item" data-g="3" data-a="resend" data-wa-ready hidden type="button" role="menuitem">' +
+              /* The step an unsigned quotation waits on stands on the row
+                 (2026-11-07: the ⋯ held ten). */
+              acts.push('<button class="btn btn-sm" data-a="resend" data-wa-ready hidden type="button">' +
                 (q.source === 'website' ? 'Resend on WhatsApp' : 'Send link on WhatsApp') + '</button>');
             }
             /* A signing on paper, keyed in by the team (2026-10-31). */
@@ -300,7 +300,7 @@
             if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
-          return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
+          return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
               (q.no_contact_at ? '<span class="chip qt-tag">Do not contact</span>' : '') +
@@ -308,7 +308,8 @@
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
               (st[2] ? '<small>' + wholeDays(esc(st[2])) + '</small>' : '') + '</span>' +
-            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>') + acts.join('') + '</span>' +
+            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>' +
+              '<button class="btn btn-sm" data-a="view" type="button">Preview PDF</button>') + acts.join('') + '</span>' +
             '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
               DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';
         }).join('') + '</div>';
@@ -1040,10 +1041,13 @@
       var addonGroups = [];
       svcs(c, 'addon').forEach(function (s) { var g = (s.spec && s.spec.group) || 'Add-ons'; if (addonGroups.indexOf(g) < 0) addonGroups.push(g); });
       $('qbOnce').innerHTML = ['content', 'verify', 'koc'].concat(addonGroups.map(function (g) { return 'addon:' + g; })).map(function (role) {
-        var grp = role.indexOf('addon:') === 0 ? role.slice(6) : '';
-        var list = grp ? svcs(c, 'addon').filter(function (s) { return ((s.spec && s.spec.group) || 'Add-ons') === grp; }) : svcs(c, role);
+        var add = role.indexOf('addon:') === 0, grp = add ? role.slice(6) : '';
+        /* Every group under its heading, the first three as the add-ons are
+           (2026-11-07). */
+        var head = add ? grp : ({ content: 'Content production', verify: 'Verifications', koc: 'KOC packages' })[role];
+        var list = add ? svcs(c, 'addon').filter(function (s) { return ((s.spec && s.spec.group) || 'Add-ons') === grp; }) : svcs(c, role);
         list = list.filter(function (s) { return s.rate != null; });
-        return (grp && list.length ? '<p class="qb-once-h">' + esc(grp) + '</p>' : '') + list.map(function (s) {
+        return (head && list.length ? '<p class="qb-once-h">' + esc(head) + '</p>' : '') + list.map(function (s) {
           /* A stepper a line, as the extra contents are: a count of one-off
              work is pressed up, never typed into a tall box. */
           var id = 'qbO-' + esc(s.slug), nm = esc(s.name);
@@ -1309,7 +1313,7 @@
           (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
-          '<span class="svc-rate qb-mo"><span class="qb-lab">Months</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
+          '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' ? 'Months' : '&nbsp;') + '</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
             '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
