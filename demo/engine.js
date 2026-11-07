@@ -9954,7 +9954,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var e = rates && rates[l.key];
           if (e && 'incl' in e && typeof e.incl !== 'boolean') editBad = l.label;
           delete l.in_plan;
-          if (hasPlan && l.kind !== 'plan' && Number(l.rate) === 0 && !(e && e.incl === false)) l.in_plan = true;
+          if (hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 && !(e && e.incl === false)) l.in_plan = true;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         var sub = 0, once = 0, month = false;
@@ -10496,6 +10496,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
         if (qq.sent_out_at || qq.released_at) return qtOk({ error: 'sent' });
+        var qen = (DB.client_services || []).filter(function (l) { return l.quotation_id === qq.id; }).length;
+        if (qen) return qtOk({ error: 'lines', count: qen });
+        var qed = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qq.id; }); })[0];
+        if (qed) return qtOk({ error: 'letter', number: qed.number });
         if (!qtCard) return qtOk({ error: 'no-card' });
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });

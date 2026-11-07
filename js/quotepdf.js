@@ -231,10 +231,16 @@
     });
     /* A Singapore client billed in RM reads the figure in S$ under it, at
        the rate in force on the day of issue (2026-10-22). */
-    var MONY = window.ADspaceMoney, last = tot.filter(function (r) { return r[2]; }).pop();
-    var lastVal = last ? Number(String(last[1]).replace(/[^0-9.\-]/g, '')) : 0;
-    var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx && last ? MONY.approx(lastVal, opts.client, dayOf(q.issued_at)) : '';
-    if (near) { y -= 13; right(near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx'), R, y + 3, SM, book, mute); }
+    /* Every bold total is agreed, the monthly fee and the one-off total
+       alike (2026-11-07: a plan with an outstation fee signed on the one-off
+       figure alone), each with its S$ beside it where billed in RM. */
+    var MONY = window.ADspaceMoney, bold = tot.filter(function (r) { return r[2]; });
+    bold.forEach(function (b) {
+      var v = Number(String(b[1]).replace(/[^0-9.\-]/g, ''));
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
+      if (near) { y -= 13; right(bold.length > 1 ? b[0] + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
+    });
     y -= 22;
 
     // TERMS.
@@ -278,8 +284,7 @@
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', including the ' +
       'services, fees and terms set out in this document and the ADspace Service Terms at go.adspace.me/svc-terms.', 11, 14.5);
     y -= 12;
-    var agreed = [];
-    if (last) agreed.push([last[0], last[1]]);
+    var agreed = bold.map(function (b) { return [b[0], b[1]]; });
     if (t.month) {
       agreed.push(['Minimum term', t.term + ' months']);
       agreed.push(['Total for the term' + incl, amt(t.commitment, q)]);

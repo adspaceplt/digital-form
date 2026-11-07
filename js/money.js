@@ -340,7 +340,7 @@
     lines = (lines || []).map(function (l) { return Object.assign({}, l); });
     var plan = lines.filter(function (l) { return l.kind === 'plan'; })[0];
     if (!plan) return lines;
-    var into = lines.filter(function (l) { return l.in_plan && l !== plan; });
+    var into = lines.filter(function (l) { return l.in_plan && l !== plan && l.basis !== 'once'; });
     if (!into.length) return lines;
     plan.detail = (plan.detail || []).concat(into.map(function (l) {
       /* "7 × Translation into Chinese": the count says what "per content
