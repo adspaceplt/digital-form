@@ -557,10 +557,13 @@
       : p.svg ? '<span class="vs-pic-box">' + p.svg + '</span>'
       : '<a class="vs-pic-box" href="' + esc(p.url) + '" target="_blank" rel="noopener" aria-label="Open the picture for scene ' + (i + 1) + '">' +
         '<img src="' + esc(p.url) + '" alt="" loading="lazy" decoding="async"></a>';
+    /* Redraw asks the changes and revises the drawing from itself, round
+       after round (2026-11-07). */
+    var redraw = work && p && p.kind === 'ai' && st.drawReady ? '<button class="btn btn-sm btn-icon" type="button" data-pic="redraw">' + AI_GLYPH + 'Redraw</button>' : '';
     var act = !work ? '' : sc.photo_url
       ? '<button class="btn btn-sm" type="button" data-pic="remove">Remove</button>'
       : '<label class="btn btn-sm vs-pic-add">' + ICON.camera + 'Add photo<input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" data-pic="add" hidden></label>';
-    return '<span class="vs-pic">' + box + (p ? '<span class="vs-pic-tag">' + esc(p.tag) + '</span>' : '') + act + '</span>';
+    return '<span class="vs-pic">' + box + (p ? '<span class="vs-pic-tag">' + esc(p.tag) + '</span>' : '') + redraw + act + '</span>';
   }
   /* Draw with AI on the Scenes heading: drawn only where the picture
      writer answers that it is set up, with what is left today. */
@@ -887,6 +890,10 @@
         }).catch(function (e) { b.disabled = false; sayPic(picSaid(e)); });
       });
     });
+    Array.prototype.forEach.call(body.querySelectorAll('[data-scene] [data-pic="redraw"]'), function (b) {
+      var id = b.closest('[data-scene]').getAttribute('data-scene');
+      b.addEventListener('click', function () { redrawScene(id, b); });
+    });
     if ($('vsDraw')) $('vsDraw').addEventListener('click', function () { drawWithAi($('vsDraw')); });
     if ($('vsPlay')) $('vsPlay').addEventListener('click', function () { openPlay($('vsPlay')); });
   }
@@ -915,35 +922,77 @@
       window.ADspaceConfirm.ask({
         title: 'Draw with AI',
         body: 'A storyboard picture is drawn for each scene from its shot. ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
-        go: 'Draw', field: { label: 'Scenes', choices: choices, seg: true, value: choices[0][0] }
+        go: 'Draw',
+        fields: [{ name: 'scope', label: 'Scenes', choices: choices, seg: true, value: choices[0][0] },
+                 { name: 'changes', label: 'Changes', rows: 3, required: false, placeholder: 'Optional' }]
       }, function (v) {
-        var list = (v === 'all' ? st.scenes : missing).slice(0, 30);
+        var list = (v.scope === 'all' ? st.scenes : missing).slice(0, 30);
         if (list.length > left.left) { sayPic(picSaid({ message: 'ai-limit', data: left })); return; }
-        var sid = s.id;
-        btn.disabled = true;
-        btn.innerHTML = AI_GLYPH + 'Drawing';
-        sayPic('Drawing ' + list.length + (list.length === 1 ? ' picture' : ' pictures') + '. This can take a minute.', 'ok');
-        db.functions.invoke('script-pictures', { body: { script_id: sid, scenes: list.map(function (x) { return x.id; }) } }).then(function (res) {
-          var d = res && res.data;
-          if (res.error || !d || d.error || !d.drawn) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; x.data = d; throw x; }
-          /* Each frame is kept on its scene by the function as it is drawn. */
-          return { n: d.drawn.length, missed: d.missed || 0 };
-        }).then(function (r) {
-          if (!st.open || st.open.id !== sid) return;
-          return rpc('ai_picture_left', {}).then(function (l) { st.drawLeft = l.left; }, function () {})
-            .then(function () { return readScript(sid); })
-            .then(function () {
-              repaintScenes(r.n + (r.n === 1 ? ' picture drawn.' : ' pictures drawn.') +
-                (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : ''), r.missed ? 'warn' : 'ok');
-            });
-        }).catch(function (e) {
-          if (!st.open || st.open.id !== sid) return;
-          btn.disabled = false;
-          btn.innerHTML = AI_GLYPH + 'Draw with AI';
-          sayPic(picSaid(e));
-        });
+        runDraw(list, String(v.changes || '').trim(), null, btn);
       });
     }).catch(function (e) { btn.disabled = false; sayPic(picSaid(e)); });
+  }
+  /* Redraw one scene: the changes asked, then Claude revises its drawing. */
+  function redrawScene(id, b) {
+    sayPic('');
+    b.disabled = true;
+    rpc('ai_picture_left', {}).then(function (left) {
+      b.disabled = false;
+      st.drawLeft = left.left;
+      if (!left.left) { sayPic(picSaid({ message: 'ai-limit', data: left })); return; }
+      window.ADspaceConfirm.ask({
+        title: 'Redraw scene ' + scenePos(id),
+        body: left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
+        go: 'Redraw',
+        fields: [{ name: 'changes', label: 'Changes', rows: 3, placeholder: 'One change per line' }]
+      }, function (v) {
+        var sc = st.scenes.filter(function (x) { return x.id === id; })[0];
+        if (!sc) return;
+        var notes = {}; notes[id] = String(v.changes || '').trim();
+        runDraw([sc], '', notes, b);
+      });
+    }).catch(function (e) { b.disabled = false; sayPic(picSaid(e)); });
+  }
+  /* Draws the scenes asked, with the team's changes; a drawing it replaced
+     comes back with Undo where it happened. */
+  function runDraw(list, note, notes, btn) {
+    var s = st.open, sid = s.id, main = btn === $('vsDraw');
+    var before = {};
+    list.forEach(function (x) { if (x.ai_frame) before[x.id] = x.ai_frame; });
+    btn.disabled = true;
+    if (main) btn.innerHTML = AI_GLYPH + 'Drawing';
+    sayPic('Drawing ' + list.length + (list.length === 1 ? ' picture' : ' pictures') + '. This can take a minute.', 'ok');
+    var body = { script_id: sid, scenes: list.map(function (x) { return x.id; }) };
+    if (note) body.note = note;
+    if (notes) body.notes = notes;
+    db.functions.invoke('script-pictures', { body: body }).then(function (res) {
+      var d = res && res.data;
+      if (res.error || !d || d.error || !d.drawn) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; x.data = d; throw x; }
+      /* Each frame is kept on its scene by the function as it is drawn. */
+      return { n: d.drawn.length, missed: d.missed || 0, drawn: d.drawn, presses: d.presses || {} };
+    }).then(function (r) {
+      if (!st.open || st.open.id !== sid) return;
+      var back = r.drawn.filter(function (id) { return before[id] && r.presses[id]; });
+      return rpc('ai_picture_left', {}).then(function (l) { st.drawLeft = l.left; }, function () {})
+        .then(function () { return readScript(sid); })
+        .then(function () {
+          var said = r.n + (r.n === 1 ? ' picture drawn.' : ' pictures drawn.') +
+            (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : '');
+          if (!back.length || r.missed) { repaintScenes(said, r.missed ? 'warn' : 'ok'); return; }
+          repaintScenes();
+          undoBar((back.length === 1 ? 'Scene ' + scenePos(back[0]) + ' redrawn.' : back.length + ' scenes redrawn.'), function () {
+            Promise.all(back.map(function (id) {
+              return rpc('video_script_frame', { p_script: sid, p_scene: id, p_frame: before[id], p_press: r.presses[id] });
+            })).then(function () { return readScript(sid); }).then(function () { repaintScenes('Undone.', 'ok'); })
+              .catch(function (e) { sayPic(picSaid(e)); });
+          }, $('vsPicMsg'));
+        });
+    }).catch(function (e) {
+      if (!st.open || st.open.id !== sid) return;
+      btn.disabled = false;
+      if (main) btn.innerHTML = AI_GLYPH + 'Draw with AI';
+      sayPic(picSaid(e));
+    });
   }
 
   /* ---- The animatic (2026-11-06; the user: short clips, "1 yes") ------- */

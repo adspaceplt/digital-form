@@ -22,6 +22,13 @@
  * the page builds the drawing from it. A frame kept is answered with its
  * scene; one that did not come back is marked failed and not counted.
  *
+ * `note` (every scene asked) and `notes` (one a scene, from Redraw) carry the
+ * team's changes, 500 characters each, masked as the rest; a scene already
+ * drawn is sent with its drawing and revised from it, so the storyboard goes
+ * round by round until it is right (2026-11-07). The answer names the press
+ * each frame was kept under (`presses`), which the page's Undo writes the
+ * earlier drawing back with.
+ *
  * `{ ping: true }` answers whether the function is set up, counting nothing,
  * so the page draws Draw with AI only where it can work.
  *
@@ -89,6 +96,13 @@ Deno.serve(async (req) => {
   if (!/^[0-9a-f-]{36}$/i.test(scriptId)) return json({ error: 'bad-request' }, 400, origin);
   const want = (Array.isArray(body && body.scenes) ? body.scenes : []).map(String).filter((x: string) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 30);
   if (!want.length) return json({ error: 'bad-request' }, 400, origin);
+  /* The team's changes (2026-11-07; the user: rounds of changes until the
+     storyboard is right): one note for every scene asked, and one a scene
+     from Redraw. A scene already drawn is revised from its drawing. */
+  const note = text(body && body.note, 500);
+  const notes: Record<string, string> = {};
+  const given = body && body.notes && typeof body.notes === 'object' ? body.notes as Record<string, unknown> : {};
+  want.forEach((id: string) => { const n = text(given[id], 500); if (n) notes[id] = n; });
 
   const auth = req.headers.get('Authorization') ?? '';
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -101,7 +115,7 @@ Deno.serve(async (req) => {
   const cl = await db.from('clients').select('name, industry, handle_ig, handle_fb, handle_tiktok, handle_xhs')
     .eq('id', vs.data.client_id as string).maybeSingle();
   if (cl.error || !cl.data) return json({ error: 'client-scope' }, 200, origin);
-  const scs = await db.from('video_script_scenes').select('id, position, visual, line, shot_size, angle, camera_move')
+  const scs = await db.from('video_script_scenes').select('id, position, visual, line, shot_size, angle, camera_move, ai_frame')
     .eq('script_id', scriptId).in('id', want).order('position');
   if (scs.error) return json({ error: 'not-found' }, 200, origin);
   const scenes = (scs.data || []) as Record<string, unknown>[];
@@ -135,8 +149,20 @@ Deno.serve(async (req) => {
     'Scene ' + sc.position + '.',
     'Shot size: ' + (text(sc.shot_size, 60) || 'not set') + '. Angle: ' + (text(sc.angle, 60) || 'not set') + '. Camera move: ' + (text(sc.camera_move, 60) || 'not set') + '.',
     'What is seen: ' + mask(text(sc.visual, 900)),
-    text(sc.line, 1) ? 'What is said: ' + mask(text(sc.line, 600)) : ''
+    text(sc.line, 1) ? 'What is said: ' + mask(text(sc.line, 600)) : '',
+    ...revision(sc)
   ].filter(Boolean).join('\n');
+  function revision(sc: Record<string, unknown>): string[] {
+    const asked = [notes[String(sc.id)], note].filter(Boolean).map((x) => mask(String(x)));
+    if (!asked.length) return [];
+    const was = sc.ai_frame && typeof sc.ai_frame === 'object' ? sc.ai_frame as Record<string, unknown> : null;
+    const shapes = was && Array.isArray(was.shapes) ? JSON.stringify({ shot_size: was.shot_size, angle: was.angle, move: was.move, shapes: was.shapes }).slice(0, 30000) : '';
+    return [
+      shapes ? 'The current drawing of this scene: ' + shapes : '',
+      shapes ? 'Redraw it with the changes the team asks for. Keep what they do not ask to change.' : 'Draw it with the changes the team asks for.',
+      'Changes asked: ' + asked.join(' ')
+    ].filter(Boolean);
+  }
 
   const format = {
     type: 'object',
@@ -158,6 +184,7 @@ Deno.serve(async (req) => {
   return held((async () => {
     const client = new Anthropic({ apiKey: key });
     const out: string[] = [];
+    const presses: Record<string, string> = {};
     let refused = '';
     const one = async (sc: Record<string, unknown>, press: string) => {
       const left = BUDGET_MS - (Date.now() - started);
@@ -190,6 +217,7 @@ Deno.serve(async (req) => {
         }
         await done(press, true);
         out.push(String(sc.id));
+        presses[String(sc.id)] = press;
       } catch (e) {
         const st = Number((e as { status?: number })?.status || 0);
         console.error('script-pictures: no answer', st, String((e as Error)?.message || e).slice(0, 300));
@@ -202,6 +230,6 @@ Deno.serve(async (req) => {
       await Promise.all(scenes.slice(i, i + 4).map((sc, k) => one(sc, ids[i + k])));
     }
     if (!out.length) return { error: refused || 'ai-incomplete' };
-    return { drawn: out, missed: scenes.length - out.length, left: got.left };
+    return { drawn: out, presses, missed: scenes.length - out.length, left: got.left };
   })(), origin);
 });
