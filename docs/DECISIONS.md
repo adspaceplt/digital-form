@@ -8741,3 +8741,9 @@ the formats local creators use and with local speech, handheld; a host
 speaking to camera keeps eye level and changes size by jump cuts. The
 reviewer checks the same. The brief's Format list was left as it is (a
 migration); the writer names the local format in the concept.
+
+### 2026-11-07 · A scene's picture on a phone
+The user sent a phone screenshot of a script: each scene stood the picture,
+its tag, Redraw and Add photo in one column, so a scene ran a screen tall.
+On a tight pane the picture now holds the left of its cell with the tag and
+both acts beside it; the words follow under the row as before.
