@@ -33,6 +33,8 @@
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
+    lines: 'Not saved. Service lines were made from this quotation. Refresh the page to revise it.',
+    letter: 'Not saved. A Letter of Offer was issued from this quotation. Refresh the page to revise it.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
     'no-number': 'This prospect has no WhatsApp number. Add one in Contacts first.',
@@ -567,7 +569,9 @@
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
-    if (a === 'edit') { if (sentOut(q)) build(ctx, q.selection, btn, q); else build(ctx, q.selection, btn, null, q); return; }
+    /* A quotation a letter or service lines came from keeps its figures:
+       Edit makes its revision, as once sent out (2026-11-07). */
+    if (a === 'edit') { if (sentOut(q) || (q._lines || []).length) build(ctx, q.selection, btn, q); else build(ctx, q.selection, btn, null, q); return; }
     if (a === 'delete') { remove(q, ctx); return; }
     var back = { not_proceeding: 'proceeding', remove: 'restore' }[a];
     set(q, a, ctx, function () {
@@ -809,7 +813,11 @@
     var q = RV.q, ctx = RV.ctx, me = meNow(), go = $('qsgApprove');
     var place = me && me.id !== q.reviewer_id;
     var c = ctx.client || {};
-    var empty = !String(c.legal_name || '').trim() && !String(c.company_no || '').trim() && !String(c.billing_address || '').trim();
+    /* Read from the database's own list where the reader cannot see Billing's
+       values (only `billing_missing` arrives then). */
+    var miss = Array.isArray(c.billing_missing) ? c.billing_missing : null;
+    var empty = miss ? ['legal_name', 'company_no', 'billing_address'].every(function (f) { return miss.indexOf(f) > -1; })
+      : !String(c.legal_name || '').trim() && !String(c.company_no || '').trim() && !String(c.billing_address || '').trim();
     window.ADspaceConfirm.ask({
       title: place ? 'Approve in place of ' + q.reviewer_name + '?' : 'Approve ' + q.ref + '?',
       body: (place ? q.reviewer_name + ' was asked to review it; the approval is filed under your name in their place. ' : '') +
@@ -1003,7 +1011,7 @@
       $('qbAds').value = chosen && chosen.spec.ads ? 'ads' : 'none';
       $('qbAds').dispatchEvent(new Event('input'));
       paintPlans();
-      mixFor(sel.mix || 0);
+      mixFor(Number(sel.mix) || 0);
       Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) {
         i.checked = (sel.platforms || []).indexOf(i.value) > -1;
       });
@@ -1047,6 +1055,7 @@
         }).join('');
       }).join('');
       $('qbOnceMore').open = Boolean((sel.once || []).length);
+      stepQtys(true);
       sync();
       window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
       preview();
@@ -1157,11 +1166,27 @@
   /* The stepper that holds a line's quantity, found by the line's slug
      (its key is kind|slug|label), else none. */
   function stepperOf(key) {
-    var slug = String(key || '').split('|')[1] || '';
+    var part = String(key || '').split('|'), kind = part[0], slug = part[1] || '';
     if (!slug) return null;
-    if (B && B.plan && slug === extraSlug('graphic')) return $('qbGraphic');
-    if (B && B.plan && slug === extraSlug('reel')) return $('qbReel');
-    return document.getElementById('qbO-' + slug);
+    if (kind === 'extra') {
+      if (B && B.plan && slug === extraSlug('graphic')) return $('qbGraphic');
+      if (B && B.plan && slug === extraSlug('reel')) return $('qbReel');
+      return null;
+    }
+    return ['content', 'verify', 'koc', 'kol', 'addon'].indexOf(kind) > -1 ? document.getElementById('qbO-' + slug) : null;
+  }
+  /* A line with a stepper takes its count from the stepper alone: a Qty
+     typed on it before 2026-11-07 is moved into the stepper as the sheet
+     opens, and none is ever sent beside it, so the two never differ
+     (Betelnut, 2026-11-07: the stepper read 2, the line kept 1). */
+  function stepQtys(move) {
+    Object.keys(B.edits || {}).forEach(function (k) {
+      var e = B.edits[k], step = e && e.qty != null && stepperOf(k);
+      if (!step) return;
+      if (move) step.value = String(Math.max(0, Math.floor(Number(e.qty) || 0)));
+      delete e.qty;
+      if (!Object.keys(e).length) delete B.edits[k];
+    });
   }
   function selection() {
     var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6,
@@ -1179,6 +1204,7 @@
       var n = Math.max(0, Math.floor(Number(i.value) || 0));
       if (n) sel.once.push({ slug: i.getAttribute('data-slug'), qty: n });
     });
+    stepQtys(false);
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     return sel;
   }
@@ -1198,7 +1224,7 @@
   function preview() {
     clearTimeout(timer);
     /* A changed selection is a new quotation: its own key (audit 15, 2026-10-19). */
-    if (B) B.idem = null;
+    if (B) { B.idem = null; B.priced = null; $('qbSave').disabled = true; $('qbPreview').disabled = true; }
     timer = setTimeout(function () {
       if (!B) return;
       var seq = ++B.seq;
@@ -1276,7 +1302,7 @@
         /* Include in plan (the user, 2026-11-06, option A): a line at RM 0
            beside a plan is listed under the plan's inclusions on the
            quotation, not as a row of its own; on unless unticked. */
-        var fold = hasPlan && l.kind !== 'plan' && Number(l.rate) === 0 ?
+        var fold = hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 ?
           '<label class="tickline qb-inplan"><input type="checkbox" data-key="' + esc(l.key || '') + '"' + (l.in_plan ? ' checked' : '') + '> Include in plan</label>' : '';
         return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           (incl.length ? '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
@@ -1355,7 +1381,7 @@
        leaving the field prices it again. Empty, or the card's own figure,
        puts back the card's. */
     $('qbLines').addEventListener('input', function (e) {
-      if (B && e.target.closest('.qb-val')) $('qbSave').disabled = true;
+      if (B && e.target.closest('.qb-val')) { $('qbSave').disabled = true; $('qbPreview').disabled = true; }
     });
     $('qbLines').addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing && e.target.closest('.qb-val')) { e.preventDefault(); e.target.blur(); }
@@ -1388,6 +1414,12 @@
          stepper, never an override beside it, so the two never disagree
          (the user, 2026-11-07: Qty 3 below, the stepper 2 above). */
       var step = what === 'qty' && ok && stepperOf(k);
+      if (step && Number(raw) > Number(step.max || 999)) {
+        i.value = step.value;
+        $('qbMsg').textContent = 'Enter a quantity up to ' + (step.max || 999) + '.'; $('qbMsg').className = 'msg err';
+        i.focus();
+        return;
+      }
       if (step) {
         step.value = raw;
         if (B.edits[k]) { delete B.edits[k].qty; if (!Object.keys(B.edits[k]).length) delete B.edits[k]; }
@@ -1418,7 +1450,8 @@
       var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30;
       var me = window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null;
       var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
-        made_by: (me && me.name) || '',
+        made_by: (B.editing && B.editing.made_by) || (me && me.name) || '',
+        source: B.editing ? B.editing.source : undefined, contact: B.editing ? B.editing.contact : undefined,
         version: d.version, lines: d.lines, totals: d.totals, selection: B.sel };
       var tab = window.ADspaceDocs.previewTab();
       btn.disabled = true;

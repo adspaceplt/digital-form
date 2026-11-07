@@ -8678,3 +8678,33 @@ a point a line (`2026-11-07-one-off-lines-carry-their-description.sql`).
 Quotations already made keep their lines; an unsent one takes it once
 edited and saved.
 
+### 2026-11-07 · Review of Quotations and the Letter of Offer: eighteen fixes
+The user found bugs "here and there" in both. A review traced each flow and
+found eighteen. Quotations: the acceptance page kept only the last bold
+total, so a plan with an outstation fee was signed on the one-off figure
+alone; a typed Qty on a one-off content line moved the monthly stepper of
+the same service; a typed count kept from before #950 overrode the stepper
+(Betelnut: the stepper read 2, the line 1), so the stepper is now the one
+count and an older typed count moves into it as the sheet opens; Create
+could save the selection from before the last press; a website
+quotation's content option was read as text and reset; a free one-off item
+was folded into the monthly plan; Edit in place rewrote a quotation a
+letter or service lines came from (now its revision, and refused by
+`quotation_edit` as Delete refuses it); the Approve question misread
+Billing for a reviewer without Billing's values; Preview named the editor
+as preparer. Letter of Offer fixes are in the entry beside it.
+
+### 2026-11-07 · Letter of Offer: nine fixes from the same review
+The letter sheet greyed every Confirmed line, so no renewal or variation
+could be issued: only a line on a live letter is held now. `issue_letter`
+locks the ticked lines before it checks them (two presses at once put one
+line on two letters), refuses Replace on a letter already replaced or void,
+and totals a quoted letter as the page does (1.5 × RM 333.33 over 12 months
+read RM 6,479.94 against the page's RM 6,480.00, refused as stale on every
+press). `letter_delete` brings back the letter a deleted replacement
+replaced only where no other live letter holds its lines. On the page:
+Replace survives the Billing step, Verify and Mark signed are drawn at
+Letters Work alone, a stale Preview reloads the sheet, and an Issue still
+on its way acts only on the sheet that sent it
+(`2026-11-07-letter-of-offer-fixes.sql`).
+

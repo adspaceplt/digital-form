@@ -2243,6 +2243,9 @@ function cardSlugFree(name, self, email) {
       })[0];
       if (!prior) return { error: 'no-replaces' };
       if (prior.verified_at) return { error: 'replaces-verified' };
+
+      if (prior.superseded_by) return { error: 'superseded' };
+      if (prior.voided_at) return { error: 'voided' };
     }
 
     var num = typed;
@@ -2418,7 +2421,17 @@ function cardSlugFree(name, self, email) {
       var l = DB.client_services.filter(function (x) { return x.id === id; })[0];
       if (l) l.state = 'quoted';
     });
-    DB.client_documents.forEach(function (x) { if (x.superseded_by === d.id) x.superseded_by = null; });
+
+    DB.client_documents.forEach(function (x) {
+      if (x.superseded_by !== d.id) return;
+      var mine = DB.client_document_services.filter(function (m) { return m.document_id === x.id; })
+        .map(function (m) { return m.service_id; });
+      var other = DB.client_documents.filter(function (o) {
+        return o.id !== x.id && o.id !== d.id && !o.voided_at && !o.superseded_by &&
+          DB.client_document_services.some(function (m) { return m.document_id === o.id && mine.indexOf(m.service_id) > -1; });
+      }).sort(function (p, q) { return String(q.created_at || '').localeCompare(String(p.created_at || '')); })[0];
+      x.superseded_by = other ? other.id : null;
+    });
     DB.client_document_deletions.push({ id: nid('dd'), document_id: d.id, number: d.number,
       client_id: d.client_id, actor: whoNow(), reason: String(a.p_reason).trim(),
       service_ids: ids, deleted_at: new Date().toISOString() });
@@ -9954,7 +9967,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var e = rates && rates[l.key];
           if (e && 'incl' in e && typeof e.incl !== 'boolean') editBad = l.label;
           delete l.in_plan;
-          if (hasPlan && l.kind !== 'plan' && Number(l.rate) === 0 && !(e && e.incl === false)) l.in_plan = true;
+          if (hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 && !(e && e.incl === false)) l.in_plan = true;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         var sub = 0, once = 0, month = false;
@@ -10496,6 +10509,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
         if (qq.sent_out_at || qq.released_at) return qtOk({ error: 'sent' });
+        var qen = (DB.client_services || []).filter(function (l) { return l.quotation_id === qq.id; }).length;
+        if (qen) return qtOk({ error: 'lines', count: qen });
+        var qed = (DB.client_documents || []).filter(function (d) { return (d.lines || []).some(function (l) { return l && l.quotation_id === qq.id; }); })[0];
+        if (qed) return qtOk({ error: 'letter', number: qed.number });
         if (!qtCard) return qtOk({ error: 'no-card' });
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });

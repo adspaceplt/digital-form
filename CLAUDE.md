@@ -2580,6 +2580,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`needs-billing`, as Active holds); the letter sheet opens Billing on
     its first missing field instead, offering the details form, and Billing's
     Save carries on into the letter sheet.
+  - The ticked lines are locked before they are checked against live
+    letters; a Confirmed line is tickable for a renewal; Replace is refused
+    on a letter already replaced (`superseded`) or void (`voided`), and a
+    deleted replacement revives the letter it replaced only where no other
+    live letter holds its lines (`2026-11-07-letter-of-offer-fixes.sql`).
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
     digits is a floor, not a width.
@@ -6140,7 +6145,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   card group: an outstation fee, a shoot, revisions, files; 2026-11-07; each
   one-off line carrying its service's description, a point a line, from the
   live version, `2026-11-07-one-off-lines-carry-their-description.sql`; a
-  line's Qty typed sets its stepper, never an edit beside it), the
+  line's Qty typed sets its stepper, never an edit beside it, an older typed
+  count moved into the stepper as the sheet opens; Create and Preview PDF
+  rest from the first change until it is priced), the
   lines and totals from `quote_preview` as ticked, Monthly incl. SST kept in
   the foot (`#qbSum`); with no plan the
   platforms run four across and the budget sits beside the term) makes one (`quotation_create`, a key a press,
@@ -6159,7 +6166,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   figure back. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
-  `quote_adjust` stamps `in_plan`; the user, 2026-11-06, option A): no row
+  `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
+  `2026-11-07-quotation-fixes.sql`; the user, 2026-11-06, option A): no row
   of its own on the PDF or /quote/, listed under the plan's inclusions
   (`ADspaceMoney.planFold`, its count always stated, one singular:
   `1 × Additional reel, up to 60 seconds`), the totals
@@ -6193,7 +6201,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the totals at the right ending at the one bold figure, TERMS: validity,
   SST, budget billed separately, the whole term's commitment, binding once
   accepted and signed with the Service Terms, the rate card line); and
-  Acceptance of quotation on a page of its own (the figures agreed, Issued
+  Acceptance of quotation on a page of its own (the figures agreed, every
+  bold total among them, the monthly and the one-off alike, Issued
   for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
   client's block to sign and stamp, Name, Designation, Date). Prepared by
   is the quotation's `made_by` (a website quotation's person in charge)
