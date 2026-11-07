@@ -587,7 +587,7 @@
         Array.prototype.forEach.call(box.querySelectorAll('[data-l]'), function (b) {
           b.addEventListener('click', function () {
             var d = rows[Number(b.getAttribute('data-l'))];
-            if (d.source === 'manual') { window.open(d.file_url, '_blank', 'noopener'); return; }
+            if (d.source === 'manual') { var u = window.ADspaceWords.absUrl(d.file_url); if (u) window.open(u, '_blank', 'noopener'); return; }
             if (window.ADspaceLetters) window.ADspaceLetters.download(d, function (warn) { if (warn) msg('supRecMsg', warn, 'err'); });
           });
         });

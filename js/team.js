@@ -689,7 +689,7 @@
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'This is a system account.';
-    if (/admin-only/.test(t)) return ADMIN_ONLY;
+    if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin changes your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
   }

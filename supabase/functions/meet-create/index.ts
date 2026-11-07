@@ -110,7 +110,13 @@ Deno.serve(async (req) => {
   if (!tok.token) return json({ error: tok.error, missing: tok.missing, reason: tok.reason }, 200, origin);
   const g = { Authorization: `Bearer ${tok.token}`, 'Content-Type': 'application/json' };
 
-  const eventId = m.meeting_event_id ? String(m.meeting_event_id) : '';
+  /* Only the record's own event is ever moved or deleted (security audit
+     2026-11-07): the stored id is the caller's to write, so one naming any
+     other event (another client's month, the team's own) is never sent to
+     Google. A delete then clears the record alone; a booking makes the
+     record's own event. */
+  const stored = m.meeting_event_id ? String(m.meeting_event_id) : '';
+  const eventId = stored === eventIdOf(touch, eid) ? stored : '';
   if (action === 'delete') {
     if (eventId) {
       const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
@@ -203,7 +209,7 @@ Deno.serve(async (req) => {
     const again = await fetch(`${CAL}/${encodeURIComponent(made!.id)}?conferenceDataVersion=1`, { headers: g });
     if (again.ok) link = meetLinkOf(await again.json());
   }
-  link = link || (m.meeting_link ? String(m.meeting_link) : null);
+  link = link || (eventId && m.meeting_link ? String(m.meeting_link) : null);
   if (!link) {
     /* The event is recorded without a link, so the next press asks Google
        for the Meet on this event rather than booking a second one. */

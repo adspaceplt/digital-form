@@ -42,6 +42,7 @@
     'no-field': 'Choose Bukku\'s Client ID and Supplier ID fields on the Settings page (Money, Bukku) first.',
     linked: 'This record is already linked to a contact in Bukku. Read the sheet again.',
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
+    'not-offered': 'That Bukku contact does not match this record. Choose one of the contacts offered.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
     moved: 'Not restored. It was linked again meanwhile.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',

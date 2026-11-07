@@ -1328,7 +1328,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   column (`^https?://`, an invoice `https://` or `private/`) and the page
   drawing it only on http or https (`ADspaceWords.absUrl`, the one copy, answers nothing for another
   scheme, nor for a space, quote, `<`, `>`, backtick or backslash the
-  column's check refuses; 2026-10-17: `javascript://` passed the scheme test). A link typed
+  column's check refuses; 2026-10-17: `javascript://` passed the scheme test; a
+  booking's file and a document's file link likewise, opened by `window.open`
+  too, 2026-11-07). A link typed
   bare takes `https://` (a month's Drive folder too, its column https
   alone); one `absUrl` answers nothing for is refused where it was typed
   (Enter a web address.), never saved as none. A value
@@ -1658,7 +1660,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `.select('slug')` and names a refusal.
 - Only an admin makes a colleague or a group admin, or changes an admin's
   group, access, access date, email or standing (`team_admin_guard`,
-  `team_roles_admin_guard`, `admin-only`; 2026-10-17): Team Full Access is
+  `team_roles_admin_guard`, `admin-only`; 2026-10-17), and only an admin
+  changes their own group (`2026-11-07-own-group-through-an-admin.sql`): Team Full Access is
   not admin, and is drawn no Set inactive, Delete or Access until pen on an
   admin's record (2026-10-27, TEAM-1). Nor does anyone but an admin turn on, change or take off a
   granted part (an admin tool, Performance, Supplier bank details …) on any
@@ -2932,7 +2935,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.settings`, filed under Settings); Off, no record draws it and
   prepare and begin refuse `email-off`. Access: Clients: Quotations,
   Clients: Letters, Letters or Documents: Client documents at Work
-  (`client_email_may`), the client in scope. One sheet (`#dmSheet`,
+  (`client_email_may`) with Clients: Contacts at View (its addresses are
+  that part's; security audit 2026-11-07), the client in scope. One sheet (`#dmSheet`,
   `ADspaceDocMail.compose`): From `ADspace <noreply-client@sc.adspace.me>`
   (`MAIL_CLIENT_FROM`), replies to the colleague who sends (else
   marketing@adspacestudios.com), To the client's contacts holding an email,
@@ -3036,7 +3040,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   One Bukku contact is one record's, a supplier and its own client sharing
   one: `bukku-sync` sends a linked record to its own contact alone and asks
   `bukku_contact_check` before it writes Bukku, and `bukku_linked` and
-  `bukku_link_only` refuse `taken` (2026-10-22, BE-2).
+  `bukku_link_only` refuse `taken` (2026-10-22, BE-2). A contact the page
+  names for an unlinked record is read or written only where find offers it
+  for that record (its registration no. or name), else `not-offered` unless
+  the colleague sees every client (`invoice_scope` `all`; security audit
+  2026-11-07).
   Bukku by entity (`2026-10-29-bukku-by-entity.sql`, the SQL Editor's; the
   user, 2026-10-29: one brand billed by several companies): a Bukku contact
   is a company, so `bukku_links` takes the kind `entity`; an entity's fold
@@ -4682,7 +4690,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (trigger `ops_tasks_revision_due`, filed `due_changed`, reason Client
     request).
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
-  in its secrets).
+  in its secrets), and only the record's own event (`admonth`/`adtouch` and
+  its id): a stored id naming any other is never sent to Google, a delete
+  clearing the record alone and a booking making its own (security audit
+  2026-11-07).
   - It asks `ops_engagement_meet_prepare` (a month) or
     `client_touch_meet_prepare` (a Calls and visits meeting) as the caller.
   - It refuses a slot only where another online meeting overlaps it (a Meet
@@ -6319,7 +6330,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   "Quotation is a serious one so it must be accurate", Download never
   locks it): `quotations.sent_out_at`, stamped by trigger when a website
   quotation is released, a team's quotation is given its link, or a
-  WhatsApp or an email is filed for it. Until then a team's quotation's ⋯
+  WhatsApp for it is queued, sent or not confirmed, or an email for it
+  sent, never while only filed or once failed
+  (`2026-11-07-quotation-sent-when-it-went.sql`). Until then a team's quotation's ⋯
   and an awaiting website quotation's row offer Edit, Build quote opened
   as Edit {ref} whose Save is `quotation_edit(p_id, p_sel)` (Clients:
   Quotations at Work, in scope; priced again from the live card into the
@@ -6799,7 +6812,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Erase personal details also removes the mobile, the namecard (off, its short
     link freed), the sign-in email and its login, their health check-ins,
     consents, log and talks, devices, guides met and section order
-    (`erased_at`). Their name, Employee ID and group, their name on past
+    (`erased_at`), and their number and words from every WhatsApp message
+    to them (trigger `team_members_erased_whatsapp`). Their name, Employee ID and group, their name on past
     work and the documents they signed, and their own HR letters and
     performance records are kept either way.
   - Leaving (`2026-10-15-colleague-leaving.sql`, audit I3, I4, S6, S9, I9):
@@ -6962,6 +6976,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`Admin → Team → Admin`), a run reads `· 3 times`, and a cut entry is a
   button with `aria-expanded` (`is-long`).
   `register.added` / `register.edited` read Document added / edited.
+- A line a page files in the Activity record names the address the caller
+  signed in with and the moment it arrived, whatever the page sent (trigger
+  `activity_log_stamp`, `2026-11-07-activity-actor-stamped.sql`); a
+  function's own line keeps its actor.
 - Every save files what it changed, from and to (`ADspaceRecords.changes`:
   "Label: old → new", empty reads "not set"); a save that changed nothing
   files nothing. Client details, brand, contacts, rate lines, team members,
@@ -7428,7 +7446,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   is owed (`optionId`, Creator Campaigns: Campaigns at Work), `invoice` a
   campaign (`campaignId`, Creator Campaigns: Finance at Work, private where
   set up), `report` a report version (`versionId`, Reports at Work, always
-  private); the record must be the named client's and the caller's client
+  private, its scope asked of the report's client); the record must be the named client's and the caller's client
   scope must reach it, each asked as the caller. Work in one section signs
   nothing for another; a page that names no purpose is asked to reload.
 - `sign-upload` signs only the extensions the pages upload (`EXT_TYPE`:
@@ -7473,7 +7491,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   links Worker (its `IP_RELAY_SECRET`, a creator's preview) pass their
   caller's on as `x-adspace-ip` beside `x-adspace-relay`, the
   `ip_relay_secret` in `app_secrets`, the only way it is taken;
-  `2026-10-18-a-callers-address-is-cloudflares.sql`), five within
+  `2026-10-18-a-callers-address-is-cloudflares.sql`; both rows taken under
+  a row lock before any passcode is compared, so guesses sent at once are
+  counted in turn, `2026-11-07-passcode-tries-counted-first.sql`), five within
   15 minutes locking that address out, the right one included, for 15
   minutes, then an hour, then a day where it is locked again within a day
   of the last lock ending (`strikes`, `struck_until`; the right code and

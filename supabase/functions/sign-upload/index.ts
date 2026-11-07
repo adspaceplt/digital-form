@@ -69,8 +69,11 @@ const PURPOSES: Record<string, {
   invoice: { field: 'campaignId', sections: ['campaigns.finance'], kind: 'campaign', level: 'work', private: 'may',
     clientOf: async (a, id) => { const r = await one(a.from('campaigns').select('client_id').eq('id', id).maybeSingle());
       return r ? { client: String(r.client_id) } : null; } },
-  // A published report version's PDF, kept as it went out, kept private.
-  report: { field: 'versionId', sections: ['reports'], kind: 'report', level: 'view', private: 'must',
+  /* A published report version's PDF, kept as it went out, kept private.
+     Its scope is asked of the report's client: asked of the version's id as
+     a report, it found no report and let any client through (security
+     audit 2026-11-07). */
+  report: { field: 'versionId', sections: ['reports'], kind: 'client', level: 'view', private: 'must',
     clientOf: async (a, id) => { const r = await one(a.from('sm_report_versions').select('report_id, sm_reports(client_id)').eq('id', id).maybeSingle());
       const c = r && (r.sm_reports as Record<string, unknown> | null);
       return c ? { client: String(c.client_id) } : null; } },

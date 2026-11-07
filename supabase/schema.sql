@@ -100093,4 +100093,377 @@ grant execute on function public.ai_draft_usage() to authenticated;
 
 -- END OF SCENE FRAMES DRAWN BY CLAUDE ------------------------------------------
 
+-- PASSCODE TRIES COUNTED FIRST -----------------------------------------------
+
+/* The guess is held until its try is counted (security audit 2026-11-07):
+   the caller's row and the link's row are taken under a row lock before
+   any passcode is compared, so guesses sent at once wait in turn, each
+   reading the count the one before it left, and a right one sent beside the
+   fifth wrong one meets the lock. Asked without a passcode, it still only
+   reads. Everything else is as the PASSCODE LOCKS LENGTHEN band left it. */
+create or replace function public.link_passcode(p_kind text, p_token text, p_stored text, p_given text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare
+  v_ip text := public.request_ip();
+  a public.link_tries%rowtype;
+  b public.link_attempts%rowtype;
+  v_known boolean;
+begin
+  if coalesce(p_stored, '') = '' then return 'ok'; end if;
+  -- Asked without one: the page learning that a passcode is needed.
+  if coalesce(p_given, '') = '' then
+    select * into a from public.link_tries where kind = p_kind and token = p_token and ip = v_ip;
+    select * into b from public.link_attempts where kind = p_kind and token = p_token;
+    v_known := a.ok_at is not null and a.ok_at > now() - interval '30 days';
+    if a.locked_until > now() then return 'locked'; end if;
+    if b.locked_until > now() and not v_known then return 'locked'; end if;
+    return 'wrong';
+  end if;
+
+  insert into public.link_tries (kind, token, ip) values (p_kind, p_token, v_ip)
+  on conflict (kind, token, ip) do nothing;
+  select * into a from public.link_tries
+   where kind = p_kind and token = p_token and ip = v_ip for update;
+  insert into public.link_attempts (kind, token) values (p_kind, p_token)
+  on conflict (kind, token) do nothing;
+  select * into b from public.link_attempts
+   where kind = p_kind and token = p_token for update;
+  -- An address that opened the link in the last 30 days is never held by
+  -- the link's backstop, only by its own count.
+  v_known := a.ok_at is not null and a.ok_at > now() - interval '30 days';
+  if a.locked_until > now() then return 'locked'; end if;
+  if b.locked_until > now() and not v_known then return 'locked'; end if;
+
+  if p_given = p_stored then
+    if a.fails > 0 or a.locked_until is not null or a.strikes > 0
+       or coalesce(a.ok_at < now() - interval '1 day', true) then
+      update public.link_tries
+         set fails = 0, last_at = now(), locked_until = null, ok_at = now(), strikes = 0, struck_until = null
+       where kind = p_kind and token = p_token and ip = v_ip;
+    end if;
+    return 'ok';
+  end if;
+
+  a.fails := case when a.locked_until is not null or a.last_at < now() - interval '15 minutes'
+                  then 1 else a.fails + 1 end;
+  if a.fails >= 5 then
+    -- A lock again within a day of the last one ending is longer: 15
+    -- minutes, then an hour, then a day (second audit, item 16).
+    a.strikes := case when a.struck_until > now() - interval '24 hours' then a.strikes + 1 else 1 end;
+    a.locked_until := now() + case a.strikes when 1 then interval '15 minutes'
+                                             when 2 then interval '1 hour'
+                                             else interval '24 hours' end;
+    a.struck_until := a.locked_until;
+  else
+    a.locked_until := null;
+  end if;
+  update public.link_tries
+     set fails = a.fails, last_at = now(), locked_until = a.locked_until,
+         strikes = a.strikes, struck_until = a.struck_until
+   where kind = p_kind and token = p_token and ip = v_ip;
+
+  if b.locked_until is null or b.locked_until <= now() then
+    b.fails := case when b.locked_until is not null or b.last_at < now() - interval '1 hour'
+                    then 1 else b.fails + 1 end;
+    b.locked_until := case when b.fails >= 100 then now() + interval '1 hour' end;
+    update public.link_attempts set fails = b.fails, last_at = now(), locked_until = b.locked_until
+     where kind = p_kind and token = p_token;
+  end if;
+
+  if a.locked_until is not null then return 'locked'; end if;
+  if b.locked_until > now() and not v_known then return 'locked'; end if;
+  return 'wrong';
+end $$;
+revoke all on function public.link_passcode(text, text, text, text) from public, anon, authenticated;
+
+-- END OF PASSCODE TRIES COUNTED FIRST ----------------------------------------
+
+-- OWN GROUP THROUGH AN ADMIN -------------------------------------------------
+
+/* A colleague who is not an admin changes nobody's group to their own
+   advantage, their own least (security audit 2026-11-07): Team Full Access
+   could move itself into a group an admin had given an admin tool, and the
+   group's map, copied onto the row, granted it. Only an admin changes their
+   own group. Everything else is as ADMINS MADE BY ADMINS left it. */
+create or replace function public.team_admin_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  who      text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  was      boolean;
+  will     boolean;
+begin
+  if who = '' or pg_trigger_depth() > 1 or public.allowed('admin') then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+  if tg_op <> 'INSERT' then was := coalesce(old.is_admin, false) or old.role = 'admin'; end if;
+  if tg_op <> 'DELETE' then
+    will := new.role = 'admin'
+         or exists (select 1 from public.team_roles r where r.slug = new.role and r.is_admin);
+  end if;
+  if tg_op = 'DELETE' then
+    if was then
+      raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin removes an admin.';
+    end if;
+    return old;
+  end if;
+  if tg_op = 'UPDATE' and new.role is distinct from old.role and lower(old.email) = who then
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes your own group.';
+  end if;
+  if will and not coalesce(was, false) then
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin makes a colleague admin.';
+  end if;
+  if tg_op = 'UPDATE' and was and (
+       new.role is distinct from old.role
+    or new.is_admin is distinct from old.is_admin
+    or new.access is distinct from old.access
+    or new.access_until is distinct from old.access_until
+    or new.access_until_time is distinct from old.access_until_time
+    or new.active is distinct from old.active
+    or new.removed_at is distinct from old.removed_at
+    or lower(new.email) is distinct from lower(old.email)) then
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin.';
+  end if;
+  return new;
+end $$;
+revoke all on function public.team_admin_guard() from public, anon, authenticated;
+
+create or replace trigger team_admin_guard before insert or update or delete on public.team_members
+  for each row execute function public.team_admin_guard();
+
+-- END OF OWN GROUP THROUGH AN ADMIN ------------------------------------------
+
+-- ACTIVITY ACTOR STAMPED -----------------------------------------------------
+
+/* Who filed a line is the database's word (security audit 2026-11-07): a
+   page's own insert into the Activity record took its actor and its time
+   from the page, so a colleague could file a line in another's name, or on
+   another day. A line a page inserts is stamped with the address the caller
+   signed in with and the moment it arrived; a function's own line (its
+   owner the writer) and a scheduled job's keep the actor they name. */
+create or replace function public.activity_log_stamp()
+returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if current_user = 'authenticated' then
+    new.actor := coalesce(nullif(lower(auth.jwt() ->> 'email'), ''), 'unknown');
+    new.created_at := now();
+  end if;
+  return new;
+end $$;
+revoke all on function public.activity_log_stamp() from public, anon, authenticated;
+create or replace trigger activity_log_stamp before insert on public.activity_log
+  for each row execute function public.activity_log_stamp();
+
+-- END OF ACTIVITY ACTOR STAMPED ----------------------------------------------
+
+-- CLIENT EMAILS ASK CONTACTS -------------------------------------------------
+
+/* Send by email answers a client's contacts only to a colleague who may
+   read them (security audit 2026-11-07): the sheet's list of addresses is
+   Clients: Contacts', as the contacts' own read, New email's recipients and
+   a client's emails ask. Everything else is as the CLIENT DOCUMENT EMAILS
+   band left it. */
+create or replace function public.client_email_prepare(p_kind text, p_ref uuid, p_contact uuid default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  c      public.clients;
+  q      public.quotations;
+  o      public.client_documents;
+  d      public.documents;
+  k      public.client_contacts;
+  t      public.client_email_templates;
+  v_cid  uuid;
+  v_ref  text;
+  v_tit  text;
+  v_day  date;
+  v_val  date;
+  v      jsonb;
+  ppl    jsonb;
+  hours  numeric;
+  r      public.client_emails;
+  v_cc   text;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('quotation', 'offer', 'letter') then return jsonb_build_object('error', 'bad-request'); end if;
+  if not public.client_email_may(p_kind, 'work') or not public.allowed('clients.contacts', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if coalesce(public.app_setting('client_email_on', (now() at time zone 'Asia/Kuala_Lumpur')::date), 0) <> 1 then
+    return jsonb_build_object('error', 'email-off');
+  end if;
+  if p_kind = 'quotation' then
+    select * into q from public.quotations x where x.id = p_ref;
+    if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+    if q.status = 'not_proceeding' then return jsonb_build_object('error', 'void'); end if;
+    if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'unreleased'); end if;
+    if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+    v_cid := q.client_id; v_ref := q.ref; v_tit := 'Quotation';
+    v_day := (q.issued_at at time zone 'Asia/Kuala_Lumpur')::date; v_val := q.valid_until;
+  elsif p_kind = 'offer' then
+    select * into o from public.client_documents x where x.id = p_ref;
+    if o.id is null or o.kind not in ('offer', 'intent', 'cover') then return jsonb_build_object('error', 'not-found'); end if;
+    if o.voided_at is not null or o.superseded_by is not null then return jsonb_build_object('error', 'void'); end if;
+    v_cid := o.client_id; v_ref := o.number; v_tit := 'Letter of Offer'; v_day := o.issued_at;
+  else
+    select * into d from public.documents x where x.id = p_ref and x.family = 'client';
+    if d.id is null or d.client_id is null then return jsonb_build_object('error', 'not-found'); end if;
+    if d.voided_at is not null then return jsonb_build_object('error', 'void'); end if;
+    if d.source <> 'portal' then return jsonb_build_object('error', 'no-file'); end if;
+    v_cid := d.client_id; v_ref := d.serial; v_tit := coalesce(nullif(d.kind, ''), 'Letter'); v_day := d.issued_at;
+  end if;
+  select * into c from public.clients x where x.id = v_cid;
+  if c.id is null or not public.client_seen(c.id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.client_email_templates x where x.kind = p_kind;
+  if t.kind is null then return jsonb_build_object('error', 'needs-update'); end if;
+
+  /* The client's contacts holding an email, the billing contact first, then
+     the primary, then by name. */
+  select coalesce(jsonb_agg(jsonb_build_object('id', x.id, 'name', public.contact_named(x.salutation, x.name),
+           'email', btrim(x.email), 'role', x.role, 'billing', coalesce(x.id = c.bill_contact_id, false), 'primary', x.is_primary)
+           order by (x.id = c.bill_contact_id) desc nulls last, x.is_primary desc, x.name), '[]'::jsonb)
+    into ppl
+    from public.client_contacts x
+   where x.client_id = c.id and x.archived_at is null and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+  if jsonb_array_length(ppl) = 0 then return jsonb_build_object('error', 'no-email'); end if;
+  if p_contact is not null then
+    select * into k from public.client_contacts x
+     where x.id = p_contact and x.client_id = c.id and x.archived_at is null
+       and coalesce(btrim(x.email), '') ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$';
+    if k.id is null then return jsonb_build_object('error', 'bad-contact'); end if;
+  else
+    select * into k from public.client_contacts x where x.id = (ppl->0->>'id')::uuid;
+  end if;
+  -- The finance email and registered name are Billing's (audit 2026-11-04).
+  v_cc := case when public.allowed('clients.billing', 'view') then nullif(btrim(coalesce(c.finance_email, '')), '') end;
+  if v_cc is not null and (lower(v_cc) = lower(btrim(k.email)) or v_cc !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$') then v_cc := null; end if;
+
+  v := jsonb_build_object(
+    'contact name', public.contact_named(k.salutation, k.name),
+    'client name', c.name,
+    'company name', coalesce(case when public.allowed('clients.billing', 'view') then nullif(c.legal_name, '') end, c.name),
+    'document title', v_tit, 'document reference', v_ref,
+    'document date', case when v_day is null then '' else to_char(v_day, 'FMDD FMMonth YYYY') end,
+    'valid until', case when v_val is null then '' else to_char(v_val, 'FMDD FMMonth YYYY') end,
+    'sender name', coalesce(me.name, ''));
+  hours := coalesce(public.app_setting('wa_repeat_hours', (now() at time zone 'Asia/Kuala_Lumpur')::date), 24);
+  if hours > 0 then
+    select * into r from public.client_emails x
+     where x.kind = p_kind and x.ref_id = p_ref and x.status <> 'failed'
+       and x.created_at > now() - make_interval(secs => hours * 3600)
+     order by x.created_at desc limit 1;
+  end if;
+  return jsonb_build_object('ok', true,
+    'client_id', c.id, 'client', c.name,
+    'contacts', ppl,
+    'to', jsonb_build_object('id', k.id, 'name', public.contact_named(k.salutation, k.name), 'email', btrim(k.email)),
+    'cc', v_cc,
+    'reply_to', nullif(btrim(coalesce(me.email, '')), ''),
+    'values', v,
+    'subject', public.supplier_email_fill(t.subject, v),
+    'body', public.supplier_email_fill(t.body, v),
+    'document', jsonb_build_object('id', p_ref, 'kind', p_kind, 'serial', v_ref, 'title', v_tit),
+    'recent', case when r.id is null then null else jsonb_build_object('at', r.created_at, 'to', r.to_email,
+      'by', (select m.name from public.team_members m where m.id = r.sent_by)) end);
+end $$;
+revoke all on function public.client_email_prepare(text, uuid, uuid) from public, anon;
+grant execute on function public.client_email_prepare(text, uuid, uuid) to authenticated;
+
+-- END OF CLIENT EMAILS ASK CONTACTS ------------------------------------------
+
+-- ERASED COLLEAGUE WHATSAPP CLEARED ------------------------------------------
+
+/* Erasing a colleague clears their number from the WhatsApp log too
+   (security audit 2026-11-07): the reminders queued to them kept the mobile
+   and their name in the message's words, readable in Messages for twelve
+   months after the details were erased. Once `erased_at` is set, every
+   message to that colleague not on its way loses its number and words, as
+   `privacy_retention` clears them at twelve months; the name stays, as on
+   their past work. */
+create or replace function public.team_members_erased_whatsapp()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.erased_at is not null and old.erased_at is null then
+    update public.wa_outbox o
+       set to_number = '', params = '[]'::jsonb, button = null
+     where o.to_kind = 'colleague' and o.to_id = new.id and o.state <> 'sending';
+  end if;
+  return null;
+end $$;
+revoke all on function public.team_members_erased_whatsapp() from public, anon, authenticated;
+create or replace trigger team_members_erased_whatsapp after update of erased_at on public.team_members
+  for each row execute function public.team_members_erased_whatsapp();
+
+-- Those erased before today.
+update public.wa_outbox o
+   set to_number = '', params = '[]'::jsonb, button = null
+  from public.team_members m
+ where o.to_kind = 'colleague' and o.to_id = m.id and m.erased_at is not null
+   and o.state <> 'sending' and (o.to_number <> '' or o.params <> '[]'::jsonb);
+
+-- END OF ERASED COLLEAGUE WHATSAPP CLEARED -----------------------------------
+
+-- QUOTATION SENT WHEN IT WENT ------------------------------------------------
+
+/* A quotation is sent out once its message went, never while it is only
+   filed (audit 2026-11-07): a WhatsApp filed as Sending, or an email filed
+   before Resend was asked, stamped the quotation sent out, moved its lead to
+   Proposal sent and locked its edits, and a send that then failed undid
+   none of it. A WhatsApp counts once queued for the drain, sent or not
+   confirmed; an email once sent, delivered, opened or not
+   confirmed. Everything else is as QUOTATION EDITED UNTIL SENT left it. */
+create or replace function public.quotation_sent_by_message()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare v_id uuid;
+begin
+  if tg_table_name = 'wa_outbox' then
+    if new.ref_kind is distinct from 'quotation'
+       or coalesce(new.state, '') not in ('queued', 'sent', 'unknown') then return null; end if;
+  elsif new.kind is distinct from 'quotation'
+     or coalesce(new.status, '') not in ('sent', 'delivered', 'opened', 'unknown') then return null;
+  end if;
+  v_id := new.ref_id;
+  update public.quotations set sent_out_at = now() where id = v_id and sent_out_at is null;
+  return null;
+exception when others then
+  raise warning 'quotation_sent_by_message: %', sqlerrm;
+  return null;
+end $$;
+revoke all on function public.quotation_sent_by_message() from public, anon, authenticated;
+create or replace trigger wa_outbox_quotation_sent after insert or update of state on public.wa_outbox
+  for each row execute function public.quotation_sent_by_message();
+create or replace trigger client_emails_quotation_sent after insert or update of status on public.client_emails
+  for each row execute function public.quotation_sent_by_message();
+
+-- END OF QUOTATION SENT WHEN IT WENT -----------------------------------------
+
+-- FILE LINKS HELD TO THE WEB -------------------------------------------------
+
+/* A booking's file and a hand-added document's file link are web addresses,
+   never script (security audit 2026-11-07, the two leads LINKS HELD TO THE
+   WEB did not reach): `campaign_deliverables.url`, which a colleague at
+   Campaigns Work writes and the selection page and the creator's page draw
+   as a link, is held to `https://`; `documents.file_url`, typed in Add
+   existing document and opened by the console, to `http://` or `https://`.
+   Checked live on 2026-11-07 before adding them: none of 28 files or 155
+   documents fails. The pages open each only on http or https as well. */
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'campaign_deliverables_url_web') then
+    alter table public.campaign_deliverables add constraint campaign_deliverables_url_web
+      check (url ~* '^https://[^\s"''<>`\\]+$');
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'documents_file_url_web') then
+    alter table public.documents add constraint documents_file_url_web
+      check (file_url is null or file_url ~* '^https?://[^\s"''<>`\\]+$');
+  end if;
+end $$;
+
+-- END OF FILE LINKS HELD TO THE WEB ------------------------------------------
+
 select public.functions_tidy();
