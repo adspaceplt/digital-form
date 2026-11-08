@@ -1,7 +1,7 @@
 -- ===========================================================================
 -- CREATOR AND CAMPAIGN IDS — every creator a Creator ID (ADC0001), every
--- campaign a Campaign ID (ACC001), and a booking's Job reference made of the
--- two (ADC0001/ACC001), each prefix, width, next number and the reference's
+-- campaign a Campaign ID (CC001), and a booking's Job reference made of the
+-- two (ADC0001/CC001), each prefix, width, next number and the reference's
 -- shape a setting. 2026-11-08. Safe to run twice. Rollback at the foot.
 -- Mirrored byte for byte in supabase/schema.sql under the same banner;
 -- tests/sql.js compares the two.
@@ -38,7 +38,7 @@ create table if not exists public.id_formats (
 alter table public.id_formats enable row level security;
 revoke all on public.id_formats from public, anon, authenticated;
 insert into public.id_formats (kind, prefix, width, next_no, pattern) values
-  ('creator', 'ADC', 4, 1, null), ('campaign', 'ACC', 3, 1, null), ('job', null, null, null, '{creator}/{campaign}')
+  ('creator', 'ADC', 4, 1, null), ('campaign', 'CC', 3, 1, null), ('job', null, null, null, '{creator}/{campaign}')
 on conflict (kind) do nothing;
 
 alter table public.creators add column if not exists creator_code text;

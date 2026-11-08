@@ -3698,7 +3698,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   stamped by triggers). A stage it cannot date is left out.
 - Creator and campaign IDs (`2026-11-08-creator-and-campaign-ids.sql`; the
   user, 2026-11-08: "USE ADCXXXX for adspace creator, ACC for each creator
-  campaign", "dont hardcode anything"): every creator a Creator ID
+  campaign", "dont hardcode anything"; the prefix CC since the same day: "just do CC not
+  ACC else its pretty long"): every creator a Creator ID
   (`creators.creator_code`) and every campaign a Campaign ID
   (`campaigns.campaign_code`), given by trigger on insert from `id_formats`
   (RLS on, no policy, no grant: a prefix, a width and the next number a
