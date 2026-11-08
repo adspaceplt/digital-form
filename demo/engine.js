@@ -4305,7 +4305,7 @@ function cardSlugFree(name, self, email) {
 
   function idFormats() {
     if (DB.id_formats) return DB.id_formats;
-    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1 }, campaign: { prefix: 'ACC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' } };
+    DB.id_formats = { creator: { prefix: 'ADC', width: 4, next_no: 1 }, campaign: { prefix: 'CC', width: 3, next_no: 1 }, job: { pattern: '{creator}/{campaign}' } };
     idBackfill();
     return DB.id_formats;
   }

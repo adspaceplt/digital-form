@@ -8865,4 +8865,8 @@ user: "all four shows same width left right").
   change, and a booking's two IDs never do.
 - The old AKJ numbers on Bukku bills stay as they are (R3 reads them as
   earlier payments).
+- The same day the user shortened the Campaign ID: "just do CC not ACC else
+  its pretty long" (ADC9999/CC100). The default prefix is CC; the two live
+  campaigns numbered ACC001 and ACC002 an hour earlier, on no bill yet, were
+  renumbered CC001 and CC002 by hand with the code trigger held off.
 
