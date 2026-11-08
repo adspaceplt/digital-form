@@ -618,7 +618,9 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- None open.
+- `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
+  wide logo upload) fails now and then on main, then passes on a rerun
+  (2026-11-08); its wait for the preview needs finding.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside

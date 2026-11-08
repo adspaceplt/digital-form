@@ -8815,3 +8815,15 @@ or sent by a page cannot stand in for the signed-in person. The links
 already sent keep working for anyone with no sign-in, as the proposal said.
 Commissions (release 2 and 3 of the same proposal) are on hold.
 
+### 2026-11-08 · A contact's chips carry their glyphs; the ⋯ on the name's line; No emails. in its card
+The user sent a phone screenshot of a client's Account pane and asked why
+WhatsApp, which leaves the portal, looked like the other chips. The
+console's contact chips were words alone, while the client portal's
+contacts already led each with its glyph; the console now does the same
+(phone, chat bubble, envelope) on the Account pane and the Overview. The
+same screenshot showed the contact's ⋯ standing 5 to 11px below the name
+(its 34 or 44px box top aligned), now centred on the name's line as a
+service line's is, and No emails. sitting on the ground with a card's
+inset; it is the `.empty` card, the same edges as Contacts above it (the
+user: "all four shows same width left right").
+

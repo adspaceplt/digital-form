@@ -1706,7 +1706,7 @@
       /* A button, not a word run against the number with nothing between them:
          it is a thing to press and it is the same `.plink` the contact row
          and the client's own page already draw. */
-      rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:' + esc(m.phone) + '">' + esc(m.phone) + '</a>' +
+      rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:' + esc(m.phone) + '">' + reachGlyph('phone') + esc(m.phone) + '</a>' +
         (mUser ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
     }
     if (mUser) {
@@ -1715,7 +1715,7 @@
     }
     /* Every way to reach the person is the outlined contact chip, never an
        underlined word (the user, 2026-09-28). */
-    if (m.email) rows.push(['Email', '<span class="ovreach"><a class="plink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a></span>']);
+    if (m.email) rows.push(['Email', '<span class="ovreach"><a class="plink" href="mailto:' + esc(m.email) + '">' + reachGlyph('mail') + esc(m.email) + '</a></span>']);
     if (m.lang && LANG_WORD[m.lang]) rows.push(['Language', 'Prefers ' + esc(LANG_WORD[m.lang])]);
     /* Person in charge is on the identity line above and is not repeated
        here; a record that states a fact twice is a record nobody reads. */
@@ -4575,7 +4575,9 @@
       }
       var rows = (r.data && r.data.rows) || [];
       head.hidden = box.hidden = !rows.length && !mayMail();
-      if (!rows.length) { box.innerHTML = '<p class="emptyline">No emails.</p>'; return; }
+      /* The empty part is the white card every record part's empty line is
+         (`.empty`), the same edges as Contacts above it (2026-11-08). */
+      if (!rows.length) { box.innerHTML = '<div class="empty">No emails.</div>'; return; }
       box.innerHTML = '';
       var table = document.createElement('div');
       table.className = 'crm-table';
@@ -4677,12 +4679,16 @@
     if (!u) return phone || null;
     return waIsNumber(u) ? u : '@' + u;
   }
+  /* A way to reach a person carries its glyph, as the client portal's
+     contacts do (2026-11-08, the user: "Whatsapp is an external button why
+     does it look this way"): the phone, the chat bubble, the envelope. */
+  function reachGlyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   function waLink(raw, market, label) {
     var u = waHandle(raw);
     var n = u ? '@' + encodeURIComponent(u) : waNumber(raw, market);
     if (!n) return '';
     return '<a class="plink" href="https://wa.me/' + esc(n) +
-      '" target="_blank" rel="noopener">' + esc(label || 'WhatsApp') + '</a>';
+      '" target="_blank" rel="noopener">' + reachGlyph('chat') + esc(label || 'WhatsApp') + '</a>';
   }
 
   function contactRow(ct, removed) {
@@ -4705,9 +4711,9 @@
         (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
         '</span><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
-        (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
+        (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + reachGlyph('phone') + esc(ct.phone) + '</a>' : '') +
         waLink(ct.whatsapp || ct.phone, (state.client || {}).market) +
-        (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a>' : '') +
+        (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + reachGlyph('mail') + esc(ct.email) + '</a>' : '') +
       '</span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
