@@ -1539,8 +1539,8 @@
           if (!r.error && (d.error === 'lines' || d.error === 'letter')) {
             B.revises = ed; B.editing = null;
             $('qbSave').textContent = 'Create quotation';
-            $('qbMsg').textContent = (d.error === 'lines' ? 'Service lines were made from ' : 'A Letter of Offer quotes ') + ed.ref +
-              ', so it is kept. Create quotation makes its revision.';
+            $('qbMsg').textContent = (d.error === 'lines' ? 'Service lines were created from ' : 'A Letter of Offer was issued from ') + ed.ref +
+              ', so it cannot be edited. Create quotation will create a revised quotation.';
             $('qbMsg').className = 'msg warn';
             return;
           }
