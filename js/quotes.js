@@ -386,6 +386,7 @@
       Array.prototype.forEach.call(menu.querySelectorAll('[data-a]'), function (it) {
         it.addEventListener('click', function () {
           menu.hidden = true;
+          if (it.getAttribute('data-a') === 'linkcard') { linkCard(q, ctx, it, btn); return; }
           act(it.getAttribute('data-a'), q, ctx, host, btn);
         });
       });
@@ -457,9 +458,7 @@
     linkPop.hidden = true;
     if (linkBtn) { linkBtn.setAttribute('aria-expanded', 'false'); if (back) linkBtn.focus(); }
   }
-  function linkCard(q, ctx, item) {
-    var row = item.closest('.qt-row');
-    var anchorBtn = (row && row.querySelector('.kmenu-btn')) || item;
+  function linkCard(q, ctx, item, anchorBtn) {
     if (!linkPop) {
       linkPop = document.createElement('div');
       linkPop.className = 'kmenu rp-idspop qt-linkpop'; linkPop.id = 'qtLinkPop'; linkPop.hidden = true; linkPop.tabIndex = -1;
@@ -490,14 +489,17 @@
       };
     });
     linkPop.querySelector('[data-a="x"]').onclick = function () { linkShut(true); };
-    linkPop.hidden = false;
-    anchorBtn.setAttribute('aria-expanded', 'true');
-    if (window.ADspaceMenu) window.ADspaceMenu.pop(anchorBtn, linkPop, 'left');
-    try { linkPop.focus({ preventScroll: true }); } catch (e) { linkPop.focus(); }
+    /* Shown a tick later: the press on the ⋯ item is still on its way to
+       the page, whose click shuts the card. */
+    setTimeout(function () {
+      linkPop.hidden = false;
+      anchorBtn.setAttribute('aria-expanded', 'true');
+      if (window.ADspaceMenu) window.ADspaceMenu.pop(anchorBtn, linkPop, 'left');
+      try { linkPop.focus({ preventScroll: true }); } catch (e) { linkPop.focus(); }
+    }, 0);
   }
 
   function act(a, q, ctx, host, btn) {
-    if (a === 'linkcard') { linkCard(q, ctx, btn); return; }
     if (a === 'preview') { window.open('/quote/?q=' + encodeURIComponent(q.access_key) + '&preview=1', '_blank', 'noopener'); return; }
     if (a === 'link') {
       var copy = function (key) { window.ADspaceCopy.to(btn, location.origin + '/quote/?q=' + encodeURIComponent(key)); ctx.msg('qtMsg', 'Link copied.', 'ok'); };
