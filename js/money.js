@@ -352,7 +352,10 @@
       if (n === 1) name = name.replace(/^(Additional )([a-z]+[^s])s\b/i, '$1$2');
       return n + ' × ' + name;
     }));
-    return lines.filter(function (l) { return !(l.in_plan && l !== plan); });
+    /* Only the lines listed above leave the table: a one-off line a
+       quotation of 6 or 7 Nov marked in_plan keeps its own row (audit
+       2026-11-08, 2). */
+    return lines.filter(function (l) { return into.indexOf(l) < 0; });
   }
 
   window.ADspaceMoney = {

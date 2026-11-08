@@ -8827,3 +8827,28 @@ service line's is, and No emails. sitting on the ground with a card's
 inset; it is the `.empty` card, the same edges as Contacts above it (the
 user: "all four shows same width left right").
 
+### 2026-11-08 · The ponytail audit of #943 to #962, six fixes
+- How it was found: the audit since the last build (the user: "fix all
+  together with previous unmerge … merge").
+- What broke, and the fix:
+  1. The installed app's PDF panel opened files with pdf.js 3.11.174 and
+     eval on: a crafted font could run script (CVE-2024-4367), and Preview
+     shows files a colleague uploaded (a report's kept PDF). Opened with
+     `isEvalSupported: false`; `pwapdf` asserts the option.
+  2. `planFold` dropped every `in_plan` line but folded only monthly ones,
+     so a free one-off a quotation of 6 or 7 Nov marked `in_plan` showed on
+     neither the PDF nor /quote/. Only the lines folded leave the table.
+  3. Edit offered in place where only removed service lines or a voided
+     letter came from the quotation; the database counts them and refused,
+     and a refresh offered the same. The refused sheet now becomes its
+     revision (Create quotation).
+  4. The Letter of Offer fixes were held only by regular expressions;
+     `lettersql` now runs Replace twice, a chain and its deletes.
+  5. Two Replace presses on one letter with different lines both issued:
+     `issue_letter` now reads the letter it replaces `for update`
+     (`2026-11-08-replace-locks-the-letter.sql`).
+  6. Draw with AI offered no Undo when one scene missed; the redrawn
+     scenes keep their Undo, the missed count on its line.
+- Copy review: "Template name" (the user's choice, B) kept over the
+  reviewer's "Name"; the revision line reworded as reviewed.
+

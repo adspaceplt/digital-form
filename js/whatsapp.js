@@ -1536,7 +1536,7 @@
   function etEdit(t, btn) {
     var fields = [];
     if (!t) fields.push({ name: 'audience', label: 'For', choices: [['client', 'Clients'], ['supplier', 'Suppliers']], seg: true, value: 'client' });
-    fields.push({ name: 'name', label: 'Name', value: t ? t.name : '' },
+    fields.push({ name: 'name', label: 'Template name', value: t ? t.name : '' },
       { name: 'subject', label: 'Subject', value: t ? t.subject : '' },
       { name: 'body', label: 'Message', rows: 10, value: t ? t.body : '',
         note: '{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled in when the email is sent.' });
