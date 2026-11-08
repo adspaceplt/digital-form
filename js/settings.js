@@ -113,7 +113,7 @@
       return db.rpc('id_formats_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('ids');
         return parts(r.data.filter(function (f) { return f.kind !== 'job'; }).map(function (f) {
-          return (f.kind === 'creator' ? 'Creator ' : 'Campaign ') + idNext(f);
+          return (f.kind === 'creator' ? 'Next creator ' : 'Next campaign ') + idNext(f);
         }));
       });
     },
@@ -601,8 +601,8 @@
     return f.prefix + n;
   }
   var IDS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
-    'bad-prefix': 'Prefix: 1 to 6 capital letters.', 'bad-width': 'Digits: 2 to 6.',
-    'bad-next': 'Next number: 1 or more.', 'bad-pattern': 'Job reference: include {creator} and {campaign}, 40 characters at most.' };
+    'bad-prefix': 'Enter a prefix of 1 to 6 capital letters.', 'bad-width': 'Choose 2 to 6 digits.',
+    'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.' };
   function openIds() {
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
@@ -651,7 +651,8 @@
             if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
             var d = r2.data || {};
             if (d.error === 'bad-next' && d.top != null) {
-              return (k === 'creator' ? 'Creator ID' : 'Campaign ID') + ': ' + by[k].prefix + ' ' + d.top + ' is in use. Choose a next number above it.';
+              return idNext({ prefix: String(v[k + '_prefix']).trim().toUpperCase(), width: Number(v[k + '_width']), next: d.top }) +
+                ' is already used. Enter a next number above ' + d.top + '.';
             }
             if (d.error) return IDS_SAID[d.error] || 'Not saved.';
             return one(i + 1);

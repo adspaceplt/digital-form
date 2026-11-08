@@ -8592,7 +8592,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else if (da.p_kind === 'job') {
           var dT = String(da.p_pattern || '').trim();
           if (dT.length > 40 || dT.indexOf('{creator}') < 0 || dT.indexOf('{campaign}') < 0) dOut = { error: 'bad-pattern' };
-          else { if (dT !== dF.pattern) { logAct('team.changed', 'Creator IDs', dW + ': ' + dF.pattern + ' → ' + dT); dF.pattern = dT; } dOut = { ok: true }; }
+          else { if (dT !== dF.pattern) { logAct('team.changed', 'Creator and campaign IDs', dW + ': ' + dF.pattern + ' → ' + dT); dF.pattern = dT; } dOut = { ok: true }; }
         } else {
           var dP = String(da.p_prefix || '').trim().toUpperCase(), dWd = Number(da.p_width), dN = Number(da.p_next);
           var dRows = da.p_kind === 'creator' ? (DB.creators || []).map(function (c) { return c.creator_code; }) : (DB.campaigns || []).map(function (m) { return m.campaign_code; });
@@ -8607,7 +8607,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (dP !== dF.prefix) dMv.push('prefix ' + dF.prefix + ' → ' + dP);
             if (dWd !== dF.width) dMv.push('digits ' + dF.width + ' → ' + dWd);
             if (dN !== dF.next_no) dMv.push('next ' + dF.next_no + ' → ' + dN);
-            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; logAct('team.changed', 'Creator IDs', dW + ': ' + dMv.join(', ')); }
+            if (dMv.length) { dF.prefix = dP; dF.width = dWd; dF.next_no = dN; logAct('team.changed', 'Creator and campaign IDs', dW + ': ' + dMv.join(', ')); }
             dOut = { ok: true };
           }
         }

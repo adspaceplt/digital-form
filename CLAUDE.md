@@ -3708,7 +3708,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`campaign_job_ref`, the console's `jobRef`). Settings, Clients: Creator
   and campaign IDs (`team.settings`; `id_format_set`: `bad-prefix`,
   `bad-width`, `bad-next` with the `top` in use, `bad-pattern`; filed
-  `team.changed` under Creator IDs) applies to the next one made. The
+  `team.changed` under Creator and campaign IDs) applies to the next one made. The
   Creators List reads the Creator ID under the name (searched), the
   campaign head leads its meta with the Campaign ID, a booking's Terms line
   the Job reference as a copy control.

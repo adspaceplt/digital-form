@@ -3860,7 +3860,7 @@
         '<span class="kstep-label">Terms</span>' +
         '<span class="kstep-sum"><b>' + esc(money(o.rate)) + '</b>' +
           (plats ? '<span>' + esc(plats) + '</span>' : '') +
-          (jobRef(o) ? '<span>Job <button class="serial-copy" type="button" data-a="copyjob" aria-label="Copy ' +
+          (jobRef(o) ? '<span>Job reference <button class="serial-copy" type="button" data-a="copyjob" aria-label="Copy ' +
             esc(jobRef(o)) + '">' + esc(jobRef(o)) + '</button></span>' : '') + '</span>' +
         (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Edit</button>'
                  : agreed ? '<span class="kstep-note">Agreed</span>' : '') +

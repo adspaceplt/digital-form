@@ -19,7 +19,7 @@
 --   p_prefix, p_width, p_next, p_pattern)` (`team.settings`) changes them:
 --   `bad-prefix`, `bad-width`, `bad-next` (at or below a number in use under
 --   that prefix), `bad-pattern` (a job pattern without both parts); filed
---   `team.changed` under Creator IDs. A change applies to the next one made.
+--   `team.changed` under Creator and campaign IDs. A change applies to the next one made.
 -- * `campaign_job_ref(p_option)`: a booking's Job reference as the pattern
 --   in force writes it, for the team.
 -- ===========================================================================
@@ -141,7 +141,7 @@ begin
     if v_t is distinct from f.pattern then
       update public.id_formats set pattern = v_t, updated_at = now(), updated_by = me.id where kind = p_kind;
       insert into public.activity_log (actor, action, subject, detail)
-      values (me.name, 'team.changed', 'Creator IDs', v_word || ': ' || f.pattern || ' → ' || v_t);
+      values (me.name, 'team.changed', 'Creator and campaign IDs', v_word || ': ' || f.pattern || ' → ' || v_t);
     end if;
     return jsonb_build_object('ok', true);
   end if;
@@ -167,7 +167,7 @@ begin
   update public.id_formats set prefix = v_p, width = p_width, next_no = p_next, updated_at = now(), updated_by = me.id
    where kind = p_kind;
   insert into public.activity_log (actor, action, subject, detail)
-  values (me.name, 'team.changed', 'Creator IDs', v_word || ': ' || array_to_string(v_moved, ', '));
+  values (me.name, 'team.changed', 'Creator and campaign IDs', v_word || ': ' || array_to_string(v_moved, ', '));
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.id_format_set(text, text, int, bigint, text) from public, anon;
