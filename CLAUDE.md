@@ -623,7 +623,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
   Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
   (2026-10-11, the queue's task 46): Portal
-  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Industries, Follow-up limits, Details forms: a
+  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Industries, Creator and campaign IDs, Follow-up limits, Details forms: a
   client's and a supplier's link alike, Analytics, Send by email), My
   Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Reach allowance, Ad benchmarks),
@@ -3696,6 +3696,22 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Timing (`paintCampTiming`) is read from `campaigns.state_log`,
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
+- Creator and campaign IDs (`2026-11-08-creator-and-campaign-ids.sql`; the
+  user, 2026-11-08: "USE ADCXXXX for adspace creator, ACC for each creator
+  campaign", "dont hardcode anything"): every creator a Creator ID
+  (`creators.creator_code`) and every campaign a Campaign ID
+  (`campaigns.campaign_code`), given by trigger on insert from `id_formats`
+  (RLS on, no policy, no grant: a prefix, a width and the next number a
+  kind, `id_take` under the row's lock, a code held passed over), never
+  changed after (`code-fixed`); a booking's Job reference is the pattern
+  (`{creator}/{campaign}`) filled with the two, worked out on read
+  (`campaign_job_ref`, the console's `jobRef`). Settings, Clients: Creator
+  and campaign IDs (`team.settings`; `id_format_set`: `bad-prefix`,
+  `bad-width`, `bad-next` with the `top` in use, `bad-pattern`; filed
+  `team.changed` under Creator and campaign IDs) applies to the next one made. The
+  Creators List reads the Creator ID under the name (searched), the
+  campaign head leads its meta with the Campaign ID, a booking's Terms line
+  the Job reference as a copy control.
 - The Creators List:
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
     figure is the client's price with markup, never the creator's payout, so

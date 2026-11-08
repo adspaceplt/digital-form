@@ -941,7 +941,10 @@ screenshotted, and the push names any line it could not settle.
   - tasks `#WT00001`;
   - task codes `YYMMW{week}{NN}`;
   - HR `ADHR/…`;
-  - client letters `ACL/{client code}/{YYMMDD}{NN}`.
+  - client letters `ACL/{client code}/{YYMMDD}{NN}`;
+  - Creator ID `ADC0001`, Campaign ID `ACC001`, a booking's Job reference
+    `ADC0001/ACC001`, each prefix, width, next number and the reference's
+    shape a setting (`id_formats`).
 - Row ⋯ menus are placed on the viewport. A faded row fades its content, never
   its ⋯. The global click handler spares `.kcard-head`, `.kmenu` and
   `.team-act`. A modal that filters keeps one height.

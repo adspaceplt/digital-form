@@ -8852,3 +8852,17 @@ user: "all four shows same width left right").
 - Copy review: "Template name" (the user's choice, B) kept over the
   reviewer's "Name"; the revision line reworded as reviewed.
 
+### 2026-11-08 · Creator and campaign IDs (Creator R1)
+- The user: "USE ADCXXXX for adspace creator / ACC for each creator campaign /
+  ADC0001/ACC100 Creator A in Campaign 100", and "dont hardcode anything".
+  The first of five releases for creator payments and the creator page.
+- `id_formats` holds each kind's prefix, digits and next number and the Job
+  reference's shape; the triggers number each new creator and campaign, the
+  ones standing numbered in the order they were made. A next number at or
+  below one in use under that prefix is refused, naming it, so a change in
+  Settings can never hand out a code twice. A typed code is passed over.
+- The Job reference is worked out on read, never stored: the pattern may
+  change, and a booking's two IDs never do.
+- The old AKJ numbers on Bukku bills stay as they are (R3 reads them as
+  earlier payments).
+

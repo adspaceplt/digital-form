@@ -108,6 +108,15 @@
       });
     },
     /* What the Industries row holds (2026-11-04). */
+    /* Creator and campaign IDs (2026-11-08): the next of each. */
+    ids: function () {
+      return db.rpc('id_formats_list').then(function (r) {
+        if (r.error || !Array.isArray(r.data)) throw r.error || new Error('ids');
+        return parts(r.data.filter(function (f) { return f.kind !== 'job'; }).map(function (f) {
+          return (f.kind === 'creator' ? 'Next creator ' : 'Next campaign ') + idNext(f);
+        }));
+      });
+    },
     industries: function () {
       return db.rpc('industries_list').then(function (r) {
         if (r.error || !Array.isArray(r.data)) throw r.error || new Error('industries');
@@ -234,6 +243,8 @@
     add('clients', 'Clients', [
       /* The industries a client is put in (2026-11-04). */
       biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries') },
+      /* Creator and campaign IDs and the Job reference (2026-11-08). */
+      biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids') },
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
         meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
           num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
@@ -534,6 +545,7 @@
     if (a === 'demo') { openDemo(); return; }
     if (a === 'depts') { openDepts(btn); return; }
     if (a === 'industries') { openInd(btn); return; }
+    if (a === 'ids') { openIds(); return; }
     if (a === 'taxcodes') { openTax(btn); return; }
     if (a === 'bukku') { if (window.ADspaceBukku) window.ADspaceBukku.openConfig(btn, rowSay('bukku')); return; }
     if (a === 'overdue') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('overdue')); return; }
@@ -578,6 +590,82 @@
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
     }).catch(function () { rowSay('demo')('Could not load.', 'err'); });
+  }
+
+  /* ---- Creator and campaign IDs (2026-11-08) ---------------------------
+     Each kind's prefix, digits and next number, and the Job reference's
+     shape; a change applies to the next one made. */
+  function idNext(f) {
+    var n = String(f.next || 1);
+    while (n.length < Number(f.width || 0)) n = '0' + n;
+    return f.prefix + n;
+  }
+  var IDS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
+    'bad-prefix': 'Enter a prefix of 1 to 6 capital letters.', 'bad-width': 'Choose 2 to 6 digits.',
+    'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.' };
+  function openIds() {
+    db.rpc('id_formats_list').then(function (r) {
+      var list = (r && r.data) || [];
+      if (r.error || !Array.isArray(list) || !list.length) {
+        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : 'Could not load.', 'err');
+        return;
+      }
+      var by = {};
+      list.forEach(function (f) { by[f.kind] = f; });
+      var fields = [];
+      [['creator', 'Creator ID'], ['campaign', 'Campaign ID']].forEach(function (k) {
+        var f = by[k[0]] || {};
+        fields.push({ name: k[0] + '_prefix', label: 'Prefix', head: k[1], third: true, value: f.prefix || '', required: true });
+        fields.push({ name: k[0] + '_width', label: 'Digits', third: true, value: String(f.width || ''), required: true });
+        fields.push({ name: k[0] + '_next', label: 'Next number', third: true, value: String(f.next || ''), required: true });
+      });
+      fields.push({ name: 'job', label: 'Pattern', head: 'Job reference', value: (by.job || {}).pattern || '', required: true,
+        note: 'A booking reads, for example, ' + ((by.job || {}).pattern || '').replace('{creator}', idNext(by.creator || {})).replace('{campaign}', idNext(by.campaign || {})) + '.' });
+      window.ADspaceConfirm.ask({
+        title: 'Creator and campaign IDs', go: 'Save', wait: true, fields: fields,
+        check: function (v) {
+          var bad = '';
+          ['creator', 'campaign'].forEach(function (k) {
+            if (bad) return;
+            if (!/^[A-Za-z]{1,6}$/.test(String(v[k + '_prefix'] || '').trim())) bad = IDS_SAID['bad-prefix'];
+            else if (!(Number(v[k + '_width']) >= 2 && Number(v[k + '_width']) <= 6)) bad = IDS_SAID['bad-width'];
+            else if (!(Number(v[k + '_next']) >= 1)) bad = IDS_SAID['bad-next'];
+          });
+          var j = String(v.job || '').trim();
+          if (!bad && (j.length > 40 || j.indexOf('{creator}') < 0 || j.indexOf('{campaign}') < 0)) bad = IDS_SAID['bad-pattern'];
+          return bad;
+        }
+      }, function (v) {
+        var steps = ['creator', 'campaign', 'job'].filter(function (k) {
+          var f = by[k] || {};
+          if (k === 'job') return String(v.job || '').trim() !== (f.pattern || '');
+          return String(v[k + '_prefix']).trim().toUpperCase() !== f.prefix || Number(v[k + '_width']) !== Number(f.width) || Number(v[k + '_next']) !== Number(f.next);
+        });
+        function one(i) {
+          if (i >= steps.length) return Promise.resolve('');
+          var k = steps[i];
+          return db.rpc('id_format_set', k === 'job'
+            ? { p_kind: 'job', p_prefix: null, p_width: null, p_next: null, p_pattern: String(v.job || '').trim() }
+            : { p_kind: k, p_prefix: String(v[k + '_prefix']).trim().toUpperCase(), p_width: Number(v[k + '_width']),
+                p_next: Number(v[k + '_next']), p_pattern: null }).then(function (r2) {
+            if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
+            var d = r2.data || {};
+            if (d.error === 'bad-next' && d.top != null) {
+              return idNext({ prefix: String(v[k + '_prefix']).trim().toUpperCase(), width: Number(v[k + '_width']), next: d.top }) +
+                ' is already used. Enter a next number above ' + d.top + '.';
+            }
+            if (d.error) return IDS_SAID[d.error] || 'Not saved.';
+            return one(i + 1);
+          });
+        }
+        return one(0).then(function (e) {
+          if (e) return e;
+          readLine('ids');
+          rowSay('ids')(steps.length ? 'Saved.' : 'No changes.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('ids')('Could not load.', 'err'); });
   }
 
   /* ---- Public holidays (2026-10-14) ------------------------------------
