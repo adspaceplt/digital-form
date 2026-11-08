@@ -341,7 +341,7 @@
     var shown = state.creators.filter(function (c) {
       if (plat !== 'all' && !(c.creator_profiles || []).some(function (p) { return p.platform === plat; })) return false;
       if (!q) return true;
-      var hay = c.name + ' ' +
+      var hay = c.name + ' ' + (c.creator_code || '') + ' ' +
         (c.creator_profiles || []).map(function (p) { return p.handle || p.url; }).join(' ');
       return hay.toLowerCase().indexOf(q) > -1;
     });
@@ -436,7 +436,8 @@
       }).join('');
       row.innerHTML =
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
-          (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b></span>' +
+          (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
+          (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') + '</span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
         '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
@@ -1614,6 +1615,7 @@
     var meta = $('campIdMeta');
     if (!meta) return;
     var bits = [];
+    if (c.campaign_code) bits.push('<span class="crm-meta-code">' + esc(c.campaign_code) + '</span>');
     if (cl.name) bits.push(esc(cl.name));
     if (c.owner) bits.push('Person in charge: ' + esc(c.owner));
     meta.innerHTML = bits.join(' &middot; ');
@@ -1830,9 +1832,28 @@
     m[k] = [W.en.step[k], W.tone(k)]; return m;
   }, { replaced: ['Replaced', 'is-off'] });
 
+  /* A booking's Job reference is the Creator ID and the Campaign ID in the
+     shape Settings gives it (`id_formats`), read once a visit (2026-11-08). */
+  var jobPattern = null;
+  function readJobPattern(done) {
+    if (jobPattern !== null) { done(); return; }
+    db.rpc('id_formats_list').then(function (r) {
+      var job = ((r && r.data) || []).filter(function (f) { return f.kind === 'job'; })[0];
+      jobPattern = job && job.pattern ? job.pattern : '';
+      done();
+    }).catch(function () { jobPattern = ''; done(); });
+  }
+  function jobRef(o) {
+    var cr = o.creators || {}, cm = state.campaign || {};
+    if (!jobPattern || !cr.creator_code || !cm.campaign_code) return '';
+    return jobPattern.replace('{creator}', cr.creator_code).replace('{campaign}', cm.campaign_code);
+  }
+
   function loadOptions() {
-    db.from('campaign_options').select('*, creators(name, access_code, creator_profiles(platform, url))')
+    db.from('campaign_options').select('*, creators(name, access_code, creator_code, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
+        return new Promise(function (res) { readJobPattern(function () { res(r); }); });
+      }).then(function (r) {
         state.options = (r.data) || [];
         state.optionsFor = state.campaign.id;
         syncCampState();
@@ -3838,7 +3859,9 @@
         '<span class="kstep-mark" aria-hidden="true">' + (agreed ? TICK : '') + '</span>' +
         '<span class="kstep-label">Terms</span>' +
         '<span class="kstep-sum"><b>' + esc(money(o.rate)) + '</b>' +
-          (plats ? '<span>' + esc(plats) + '</span>' : '') + '</span>' +
+          (plats ? '<span>' + esc(plats) + '</span>' : '') +
+          (jobRef(o) ? '<span>Job <button class="serial-copy" type="button" data-a="copyjob" aria-label="Copy ' +
+            esc(jobRef(o)) + '">' + esc(jobRef(o)) + '</button></span>' : '') + '</span>' +
         (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Edit</button>'
                  : agreed ? '<span class="kstep-note">Agreed</span>' : '') +
       '</div>' +
@@ -4100,6 +4123,7 @@
       });
     });
 
+    on('copyjob', function () { window.ADspaceCopy.to(this, jobRef(o)); });
     on('copylink', function () {
       window.ADspaceCopy.to(this, creatorLink((o.creators || {}).access_code));
     });
