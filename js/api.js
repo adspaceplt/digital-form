@@ -158,6 +158,20 @@
     } catch (e) { return null; }
   }
 
+  /* A review or selection link opened by a signed-in contact of its client
+     (2026-11-08): the contact's name and the link's access code, so the
+     page opens with no code typed and decides under that name. Null with
+     no sign-in, for anyone else, or where the function is not there. */
+  async function portalPass(kind, token) {
+    if (!client || !token) return null;
+    try {
+      const { data: s } = await client.auth.getSession();
+      if (!s || !s.session) return null;
+      const { data, error } = await client.rpc('portal_link_pass', { p_kind: kind, p_token: token });
+      return error || !data || !data.name ? null : data;
+    } catch (e) { return null; }
+  }
+
   /* The key in a client's review link and a campaign's selection link: eight
      characters from the creator code's alphabet in lower case (no 0, 1, i,
      l, o), about 850 billion links, short enough to read aloud (the user,
@@ -252,6 +266,7 @@
     uploadAccept,
     waNumber,
     movedKey,
+    portalPass,
     configured,
     client,
     CLIENT_COLS,

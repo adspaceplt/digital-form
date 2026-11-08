@@ -361,10 +361,35 @@
   });
 
   // ---- Load ---------------------------------------------------------------
+  var portalAsked = false;
+  /* Back to the client portal, where a signed-in contact came from. */
+  function portalBack() {
+    var main = document.querySelector('main');
+    if (document.getElementById('cpPortalBack') || !main) return;
+    var a = document.createElement('a');
+    a.id = 'cpPortalBack'; a.className = 'backlink'; a.href = '/client/?tab=campaigns';
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' +
+      window.ADspaceWords.esc(t().back || 'Back');
+    main.insertBefore(a, main.firstChild);
+  }
   function load() {
     if (!db) { showState('Not connected', 'This portal is not set up.', false); return; }
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
+    /* Opened by a contact signed in to the client portal (2026-11-08): no
+       code is typed and the selection and decisions go under the
+       contact's own name. */
+    if (!portalAsked && API && API.portalPass) {
+      portalAsked = true;
+      return API.portalPass('campaign', TOKEN).then(function (pp) {
+        if (pp) {
+          if (pp.passcode) passcode = pp.passcode;
+          if (window.ADspaceDecide && window.ADspaceDecide.sign) window.ADspaceDecide.sign(pp.name);
+          portalBack();
+        }
+        return load();
+      });
+    }
     /* SST is a setting (js/money.js): read beside the campaign, never after it. */
     var rates = MON.load ? MON.load() : Promise.resolve();
     return db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode })

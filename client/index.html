@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261107h">
+<link rel="stylesheet" href="/css/portal.css?v=20261108">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
@@ -25,7 +25,7 @@
 <script src="/js/config.js?v=20261103b"></script>
 <script src="/js/demo.js?v=20261029m"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261106"></script>
+<script src="/js/words.js?v=20261108"></script>
 <script src="/js/clock.js?v=20261102a"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/grow.js?v=20261008"></script>
@@ -34,7 +34,7 @@
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261108"></script>
 <script src="/js/guide.js?v=20261014j"></script>
-<script src="/js/api.js?v=20261031w"></script>
+<script src="/js/api.js?v=20261108"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
@@ -99,6 +99,9 @@
 
     <nav class="rectabs cp-tabs" id="cpTabs" role="tablist" aria-label="Your account">
       <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true" id="tabOverview">Overview</button>
+      <button class="tab" data-pane="review" type="button" role="tab" aria-selected="false" id="tabReview" hidden>Content Review</button>
+      <button class="tab" data-pane="scripts" type="button" role="tab" aria-selected="false" id="tabScripts" hidden>Video Scripts</button>
+      <button class="tab" data-pane="campaigns" type="button" role="tab" aria-selected="false" id="tabCampaigns" hidden>Creator Campaigns</button>
       <button class="tab" data-pane="services" type="button" role="tab" aria-selected="false" id="tabServices">Services</button>
       <button class="tab" data-pane="letters" type="button" role="tab" aria-selected="false" id="tabLetters">Letters</button>
       <button class="tab" data-pane="reports" type="button" role="tab" aria-selected="false" id="tabReports" hidden>Reports</button>
@@ -161,6 +164,28 @@
           <div class="cp-card-head"><h3 id="docHead">Letters</h3></div>
           <div class="msg" id="docMsg"></div>
           <div id="docBox"></div>
+        </section>
+      </div>
+
+      <!-- One sign-in (2026-11-08): the content to review, the video scripts
+           and the creator campaigns, each opening its own page signed in.
+           Each tab is drawn once it holds something. -->
+      <div class="cp-pane" data-pane="review" role="tabpanel" aria-labelledby="tabReview" hidden>
+        <section class="panel cp-card" id="crWrap">
+          <div class="cp-card-head"><h3 id="crHead">Content Review</h3></div>
+          <div id="crBox"></div>
+        </section>
+      </div>
+      <div class="cp-pane" data-pane="scripts" role="tabpanel" aria-labelledby="tabScripts" hidden>
+        <section class="panel cp-card" id="vsWrap">
+          <div class="cp-card-head"><h3 id="vsHead">Video Scripts</h3></div>
+          <div id="vsBox"></div>
+        </section>
+      </div>
+      <div class="cp-pane" data-pane="campaigns" role="tabpanel" aria-labelledby="tabCampaigns" hidden>
+        <section class="panel cp-card" id="cmWrap">
+          <div class="cp-card-head"><h3 id="cmHead">Creator Campaigns</h3></div>
+          <div id="cmBox"></div>
         </section>
       </div>
 
@@ -235,6 +260,6 @@
 <script src="/js/confirm.js?v=20261031w"></script>
 <script src="/js/icons.js?v=20261102a"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
-<script src="/js/portal.js?v=20261105c"></script>
+<script src="/js/portal.js?v=20261108"></script>
 </body>
 </html>

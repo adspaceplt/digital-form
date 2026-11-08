@@ -8803,3 +8803,15 @@ IDs card is) with the address, Preview and Copy link, never a nested menu.
 Edit, an act most quotations take before they go out, moved onto the row
 beside Download and Preview PDF.
 
+### 2026-11-08 · The client portal on one sign-in (release 1)
+The user approved the mockup of Content Review, Video Scripts and Creator
+campaigns inside `/client/`. Each is a tab listing what the team shared,
+its rows opening the existing page in the same tab, so there is one
+renderer of each page and no second copy of the review gallery. A signed-in
+contact needs no access code there (`portal_link_pass` hands the page the
+code only for a contact of that link's client), and the database files the
+contact's own name on a decision (`portal_decider_stamp`), so a name typed
+or sent by a page cannot stand in for the signed-in person. The links
+already sent keep working for anyone with no sign-in, as the proposal said.
+Commissions (release 2 and 3 of the same proposal) are on hold.
+

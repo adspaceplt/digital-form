@@ -24,7 +24,13 @@
 
   var KEY = 'adspace_reviewer';
 
+  /* A contact signed in to the client portal decides as themselves
+     (2026-11-08): the name the portal holds, never one typed. */
+  var signed = '';
+  function sign(name) { signed = String(name || '').trim(); tell(); }
+  function isSigned() { return Boolean(signed); }
   function known() {
+    if (signed) return signed;
     try { return (localStorage.getItem(KEY) || '').trim(); } catch (e) { return ''; }
   }
   function keep(name) {
@@ -57,6 +63,7 @@
       var name = known();
       line.hidden = !name;
       if (!name) { line.innerHTML = ''; return; }
+      if (signed) { line.innerHTML = '<span class="decide-as-who">' + esc(w.as) + ' <b>' + esc(name) + '</b></span>'; return; }
       line.innerHTML = '<span class="decide-as-who">' + esc(w.as) + ' <b>' + esc(name) + '</b></span>' +
         '<button class="linkbtn" type="button" data-a="change">' + esc(w.change) + '</button>' +
         '<button class="linkbtn" type="button" data-a="forget">' + esc(w.forget) + '</button>';
@@ -186,5 +193,5 @@
     };
   }
 
-  window.ADspaceDecide = { KEY: KEY, known: known, keep: keep, forget: forget, whoLine: whoLine, nameBox: nameBox };
+  window.ADspaceDecide = { KEY: KEY, known: known, sign: sign, signed: isSigned, keep: keep, forget: forget, whoLine: whoLine, nameBox: nameBox };
 })();

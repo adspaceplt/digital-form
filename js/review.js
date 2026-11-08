@@ -1271,9 +1271,34 @@
      because three files were kept in step by hand. */
   var W = window.ADspaceWords.en;
 
+  var portalAsked = false;
+  /* Back to the client portal, where a signed-in contact came from. */
+  function portalBack() {
+    var head = document.querySelector('.topbar .brand') || null;
+    if (document.getElementById('rvPortalBack') || !head) return;
+    var a = document.createElement('a');
+    a.id = 'rvPortalBack'; a.className = 'backlink'; a.href = '/client/?tab=review';
+    a.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>' + escapeHtml(window.ADspaceWords.en.back || 'Back');
+    var main = document.querySelector('main');
+    if (main) main.insertBefore(a, main.firstChild);
+  }
   function load() {
     if (!token && API.configured) {
       showState(W.notFound, W.notFoundText);
+      return;
+    }
+    /* Opened by a contact signed in to the client portal (2026-11-08): no
+       code is typed and decisions are made under the contact's own name. */
+    if (!portalAsked && API.portalPass) {
+      portalAsked = true;
+      API.portalPass('review', token).then(function (pp) {
+        if (pp) {
+          if (pp.passcode) passcode = pp.passcode;
+          if (window.ADspaceDecide && window.ADspaceDecide.sign) window.ADspaceDecide.sign(pp.name);
+          portalBack();
+        }
+        load();
+      });
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {

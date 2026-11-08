@@ -92,7 +92,12 @@
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'Requested change', downgrade: 'Requested change', cancel: 'Reason (optional)', details: 'Details to update' },
       send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'Please describe the change required.', company: 'Company',
-      tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
+      tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
+        services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
+      posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
+      toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved',
+      noPosts: 'No posts', shoot: 'Shoot', noMonth: 'Month not set',
+      scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
       lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
     },
@@ -126,12 +131,17 @@
       meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论', to: '至',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
-      review: '内容审阅', open: '打开', campaign: '创作者推广',
+      review: '内容审阅', open: '打开', campaign: '创作者项目',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请描述所需的更改。', company: '公司',
-      tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
+      tabs: { overview: '概览', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
+        services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
+      posts: function (n) { return n + '篇帖子'; },
+      toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准',
+      noPosts: '暂无帖子', shoot: '拍摄', noMonth: '未定月份',
+      scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
       lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
     }
@@ -330,7 +340,7 @@
      through the tabs and a refresh lands on the one that was open. Reports and
      Meetings draw once there is one; an address naming a tab not drawn yet
      opens it as soon as it is. */
-  var PANES = ['overview', 'services', 'letters', 'reports', 'meetings', 'account'];
+  var PANES = ['overview', 'review', 'scripts', 'campaigns', 'services', 'letters', 'reports', 'meetings', 'account'];
   var pane = 'overview';
   var wantPane = null;
   function paneFromUrl() {
@@ -586,6 +596,91 @@
       box.innerHTML = ''; box.appendChild(tb);
     });
   }
+  // ---- One sign-in: Content Review, Video Scripts, Creator campaigns -------
+  /* What the team shares with the client, a tab each, every row opening its
+     own page in this tab, signed in: no access code and no name to type
+     (the user, 2026-11-08, approving the portal's release 1). Each tab is
+     drawn once it holds something; a refused read leaves the tab out. */
+  function monthWord(p) {
+    if (!p) return t().noMonth;
+    var m = /^(\d{4})-(\d{2})/.exec(p);
+    if (!m) return p;
+    return lang === 'zh' ? m[1] + '年' + Number(m[2]) + '月' : MON_EN[Number(m[2]) - 1] + ' ' + m[1];
+  }
+  function openCell(w, url) {
+    return '<span class="team-act cp-go"><a class="btn btn-sm" href="' + esc(url) + '">' + esc(w.open) + '</a></span>';
+  }
+  function paintWork(w, c, feed) {
+    var camps = (feed && feed.campaigns) || [];
+    var cmBox = $('cmBox');
+    tabShown('campaigns', camps.length > 0);
+    if (cmBox) {
+      cmBox.innerHTML = '';
+      if (camps.length) {
+        var ctb = table('');
+        camps.forEach(function (m) {
+          var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
+          nm = String(nm == null ? '' : nm).trim() || w.untitled;
+          var row = document.createElement('div');
+          row.className = 'svc-row cp-work-row';
+          row.innerHTML = '<span class="svc-name"><b>' + esc(nm) + '</b><small>' + parts([w.campaign]) + '</small></span>' +
+            '<span class="svc-state">' + chip(w.campState[m.state] || '', m.state === 'completed' ? 'is-ok' : (m.state === 'open' ? 'is-warn' : 'is-live')) + '</span>' +
+            openCell(w, '/creators/?k=' + encodeURIComponent(m.token));
+          ctb.appendChild(row);
+        });
+        cmBox.appendChild(ctb);
+      }
+    }
+    if (!c.id) return;
+    db.rpc('portal_work', { p_client: c.id }).then(function (r) {
+      var d = (!r.error && r.data && !r.data.error) ? r.data : {};
+      var rv = d.review, sets = (rv && rv.sets) || [];
+      var waiting = sets.reduce(function (n, x) { return n + (x.waiting || 0); }, 0);
+      tabShown('review', sets.length > 0);
+      var rt = tabOf('review');
+      if (rt) rt.innerHTML = esc(w.tabs.review) + (waiting ? ' <span class="tab-n is-err">' + waiting + '</span>' : '');
+      var crBox = $('crBox');
+      if (crBox) {
+        crBox.innerHTML = '';
+        if (sets.length) {
+          var rtb = table('');
+          sets.forEach(function (x) {
+            var st = x.waiting ? chip(w.toReview(x.waiting), 'is-warn') : x.changes ? chip(w.changesAsked, 'is-warn') :
+              x.posts ? chip(w.allApproved, 'is-ok') : chip(w.noPosts, 'is-off');
+            var row = document.createElement('div');
+            row.className = 'svc-row cp-work-row';
+            row.innerHTML = '<span class="svc-name"><b>' + esc(x.title || '') + '</b><small>' +
+              parts([monthWord(x.period), w.posts(x.posts || 0)]) + '</small></span>' +
+              '<span class="svc-state">' + st + '</span>' +
+              openCell(w, '/review/?k=' + encodeURIComponent(rv.token) + '#s-' + String(x.id).slice(0, 8));
+            rtb.appendChild(row);
+          });
+          crBox.appendChild(rtb);
+        }
+      }
+      var sc = d.scripts, list = (sc && sc.list) || [];
+      tabShown('scripts', list.length > 0);
+      var vsBox = $('vsBox');
+      if (vsBox) {
+        vsBox.innerHTML = '';
+        if (list.length) {
+          var stb = table('');
+          list.forEach(function (x) {
+            var shoot = x.shoot_on ? w.shoot + ' ' + niceDate(x.shoot_on) : '';
+            var row = document.createElement('div');
+            row.className = 'svc-row cp-work-row';
+            row.innerHTML = '<span class="svc-name"><b>' + esc([x.code, x.title].filter(Boolean).join(' · ')) + '</b><small>' +
+              parts([(w.scriptKind || {})[x.kind] || '', monthWord(x.period), shoot]) + '</small></span>' +
+              '<span class="svc-state"></span>' +
+              openCell(w, '/script/?k=' + encodeURIComponent(sc.key) + '#' + encodeURIComponent(x.id));
+            stb.appendChild(row);
+          });
+          vsBox.appendChild(stb);
+        }
+      }
+    }).catch(function () { tabShown('review', false); tabShown('scripts', false); });
+  }
+
   /* A failed read is never drawn as nothing (js/state.js): a refusal keeps
      the Overview's card with the cover's words, while a database without the
      function (PGRST202) reads as none, as before (the client pages audit,
@@ -818,6 +913,9 @@
     /* An Overview card's way to its tab: the console Overview's own control. */
     Array.prototype.forEach.call(document.querySelectorAll('.cp-card .ovgo-word'), function (x) { x.textContent = w.viewAll; });
     PANES.forEach(function (k) { var b = tabOf(k); if (b) b.textContent = w.tabs[k]; });
+    ['crHead:review', 'vsHead:scripts', 'cmHead:campaigns'].forEach(function (p) {
+      var a = p.split(':'); if ($(a[0])) $(a[0]).textContent = w.tabs[a[1]];
+    });
     if (!feed.__shown) { feed.__shown = true; showPane(paneFromUrl(), false); }
     $('ovRequestWord').textContent = w.requestChange;
 
@@ -1032,6 +1130,7 @@
 
     paintMeetings(w, c);
     paintReports(w, c);
+    paintWork(w, c, feed);
 
     // Engagements: the two client pages, opened with their own links.
     var eng = [];
@@ -1051,7 +1150,7 @@
         var row = document.createElement('div');
         row.className = 'svc-row cp-eng-row';
         row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + parts([e.sub]) + '</small>' : '') + '</span>' +
-          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(w.open) + ' ' + EXT + '</a>';
+          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '">' + esc(w.open) + '</a>';
         etb.appendChild(row);
       });
       ebox.innerHTML = ''; ebox.appendChild(etb);

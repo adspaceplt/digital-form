@@ -53,6 +53,7 @@
     uploadTooLarge: 'A file is over the {n} MB limit.',
     // The name decisions are recorded under (js/decide.js, 2026-10-08).
     decideAs: 'Deciding as',
+    back: 'Back',
     decideChange: 'Change',
     decideForget: 'Forget',
     decideSave: 'Save',
@@ -148,6 +149,7 @@
     uploadSize: '{file}超过{n}MB的上限。',
     uploadTooLarge: '有文件超过{n}MB的上限。',
     decideAs: '当前审批人',
+    back: '返回',
     decideChange: '更改',
     decideForget: '清除',
     decideSave: '保存',
