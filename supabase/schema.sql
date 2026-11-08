@@ -102366,7 +102366,7 @@ alter table public.creator_email_templates enable row level security;
 revoke all on table public.creator_email_templates from public, anon, authenticated;
 insert into public.creator_email_templates (purpose, subject, body, to_email) values
   ('received', 'Payment details received: {reference}',
-   E'Dear {creator name},\n\nThank you. We have received your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', null),
+   E'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', null),
   ('review', 'Payment details to review: {creator id} {creator name}',
    E'{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', 'ap@adspacestudios.com'),
   ('approved', 'Payment details approved: {reference}',
@@ -102623,7 +102623,7 @@ begin
   returning * into v_new;
   insert into public.activity_log (actor, action, subject, detail)
   values ('Creator page', 'creator.updated', cr.name,
-          coalesce(cr.creator_code || ' · ', '') || 'Payment details sent · ' || v_new.ref || ' · ' ||
+          coalesce(cr.creator_code || ' · ', '') || 'Payment details submitted · ' || v_new.ref || ' · ' ||
           public.creator_pay_method(v_new.method, v_new.bank) || ' ending ' || right(v_new.account, 4));
   perform public.creator_mail_queue('received', v_new.id);
   perform public.creator_mail_queue('review', v_new.id);
@@ -102743,7 +102743,7 @@ begin
       v_moved := v_moved || (v_word ||
         case when t.on_send is distinct from coalesce((x->>'on')::boolean, true)
              then ': ' || case when t.on_send then 'Sent → Not sent' else 'Not sent → Sent' end
-             when t.to_email is distinct from v_to then ': finance address changed'
+             when t.to_email is distinct from v_to then ': finance email changed'
              else ': wording changed' end);
       update public.creator_email_templates y set on_send = coalesce((x->>'on')::boolean, true), subject = btrim(x->>'subject'),
         body = btrim(x->>'body'), to_email = v_to, updated_at = now(), updated_by = me.id where y.purpose = t.purpose;

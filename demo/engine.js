@@ -9149,7 +9149,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
     function cpTpl() {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
-        { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you. We have received your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
         { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
       return DB.creator_email_templates;
@@ -9242,7 +9242,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             cpRef = cpRun ? cpRef.replace('{' + cpRun + '}', (new Array(cpRun.length + 1).join('0') + cpSeq).slice(-Math.max(cpRun.length, String(cpSeq).length))) : cpRef + cpSeq;
             var cpNew = Object.assign({ id: nid('cp'), creator_id: cpC.id, seq: cpSeq, ref: cpRef, status: 'pending', created_at: new Date().toISOString() }, cpK.values);
             cpReqs.push(cpNew);
-            logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details sent · ' + cpRef + ' · ' +
+            logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Payment details submitted · ' + cpRef + ' · ' +
               cpMethod(cpNew.method, cpNew.bank) + ' ending ' + cpNew.account.slice(-4));
             DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
             cpQueue('received', cpNew); cpQueue('review', cpNew);
@@ -9301,7 +9301,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (t.purpose !== 'review') to = null;
             if (t.on_send !== on || t.subject !== x.subject.trim() || t.body !== x.body.trim() || (t.to_email || null) !== to) {
               var w = ({ received: 'Details received', review: 'Details to review', approved: 'Details approved' })[t.purpose];
-              cpMv.push(w + (t.on_send !== on ? ': ' + (t.on_send ? 'Sent → Not sent' : 'Not sent → Sent') : (t.to_email || null) !== to ? ': finance address changed' : ': wording changed'));
+              cpMv.push(w + (t.on_send !== on ? ': ' + (t.on_send ? 'Sent → Not sent' : 'Not sent → Sent') : (t.to_email || null) !== to ? ': finance email changed' : ': wording changed'));
               t.on_send = on; t.subject = x.subject.trim(); t.body = x.body.trim(); t.to_email = to; t.updated_at = new Date().toISOString(); t.updated_by = opsMe().name;
             }
           }

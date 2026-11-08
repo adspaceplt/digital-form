@@ -88,12 +88,12 @@
       payHead: 'Payment details',
       payGo: 'Submit details', payChange: 'Change details',
       payNone: 'Please submit your payment details before your first payment.',
-      payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Not approved', payChangePending: 'Change under review',
+      payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Declined', payChangePending: 'Change under review',
       paySentOn: 'Submitted on {d}', payAgain: 'Please submit your details again.',
       payTo: 'Pay to', payMethod: 'Method', payAccount: 'Account', payEnding: 'Ending {n}',
       payBilling: 'Billing as', payName: 'Legal name', payEmail: 'Email',
       payHeads: { billing: 'Billing', payment: 'Payment', contact: 'Contact' },
-      payKinds: { nric: 'Malaysian NRIC', passport: 'Passport', brn: 'Company BRN' },
+      payKinds: { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' },
       payIdLabel: { nric: 'NRIC number', passport: 'Passport number', brn: 'Business registration number (12 digits)' },
       payNameLabel: { nric: 'Name as on NRIC', passport: 'Name as on passport', brn: 'Registered company name' },
       payTin: 'Tax identification number (TIN)', payOptional: 'Optional', payAddress: 'Billing address',
@@ -103,8 +103,9 @@
       payPayee: 'Account holder name', payWhatsapp: 'WhatsApp number',
       payKeep: 'Leave blank to keep the number ending {n}.',
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
-      paySent: 'Submitted. ADspace will review your details and inform you by email.',
-      payBad: { bill_kind: 'Choose how you are billed.', id_no: 'Enter a valid number.', legal_name: 'Enter the legal name.',
+      paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
+      payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC number.', passport: 'Enter a valid passport number.', brn: 'Enter a valid 12-digit registration number.' },
+        legal_name: { nric: 'Enter the name as on your NRIC.', passport: 'Enter the name as on your passport.', brn: 'Enter the registered company name.' },
         tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
         method: 'Choose a payment method.', bank: 'Choose a bank.', account: 'Enter a valid account number.',
         payee: 'Enter the account holder name.', email: 'Enter a valid email address.', whatsapp: 'Enter a valid WhatsApp number.',
@@ -187,23 +188,24 @@
       payHead: '付款资料',
       payGo: '提交资料', payChange: '更改资料',
       payNone: '首次付款前，请提交您的付款资料。',
-      payPending: '审核中', payApproved: '已核准', payDeclined: '未核准', payChangePending: '更改审核中',
+      payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
       paySentOn: '提交于{d}', payAgain: '请重新提交您的资料。',
       payTo: '收款人', payMethod: '付款方式', payAccount: '账户', payEnding: '尾号{n}',
       payBilling: '开票身份', payName: '法定名称', payEmail: '电邮',
       payHeads: { billing: '开票资料', payment: '收款资料', contact: '联络资料' },
-      payKinds: { nric: '马来西亚身份证', passport: '护照', brn: '公司注册号' },
+      payKinds: { nric: '个人（身份证）', passport: '个人（护照）', brn: '公司' },
       payIdLabel: { nric: '身份证号码', passport: '护照号码', brn: '公司注册号（12位数字）' },
       payNameLabel: { nric: '身份证上的姓名', passport: '护照上的姓名', brn: '公司注册名称' },
       payTin: '税务识别号（TIN）', payOptional: '选填', payAddress: '账单地址',
       payCurrency: '货币', payMethods: { bank: '银行转账', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go 电子钱包' },
       payBank: '银行', payChooseBank: '请选择银行',
-      payAcctLabel: { bank: '银行账号', duitnow: 'DuitNow ID', paynow: 'PayNow ID（手机号码或UEN）', tng: 'Touch \u2019n Go 电子钱包手机号码' },
+      payAcctLabel: { bank: '银行账号', duitnow: 'DuitNow ID', paynow: 'PayNow ID（手机号码或 UEN）', tng: 'Touch \u2019n Go 电子钱包手机号码' },
       payPayee: '账户持有人姓名', payWhatsapp: 'WhatsApp号码',
       payKeep: '留空即保留尾号为{n}的号码。',
-      payConfirm: '本人确认以上资料正确无误，并授权ADSPACE PLT将款项付至此账户。',
-      paySent: '已提交。ADspace审核后将以电邮通知您。',
-      payBad: { bill_kind: '请选择开票身份。', id_no: '请输入有效号码。', legal_name: '请输入法定名称。',
+      payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
+      paySent: '已提交。ADspace 审核通过后将以电邮通知您。',
+      payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: '请输入有效的12位公司注册号。' },
+        legal_name: { nric: '请输入身份证上的姓名。', passport: '请输入护照上的姓名。', brn: '请输入公司注册名称。' },
         tin: '请输入有效的TIN，或留空。', address: '请输入账单地址。', currency: '请选择货币。',
         method: '请选择付款方式。', bank: '请选择银行。', account: '请输入有效账号。',
         payee: '请输入账户持有人姓名。', email: '请输入有效的电邮地址。', whatsapp: '请输入有效的WhatsApp号码。',
@@ -1110,7 +1112,8 @@
     Array.prototype.forEach.call($('payFields').querySelectorAll('.msg'), function (el) { el.textContent = ''; el.className = 'msg'; });
     var wrong = function (k) {
       var el = $('pf_' + k), m = $('pf_' + k + 'Msg');
-      if (m) { m.textContent = T0.payBad[k] || T0.payFail; m.className = 'msg err'; }
+      var said = T0.payBad[k]; if (said && typeof said === 'object') said = said[payTyped.bill_kind];
+      if (m) { m.textContent = said || T0.payFail; m.className = 'msg err'; }
       if (el) { el.setAttribute('aria-invalid', 'true'); try { el.focus(); } catch (e) {} }
     };
     if (!payTyped.confirm) { wrong('confirm'); return; }

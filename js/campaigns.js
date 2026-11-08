@@ -558,12 +558,12 @@
      Work (`creator_pay_decide`), a decline asking its reason, which the
      creator reads. */
   var payFor = null, payRows = null, payOpener = null;
-  var PAY_KIND = { nric: 'Malaysian NRIC', passport: 'Passport', brn: 'Company BRN' };
+  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
   var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved' };
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
-    'not-found': 'These details no longer exist.', decided: 'These details were decided by someone else. The latest is now shown.',
+    'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
     'no-note': 'Enter a reason.', 'too-long': 'Enter a reason of up to 300 characters.' };
   function openPayDetails(c, opener) {
     payFor = c; payRows = null; payOpener = opener || null;
@@ -607,7 +607,7 @@
           fact('Billing address', cur.address) +
           fact('Currency', cur.currency) +
           fact('Method', cur.method_word) +
-          fact(cur.method === 'bank' ? 'Account no.' : 'Account', cur.account || 'Ending ' + cur.account_end) +
+          fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
           fact('Account holder', cur.payee) +
           fact('Email', cur.email) +
           fact('WhatsApp', cur.whatsapp) +
@@ -623,7 +623,7 @@
           d.emails.map(function (e) {
             return '<div><dt>' + esc(PAY_MAIL[e.purpose] || e.purpose) + '</dt><dd>' + esc(day(e.created_at)) + ' · ' +
               esc(window.ADspaceWords.en.mailStatus ? window.ADspaceWords.en.mailStatus(e.status) : ({ queued: 'Queued', sending: 'Sending', sent: 'Sent',
-                delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced', failed: 'Failed', complained: 'Complained', unknown: 'Not confirmed' })[e.status] || e.status) +
+                delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced', failed: 'Not sent', complained: 'Marked as spam', unknown: 'Not confirmed' })[e.status] || e.status) +
               '</dd></div>';
           }).join('') + '</dl></section>';
       }
@@ -656,7 +656,7 @@
   });
   $('cpayDecline').addEventListener('click', function () {
     window.ADspaceConfirm.ask({ title: 'Decline payment details?', go: 'Decline', wait: true,
-      body: 'The creator reads the reason and is asked to submit their details again.',
+      body: 'The creator will see the reason and be asked to submit their details again.',
       field: { name: 'note', label: 'Reason', rows: 3, maxlength: 300 } }, function (v) {
       return decidePay(false, String((v && v.note) || v || '').trim());
     });
