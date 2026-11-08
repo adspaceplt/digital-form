@@ -85,8 +85,32 @@
       linkTaken: 'This profile is registered to another creator. Please contact your ADspace account manager.',
       linkNone: 'Keep at least one profile link.',
       linkFail: 'Not saved. Please try again.',
-      payHead: 'Payment details', payLine: 'Please complete your payment details.',
-      payGo: 'Fill in the form',
+      payHead: 'Payment details',
+      payGo: 'Submit details', payChange: 'Change details',
+      payNone: 'Please submit your payment details before your first payment.',
+      payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Not approved', payChangePending: 'Change under review',
+      paySentOn: 'Submitted on {d}', payAgain: 'Please submit your details again.',
+      payTo: 'Pay to', payMethod: 'Method', payAccount: 'Account', payEnding: 'Ending {n}',
+      payBilling: 'Billing as', payName: 'Legal name', payEmail: 'Email',
+      payHeads: { billing: 'Billing', payment: 'Payment', contact: 'Contact' },
+      payKinds: { nric: 'Malaysian NRIC', passport: 'Passport', brn: 'Company BRN' },
+      payIdLabel: { nric: 'NRIC number', passport: 'Passport number', brn: 'Business registration number (12 digits)' },
+      payNameLabel: { nric: 'Name as on NRIC', passport: 'Name as on passport', brn: 'Registered company name' },
+      payTin: 'Tax identification number (TIN)', payOptional: 'Optional', payAddress: 'Billing address',
+      payCurrency: 'Currency', payMethods: { bank: 'Bank transfer', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go eWallet' },
+      payBank: 'Bank', payChooseBank: 'Choose a bank',
+      payAcctLabel: { bank: 'Account number', duitnow: 'DuitNow ID', paynow: 'PayNow ID (mobile number or UEN)', tng: 'Touch \u2019n Go eWallet mobile number' },
+      payPayee: 'Account holder name', payWhatsapp: 'WhatsApp number',
+      payKeep: 'Leave blank to keep the number ending {n}.',
+      payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
+      paySent: 'Submitted. ADspace will review your details and inform you by email.',
+      payBad: { bill_kind: 'Choose how you are billed.', id_no: 'Enter a valid number.', legal_name: 'Enter the legal name.',
+        tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
+        method: 'Choose a payment method.', bank: 'Choose a bank.', account: 'Enter a valid account number.',
+        payee: 'Enter the account holder name.', email: 'Enter a valid email address.', whatsapp: 'Enter a valid WhatsApp number.',
+        confirm: 'Please tick to confirm.' },
+      payTooMany: 'Too many submissions today. Please try again tomorrow.',
+      payFail: 'Not submitted. Please try again.',
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Posted on',
       countPeriod: 'Results period: {a} to {b}', periodWait: 'ADspace will set the results period shortly.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
@@ -160,8 +184,32 @@
       rateHead: '合作体验', foldHead: '合作详情',
       rateStar: function (n) { return n + '星（满分5星）'; },
       rateThanks: '感谢您的评分。',
-      payHead: '付款资料', payLine: '请填写您的付款资料。',
-      payGo: '填写表单',
+      payHead: '付款资料',
+      payGo: '提交资料', payChange: '更改资料',
+      payNone: '首次付款前，请提交您的付款资料。',
+      payPending: '审核中', payApproved: '已核准', payDeclined: '未核准', payChangePending: '更改审核中',
+      paySentOn: '提交于{d}', payAgain: '请重新提交您的资料。',
+      payTo: '收款人', payMethod: '付款方式', payAccount: '账户', payEnding: '尾号{n}',
+      payBilling: '开票身份', payName: '法定名称', payEmail: '电邮',
+      payHeads: { billing: '开票资料', payment: '收款资料', contact: '联络资料' },
+      payKinds: { nric: '马来西亚身份证', passport: '护照', brn: '公司注册号' },
+      payIdLabel: { nric: '身份证号码', passport: '护照号码', brn: '公司注册号（12位数字）' },
+      payNameLabel: { nric: '身份证上的姓名', passport: '护照上的姓名', brn: '公司注册名称' },
+      payTin: '税务识别号（TIN）', payOptional: '选填', payAddress: '账单地址',
+      payCurrency: '货币', payMethods: { bank: '银行转账', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go 电子钱包' },
+      payBank: '银行', payChooseBank: '请选择银行',
+      payAcctLabel: { bank: '银行账号', duitnow: 'DuitNow ID', paynow: 'PayNow ID（手机号码或UEN）', tng: 'Touch \u2019n Go 电子钱包手机号码' },
+      payPayee: '账户持有人姓名', payWhatsapp: 'WhatsApp号码',
+      payKeep: '留空即保留尾号为{n}的号码。',
+      payConfirm: '本人确认以上资料正确无误，并授权ADSPACE PLT将款项付至此账户。',
+      paySent: '已提交。ADspace审核后将以电邮通知您。',
+      payBad: { bill_kind: '请选择开票身份。', id_no: '请输入有效号码。', legal_name: '请输入法定名称。',
+        tin: '请输入有效的TIN，或留空。', address: '请输入账单地址。', currency: '请选择货币。',
+        method: '请选择付款方式。', bank: '请选择银行。', account: '请输入有效账号。',
+        payee: '请输入账户持有人姓名。', email: '请输入有效的电邮地址。', whatsapp: '请输入有效的WhatsApp号码。',
+        confirm: '请勾选确认。' },
+      payTooMany: '今日提交次数过多，请明天再试。',
+      payFail: '未能提交，请重试。',
       ended: '此合作已结束。',
       nextUp: {
         confirmed: '我们会与您确认拍摄日期。',
@@ -288,7 +336,7 @@
       feed = d;
       // The code has proved itself: the media pass first, then the files.
       var M = window.ADspaceMedia;
-      return (M && M.pass ? M.pass({ creator: c }) : Promise.resolve()).then(function () {
+      return Promise.all([M && M.pass ? M.pass({ creator: c }) : Promise.resolve(), loadPay()]).then(function () {
         paint();
         follow();
       });
@@ -302,7 +350,7 @@
     following = false;
     var b = $('pushBtn'); if (b) b.hidden = true;
     if (window.ADspacePush) window.ADspacePush.shut();
-    try { localStorage.removeItem(KEY); sessionStorage.removeItem(DRAFTS + code); } catch (e) {} drafts = {}; code = ''; feed = null;
+    try { localStorage.removeItem(KEY); sessionStorage.removeItem(DRAFTS + code); } catch (e) {} drafts = {}; code = ''; feed = null; pay = null;
   }
 
   /* Notifications on this device for this creator (js/push.js), offered once
@@ -339,6 +387,7 @@
     $('noWorkTitle').textContent = t().none;
     $('noWorkText').textContent = t().noneText;
 
+    paintPay();
     paintQueue(rows);
   }
 
@@ -639,7 +688,9 @@
        2026-10-08 for every step; ux-audit CREATOR-1, 2026-10-14). A finished
        booking keeps them, read only, in its fold. */
     var owedPost = !dead && (b.state === 'scheduled' || b.state === 'posted');
-    var postBlocks = (postsDue(b.state) ? postsHtml(b) : '') + (payDue(b.state) ? payHtml() : '');
+    /* Payment details are the page's own card (2026-11-08), asked once,
+       never again on each booking. */
+    var postBlocks = postsDue(b.state) ? postsHtml(b) : '';
     var rest = dead ? '' :
         (done ? '' : journeyHtml(b)) +
         (owed ? '<div class="cx-nextup"><p class="cx-eyebrow cx-quietlabel">' + esc(t().nextUpWord) + '</p>' +
@@ -672,9 +723,6 @@
 
     if (b.can_deliver) wireDeliver(card, b);
     if (postsDue(b.state)) wirePosts(card, b);
-    if (payDue(b.state)) {
-      card.querySelector('[data-a="pay"]').setAttribute('href', (window.ADSPACE_ORG && window.ADSPACE_ORG.ap01) || '/ap01.html');
-    }
     if (b.state === 'completed') wireRate(card, b);
     return card;
   }
@@ -872,15 +920,9 @@
     });
   }
 
-  /* The payment form is named once the work is approved, not the moment it is
-     handed in: a creator who has to reshoot would otherwise have filed payment
-     details against work nobody has accepted, and the correction lands in the
-     ledger. It leaves again at `completed`, because by then the form has been
-     filled and the booking is closed: a standing call to action on a finished
-     job reads as something still owed. */
-  /* Payment is asked for once the post is out, never on the draft's
-     approval alone: "Approved" beside a payment form read as the payment
-     being approved (the user, 2026-09-28). */
+  /* Once the post is out its own Save is no longer the booking's one step,
+     so it is drawn tonal. Payment details are the page's own card
+     (2026-11-08), asked once from the first booking, never on a booking. */
   function payDue(s) { return s === 'posted'; }
 
   /* What the last block on a finished booking asks. The job is over and the
@@ -932,10 +974,162 @@
     });
   }
 
-  function payHtml() {
-    return '<div class="booking-pay"><div class="kstep-title">' + esc(t().payHead) + '</div>' +
-      '<p>' + esc(t().payLine) + '</p>' +
-      '<a class="btn btn-go" data-a="pay" target="_blank" rel="noopener">' + esc(t().payGo) + '</a></div>';
+  /* ---- Payment details (2026-11-08) --------------------------------------
+     Asked once, from the first booking (`creator_pay_form` answers `due`),
+     read back as approved, and changed through the same form, which goes
+     back for approval. The ID and account numbers come back as their last
+     four alone; one left blank keeps the number held. */
+  var pay = null;
+  var BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
+    'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
+    '[SG] Maybank', '[SG] Bank of China'];
+  var METHODS = { MYR: ['bank', 'duitnow', 'tng'], SGD: ['bank', 'paynow'] };
+  function loadPay() {
+    if (!db || !code) return Promise.resolve();
+    return db.rpc('creator_pay_form', { p_code: code }).then(function (r) {
+      var d = r.data;
+      pay = !r.error && d && d.ok ? d : null;
+      paintPay();
+    }).catch(function () { pay = null; paintPay(); });
+  }
+  function payDay(ts) { return ADspaceClock.date(ts, { zh: lang === 'zh' }); }
+  function paintPay() {
+    var box = $('payBox');
+    if (!box) return;
+    box.hidden = !(pay && pay.due);
+    if (box.hidden) return;
+    var T0 = t(), last = pay.last, paid = pay.paid;
+    $('payTitle').textContent = T0.payHead;
+    /* Each part of the line held whole, breaking only between parts. */
+    var part = function (html, first) { return '<span class="crpay-part">' + (first ? '' : '<span class="crpay-sep"> · </span>') + html + '</span>'; };
+    var chip = function (tone, word) { return part('<span class="chip-state ' + tone + '">' + esc(word) + '</span>', true); };
+    var line;
+    if (!last) line = esc(T0.payNone);
+    else if (last.status === 'pending') line = chip('is-warn', paid ? T0.payChangePending : T0.payPending) +
+      part(esc(fill(T0.paySentOn, { d: payDay(last.created_at) }))) + part(esc(last.ref));
+    else if (last.status === 'declined') line = chip('is-danger', T0.payDeclined) + part(esc(last.note ? last.note : T0.payAgain));
+    else line = chip('is-ok', T0.payApproved) + part(esc((paid || last).ref));
+    $('payLine').innerHTML = line;
+    var asks = !last || last.status === 'declined';
+    $('payEdit').textContent = asks && !paid ? T0.payGo : T0.payChange;
+    $('payEdit').className = 'btn btn-sm' + (asks ? ' btn-primary' : '');
+    var f = $('payFacts');
+    f.hidden = !paid;
+    if (paid) {
+      f.innerHTML = [
+        [T0.payTo, paid.payee],
+        [T0.payMethod, [T0.payMethods[paid.method] || paid.method, paid.bank]],
+        [T0.payAccount, fill(T0.payEnding, { n: paid.account_end })],
+        [T0.payBilling, [T0.payKinds[paid.bill_kind] || '', fill(T0.payEnding, { n: paid.id_end })]],
+        [T0.payName, paid.legal_name],
+        [T0.payEmail, paid.email]
+      ].map(function (r) {
+        var v = typeof r[1] === 'string' ? esc(r[1]) : r[1].filter(Boolean).map(function (x, i) { return part(esc(x), !i); }).join('');
+        return '<div><dt>' + esc(r[0]) + '</dt><dd>' + v + '</dd></div>';
+      }).join('');
+    }
+  }
+  function paySay(text, tone) { $('payMsg').textContent = text || ''; $('payMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
+
+  /* The form's values while it is open; a number left blank keeps the one
+     held, which the database knows by its last four. */
+  var payTyped = {};
+  function payHeld() { return pay && (pay.last && pay.last.status !== 'declined' ? pay.last : pay.paid); }
+  function payStart() {
+    var h = payHeld() || (pay && pay.last) || {};
+    payTyped = { bill_kind: h.bill_kind || 'nric', id_no: '', legal_name: h.legal_name || '', tin: h.tin || '',
+      address: h.address || '', currency: h.currency || 'MYR', method: h.method || 'bank', bank: h.bank || '', account: '',
+      payee: h.payee || '', email: h.email || '', whatsapp: h.whatsapp || (pay && pay.whatsapp) || '', confirm: false };
+  }
+  function payRead() {
+    Array.prototype.forEach.call($('payFields').querySelectorAll('[data-k]'), function (el) {
+      payTyped[el.getAttribute('data-k')] = el.type === 'checkbox' ? el.checked : el.value;
+    });
+  }
+  function payFields() {
+    var T0 = t(), v = payTyped, h = payHeld();
+    var keepId = h && h.bill_kind === v.bill_kind && h.id_end;
+    var keepAcct = h && h.method === v.method && h.currency === v.currency && String(h.bank || '') === String(v.bank || '') && h.account_end;
+    var field = function (k, label, inner, hint) {
+      return '<div class="row"><div><label class="field-label" for="pf_' + k + '">' + esc(label) + '</label>' + inner +
+        (hint ? '<span class="hint">' + esc(hint) + '</span>' : '') + '<span class="msg" id="pf_' + k + 'Msg"></span></div></div>';
+    };
+    var input = function (k, req, attrs) {
+      return '<input class="input" id="pf_' + k + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + ' ' + (attrs || '') +
+        ' value="' + esc(v[k] || '') + '">';
+    };
+    var options = function (list, word, cur) {
+      return list.map(function (o) { return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(word ? word[o] : o) + '</option>'; }).join('');
+    };
+    var methods = METHODS[v.currency] || METHODS.MYR;
+    if (methods.indexOf(v.method) < 0) v.method = methods[0];
+    var banks = BANKS.filter(function (b) { return (v.currency === 'SGD') === (b.indexOf('[SG]') === 0); });
+    $('payFields').innerHTML =
+      '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.billing) + '</h4>' +
+        field('bill_kind', T0.payBilling, '<select class="select" id="pf_bill_kind" data-k="bill_kind" data-seg aria-required="true">' +
+          options(['nric', 'passport', 'brn'], T0.payKinds, v.bill_kind) + '</select>') +
+        field('id_no', T0.payIdLabel[v.bill_kind], input('id_no', !keepId, 'autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24"'),
+          keepId ? fill(T0.payKeep, { n: h.id_end }) : '') +
+        field('legal_name', T0.payNameLabel[v.bill_kind], input('legal_name', true, 'maxlength="120" autocomplete="name"')) +
+        field('tin', T0.payTin, input('tin', false, 'maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="' + esc(T0.payOptional) + '"')) +
+        field('address', T0.payAddress, '<textarea class="input" id="pf_address" data-k="address" aria-required="true" rows="3" maxlength="300">' + esc(v.address || '') + '</textarea>') +
+      '</section>' +
+      '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.payment) + '</h4>' +
+        field('currency', T0.payCurrency, '<select class="select" id="pf_currency" data-k="currency" data-seg aria-required="true">' + options(['MYR', 'SGD'], null, v.currency) + '</select>') +
+        field('method', T0.payMethod, '<select class="select" id="pf_method" data-k="method" aria-required="true">' + options(methods, T0.payMethods, v.method) + '</select>') +
+        (v.method === 'bank' ? field('bank', T0.payBank, '<select class="select" id="pf_bank" data-k="bank" aria-required="true"><option value="">' +
+          esc(T0.payChooseBank) + '</option>' + options(banks, null, v.bank) + '</select>') : '') +
+        field('account', T0.payAcctLabel[v.method], input('account', !keepAcct, 'inputmode="' + (v.method === 'bank' ? 'numeric' : 'text') + '" autocomplete="off" spellcheck="false" maxlength="40"'),
+          keepAcct ? fill(T0.payKeep, { n: h.account_end }) : '') +
+        field('payee', T0.payPayee, input('payee', true, 'maxlength="120"')) +
+      '</section>' +
+      '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.contact) + '</h4>' +
+        field('email', T0.payEmail, input('email', true, 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"')) +
+        field('whatsapp', T0.payWhatsapp, input('whatsapp', true, 'type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="012-345 6789"')) +
+        '<label class="tickline"><input type="checkbox" id="pf_confirm" data-k="confirm"' + (v.confirm ? ' checked' : '') + '><span>' + esc(T0.payConfirm) + '</span></label>' +
+        '<span class="msg" id="pf_confirmMsg"></span>' +
+      '</section>' +
+      '<div class="msg" id="paySheetMsg" role="status"></div>';
+    if (window.ADspaceForm) window.ADspaceForm.scan($('payFields'));
+  }
+  function openPay(opener) {
+    var T0 = t();
+    payStart();
+    $('paySheetTitle').textContent = T0.payHead;
+    $('paySend').textContent = T0.payGo;
+    $('payCancel').textContent = T0.cancel;
+    $('payClose').setAttribute('aria-label', T0.close);
+    payFields();
+    paySay('');
+    window.ADspaceSheet.show($('paySheet'), { opener: opener || $('payEdit') });
+  }
+  function sendPay() {
+    payRead();
+    var T0 = t(), btn = $('paySend');
+    Array.prototype.forEach.call($('payFields').querySelectorAll('[aria-invalid]'), function (el) { el.removeAttribute('aria-invalid'); });
+    Array.prototype.forEach.call($('payFields').querySelectorAll('.msg'), function (el) { el.textContent = ''; el.className = 'msg'; });
+    var wrong = function (k) {
+      var el = $('pf_' + k), m = $('pf_' + k + 'Msg');
+      if (m) { m.textContent = T0.payBad[k] || T0.payFail; m.className = 'msg err'; }
+      if (el) { el.setAttribute('aria-invalid', 'true'); try { el.focus(); } catch (e) {} }
+    };
+    if (!payTyped.confirm) { wrong('confirm'); return; }
+    btn.disabled = true;
+    var vals = {};
+    Object.keys(payTyped).forEach(function (k) { vals[k] = payTyped[k]; });
+    vals.confirm = 'true';
+    if (vals.method !== 'bank') vals.bank = '';
+    db.rpc('creator_pay_submit', { p_code: code, p_values: vals }).then(function (r) {
+      btn.disabled = false;
+      var d = r.data || {};
+      if (r.error || !d) { $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; return; }
+      if (d.error === 'bad') { wrong(d.field); return; }
+      if (d.error === 'locked') { $('paySheetMsg').textContent = W.lockedLine(T0, d.minutes); $('paySheetMsg').className = 'msg err'; return; }
+      if (d.error === 'too-many') { $('paySheetMsg').textContent = T0.payTooMany; $('paySheetMsg').className = 'msg err'; return; }
+      if (d.error) { $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; return; }
+      window.ADspaceSheet.close();
+      loadPay().then(function () { paySay(T0.paySent, 'ok'); paint(); });
+    }).catch(function () { btn.disabled = false; $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; });
   }
 
   function isImg(k) { return k === 'image'; }
@@ -1415,6 +1609,20 @@
     forget(); askCode();
   });
   $('linksEdit').addEventListener('click', openLinks);
+  $('payEdit').addEventListener('click', function () { paySay(''); openPay($('payEdit')); });
+  $('paySend').addEventListener('click', sendPay);
+  $('payCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('payClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  /* A choice that changes the fields under it redraws them, keeping what
+     was typed. */
+  $('payFields').addEventListener('change', function (e) {
+    var k = e.target && e.target.getAttribute('data-k');
+    if (k !== 'bill_kind' && k !== 'currency' && k !== 'method' && k !== 'bank') return;
+    payRead();
+    if (k === 'currency') payTyped.bank = '';
+    payFields();
+    var again = $('pf_' + k); if (again) try { again.focus(); } catch (x) {}
+  });
   $('linksSave').addEventListener('click', saveLinks);
   $('linksCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('linksClose').addEventListener('click', function () { window.ADspaceSheet.close(); });

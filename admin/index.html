@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261108a">
-<link rel="stylesheet" href="/css/console.css?v=20261108">
+<link rel="stylesheet" href="/css/portal.css?v=20261108c">
+<link rel="stylesheet" href="/css/console.css?v=20261108c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -145,7 +145,7 @@
 <script src="/js/form.js?v=20261106"></script>
 <script src="/js/state.js?v=20261026f"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261108"></script>
+<script src="/js/menu.js?v=20261108c"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -155,7 +155,7 @@
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
 <script src="/js/notice.js?v=20261103l"></script>
-<script src="/js/whatsapp.js?v=20261108"></script>
+<script src="/js/whatsapp.js?v=20261108c"></script>
 <script src="/js/docmail.js?v=20261104a"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261108"></script>
@@ -2502,6 +2502,24 @@
             <div class="sheet-body">
               <div id="linkHistList"></div>
               <div class="msg" id="linkHistMsg"></div>
+            </div>
+          </div>
+        </div>
+        <!-- A creator's payment details (2026-11-08): the newest set they
+             sent, its ID and account numbers whole only at Creator
+             Campaigns: Payment details View, approved or declined at Work;
+             the sets before it and the emails sent under it. -->
+        <div class="sheet" id="cpaySheet" hidden>
+          <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="cpayTitle" tabindex="-1">
+            <div class="sheet-head">
+              <h3 id="cpayTitle">Payment details</h3>
+              <button class="iconbtn" id="cpayClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body" id="cpayBody"></div>
+            <div class="sheet-foot" id="cpayFoot">
+              <button class="btn btn-primary" id="cpayApprove" type="button">Approve</button>
+              <button class="btn" id="cpayDecline" type="button">Decline</button>
+              <button class="btn btn-quiet" id="cpayCancel" type="button">Close</button>
             </div>
           </div>
         </div>
@@ -6329,7 +6347,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261031w"></script>
-<script src="/js/admin.js?v=20261105e"></script>
+<script src="/js/admin.js?v=20261108c"></script>
 <script src="/js/documents.js?v=20261108"></script>
 <script src="/js/letters.js?v=20261105c"></script>
 <script src="/js/smreport.js?v=20261103e"></script>
@@ -6344,7 +6362,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261105c"></script>
 <script src="/js/crm.js?v=20261108"></script>
 <script src="/js/sales.js?v=20261025a"></script>
-<script src="/js/team.js?v=20261107"></script>
+<script src="/js/team.js?v=20261108c"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
 <script src="/js/handbook.js?v=20261031w"></script>
 <script src="/js/frames.js?v=20261107a"></script>
@@ -6352,13 +6370,13 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261108"></script>
 <script src="/js/scriptpdf.js?v=20261105e"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
-<script src="/js/campaigns.js?v=20261108b"></script>
+<script src="/js/campaigns.js?v=20261108c"></script>
 <script src="/js/ops.js?v=20261106e"></script>
 <script src="/js/perf.js?v=20261107"></script>
 <script src="/js/health.js?v=20261031w"></script>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261105a"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261108b"></script>
+<script src="/js/settings.js?v=20261108c"></script>
 </body>
 </html>

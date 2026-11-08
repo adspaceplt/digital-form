@@ -325,13 +325,15 @@
      keep, each row at its own record's access. Resend's word on each, and a
      signing code's own state (its delivery is not reported back). */
   var ML_KIND = { reminder: 'Overdue reminder', invoice: 'Invoice', quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter',
-    approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email' };
-  var ML_STATE = { sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
+    approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
+    creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved' };
+  var ML_STATE = { queued: ['Queued', 'is-warn'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],
     requested: ['Code sent', 'is-live'], used: ['Signed', 'is-ok'], expired: ['Expired', 'is-off'] };
   var ML_FROM = { supplier: 'ADspace <noreply-supplier@sc.adspace.me>', client: 'ADspace <noreply-client@sc.adspace.me>',
-    invoice: 'ADspace Finance <noreply-finance@sc.adspace.me>', signing: 'ADspace <noreply-client@sc.adspace.me>' };
+    invoice: 'ADspace Finance <noreply-finance@sc.adspace.me>', signing: 'ADspace <noreply-client@sc.adspace.me>',
+    creator: 'ADspace <noreply-creator@sc.adspace.me>' };
   var ml = { month: monthNow(), data: null, wired: false };
   function mlState(x) { return ML_STATE[x.status] || [x.status || '', '']; }
   function mlWire() {

@@ -178,6 +178,16 @@
     clientmail: function () { return window.ADspaceDocMail && window.ADspaceDocMail.templatesLine(); },
     /* A New email's saved words (2026-11-04). */
     emailtpl: function () { return window.ADspaceWhatsApp && window.ADspaceWhatsApp.emailTemplatesLine(); },
+    /* Creator emails (2026-11-08): how many are sent, and to which finance address. */
+    creatormail: function () {
+      return db.rpc('creator_email_templates_get').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) throw new Error('unread');
+        var on = (d.rows || []).filter(function (t) { return t.on; }).length;
+        var fin = (d.rows || []).filter(function (t) { return t.purpose === 'review'; })[0];
+        return parts([on + ' of ' + (d.rows || []).length + ' sent', fin && fin.to_email ? 'Finance: ' + fin.to_email : ''].filter(Boolean));
+      });
+    },
     /* The meeting message (2026-10-29): who last changed its words. */
     meetmsg: function () { return window.ADspaceOps && window.ADspaceOps.meetMessageLine && window.ADspaceOps.meetMessageLine(); },
     /* Task templates (2026-10-29): the families, and how many fill a task. */
@@ -328,6 +338,8 @@
          Overdue invoices (2026-10-28). */
       biz && window.ADspaceInvoices && { id: 'overdue', name: 'Overdue reminder', kind: 'edit', meta: line('overdue') },
       biz && window.ADspaceInvoices && { id: 'invoicemail', name: 'Invoice email', kind: 'edit', meta: line('invoicemail') },
+      /* The three emails a creator's payment details send (2026-11-08). */
+      biz && { id: 'creatormail', name: 'Creator emails', kind: 'edit', meta: line('creatormail') },
       /* The content meeting's message to the client, copied from a month's
          card (2026-10-29). */
       biz && window.ADspaceOps && { id: 'meetmsg', name: 'Meeting message', kind: 'edit', meta: line('meetmsg') },
@@ -552,6 +564,7 @@
     if (a === 'invoicemail') { if (window.ADspaceInvoices) window.ADspaceInvoices.openTemplate(btn, rowSay('invoicemail'), 'invoice'); return; }
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
     if (a.indexOf('perf-') === 0) { if (window.ADspacePerf && window.ADspacePerf.openSettings) window.ADspacePerf.openSettings(a.slice(5), btn); return; }
+    if (a === 'creatormail') { openCreatorMail(); return; }
     if (a === 'meetmsg') { if (window.ADspaceOps && window.ADspaceOps.openMeetMessage) window.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); return; }
     if (a === 'tasktpl') { if (window.ADspaceOps && window.ADspaceOps.openTemplates) window.ADspaceOps.openTemplates(btn); return; }
     if (a === 'wording') { if (window.ADspaceCRM && window.ADspaceCRM.openWording) window.ADspaceCRM.openWording(btn); return; }
@@ -602,7 +615,57 @@
   }
   var IDS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
     'bad-prefix': 'Enter a prefix of 1 to 6 capital letters.', 'bad-width': 'Choose 2 to 6 digits.',
-    'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.' };
+    'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.',
+    'bad-request-pattern': 'Enter a payment details reference of up to 40 characters that includes {creator} and {nnn}.' };
+  /* ---- Creator emails (2026-11-08) ----------------------------------------
+     The three emails a creator's payment details send: each sent or not, its
+     subject and message, and the finance address Details to review goes to. */
+  var CM_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
+    'bad-subject': 'Enter a subject of 3 to 200 characters.', 'bad-body': 'Enter a message of 10 to 5,000 characters.',
+    'bad-email': 'Enter a valid email address for the finance team.' };
+  var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved' };
+  function openCreatorMail() {
+    db.rpc('creator_email_templates_get').then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        rowSay('creatormail')(r.error && /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : 'Could not load.', 'err');
+        return;
+      }
+      var rows = d.rows || [], fields = [];
+      rows.forEach(function (t) {
+        fields.push({ name: t.purpose + '_on', label: 'Send this email', tick: true, value: t.on ? 'on' : '', head: CM_WORD[t.purpose] });
+        if (t.purpose === 'review') fields.push({ name: 'review_to', label: 'Finance email', type: 'email', value: t.to_email || '', required: true });
+        fields.push({ name: t.purpose + '_subject', label: 'Subject', value: t.subject || '', required: true });
+        fields.push({ name: t.purpose + '_body', label: 'Message', rows: 8, value: t.body || '', required: true });
+      });
+      window.ADspaceConfirm.ask({
+        title: 'Creator emails', go: 'Save', wait: true, fields: fields,
+        body: 'Fields: {creator name}, {creator id}, {reference}, {payee}, {method}, {account ending}, {review link}.',
+        check: function (v) { return window.ADspaceWords.emailOk(String(v.review_to || '').trim()) ? '' : CM_SAID['bad-email']; }
+      }, function (v) {
+        return db.rpc('creator_email_templates_save', { p_rows: rows.map(function (t) {
+          return { purpose: t.purpose, on: v[t.purpose + '_on'] === 'on', subject: String(v[t.purpose + '_subject'] || '').trim(),
+            body: String(v[t.purpose + '_body'] || '').trim(), to_email: t.purpose === 'review' ? String(v.review_to || '').trim() : null };
+        }) }).then(function (r2) {
+          if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
+          var e = (r2.data || {}).error;
+          if (e) return (CM_SAID[e] || 'Not saved.') + ((r2.data || {}).purpose ? ' (' + CM_WORD[r2.data.purpose] + ')' : '');
+          readLine('creatormail');
+          rowSay('creatormail')('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('creatormail')('Could not load.', 'err'); });
+  }
+
+  /* A payment details reference as the database writes it (creator_pay_ref). */
+  function payRefOf(pat, codeWord, n) {
+    var run = (String(pat).match(/\{(n+)\}/) || [])[1], out = String(pat).replace('{creator}', codeWord);
+    if (!run) return out + n;
+    var num = String(n);
+    while (num.length < run.length) num = '0' + num;
+    return out.replace('{' + run + '}', num);
+  }
   function openIds() {
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
@@ -621,6 +684,11 @@
       });
       fields.push({ name: 'job', label: 'Pattern', head: 'Job reference', value: (by.job || {}).pattern || '', required: true,
         note: 'A booking reads, for example, ' + ((by.job || {}).pattern || '').replace('{creator}', idNext(by.creator || {})).replace('{campaign}', idNext(by.campaign || {})) + '.' });
+      /* A creator's payment details reference (2026-11-08): its Creator ID
+         and a run of n for the number, held on the creator's row. */
+      var payPat = (by.creator || {}).pattern || '{creator}/R{nnn}';
+      fields.push({ name: 'payref', label: 'Pattern', head: 'Payment details reference', value: payPat, required: true,
+        note: 'A creator\'s first set of details reads, for example, ' + payRefOf(payPat, idNext(by.creator || {}), 1) + '.' });
       window.ADspaceConfirm.ask({
         title: 'Creator and campaign IDs', go: 'Save', wait: true, fields: fields,
         check: function (v) {
@@ -633,13 +701,16 @@
           });
           var j = String(v.job || '').trim();
           if (!bad && (j.length > 40 || j.indexOf('{creator}') < 0 || j.indexOf('{campaign}') < 0)) bad = IDS_SAID['bad-pattern'];
+          var pr = String(v.payref || '').trim();
+          if (!bad && (pr.length > 40 || pr.indexOf('{creator}') < 0 || !/\{n{1,6}\}/.test(pr))) bad = IDS_SAID['bad-request-pattern'];
           return bad;
         }
       }, function (v) {
         var steps = ['creator', 'campaign', 'job'].filter(function (k) {
           var f = by[k] || {};
           if (k === 'job') return String(v.job || '').trim() !== (f.pattern || '');
-          return String(v[k + '_prefix']).trim().toUpperCase() !== f.prefix || Number(v[k + '_width']) !== Number(f.width) || Number(v[k + '_next']) !== Number(f.next);
+          return String(v[k + '_prefix']).trim().toUpperCase() !== f.prefix || Number(v[k + '_width']) !== Number(f.width) || Number(v[k + '_next']) !== Number(f.next) ||
+            (k === 'creator' && String(v.payref || '').trim() !== (f.pattern || '{creator}/R{nnn}'));
         });
         function one(i) {
           if (i >= steps.length) return Promise.resolve('');
@@ -647,7 +718,7 @@
           return db.rpc('id_format_set', k === 'job'
             ? { p_kind: 'job', p_prefix: null, p_width: null, p_next: null, p_pattern: String(v.job || '').trim() }
             : { p_kind: k, p_prefix: String(v[k + '_prefix']).trim().toUpperCase(), p_width: Number(v[k + '_width']),
-                p_next: Number(v[k + '_next']), p_pattern: null }).then(function (r2) {
+                p_next: Number(v[k + '_next']), p_pattern: k === 'creator' ? String(v.payref || '').trim() : null }).then(function (r2) {
             if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
             var d = r2.data || {};
             if (d.error === 'bad-next' && d.top != null) {

@@ -5718,6 +5718,18 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .crlinks-none { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
 .crhead > .msg { margin-top: 10px; }
+/* Payment details (2026-11-08): the head's own shape, a sub-heading over
+   its standing, and the details paid to under a hairline. */
+.crpay { margin-top: 12px; }
+.crpay-title { margin: 0; font-family: var(--font-head); font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+.crpay .rec-id-meta { overflow-wrap: anywhere; }
+.crpay-part { white-space: nowrap; }
+.crpay-part .crpay-sep { white-space: normal; }
+.crpay-facts { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.crpay > .msg { margin-top: 10px; }
+.crpay > .msg:empty, #payFields .msg:empty { display: none; }
+#payFields .row .msg { margin-top: 6px; }
+@media (max-width: 640px) { .crpay-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
 .input[aria-invalid="true"] { border-color: var(--err); }
 @media (max-width: 640px) {
   /* The chrome's "Forget this device" gives up its word on a phone, the way
