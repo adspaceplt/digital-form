@@ -6429,7 +6429,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
   - Letters: Download redraws the snapshot.
-  - Content Review, Video Scripts and Creator campaigns (one sign-in,
+  - Content Review, Video Scripts and Creator Campaigns (one sign-in,
     `2026-11-08-client-portal-one-sign-in.sql`; the user, 2026-11-08,
     approving the portal's release 1): tabs after Overview, each drawn only
     once it holds something, read by `portal_work(p_client)` (the published
