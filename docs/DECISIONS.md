@@ -8794,3 +8794,12 @@ the totals share the amount column, every one-off group has its heading,
 the validity is written as prose dates are, and /quote/ names the
 quotation for signing (EN and 中文).
 
+### 2026-11-08 · A quotation's ⋯ keeps to seven
+After #959 the fullest quotation ⋯ still held nine items (Copy link,
+Preview, Edit, Duplicate, Send on WhatsApp, Send by email, Mark signed,
+Cancel, Remove) against DESIGN §5's seven. The user approved one Link item
+for the quotation's own link: it opens a card hung from the ⋯ (as the Ad
+IDs card is) with the address, Preview and Copy link, never a nested menu.
+Edit, an act most quotations take before they go out, moved onto the row
+beside Download and Preview PDF.
+

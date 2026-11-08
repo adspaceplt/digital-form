@@ -207,18 +207,19 @@
           var st = stateOf(q, live), h = headline(q);
           var items = [];
           if (q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
-          /* The prospect's own page (2026-10-30): Preview opens it read only,
-             for any reader of the quotation; Preview is the team's view,
-             Copy link the prospect's. */
-          /* Its own link, to send the prospect again by hand, once the team
-             has sent the quotation (2026-10-30); a team's quotation has one
-             too, made at the first Copy link, so the client signs on it
-             (QUOTATION SIGNING, 2026-10-31). */
-          if (!q.removed_at && !awaiting(q) && !q._revised && q.status !== 'not_proceeding' && (q.access_key || maySet)) {
-            items.push('<button class="kmenu-item" data-g="1" data-a="link" type="button" role="menuitem">Copy link</button>');
+          /* The quotation's link (2026-11-08): one item opening a card with
+             the address, Copy link and Preview, so the ⋯ keeps to seven.
+             Copy link is the prospect's own link, to send again by hand,
+             once the team has sent the quotation (2026-10-30); a team's
+             quotation has one too, made at the first Copy link, so the
+             client signs on it (QUOTATION SIGNING, 2026-10-31). Preview
+             opens the prospect's page read only, for any reader. */
+          var canCopy = !q.removed_at && !awaiting(q) && !q._revised && q.status !== 'not_proceeding' && (q.access_key || maySet);
+          var canPreview = !!(q.access_key && !q.removed_at);
+          if (canCopy || canPreview) {
+            items.push('<button class="kmenu-item" data-g="1" data-a="linkcard" type="button" role="menuitem"' +
+              (canCopy ? ' data-copy' : '') + (canPreview ? ' data-preview' : '') + '>Link</button>');
           }
-          /* Copy link and Preview stand together (2026-11-07). */
-          if (q.access_key && !q.removed_at) items.push('<button class="kmenu-item" data-g="1" data-a="preview" type="button" role="menuitem">Preview</button>');
           /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
              drawn only once the template is on (`waOn` below). */
           var acts = [];
@@ -235,6 +236,12 @@
           }
           /* A signed quotation is the contract: asked again, never revised
              over (audit 2026-11-04). */
+          /* A team's quotation is edited from its row too: in place until
+             sent out, else its revision (2026-11-06; on the row since
+             2026-11-08, so the ⋯ keeps to seven). */
+          if (maySet && !q.removed_at && q.source !== 'website' && editable(q)) {
+            acts.push('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
+          }
           if (maySet && awaiting(q) && editable(q)) {
             acts.push('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
           } else if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
@@ -253,9 +260,6 @@
             /* A team's quotation is edited from its ⋯: in place until sent
                out, else its revision (2026-11-06). A website one is the
                row's Edit or Adjust and send. */
-            if (q.source !== 'website' && editable(q)) {
-              items.push('<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
-            }
             items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
@@ -382,6 +386,7 @@
       Array.prototype.forEach.call(menu.querySelectorAll('[data-a]'), function (it) {
         it.addEventListener('click', function () {
           menu.hidden = true;
+          if (it.getAttribute('data-a') === 'linkcard') { linkCard(q, ctx, it, btn); return; }
           act(it.getAttribute('data-a'), q, ctx, host, btn);
         });
       });
@@ -443,6 +448,55 @@
   function mayReview(q) {
     var m = meNow();
     return Boolean(q.signed_at && q.submitted_at && !q.returned_at && !q.reviewed_at && m && (m.id === q.reviewer_id || adminNow()));
+  }
+
+  /* The Link card (2026-11-08): the quotation's address, Copy link and
+     Preview, hung from the row's ⋯ as the Ad IDs card is. */
+  var linkPop = null, linkBtn = null;
+  function linkShut(back) {
+    if (!linkPop || linkPop.hidden) return;
+    linkPop.hidden = true;
+    if (linkBtn) { linkBtn.setAttribute('aria-expanded', 'false'); if (back) linkBtn.focus(); }
+  }
+  function linkCard(q, ctx, item, anchorBtn) {
+    if (!linkPop) {
+      linkPop = document.createElement('div');
+      linkPop.className = 'kmenu rp-idspop qt-linkpop'; linkPop.id = 'qtLinkPop'; linkPop.hidden = true; linkPop.tabIndex = -1;
+      linkPop.setAttribute('role', 'dialog'); linkPop.setAttribute('aria-labelledby', 'qtLinkTitle');
+      document.body.appendChild(linkPop);
+      linkPop.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.addEventListener('click', function () { linkShut(); });
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && linkPop && !linkPop.hidden) { e.stopImmediatePropagation(); e.preventDefault(); linkShut(true); }
+      }, true);
+      if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { linkShut(); });
+    }
+    if (linkBtn && linkBtn !== anchorBtn) linkBtn.setAttribute('aria-expanded', 'false');
+    linkBtn = anchorBtn;
+    var url = q.access_key ? location.origin + '/quote/?q=' + encodeURIComponent(q.access_key) : '';
+    var canCopy = item.hasAttribute('data-copy'), canPreview = item.hasAttribute('data-preview');
+    linkPop.innerHTML = '<div class="popcard-head"><p class="rp-idspop-title" id="qtLinkTitle">' + esc(q.ref) + '</p>' +
+      '<button class="iconbtn popcard-x" type="button" data-a="x" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
+      (url ? '<p class="qt-linkaddr">' + esc(url.replace(/^https?:\/\//, '')) + '</p>' : '') +
+      '<div class="rp-idspop-acts">' +
+        (canPreview && url ? '<button class="btn btn-sm" type="button" data-a="preview">Preview</button>' : '') +
+        (canCopy ? '<button class="btn btn-sm" type="button" data-a="link">Copy link</button>' : '') + '</div>';
+    Array.prototype.forEach.call(linkPop.querySelectorAll('[data-a="preview"], [data-a="link"]'), function (b) {
+      b.onclick = function () {
+        var a2 = b.getAttribute('data-a');
+        act(a2, q, ctx, null, b);
+        if (a2 === 'preview') linkShut();
+      };
+    });
+    linkPop.querySelector('[data-a="x"]').onclick = function () { linkShut(true); };
+    /* Shown a tick later: the press on the ⋯ item is still on its way to
+       the page, whose click shuts the card. */
+    setTimeout(function () {
+      linkPop.hidden = false;
+      anchorBtn.setAttribute('aria-expanded', 'true');
+      if (window.ADspaceMenu) window.ADspaceMenu.pop(anchorBtn, linkPop, 'left');
+      try { linkPop.focus({ preventScroll: true }); } catch (e) { linkPop.focus(); }
+    }, 0);
   }
 
   function act(a, q, ctx, host, btn) {
