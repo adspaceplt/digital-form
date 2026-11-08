@@ -464,6 +464,8 @@
     perf_unlock: 'p_code',
     perf_unrelease: 'p_review p_reason p_token',
     portal_clients: '',
+    portal_link_pass: 'p_kind p_token',
+    portal_work: 'p_client',
     portal_meetings: 'p_client',
     portal_report: 'p_version',
     portal_reports: 'p_client',
@@ -1787,6 +1789,11 @@
     SESS[s.refresh_token] = s;
     return s;
   }
+
+  try {
+    var keepAs = sessionStorage.getItem('__stubKeepSession');
+    if (keepAs) session = mkSession(keepAs, [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]);
+  } catch (e) {  }
 
   var TEAM_CAN = { clients: true, billing: true, admin: true, remove: true, doc_void: true,
                    register: true, hr: true, docs: true };
@@ -9255,6 +9262,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }) }, error: null });
     }
 
+    function portalNameOf(cid) {
+      var e = String(session && session.user && session.user.email || '').toLowerCase();
+      if (!e || !cid) return null;
+      var k = (DB.client_contacts || []).filter(function (c) { return c.client_id === cid && c.portal_access && !c.archived_at &&
+        String(c.email || '').toLowerCase() === e; }).sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0); })[0];
+      return k ? k.name : null;
+    }
     if (name === 'submit_review_seen') {
       var ssc = (DB.clients || []).filter(function (c) { return c.access_token === args.p_token && c.active !== false && !c.review_hidden &&
         (!c.passcode || c.passcode === args.p_passcode); })[0];
@@ -9325,7 +9339,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       DB.reviews = DB.reviews || [];
       DB.reviews.push({ id: nid('r'), post_id: sp.id, decision: args.p_decision, note: String(args.p_note || '').trim() || null,
-        reviewer: String(args.p_reviewer || '').trim() || null, created_at: new Date().toISOString(),
+        reviewer: portalNameOf(sc && sc.id) || String(args.p_reviewer || '').trim() || null, created_at: new Date().toISOString(),
         round: sp.round || 1, suggested_caption: cap, suggested_caption_zh: capZh, source: 'client', undone_at: null });
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
@@ -9410,6 +9424,49 @@ function opsCodeRange(cid, period, ty, src, seq) {
                   market: cl.market || 'MY', bill_market: billMarket(cl),
                   sst_applies: cl.sst_applies === undefined ? true : cl.sst_applies },
         options: opts }, error: null });
+    }
+
+    if (name === 'portal_work') {
+      var pwName = portalNameOf(args && args.p_client);
+      if (!pwName) return Promise.resolve({ data: { error: 'no-access' }, error: null });
+      var pwc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0] || {};
+      var pwReview = null, pwScripts = null;
+      if (!pwc.review_hidden && pwc.access_token) {
+        pwReview = { token: pwc.access_token, sets: (DB.batches || []).filter(function (b) { return b.client_id === pwc.id && b.published; })
+          .map(function (b) {
+            var ps = (DB.posts || []).filter(function (q) { return q.batch_id === b.id; });
+            var n = { posts: ps.length, approved: 0, changes: 0, waiting: 0 };
+            ps.forEach(function (q) {
+              var r = (DB.reviews || []).filter(function (x) { return x.post_id === q.id && !x.undone_at && (x.round || 1) === (q.round || 1) &&
+                (!q.review_reset_at || x.created_at > q.review_reset_at); })
+                .sort(function (a, c) { return String(c.created_at).localeCompare(String(a.created_at)); })[0];
+              if (!r) n.waiting++; else if (r.decision === 'approved') n.approved++; else n.changes++;
+            });
+            return { id: b.id, title: b.title, period: b.period || null, published_at: b.published_at || null, created_at: b.created_at || null,
+              posts: n.posts, approved: n.approved, changes: n.changes, waiting: n.waiting };
+          }).sort(function (a, c) { return String(c.period || '').localeCompare(String(a.period || '')) ||
+            String(c.published_at || c.created_at || '').localeCompare(String(a.published_at || a.created_at || '')); }) };
+      }
+      if (pwc.script_key) {
+        pwScripts = { key: pwc.script_key, list: (DB.video_scripts || []).filter(function (x) { return x.client_id === pwc.id && x.status === 'shared'; })
+          .sort(function (a, c) { return String(c.period || '').localeCompare(String(a.period || '')) || (a.seq || 0) - (c.seq || 0); })
+          .map(function (x) { return { id: x.id, code: x.code || null, title: x.title || null, kind: x.kind || null, period: x.period || null,
+            shoot_on: x.shoot_on || null, shoot_time: x.shoot_time || null }; }) };
+      }
+      return Promise.resolve({ data: { review: pwReview, scripts: pwScripts }, error: null });
+    }
+    if (name === 'portal_link_pass') {
+      var plc = null, plCode = null;
+      if (!args || !args.p_token) return Promise.resolve({ data: { none: true }, error: null });
+      if (args.p_kind === 'review') {
+        var plx = (DB.clients || []).filter(function (c) { return c.access_token === args.p_token && c.active !== false && !c.review_hidden; })[0];
+        if (plx) { plc = plx.id; plCode = plx.passcode || null; }
+      } else if (args.p_kind === 'campaign') {
+        var plm = (DB.campaigns || []).filter(function (m) { return m.access_token === args.p_token; })[0];
+        if (plm) { plc = plm.client_id; plCode = plm.passcode || null; }
+      } else return Promise.resolve({ data: { error: 'bad-kind' }, error: null });
+      var plName = portalNameOf(plc);
+      return Promise.resolve({ data: plName ? { name: plName, passcode: plCode } : { none: true }, error: null });
     }
 
     var who = function () { return String(session && session.user && session.user.email || '').toLowerCase(); };
@@ -13072,7 +13129,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       var n = oo.revision_round || 0;
       DB.option_reviews.push({ id: 'rv' + (DB.option_reviews.length + 1), option_id: oo.id, round: Math.max(n, 1),
-        decision: args.p_decision, note: args.p_note, reviewer: args.p_reviewer,
+        decision: args.p_decision, note: args.p_note,
+        reviewer: portalNameOf((DB.campaigns.filter(function (m) { return m.id === oo.campaign_id; })[0] || {}).client_id) || args.p_reviewer,
         source: 'client', undone_at: null, created_at: new Date().toISOString() });
       if (args.p_decision === 'approved') oo.state = 'scheduled';
       else {

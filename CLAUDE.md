@@ -6429,6 +6429,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     one exists (Withdraw with Undo while Requested). A request sent opens
     this tab.
   - Letters: Download redraws the snapshot.
+  - Content Review, Video Scripts and Creator campaigns (one sign-in,
+    `2026-11-08-client-portal-one-sign-in.sql`; the user, 2026-11-08,
+    approving the portal's release 1): tabs after Overview, each drawn only
+    once it holds something, read by `portal_work(p_client)` (the published
+    sets with posts, approved, changes and waiting, the waiting count on
+    the tab; the shared scripts) beside `get_portal`'s campaigns; each row
+    its name over its month, its state, and Open, its page in this tab
+    (`/review/?k=…#s-{set}`, `/script/?k=…#{id}`, `/creators/?k=…`). Opened
+    by a signed-in contact of its client, the review and selection pages
+    ask `portal_link_pass(p_kind, p_token)` (`ADspaceAPI.portalPass`): no
+    access code is typed, the page decides as the contact
+    (`ADspaceDecide.sign`: Deciding as {name}, no Change or Forget), Back
+    returns to the portal's tab, and trigger `portal_decider_stamp` files a
+    decision on `reviews` or `option_reviews` under the contact's own name
+    whatever name was sent. A link opened with no sign-in, or by a
+    colleague, asks its code as before.
   - Reports and Meetings: tabs drawn only once there is one; an address
     naming one before it is drawn opens it when it is. A meeting ahead with
     a link offers Join on its row, never in a ⋯ (2026-10-20, POR-2).

@@ -1536,7 +1536,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
   display: inline-flex; align-items: center; gap: 7px;
   min-height: var(--ctl-h); border: 1px solid transparent; background: none; border-radius: 8px;
   margin: 14px 0 4px; padding: 0 12px 0 9px;
-  color: var(--ink-mute); font-size: 13px;
+  color: var(--ink-mute); font-size: 13px; text-decoration: none;
 }
 .backlink svg { width: 15px; height: 15px; }
 @media (hover: hover) {
@@ -9029,6 +9029,19 @@ body.is-maint { overflow: hidden; }
 .svc-row.cp-eng-row > .cx-tile { grid-area: tile; }
 .svc-row.cp-eng-row > .svc-name { grid-area: name; }
 .svc-row.cp-eng-row > .cp-open { grid-area: open; }
+/* The portal's one-sign-in rows (2026-11-08): what it is over its month,
+   where it stands, Open at the right edge; on a phone the state goes under
+   the name and Open keeps the right edge. */
+.svc-row.cp-work-row, .is-narrow .svc-row.cp-work-row {
+  grid-template-columns: minmax(0, 1fr) 150px auto; grid-template-areas: "name state go"; align-items: center;
+}
+.svc-row.cp-work-row > .svc-name { grid-area: name; }
+.svc-row.cp-work-row > .svc-state { grid-area: state; }
+.svc-row.cp-work-row > .cp-go { grid-area: go; justify-self: end; }
+.is-narrow .svc-row.cp-work-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name state" "name go"; row-gap: 8px; align-items: start; }
+.is-narrow .svc-row.cp-work-row > .svc-state { justify-self: end; }
+.is-narrow .svc-row.cp-work-row > .svc-state:empty { display: none; }
+.is-narrow .svc-row.cp-work-row:has(> .svc-state:empty) { grid-template-areas: "name go"; align-items: center; }
 .cx-tile { width: 40px; height: 40px; border-radius: 11px; background: var(--tonal); display: grid; place-items: center; color: var(--ink); }
 .cx-tile .ic { width: 18px; height: 18px; }
 .cp-reach .plink { gap: 6px; }
