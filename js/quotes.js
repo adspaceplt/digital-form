@@ -1532,6 +1532,18 @@
         B.ctx.db.rpc('quotation_edit', { p_id: ed.id, p_sel: B.sel }).then(function (r) {
           var d = r.data || {};
           go.disabled = false;
+          /* Lines or a letter came from it (removed lines and voided
+             letters count too, as the database holds them): the same sheet
+             becomes its revision, kept as typed, Save making the next
+             quotation (audit 2026-11-08, 3). */
+          if (!r.error && (d.error === 'lines' || d.error === 'letter')) {
+            B.revises = ed; B.editing = null;
+            $('qbSave').textContent = 'Create quotation';
+            $('qbMsg').textContent = (d.error === 'lines' ? 'Service lines were made from ' : 'A Letter of Offer quotes ') + ed.ref +
+              ', so it is kept. Create quotation makes its revision.';
+            $('qbMsg').className = 'msg warn';
+            return;
+          }
           if (r.error || d.error) { $('qbMsg').textContent = said(r.error || d.error); $('qbMsg').className = 'msg err'; return; }
           var ctx = B.ctx;
           window.ADspaceSheet.close();

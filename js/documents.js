@@ -1514,7 +1514,10 @@
     };
     var bytes = file.arrayBuffer ? file.arrayBuffer() : new Response(file).arrayBuffer();
     Promise.all([pdfjs(), bytes]).then(function (r) {
-      return r[0].getDocument({ data: new Uint8Array(r[1]) }).promise;
+      /* No eval: pdf.js 3.11.174 runs a font's FontMatrix as code
+         where eval is allowed (CVE-2024-4367), and a Preview may show a
+         file a colleague uploaded (audit 2026-11-08, 1). */
+      return r[0].getDocument({ data: new Uint8Array(r[1]), isEvalSupported: false }).promise;
     }).then(function (doc) {
       var w = Math.max(200, host.clientWidth - 16), dpr = Math.min(window.devicePixelRatio || 1, 3), n = 0;
       var next = function () {

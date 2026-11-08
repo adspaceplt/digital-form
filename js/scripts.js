@@ -983,9 +983,12 @@
         .then(function () {
           var said = r.n + (r.n === 1 ? ' picture drawn.' : ' pictures drawn.') +
             (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene' : ' scenes') + '. Try again.' : '');
-          if (!back.length || r.missed) { repaintScenes(said, r.missed ? 'warn' : 'ok'); return; }
+          if (!back.length) { repaintScenes(said, r.missed ? 'warn' : 'ok'); return; }
+          /* A redraw keeps its Undo when another scene missed (audit
+             2026-11-08, 6): the missed count rides the Undo line. */
           repaintScenes();
-          undoBar((back.length === 1 ? 'Scene ' + scenePos(back[0]) + ' redrawn.' : back.length + ' scenes redrawn.'), function () {
+          undoBar((back.length === 1 ? 'Scene ' + scenePos(back[0]) + ' redrawn.' : back.length + ' scenes redrawn.') +
+            (r.missed ? ' No picture was drawn for ' + r.missed + (r.missed === 1 ? ' scene.' : ' scenes.') : ''), function () {
             Promise.all(back.map(function (id) {
               return rpc('video_script_frame', { p_script: sid, p_scene: id, p_frame: before[id], p_press: r.presses[id] });
             })).then(function () { return readScript(sid); }).then(function () { repaintScenes('Undone.', 'ok'); })
