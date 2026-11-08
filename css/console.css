@@ -1793,6 +1793,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 }
 .rp-idspop:focus { outline: none; }
 .rp-idspop-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+/* The quotation's Link card (2026-11-08): its address one mute line. */
+.qt-linkaddr { margin: 0; font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .popcard.is-dock.rp-idspop .rp-idspop-acts { --ctl-h-sm: var(--ctl-h); }
 .popcard.is-dock.rp-idspop .rp-idspop-acts .btn { flex: 1 1 100%; }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

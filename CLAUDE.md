@@ -6113,12 +6113,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   worked out on read (Valid until, Expired, Ready to proceed, Revised, Letter of Offer requested, Not
   proceeding, Letter of Offer issued once a live letter holds its lines),
   the row two short lines (the plan and term, then who made it and when;
-  2026-10-26), Download and Preview PDF on the row, with the step it
-  waits on (Send link on WhatsApp, Resend on WhatsApp, Submit, Review;
-  2026-11-07: the ⋯ held ten), at a desk under the figure, the reference
-  kept whole, equal halves under the meta on a phone; the ⋯ Copy link
-  and Preview together, Edit, Duplicate, Send on WhatsApp, Send by email,
-  Mark signed, Cancel / Restore (Cancelled), Remove with Undo
+  2026-10-26), Download and Preview PDF on the row, with Edit while it
+  may be edited and the step it waits on (Send link on WhatsApp, Resend
+  on WhatsApp, Submit, Review; 2026-11-07: the ⋯ held ten), at a desk
+  under the figure, the reference kept whole, equal halves under the meta
+  on a phone; the ⋯ seven at most: Link (a card hung from the ⋯,
+  `#qtLinkPop`: the address, Preview and Copy link; 2026-11-08), Duplicate,
+  Send on WhatsApp, Send by email, Mark signed, Cancel / Restore
+  (Cancelled), Remove with Undo
   (the user, 2026-10-22, QT-M1: "approve"). Show n removed quotations
   (`#qtGone`) opens a small list (`#qtGoneList`, `.qt-gonerow`, a `--sunk`
   box; the user, 2026-10-31: "it should make it small list"): a line each,
