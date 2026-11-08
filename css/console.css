@@ -757,6 +757,7 @@ button.appver {
    12.5px, and the name is the half that gives way. */
 .cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
 .cr-record-when { flex: 0 0 auto; white-space: pre; }
+.cr-who > .cr-pay { margin-top: 4px; }  /* a creator's payment details to review (2026-11-08) */
 
 /* What this creator has run, on their own card. A row a campaign, the name
    and the month it was shot, and the whole row opens it — the shape every

@@ -17,7 +17,7 @@
      it: the page is installed at its own address, the link that proves it. -->
 <link rel="manifest" href="/creator/manifest.webmanifest">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261108a">
+<link rel="stylesheet" href="/css/portal.css?v=20261108c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js" integrity="sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o" crossorigin="anonymous"></script>
 <!-- The demo (js/demo.js): sample data in place of the database while `adspace-demo` stands,
      for the demo's own links alone (a key holding 0, which no real key does). -->
@@ -32,7 +32,7 @@
 <script src="/js/api.js?v=20261108"></script>
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
-<script src="/js/menu.js?v=20261108"></script>
+<script src="/js/menu.js?v=20261108c"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/sheet.js?v=20261023g"></script>
@@ -105,6 +105,35 @@
       </div>
     </div>
 
+    <!-- Payment details (2026-11-08): asked once, from the first booking,
+         and read back as the team approved them; a change goes back for
+         approval. The ID and account numbers are shown as their last four. -->
+    <section class="panel crpay" id="payBox" hidden>
+      <div class="rec-id rec-id-solo">
+        <div class="rec-who">
+          <h2 class="crpay-title" id="payTitle">Payment details</h2>
+          <p class="rec-id-meta" id="payLine"></p>
+        </div>
+        <div class="rec-ctl"><button class="btn btn-sm" id="payEdit" type="button"></button></div>
+      </div>
+      <dl class="ovfacts crpay-facts" id="payFacts" hidden></dl>
+      <div class="msg" id="payMsg" role="status"></div>
+    </section>
+
+    <div class="sheet" id="paySheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="paySheetTitle" tabindex="-1">
+        <div class="sheet-head">
+          <h3 id="paySheetTitle">Payment details</h3>
+          <button class="iconbtn" id="payClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" id="payFields"></div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="paySend" type="button">Submit</button>
+          <button class="btn btn-quiet" id="payCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <h2 class="sectionhead" id="workHead" hidden></h2>
     <!-- A creator with four bookings had four full cards stacked down the
          page, each with its own upload box, and the one that needed them
@@ -126,6 +155,6 @@
 
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/icons.js?v=20261102a"></script>
-<script src="/js/creator.js?v=20261107"></script>
+<script src="/js/creator.js?v=20261108c"></script>
 </body>
 </html>

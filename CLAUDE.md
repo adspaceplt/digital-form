@@ -260,6 +260,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
+| Creator payment details (the CREATOR PAYMENT DETAILS section, `supabase/functions/creator-mail/`, `#payBox`, `#cpaySheet`) | creator, sql, camp, settings, perms, menus, whatsapp, then `ui` |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
@@ -634,7 +635,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   behind the master code; 2026-10-29), Templates (the user,
   2026-10-29: every template in one place: WhatsApp templates at WhatsApp
   Full Access, Supplier emails at Suppliers Full Access, Client emails, Overdue reminder, Invoice email,
-  Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
+  Creator emails, Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access); each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
   Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
@@ -3713,6 +3714,45 @@ Each line is a rule that broke once. Its reason is in the archive.
   Creators List reads the Creator ID under the name (searched), the
   campaign head leads its meta with the Campaign ID, a booking's Terms line
   the Job reference as a copy control.
+- Creator payment details (`2026-11-08-creator-payment-details.sql`; the
+  user, 2026-11-08: the AP01 form's fields, asked once from the first
+  booking, a change going back for approval, "dont hardcode anything"): the
+  creator's page holds one Payment details card (`#payBox`, under the head)
+  once a booking is Confirmed or later, never a step of a booking, in place
+  of the AP01 link. Its sheet (`#paySheet`) asks Billing as (Malaysian
+  NRIC, Passport, Company BRN) and its number, the legal name, TIN
+  (optional), the billing address, Currency (MYR, SGD) and the methods it
+  takes (Bank transfer, DuitNow, Touch 'n Go eWallet; Bank transfer,
+  PayNow), the bank (the supplier form's list for that currency), the
+  account and its holder, email, WhatsApp and the confirmation tick, in
+  English and 中文; checked as `creator_pay_check` checks it, refused by
+  field. Each set is a `creator_pay_requests` row (RLS on, no policy, no
+  grant) under a reference from the pattern on the creator row of
+  `id_formats` (`{creator}/R{nnn}`, ADC0001/R001; Settings' Creator and
+  campaign IDs, `bad-request-pattern`). `creator_pay_form` and
+  `creator_pay_submit` (anon, the creator's code counted as `get_creator`
+  counts it; `not-due`, `bad` with `field`, `too-many` past five a day)
+  answer the ID and account numbers by their last four alone; one left
+  blank keeps the number held where its kind, or its method, bank and
+  currency, did not move. A set sent while one is pending withdraws it.
+  The console: the Creators List names a creator whose details wait
+  (Payment details to review), its ⋯ Payment details opening `#cpaySheet`
+  (`creator_pay_list`, Creators List View; the numbers whole only at the
+  granted part `campaigns.pay` View), Approve and Decline (a reason the
+  creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
+  `no-note`; filed `creator.updated`); the newest approval is paid to, the
+  one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens it.
+  The emails (`creator_emails`, RLS on, no policy, no grant) are queued in
+  their templates' words (`creator_email_templates`: Details received to
+  the creator, Details to review to the finance address with the account's
+  last four and the console link, Details approved to the creator; each
+  sent or not; Settings, Templates: Creator emails, `team.settings`) and
+  sent by the `creator-mail` edge function (woken by `creator_mail_kick`
+  with the wake secret, and by pg_cron `creator-mail-drain` every five
+  minutes while one waits; `creator_mail_claim`, `creator_mail_done`, the
+  service role's alone), from `ADspace <noreply-creator@sc.adspace.me>`;
+  Resend's word, the sweep, the twelve-month clearing and Messages' Email
+  log take them as every other email.
 - The Creators List:
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
     figure is the client's price with markup, never the creator's payout, so
@@ -3795,8 +3835,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     language and a repaint; Submit and Forget this device clear it, and
     leaving with it asks first. Nothing but Submit sends it (audit F4,
     `tests/capdraft.js`).
-  - Payment details (AP01) are asked for once posted (`payDue`: posted only),
-    never on the draft's approval, and the line never says Approved.
+  - Payment details are the page's own card, asked once from the first
+    booking (Creator payment details, above), never on a booking.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
   - Post and results (Scheduled, Posted; read-only at Completed): per
     placement, the post link (the platform's own host, `post_link_ok()`),
@@ -7701,7 +7741,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the

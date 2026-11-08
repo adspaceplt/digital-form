@@ -8870,3 +8870,26 @@ user: "all four shows same width left right").
   campaigns numbered ACC001 and ACC002 an hour earlier, on no bill yet, were
   renumbered CC001 and CC002 by hand with the code trigger held off.
 
+
+### 2026-11-08 · Creator payment details (Creator R2)
+- The user, after approving the payment flow: details asked once from the
+  first booking with the AP01 Jotform's fields, a change going back for
+  approval, finance told by email with the account's last four and a link
+  (option b), and "dont hardcode anything". The past 117 AP01 submissions
+  are not imported.
+- One card on the creator's page, never a step of a booking: the booking's
+  AP01 button said the same thing a second time once the card stood above
+  it, so it was taken off in the same build.
+- Each set is kept whole under its own reference (`{creator}/R{nnn}`, the
+  pattern a setting beside the Creator ID), so a change never overwrites the
+  set a payment was made on: the newest approval is paid to, the one before
+  Replaced. The creator's page reads the ID and account numbers by their
+  last four alone; one left blank keeps the number held only where what it
+  belongs to did not move, so a new bank with a blank account is refused.
+- The numbers are a granted part of their own (`campaigns.pay`), as a
+  supplier's bank details are, held with the other granted parts by
+  `team_roles_admin_guard`.
+- The emails are queued by the database and sent by their own edge function
+  (`creator-mail`), woken as the WhatsApp queue is; the page sends no words.
+  They join the existing status webhook, sweep, retention and Email log
+  rather than a parallel copy.

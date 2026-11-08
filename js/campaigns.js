@@ -237,7 +237,10 @@
         return;
       }
       state.creators = r.data || [];
-      loadRecord(function () { paintRoster(); if (then) then(); });
+      /* Each creator's payment details standing (2026-11-08), one read. */
+      var states = db.rpc('creator_pay_states').then(function (p) { state.payStates = (!p.error && p.data) || {}; })
+        .catch(function () { state.payStates = {}; });
+      loadRecord(function () { states.then(function () { paintRoster(); if (then) then(); }); });
     });
   }
 
@@ -437,7 +440,9 @@
       row.innerHTML =
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
           (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
-          (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') + '</span>' +
+          (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') +
+          /* Details waiting on the team are the exception the row names. */
+          ((state.payStates || {})[c.id] === 'pending' ? '<span class="cr-pay"><span class="chip-state is-warn">Payment details to review</span></span>' : '') + '</span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
         '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
@@ -450,6 +455,7 @@
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
             menuItem('links', 'Link history') +
+            ((state.payStates || {})[c.id] ? menuItem('pay', 'Payment details') : '') +
             menuItem('del', 'Delete', 'is-danger', 'campaigns:manage') +
           '</div>' +
         '</span>';
@@ -459,6 +465,8 @@
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { removeCreator(c); });
       row.querySelector('[data-a="links"]').addEventListener('click', function () { shutMenus(); openLinkHistory(c, this); });
+      var payItem = row.querySelector('[data-a="pay"]');
+      if (payItem) payItem.addEventListener('click', function () { shutMenus(); openPayDetails(c, row.querySelector('[data-a="menu"]')); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         shutMenus();
         db.from('creators').update({ active: off }).eq('id', c.id).select('id').then(function (r) {
@@ -543,6 +551,118 @@
     paintLinkHistory();
   }
   $('linkHistClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+
+  /* ---- Payment details (2026-11-08) --------------------------------------
+     The newest set a creator sent (`creator_pay_list`), the ID and account
+     numbers whole only at Payment details View; Approve and Decline at its
+     Work (`creator_pay_decide`), a decline asking its reason, which the
+     creator reads. */
+  var payFor = null, payRows = null, payOpener = null;
+  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' };
+  var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
+    replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
+  var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved' };
+  var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
+    'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
+    'no-note': 'Enter a reason.', 'too-long': 'Enter a reason of up to 300 characters.' };
+  function openPayDetails(c, opener) {
+    payFor = c; payRows = null; payOpener = opener || null;
+    $('cpayTitle').textContent = 'Payment details · ' + c.name;
+    UI.skeleton($('cpayBody'), 4);
+    $('cpayApprove').hidden = true; $('cpayDecline').hidden = true;
+    window.ADspaceSheet.show($('cpaySheet'), { opener: opener });
+    readPayDetails();
+  }
+  function readPayDetails() {
+    var c = payFor;
+    db.rpc('creator_pay_list', { p_creator: c.id }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        UI.failLine($('cpayBody'), 'The payment details', (r.error && r.error.message) || PAY_SAID[d.error] || d.error, readPayDetails);
+        return;
+      }
+      payRows = d;
+      paintPayDetails();
+    }).catch(function (e) { UI.failLine($('cpayBody'), 'The payment details', e.message, readPayDetails); });
+  }
+  function paintPayDetails() {
+    var d = payRows, rows = (d.rows || []).filter(function (x) { return x.status !== 'withdrawn'; });
+    var cur = rows[0];
+    var day = function (ts) { return ts ? ADspaceClock.date(ts) : ''; };
+    var chip = function (st) { var w = PAY_STATE[st] || [st, '']; return '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>'; };
+    var fact = function (k, v) { return v ? '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>' : ''; };
+    var html = '';
+    if (!cur) html = '<p class="emptyline">No payment details.</p>';
+    else {
+      html += '<section class="fsec"><h4 class="fsec-h">' + esc(cur.ref) + '</h4>' +
+        '<dl class="ovfacts">' +
+          '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
+          fact('Submitted', day(cur.created_at)) +
+          (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
+          fact('Reason', cur.status === 'declined' ? cur.note : '') +
+          fact('Billing as', PAY_KIND[cur.bill_kind]) +
+          fact(cur.bill_kind === 'brn' ? 'Registration no.' : cur.bill_kind === 'passport' ? 'Passport no.' : 'NRIC no.', cur.id_no || 'Ending ' + cur.id_end) +
+          fact('Legal name', cur.legal_name) +
+          fact('TIN', cur.tin) +
+          fact('Billing address', cur.address) +
+          fact('Currency', cur.currency) +
+          fact('Method', cur.method_word) +
+          fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
+          fact('Account holder', cur.payee) +
+          fact('Email', cur.email) +
+          fact('WhatsApp', cur.whatsapp) +
+        '</dl></section>';
+      if (rows.length > 1) {
+        html += '<section class="fsec"><h4 class="fsec-h">Earlier details</h4><dl class="ovfacts">' +
+          rows.slice(1).map(function (x) {
+            return '<div><dt>' + esc(x.ref) + '</dt><dd>' + chip(x.status) + ' · ' + esc(x.method_word + ' ending ' + x.account_end) + '</dd></div>';
+          }).join('') + '</dl></section>';
+      }
+      if ((d.emails || []).length) {
+        html += '<section class="fsec"><h4 class="fsec-h">Emails</h4><dl class="ovfacts">' +
+          d.emails.map(function (e) {
+            return '<div><dt>' + esc(PAY_MAIL[e.purpose] || e.purpose) + '</dt><dd>' + esc(day(e.created_at)) + ' · ' +
+              esc(window.ADspaceWords.en.mailStatus ? window.ADspaceWords.en.mailStatus(e.status) : ({ queued: 'Queued', sending: 'Sending', sent: 'Sent',
+                delivered: 'Delivered', opened: 'Opened', bounced: 'Bounced', failed: 'Not sent', complained: 'Marked as spam', unknown: 'Not confirmed' })[e.status] || e.status) +
+              '</dd></div>';
+          }).join('') + '</dl></section>';
+      }
+    }
+    $('cpayBody').innerHTML = html + '<div class="msg" id="cpayMsg" role="status"></div>';
+    var open = cur && cur.status === 'pending' && d.decide;
+    $('cpayApprove').hidden = !open; $('cpayDecline').hidden = !open;
+  }
+  function decidePay(ok, note) {
+    var cur = ((payRows && payRows.rows) || []).filter(function (x) { return x.status !== 'withdrawn'; })[0];
+    if (!cur) return Promise.resolve('');
+    return db.rpc('creator_pay_decide', { p_id: cur.id, p_ok: ok, p_note: note || null }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) return r.error.message;
+      if (d.error) {
+        if (d.error === 'decided') readPayDetails();
+        return PAY_SAID[d.error] || d.error;
+      }
+      readPayDetails();
+      db.rpc('creator_pay_states').then(function (p) { if (!p.error) { state.payStates = p.data || {}; paintRoster(); } });
+      return '';
+    });
+  }
+  $('cpayApprove').addEventListener('click', function () {
+    var btn = this; btn.disabled = true;
+    decidePay(true).then(function (said) {
+      btn.disabled = false;
+      var m = $('cpayMsg'); if (m) { m.textContent = said || 'Approved.'; m.className = 'msg ' + (said ? 'err' : 'ok'); }
+    }).catch(function (e) { btn.disabled = false; var m = $('cpayMsg'); if (m) { m.textContent = e.message; m.className = 'msg err'; } });
+  });
+  $('cpayDecline').addEventListener('click', function () {
+    window.ADspaceConfirm.ask({ title: 'Decline payment details?', go: 'Decline', wait: true,
+      body: 'The creator will see the reason and be asked to submit their details again.',
+      field: { name: 'note', label: 'Reason', rows: 3, maxlength: 300 } }, function (v) {
+      return decidePay(false, String((v && v.note) || v || '').trim());
+    });
+  });
+  $('cpayCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('cpayClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
   /* A creators list ⋯ hangs off a table row, so it is placed on the viewport
      rather than inside the row that would clip it. */
@@ -5521,6 +5641,14 @@
       }
       if (state.campaign) { showTab('campaigns'); return; }
       showTab(params.get('tab') === 'roster' ? 'roster' : 'campaigns');
+      /* A creator's payment details to review, the finance email's link. */
+      var payId = params.get('pay');
+      if (payId && params.get('tab') === 'roster') {
+        loadRoster(function () {
+          var who = state.creators.filter(function (c) { return c.id === payId; })[0];
+          if (who) openPayDetails(who, null);
+        });
+      }
       var forClient = params.get('new');
       if (forClient) {
         loadClients(function () {
