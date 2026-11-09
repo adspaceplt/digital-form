@@ -350,7 +350,7 @@
   }
   function shut() { if (sheet) sheet.hidden = true; if (window.ADspaceSheet && window.ADspaceSheet.isOpen(sheet)) window.ADspaceSheet.close(); cur = null; }
   function say(text, tone) { var m = $('bkMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (text && tone ? ' ' + tone : ''); } }
-  var WHY = { brn: 'Same Registration No.', name: 'Same name', similar: 'Similar name' };
+  var WHY = { brn: 'Same Business Registration No.', name: 'Same name', similar: 'Similar name' };
 
   function send(kind, id, btn, done) {
     build();

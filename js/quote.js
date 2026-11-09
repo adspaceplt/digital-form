@@ -120,8 +120,8 @@
       sg: {
         title: 'Accept this quotation', line: 'Confirm your company details and sign here. No printing or scanning is needed.',
         steps: ['Company details', 'Review and sign', 'Confirm with the code'], go: 'Accept and sign',
-        legal: 'Registered Company Name', reg: 'Registration No.', regOld: 'Old Registration No.', addr: 'Billing address',
-        addrPh: 'Street, postcode, city, state', sst: 'SST No.', tin: 'TIN', fin: 'Finance email', contactH: 'Billing contact',
+        legal: 'Registered Company Name', reg: 'Business Registration No.', regOld: 'Old Registration No.', addr: 'Billing address',
+        addrPh: 'Street, postcode, city, state', sst: 'SST Registration No.', tin: 'TIN', fin: 'Finance email', contactH: 'Billing contact',
         mobile: 'Mobile', email: 'Email', minTerm: 'Minimum term', termTotal: 'Total for the term', termTotalIncl: 'Total for the term incl. SST',
         signer: 'Full name', desig: 'Designation', sig: 'Signature', clear: 'Clear', typeIn: 'Type instead', drawIn: 'Draw instead',
         pad: 'Signature area', padHint: 'Sign here', typedPh: 'Type your full name',
@@ -133,8 +133,8 @@
         doneT: 'Quotation accepted', by: 'Signed by', forCo: 'For', on: 'On', dl: 'Download signed quotation',
         doneP: 'ADspace will review your details and confirm your start date within 2 working days.',
         say: {
-          legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Registration Number.', regOld: 'Enter a valid Old Registration Number.',
-          tin: 'Enter a valid TIN.', sst: 'Enter a valid SST Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
+          legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Business Registration Number.', regOld: 'Enter a valid Old Registration Number.',
+          tin: 'Enter a valid TIN.', sst: 'Enter a valid SST Registration Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
           sal: 'Select a salutation from the list.', name: 'Enter the name of the billing contact.', mobile: 'Enter a valid mobile number.',
           signer: 'Enter your full name.', desig: 'Enter your designation.', sig: 'Draw or type your signature.',
           agree: 'Tick the box to confirm you are authorised to sign.', code: 'Enter the six-digit code.',

@@ -27,7 +27,7 @@
       req: { legal_name: 'Enter the Registered Company Name.', company_no: 'Enter the Business Registration Number.',
         billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
         contact_phone: 'Enter the mobile number.', contact_email: 'Enter the email address.' },
-      badBrn: 'Enter the Registration Number as shown on the company\'s registration.',
+      badBrn: 'Enter the Business Registration Number as shown on the company\'s registration.',
       badEmail: 'Enter a valid email address.', badPhone: 'Enter a mobile number of 8 to 15 digits.',
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.', tick: 'Tick the box to continue.',
       doneT: 'Details received', doneP: 'Thank you. Your ADspace account manager will review them.',

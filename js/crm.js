@@ -3029,7 +3029,7 @@
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
-    'brn-taken': 'An entity with this Registration No. already exists. Add that entity instead.'
+    'brn-taken': 'An entity with this Business Registration No. already exists. Add that entity instead.'
   };
   function entSaid(r) {
     if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
@@ -3174,7 +3174,7 @@
       var d = r.data || {};
       if (d.error === 'brn-taken' && d.entity) {
         window.ADspaceConfirm.ask({
-          title: 'Registration No. already in use', go: 'Add entity', wait: true,
+          title: 'Business Registration No. already in use', go: 'Add entity', wait: true,
           body: d.entity.legal_name + ' already uses this Business Registration No. Add that entity to ' + state.client.name + ' instead?'
         }, function () {
           return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
@@ -3216,7 +3216,7 @@
         entClose();
         entReload();
         if (k.error) { msg('crmBillNote', 'Added. Not created in Bukku: ' + (window.ADspaceBukku ? window.ADspaceBukku.said(k) : k.error), 'warn'); return; }
-        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this Registration No.'
+        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this Business Registration No.'
           : 'Added and created in Bukku as ' + k.code + '.', 'ok');
       });
     };
@@ -3269,7 +3269,7 @@
   }
   function entPickNew() {
     return '<label class="ent-pick"><input type="radio" name="entPick" value="new" checked>' +
-      '<span><b>New entity</b><small>Registered Company Name, Registration No., address and billing contact</small></span></label>';
+      '<span><b>New entity</b><small>Registered Company Name, Business Registration No., address and billing contact</small></span></label>';
   }
   /* Bukku's customers holding every word typed, or the registration no. */
   function entBukkuFind() {
@@ -6907,7 +6907,7 @@
     var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
       ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
     if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
-      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its Registered Company Name, Registration No. and billing address. Complete it on Billing first.', 'err');
+      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.', 'err');
       $('pickBillTo').focus();
       return null;
     }

@@ -610,7 +610,7 @@
           (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
           fact('Reason', cur.status === 'declined' ? cur.note : '') +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
-          fact(cur.bill_kind === 'brn' ? 'Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
+          fact(cur.bill_kind === 'brn' ? 'Business Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
           fact('Billing address', cur.address) +

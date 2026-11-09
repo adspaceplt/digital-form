@@ -39,7 +39,7 @@
     'bad-code': 'A Supplier ID is 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
     'bad-name': 'Enter the name, 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
     'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
-    'bad-sst_no': 'Enter the SST No. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
+    'bad-sst_no': 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     'bad-mobile': 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email address.', 'bad-finance_email': 'Enter a valid email address.',
     'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
@@ -221,7 +221,7 @@
     });
   }
   var GROUPS = [
-    ['Billing details', [['kind', 'Supplier type'], ['brn', 'BRN'], ['nric', 'NRIC', 1], ['tin', 'TIN'], ['sst_no', 'SST No.'], ['phone', 'Office / mobile'], ['address', 'Billing address']]],
+    ['Billing details', [['kind', 'Supplier type'], ['brn', 'BRN'], ['nric', 'NRIC', 1], ['tin', 'TIN'], ['sst_no', 'SST Registration No.'], ['phone', 'Office / mobile'], ['address', 'Billing address']]],
     ['Person in charge', [['contact_name', 'Legal name'], ['designation', 'Designation'], ['email', 'Email'], ['mobile', 'Mobile / WhatsApp']]],
     ['Payment details', [['payment_term', 'Payment term'], ['currency', 'Currency'], ['finance_email', 'Finance email'],
       ['payee_name', 'Payee name', 1], ['bank_name', 'Bank', 1], ['bank_account', 'Account number', 1], ['swift', 'SWIFT code', 1], ['bank_address', 'Bank address', 1]]]

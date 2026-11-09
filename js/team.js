@@ -1324,7 +1324,7 @@
     'register.documents': 'Client letters and other documents.',
     'register.hr': 'HR letters and downloaded performance records.',
     'suppliers.pay': 'A supplier\'s NRIC and bank details.',
-    'campaigns.pay': 'A creator\'s NRIC, Passport or Registration Number and account number, and approving their payment details.',
+    'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
     'ops.all': 'Every colleague\'s tasks, not only one\'s own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'

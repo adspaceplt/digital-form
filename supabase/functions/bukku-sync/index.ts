@@ -353,10 +353,10 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   const T: Record<string, string> = { customer: 'Customer', supplier: 'Supplier', employee: 'Employee' };
   const list: [string, string, string][] = [
     ['Legal name', c.legal_name || '', next.legal_name || ''],
-    ['Registration No.', c.reg_no || '', next.reg_no || ''],
+    ['Business Registration No.', c.reg_no || '', next.reg_no || ''],
     ['Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
     ['TIN', c.tax_id_no || '', next.tax_id_no || ''],
-    ['SST No.', c.sst_reg_no || '', next.sst_reg_no || ''],
+    ['SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
     ['Email', c.email || '', next.email || ''],
     ['Phone', c.phone_no || '', next.phone_no || ''],
     ['Billing person', person(c), person(next)],

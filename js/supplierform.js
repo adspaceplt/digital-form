@@ -153,9 +153,9 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit Registration Number, digits only.',
+    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit Business Registration Number, digits only.',
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
-    sst_no: 'Enter the SST No. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
+    sst_no: 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     mobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', address: 'Enter the full billing address.',
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',

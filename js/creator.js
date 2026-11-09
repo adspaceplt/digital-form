@@ -105,7 +105,7 @@
       payKeep: 'Leave blank to keep the number ending {n}.',
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
       paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
-      payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: 'Enter a valid 12-digit Registration Number.' },
+      payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: 'Enter a valid 12-digit Business Registration Number.' },
         legal_name: { nric: 'Enter your Full Name as per NRIC.', passport: 'Enter your Full Name as per Passport.', brn: 'Enter the Registered Company Name.' },
         tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
         method: 'Choose a payment method.', bank: 'Choose a bank.', account: 'Enter a valid account number.',

@@ -1544,7 +1544,7 @@
         });
         if (blocked) {
           rows = [];
-          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this Registration No. already exists. Add that entity instead.', hint: 'brn-taken' }
+          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this Business Registration No. already exists. Add that entity instead.', hint: 'brn-taken' }
             : { code: 'P0001', message: blocked };
           return api;
         }
@@ -8348,7 +8348,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (DB.bukku_links_gone) DB.bukku_links_gone = DB.bukku_links_gone.filter(function (g) { return !(g.kind === 'entity' && g.record_id === eg.id); });
       DB.billing_entities.splice(DB.billing_entities.indexOf(eg), 1);
       DB.activity_log.unshift({ id: nid('al'), actor: egMe.name, action: 'client.billing', subject: egC.name,
-        detail: 'Billing entity deleted: ' + (eg.legal_name || 'no Registered Company Name'), created_at: new Date().toISOString() });
+        detail: 'Billing entity deleted: ' + (eg.legal_name || 'Registered Company Name not set'), created_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }
@@ -14165,7 +14165,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (bkb.action === 'preview') {
               return { data: { ok: true, code: ct ? ct.contact_code : nextC(), rows: [
                 { field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
-                { field: 'Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
+                { field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
                 { field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
                 { field: p.kind === 'client' ? 'Client ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
                 { field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };

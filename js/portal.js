@@ -68,7 +68,7 @@
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
       addCal: 'Add to calendar', monthOf: function (a, b) { return 'Month ' + a + ' of ' + b; }, endsOn: function (d) { return 'ends ' + d; },
-      legalName: 'Registered Company Name', regNo: 'Registration No.', address: 'Billing address', market: 'Market',
+      legalName: 'Registered Company Name', regNo: 'Business Registration No.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
       contact: 'Contact', reach: 'Contact details', contacts: 'Contacts',
