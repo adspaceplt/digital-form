@@ -3844,6 +3844,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   many headers will be filled. The pay sheet reads each set's Creator payments sheet
   line (`creator_sheet_state`).
 - The Creators List:
+  - Under each name, its payment details as they stand (Payment details to
+    review, approved or declined; none said while not submitted) and a
+    Payment details filter (`#rosterPay`: Not submitted, To review,
+    Approved, Declined); the row's ⋯ Payment details opens `#cpaySheet` for
+    every creator (2026-11-10).
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
     figure is the client's price with markup, never the creator's payout, so
     it is never headed Fee.
@@ -3932,6 +3937,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     `tests/capdraft.js`).
   - Payment details are the page's own card, asked once from the first
     booking (Creator payment details, above), never on a booking.
+  - The page is three tabs under the head (`#crTabs`, the view strip,
+    `?tab=`, Bookings left out; 2026-11-10, the approved mockup): Bookings
+    (the queue and the open booking, the red count of what waits on the
+    creator), Payments (drawn once details are asked or a booking holds a
+    payment: the Payment details card, then each booking from Confirmed on
+    with its Job reference, its Bukku bill read as Processing or Paid with
+    its amount, else Not due, and the working days payment takes, all from
+    `creator_pay_form` `payments` and `days`, the creator's own alone;
+    `2026-11-10-creator-page-payments.sql`) and Profile (the profile links
+    with Edit links, and Contact: the WhatsApp and email held).
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
   - Post and results (Scheduled, Posted; read-only at Completed): per
     placement, the post link (the platform's own host, `post_link_ok()`),

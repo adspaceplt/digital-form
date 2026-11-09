@@ -9045,3 +9045,18 @@ functions, none testable against Resend here), one permission rule a
 recipient (a supplier's New email template is `team.settings`, its fixed
 two are Suppliers Full Access: an access change), and Send test to me (a
 new send path in `supplier-mail`).
+### 2026-11-10 — The creator's page in three tabs, and the Creators List by payment details (Creator R5)
+From the mockup the user approved on 2026-11-08 (Creator Portal Revamp).
+The creator's page reads Bookings, Payments and Profile under its head;
+Payments reads each booking's Bukku bill (Processing, Paid, with its
+amount) and the working days payment takes, through `creator_pay_form`,
+which already answers the creator's code and is open to the page, so no new
+public function was opened. Profile holds the links and the contact held.
+The Creators List names each creator's payment details under the name and
+filters by them. Left from the mockup: the Payment details column (the
+state sits under the name, where the row already said To review, so the
+phone's two-column row keeps its shape), the Bukku chip on the list (the
+sheet's Bukku band says it), and the row opening a record page (the ⋯
+Payment details opens the sheet holding the details, Bukku and payments for
+every creator).
+
