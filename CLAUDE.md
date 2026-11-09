@@ -3809,7 +3809,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`team.settings`; `creator_sheet_get`, `creator_sheet_set`: a Sheets link
   read for its ID, `bad-sheet`, `bad-tab`; filed under Creator payments
   sheet), whose save asks `creator-mail` `check` (as the colleague) how
-  many headers take a value. The pay sheet reads each set's Payments sheet
+  many headers will be filled. The pay sheet reads each set's Creator payments sheet
   line (`creator_sheet_state`).
 - The Creators List:
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The

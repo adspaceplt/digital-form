@@ -108,9 +108,9 @@ begin
   if s.on_send is distinct from coalesce(p_on, false) then
     v_moved := v_moved || ('Add rows: ' || case when s.on_send then 'On → Off' else 'Off → On' end);
   end if;
-  if s.spreadsheet_id is distinct from v_id then v_moved := v_moved || 'spreadsheet changed'::text; end if;
+  if s.spreadsheet_id is distinct from v_id then v_moved := v_moved || 'Google Sheets link changed'::text; end if;
   if s.tab is distinct from v_tab then
-    v_moved := v_moved || ('Tab: ' || coalesce(s.tab, 'the first') || ' → ' || coalesce(v_tab, 'the first'));
+    v_moved := v_moved || ('Tab: ' || coalesce(s.tab, 'First tab') || ' → ' || coalesce(v_tab, 'First tab'));
   end if;
   if cardinality(v_moved) = 0 then return jsonb_build_object('ok', true); end if;
   update public.creator_sheet_settings set on_send = coalesce(p_on, false), spreadsheet_id = v_id, tab = v_tab,

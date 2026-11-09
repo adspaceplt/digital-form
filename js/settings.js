@@ -268,7 +268,7 @@
       /* When a creator is paid after their post (2026-11-09). */
       biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
         meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
-          'Other ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
+          'Other currencies ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
       /* Approved payment details as a row of the finance team's Google Sheet (2026-11-09). */
       biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet') },
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
@@ -648,11 +648,12 @@
     return db.functions.invoke('creator-mail', { body: { action: 'check' } }).then(function (r) {
       return window.ADspaceAPI.fnRefusal(r).then(function (code) {
         var d = code ? { error: code } : (r.data || {});
-        if (d.error) { rowSay('crsheet')(CS_SAID[d.error] || 'The sheet could not be read.', 'err'); return; }
+        if (d.error) { rowSay('crsheet')(CS_SAID[d.error] || 'The sheet could not be read. Check the link and that the sheet is shared with the ADspace Google account.', 'err'); return; }
         var cols = d.columns || [], used = cols.filter(function (c) { return c.value; }).length;
-        rowSay('crsheet')('Saved. ' + used + ' of ' + plural(cols.length, 'column', 'columns') + ' in ' + d.tab + ' take a value.', used ? 'ok' : 'err');
+        rowSay('crsheet')(used ? 'Saved. ' + used + ' of ' + plural(cols.length, 'column', 'columns') + ' in ' + d.tab + ' will be filled.'
+          : 'Saved. No column in ' + d.tab + ' matches a payment detail. Rename the headers to match, then save again.', used ? 'ok' : 'err');
       });
-    }).catch(function () { rowSay('crsheet')('Saved. The sheet could not be read.', 'err'); });
+    }).catch(function () { rowSay('crsheet')('Saved. The sheet could not be read. Check the link and the tab name.', 'err'); });
   }
   function openCrSheet() {
     db.rpc('creator_sheet_get').then(function (r) {

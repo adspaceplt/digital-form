@@ -603,7 +603,7 @@
     var x = ((payRows && payRows.sheet) || []).filter(function (y) { return y.request === req; })[0];
     if (!x) return '';
     var w = x.status === 'added' ? 'Added ' + (x.added_at ? ADspaceClock.date(x.added_at) : '') : x.status === 'failed' ? 'Not added' : 'Waiting';
-    return '<div><dt>Payments sheet</dt><dd>' + esc(w) + '</dd></div>';
+    return '<div><dt>Creator payments sheet</dt><dd>' + esc(w) + '</dd></div>';
   }
   function paintPayDetails() {
     var d = payRows, rows = (d.rows || []).filter(function (x) { return x.status !== 'withdrawn'; });

@@ -9309,8 +9309,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else if (csTab && csTab.length > 100) csOut = { error: 'bad-tab' };
         else {
           if (csS.on_send !== !!csA.p_on) csMv.push('Add rows: ' + (csS.on_send ? 'On → Off' : 'Off → On'));
-          if (csS.spreadsheet_id !== csId) csMv.push('spreadsheet changed');
-          if ((csS.tab || null) !== csTab) csMv.push('Tab: ' + (csS.tab || 'the first') + ' → ' + (csTab || 'the first'));
+          if (csS.spreadsheet_id !== csId) csMv.push('Google Sheets link changed');
+          if ((csS.tab || null) !== csTab) csMv.push('Tab: ' + (csS.tab || 'First tab') + ' → ' + (csTab || 'First tab'));
           if (csMv.length) { csS.on_send = !!csA.p_on; csS.spreadsheet_id = csId; csS.tab = csTab; logAct('team.changed', 'Creator payments sheet', csMv.join(' · ')); }
           csOut = { ok: true };
         }
