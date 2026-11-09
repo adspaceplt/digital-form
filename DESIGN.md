@@ -708,19 +708,22 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   - Articles and short prepositions stay lower; acronyms keep their capitals;
     Pre-Advertising Checklist.
   - An official or professional term keeps its capitals wherever it is
-    written, a label, a refusal, a placeholder, an email and a PDF line
-    included (the user, 2026-11-09: "Passport, Tax Identification Number
-    (TIN) etc. not every wordings should only capital the very first
-    word"): the field names of Malaysian identity, bank, LHDN and SSM
-    forms (Full Name as per NRIC, Full Name as per Passport, Registered
-    Company Name, NRIC, NRIC Number, MyKad, Passport, Passport Number,
-    Business Registration Number (BRN), Business Registration No.,
-    Registration No., Old Registration No., Tax Identification Number
-    (TIN), SST Registration Number, SST Registration No., SST No.) and the
-    formal names above. The label's other words stay sentence case
-    (Billing address, Finance email, Payment method); a term not plainly an
-    official one stays sentence case. `tests/words.js` fails a lower-case
-    official term.
+    written, on every page of the portal, a label, a refusal, a
+    placeholder, an email and a PDF line included (the user, 2026-11-09:
+    "Passport, Tax Identification Number (TIN) etc. not every wordings
+    should only capital the very first word", "not just cover the billing
+    section but entire portal"): the field names of Malaysian identity,
+    bank, LHDN and SSM forms, one name a field (Full Name as per NRIC, Full
+    Name as per Passport, Registered Company Name, NRIC, NRIC Number,
+    MyKad, Passport, Passport Number, Business Registration No. and
+    Business Registration Number (BRN), Old Registration No., Tax
+    Identification Number (TIN), SST Registration No. and SST Registration
+    Number); the formal names above; and a section's or product's own name
+    (Creators List, Content Review, Google Meet, Meta Business Suite,
+    Bukku). The label's other words stay sentence case (Billing address,
+    Finance email, Payment method), as does a common noun (rate card,
+    quotation, invoice) and a term not plainly an official one.
+    `tests/words.js` fails a lower-case official term.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
 - Remove and Delete are two promises (the user, 2026-10-31: "Remove means

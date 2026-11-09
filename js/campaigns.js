@@ -228,11 +228,11 @@
     db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
       if (r.error) {
         state.creators = [];
-        UI.failLine($('rosterList'), 'The creators list', r.error.message, function () { loadRoster(then); });
+        UI.failLine($('rosterList'), 'The Creators List', r.error.message, function () { loadRoster(then); });
         /* Add creators reads the same list, and a failed read is never drawn
            as a list with nobody on it. */
         if ($('addOptionBox') && !$('addOptionBox').hidden) {
-          UI.failLine($('optionPick'), 'The creators list', r.error.message, function () { loadRoster(then); });
+          UI.failLine($('optionPick'), 'The Creators List', r.error.message, function () { loadRoster(then); });
         }
         return;
       }
@@ -872,7 +872,7 @@
        links returned early — so the commonest way to key somebody in twice
        (their name, and nothing else yet) was the one path that said nothing. */
     if (hits.length) {
-      msg(ctx.warn, 'Already in the creators list as ' + hits.join(', ') + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the Creators List as ' + hits.join(', ') + '. Saving will be refused.', 'err');
       return;
     }
     /* The same name twice is a refusal, not a caution. `SteveCN`, `SteveCN `
@@ -883,7 +883,7 @@
        whitespace to one, so what is compared is what a person reads. */
     var held = nameHolder($(ctx.name).value, state.editing);
     if (held) {
-      msg(ctx.warn, 'Already in the creators list as ' + held.name + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the Creators List as ' + held.name + '. Saving will be refused.', 'err');
       return;
     }
     // Nothing identical. Names close enough to be worth a second look.
@@ -895,7 +895,7 @@
         return o && (o.indexOf(name) > -1 || name.indexOf(o) > -1);
       }).map(function (c) { return c.name; });
       if (near.length) {
-        msg(ctx.warn, 'Similar name already in the creators list: ' + near.join(', ') + '.', 'warn');
+        msg(ctx.warn, 'Similar name already in the Creators List: ' + near.join(', ') + '.', 'warn');
         return;
       }
     }
@@ -1076,7 +1076,7 @@
     if (!name) { msg('creatorMsg', 'A name is required.', 'err'); return; }
     var held = nameHolder(name, state.editing);
     if (held) {
-      msg('creatorMsg', held.name + ' is already in the creators list.', 'err');
+      msg('creatorMsg', held.name + ' is already in the Creators List.', 'err');
       $('crName').focus();
       return;
     }

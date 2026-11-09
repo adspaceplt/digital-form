@@ -9030,4 +9030,13 @@ functions' words (what bukku_prepare names as missing and five Activity
 record lines or refusals, OFFICIAL TERMS CAPITALISED). Registered name
 became Registered Company Name throughout, one term for one thing; the
 short No. forms stayed where the column is narrow. Chinese is unaffected.
-A tests/words.js pattern fails a lower-case official term from now on.
+Asked again the same night ("not just cover the billing section but
+entire portal"), the sweep read every page's words for proper and
+professional nouns: the platforms and products (Meta, WhatsApp, Google
+Meet, Bukku) and the section names were already capitalised in every
+sentence; the Creators List was written lower case in five sentences and
+now takes its capitals, and the finance team's sheet reads Individual
+(Passport). The rate card, a quotation and an invoice are the industry's
+common nouns and stay sentence case, the Rate Card wording the team wrote
+kept as written. A tests/words.js pattern fails a lower-case official
+term from now on.
