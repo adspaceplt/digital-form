@@ -9025,3 +9025,23 @@ their own refusals, and every editor names the field and the ones to use.
 Every live template was read first and holds only its own fields, so no
 saved wording is refused. The copy review moved the Creator emails' template
 name before the refusal (a bracket after a full stop read as a fragment).
+
+### 2026-11-10: every email's wording in one editor; Settings by channel
+
+The overnight Settings review (findings 2 to 9): six template sheets each
+built its own editor (a picker sheet, two ADspaceConfirm forms, a list
+sheet), each with a hard-coded field list; the emails sat in Templates,
+Clients and Money alike, and the press() if-chain grew a branch a row.
+Built: `js/mailtpl.js`, one Email templates sheet by recipient and one
+editor with a live preview, field chips from `template_fields_all()` and an
+unknown field marked as typed; the five old editors and their markup
+removed. Settings regrouped after System Settings: Messages (Email,
+WhatsApp) beside Templates (Document types, Task templates, Rate card
+wording); every group a rail glyph and inset cards of five rows at most
+under headings; a search over every row; each row carries what a press
+opens; a switch offers Undo under its card. Held for the user: folding the
+six template tables into one store (it restates about twenty live send
+functions, none testable against Resend here), one permission rule a
+recipient (a supplier's New email template is `team.settings`, its fixed
+two are Suppliers Full Access: an access change), and Send test to me (a
+new send path in `supplier-mail`).

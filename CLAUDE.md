@@ -299,6 +299,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
+| `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
@@ -624,21 +625,38 @@ Each line is a rule that broke once. Its reason is in the archive.
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Eight groups
-  (2026-10-11, the queue's task 46): Portal
-  (Page availability, Announcements, Notices, Public holidays, Departments, Overseas approval, Health data kept), Clients (Industries, Creator and campaign IDs, Follow-up limits, Details forms: a
-  client's and a supplier's link alike, Analytics, Send by email), My
-  Work (Due dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
-  checks, Reach allowance, Ad benchmarks),
-  Money (Tax and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices), WhatsApp
-  (Sent again: WhatsApp and
-  emails, Website quotations: how many a day are told on WhatsApp), Performance
-  (Months, Quarters, Bonus and trip, Commission at `team.performance` View,
-  behind the master code; 2026-10-29), Templates (the user,
-  2026-10-29: every template in one place: WhatsApp templates at WhatsApp
-  Full Access, Supplier emails at Suppliers Full Access, Client emails, Overdue reminder, Invoice email,
-  Creator emails, Meeting message, Document types, Task templates at `ops.workflows`, Rate card wording at
-  Services Full Access); each setting has this one place: no Tax and terms
+  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Nine groups
+  (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
+  review, after Apple's System Settings), each led by a rail glyph and its
+  rows in inset cards of five at most under short headings: Portal (Pages
+  and notices: Page availability, Announcements, Notices, Demo access;
+  Company: Public holidays, Departments, Overseas approval, Health data
+  kept), Clients (Clients: Industries, Follow-up limits, Details forms: a
+  client's and a supplier's link alike, Analytics; Creators: Creator and
+  campaign IDs, Creator payments, Creator payments sheet), My Work (Due
+  dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
+  checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Money (Tax
+  and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
+  Messages (Email: Send by email, Email templates, Sent again: WhatsApp and
+  emails; WhatsApp: WhatsApp templates at WhatsApp Full Access, Meeting
+  message, Website quotations: how many a day are told on WhatsApp),
+  Performance (Months, Quarters, Bonus and trip, Commission at
+  `team.performance` View, behind the master code; 2026-10-29), Templates
+  (Document types, Task templates at `ops.workflows`, Rate card wording at
+  Services Full Access). Email templates (`js/mailtpl.js`,
+  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access) lists
+  every email by recipient (Clients: Quotation, Letter of Offer, Client
+  letter, Overdue reminder, Invoice email and New email's own; Suppliers:
+  Supplier approved, Document and New email's own; Creators: the six
+  creator emails), each saved through its own function, and one editor
+  (`#mtEdSheet`): the words at the left, the email as it reads at the right
+  (stacked under 720), the sender's fields from `template_fields_all()` as
+  chips inserting at the caret, a field it cannot fill marked as it is
+  typed. A row carries what a press opens (`open`); a switch acts at the
+  press with Undo under its card. A search heads the group list (a
+  phone's page), finding a row by its name, group or value across every
+  group and opening its group on its control (Enter takes the first);
+  each setting has this one place: no Tax and terms
   on the Services bar, no Templates, Task numbering or Due dates in My
   Work's ⋯, no Document types on Documents, no Templates tab in WhatsApp,
   no Wording tab in Services; a group with
@@ -2969,8 +2987,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   back); an email still Sending ten minutes after it was filed (its
   function stopped) reads Not confirmed (`mail_sweep`, pg_cron
   `mail-sweep` every fifteen minutes; overdue reminders alike). The two templates (`{contact name}` … `{sender name}`) are
-  Settings, Documents: Supplier emails (`#supTplSheet`, Suppliers Full
-  Access). `supplier_email_templates` and `supplier_emails` have RLS on,
+  Settings, Messages: Email templates under Suppliers (`ADspaceMailTpl`,
+  Suppliers Full Access). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
 - Send by email (`js/docmail.js`, `2026-10-31-client-document-emails.sql`;
@@ -3002,9 +3020,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   client); Resend's word and `mail_sweep` reach `client_emails` as they do
   the supplier's. The record's row reads its last email under its
   reference (Emailed {day} · Delivered; `client_emails_of`, one read a
-  visit to the client). The three templates are Settings, Templates:
-  Client emails (`#dmTplSheet`, `team.settings`; filed `team.changed`
-  under Client emails). `client_email_templates` and `client_emails` have
+  visit to the client). The three templates are Settings, Messages:
+  Email templates under Clients (`ADspaceMailTpl`, `team.settings`; filed
+  `team.changed` under Client emails). `client_email_templates` and `client_emails` have
   RLS on, no policy, no grant.
 
 - Tax codes per line (`2026-10-22-tax-codes-per-line.sql`; the user,
@@ -3196,7 +3214,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   files or names a figure: begin and done are the service role's alone.
   Shut while sending, Review and send sends no further email and reads the
   list again once the one on its way answers.
-  The words are Settings, Money: Overdue reminder (`invoice_email_template`,
+  The words are Settings, Messages: Email templates, Overdue reminder (`invoice_email_template`,
   `team.settings`; two subjects, the message holding `{invoices}`, the
   legal note and the disclaimer, in the dark grey). Resend's word
   reaches it through `supplier_email_status`. `invoice_emails` and the
@@ -3227,7 +3245,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sends share, `invoice_mail_begin`), from ADspace Finance with the same
   table and Bukku's own link (View PDF; Bukku's API holds no PDF to
   attach), and closed as Invoice emailed to … on the client. Its own
-  words (`invoice_send_template`, Settings, Templates: Invoice email,
+  words (`invoice_send_template`, Settings, Messages: Email templates, Invoice email,
   `team.settings`; `invoice_send_template_get`, `_save`, filed under
   Invoice email) and its own Sent recently: a reminder never holds an
   invoice back, nor an invoice a reminder. The Email log reads it as
@@ -3773,7 +3791,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   their templates' words (`creator_email_templates`: Details received to
   the creator, Details to review to the finance address with the account's
   last four and the console link, Details approved to the creator; each
-  sent or not; Settings, Templates: Creator emails, `team.settings`) and
+  sent or not; Settings, Messages: Email templates under Creators, `team.settings`) and
   sent by the `creator-mail` edge function (woken by `creator_mail_kick`
   with the wake secret, and by pg_cron `creator-mail-drain` every five
   minutes while one waits; `creator_mail_claim`, `creator_mail_done`, the
@@ -3806,7 +3824,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
   bills matching no booking read under Earlier payments
   (`creator_bills_list`, Creators List View, amounts at `campaigns.pay`
-  View). The three emails' words are Settings, Templates: Creator emails,
+  View). The three emails' words are Settings, Messages: Email templates under Creators,
   Payment request to Details to review's finance address.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
@@ -4876,7 +4894,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Not connected is not a failure of the save.
   - `clientMessage()` fills the one bilingual template, the team's words
     (`meeting_message_template`, `2026-10-29-meeting-message.sql`; Settings,
-    Templates, Meeting message at `team.settings`; `meeting_message_save`
+    Messages, Meeting message at `team.settings`; `meeting_message_save`
     refuses words without {date}, `no-date`, filed under Meeting message;
     the sheet refuses a field it cannot fill, naming it, 2026-10-29):
     {meeting}, {date}, {time}, {month}, {channel}, {link}, a line whose
@@ -7257,10 +7275,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   email is marked (`team_emails.finance`) and read on the client and in the
   log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
-  `mail_sweep`. Settings, Templates: Email templates (`#etplSheet`,
-  `team.settings`; `email_template_save` with `taken`, `email_template_delete`
-  in the ⋯, filed under Email templates). Not the invoice email, which keeps
-  its own sheet. A client's audience asks Clients: Contacts at View too
+  `mail_sweep`. Settings, Messages: Email templates, New email under Clients
+  or Suppliers (`ADspaceMailTpl`, `team.settings`; `email_template_save` with
+  `taken`, `email_template_delete` in the row's ⋯, filed under Email
+  templates). A client's audience asks Clients: Contacts at View too
   (its addresses are that part's): without it no client is offered, its
   email is refused (`denied`) and its rows leave the log. A client record's
   Contacts pane lists the emails written to it under Emails
@@ -7328,7 +7346,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   twelve), Type and Status behind Filters, the count, New message (Work).
 - At Full Access the queue (waiting, sending, not sent and not confirmed
   in 7 days, `wa_messages` `queue`; `#waQueue`) heads the messages. The
-  templates are Settings' Templates, WhatsApp templates (`#waTplSheet`,
+  templates are Settings, Messages: WhatsApp templates (`#waTplSheet`,
   `ADspaceWhatsApp.manage`; 2026-10-29: the section's Templates tab gone,
   an older `tab=templates` reads the messages): one template a purpose (`wa_templates`: `report`,
   `feedback`, `reminder`, `creator`, `approval`; name, language, category, how many body
@@ -7403,7 +7421,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   composer asks `wa_sent_recently(p_to_kind, p_to, p_purpose, p_ref,
   p_template)` for the newest message not failed to that recipient for that
   purpose and record (a feedback request its client, a plain message its
-  template) within `wa_repeat_hours` (24; Settings, WhatsApp: Sent again; 0
+  template) within `wa_repeat_hours` (24; Settings, Messages: Sent again; 0
   to 168, 0 asks nothing); found, Send asks in warn instead (Sent recently:
   to whom, by whom or automatically, when and how long ago; Send again),
   and `wa-send` refuses `recent` unless that question was answered

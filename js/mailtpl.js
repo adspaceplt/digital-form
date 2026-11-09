@@ -78,7 +78,7 @@
       var out = [];
       var CK = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
       ((a[1] && a[1].rows) || []).forEach(function (t) {
-        out.push({ id: 'client:' + t.kind, rec: 'clients', sec: 'Sent from a record', name: CK[t.kind] || t.kind, kind: 'client',
+        out.push({ id: 'client:' + t.kind, rec: 'clients', sec: 'Client documents', name: CK[t.kind] || t.kind, kind: 'client',
           subject: t.subject, body: t.body,
           save: function (v) { return saveWith('client_email_template_save', { p_kind: t.kind, p_subject: v.subject, p_body: v.body }); } });
       });
@@ -96,7 +96,7 @@
       });
       var SK = { approved: 'Supplier approved', document: 'Document' };
       ((a[5] && a[5].rows) || []).forEach(function (t) {
-        out.push({ id: 'supplier:' + t.purpose, rec: 'suppliers', sec: 'Sent from a supplier', name: SK[t.purpose] || t.purpose, kind: 'supplier',
+        out.push({ id: 'supplier:' + t.purpose, rec: 'suppliers', sec: 'Supplier emails', name: SK[t.purpose] || t.purpose, kind: 'supplier',
           subject: t.subject, body: t.body,
           save: function (v) { return saveWith('supplier_email_template_save', { p_purpose: t.purpose, p_subject: v.subject, p_body: v.body }); } });
       });
@@ -158,7 +158,7 @@
     }).join('');
   }
   function rowHtml(i) {
-    var meta = i.sw && !i.on ? 'Not sent' : i.subject;
+    var meta = i.sw && !i.on ? 'Off' : i.subject;
     return '<div class="stg-row mt-row" data-id="' + esc(i.id) + '">' +
       '<div class="stg-what"><p class="stg-name">' + esc(i.name) + '</p><p class="stg-meta mt-subj">' + esc(meta) + '</p></div>' +
       '<div class="stg-ctl">' +
@@ -203,9 +203,9 @@
     if (it.named) h += box('name', 'Template name', it.name, 'input');
     if (it.sw) h += '<div class="mt-on"><span class="field-label" id="mtOnL">Send this email</span>' +
       '<button class="switch" type="button" role="switch" id="mtOn" aria-labelledby="mtOnL" aria-checked="' + (it.on ? 'true' : 'false') + '"></button></div>';
-    if (it.to) h += box('to', 'Finance email', it.toEmail, 'email', 'Details to review and Payment request go to it.');
-    h += box('subject', it.two ? 'Subject, one invoice' : 'Subject', it.subject, 'input');
-    if (it.two) h += box('subject2', 'Subject, several invoices', it.subject2, 'input');
+    if (it.to) h += box('to', 'Finance email', it.toEmail, 'email', 'Receives Details to review and Payment request.');
+    h += box('subject', it.two ? 'Subject for one invoice' : 'Subject', it.subject, 'input');
+    if (it.two) h += box('subject2', 'Subject for several invoices', it.subject2, 'input');
     h += box('body', 'Message', it.body, 'area');
     h += '<div class="mt-chips" role="group" aria-label="Insert a field">' + f.map(function (x) {
       return '<button class="btn btn-sm mt-chip" type="button" data-f="' + esc(x) + '">{' + esc(x) + '}</button>';
@@ -312,7 +312,7 @@
       return rpc('email_template_delete', { p_id: it.tid }).then(function (d) {
         if (d && d.error) return said(d);
         return load().then(function () { paint(); msg('Deleted.', 'ok'); return ''; });
-      }).catch(function (e) { return (e && e.message) || 'Not deleted.'; });
+      }).catch(function (e) { return (e && e.message) || 'Not deleted. The database refused the request.'; });
     });
   }
 
