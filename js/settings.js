@@ -472,10 +472,12 @@
       return '<button class="stg-go" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '">' +
         '<span class="stg-go-g" aria-hidden="true">' + glyphOf(x) + '</span>' + esc(x.name) + '</button>';
     }).join('') + '</nav>' : '') +
-      (!desk ? find : '') +
       (strip && !query ? '<div class="actstrip stg-strip"><span class="cmdbar-views actviews" id="stgStrip" role="group" aria-label="Settings">' + list.map(function (x) {
         return '<button class="acttab btn-sm stg-tab" type="button" data-g="' + x.key + '" aria-controls="stg-' + x.key + '" aria-pressed="false">' + esc(x.name) + '</button>';
       }).join('') + '</span></div>' : '') +
+      /* On a phone the strip stands where every section's does, the
+         search under it (2026-11-10, cmdbar). */
+      (!desk ? find : '') +
       (query ? '<div class="stg-groups">' + found(list) + '</div>' :
       '<div class="stg-groups"' + (strip ? ' data-swipe="stgStrip"' : '') + '>' + list.map(function (g) {
         /* With fewer than three groups there is nothing to move between,
