@@ -1301,7 +1301,7 @@
      name alone left a group unsure that Service lines held no quotations. */
   var PART_DESC = {
     'clients.contacts': 'The client\'s people and their portal access.',
-    'clients.billing': 'Registered name, BRN, billing contact and address.',
+    'clients.billing': 'Registered Company Name, BRN, billing contact and address.',
     'clients.quotes': 'Build quote and the client\'s quotations.',
     'clients.services': 'The client\'s service lines and their rates.',
     'clients.documents': 'Letters of Offer and client letters: issue, sign and void.',
@@ -1324,7 +1324,7 @@
     'register.documents': 'Client letters and other documents.',
     'register.hr': 'HR letters and downloaded performance records.',
     'suppliers.pay': 'A supplier\'s NRIC and bank details.',
-    'campaigns.pay': 'A creator\'s NRIC, passport or registration number and account number, and approving their payment details.',
+    'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
     'ops.all': 'Every colleague\'s tasks, not only one\'s own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'

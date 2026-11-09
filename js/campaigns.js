@@ -228,11 +228,11 @@
     db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
       if (r.error) {
         state.creators = [];
-        UI.failLine($('rosterList'), 'The creators list', r.error.message, function () { loadRoster(then); });
+        UI.failLine($('rosterList'), 'The Creators List', r.error.message, function () { loadRoster(then); });
         /* Add creators reads the same list, and a failed read is never drawn
            as a list with nobody on it. */
         if ($('addOptionBox') && !$('addOptionBox').hidden) {
-          UI.failLine($('optionPick'), 'The creators list', r.error.message, function () { loadRoster(then); });
+          UI.failLine($('optionPick'), 'The Creators List', r.error.message, function () { loadRoster(then); });
         }
         return;
       }
@@ -565,7 +565,7 @@
      Work (`creator_pay_decide`), a decline asking its reason, which the
      creator reads. */
   var payFor = null, payRows = null, payOpener = null;
-  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' };
+  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (Passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
   var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
@@ -628,7 +628,7 @@
           (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
           fact('Reason', cur.status === 'declined' ? cur.note : '') +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
-          fact(cur.bill_kind === 'brn' ? 'Registration no.' : cur.bill_kind === 'passport' ? 'Passport no.' : 'NRIC no.', cur.id_no || 'Ending ' + cur.id_end) +
+          fact(cur.bill_kind === 'brn' ? 'Business Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
           fact('Billing address', cur.address) +
@@ -879,7 +879,7 @@
        links returned early — so the commonest way to key somebody in twice
        (their name, and nothing else yet) was the one path that said nothing. */
     if (hits.length) {
-      msg(ctx.warn, 'Already in the creators list as ' + hits.join(', ') + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the Creators List as ' + hits.join(', ') + '. Saving will be refused.', 'err');
       return;
     }
     /* The same name twice is a refusal, not a caution. `SteveCN`, `SteveCN `
@@ -890,7 +890,7 @@
        whitespace to one, so what is compared is what a person reads. */
     var held = nameHolder($(ctx.name).value, state.editing);
     if (held) {
-      msg(ctx.warn, 'Already in the creators list as ' + held.name + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the Creators List as ' + held.name + '. Saving will be refused.', 'err');
       return;
     }
     // Nothing identical. Names close enough to be worth a second look.
@@ -902,7 +902,7 @@
         return o && (o.indexOf(name) > -1 || name.indexOf(o) > -1);
       }).map(function (c) { return c.name; });
       if (near.length) {
-        msg(ctx.warn, 'Similar name already in the creators list: ' + near.join(', ') + '.', 'warn');
+        msg(ctx.warn, 'Similar name already in the Creators List: ' + near.join(', ') + '.', 'warn');
         return;
       }
     }
@@ -1084,7 +1084,7 @@
     if (!name) { msg('creatorMsg', 'A name is required.', 'err'); return; }
     var held = nameHolder(name, state.editing);
     if (held) {
-      msg('creatorMsg', held.name + ' is already in the creators list.', 'err');
+      msg('creatorMsg', held.name + ' is already in the Creators List.', 'err');
       $('crName').focus();
       return;
     }
