@@ -363,18 +363,22 @@
         if (String(v.en || '').trim().length > 300 || String(v.zh || '').trim().length > 300) return SAID['bad-text'];
         if (v.link && !/^https:\/\/\S+$/.test(String(v.link).trim())) return SAID['bad-link'];
         return win(v).bad;
-      }
+      },
+      /* The sheet stays open until the save answers; a refusal keeps the
+         words typed (the overnight review, 2026-11-10). */
+      wait: true
     }, function (v) {
       var w = win(v);
-      db().rpc('announcement_save', {
+      return db().rpc('announcement_save', {
         p_id: a ? a.id : null, p_audience: aud, p_tone: v.tone || 'info', p_body_en: v.en, p_body_zh: aud === 'team' ? null : (v.zh || null),
         p_link: v.link || null, p_starts: w.starts, p_ends: w.ends
       }).then(function (r) {
         var d = (r && r.data) || {};
-        if ((r && r.error) || d.error) { msg(said(r.error || d.error), 'err'); return; }
+        if ((r && r.error) || d.error) return said(r.error || d.error);
         msg(a ? 'Saved.' : 'Posted.', 'ok');
         load(); refresh();
-      }).catch(function (err) { msg(said(err), 'err'); });
+        return '';
+      }).catch(function (err) { return said(err); });
     });
   }
 

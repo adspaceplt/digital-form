@@ -33,10 +33,13 @@
     live: 'Withdraw the notice before it is deleted.'
   };
   function said(e, d) {
-    if (!e) return 'Not sent.';
+    if (!e) return 'This could not be completed. Please try again.';
     /* Ten notices an hour (2026-10-18, Team audit 16): the next one's time. */
     if (e === 'too-many') return 'You can send up to ten notices per hour.' + (d && d.next ? ' The next can be sent at ' + when(d.next) + '.' : '');
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : 'Not sent. Check the connection and try again.';
+    /* The database's own words where it refused; the connection only where
+       nothing came back (the overnight review, 2026-11-10). */
+    if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet
+      : /fetch|network|load failed/i.test(e.message) ? 'Not sent. Check the connection and try again.' : e.message;
     return SAID[e] || e;
   }
   function $(id) { return document.getElementById(id); }

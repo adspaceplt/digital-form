@@ -480,7 +480,7 @@
     db.rpc('page_set', args).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
+        done(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
                      : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
                      : d.error === 'denied' ? 'You do not have permission to change page availability. Please ask an admin.' : 'Not saved. The database refused the request.');
         return;
@@ -755,7 +755,7 @@
       db.rpc('abroad_request', { p_reason: why, p_until: until }).then(function (r) {
         var d = r.data, e = r.error || (d && d.error);
         if (e) {
-          abroadMsg(e.message ? (/function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message)
+          abroadMsg(e.message ? (/function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet : e.message)
             : e === 'bad-until' ? 'Choose a day from today to ' + window.ADspaceClock.date(d.max) + '.' : ABROAD_SAID[e] || 'Not sent.');
           return;
         }
@@ -1590,7 +1590,7 @@
       db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
         btn.disabled = false;
         var why = r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
-          ? 'This feature is not available yet. Please contact an admin.' : 'Not saved. Try again.')
+          ? window.ADspaceWords.line.notYet : 'Not saved. Try again.')
           : (r.data && r.data.error) ? 'Not saved. Try again.' : '';
         if (why) { m.textContent = why; m.className = 'msg ro-msg err'; return; }
         keepRail(send);
@@ -3283,7 +3283,7 @@
   /* Resolves null where the client is ready, else { code, text }. */
   function brandGate(clientId, needAnalysis) {
     return db.rpc('ai_brand_ready', { p_client: clientId }).then(function (r) {
-      if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message };
+      if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message };
       var d = r.data || {};
       if (d.error) return { code: d.error, text: 'This client is outside your access.' };
       if ((d.missing || []).length) return { code: 'no-brief', text: brandWords('no-brief', d.missing) };
@@ -3319,7 +3319,7 @@
      words go into the fields; nothing is saved until the post's own Save,
      and Undo puts the earlier words back. */
   var CAP_SAID = {
-    'needs-update': 'This feature is not available yet. Please contact an admin.',
+    'needs-update': window.ADspaceWords.line.notYet,
     'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
     'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
@@ -5603,7 +5603,7 @@
      ringgit to one Singapore dollar, four decimals) may stay unset. */
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
-    rm: [0, 10000, false], share: [1, 100, false], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
+    rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
     month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
@@ -5682,7 +5682,7 @@
       ['bench_cpm_min', 'Cost per 1,000 impressions, low (RM)', 'rm', 'Market', 'Impressions low RM', String],
       ['bench_cpm_max', 'Cost per 1,000 impressions, high (RM)', 'rm', 'Market', 'Impressions high RM', String],
       ['bench_cpl_rise', 'Yearly rise in cost per lead (%)', 'adj', 'Market', 'Cost per lead rise', pctOf],
-      ['bench_reels_share', 'Reels share of impressions (%)', 'share', 'Market', 'Reels share', pctOf],
+      ['bench_reels_share', 'Reels share of impressions (%)', 'share0', 'Market', 'Reels share', pctOf],
       ['bench_ad_spend_pct', 'Ad spend share of the budget (%)', 'share', 'Budget rules', 'Ad spend', pctOf],
       ['bench_adset_daily', 'Minimum daily budget per ad set (RM)', 'rm', 'Budget rules', 'Ad set daily RM', String]] },
     /* How long health data is kept (2026-10-18, Team audit 12): PDPA 2010. */
@@ -5759,7 +5759,7 @@
       return f;
     }));
     window.ADspaceConfirm.ask({
-      title: spec.title, go: 'Save', fields: fields, focus: spec.keys[0] && spec.keys[0][0],
+      title: spec.title, go: 'Save', fields: fields, focus: spec.keys[0] && spec.keys[0][0], wait: true,
       /* Each figure the person has not touched shows the value in force on
          the From day, so a day with a planned change opens on that change
          (2026-10-20, SET-1). */
@@ -5775,7 +5775,7 @@
         });
       },
       check: function (v) {
-        if (!v.from || v.from < day) return 'From is today or a later day.';
+        if (!v.from || v.from < day) return 'Choose a From date of today or later.';
         for (var i = 0; i < spec.keys.length; i++) {
           var k = spec.keys[i], b = SET_BOUND[k[2]], x = String(v[k[0]] == null ? '' : v[k[0]]).trim(), n = Number(x);
           var dp = Math.pow(10, b[3] || 2);
@@ -5797,27 +5797,32 @@
         if (x === '' || (at != null && Number(x) === Number(at))) return;
         vals[k[0]] = Number(x);
       });
-      if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'mute'); return; }
+      if (!Object.keys(vals).length) { if (spec.msg) msg(spec.msg, 'No change.', 'mute'); return Promise.resolve(''); }
       /* A save that only puts back the figures in force before a planned
          change withdraws it, and says so (2026-10-27, SET-8). */
       var withdrawn = Object.keys(vals).every(function (key) {
         var nx = MON.next ? MON.next(key) : null, was = nx && MON.setting(key, ADspaceClock.addDays(nx.from, -1));
         return nx && nx.from === v.from && was != null && Number(vals[key]) === Number(was);
       });
-      db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
+      /* The sheet stays open until the database answers, and a refusal is
+         said in it with every figure kept (the overnight review, 2026-11-10:
+         a From day that passed at midnight lost what was typed). */
+      return db.rpc('app_settings_set', { p_from: v.from, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error || d.error) {
-          if (spec.msg) msg(spec.msg, r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
-            : d.error === 'past' ? 'From is today or a later day.' : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.'
-            : d.error === 'bad-value' ? 'A figure is out of range.' : d.error, 'err');
-          return;
+          return r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
+            : d.error === 'past' ? 'Choose a From date of today or later.' : d.error === 'denied' ? window.ADspaceWords.line.noSettings
+            : d.error === 'bad-value' ? 'Enter each figure within its allowed range.' : d.error;
         }
-        return MON.load(true).then(function () {
+        /* Saved: a failed read of the figures afterwards never reads as a
+           failed save. */
+        return MON.load(true).catch(function () {}).then(function () {
           var word = ADspaceClock.date(v.from);
           if (spec.msg) msg(spec.msg, withdrawn ? 'Planned change withdrawn.' : 'Saved. From ' + word + '.', 'ok');
           if (spec.done) spec.done();
+          return '';
         });
-      }).catch(function (e) { if (spec.msg) msg(spec.msg, String((e && e.message) || e), 'err'); });
+      }).catch(function (e) { return String((e && e.message) || e); });
     });
   }
 
@@ -6100,7 +6105,7 @@
   };
   function confirmSaid(e) {
     var k = String(e || '');
-    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
+    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return window.ADspaceWords.line.notYet;
     return CONFIRM_SAID[k] || k || 'Not saved.';
   }
 

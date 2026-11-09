@@ -305,6 +305,10 @@
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
     mailOff: 'Email is not set up yet. Please contact an admin.',
+    /* A function the database does not hold yet, and a Settings refusal
+       (2026-11-10: each was typed on every Settings sheet). */
+    notYet: 'This feature is not available yet. Please contact an admin.',
+    noSettings: 'You do not have permission to change business settings. Please ask an admin.',
     addrGone: 'Address deleted',
     addrGoneWhen: 'Deleted after 12 months',
     bodyGone: 'The message was deleted after 12 months.',

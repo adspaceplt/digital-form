@@ -235,7 +235,6 @@
     'none-selected': 'No tasks selected.',
     'too-many': 'Select up to 500 tasks at a time.',
     'number-taken': 'That number is already used.',
-    'bad-number': 'Enter a number from 1.',
     'accounts-needs-content': 'An Accounts Report needs posts planned for the month.'
   };
   /* The database refuses Ready with one key for two causes, so the words
@@ -1671,21 +1670,25 @@
         title: 'Task numbering',
         body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task has a number yet.'),
         go: 'Save',
-        field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
+        field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }, wait: true,
+        /* A number as typed, with or without its #WT (the overnight review,
+           2026-11-10: 1008.5 was read as 10085); the sheet stays open on a
+           refusal. */
+        check: function (v) { return /^(#?WT)?0*[1-9]\d{0,6}$/i.test(String(v).trim()) ? '' : NO_WORD; }
       }, function (v) {
-        var want = Math.floor(Number(String(v).replace(/[^0-9]/g, '')));
-        if (!want) { msg(where, said('bad-number'), 'err'); return; }
-        db.rpc('ops_set_next_task_no', { p_next: want }).then(function (q) {
+        var want = Number(String(v).trim().replace(/^#?WT/i, ''));
+        return db.rpc('ops_set_next_task_no', { p_next: want }).then(function (q) {
           var e = q.data;
           if (q.error || (e && e.error)) {
-            msg(where, q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
-            return;
+            return q.error ? q.error.message : e.error === 'bad-number' ? NO_WORD : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : '');
           }
           msg(where, 'The next task is ' + e.serial + '.', 'ok');
-        });
+          return '';
+        }).catch(function (x) { return (x && x.message) || 'Not saved.'; });
       });
     });
   }
+  var NO_WORD = 'Enter a whole number from 1 to 9,999,999.';
 
   // ---- The board -----------------------------------------------------------
   /* ONE WORKFLOW'S STAGES, SIDE BY SIDE. The columns and the work-in-progress
