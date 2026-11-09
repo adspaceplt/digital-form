@@ -99,7 +99,7 @@ export function columnsOf(headers: string[]): (string | null)[] {
 const GOOGLE = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_SHEETS_REFRESH_TOKEN'];
 async function googleToken(): Promise<string | null> {
   if (GOOGLE.some((k) => !secret(k))) return null;
-  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST',
+  const r = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', signal: AbortSignal.timeout(GOOGLE_WAIT),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ client_id: secret('GOOGLE_CLIENT_ID'), client_secret: secret('GOOGLE_CLIENT_SECRET'),
       refresh_token: secret('GOOGLE_SHEETS_REFRESH_TOKEN'), grant_type: 'refresh_token' }) });
@@ -107,8 +107,10 @@ async function googleToken(): Promise<string | null> {
   return r.ok && d.access_token ? String(d.access_token) : null;
 }
 const SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets/';
+/* Google answering slowly never holds the run past its budget. */
+const GOOGLE_WAIT = 20000;
 async function sheetGet(token: string, path: string): Promise<any> {
-  const r = await fetch(SHEETS + path, { headers: { Authorization: 'Bearer ' + token } });
+  const r = await fetch(SHEETS + path, { headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(GOOGLE_WAIT) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error('google ' + r.status + ' ' + String((d.error && d.error.message) || '').slice(0, 200));
   return d;
@@ -138,15 +140,21 @@ async function sheetRows(db: any, began: number): Promise<{ added: number; faile
   const cols = head ? columnsOf(head.headers) : [];
   if (head && !cols.some(Boolean)) why = 'no header in the sheet names a value';
   for (const r of rows) {
-    if (!head || why || Date.now() - began > BUDGET) {
-      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: false, p_error: why || 'not sent: out of time' });
+    if (!head || why) {
+      // The sheet could not be read: a try is spent; saving the setting gives every try back.
+      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: false, p_error: why || 'sheet not read' });
       failed++; continue;
+    }
+    if (Date.now() - began > BUDGET) {
+      // Never tried: back to the queue with its try given back.
+      await db.rpc('creator_sheet_release', { p_id: r.id, p_error: 'not sent: out of time' });
+      continue;
     }
     const line = cols.map((k) => (k ? String((r.values || {})[k] ?? '') : ''));
     try {
       const q = "'" + head.tab.replace(/'/g, "''") + "'";
       const res = await fetch(SHEETS + encodeURIComponent(sh.spreadsheet_id) + '/values/' + encodeURIComponent(q + '!A1') +
-        ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS', { method: 'POST',
+        ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS', { method: 'POST', signal: AbortSignal.timeout(GOOGLE_WAIT),
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [line] }) });
       if (!res.ok) throw new Error('google ' + res.status + ' ' + (await res.text()).slice(0, 200));
       await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: true, p_error: null });

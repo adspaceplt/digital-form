@@ -492,7 +492,7 @@
       var b = x.bill, st = b ? (b.status === 'paid' ? 'paid' : 'processing') : 'due';
       var tone = st === 'paid' ? 'is-ok' : st === 'processing' ? 'is-warn' : 'is-off';
       var sub = [x.job];
-      if (st === 'paid' && b.date) sub.push(fill(T0.paysPaid, { d: day(b.date) }));
+      if (st === 'paid' && b.paid_at) sub.push(fill(T0.paysPaid, { d: day(b.paid_at) }));
       else if (x.posted_on) { sub.push(fill(T0.paysPosted, { d: day(x.posted_on) })); if (st !== 'paid' && x.pay_by) sub.push(fill(T0.paysBy, { d: day(x.pay_by) })); }
       else if (x.state !== 'posted' && x.state !== 'completed') sub.push(T0.paysNotPosted);
       return '<div class="crpay-row">' +

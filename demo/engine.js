@@ -3201,22 +3201,27 @@ function cardSlugFree(name, self, email) {
     DB.creator_bills = DB.creator_bills || [];
     var seen = [], told = 0, now = new Date().toISOString();
     rows.forEach(function (x) {
-      var st = Number(x.balance || 0) <= 0 ? 'paid' : 'processing', opt = billOption(creator, x.ref, x.number);
+      var opt = billOption(creator, x.ref, x.number);
       var b = DB.creator_bills.filter(function (y) { return y.bill_id === x.id; })[0];
+
+      var st = x.balance == null || x.balance === '' ? (b ? b.status : 'processing') : Number(x.balance) <= 0 ? 'paid' : 'processing';
+      var o0 = (DB.campaign_options || []).filter(function (o) { return o.id === opt; })[0];
+      var tell = function (b2) {
+        b2.paid_told_at = now; told++;
+        DB.creator_emails = DB.creator_emails || [];
+        DB.creator_emails.push({ id: nid('cp'), purpose: 'paid', creator_id: creator, option_id: opt, to_email: 'creator@example.com', subject: 'Payment sent: ' + jobRefOf(o0),
+          body: '', status: 'queued', created_at: now });
+      };
       seen.push(x.id);
       if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
         amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now,
         paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null });
-      else {
+      if (!b && st === 'paid' && o0 && o0.posted_on) tell(DB.creator_bills[DB.creator_bills.length - 1]);
+      else if (b) {
         var was = b.status;
-        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance,
+        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
           currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null });
-        if (st === 'paid' && was === 'processing' && !b.paid_told_at && opt) {
-          b.paid_told_at = now; told++;
-          DB.creator_emails = DB.creator_emails || [];
-          DB.creator_emails.push({ id: nid('cp'), purpose: 'paid', creator_id: creator, option_id: opt, to_email: 'creator@example.com', subject: 'Payment sent: ' + jobRefOf(DB.campaign_options.filter(function (o) { return o.id === opt; })[0]),
-            body: '', status: 'queued', created_at: now });
-        }
+        if (st === 'paid' && was === 'processing' && !b.paid_told_at && opt) tell(b);
       }
     });
     DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
@@ -9384,7 +9389,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = (DB.creator_bills || []).filter(function (x) { return x.option_id === o.id && !x.gone; })
               .sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];
             return { job: jobRefOf(o), campaign: m.title || m.name || '', state: o.state, posted_on: o.posted_on || null, pay_by: o.pay_by || null,
-              bill: b ? { number: b.number, status: b.status, date: b.bill_date, amount: b.amount, currency: b.currency } : null };
+              bill: b ? { number: b.number, status: b.status, date: b.bill_date, paid_at: b.paid_seen_at || null, amount: b.amount, currency: b.currency } : null };
           });
           cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpC.whatsapp || null, last: cpJson(cpLast, false), paid: cpJson(cpPaid, false),
             days: { myr: appSet('creator_pay_days_myr', appToday()), other: appSet('creator_pay_days_other', appToday()) }, payments: cpPays };

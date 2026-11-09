@@ -3818,9 +3818,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   creator contact's purchase bills into `creator_bills` (RLS on, no policy,
   no grant; `creator_bills_take`, the service role's), each matched to the
   booking whose Job reference or earlier job its reference or number holds:
-  Processing while a balance stands, Paid at none, never marked by hand;
-  Payment sent goes once, when a bill read Processing is read Paid, never
-  for one first read already paid. A booking given an AKJ number on the
+  Processing while a balance stands, Paid at none, a bill read with no
+  balance keeping the state it had, never marked by hand; Payment sent goes
+  once, when a bill read Processing is read Paid, or a bill first read paid
+  on a booking posted in the portal (`posted_on`), never for one from before
+  the portal; the creator's page reads Paid on the day the portal first read
+  it paid; one fill for every creator email's fields (`creator_mail_fill`). A booking given an AKJ number on the
   AP01 form carries it (`campaign_options.earlier_job`, the row's pen at
   `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
   bills matching no booking read under Earlier payments
@@ -3836,7 +3839,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `columnsOf`: every word of a name in the header, the longest name first,
   each value once; a header naming none left empty), the numbers whole;
   claimed and closed by the service role (`creator_sheet_claim`,
-  `_done`), a row refused tried again at the next wake, five tries; nothing
+  `_done`), a row refused tried again at the next wake, five tries (one
+  left at Sending ten minutes failed by `mail_sweep`; one never tried, its
+  run out of time, put back with its try given back, `creator_sheet_release`;
+  every refused row queued afresh when the sheet's setting is saved; Google
+  asked with a 20-second limit); nothing
   claimed while `GOOGLE_SHEETS_REFRESH_TOKEN` is unset
   (`docs/GOOGLE-SHEETS-SETUP.md`). Settings, Clients: Creator payments sheet
   (`team.settings`; `creator_sheet_get`, `creator_sheet_set`: a Sheets link
