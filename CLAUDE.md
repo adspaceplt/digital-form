@@ -262,6 +262,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `creator.js` | creator, cprofile, results, push |
 | Creator payment details (the CREATOR PAYMENT DETAILS section, `supabase/functions/creator-mail/`, `#payBox`, `#cpaySheet`) | creator, sql, camp, settings, perms, menus, whatsapp, then `ui` |
 | Creator payments (the CREATOR PAYMENTS sections, bukku-sync `bills`, `#cpayJobs`, `creator_bills`) | camp, bukkufn, sql, settings, creator, then `ui` |
+| Creator payments sheet (the CREATOR PAYMENTS SHEET section, `creator-mail` sheet rows and `check`) | mailfn, sql, settings, camp |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
@@ -1232,6 +1233,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     Z by code with digits as numbers, the unnumbered after by name
     (`byClient`, `byStaff`). The Clients list itself stays newest first.
   - The `data-hint` date hint.
+  - A number of a known shape (`input[data-shape]`: # a digit, X a letter
+    or digit, any other character laid in by itself) takes only what it
+    holds as it is typed: an NRIC `######-##-####`, a BRN 12 digits, a
+    passport 20 letters or digits; the creator's payment details and the
+    supplier form alike, a kind changed clearing the number (the user,
+    2026-11-09: "it says 12 digits but you never lock").
   - The date floor (below).
   - A long list is searched (§8): a select of ten options or more opens a
     finder (`#pickerBox`, `.picker`) in place of the browser's list, the
@@ -3793,6 +3800,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`creator_bills_list`, Creators List View, amounts at `campaigns.pay`
   View). The three emails' words are Settings, Templates: Creator emails,
   Payment request to Details to review's finance address.
+- Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
+  R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
+  in it): a set of payment details approved while the sheet is on is
+  queued once (`creator_sheet_rows`, trigger `creator_pay_requests_sheet`)
+  and added by `creator-mail` on its wake as a row of the finance team's
+  Google Sheet, each value under the header that names it (`COLUMNS`,
+  `columnsOf`: every word of a name in the header, the longest name first,
+  each value once; a header naming none left empty), the numbers whole;
+  claimed and closed by the service role (`creator_sheet_claim`,
+  `_done`), a row refused tried again at the next wake, five tries; nothing
+  claimed while `GOOGLE_SHEETS_REFRESH_TOKEN` is unset
+  (`docs/GOOGLE-SHEETS-SETUP.md`). Settings, Clients: Creator payments sheet
+  (`team.settings`; `creator_sheet_get`, `creator_sheet_set`: a Sheets link
+  read for its ID, `bad-sheet`, `bad-tab`; filed under Creator payments
+  sheet), whose save asks `creator-mail` `check` (as the colleague) how
+  many headers will be filled. The pay sheet reads each set's Creator payments sheet
+  line (`creator_sheet_state`).
 - The Creators List:
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
     figure is the client's price with markup, never the creator's payout, so
