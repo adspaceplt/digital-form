@@ -9056,5 +9056,7 @@ A bill first read already paid told nobody, so a creator paid before the
 first read never heard: it now sends Payment sent where the booking was
 posted in the portal, and stays silent for work from before it. The
 creator's page read Paid on the bill's own date: it reads the day the
-portal first read it paid. The two creator email builders each held their
+portal first read it paid. Payment sent named the newest bill of its
+booking, not the one paid (the suite found it with two bills on one
+booking): it names the bill just told. The two creator email builders each held their
 own copy of the field fill: one `creator_mail_fill`.

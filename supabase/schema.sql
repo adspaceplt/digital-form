@@ -105021,7 +105021,9 @@ begin
   select * into m from public.campaigns x where x.id = o.campaign_id;
   select * into r from public.creator_pay_requests x where x.creator_id = c.id and x.status = 'approved'
    order by x.decided_at desc limit 1;
-  select * into b from public.creator_bills x where x.option_id = o.id and not x.gone order by x.bill_date desc nulls last limit 1;
+  -- The bill this email is about: the one just told paid, else the newest.
+  select * into b from public.creator_bills x where x.option_id = o.id and not x.gone
+   order by x.paid_told_at desc nulls last, x.bill_date desc nulls last limit 1;
   select * into fin from public.creator_email_templates x where x.purpose = 'review';
   v_to := lower(btrim(coalesce(case when p_purpose = 'request' then fin.to_email else r.email end, '')));
   if v_to !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' then return; end if;
