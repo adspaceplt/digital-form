@@ -6759,6 +6759,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   An SVG made a file (`svgFile`) gains `xmlns` only where it has none: a
   second one is a repeated attribute and the picture loads as nothing
   (2026-11-07: Play drew a blank frame, the crew PDF dropped it).
+- Copy prompts (`#vsPrompts` on the Scenes heading, `#vsPromptSheet`; the
+  user, 2026-11-09, option A of the team's AI short drama guide): anyone who
+  reads the script copies its scenes as prompts for an AI video model the
+  team runs outside the portal, one a segment (scenes in order, 15 seconds
+  and four scenes at most, timed as Play times them), each References,
+  Voices, Positions (left in brackets to fill), Picture by the second (shot
+  size, angle, move, what is seen), Sound (the lines word for word, the
+  sound) and Avoid, after one Whole video block (ratio, length, language,
+  the plan, the context or voice-over); English or 中文 (a segment), Copy a
+  block or Copy all. Built on the page: nothing is sent and no AI use is
+  counted. No video service is connected (option B, held: client material
+  to a China-based service is the user's decision).
 - Write with AI (2026-10-09, `script-draft`, `2026-10-09-script-writer.sql`):
   on the editor's Script heading (`.readgroup-head`), at Video Scripts Work.
   It asks first (`ADspaceConfirm`: Video length 15s, 30s, 60s or 120s; XHS

@@ -571,7 +571,7 @@
      writer answers that it is set up, with what is left today. */
   function drawAct() {
     /* Play: the scenes as an animatic, for anyone who reads the script. */
-    var play = st.scenes.length ? '<button class="btn btn-sm" type="button" id="vsPrompts">Video prompts</button>' +
+    var play = st.scenes.length ? '<button class="btn btn-sm" type="button" id="vsPrompts">Copy prompts</button>' +
       '<button class="btn btn-sm btn-icon" type="button" id="vsPlay">' + ICON.play + 'Play</button>' : '';
     if (!may('work') || !st.drawReady) return play ? '<span class="vs-draw">' + play + '</span>' : '';
     return '<span class="vs-draw"><span class="vs-draw-left" id="vsDrawLeft">' + (st.drawLeft == null ? '' : esc(String(st.drawLeft)) + ' left today') + '</span>' +
@@ -1096,17 +1096,17 @@
     en: { seg: 'Segment', secs: ' seconds', scenes: 'Scenes', scene: 'Scene', whole: 'Whole video', refs: 'References', voice: 'Voices',
           pos: 'Positions', pic: 'Picture', sound: 'Sound', avoid: 'Avoid', says: 'says', vo: 'Narrator voice-over', fx: 'Sound effect',
           ratio: 'Aspect ratio', length: 'Video length', message: 'Core message', products: 'Products and context', story: 'Hook and story',
-          cast: 'Cast roles', locs: 'Locations', props: 'Props', lang: 'Spoken language',
+          cast: 'Cast roles', locs: 'Locations', props: 'Props', lang: 'Language',
           refFill: '@Image1: (the main character’s identity board) @Image2: (this segment’s location)',
           voiceFill: '(For each speaking role: age, tone, pace. Copy the same line into every segment.)',
           posFill: '(Who stands left and right, where the door is, which side the camera is on, who holds each prop.)',
           voRead: 'continues, read from the script’s voice-over for these seconds',
-          avoidLine: 'No one who is not in the script, props do not change hands or disappear, no one jumps position, lines unchanged, no subtitles, no background music.',
+          avoidLine: 'No one who is not in the script. Props stay with whoever holds them and stay in view. No one changes position between shots. Lines as written. No subtitles or background music.',
           sep: ': ', q: ['“', '”'], unit: 's', open: '[', shut: '] ' },
     zh: { seg: '素材段落', secs: '秒', scenes: '镜头', scene: '镜头', whole: '整支视频', refs: '参考', voice: '声音描述',
           pos: '站位', pic: '画面', sound: '声音', avoid: '禁止', says: '说', vo: '旁白画外音', fx: '音效',
           ratio: '画面比例', length: '视频时长', message: '核心信息', products: '产品与场景', story: '开场与故事',
-          cast: '角色', locs: '场景', props: '道具', lang: '对白语言',
+          cast: '角色', locs: '场景', props: '道具', lang: '语言',
           refFill: '@图片1：（主角的身份板） @图片2：（这一段的场景图）',
           voiceFill: '（每个说话的角色一句：年龄、音色、语速，每一段原样复制）',
           posFill: '（谁在左、谁在右，门在哪边，摄影机在哪一侧，道具在谁手里）',
@@ -1190,7 +1190,7 @@
   function openPrompts(opener) {
     var s = st.open;
     if (!s || !st.scenes.length) return;
-    $('vsPromptTitle').textContent = 'Video prompts';
+    $('vsPromptTitle').textContent = 'Copy prompts';
     paintPrompts();
     window.ADspaceSheet.show($('vsPromptSheet'), { opener: opener || null });
   }
