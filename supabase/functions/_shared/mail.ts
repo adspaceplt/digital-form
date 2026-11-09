@@ -10,7 +10,10 @@
  *     server built, never a page's) in place of a paragraph reading
  *     `{invoices}`, then `foot` under a hairline; under the card the
  *     company's line and the fine print (`fine`, else the standing
- *     confidentiality line), in a lighter grey.
+ *     confidentiality line), in the dark grey. Text is #1a1a1a, never
+ *     true black, the rest the palette's #515151, #f5f5f5 and #ffffff (the
+ *     user, 2026-11-09); the address breaks before its postcode, and Apple
+ *     Mail's number and address detection is kept from recolouring it.
  *   resend(msg, key)
  *     posts one email with an idempotency key; answers sent with Resend's
  *     id, failed, or unknown where the answer never came (filed as Not
@@ -34,26 +37,26 @@ const TOKEN = /\{\s*invoices\s*\}/i;
 export function layout(o: { heading: string; body: string; foot?: string; preheader?: string; block?: string; fine?: string[] }): string {
   const body = o.block ? String(o.body || '').replace(TOKEN, '\n\n{invoices}\n\n') : o.body;
   const ps = paras(body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
-    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1b1a17;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
+    '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
   const fine = (o.fine && o.fine.filter(Boolean).length ? o.fine.filter(Boolean) : [CONFIDENTIAL])
-    .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a19d97;">' + esc(t) + '</p>').join('');
+    .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#515151;">' + esc(t) + '</p>').join('');
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">' +
-    '<meta name="x-apple-disable-message-reformatting"><title>' + esc(o.heading) + '</title>' +
-    '<style>@media (max-width:600px){.card{padding:24px !important;}.foot{padding:24px 24px 0 !important;}h1{font-size:21px !important;}.hide-sm{display:none !important;}}</style></head>' +
+    '<meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><title>' + esc(o.heading) + '</title>' +
+    '<style>a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font:inherit !important;}@media (max-width:600px){.card{padding:24px !important;}.foot{padding:24px 24px 0 !important;}h1{font-size:21px !important;}.hide-sm{display:none !important;}}</style></head>' +
     '<body style="margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;">' +
     '<div style="display:none;max-height:0;overflow:hidden;opacity:0;">' + esc(o.preheader || o.heading) + '</div>' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">' +
-    '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1b1a17;">' +
+    '<tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:' + FONT + ';color:#1a1a1a;">' +
     '<img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">' +
-    '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1b1a17;">' + esc(o.heading) + '</h1>' +
+    '<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">' + esc(o.heading) + '</h1>' +
     ps +
-    (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#6b6760;">' + esc(o.foot) + '</p>' : '') +
+    (o.foot ? '<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">' + esc(o.foot) + '</p>' : '') +
     '</td></tr>' +
-    '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#6b6760;">' +
-    'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia<br>' +
-    '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#6b6760;text-decoration:none;">adspacestudios.com</a>' +
+    '<tr><td class="foot" style="padding:24px 32px 0;font-family:' + FONT + ';font-size:12px;line-height:1.6;color:#515151;">' +
+    'ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>' +
+    '(60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>' +
     fine +
     '</td></tr></table></td></tr></table></body></html>';
 }

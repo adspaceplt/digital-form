@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
        the subject or the preview line a lock screen shows. The box is the
        layout's one server-built block, set where `{invoices}` stands. */
     const heading = 'Your signing code';
-    const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f9f9f9;border-radius:10px;margin:4px 0 24px;"><tr><td style="padding:16px 24px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1b1a17;">' + esc(d.code) + '</td></tr></table>';
+    const box = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;border-radius:10px;margin:4px 0 24px;"><tr><td style="padding:16px 24px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:28px;line-height:1.2;font-weight:600;letter-spacing:4px;color:#1a1a1a;">' + esc(d.code) + '</td></tr></table>';
     const msg = {
       from: CLIENT_FROM(), to: [d.email],
       subject: 'Your ADspace signing code for quotation ' + d.ref,
