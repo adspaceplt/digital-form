@@ -75,6 +75,7 @@
       sizeMany: '{n} files are larger than {mb} MB.',
       failOne: '{file} could not be uploaded. Please try again.',
       failMany: '{n} files could not be uploaded. Please try again.',
+      uploadMany: 'This booking has reached today\'s upload limit. Please try again tomorrow, or contact ADspace.',
 
       since: 'Creator since {d}',
       bookingsN: function (n) { return n + (n === 1 ? ' booking' : ' bookings'); },
@@ -168,6 +169,7 @@
       sizeMany: '{n}个文件超过 {mb} MB 上限。',
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n}个文件上传失败，请重试。',
+      uploadMany: '此合作今日的上传数量已达上限，请明天再试或联系 ADspace。',
 
       since: '{d} 起合作',
       bookingsN: function (n) { return n + '个合作'; },
@@ -1519,7 +1521,7 @@
       lock(true);
       btn.textContent = t().submitting;
       say('');
-      var failed = [], wrongType = 0;
+      var failed = [], wrongType = 0, tooMany = 0;
 
       function run(i) {
         if (i >= list.length) return Promise.resolve();
@@ -1529,6 +1531,7 @@
         }, function (e) {
           failed.push(h.file.name);
           if (e && e.refused === 'bad_extension') wrongType++;
+          if (e && e.refused === 'too_many') tooMany++;
           if (window.console) console.warn('[creator upload] ' + h.file.name, e);
         }).then(function () { return run(i + 1); });
       }
@@ -1551,6 +1554,7 @@
           /* A file of a kind sign-upload does not take is named for what it
              is, never "Please try again" (2026-10-17). */
           if (wrongType) text = (wrongType === failed.length ? '' : text + ' ') + t().uploadType;
+          if (tooMany) text = (tooMany === failed.length ? '' : text + ' ') + t().uploadMany;
           /* Repainted from the database so the files that did go up show as
              handed in, and the answer written onto the card that replaced
              this one. */

@@ -8965,6 +8965,19 @@ adding a creator or a campaign failed live (no one had since 25 Sept).
 Left for the owner: the unversioned `npm:@anthropic-ai/sdk` imports and the
 creator's unbounded signed uploads (both depend on deployed facts), and the
 client portal's one sign-in, outside this run's scope.
+- **2026-11-09 · Copy prompts on a video script.** The user shared a guide to AI short dramas (Claude writes the script, an image model the cast, MiniMax H3 on RunningHub the clips with voice, CapCut the edit) and asked how it fits. The portal already holds most of the guide's inputs (the shot table, the plan); what it lacked was the per-segment prompt. Option A chosen: build the prompts on the page, copied by hand into the video tool. Option B (RunningHub's API, clips stored and played in the animatic) held: client scripts and photos would go to a China-based service, billed in RMB, and real-cast photos cannot be likeness references. Copy review: the button read as a noun beside Play (now Copy prompts), the Avoid line was fragments (now sentences), Spoken language repeated the facts card's Language.
+
+### 2026-11-09 · A creator's uploads are counted
+The second audit's needs-validation lead 2: a creator's code signed any
+number of uploads of up to 2 GB into its booking's folder, so a leaked code
+could fill the bucket. The user asked it fixed the same day. sign-upload
+now claims each creator upload (`creator_upload_claim`) after the file's
+type and size are checked: fifty files and 25 GB a booking a Malaysian day,
+one row a booking reset each day, so the table never grows past the
+bookings. A real round is a handful of files; a page past the limit says so
+and what to do. Rate limits stay figures in the function, as the link,
+device and invitation counts do. The bucket's lifecycle rule and a budget
+alarm remain the owner's.
 
 
 ### 2026-11-09 · Creator payments sheet (Creator R4)

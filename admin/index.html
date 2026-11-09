@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261108c">
-<link rel="stylesheet" href="/css/console.css?v=20261109a">
+<link rel="stylesheet" href="/css/console.css?v=20261109b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -4847,6 +4847,27 @@
       </div>
     </div>
 
+    <div class="sheet" id="vsPromptSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="vsPromptTitle">
+        <div class="sheet-head">
+          <h3 id="vsPromptTitle">Copy prompts</h3>
+          <button class="iconbtn" id="vsPromptClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="vs-prompt-bar">
+            <label class="field-label" for="vsPromptLang">Language</label>
+            <select class="select select-sm" id="vsPromptLang" data-seg><option value="en">English</option><option value="zh">中文</option></select>
+          </div>
+          <div class="vs-prompts" id="vsPromptList"></div>
+        </div>
+        <div class="sheet-foot">
+          <span class="lpicksum" id="vsPromptCount"></span>
+          <button class="btn btn-primary btn-icon" id="vsPromptAll" type="button">Copy all</button>
+          <button class="btn btn-quiet" id="vsPromptCancel" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionMine" hidden>
       <!-- A member's own reviews open only for a session verified by a code
            emailed to them in the last 15 minutes. -->
@@ -6370,7 +6391,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/handbook.js?v=20261031w"></script>
 <script src="/js/frames.js?v=20261107a"></script>
 <script src="/js/animatic.js?v=20261106a"></script>
-<script src="/js/scripts.js?v=20261108"></script>
+<script src="/js/scripts.js?v=20261109b"></script>
 <script src="/js/scriptpdf.js?v=20261105e"></script>
 <script src="/js/ratecardpdf.js?v=20261015k"></script>
 <script src="/js/campaigns.js?v=20261109a"></script>
