@@ -156,7 +156,7 @@ begin
       when 'campaign' then coalesce(m.title, '')
       when 'posted date' then coalesce(public.register_day(o.posted_on), '')
       when 'pay by' then coalesce(public.register_day(o.pay_by), '')
-      when 'payee' then coalesce(r.payee, 'Payment details not approved yet')
+      when 'payee' then coalesce(r.payee, 'Payment details pending approval')
       when 'method' then coalesce(public.creator_pay_method(r.method, r.bank), '')
       when 'account ending' then coalesce(right(r.account, 4), '')
       when 'amount' then case when b.amount is null then '' else

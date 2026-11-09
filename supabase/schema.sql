@@ -103301,7 +103301,7 @@ begin
       when 'campaign' then coalesce(m.title, '')
       when 'posted date' then coalesce(public.register_day(o.posted_on), '')
       when 'pay by' then coalesce(public.register_day(o.pay_by), '')
-      when 'payee' then coalesce(r.payee, 'Payment details not approved yet')
+      when 'payee' then coalesce(r.payee, 'Payment details pending approval')
       when 'method' then coalesce(public.creator_pay_method(r.method, r.bank), '')
       when 'account ending' then coalesce(right(r.account, 4), '')
       when 'amount' then case when b.amount is null then '' else
@@ -103881,7 +103881,7 @@ alter table public.creator_emails add constraint creator_emails_purpose_check
 insert into public.creator_email_templates (purpose, subject, body, to_email) values
   ('request', 'Creator payment request: {job reference}',
    E'{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', null),
-  ('posted', 'Your post is recorded: {job reference}',
+  ('posted', 'Post recorded: {job reference}',
    E'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', null),
   ('paid', 'Payment sent: {job reference}',
    E'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', null)

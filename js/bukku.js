@@ -295,8 +295,8 @@
     var code = d.code || String(d.contact_id);
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
-      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
-        (holds(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' then offers the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both are unlinked.' : '')
+      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+        (holds(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
         if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);

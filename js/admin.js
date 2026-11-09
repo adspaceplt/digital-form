@@ -5688,8 +5688,8 @@
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for (months)', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for (months after they leave)', 'leave', '', 'Leavers', per('month')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
-    creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Pay within, in MYR (working days after the post)', 'pay', '', 'MYR', per('working day')],
-      ['creator_pay_days_other', 'Pay within, in other currencies (working days after the post)', 'pay', '', 'Other currencies', per('working day')]] },
+    creatorpay: { title: 'Creator payments', keys: [['creator_pay_days_myr', 'Payment time in MYR (working days after the post)', 'pay', '', 'MYR', per('working day')],
+      ['creator_pay_days_other', 'Payment time in other currencies (working days after the post)', 'pay', '', 'Other currencies', per('working day')]] },
     resend: { title: 'Sent again', keys: [['wa_repeat_hours', 'Ask before sending again within (hours, 0 turns this off)', 'week', '', 'Asks again within', per('hour')]] },
     /* The quotation website's WhatsApp a day (2026-10-29, the audit's
        finding 3): past it the quotation is made, the message not sent. */

@@ -568,7 +568,7 @@
   var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'] };
   var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
-    taken: 'That earlier job ID is on another booking.', 'not-found': 'This booking no longer exists.',
+    taken: 'That earlier job ID is already used by another booking. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
     'not-linked': 'Link the creator to Bukku first.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
@@ -721,7 +721,7 @@
     if (!j) return;
     window.ADspaceConfirm.ask({ title: 'Earlier job ID', go: 'Save', wait: true, opener: btn,
       field: { name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
-        note: 'The job ID issued for this booking on the AP01 form. Its Bukku bill is matched by it.' } }, function (v) {
+        note: 'The job ID on this booking\'s AP01 form, used to find its bill in Bukku.' } }, function (v) {
       return db.rpc('creator_earlier_job_set', { p_option: opt, p_ref: String((v && v.ref) || '').trim() || null }).then(function (r) {
         var d = r.data || {};
         if (r.error) return r.error.message;
