@@ -622,6 +622,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
+- `sql`: "the PDF library documents.js loads is pinned by its hash" fails on
+  main since #948 (2026-11-09): pdf.js and its worker are pinned in
+  `js/documents.js`, but the suite's list (`LIB_SRI`) does not name them.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
