@@ -2,15 +2,16 @@
 --   it is good to capital it isnt it — eg. Passport, Tax Identification
 --   Number (TIN)". An official or professional term keeps its capitals
 --   wherever it is written, a label included (DESIGN.md §6).
--- WHAT: the words seven functions write capitalise those terms: what
+-- WHAT: the words eight functions write capitalise those terms: what
 --   bukku_prepare names as missing, the Activity record's lines from
 --   bukku_take, client_entity_save, quotation_submit, client_entity_delete
---   and supplier_save, and clients_entity_sync's refusal (Registered
+--   and supplier_save, clients_entity_sync's refusal and the billing kind
+--   creator_sheet_claim writes to the finance team's sheet (Registered
 --   Company Name, Business Registration No., Old Registration No., SST
 --   Registration No.). Each function is restated
 --   otherwise unchanged; nothing else moves.
 -- ORDER: the pages, then this file.
--- ROLLBACK: restate the seven functions from their bands before this one in
+-- ROLLBACK: restate the eight functions from their bands before this one in
 --   schema.sql (the words alone differ).
 
 -- ===========================================================================
@@ -562,6 +563,37 @@ begin
 end $$;
 revoke all on function public.supplier_save(uuid, jsonb, uuid) from public, anon;
 grant execute on function public.supplier_save(uuid, jsonb, uuid) to authenticated;
+
+create or replace function public.creator_sheet_claim(p_n int default 5)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare v jsonb;
+begin
+  with c as (
+    update public.creator_sheet_rows x set status = 'sending', claimed_at = now(), tries = x.tries + 1
+     where x.id in (select y.id from public.creator_sheet_rows y
+                     where y.status = 'queued' or (y.status = 'failed' and y.tries < 5)
+                     order by y.created_at limit least(greatest(coalesce(p_n, 5), 1), 20) for update skip locked)
+    returning x.*)
+  select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'values', jsonb_build_object(
+      'creator_id', k.creator_code, 'creator_name', k.name, 'reference', r.ref,
+      'billing_as', case r.bill_kind when 'nric' then 'Individual (NRIC)' when 'passport' then 'Individual (Passport)' else 'Company' end,
+      'id_no', r.id_no, 'legal_name', r.legal_name, 'tin', r.tin, 'address', r.address, 'currency', r.currency,
+      'method', public.creator_pay_method(r.method, null), 'bank', r.bank, 'account', r.account, 'payee', r.payee,
+      'email', r.email, 'whatsapp', r.whatsapp,
+      'submitted', to_char(r.created_at at time zone 'Asia/Kuala_Lumpur', 'YYYY-MM-DD HH24:MI'),
+      'approved', to_char(r.decided_at at time zone 'Asia/Kuala_Lumpur', 'YYYY-MM-DD HH24:MI'),
+      'approved_by', m.name))), '[]'::jsonb)
+    into v
+    from c join public.creator_pay_requests r on r.id = c.request_id
+    join public.creators k on k.id = r.creator_id
+    left join public.team_members m on m.id = r.decided_by;
+  return jsonb_build_object('rows', v,
+    'sheet', (select jsonb_build_object('on', s.on_send, 'spreadsheet_id', s.spreadsheet_id, 'tab', s.tab)
+                from public.creator_sheet_settings s where s.id = 1));
+end $$;
+revoke all on function public.creator_sheet_claim(int) from public, anon, authenticated;
+grant execute on function public.creator_sheet_claim(int) to service_role;
 
 -- END OF OFFICIAL TERMS CAPITALISED ------------------------------------------
 
