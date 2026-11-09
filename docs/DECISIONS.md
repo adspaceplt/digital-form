@@ -9014,6 +9014,17 @@ the later declaration replaced it and every date field threw
 (`el.getAttribute is not a function`, `tests/settings.js`). Renamed
 `holdShape`; a new function in a shared script is grepped by name first.
 
+### 2026-11-10: a template is refused a field nobody fills
+
+The Settings review of 2026-11-09 found every template editor checked its
+`{fields}` on the page alone, each with its own list, and the database took
+any wording: a creator email saved with `{creator nmae}` went out with the
+braces in it. Built: `template_fields(kind)` holds each sender's fields once,
+`template_check` refuses an unknown one in all seven save functions after
+their own refusals, and every editor names the field and the ones to use.
+Every live template was read first and holds only its own fields, so no
+saved wording is refused. The copy review moved the Creator emails' template
+name before the refusal (a bracket after a full stop read as a fragment).
 ### 2026-11-10 — The creator's page in three tabs, and the Creators List by payment details (Creator R5)
 From the mockup the user approved on 2026-11-08 (Creator Portal Revamp).
 The creator's page reads Bookings, Payments and Profile under its head;

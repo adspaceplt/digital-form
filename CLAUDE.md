@@ -1355,6 +1355,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`Not deleted. The database refused the request.`).
 - Use `.then(ok).catch(bad)`, never `.then(ok, bad)`: `bad` never sees what
   `ok` throws.
+- A template is saved only with the fields its sender fills
+  (`2026-11-10-template-fields-checked.sql`; the overnight review,
+  2026-11-10): every template save (supplier, client, Email templates, both
+  invoice emails, creator emails, the Meeting message) asks
+  `template_check(text, kind)` against `template_fields(kind)`, the one list
+  of each sender's fields, refusing `unknown-field` with the field and the
+  list, said as `ADspaceWords.line.unknownField` (Unknown field {x}. Use …);
+  `template_fields_all()` answers the lists to the team (`tests/tplfieldsql.js`).
 - A function's refusal reaches the page whole: a call wrapper hands back the
   answer with what came with it (`recent`, `paid`), never the code alone
   (2026-10-29: a reminder refused `recent` read "Reminded . Not sent again.").
