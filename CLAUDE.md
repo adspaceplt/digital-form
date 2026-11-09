@@ -1788,6 +1788,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Columns: Client, Stage, Industry, Person in charge, Sales by, Last activity,
   chevron (Sales by the colleague's name, a mute em dash where none, named
   only once the team is read; the user, 2026-11-07).
+  - Filters: Stage, Person in charge, Sales by (`#crmSales`, by the
+    colleague's id) and VIC while any is held (the user, 2026-11-09).
   - No Value column and no value on a heading.
   - Rows run newest Client ID first (digits as numbers), unnumbered after,
     newest first.
@@ -3180,7 +3182,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   list again once the one on its way answers.
   The words are Settings, Money: Overdue reminder (`invoice_email_template`,
   `team.settings`; two subjects, the message holding `{invoices}`, the
-  legal note and the disclaimer, in the lighter grey). Resend's word
+  legal note and the disclaimer, in the dark grey). Resend's word
   reaches it through `supplier_email_status`. `invoice_emails` and the
   template have RLS on, no policy, no grant. A client's Billing (the
   user, 2026-10-28) holds Unpaid invoices (`#odClient`,

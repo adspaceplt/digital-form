@@ -467,6 +467,8 @@
       else if (first && state.clients.length) paintList();
       peopleSelect($('crmOwnerPick'), state.team);
       fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'All people');
+      /* Sales by is a colleague's id (2026-11-09, the user: the filter was missing). */
+      fillSelect($('crmSales'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.id, F.named(m.staff_code, m.name)]; }), 'All people');
       if (state.due) paintDue();
       if (then) then();
     }, function () { if (then) then(); });
@@ -542,6 +544,7 @@
     var q = val('crmSearch').toLowerCase();
     var stage = $('crmStage').value;
     var owner = $('crmOwner').value;
+    var sales = $('crmSales') ? $('crmSales').value : 'all';
     var vicOnly = $('crmVic') && $('crmVic').value === 'vic';
     return state.clients.filter(function (c) {
       if (vicOnly && !isVic(c.id)) return false;
@@ -552,6 +555,7 @@
                String(c.client_code || '').toLowerCase().indexOf(q) < 0) return false;
       if (stage !== 'all' && (c.stage || 'lead') !== stage) return false;
       if (owner !== 'all' && (c.owner || '') !== owner) return false;
+      if (sales !== 'all' && (c.sales_by || '') !== sales) return false;
       return true;
     });
   }
@@ -869,16 +873,17 @@
   var filterKey = '';
   function clearFilters() {
     $('crmSearch').value = ''; $('crmStage').value = 'all'; $('crmOwner').value = 'all';
+    if ($('crmSales')) $('crmSales').value = 'all';
     if ($('crmVic')) $('crmVic').value = 'all';
     onFilter();
   }
   function onFilter() {
-    var key = JSON.stringify([val('crmSearch'), $('crmStage').value, $('crmOwner').value, $('crmVic') ? $('crmVic').value : 'all']);
+    var key = JSON.stringify([val('crmSearch'), $('crmStage').value, $('crmOwner').value, $('crmSales') ? $('crmSales').value : 'all', $('crmVic') ? $('crmVic').value : 'all']);
     if (key === filterKey) return;
     filterKey = key;
     paintList();
   }
-  ['crmSearch', 'crmStage', 'crmOwner', 'crmVic'].forEach(function (id) {
+  ['crmSearch', 'crmStage', 'crmOwner', 'crmSales', 'crmVic'].forEach(function (id) {
     $(id).addEventListener('input', onFilter);
     $(id).addEventListener('change', onFilter);
   });

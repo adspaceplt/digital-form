@@ -690,11 +690,11 @@ const day = (d: string) => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || '')
    the send, never from a page. One invoice carries one button; several,
    each row its own View PDF. Totals are kept per currency. */
 export function invoiceTable(lines: any[]): string {
-  const cell = 'padding:10px 12px;border-top:1px solid #ececec;font-size:14px;line-height:1.4;color:#1b1a17;';
-  const head = 'padding:10px 12px;font-size:12px;font-weight:600;color:#6b6760;text-align:left;';
+  const cell = 'padding:10px 12px;border-top:1px solid #ececec;font-size:14px;line-height:1.4;color:#1a1a1a;';
+  const head = 'padding:10px 12px;font-size:12px;font-weight:600;color:#515151;text-align:left;';
   const many = lines.length > 1;
   const rows = lines.map((l) => '<tr><td style="' + cell + '">' + esc(l.number) +
-      (l.part ? '<br><span style="font-size:12px;color:#6b6760;">' + esc(partWord(l.part)) + '</span>' : '') + '</td>' +
+      (l.part ? '<br><span style="font-size:12px;color:#515151;">' + esc(partWord(l.part)) + '</span>' : '') + '</td>' +
     '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.date)) + '</td>' +
     '<td class="hide-sm" style="' + cell + 'white-space:nowrap;">' + esc(day(l.due)) + '</td>' +
     '<td style="' + cell + 'text-align:right;white-space:nowrap;">' + esc(money(l.amount, l.currency)) + '</td>' +
@@ -704,7 +704,7 @@ export function invoiceTable(lines: any[]): string {
   const byCur: Record<string, number> = {};
   for (const l of lines) byCur[l.currency] = cents((byCur[l.currency] || 0) + l.amount);
   const tot = Object.keys(byCur).sort().map((c) => money(byCur[c], c)).join('<br>');
-  const table = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;background:#f9f9f9;border-radius:10px;border-collapse:separate;font-family:' + FONT + ';">' +
+  const table = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px;background:#f5f5f5;border-radius:10px;border-collapse:separate;font-family:' + FONT + ';">' +
     '<tr><th style="' + head + '">Invoice</th><th class="hide-sm" style="' + head + '">Issued</th><th class="hide-sm" style="' + head + '">Due</th>' +
     '<th style="' + head + 'text-align:right;">Amount due</th>' + (many ? '<th style="' + head + '"></th>' : '') + '</tr>' + rows +
     '<tr><td style="' + cell + 'font-weight:600;">Total due</td><td class="hide-sm" style="' + cell + '"></td><td class="hide-sm" style="' + cell + '"></td>' +
