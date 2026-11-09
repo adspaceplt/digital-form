@@ -731,61 +731,6 @@
     mail = null;
   }
 
-  /* Supplier emails (Settings, Documents): each template's subject and body
-     at Suppliers Full Access; {fields} are filled from the supplier. */
-  var FIELDS = ['contact name', 'supplier name', 'supplier id', 'payment term', 'currency', 'document title', 'document reference', 'document date', 'sender name'];
-  var tpls = null;
-  function openTemplates(btn) {
-    tpls = { rows: {}, opener: btn || null };
-    msg('supTplMsg', '');
-    $('supTplFields').innerHTML = FIELDS.map(function (f) {
-      return '<button class="btn btn-sm" type="button" data-f="' + esc(f) + '">{' + esc(f) + '}</button>';
-    }).join('');
-    rpc('supplier_email_templates_list', {}).then(function (r) {
-      var d = r.data || {};
-      if (r.error || d.error) { msg('supTplMsg', said(r), 'err'); return; }
-      (d.rows || []).forEach(function (t) { tpls.rows[t.purpose] = { subject: t.subject, body: t.body, was: t.subject + '\n' + t.body }; });
-      $('supTplPick').value = 'approved';
-      $('supTplPick').dispatchEvent(new Event('change'));
-    });
-    $('supTplSheet').hidden = false;
-  }
-  function tplShow() {
-    var t = tpls && tpls.rows[$('supTplPick').value];
-    if (!t) return;
-    tpls.on = $('supTplPick').value;
-    $('supTplSubject').value = t.subject; $('supTplBody').value = t.body;
-  }
-  function tplKeep() {
-    var t = tpls && tpls.rows[tpls.on];
-    if (!t) return;
-    t.subject = $('supTplSubject').value; t.body = $('supTplBody').value;
-  }
-  function tplSave() {
-    tplKeep();
-    var changed = Object.keys(tpls.rows).filter(function (k) { var t = tpls.rows[k]; return t.subject + '\n' + t.body !== t.was; });
-    if (!changed.length) { shutTpl(); return; }
-    var go = $('supTplGo'); go.disabled = true;
-    var next = function (i) {
-      if (i >= changed.length) { go.disabled = false; shutTpl(); return; }
-      var k = changed[i], t = tpls.rows[k];
-      rpc('supplier_email_template_save', { p_purpose: k, p_subject: t.subject.trim(), p_body: t.body.trim() }).then(function (r) {
-        var d = r.data || {};
-        if (r.error || d.error) {
-          go.disabled = false;
-          $('supTplPick').value = k; $('supTplPick').dispatchEvent(new Event('change'));
-          msg('supTplMsg', said(r), 'err'); return;
-        }
-        t.was = t.subject + '\n' + t.body;
-        next(i + 1);
-      });
-    };
-    next(0);
-  }
-  function shutTpl() {
-    $('supTplSheet').hidden = true;
-    tpls = null;
-  }
   function wireMail() {
     if (!$('supMailSheet') || $('supMailSheet').__wired) return;
     $('supMailSheet').__wired = true;
@@ -794,20 +739,6 @@
     $('supMailGo').addEventListener('click', askMail);
     $('supMailCancel').addEventListener('click', shutMail);
     $('supMailClose').addEventListener('click', shutMail);
-    $('supTplPick').addEventListener('change', function () { if (!tpls) return; tplKeep(); tplShow(); });
-    $('supTplGo').addEventListener('click', tplSave);
-    $('supTplCancel').addEventListener('click', shutTpl);
-    $('supTplClose').addEventListener('click', shutTpl);
-    $('supTplFields').addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('[data-f]');
-      if (!b) return;
-      var el = tpls && tpls.last === 'subject' ? $('supTplSubject') : $('supTplBody');
-      var w = '{' + b.getAttribute('data-f') + '}', at = el.selectionStart == null ? el.value.length : el.selectionStart;
-      el.value = el.value.slice(0, at) + w + el.value.slice(el.selectionEnd == null ? at : el.selectionEnd);
-      el.focus(); el.selectionStart = el.selectionEnd = at + w.length;
-    });
-    $('supTplSubject').addEventListener('focus', function () { if (tpls) tpls.last = 'subject'; });
-    $('supTplBody').addEventListener('focus', function () { if (tpls) tpls.last = 'body'; });
   }
 
   // ---- Edit, and Use details ------------------------------------------------
@@ -885,5 +816,5 @@
     });
   }
 
-  window.ADspaceSuppliers = { enter: enter, urlState: urlState, load: load, openTemplates: function (btn) { wireMail(); openTemplates(btn); } };
+  window.ADspaceSuppliers = { enter: enter, urlState: urlState, load: load };
 })();

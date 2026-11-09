@@ -3491,7 +3491,6 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .nem-attach { margin-top: 0; }
 .nem-attach #nemFileName { min-width: 0; overflow-wrap: anywhere; font-size: 13.5px; }
 .nem-file-acts { display: flex; gap: 8px; flex: 0 0 auto; }
-.etpl-head { margin-bottom: 8px; }
 
 .wat-row, .crm-head.wat-row {
   display: grid; align-items: center; gap: 0 12px;
@@ -4509,3 +4508,61 @@ span.inv-amt { font-weight: 600; }
    the words' edge when it wraps under them and ends on the line's edge
    beside them (2026-11-07). */
 .task-deadline.task-post .btn-quiet { min-width: 0; margin-inline: -13px; }
+
+/* Email templates (js/mailtpl.js, 2026-11-10): the list by recipient, a
+   section a heading over a shaded card of rows (a box inside the sheet is
+   shaded, never outlined); the editor the words at the left and the email as
+   it reads at the right, stacked when narrow. A field the sender fills is a
+   chip; one it cannot fill is marked in red words in the preview. */
+.mt-rec { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.mt-sec + .mt-sec { margin-top: 24px; }
+.mt-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; min-height: var(--ctl-h); }
+.mt-sec-head .fsec-h { margin: 0; }
+.stg-card.mt-card { background: var(--sunk); }
+.mt-card .stg-ctl { gap: 8px; }
+.mt-subj { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sheet-body.mt-ed { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.sheet-body.mt-ed.is-narrow { grid-template-columns: minmax(0, 1fr); }
+.mt-ed-form { display: grid; gap: 16px; min-width: 0; }
+.mt-ed-form .row { display: grid; gap: 6px; margin: 0; }
+.mt-ed-pv { display: grid; gap: 6px; min-width: 0; position: sticky; top: 0; }
+.sheet-body.mt-ed.is-narrow .mt-ed-pv { position: static; }
+.mt-on { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.mt-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: -8px; }
+.mt-chip { min-width: 0; font-family: inherit; }
+.mt-odd { margin: -8px 0 0; }
+.mt-odd[hidden] { display: none; }
+.inv-mail-card .mt-pv-subj { font-weight: 600; }
+.inv-mail-card .mt-pv-fine { font-size: 12px; color: #515151; }
+.inv-mail-card .mt-pv-none { color: #515151; }
+.inv-mail-card .mt-f { background: #eef3fb; color: #1a1a1a; border-radius: 4px; padding: 0 2px; }
+.inv-mail-card .mt-f.is-bad { background: #fdeceb; color: #b3261e; text-decoration: underline wavy; }
+#mtEdSheet .sheet-card > .msg:empty, #mtSheet .msg:empty { display: none; }
+#mtEdSheet .sheet-card > .msg { margin: 0 24px 8px; }
+
+/* Settings' search and marks (2026-11-10): a search field heads the group
+   list at a desk and the page on a phone; each group leads with its rail
+   glyph; a group's rows stand in inset cards of five at most under short
+   headings, as System Settings does. */
+.stg-find { margin-bottom: 6px; }
+.stg-find .input { width: 100%; }
+.stg.is-phone .stg-find, .stg.is-single .stg-find { margin-bottom: 12px; }
+.stg-go { gap: 10px; }
+.stg-go-g, .stg-hit-g { display: inline-flex; flex: 0 0 auto; width: 15px; height: 15px; color: var(--ink-mute); }
+.stg-go-g svg, .stg-hit-g svg { width: 15px; height: 15px; }
+.stg-go[aria-current] .stg-go-g { color: var(--ink); }
+.stg-sec { display: grid; gap: 16px; }
+.stg-sec > .stg-title { margin: 0; }
+.stg-part { display: grid; gap: 8px; }
+.stg-part-h { margin: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); padding-left: 15px; }
+.stg-part > .undobar-here { margin: 0; }
+.stg-hit {
+  display: grid; grid-template-columns: 15px minmax(0, 1fr) 15px; align-items: center; gap: 12px; width: 100%;
+  padding: 10px 15px; min-height: 56px; border: 0; border-bottom: 1px solid var(--line-soft); background: none;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.stg-hit:last-child { border-bottom: 0; }
+.stg-hit > svg { width: 15px; height: 15px; color: var(--ink-mute); }
+.stg-hit .stg-name, .stg-hit .stg-meta { display: block; }
+@media (hover: hover) { .stg-hit:hover { background: var(--sunk); } }
+.mt-rec .field-label { margin: 0; }

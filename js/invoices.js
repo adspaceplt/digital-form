@@ -17,8 +17,6 @@
  *                                    their date and those not yet due, with
  *                                    the reminders sent; Send reminder opens
  *                                    the same Review and send
- *   ADspaceInvoices.openTemplate(btn, say) — Settings' Overdue reminder
- *   ADspaceInvoices.templateLine() — Settings' value line
  */
 (function () {
   'use strict';
@@ -698,42 +696,6 @@
     });
   }
 
-  /* ---- Settings: Overdue reminder --------------------------------------- */
-  var TPL = {
-    reminder: { get: 'invoice_email_template_get', save: 'invoice_email_template_save', title: 'Overdue reminder' },
-    invoice: { get: 'invoice_send_template_get', save: 'invoice_send_template_save', title: 'Invoice email' }
-  };
-  function templateLine(kind) {
-    return rpc(TPL[kind === 'invoice' ? 'invoice' : 'reminder'].get).then(function (t) {
-      if (t.error) throw new Error(t.error);
-      return t.updated_by ? 'Changed ' + C.date(t.updated_at) + ' by ' + t.updated_by : 'Standard wording';
-    });
-  }
-  function openTemplate(btn, say, kind) {
-    var k = TPL[kind === 'invoice' ? 'invoice' : 'reminder'];
-    rpc(k.get).then(function (t) {
-      if (t.error) { if (say) say(said(t), 'err'); return; }
-      window.ADspaceConfirm.ask({
-        title: k.title, go: 'Save', wait: true,
-        body: 'Fields: {contact name}, {client}, {invoice no}, {count}, {total}, {sign off}. {invoices} is where the table of invoices goes.',
-        fields: [{ name: 'one', label: 'Subject, one invoice', value: t.subject_one || '' },
-          { name: 'many', label: 'Subject, several invoices', value: t.subject_many || '' },
-          { name: 'body', label: 'Message', rows: 12, value: t.body || '' },
-          { name: 'legal', label: 'Legal note', rows: 3, value: t.legal || '', required: false },
-          { name: 'disclaimer', label: 'Disclaimer', rows: 3, value: t.disclaimer || '', required: false }],
-        check: function (v) { return /\{\s*invoices\s*\}/i.test(String(v.body || '')) ? '' : SAID['no-invoices']; }
-      }, function (v) {
-        return rpc(k.save, { p_subject_one: String(v.one || '').trim(), p_subject_many: String(v.many || '').trim(),
-          p_body: String(v.body || '').trim(), p_legal: String(v.legal || '').trim(), p_disclaimer: String(v.disclaimer || '').trim() })
-          .then(function (d) {
-            if (d.error) return said(d);
-            if (say) say('Saved.', 'ok');
-            return '';
-          });
-      });
-    });
-  }
-
   window.ADspaceInvoices = {
     may: mayView,
     on: function () { return st.on; },
@@ -741,8 +703,6 @@
     hide: hide,
     strip: strip,
     client: clientGroup,
-    overdue: overdue,
-    openTemplate: openTemplate,
-    templateLine: templateLine
+    overdue: overdue
   };
 })();
