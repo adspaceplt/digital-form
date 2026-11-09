@@ -64,6 +64,16 @@
  *                                             client, that client's unpaid
  *                                             invoices, those not yet due
  *                                             too (its Billing).
+ *   POST { action: 'bills', creator }        a creator's Bukku bills (2026-11-09,
+ *                                             CREATOR PAYMENTS): read from the
+ *                                             creator's linked contact, kept
+ *                                             through `creator_bills_take` (the
+ *                                             service role's), each matched to
+ *                                             the booking whose Job reference
+ *                                             or earlier job it names, Paid
+ *                                             where no balance stands; answers
+ *                                             `creator_bills_list` as the
+ *                                             caller. Read again every night.
  *   POST { action: 'remind', contact, invoices, cc, to?, ccs?, subject, body, again }
  *                                             one reminder to one Bukku
  *                                             contact: each invoice read
@@ -352,7 +362,7 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
     ['Billing person', person(c), person(next)],
     ['Billing address', addr(c), addr(next)],
     ['Payment term', termName(c.default_term_id), termName(next.default_term_id)],
-    [p.kind === 'supplier' ? 'Supplier ID' : 'Client ID', idOf(c), idOf(next)],
+    [p.kind === 'supplier' ? 'Supplier ID' : p.kind === 'creator' ? 'Creator ID' : 'Client ID', idOf(c), idOf(next)],
     ['Type', (c.types || []).map((t: string) => T[t] || t).join(', '), (next.types || []).map((t: string) => T[t] || t).join(', ')]
   ];
   return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
@@ -503,7 +513,49 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
       if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
     }
   }
-  return json({ ok: true, read, failed, left: rows.length - read - failed }, 200, origin);
+  /* Creators' bills (2026-11-09): each creator with a booking posted and not
+     yet read Paid, in the time left. */
+  let bills = 0;
+  const due = Date.now() < until ? await svc.rpc('creator_bills_due') : { data: [], error: null };
+  for (const d of ((due.data || []) as any[])) {
+    if (Date.now() > until) break;
+    try { const r = await creatorBills(String(d.creator), Number(d.contact)); if (!r.error) bills++; }
+    catch (e) {
+      console.error('bukku-sync: nightly bills', d.creator, String((e as Error).message || e));
+      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
+    }
+  }
+  return json({ ok: true, read, failed, left: rows.length - read - failed, bills }, 200, origin);
+}
+
+// ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
+/* Every purchase bill of the creator's Bukku contact, a hundred a page, its
+   reference read where Bukku keeps it (the bill's reference no., else its
+   description or remarks); a void or draft bill is left out. */
+export function billOf(x: any) {
+  const ref = [x.number2, x.reference, x.title, x.description, x.remarks].filter((v) => v != null && String(v).trim() !== '')
+    .map((v) => String(v).trim()).join(' ').slice(0, 200);
+  return { id: Number(x.id), number: String(x.number || ''), ref, date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
+    amount: cents(x.amount), balance: cents(x.balance),
+    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
+}
+async function creatorBills(creator: string, contact: number): Promise<any> {
+  const out: any[] = [];
+  for (let page = 1; page <= 20; page++) {
+    const r = await bukku('GET', `/purchases/bills?contact_id=${contact}&page=${page}&page_size=100`);
+    const rows = (r && r.transactions) || [];
+    for (const x of rows) {
+      if (!x || !x.id || Number(x.contact_id) !== contact) continue;
+      if (x.status && !['ready', 'paid'].includes(String(x.status))) continue;
+      out.push(billOf(x));
+    }
+    const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+    const total = Number(r && r.paging && r.paging.total) || 0;
+    if (!rows.length || page * per >= total || rows.length < per) break;
+  }
+  const t = await svcDb().rpc('creator_bills_take', { p_creator: creator, p_contact: contact, p_rows: out });
+  if (t.error) { console.error('bukku-sync: bills not kept', creator, t.error.message); return { error: 'not-filed' }; }
+  return t.data || { error: 'not-filed' };
 }
 
 // ---- A billing entity from Bukku (2026-10-29, one step 2026-10-30) ------------
@@ -916,9 +968,23 @@ Deno.serve(async (req) => {
       return await billingAction(action, k, rid, body, db, origin);
     }
     if (action === 'contacts' || action === 'adopt') return await contactsAction(action, body, db, origin);
+    if (action === 'bills') {
+      const cid = String(body.creator || '');
+      if (!/^[0-9a-f-]{36}$/i.test(cid)) return json({ error: 'bad-request' }, 400, origin);
+      // Asked as the caller: the Creators List at View, and the creator's own link.
+      const lk = await db.rpc('bukku_link_get', { p_kind: 'creator', p_id: cid });
+      if (lk.error) return json({ error: 'needs-update' }, 200, origin);
+      if (lk.data && lk.data.error) return json({ error: lk.data.error }, 200, origin);
+      if (!lk.data || !lk.data.contact_id) return json({ error: 'not-linked' }, 200, origin);
+      const r = await creatorBills(cid, Number(lk.data.contact_id));
+      if (r.error) return json({ error: r.error }, 200, origin);
+      const list = await db.rpc('creator_bills_list', { p_creator: cid });
+      if (list.error) return json({ error: 'needs-update' }, 200, origin);
+      return json(list.data || { error: 'failed' }, 200, origin);
+    }
 
     const kind = String(body.kind || ''), id = String(body.id || '');
-    if (!['client', 'supplier', 'entity'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
+    if (!['client', 'supplier', 'entity', 'creator'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
     const p = prep.data as Prep;
@@ -1009,7 +1075,7 @@ Deno.serve(async (req) => {
       }
       /* What was sent is what Bukku holds: a client's or an entity's link
          is held from here, the portal taking Bukku's read back. */
-      if (kind !== 'supplier') {
+      if (kind === 'client' || kind === 'entity') {
         const m = await db.rpc('bukku_read_may', { p_kind: kind, p_id: id, p_level: 'work' });
         const md = (m.data || {}) as any;
         if (!m.error && md.linked) {

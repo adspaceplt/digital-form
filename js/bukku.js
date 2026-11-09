@@ -9,7 +9,7 @@
  * same contact, typed Customer and Supplier.
  *
  *   ADspaceBukku.group(host, kind, id, opts)  — the record's Bukku band, Unlink in its ⋯
- *                                               (kind client, supplier or entity; opts.after on a link's change;
+ *                                               (kind client, supplier, entity or creator; opts.after on a link's change;
  *                                               opts.read(r) after a client's or entity's read from Bukku;
  *                                               opts.lead: linked, the band leads its container)
  *   ADspaceBukku.held(kind, id)               — the last read where Bukku holds the record's billing, else null
@@ -29,12 +29,15 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function day(iso) { return iso && window.ADspaceClock ? window.ADspaceClock.date(iso) : ''; }
   function may(k, l) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(k, l)); }
-  function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : may('clients.billing', 'work'); }
+  function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : kind === 'creator' ? may('campaigns.pay', 'work') : may('clients.billing', 'work'); }
+  /* A client's or billing entity's billing is Bukku's once linked; a supplier and a creator are sent. */
+  function holds(kind) { return kind === 'client' || kind === 'entity'; }
 
   var SAID = {
     denied: 'You do not have permission to send this record to Bukku. Please ask an admin.',
     'not-found': 'This record no longer exists.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
+    'no-details': 'Approve the creator\'s payment details before they are sent to Bukku.',
     'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
     'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
     'bukku-unreachable': 'Bukku did not answer. Try again in a few minutes.',
@@ -140,7 +143,7 @@
       if (d.error) { host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b></div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
       /* Billing from Bukku (2026-10-30): a linked client's or entity's
          billing is Bukku's, read in once a visit (Refresh reads again). */
-      if (d.contact_id && kind !== 'supplier') { readBand(d, work); return; }
+      if (d.contact_id && holds(kind)) { readBand(d, work); return; }
       var gap = work && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
       var linked = Boolean(d.contact_id);
       /* A brand and its main entity are one company, one Bukku contact
@@ -155,7 +158,7 @@
       /* A client or billing entity not yet linked is linked to the contact
          Bukku holds (2026-10-30, the user: "use link bukku instead of send
          to bukku"); Bukku then holds its billing. A supplier still sends. */
-      var linkFirst = !linked && kind !== 'supplier';
+      var linkFirst = !linked && holds(kind);
       var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
@@ -292,8 +295,8 @@
     var code = d.code || String(d.contact_id);
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
-      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : 'supplier') + ' stops pointing at Bukku contact ' + code + '. Nothing changes in Bukku. ' +
-        (kind === 'supplier' ? 'Send to Bukku' : 'Link to Bukku') + ' then offers the matching contacts again.' + (kind === 'entity' ? '' : ' A supplier that is also a client shares one Bukku contact, so both are unlinked.')
+      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+        (holds(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {
         if (r.error) return r.error === 'not-linked' ? 'This record is no longer linked. Refresh the page.' : said(r);
@@ -351,7 +354,7 @@
 
   function send(kind, id, btn, done) {
     build();
-    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, mode: kind === 'supplier' ? 'send' : 'link' };
+    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, mode: holds(kind) ? 'link' : 'send' };
     $('bkTitle').textContent = cur.mode === 'link' ? 'Link to Bukku' : 'Send to Bukku';
     $('bkPick').innerHTML = '<p class="muted">Reading Bukku.</p>';
     $('bkRows').innerHTML = '';
@@ -467,6 +470,6 @@
   /* Bukku's tax codes (2026-10-22), for the Settings page's Tax codes. */
   function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
 
-  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes,
+  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes, said: said,
     held: held, state: state, save: save, fresh: fresh, said: said };
 })();
