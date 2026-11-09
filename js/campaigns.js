@@ -561,7 +561,16 @@
   var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
-  var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved' };
+  var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
+    request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
+  /* A booking's payment (2026-11-09, Creator R3): its Bukku bill read back,
+     never marked by hand. */
+  var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'] };
+  var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
+    'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
+    taken: 'That earlier job ID is on another booking.', 'not-found': 'This booking no longer exists.',
+    'not-linked': 'Link the creator to Bukku first.' };
+  var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
     'no-note': 'Enter a reason.', 'too-long': 'Enter a reason of up to 300 characters.' };
@@ -628,9 +637,99 @@
           }).join('') + '</dl></section>';
       }
     }
+    /* Bukku and the payments (2026-11-09): the creator a supplier in Bukku,
+       sent from the details approved last; each booking's bill read back. */
+    var approved = rows.some(function (x) { return x.status === 'approved'; });
+    if (approved) html += '<section class="fsec"><div class="readgroup" id="cpayBukku"></div></section>';
+    html += '<section class="fsec" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
+      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></div><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = html + '<div class="msg" id="cpayMsg" role="status"></div>';
+    if (approved && window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
+    $('cpayRead').addEventListener('click', function () { readJobs(true); });
+    if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
     var open = cur && cur.status === 'pending' && d.decide;
     $('cpayApprove').hidden = !open; $('cpayDecline').hidden = !open;
+  }
+  /* The bookings and their bills: as last read, or read from Bukku at the press. */
+  function readJobs(fresh) {
+    var c = payFor, host = $('cpayJobs');
+    if (!c || !host) return;
+    if (!payJobs || payJobs.creator !== c.id) UI.skeleton(host, 2);
+    var btn = $('cpayRead'); if (btn && fresh) btn.disabled = true;
+    var ask = fresh ? db.functions.invoke('bukku-sync', { body: { action: 'bills', creator: c.id } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }) : db.rpc('creator_bills_list', { p_creator: c.id }).then(function (r) { return r.error ? { error: r.error.message } : (r.data || {}); });
+    ask.then(function (d) {
+      if (btn) btn.disabled = false;
+      if (payFor !== c) return;
+      if (d.error) {
+        if (fresh && payJobs) { var m = $('cpayMsg'); if (m) { m.textContent = JOB_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
+        UI.failLine(host, 'The payments', JOB_SAID[d.error] || d.error, function () { readJobs(fresh); });
+        return;
+      }
+      payJobs = Object.assign({ creator: c.id }, d);
+      paintJobs();
+    }).catch(function (e) { if (btn) btn.disabled = false; UI.failLine(host, 'The payments', e.message, function () { readJobs(fresh); }); });
+  }
+  function money(n, cur) {
+    if (n == null) return '';
+    return (cur === 'SGD' ? 'S$ ' : cur && cur !== 'MYR' ? cur + ' ' : 'RM ') + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function paintJobs() {
+    var host = $('cpayJobs'), d = payJobs;
+    if (!host || !d) return;
+    var work = mayPart('campaigns.pay', 'work');
+    var btn = $('cpayRead'); if (btn) btn.hidden = !(d.linked && work);
+    var day = function (v) { return v ? ADspaceClock.date(v) : ''; };
+    var POSTED = ['posted', 'completed'];
+    var jobs = d.jobs || [];
+    var rowOf = function (j) {
+      var b = j.bill, st;
+      if (b) st = '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>';
+      else if (POSTED.indexOf(j.state) > -1) st = '<span class="chip-state is-warn">Not billed</span>';
+      else st = '<span class="chip-state is-off">Not due</span>';
+      var sub = [esc(j.campaign || '')];
+      if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
+      var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(money(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
+        : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
+      return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
+        '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
+          '<span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
+        '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
+        (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Earlier job ID for ' + esc(j.job || '') + '">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
+        '</div>';
+    };
+    var html = jobs.length ? jobs.map(rowOf).join('') : '<p class="emptyline">No bookings.</p>';
+    if ((d.earlier || []).length) {
+      html += '<h4 class="fsec-h cpay-earlier-h">Earlier payments</h4>' + d.earlier.map(function (b) {
+        return '<div class="cpay-job"><div class="cpay-job-l"><span class="cpay-job-ref">' + esc(b.number || '') + '</span>' +
+          '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
+          '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
+          (b.amount != null ? '<span class="cpay-job-sub">' + esc(money(b.amount, b.currency)) + '</span>' : '') + '</div>' +
+          (work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
+      }).join('');
+    }
+    if (d.read_at) html += '<p class="muted cpay-read">Read from Bukku ' + esc(day(d.read_at) + ', ' + ADspaceClock.clock(d.read_at)) + '</p>';
+    host.innerHTML = html;
+    host.querySelectorAll('[data-a="earlier"]').forEach(function (b) {
+      b.addEventListener('click', function () { earlierJob(b.closest('.cpay-job').getAttribute('data-opt'), b); });
+    });
+  }
+  function earlierJob(opt, btn) {
+    var j = ((payJobs && payJobs.jobs) || []).filter(function (x) { return x.option === opt; })[0];
+    if (!j) return;
+    window.ADspaceConfirm.ask({ title: 'Earlier job ID', go: 'Save', wait: true, opener: btn,
+      field: { name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
+        note: 'The job ID issued for this booking on the AP01 form. Its Bukku bill is matched by it.' } }, function (v) {
+      return db.rpc('creator_earlier_job_set', { p_option: opt, p_ref: String((v && v.ref) || '').trim() || null }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return r.error.message;
+        if (d.error) return JOB_SAID[d.error] || d.error;
+        readJobs();
+        return '';
+      });
+    });
   }
   function decidePay(ok, note) {
     var cur = ((payRows && payRows.rows) || []).filter(function (x) { return x.status !== 'withdrawn'; })[0];
@@ -643,6 +742,7 @@
         return PAY_SAID[d.error] || d.error;
       }
       readPayDetails();
+      payJobs = null;
       db.rpc('creator_pay_states').then(function (p) { if (!p.error) { state.payStates = p.data || {}; paintRoster(); } });
       return '';
     });

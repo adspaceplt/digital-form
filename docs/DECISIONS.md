@@ -8914,3 +8914,26 @@ user: "all four shows same width left right").
 - The same day: "Missing the filter for sales by" (the Clients Filters
   sheet held Stage, Person in charge and VIC). `#crmSales` filters by the
   colleague's id, as Sales by is stored; Clear takes it off.
+
+### 2026-11-09 · Creator payments (Creator R3)
+- The flow the user approved on 2026-11-08: the payment request starts when
+  a booking is Posted (the AP01 form's moment), the team puts the Job
+  reference in the Bukku bill's reference, and the portal reads that bill
+  to show Processing or Paid, never marked by hand; AKJ bills stay as they
+  are, an AKJ number typed on its booking matching its bill.
+- A creator is a supplier in Bukku, sent from the details approved last, so
+  the band reuses the supplier's Send to Bukku and Link only, never the
+  client's Billing from Bukku (Bukku does not hold a creator's details).
+- Payment sent is told only on a change the portal saw (Processing, then
+  Paid): a bill first read already paid was paid before the portal read it,
+  and an email then would repeat what the creator already knows.
+- The pay-by days are Business settings by currency (10 working days in
+  MYR, 21 otherwise, holidays passed over), stamped on the booking at the
+  move into Posted so a later change of setting never moves a promise made.
+- The checks on `bukku_links.kind` and the email purposes are replaced by
+  dropping them, and `bukku_unlink` and `app_settings_set` remove rows, so
+  they are the SQL Editor part's; the connector holds a statement that
+  drops or deletes.
+- A deploy of bukku-sync from a working tree carrying this release's
+  unfinished code went live for five minutes on 2026-11-09 before being put
+  back to main: a function is deployed from main alone (CLAUDE.md §3).

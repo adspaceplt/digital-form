@@ -15,7 +15,7 @@
     batches: 'id client_id title note published created_at published_at period',
     campaign_confirmations: 'id campaign_id kind person source note created_at idem snapshot campaign_title client_id',
     campaign_deliverables: 'id option_id url name kind bytes round uploaded_at removed_at hidden_at hidden_by',
-    campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round',
+    campaign_options: 'id campaign_id creator_id rate platforms position is_replacement state drop_reason goodwill added_at visit_date visit_time visit_location visit_pic visit_pic_phone tracking_no draft_url revision_round planned_publish confirmed_at confirmed_by notes draft_caption submitted_at changes_by submission_due creator_rating qc_second_wanted completed_at released_round earlier_job posted_on pay_by',
     campaigns: 'id client_id title title_zh invoice_no slots deadline owner push_format deliverable brief brief_zh state access_token passcode created_by created_at updated_at invoice_url invoice_uploaded_at purpose purpose_zh backups_open state_log selection_closed_at moved_token campaign_code',
     client_contacts: 'id client_id salutation name role phone email whatsapp lang is_primary notes created_at archived_at portal_access portal_login_at',
     client_document_deletions: 'id document_id number client_id actor reason service_ids deleted_at',
@@ -560,6 +560,7 @@
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
+    creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     department_save: 'p_key p_name p_in_prize p_criteria',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
@@ -1610,6 +1611,19 @@
           }
 
           if (table === 'campaign_options' && 'state' in pending) selectionClose(r.campaign_id);
+
+          if (table === 'campaign_options' && pending.state === 'posted' && ['posted', 'completed'].indexOf(api.__before[api.__before.length - 1][1].state) < 0) {
+            var poDay = new Date(Date.now() + 8 * 36e5).toISOString().slice(0, 10);
+            var poReq = (DB.creator_pay_requests || []).filter(function (q) { return q.creator_id === r.creator_id && q.status === 'approved'; })[0];
+            var poDays = appSet(poReq && poReq.currency && poReq.currency !== 'MYR' ? 'creator_pay_days_other' : 'creator_pay_days_myr', poDay) || 10;
+            r.posted_on = r.posted_on || poDay;
+            if (!r.pay_by) { var pb = new Date(r.posted_on + 'T00:00:00Z'), pn = poDays; while (pn > 0) { pb.setUTCDate(pb.getUTCDate() + 1); if (pb.getUTCDay() % 6) pn--; } r.pay_by = pb.toISOString().slice(0, 10); }
+            DB.creator_emails = DB.creator_emails || [];
+            if (!DB.creator_emails.some(function (e) { return e.option_id === r.id && (e.purpose === 'request' || e.purpose === 'posted'); })) {
+              ['request', 'posted'].forEach(function (pp) { DB.creator_emails.push({ id: nid('cp'), purpose: pp, creator_id: r.creator_id, option_id: r.id,
+                to_email: pp === 'request' ? 'ap@adspacestudios.com' : (poReq && poReq.email) || 'creator@example.com', subject: pp, body: '', status: 'queued', created_at: new Date().toISOString() }); });
+            }
+          }
           if (table === 'campaigns' && 'slots' in pending) selectionClose(r.id);
         });
         rows = DB[table].filter(function (r) { return String(r[f]) === String(v); });
@@ -2854,6 +2868,8 @@ function cardSlugFree(name, self, email) {
 
     report_post_links: 1,
 
+    creator_pay_days_myr: 10, creator_pay_days_other: 21,
+
     approval_reminder_days: 3,
 
     priority_urgent_hours: 24, priority_high_hours: 48, priority_medium_hours: 72,
@@ -3163,6 +3179,65 @@ function cardSlugFree(name, self, email) {
         e.to_email + (e.cc_email ? ', cc ' + e.cc_email : '') + ' · ' + e.invoices.map(function (x) { return x.number; }).join(', '), created_at: new Date().toISOString() });
   }
   function billMarket(c) { return c && String(c.market || "").toUpperCase() === "SG" && c.bill_sgd ? "SG" : "MY"; }
+
+  function jobRefOf(o) {
+    var c = (DB.creators || []).filter(function (x) { return x.id === o.creator_id; })[0];
+    var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
+    var f = (DB.id_formats && DB.id_formats.job && DB.id_formats.job.pattern) || '{creator}/{campaign}';
+    return f.replace('{creator}', (c && c.creator_code) || '').replace('{campaign}', (m && m.campaign_code) || '');
+  }
+  var BOOKED_OUT = ['option', 'shortlisted', 'backup', 'withdrawn', 'replaced'];
+  function refKey(v) { return String(v || '').replace(/[^0-9A-Za-z]/g, '').toUpperCase(); }
+  function billOption(creator, ref, number) {
+    var hits = (DB.campaign_options || []).filter(function (o) {
+      return o.creator_id === creator && BOOKED_OUT.indexOf(o.state) < 0 && [jobRefOf(o), o.earlier_job].some(function (k) {
+        k = refKey(k); return k.length >= 4 && (refKey(ref).indexOf(k) > -1 || refKey(number).indexOf(k) > -1); });
+    }).sort(function (a, b) { return refKey(jobRefOf(b)).length - refKey(jobRefOf(a)).length; });
+    return hits.length ? hits[0].id : null;
+  }
+
+  function creatorBillsTake(creator, contact, rows) {
+    DB.creator_bills = DB.creator_bills || [];
+    var seen = [], told = 0, now = new Date().toISOString();
+    rows.forEach(function (x) {
+      var st = Number(x.balance || 0) <= 0 ? 'paid' : 'processing', opt = billOption(creator, x.ref, x.number);
+      var b = DB.creator_bills.filter(function (y) { return y.bill_id === x.id; })[0];
+      seen.push(x.id);
+      if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
+        amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now,
+        paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null });
+      else {
+        var was = b.status;
+        Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance,
+          currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null });
+        if (st === 'paid' && was === 'processing' && !b.paid_told_at && opt) {
+          b.paid_told_at = now; told++;
+          DB.creator_emails = DB.creator_emails || [];
+          DB.creator_emails.push({ id: nid('cp'), purpose: 'paid', creator_id: creator, option_id: opt, to_email: 'creator@example.com', subject: 'Payment sent: ' + jobRefOf(DB.campaign_options.filter(function (o) { return o.id === opt; })[0]),
+            body: '', status: 'queued', created_at: now });
+        }
+      }
+    });
+    DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
+    persist();
+    return { ok: true, bills: rows.length, told: told };
+  }
+  function creatorBillsList(creator) {
+    if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
+    if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
+    var pay = opsGranted('campaigns.pay', 'view'), bills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && !b.gone; });
+    var link = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === creator; })[0];
+    var billOf = function (b) { return { number: b.number, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency }; };
+    var jobs = (DB.campaign_options || []).filter(function (o) { return o.creator_id === creator && BOOKED_OUT.indexOf(o.state) < 0; }).map(function (o) {
+      var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
+      var b = bills.filter(function (x) { return x.option_id === o.id; }).sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];
+      return { option: o.id, job: jobRefOf(o), earlier_job: o.earlier_job || null, state: o.state, campaign: m.title || m.name || '', campaign_id: m.id,
+        posted_on: o.posted_on || null, pay_by: o.pay_by || null, bill: b ? billOf(b) : null };
+    });
+    var reads = bills.map(function (b) { return b.read_at; }).sort();
+    return { ok: true, pay: pay, linked: Boolean(link), read_at: reads.length ? reads[reads.length - 1] : null, jobs: jobs,
+      earlier: bills.filter(function (b) { return !b.option_id; }).map(function (b) { return Object.assign(billOf(b), { ref: b.ref }); }) };
+  }
   function appSet(key, at) {
     appDb();
     var rows = DB.app_settings.filter(function (r) { return r.key === key; }).sort(function (a, b) { return a.from_date < b.from_date ? -1 : 1; });
@@ -3205,7 +3280,8 @@ function cardSlugFree(name, self, email) {
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
-          (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
+          (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
+          (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
           (k === 'bench_reels_share' && (v < 0 || v > 100)) || (k === 'bench_ad_spend_pct' && (v < 1 || v > 100)) ||
           (k === 'bench_cpl_rise' && (v < -100 || v > 100)) ||
           (/^bench_/.test(k) && ['bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise'].indexOf(k) < 0 && (v < 0 || v > 10000))) return { error: 'bad-value', key: k };
@@ -9151,7 +9227,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!DB.creator_email_templates) DB.creator_email_templates = [
         { purpose: 'received', on_send: true, subject: 'Payment details received: {reference}', body: 'Dear {creator name},\n\nThank you for submitting your payment details under reference {reference}.\n\nADspace will review them and inform you by email once they are approved.\n\nYours sincerely,\nADspace', to_email: null },
         { purpose: 'review', on_send: true, subject: 'Payment details to review: {creator id} {creator name}', body: '{creator name} ({creator id}) has submitted payment details under reference {reference}.\n\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nReview them in the portal:\n{review link}', to_email: 'ap@adspacestudios.com' },
-        { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
+        { purpose: 'approved', on_send: true, subject: 'Payment details approved: {reference}', body: 'Dear {creator name},\n\nYour payment details under reference {reference} have been approved. Payments will be made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'request', on_send: true, subject: 'Creator payment request: {job reference}', body: '{creator name} ({creator id}) has posted for {campaign}.\n\nJob reference: {job reference}\nPosted: {posted date}\nPay by: {pay by}\nPayee: {payee}\nMethod: {method}\nAccount ending: {account ending}\n\nOpen the creator\'s payments in the portal:\n{review link}', to_email: null },
+        { purpose: 'posted', on_send: true, subject: 'Your post is recorded: {job reference}', body: 'Dear {creator name},\n\nThank you. Your post for {campaign} has been recorded under job reference {job reference}.\n\nPayment will be made by {pay by} to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null },
+        { purpose: 'paid', on_send: true, subject: 'Payment sent: {job reference}', body: 'Dear {creator name},\n\nPayment of {amount} for {campaign}, job reference {job reference}, has been made to the account ending {account ending}.\n\nYours sincerely,\nADspace', to_email: null }];
       return DB.creator_email_templates;
     }
     function cpMethod(m, b) { return m === 'bank' ? 'Bank transfer' + (b ? ' · ' + b : '') : ({ duitnow: 'DuitNow', paynow: 'PayNow', tng: "Touch 'n Go eWallet" })[m] || m; }
@@ -9204,6 +9283,33 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.creator_emails = DB.creator_emails || [];
       DB.creator_emails.push({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
         body: fill(t.body), status: 'queued', created_at: new Date().toISOString() });
+    }
+
+    if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
+      var cbA = args || {}, cbOut;
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      if (name === 'creator_bills_take' || name === 'creator_bills_due') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
+      if (!opsMe()) cbOut = { error: 'denied' };
+      else if (name === 'creator_bills_list') cbOut = creatorBillsList(cbA.p_creator);
+      else {
+        var cbO = (DB.campaign_options || []).filter(function (o) { return o.id === cbA.p_option; })[0];
+        var cbV = String(cbA.p_ref || '').replace(/\s+/g, '').toUpperCase() || null;
+        if (!opsGranted('campaigns.pay', 'work')) cbOut = { error: 'denied' };
+        else if (!cbO) cbOut = { error: 'not-found' };
+        else if (cbV && !/^[A-Z0-9][A-Z0-9\/._-]{1,39}$/.test(cbV)) cbOut = { error: 'bad-ref' };
+        else if (cbV && DB.campaign_options.some(function (o) { return o.earlier_job === cbV && o.id !== cbO.id; })) cbOut = { error: 'taken' };
+        else {
+          if ((cbO.earlier_job || null) !== cbV) {
+            var cbC = DB.creators.filter(function (c) { return c.id === cbO.creator_id; })[0] || {};
+            logAct('creator.updated', cbC.name, jobRefOf(cbO) + ' · Earlier job ID: ' + (cbO.earlier_job || 'not set') + ' → ' + (cbV || 'not set'));
+            cbO.earlier_job = cbV;
+            (DB.creator_bills || []).forEach(function (b) { if (b.creator_id === cbO.creator_id) b.option_id = billOption(b.creator_id, b.ref, b.number); });
+          }
+          cbOut = { ok: true, earlier_job: cbV };
+        }
+      }
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(cbOut)), error: null });
     }
     if (/^creator_pay_|^creator_email_templates_/.test(name)) {
       var cpR = window.__refuseRpc && window.__refuseRpc[name];
@@ -9300,7 +9406,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           else {
             if (t.purpose !== 'review') to = null;
             if (t.on_send !== on || t.subject !== x.subject.trim() || t.body !== x.body.trim() || (t.to_email || null) !== to) {
-              var w = ({ received: 'Details received', review: 'Details to review', approved: 'Details approved' })[t.purpose];
+              var w = ({ received: 'Details received', review: 'Details to review', approved: 'Details approved', request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' })[t.purpose];
               cpMv.push(w + (t.on_send !== on ? ': ' + (t.on_send ? 'Sent → Not sent' : 'Not sent → Sent') : (t.to_email || null) !== to ? ': finance email changed' : ': wording changed'));
               t.on_send = on; t.subject = x.subject.trim(); t.body = x.body.trim(); t.to_email = to; t.updated_at = new Date().toISOString(); t.updated_by = opsMe().name;
             }
@@ -11869,10 +11975,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!bkMe) return false;
         if (k === 'client') return opsAllowed('clients.billing', lv);
         if (k === 'supplier') return opsAllowed('suppliers', lv);
+
+        if (k === 'creator') return opsAllowed('campaigns.creators', 'view') && (lv === 'view' || opsGranted('campaigns.pay', 'work'));
         if (k === 'entity') return opsAllowed('clients.billing', lv) && (id == null || (DB.client_entities || []).some(function (l) { return l.entity_id === id && bkSeen(l.client_id); }));
         return false;
       };
+      var bkPay = function (id) { return (DB.creator_pay_requests || []).filter(function (r) { return r.creator_id === id && r.status === 'approved'; })
+        .sort(function (a, b) { return a.decided_at < b.decided_at ? 1 : -1; })[0]; };
       var bkPrint = function (k, id) {
+        if (k === 'creator') { var pq = bkPay(id), pc = DB.creators.filter(function (x) { return x.id === id; })[0]; return pc ? JSON.stringify([pq ? pq.ref : null, pq ? pq.legal_name : null, pc.creator_code]) : null; }
         if (k === 'entity') {
           var be = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0];
           var bh = be && DB.clients.filter(function (x) { return x.id === entHome(id); })[0];
@@ -11992,6 +12103,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
         });
       }
       if (name === 'bukku_prepare') {
+        if (args.p_kind === 'creator') {
+          var pcr = DB.creators.filter(function (x) { return x.id === args.p_id; })[0];
+          if (!pcr) return bkNo('not-found');
+          var pq = bkPay(pcr.id);
+          if (!pq) return bkNo('no-details');
+          var pco = pq.bill_kind === 'brn', pw = opsGranted('campaigns.pay', 'view');
+          return bkOk({ kind: 'creator', id: pcr.id, legal_name: pco ? String(pq.legal_name).toUpperCase() : pq.legal_name, other_name: pcr.name,
+            reg_no: pco || pw ? String(pq.id_no || '').replace(/[^0-9A-Za-z]/g, '') || null : null, tax_id_no: pq.tin || null, email: pq.email || null,
+            address: pq.address || null, currency: pq.currency, person: pco ? null : pq.legal_name, our_id: pcr.creator_code,
+            field_id: DB.bukku_settings.field_supplier || null, type: 'supplier', contact_id: bkLink ? bkLink.contact_id : null });
+        }
         if (args.p_kind === 'entity') {
           var pe = (DB.billing_entities || []).filter(function (x) { return x.id === args.p_id; })[0];
           if (!pe) return bkNo('not-found');
@@ -12054,15 +12176,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
           return;
         }
-        var fr = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
-        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: k === 'client' ? 'client.edited' : 'supplier.edited',
-          subject: fr ? (k === 'client' ? fr.name : (fr.name || fr.code)) : 'Bukku', detail: detail, created_at: at });
+        var fr = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : k === 'creator' ? DB.creators.filter(function (x) { return x.id === id; })[0]
+          : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
+        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: k === 'client' ? 'client.edited' : k === 'creator' ? 'creator.updated' : 'supplier.edited',
+          subject: fr ? (k === 'client' || k === 'creator' ? fr.name : (fr.name || fr.code)) : 'Bukku', detail: detail, created_at: at });
       };
 
       if (name === 'bukku_unlink' || name === 'bukku_unlink_undo') {
         DB.bukku_links_gone = DB.bukku_links_gone || [];
         var bkNameOf = function (k, id) {
           if (k === 'entity') { var ne = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0]; return ne ? (ne.legal_name || 'Billing entity') : null; }
+          if (k === 'creator') { var nc = DB.creators.filter(function (x) { return x.id === id; })[0]; return nc ? nc.name : null; }
           var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
           return r ? (k === 'client' ? r.name : (r.name || r.code)) : null;
         };
@@ -13734,6 +13858,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bkb = (opts && opts.body) || {};
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
           if (window.__bukkuOff) return bkR({ error: 'bukku-not-set-up' });
+
+          if (bkb.action === 'bills') {
+            var blk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === bkb.creator; })[0];
+            if (!opsMe() || !opsAllowed('campaigns.creators', 'view')) return bkR({ error: 'denied' });
+            if (!blk) return bkR({ error: 'not-linked' });
+            if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
+            var brows = (window.__bukkuBills || []).filter(function (x) { return Number(x.contact_id) === Number(blk.contact_id) && (!x.status || x.status === 'ready' || x.status === 'paid'); })
+              .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
+                amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; });
+            creatorBillsTake(bkb.creator, Number(blk.contact_id), brows);
+            return bkR(creatorBillsList(bkb.creator));
+          }
           var held = window.__bukkuContacts = window.__bukkuContacts || [
             { id: 501, contact_code: 'C-L0003', legal_name: 'SAMPLE CLIENT SDN BHD', reg_no: '000000012345', types: ['customer'], fields: [] },
             { id: 502, contact_code: 'C-A0007', legal_name: 'ACME TRADING', reg_no: '201901000001', types: ['supplier'], fields: [] }];

@@ -255,6 +255,10 @@
       biz && { id: 'industries', name: 'Industries', kind: 'open', meta: line('industries') },
       /* Creator and campaign IDs and the Job reference (2026-11-08). */
       biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids') },
+      /* When a creator is paid after their post (2026-11-09). */
+      biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
+        meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR within ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
+          'Other currencies within ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
         meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
           num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
@@ -623,7 +627,8 @@
   var CM_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
     'bad-subject': 'Enter a subject of 3 to 200 characters.', 'bad-body': 'Enter a message of 10 to 5,000 characters.',
     'bad-email': 'Enter a valid email address for the finance team.' };
-  var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved' };
+  var CM_WORD = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
+    request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
   function openCreatorMail() {
     db.rpc('creator_email_templates_get').then(function (r) {
       var d = r.data || {};
@@ -634,13 +639,14 @@
       var rows = d.rows || [], fields = [];
       rows.forEach(function (t) {
         fields.push({ name: t.purpose + '_on', label: 'Send this email', tick: true, value: t.on ? 'on' : '', head: CM_WORD[t.purpose] });
-        if (t.purpose === 'review') fields.push({ name: 'review_to', label: 'Finance email', type: 'email', value: t.to_email || '', required: true });
+        if (t.purpose === 'review') fields.push({ name: 'review_to', label: 'Finance email', type: 'email', value: t.to_email || '', required: true,
+          note: 'Details to review and Payment request go to it.' });
         fields.push({ name: t.purpose + '_subject', label: 'Subject', value: t.subject || '', required: true });
         fields.push({ name: t.purpose + '_body', label: 'Message', rows: 8, value: t.body || '', required: true });
       });
       window.ADspaceConfirm.ask({
         title: 'Creator emails', go: 'Save', wait: true, fields: fields,
-        body: 'Fields: {creator name}, {creator id}, {reference}, {payee}, {method}, {account ending}, {review link}.',
+        body: 'Fields: {creator name}, {creator id}, {reference}, {payee}, {method}, {account ending}, {review link}; on a booking also {job reference}, {campaign}, {posted date}, {pay by}, {amount}, {bill number}.',
         check: function (v) { return window.ADspaceWords.emailOk(String(v.review_to || '').trim()) ? '' : CM_SAID['bad-email']; }
       }, function (v) {
         return db.rpc('creator_email_templates_save', { p_rows: rows.map(function (t) {

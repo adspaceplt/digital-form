@@ -261,6 +261,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
 | Creator payment details (the CREATOR PAYMENT DETAILS section, `supabase/functions/creator-mail/`, `#payBox`, `#cpaySheet`) | creator, sql, camp, settings, perms, menus, whatsapp, then `ui` |
+| Creator payments (the CREATOR PAYMENTS sections, bukku-sync `bills`, `#cpayJobs`, `creator_bills`) | camp, bukkufn, sql, settings, creator, then `ui` |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs, seenpage, seensql |
 | `portal.js` | portal, confirmpage |
@@ -3755,6 +3756,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   service role's alone), from `ADspace <noreply-creator@sc.adspace.me>`;
   Resend's word, the sweep, the twelve-month clearing and Messages' Email
   log take them as every other email.
+- Creator payments (`2026-11-09-creator-payments.sql`, its SQL Editor part
+  `-editor.sql`; Creator R3, the flow the user approved 2026-11-08): a
+  creator is a Bukku supplier contact (`bukku_links` kind `creator`), sent
+  or linked from the payment details approved last on `#cpaySheet`'s Bukku
+  band (the Creator ID in Bukku's Supplier ID field, the ID number at
+  `campaigns.pay` View alone; read at the Creators List, sent, linked and
+  unlinked at `campaigns.pay` Work, filed `creator.updated`). The move into
+  Posted stamps `campaign_options.posted_on` (the first post's day, else
+  today) and `pay_by` (`creator_pay_days_myr` 10 or `creator_pay_days_other`
+  21 working days on, by the approved details' currency; Settings, Clients:
+  Creator payments) and queues Payment request to the finance address and
+  Post recorded to the creator, with the bell (`creator.payment`) for
+  `campaigns.pay` Work, once a booking (trigger `campaign_options_posted`,
+  `_posted_mail`). The team puts the Job reference in the Bukku bill's
+  reference; `bukku-sync` `bills` (Read from Bukku on the sheet's Payments,
+  and every night after the billing read, `creator_bills_due`) reads the
+  creator contact's purchase bills into `creator_bills` (RLS on, no policy,
+  no grant; `creator_bills_take`, the service role's), each matched to the
+  booking whose Job reference or earlier job its reference or number holds:
+  Processing while a balance stands, Paid at none, never marked by hand;
+  Payment sent goes once, when a bill read Processing is read Paid, never
+  for one first read already paid. A booking given an AKJ number on the
+  AP01 form carries it (`campaign_options.earlier_job`, the row's pen at
+  `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
+  bills matching no booking read under Earlier payments
+  (`creator_bills_list`, Creators List View, amounts at `campaigns.pay`
+  View). The three emails' words are Settings, Templates: Creator emails,
+  Payment request to Details to review's finance address.
 - The Creators List:
   - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
     figure is the client's price with markup, never the creator's payout, so
