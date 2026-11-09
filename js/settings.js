@@ -548,10 +548,12 @@
     db.rpc('app_settings_set', { p_from: day, p_values: { meta_checks: to ? 1 : 0 } }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
-          : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.' : d.error === 'bad-value' ? 'This feature is not available yet. Please contact an admin.' : d.error);
+        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
+          : d.error === 'denied' ? window.ADspaceWords.line.noSettings : d.error === 'bad-value' ? window.ADspaceWords.line.notYet : d.error);
       }
-      return window.ADspaceMoney.load(true);
+      /* Saved: a failed read of the figures afterwards keeps the switch as
+         pressed (the overnight review, 2026-11-10). */
+      return window.ADspaceMoney.load(true).catch(function () {});
     }).then(function () {
       said = null; paint();
       undoSwitch('meta', to ? 'Meta checks are on.' : 'Meta checks are off.', to);
@@ -572,10 +574,12 @@
     db.rpc(fn, { p_on: to }).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
-        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
-          : d.error === 'denied' ? 'You do not have permission to change business settings. Please ask an admin.' : d.error);
+        throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
+          : d.error === 'denied' ? window.ADspaceWords.line.noSettings : d.error);
       }
-      return window.ADspaceMoney.load(true);
+      /* Saved: a failed read of the figures afterwards keeps the switch as
+         pressed (the overnight review, 2026-11-10). */
+      return window.ADspaceMoney.load(true).catch(function () {});
     }).then(function () {
       said = null; paint();
       undoSwitch(id, word + (to ? ' is on.' : ' is off.'), to);
@@ -613,12 +617,12 @@
   /* ---- Demo access (2026-10-27) ----------------------------------------
      One sheet: On or Off, and a new PIN (4 to 8 digits; empty keeps the
      one held). The PIN is never read back: the database keeps its hash. */
-  var DEMO_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-pin': 'PIN: 4 to 8 digits.',
+  var DEMO_SAID = { denied: window.ADspaceWords.line.noSettings, 'bad-pin': 'Enter a PIN of 4 to 8 digits.',
     'no-pin': 'Set a PIN before turning demo access on.' };
   function openDemo() {
     db.rpc('demo_state').then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { rowSay('demo')(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : DEMO_SAID[d.error] || d.error, 'err'); return; }
+      if (r.error || d.error) { rowSay('demo')(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message) : DEMO_SAID[d.error] || d.error, 'err'); return; }
       window.ADspaceConfirm.ask({
         title: 'Demo access', go: 'Save', wait: true,
         fields: [{ name: 'on', label: 'Demo access', seg: true, value: d.on ? 'on' : 'off', choices: [['on', 'On'], ['off', 'Off']] },
@@ -633,7 +637,7 @@
         }
       }, function (v) {
         return db.rpc('demo_set', { p_on: v.on === 'on', p_pin: String(v.pin || '').trim() || null }).then(function (r2) {
-          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message)
+          var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message)
             : r2.data && r2.data.error ? DEMO_SAID[r2.data.error] || r2.data.error : '';
           if (e) return e;
           var n = r2.data || {};
@@ -653,7 +657,7 @@
     while (n.length < Number(f.width || 0)) n = '0' + n;
     return f.prefix + n;
   }
-  var IDS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
+  var IDS_SAID = { denied: window.ADspaceWords.line.noSettings,
     'bad-prefix': 'Enter a prefix of 1 to 6 capital letters.', 'bad-width': 'Choose 2 to 6 digits.',
     'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.',
     'bad-request-pattern': 'Enter a payment details reference of up to 40 characters that includes {creator} and {nnn}.' };
@@ -661,12 +665,12 @@
      Whether approved payment details are added as a row, the spreadsheet's
      link and its tab; after a save the sheet's headers are read and the
      row says how many take a value. */
-  var CS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
+  var CS_SAID = { denied: window.ADspaceWords.line.noSettings,
     'bad-sheet': 'Enter the Google Sheets link or ID.', 'bad-tab': 'Enter a tab name of up to 100 characters.',
     'no-sheet': 'Enter the Google Sheets link or ID.',
     'google-not-set-up': 'Google Sheets is not connected yet. Please contact an admin.',
     'google-refused': 'Google could not open the sheet. Share it with the ADspace Google account, then try again.',
-    'needs-update': 'This feature is not available yet. Please contact an admin.' };
+    'needs-update': window.ADspaceWords.line.notYet };
   function checkCrSheet() {
     return db.functions.invoke('creator-mail', { body: { action: 'check' } }).then(function (r) {
       return window.ADspaceAPI.fnRefusal(r).then(function (code) {
@@ -713,11 +717,12 @@
     while (num.length < run.length) num = '0' + num;
     return out.replace('{' + run + '}', num);
   }
+  var IDS_WORD = { creator: 'Creator ID', campaign: 'Campaign ID', job: 'Job reference' };
   function openIds() {
     db.rpc('id_formats_list').then(function (r) {
       var list = (r && r.data) || [];
       if (r.error || !Array.isArray(list) || !list.length) {
-        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : 'Could not load.', 'err');
+        rowSay('ids')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load.', 'err');
         return;
       }
       var by = {};
@@ -743,8 +748,8 @@
           ['creator', 'campaign'].forEach(function (k) {
             if (bad) return;
             if (!/^[A-Za-z]{1,6}$/.test(String(v[k + '_prefix'] || '').trim())) bad = IDS_SAID['bad-prefix'];
-            else if (!(Number(v[k + '_width']) >= 2 && Number(v[k + '_width']) <= 6)) bad = IDS_SAID['bad-width'];
-            else if (!(Number(v[k + '_next']) >= 1)) bad = IDS_SAID['bad-next'];
+            else if (!/^[2-6]$/.test(String(v[k + '_width'] || '').trim())) bad = IDS_SAID['bad-width'];
+            else if (!/^[1-9]\d{0,8}$/.test(String(v[k + '_next'] || '').trim())) bad = IDS_SAID['bad-next'];
           });
           var j = String(v.job || '').trim();
           if (!bad && (j.length > 40 || j.indexOf('{creator}') < 0 || j.indexOf('{campaign}') < 0)) bad = IDS_SAID['bad-pattern'];
@@ -766,20 +771,26 @@
             ? { p_kind: 'job', p_prefix: null, p_width: null, p_next: null, p_pattern: String(v.job || '').trim() }
             : { p_kind: k, p_prefix: String(v[k + '_prefix']).trim().toUpperCase(), p_width: Number(v[k + '_width']),
                 p_next: Number(v[k + '_next']), p_pattern: k === 'creator' ? String(v.payref || '').trim() : null }).then(function (r2) {
-            if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
+            if (r2.error) return /function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message;
             var d = r2.data || {};
             if (d.error === 'bad-next' && d.top != null) {
               return idNext({ prefix: String(v[k + '_prefix']).trim().toUpperCase(), width: Number(v[k + '_width']), next: d.top }) +
                 ' is already used. Enter a next number above ' + d.top + '.';
             }
-            if (d.error) return IDS_SAID[d.error] || 'Not saved.';
+            if (d.error) {
+              /* What saved before the refusal is said, and its line read again
+                 (the overnight review, 2026-11-10). */
+              var done = steps.slice(0, i).map(function (x) { return IDS_WORD[x]; });
+              if (done.length) readLine('ids');
+              return (IDS_SAID[d.error] || IDS_WORD[k] + ' not saved.') + (done.length ? ' ' + done.join(' and ') + ' saved.' : '');
+            }
             return one(i + 1);
           });
         }
         return one(0).then(function (e) {
           if (e) return e;
           readLine('ids');
-          rowSay('ids')(steps.length ? 'Saved.' : 'No changes.', 'ok');
+          rowSay('ids')(steps.length ? 'Saved.' : 'No change.', 'ok');
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
@@ -793,13 +804,13 @@
   var hol = { rows: null, err: null, year: null };
   var HOL_SAID = {
     taken: 'A holiday is already set on this date.', 'bad-name': 'Enter a name of 2 to 80 characters.',
-    'bad-day': 'Choose a date from 2023 to 2099.', 'not-found': 'This holiday was removed in the meantime.',
-    denied: 'You do not have permission to change business settings. Please ask an admin.'
+    'bad-day': 'Choose a date from 14 Aug 2023 to 31 Dec 2099.', 'not-found': 'This holiday no longer exists.',
+    denied: window.ADspaceWords.line.noSettings
   };
   function holSaid(r) {
     var e = r && (r.error || (r.data && r.data.error));
     if (!e) return '';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet : e.message;
     return e === 'taken' && r.data.name ? r.data.name + ' is already set on this date.' : HOL_SAID[e] || 'Not saved.';
   }
   function holToday() { return window.ADspaceClock.today(); }
@@ -818,6 +829,10 @@
       if (r.error) throw r.error;
       hol.rows = r.data || []; hol.err = null;
     }).catch(function (e) { hol.rows = null; hol.err = e; }).then(function () { if (done) done(); });
+  }
+  function holSpan() {
+    var y = Number(holToday().slice(0, 4));
+    return ' min="' + y + '-01-01" max="' + (y + 1) + '-12-31"';
   }
   function holYears() {
     var y = Number(holToday().slice(0, 4)), out = [y, y + 1];
@@ -847,7 +862,7 @@
     var body = rows.map(function (h) {
       if (h.day === hol.editing) {
         return '<div class="ind-row is-hol is-edit" data-day="' + esc(h.day) + '">' +
-          '<input class="input input-sm" type="date" id="holEdDay" aria-label="Date" value="' + esc(h.day) + '">' +
+          '<input class="input input-sm" type="date" id="holEdDay" aria-label="Date"' + holSpan() + ' value="' + esc(h.day) + '">' +
           '<input class="input input-sm" id="holEdName" maxlength="80" aria-label="Holiday" value="' + esc(h.name) + '">' +
           '<span class="ind-acts"><button class="btn btn-danger btn-sm" type="button" data-h="delete">Delete</button>' +
             '<button class="btn btn-quiet btn-sm" type="button" data-h="cancel">Cancel</button>' +
@@ -862,7 +877,7 @@
     box.innerHTML = (rows.length ? '<div class="ind-row ind-head is-hol" aria-hidden="true"><span>Date</span><span>Holiday</span><span></span></div>' + body
         : '<div class="hol-none"></div>') +
       '<div class="ind-row is-hol ind-add">' +
-        '<input class="input input-sm" type="date" id="holNewDay" aria-label="New holiday\'s date" value="' + esc(firstDay) + '">' +
+        '<input class="input input-sm" type="date" id="holNewDay" aria-label="New holiday\'s date"' + holSpan() + ' value="' + esc(firstDay) + '">' +
         '<input class="input input-sm" id="holNewName" maxlength="80" placeholder="Deepavali" aria-label="New holiday">' +
         '<span class="ind-acts"><button class="btn btn-sm" type="button" data-h="add">' + PLUS + 'Add</button></span></div>';
     if (!rows.length) window.ADspaceState.emptyLine(box.querySelector('.hol-none'), 'No holidays.');
@@ -874,6 +889,10 @@
     var dayF = $(was ? 'holEdDay' : 'holNewDay'), nameF = $(was ? 'holEdName' : 'holNewName');
     var day = String(dayF.value || ''), name = String(nameF.value || '').replace(/\s+/g, ' ').trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { holMsg('Choose a date.'); dayF.focus(); return; }
+    /* The list reads this year and next: a day outside them would save and
+       then be out of reach (the overnight review, 2026-11-10). */
+    var y = Number(holToday().slice(0, 4));
+    if (day < y + '-01-01' || day > (y + 1) + '-12-31') { holMsg('Choose a date in ' + y + ' or ' + (y + 1) + '.'); dayF.focus(); return; }
     if (!name) { holMsg('Enter the holiday\'s name.'); nameF.focus(); return; }
     var btn = $('holList').querySelector(was ? '.is-edit [data-h="save"]' : '[data-h="add"]');
     if (btn && btn.disabled) return;
@@ -913,14 +932,14 @@
      set inactive (offered to nobody, out of the prize). */
   var dep = { rows: null, err: null };
   var DEP_SAID = {
-    denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
+    denied: window.ADspaceWords.line.noSettings, 'bad-name': 'Enter a name of 2 to 40 characters.',
     taken: 'A department with this name already exists.', 'criteria-needed': 'Name its five criteria to put it in the department prize.',
     'bad-criteria': 'Each criterion is 2 to 60 characters, and all five are named.', 'not-found': 'This department was removed in the meantime.'
   };
   function depSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet : e.message;
     if (e === 'in-use') return d.members ? plural(d.members, 'colleague is', 'colleagues are') + ' in this department. Move them first, or set it inactive.'
       : 'Performance records name this department. Set it inactive instead.';
     return DEP_SAID[e] || 'Not saved.';
@@ -1059,7 +1078,7 @@
      an industry no client holds; the last row adds one. */
   var ind = { rows: null, err: null, editing: null };
   var IND_SAID = {
-    denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-name': 'Enter a name of 2 to 40 characters.',
+    denied: window.ADspaceWords.line.noSettings, 'bad-name': 'Enter a name of 2 to 40 characters.',
     'bad-name-zh': 'Enter a Chinese name of 40 characters at most.', taken: 'An industry with this name already exists.',
     'not-found': 'This industry no longer exists. The latest list is now shown.',
     fixed: 'Other cannot be renamed or deleted. Only its Chinese name can be changed.'
@@ -1067,7 +1086,7 @@
   function indSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
     if (!e) return '';
-    if (e.message) return /function|schema cache/i.test(e.message) ? 'This feature is not available yet. Please contact an admin.' : e.message;
+    if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet : e.message;
     if (e === 'in-use') return (d.clients === 1 ? '1 client is in this industry. Move it' : plural(d.clients || 0, 'client', 'clients') + ' are in this industry. Move them') + ' to another industry first.';
     return IND_SAID[e] || (r && r.deleting ? 'Not deleted. Please try again.' : 'Not saved. Please try again.');
   }
@@ -1218,6 +1237,7 @@
     });
   }
   function pgOf(k) { return (pg.rows || []).filter(function (p) { return p.key === k; })[0]; }
+  function pgName(k) { var p = pgOf(k); return p ? p.name : k; }
   function pgState(p) {
     if (!p.set) return ['is-ok', 'Available', ''];
     var w = p.on ? (p.ends_at ? 'Until ' + when(p.ends_at) : 'No end set')
@@ -1297,7 +1317,7 @@
   function pgSave(args, then) {
     return db.rpc('page_set', args).then(function (r) {
       var d = r.data || {};
-      if (r.error || d.error) throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message) : PG_SAID[d.error] || d.error);
+      if (r.error || d.error) throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message) : PG_SAID[d.error] || d.error);
       pg.rows = d.pages || pg.rows;
       if (bridge.upgradeRead) bridge.upgradeRead();
       return then ? then() : null;
@@ -1329,9 +1349,15 @@
         pgMsg('Saved.', 'ok');
         fillLine('pages', null); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); });
         bridge.undoHere('Saved.', function () {
-          was.reduce(function (pr, a) { return pr.then(function () { return pgSave(a); }); }, Promise.resolve())
-            .then(function () { paintPg(); pgMsg('Undone.', 'ok'); READ.pages().then(function (t) { fillLine('pages', t); }); })
-            .catch(function (e) { pgMsg(e.message || String(e)); });
+          /* Every page is put back that can be, and those that cannot are
+             named (the overnight review, 2026-11-10). */
+          var left = [];
+          was.reduce(function (pr, a) { return pr.then(function () { return pgSave(a).catch(function () { left = left.concat(a.p_pages.map(pgName)); }); }); }, Promise.resolve())
+            .then(function () {
+              paintPg();
+              pgMsg(left.length ? 'The change to ' + left.join(', ') + ' could not be undone. Set ' + (left.length > 1 ? 'their' : 'its') + ' availability again.' : 'Undone.', left.length ? 'err' : 'ok');
+              READ.pages().then(function (t) { fillLine('pages', t); });
+            });
         }, $('pgMsg'));
         return '';
       }).catch(function (e) { return e.message || String(e); });
@@ -1449,7 +1475,7 @@
   function taxSave(rows, replace, done) {
     return db.rpc('tax_codes_save', { p_rows: rows, p_replace: Boolean(replace) }).then(function (r) {
       var d = r.data || {};
-      if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : (r.error.message || 'Not saved.');
+      if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not saved.');
       if (d.error) return taxRefusal(d);
       tax.rows = d.codes || [];
       paintTax(); readLine('taxcodes');
@@ -1468,7 +1494,7 @@
     }, function () {
       return db.rpc('tax_codes_delete', { p_codes: codes }).then(function (r) {
         var d = r.data || {};
-        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : (r.error.message || 'Not deleted.');
+        if (r.error) return /could not find|does not exist|schema cache/i.test(r.error.message || '') ? window.ADspaceWords.line.notYet : (r.error.message || 'Not deleted.');
         if (d.error) return taxRefusal(d);
         tax.rows = d.codes || [];
         tax.mode = 'list'; tax.picked = {};
@@ -1487,6 +1513,7 @@
         { name: 'active', label: 'Offered on new lines', tick: true, value: !t || t.active ? 'on' : '' }].filter(Boolean),
       check: function (v) {
         if (!t && !/^[A-Za-z0-9._ -]{1,30}$/.test(String(v.code || '').trim())) return TAX_SAID['bad-row'];
+        if (String(v.name || '').trim().length > 80) return 'Enter a name of up to 80 characters.';
         return /^[0-9]{1,3}(\.[0-9]{1,2})?$/.test(String(v.rate || '').trim()) && Number(v.rate) <= 100 ? '' : 'A rate is 0 to 100, to two decimals.';
       }
     }, function (v) {

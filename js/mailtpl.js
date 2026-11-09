@@ -19,7 +19,7 @@
   var esc = function (s) { return window.ADspaceWords.esc(s); };
   var L = function () { return window.ADspaceWords.line; };
 
-  var NOT_YET = 'This feature is not available yet. Please contact an admin.';
+  var NOT_YET = window.ADspaceWords.line.notYet;
   var SAID = {
     denied: 'You do not have permission to change these templates. Please ask an admin.',
     'bad-subject': window.ADspaceWords.line.subject,

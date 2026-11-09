@@ -9087,3 +9087,22 @@ now takes its capitals, and the finance team's sheet reads Individual
 common nouns and stay sentence case, the Rate Card wording the team wrote
 kept as written. A tests/words.js pattern fails a lower-case official
 term from now on.
+
+### 2026-11-10: Settings review, Part B fixes
+
+`docs/SETTINGS-REVIEW.md` lists sixteen findings on the rest of Settings.
+Built: Creator payments could not be saved (its figures' kind had no
+bounds, so Save threw); every figures sheet, an announcement's and Task
+numbering now stay open until the database answers, keeping what was typed;
+Creator and campaign IDs take whole numbers and name what saved before a
+refusal; a holiday is held to the two years the list reads; Task numbering
+reads #WT1008 and refuses 1008.5 (it read 10085), and its refusal no
+longer shadows a post result's; AI usage's limits stay in their fields on a
+refusal and name every one refused; a switch saved stays as pressed when
+the figures' read after it fails; a tax code's long name is refused in its
+own words; Reels share takes 0 as the database does; Notices passes the
+database's refusal on; Page availability's Undo names the pages it could
+not put back; the permission and not-available lines are read from
+`ADspaceWords.line`. The stand-in filed a creator payment setting with no
+word for it and threw; it has one now. Held: the Website quotations row
+(its figure limits nothing since 2026-10-26) and Departments' list.

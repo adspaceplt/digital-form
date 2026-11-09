@@ -1488,7 +1488,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   change withdrawn" (`2026-10-19-planned-setting-withdrawn.sql`). An edge
   function reads a setting in force from `app_settings_read` through one
   helper (`settingsAt`; `app_setting` is closed to a caller). One sheet edits a group of them
-  (`ADspaceAdmin.editSettings`: From, then each figure, under its
+  (`ADspaceAdmin.editSettings`, open until the database answers, a refusal
+  said in it with every figure kept (2026-11-10): From, then each figure, under its
   section's heading where a key names one, a change already set from a
   later day said under its field with its unit as the Settings row says it
   and Withdraw on it; each untouched figure shows the value in force on the

@@ -5609,9 +5609,14 @@
           });
         });
       }, Promise.resolve()).then(function () {
-        say(m, fails.length ? fails[0] : 'Saved.', fails.length ? 'err' : 'ok');
+        /* A refusal keeps the figures in their fields and says every one
+           refused (the overnight review, 2026-11-10). */
+        saveBtn.disabled = false;
+        if (fails.length) { say(m, fails.filter(function (x, i) { return fails.indexOf(x) === i; }).join(' '), 'err'); return; }
+        setEditing(false);
+        say(m, 'Saved.', 'ok');
         paint();
-      }).catch(function (e) { say(m, said(e), 'err'); paint(); });
+      }).catch(function (e) { saveBtn.disabled = false; say(m, said(e), 'err'); });
     };
     var whole = function (x) { return /^\d{1,3}$/.test(x) && Number(x) <= 500; };
     unedit.onclick = function () { setEditing(false); };
@@ -5625,8 +5630,8 @@
       if (bad) { say(m, 'Enter a whole number from 0 to 500.', 'err'); bad.focus(); return; }
       var sw = host.querySelector('.aiu-std .switch'), per = sw.getAttribute('aria-checked') === 'true' ? 1 : 0;
       if (per !== (lim('per_report') > 0 ? 1 : 0)) jobs.push({ scope: 'per_report', daily: per });
-      setEditing(false);
-      if (!jobs.length) { say(m, 'No change.', 'mute'); return; }
+      if (!jobs.length) { setEditing(false); say(m, 'No change.', 'mute'); return; }
+      saveBtn.disabled = true;
       setLimit(jobs);
     };
     host.addEventListener('click', function (e) {
