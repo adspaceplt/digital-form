@@ -1478,94 +1478,11 @@
     $('nemClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
   }
 
-  /* Settings, Templates: Email templates (2026-11-04): the saved words a
-     New email starts from, for clients or for suppliers. */
-  var et = { wired: false };
-  function etMsg(t, tone) { $('etplMsg').textContent = t || ''; $('etplMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
-  function emailTemplates(opener) {
-    if (!et.wired) {
-      et.wired = true;
-      $('etplClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-      $('etplAdd').addEventListener('click', function () { etEdit(null, this); });
-      document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#etplList .team-act')) etShut(); });
-    }
-    etMsg('');
-    window.ADspaceSheet.show($('etplSheet'), { opener: opener || null });
-    etPaint();
-  }
-  function etShut() {
-    Array.prototype.forEach.call(document.querySelectorAll('#etplList .kmenu'), function (m) { m.hidden = true; });
-    Array.prototype.forEach.call(document.querySelectorAll('#etplList [data-a="menu"]'), function (b) { b.setAttribute('aria-expanded', 'false'); });
-  }
-  function etPaint() {
-    var box = $('etplList'), S = window.ADspaceState;
-    if (S && S.skeleton) S.skeleton(box, 2);
-    rpc('email_templates_list').then(function (d) {
-      var rows = d.rows || [], byId = {};
-      rows.forEach(function (t) { byId[t.id] = t; });
-      if (!rows.length) { box.innerHTML = '<p class="emptyline">No templates.</p>'; return; }
-      var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
-      box.innerHTML = '<div class="ann-list">' + rows.map(function (t) {
-        return '<div class="ann-row etpl-row" data-id="' + esc(t.id) + '">' +
-          '<div class="ann-what"><p class="ann-text">' + esc(t.name) + '</p>' +
-            '<p class="ann-meta">' + esc([t.audience === 'supplier' ? 'Suppliers' : 'Clients', t.subject].join(' · ')) + '</p></div>' +
-          '<div class="ann-acts"><button class="btn btn-sm" type="button" data-a="edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4Z"/></svg>Edit</button>' +
-            '<span class="team-act"><button class="kmenu-btn" type="button" data-a="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-              '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="delete">Delete</button></div></span></div></div>';
-      }).join('') + '</div>';
-      Array.prototype.forEach.call(box.querySelectorAll('.etpl-row'), function (rw) {
-        var t = byId[rw.getAttribute('data-id')];
-        rw.querySelector('[data-a="edit"]').addEventListener('click', function () { etEdit(t, this); });
-        var mb = rw.querySelector('[data-a="menu"]'), mn = rw.querySelector('[data-menu]');
-        mb.addEventListener('click', function (e) {
-          e.stopPropagation();
-          var open = mn.hidden;
-          etShut();
-          mn.hidden = !open;
-          mb.setAttribute('aria-expanded', String(open));
-          if (open) window.ADspaceMenu.place(mb, mn);
-        });
-        rw.querySelector('[data-a="delete"]').addEventListener('click', function () {
-          etShut();
-          window.ADspaceConfirm.ask({ title: 'Delete this template?', body: '“' + t.name + '” will no longer be offered. Emails already sent keep their words. This cannot be undone.',
-            go: 'Delete', tone: 'danger' }, function () {
-            rpc('email_template_delete', { p_id: t.id }).then(function () { etMsg('Deleted.', 'ok'); etPaint(); })
-              .catch(function (e) { etMsg(neSaid(e), 'err'); });
-          });
-        });
-      });
-    }).catch(function (e) { if (S && S.failLine) S.failLine(box, 'The templates', neSaid(e), etPaint); });
-  }
-  function etEdit(t, btn) {
-    var fields = [];
-    if (!t) fields.push({ name: 'audience', label: 'For', choices: [['client', 'Clients'], ['supplier', 'Suppliers']], seg: true, value: 'client' });
-    fields.push({ name: 'name', label: 'Template name', value: t ? t.name : '' },
-      { name: 'subject', label: 'Subject', value: t ? t.subject : '' },
-      { name: 'body', label: 'Message', rows: 10, value: t ? t.body : '',
-        note: '{contact name}, {company name}, {client name}, {supplier name} and {sender name} are filled in when the email is sent.' });
-    window.ADspaceConfirm.ask({ title: t ? 'Edit template' : 'Add template', go: 'Save', fields: fields, wait: true,
-      check: function (v) {
-        if (String(v.name || '').trim().length < 2) return NE_SAID['bad-name'];
-        if (String(v.subject || '').trim().length < 2) return NE_SAID['bad-subject'];
-        if (String(v.body || '').trim().length < 2) return NE_SAID['bad-body'];
-        return '';
-      } }, function (v) {
-      return rpc('email_template_save', { p_id: t ? t.id : null, p_audience: t ? t.audience : v.audience, p_name: v.name, p_subject: v.subject, p_body: v.body })
-        .then(function () { etMsg('Saved.', 'ok'); etPaint(); return ''; })
-        .catch(function (e) { return neSaid(e); });
-    });
-  }
-  function emailTemplatesLine() {
-    return rpc('email_templates_list').then(function (d) { var n = (d.rows || []).length; return n + (n === 1 ? ' template' : ' templates'); });
-  }
-
   window.ADspaceWhatsApp = {
     enter: enter,
     newEmail: newEmail,
     /* A client record's Emails part draws the log's own row. */
     emailRow: mlRow,
-    emailTemplates: emailTemplates,
-    emailTemplatesLine: emailTemplatesLine,
     manage: manage,
     urlState: function () { return st.tab === 'email' ? { tab: 'email' } : {}; },
     compose: function (o) { wireComposer(); compose(o); },

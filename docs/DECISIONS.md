@@ -9025,6 +9025,26 @@ their own refusals, and every editor names the field and the ones to use.
 Every live template was read first and holds only its own fields, so no
 saved wording is refused. The copy review moved the Creator emails' template
 name before the refusal (a bracket after a full stop read as a fragment).
+
+### 2026-11-10: every email's wording in one editor; Settings by channel
+
+The overnight Settings review (findings 2 to 9): six template sheets each
+built its own editor (a picker sheet, two ADspaceConfirm forms, a list
+sheet), each with a hard-coded field list; the emails sat in Templates,
+Clients and Money alike, and the press() if-chain grew a branch a row.
+Built: `js/mailtpl.js`, one Email templates sheet by recipient and one
+editor with a live preview, field chips from `template_fields_all()` and an
+unknown field marked as typed; the five old editors and their markup
+removed. Settings regrouped after System Settings: Messages (Email,
+WhatsApp) beside Templates (Document types, Task templates, Rate card
+wording); every group a rail glyph and inset cards of five rows at most
+under headings; a search over every row; each row carries what a press
+opens; a switch offers Undo under its card. Held for the user: folding the
+six template tables into one store (it restates about twenty live send
+functions, none testable against Resend here), one permission rule a
+recipient (a supplier's New email template is `team.settings`, its fixed
+two are Suppliers Full Access: an access change), and Send test to me (a
+new send path in `supplier-mail`).
 ### 2026-11-10 — The creator's page in three tabs, and the Creators List by payment details (Creator R5)
 From the mockup the user approved on 2026-11-08 (Creator Portal Revamp).
 The creator's page reads Bookings, Payments and Profile under its head;
@@ -9060,3 +9080,29 @@ portal first read it paid. Payment sent named the newest bill of its
 booking, not the one paid (the suite found it with two bills on one
 booking): it names the bill just told. The two creator email builders each held their
 own copy of the field fill: one `creator_mail_fill`.
+### 2026-11-10 · Official terms keep their capitals
+The user, 2026-11-09, relayed from the Creator payments session: "when an
+item is a proper or professional noun, it is good to capital it isnt it —
+eg. Passport, Tax Identification Number (TIN) etc. not every wordings
+should only capital the very first word". Asked whether "Full Name as per
+NRIC" counted, they left it to judgement; the field names of Malaysian
+identity, bank, LHDN and SSM forms were taken as official. DESIGN.md §6
+had made every label sentence case but formal document names, so labels
+read Business registration no. and Name as on passport. The rule now
+keeps an official term's capitals wherever it is written; the sweep
+covered the console, the client pages, the creator's payment details,
+the details and supplier forms, /quote/, bukku-sync's comparison and six
+functions' words (what bukku_prepare names as missing and five Activity
+record lines or refusals, OFFICIAL TERMS CAPITALISED). Registered name
+became Registered Company Name throughout, one term for one thing; the
+short No. forms stayed where the column is narrow. Chinese is unaffected.
+Asked again the same night ("not just cover the billing section but
+entire portal"), the sweep read every page's words for proper and
+professional nouns: the platforms and products (Meta, WhatsApp, Google
+Meet, Bukku) and the section names were already capitalised in every
+sentence; the Creators List was written lower case in five sentences and
+now takes its capitals, and the finance team's sheet reads Individual
+(Passport). The rate card, a quotation and an invoice are the industry's
+common nouns and stay sentence case, the Rate Card wording the team wrote
+kept as written. A tests/words.js pattern fails a lower-case official
+term from now on.
