@@ -778,7 +778,7 @@
     }
     return out;
   }
-  function shape(el) {
+  function holdShape(el) {
     if (el.__shape) return;
     el.__shape = true;
     var pattern = el.getAttribute('data-shape');
@@ -802,7 +802,7 @@
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"]'), dmy);
     Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
-    Array.prototype.forEach.call((root || document).querySelectorAll('input[data-shape]'), shape);
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[data-shape]'), holdShape);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
     Array.prototype.forEach.call((root || document).querySelectorAll('details.fmore'), fold);
     /* Every strip slides: the view strips, a record's panes and a route's

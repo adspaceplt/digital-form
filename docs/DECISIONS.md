@@ -9008,3 +9008,8 @@ creator's page, and for the supplier form's NRIC and BRN, which had the
 same gap; a kind changed clears the number. `tests/creator.js`,
 `tests/suppliers.js`.
 
+The gate caught it before the merge: the new helper was first named
+`shape`, which `js/form.js` already held for the DD/MM/YYYY date box, so
+the later declaration replaced it and every date field threw
+(`el.getAttribute is not a function`, `tests/settings.js`). Renamed
+`holdShape`; a new function in a shared script is grepped by name first.
