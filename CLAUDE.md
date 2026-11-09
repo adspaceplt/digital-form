@@ -3866,6 +3866,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     `sign-upload` made for that booking (`bad-file`), a name of 1 to 255
     (`bad-name`) and a kind of image, video or file (`bad-kind`;
     `2026-10-17-creator-files-held-to-their-folder.sql`).
+  - Each signed upload is claimed first (`creator_upload_claim`, the
+    service role's, after the type and size are checked): fifty files and
+    25 GB a booking a Malaysian day (`creator_upload_counts`, RLS on, no
+    policy, no grant), then `too_many` (429), said as the day's limit
+    (`uploadMany`; security audit 2026-11-09).
   - Picked files are held on the device (`held`, `.filecard.is-held`, ×
     each) and upload one by one only on Submit or Update; each row is
     written after its file is stored. A failure keeps that file held and

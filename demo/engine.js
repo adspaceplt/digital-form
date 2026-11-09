@@ -14575,6 +14575,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
               ['pending_draft', 'changes'].indexOf(o.state) > -1;
           });
           if (!okC) return upRefuse('not_allowed');
+
+          var ucDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+          var uc = (DB.__uploadCounts = DB.__uploadCounts || {})[bd.optionId];
+          if (!uc || uc.day !== ucDay) uc = DB.__uploadCounts[bd.optionId] = { day: ucDay, files: 0, bytes: 0 };
+          if (uc.files >= (window.__uploadMax || 50) || uc.bytes + Number(bd.size || 0) > 25 * 1073741824) return upRefuse('too_many');
+          uc.files++; uc.bytes += Number(bd.size || 0);
           var kh = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
           var kk = 'content/creator/' + bd.optionId + '/' + [kh(8), kh(4), kh(4), kh(4), kh(12)].join('-') +
             '.' + (bd.ext || 'bin');
