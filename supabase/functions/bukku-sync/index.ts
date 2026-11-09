@@ -536,7 +536,7 @@ export function billOf(x: any) {
   const ref = [x.number2, x.reference, x.title, x.description, x.remarks].filter((v) => v != null && String(v).trim() !== '')
     .map((v) => String(v).trim()).join(' ').slice(0, 200);
   return { id: Number(x.id), number: String(x.number || ''), ref, date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
-    amount: cents(x.amount), balance: cents(x.balance),
+    amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
     currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
 }
 async function creatorBills(creator: string, contact: number): Promise<any> {

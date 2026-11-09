@@ -9040,3 +9040,21 @@ sheet's Bukku band says it), and the row opening a record page (the ⋯
 Payment details opens the sheet holding the details, Bukku and payments for
 every creator).
 
+
+### 2026-11-10: creator payments, the code review's fixes
+The review of Creator R1 to R5 (the user: review once R1 to R5 are built,
+fix all) found six. A bill Bukku sent with no balance was read as paid,
+since `bukku-sync` sent nought for nothing and `creator_bills_take` took
+nought as Paid: the function now sends no balance as none and the database
+keeps the state the bill had. A sheet row left at Sending when its run
+stopped stayed there for good: `mail_sweep` fails it after ten minutes so
+the next wake tries it, Google is asked with a 20-second limit, a row never
+tried for lack of time is put back with its try given back
+(`creator_sheet_release`), and saving the sheet's setting queues every row
+it refused afresh (five refusals on a wrong link had ended a row for good).
+A bill first read already paid told nobody, so a creator paid before the
+first read never heard: it now sends Payment sent where the booking was
+posted in the portal, and stays silent for work from before it. The
+creator's page read Paid on the bill's own date: it reads the day the
+portal first read it paid. The two creator email builders each held their
+own copy of the field fill: one `creator_mail_fill`.
