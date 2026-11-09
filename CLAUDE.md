@@ -1233,6 +1233,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     Z by code with digits as numbers, the unnumbered after by name
     (`byClient`, `byStaff`). The Clients list itself stays newest first.
   - The `data-hint` date hint.
+  - A number of a known shape (`input[data-shape]`: # a digit, X a letter
+    or digit, any other character laid in by itself) takes only what it
+    holds as it is typed: an NRIC `######-##-####`, a BRN 12 digits, a
+    passport 20 letters or digits; the creator's payment details and the
+    supplier form alike, a kind changed clearing the number (the user,
+    2026-11-09: "it says 12 digits but you never lock").
   - The date floor (below).
   - A long list is searched (§8): a select of ten options or more opens a
     finder (`#pickerBox`, `.picker`) in place of the browser's list, the

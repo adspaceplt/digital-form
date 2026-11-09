@@ -8980,3 +8980,18 @@ client portal's one sign-in, outside this run's scope.
   spend no try and are added once the token is set.
 - Its own refresh token (`GOOGLE_SHEETS_REFRESH_TOKEN`), not Meet's: the
   calendar token was granted the Calendar scope alone.
+
+### 2026-11-09 — A number with a known shape takes only what it holds
+The user, on the creator's payment details: "it says 12 digits but you
+never lock to just able to enter 12 digits. same goes to NRIC", and the
+name's label to read Full name as per NRIC, Full name as per passport,
+Registered company name. The ID box took 24 characters of anything and
+only `creator_pay_check` refused a wrong one on Submit; the NRIC typed was
+also carried into the company number box when Billing as changed. Built:
+`input[data-shape]` in `js/form.js` (# a digit, X a letter or digit, a
+separator laid in by itself, the caret kept), used for the NRIC
+(XXXXXX-XX-XXXX), the BRN (12 digits) and the passport (20) on the
+creator's page, and for the supplier form's NRIC and BRN, which had the
+same gap; a kind changed clears the number. `tests/creator.js`,
+`tests/suppliers.js`.
+

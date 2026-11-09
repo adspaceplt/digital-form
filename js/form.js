@@ -759,11 +759,50 @@
     });
   }) : null;
 
+  /* A number with a known shape takes only what it can hold (the user,
+     2026-11-09: "it says 12 digits but you never lock"): `data-shape`
+     spells it, # a digit, X a letter or digit (in capitals), anything else
+     a separator laid in by itself; what does not fit is never typed. The
+     caret keeps its place among the characters typed. */
+  function shapeOf(pattern, raw) {
+    var slots = pattern.replace(/[^#X]/g, ''), keep = [];
+    String(raw || '').toUpperCase().split('').forEach(function (ch) {
+      var s = slots.charAt(keep.length);
+      if (s === '#' ? /\d/.test(ch) : s === 'X' ? /[A-Z0-9]/.test(ch) : false) keep.push(ch);
+    });
+    var out = '', i = 0;
+    for (var p = 0; p < pattern.length && i < keep.length; p++) {
+      var c = pattern.charAt(p);
+      if (c === '#' || c === 'X') out += keep[i++];
+      else out += c;
+    }
+    return out;
+  }
+  function shape(el) {
+    if (el.__shape) return;
+    el.__shape = true;
+    var pattern = el.getAttribute('data-shape');
+    el.maxLength = pattern.length;
+    var fix = function () {
+      var v = el.value, at = el.selectionStart == null ? v.length : el.selectionStart;
+      var before = shapeOf(pattern, v.slice(0, at)).replace(/[^A-Z0-9]/g, '').length;
+      var next = shapeOf(pattern, v);
+      if (next === v) return;
+      el.value = next;
+      var n = 0, pos = 0;
+      while (pos < next.length && n < before) { if (/[A-Z0-9]/.test(next.charAt(pos))) n++; pos++; }
+      try { if (document.activeElement === el) el.setSelectionRange(pos, pos); } catch (e) {}
+    };
+    el.addEventListener('input', function (e) { if (!e.isComposing) fix(); });
+    if (el.value) fix();
+  }
+
   function scan(root) {
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"], input[type="month"], input[type="datetime-local"]'), floor);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"]'), dmy);
     Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[data-shape]'), shape);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
     Array.prototype.forEach.call((root || document).querySelectorAll('details.fmore'), fold);
     /* Every strip slides: the view strips, a record's panes and a route's
