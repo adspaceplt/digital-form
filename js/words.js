@@ -312,7 +312,7 @@
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */
     unknownField: function (field, fields) {
       var w = (fields || []).map(function (f) { return '{' + f + '}'; });
-      return 'Unknown field ' + field + '.' + (w.length ? ' Use ' + (w.length > 1 ? w.slice(0, -1).join(', ') + ' or ' + w[w.length - 1] : w[0]) + '.' : '');
+      return 'Unknown field ' + field + '.' + (w.length ? ' Use ' + (w.length > 1 ? w.slice(0, -1).join(', ') + ' or ' + w[w.length - 1] : w[0]) + '.' : ' Remove it from the wording.');
     },
     /* Who an email goes to: "To x, with a copy to y, with f attached"
        (no full stop; the caller ends the sentence). */

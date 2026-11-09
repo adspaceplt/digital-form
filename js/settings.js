@@ -716,7 +716,7 @@
         }) }).then(function (r2) {
           if (r2.error) return /function|schema cache/i.test(r2.error.message) ? 'This feature is not available yet. Please contact an admin.' : r2.error.message;
           var e = (r2.data || {}).error;
-          if (e === 'unknown-field') return window.ADspaceWords.line.unknownField(r2.data.field, r2.data.fields) + ' (' + CM_WORD[r2.data.purpose] + ')';
+          if (e === 'unknown-field') return CM_WORD[r2.data.purpose] + ': ' + window.ADspaceWords.line.unknownField(r2.data.field, r2.data.fields);
           if (e) return (CM_SAID[e] || 'Not saved.') + ((r2.data || {}).purpose ? ' (' + CM_WORD[r2.data.purpose] + ')' : '');
           readLine('creatormail');
           rowSay('creatormail')('Saved.', 'ok');
