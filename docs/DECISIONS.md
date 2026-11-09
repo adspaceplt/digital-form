@@ -8944,3 +8944,15 @@ Left for the owner: the unversioned `npm:@anthropic-ai/sdk` imports and the
 creator's unbounded signed uploads (both depend on deployed facts), and the
 client portal's one sign-in, outside this run's scope.
 
+### 2026-11-09 · A creator's uploads are counted
+The second audit's needs-validation lead 2: a creator's code signed any
+number of uploads of up to 2 GB into its booking's folder, so a leaked code
+could fill the bucket. The user asked it fixed the same day. sign-upload
+now claims each creator upload (`creator_upload_claim`) after the file's
+type and size are checked: fifty files and 25 GB a booking a Malaysian day,
+one row a booking reset each day, so the table never grows past the
+bookings. A real round is a handful of files; a page past the limit says so
+and what to do. Rate limits stay figures in the function, as the link,
+device and invitation counts do. The bucket's lifecycle rule and a budget
+alarm remain the owner's.
+

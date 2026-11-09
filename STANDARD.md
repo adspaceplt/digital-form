@@ -571,9 +571,9 @@ section holds only what is true of the project as a whole.
   group (`--path-as-is` dot-segment requests, or a key group of its own for
   `private/`); seven edge functions import `npm:@anthropic-ai/sdk` with no
   version and none has a lock file (pin each to the version deployed, read
-  back from the live bundle); a creator's code mints signed 2 GB uploads
-  with no count a booking (S3 lifecycle, AWS Budgets, the function's rate
-  limit). Not yet hunted: the client portal's one sign-in (`portal_work`,
+  back from the live bundle). A creator's signed uploads are counted a
+  booking a day since 2026-11-09; an S3 lifecycle rule and an AWS Budgets
+  alarm stay the owner's. Not yet hunted: the client portal's one sign-in (`portal_work`,
   `portal_link_pass`, its sign-out), new since run 1.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn

@@ -183,6 +183,18 @@ Deno.serve(async (req) => {
   if (!contentType) return json({ error: 'bad_extension' }, 400, origin);
   if (!Number.isSafeInteger(size) || size < 1 || size > MAX_BYTES) return json({ error: 'too_large' }, 400, origin);
 
+  /* A creator's uploads are counted a booking a day (security audit
+     2026-11-09): fifty files and 25 GB a Malaysian day, asked after the file
+     itself is checked, so a refused type or size is never counted. */
+  if (creatorCode) {
+    const { data: claim, error: claimErr } = await admin.rpc('creator_upload_claim', {
+      p_code: creatorCode, p_option: optionId, p_size: size
+    });
+    if (claimErr || claim === 'not-allowed') return json({ error: 'not_allowed' }, 403, origin);
+    if (claim === 'too-many') return json({ error: 'too_many' }, 429, origin);
+    if (claim !== 'ok') return json({ error: 'not_allowed' }, 403, origin);
+  }
+
   // 3. Sign a PUT for one key we choose. The browser never picks the path.
   const bucket = Deno.env.get('S3_BUCKET')!;
   const region = Deno.env.get('S3_REGION')!;
