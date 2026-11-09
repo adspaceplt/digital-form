@@ -86,8 +86,8 @@
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Supplier type', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Supplier type')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
-        field('sfBrn', 'Business registration no.', input('sfBrn', 'brn', !ind, 'maxlength="14" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
-        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'maxlength="14" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
+        field('sfBrn', 'Business registration no.', input('sfBrn', 'brn', !ind, 'data-shape="############" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
+        (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'data-shape="######-##-####" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
         field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
         field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
         field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +

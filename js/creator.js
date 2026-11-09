@@ -96,7 +96,7 @@
       payHeads: { billing: 'Billing', payment: 'Payment', contact: 'Contact' },
       payKinds: { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' },
       payIdLabel: { nric: 'NRIC number', passport: 'Passport number', brn: 'Business registration number (12 digits)' },
-      payNameLabel: { nric: 'Name as on NRIC', passport: 'Name as on passport', brn: 'Registered company name' },
+      payNameLabel: { nric: 'Full name as per NRIC', passport: 'Full name as per passport', brn: 'Registered company name' },
       payTin: 'Tax identification number (TIN)', payOptional: 'Optional', payAddress: 'Billing address',
       payCurrency: 'Currency', payMethods: { bank: 'Bank transfer', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go eWallet' },
       payBank: 'Bank', payChooseBank: 'Choose a bank',
@@ -106,7 +106,7 @@
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
       paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
       payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC number.', passport: 'Enter a valid passport number.', brn: 'Enter a valid 12-digit registration number.' },
-        legal_name: { nric: 'Enter the name as on your NRIC.', passport: 'Enter the name as on your passport.', brn: 'Enter the registered company name.' },
+        legal_name: { nric: 'Enter your full name as per your NRIC.', passport: 'Enter your full name as per your passport.', brn: 'Enter the registered company name.' },
         tin: 'Enter a valid TIN, or leave it blank.', address: 'Enter the billing address.', currency: 'Choose a currency.',
         method: 'Choose a payment method.', bank: 'Choose a bank.', account: 'Enter a valid account number.',
         payee: 'Enter the account holder name.', email: 'Enter a valid email address.', whatsapp: 'Enter a valid WhatsApp number.',
@@ -197,7 +197,7 @@
       payHeads: { billing: '开票资料', payment: '收款资料', contact: '联络资料' },
       payKinds: { nric: '个人（身份证）', passport: '个人（护照）', brn: '公司' },
       payIdLabel: { nric: '身份证号码', passport: '护照号码', brn: '公司注册号（12位数字）' },
-      payNameLabel: { nric: '身份证上的姓名', passport: '护照上的姓名', brn: '公司注册名称' },
+      payNameLabel: { nric: '身份证上的全名', passport: '护照上的全名', brn: '公司注册名称' },
       payTin: '税务识别号（TIN）', payOptional: '选填', payAddress: '账单地址',
       payCurrency: '货币', payMethods: { bank: '银行转账', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go 电子钱包' },
       payBank: '银行', payChooseBank: '请选择银行',
@@ -207,7 +207,7 @@
       payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
       paySent: '已提交。ADspace 审核通过后将以电邮通知您。',
       payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: '请输入有效的12位公司注册号。' },
-        legal_name: { nric: '请输入身份证上的姓名。', passport: '请输入护照上的姓名。', brn: '请输入公司注册名称。' },
+        legal_name: { nric: '请输入身份证上的全名。', passport: '请输入护照上的全名。', brn: '请输入公司注册名称。' },
         tin: '请输入有效的TIN，或留空。', address: '请输入账单地址。', currency: '请选择货币。',
         method: '请选择付款方式。', bank: '请选择银行。', account: '请输入有效账号。',
         payee: '请输入账户持有人姓名。', email: '请输入有效的电邮地址。', whatsapp: '请输入有效的WhatsApp号码。',
@@ -1038,6 +1038,14 @@
   /* The form's values while it is open; a number left blank keeps the one
      held, which the database knows by its last four. */
   var payTyped = {};
+  /* Each kind of number takes only what it holds: an NRIC 12 digits laid
+     out XXXXXX-XX-XXXX, a registration number 12 digits, a passport 20
+     letters or digits (as creator_pay_check reads them). */
+  var ID_SHAPE = {
+    nric: 'inputmode="numeric" data-shape="######-##-####" placeholder="XXXXXX-XX-XXXX"',
+    brn: 'inputmode="numeric" data-shape="############"',
+    passport: 'data-shape="XXXXXXXXXXXXXXXXXXXX"'
+  };
   function payHeld() { return pay && (pay.last && pay.last.status !== 'declined' ? pay.last : pay.paid); }
   function payStart() {
     var h = payHeld() || (pay && pay.last) || {};
@@ -1072,7 +1080,8 @@
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.billing) + '</h4>' +
         field('bill_kind', T0.payBilling, '<select class="select" id="pf_bill_kind" data-k="bill_kind" data-seg aria-required="true">' +
           options(['nric', 'passport', 'brn'], T0.payKinds, v.bill_kind) + '</select>') +
-        field('id_no', T0.payIdLabel[v.bill_kind], input('id_no', !keepId, 'autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24"'),
+        field('id_no', T0.payIdLabel[v.bill_kind], input('id_no', !keepId, 'autocomplete="off" autocapitalize="characters" spellcheck="false" ' +
+          ID_SHAPE[v.bill_kind]),
           keepId ? fill(T0.payKeep, { n: h.id_end }) : '') +
         field('legal_name', T0.payNameLabel[v.bill_kind], input('legal_name', true, 'maxlength="120" autocomplete="name"')) +
         field('tin', T0.payTin, input('tin', false, 'maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="' + esc(T0.payOptional) + '"')) +
@@ -1627,6 +1636,8 @@
     if (k !== 'bill_kind' && k !== 'currency' && k !== 'method' && k !== 'bank') return;
     payRead();
     if (k === 'currency') payTyped.bank = '';
+    // One kind's number is never another's.
+    if (k === 'bill_kind') payTyped.id_no = '';
     payFields();
     var again = $('pf_' + k); if (again) try { again.focus(); } catch (x) {}
   });

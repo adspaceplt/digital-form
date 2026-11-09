@@ -8979,3 +8979,37 @@ and what to do. Rate limits stay figures in the function, as the link,
 device and invitation counts do. The bucket's lifecycle rule and a budget
 alarm remain the owner's.
 
+
+### 2026-11-09 · Creator payments sheet (Creator R4)
+- The user, 2026-11-08: a row added to the payments spreadsheet on
+  approval, the full bank number in it, the columns matched by their
+  headers.
+- The values are put under the headers the sheet already holds rather than
+  a fixed column order, so the team can keep its own layout and add or move
+  a column without a release; Settings' save reads the headers back and
+  says how many take a value, so a renamed header is seen at once.
+- The rows ride `creator-mail`'s wake (the same secret, the same cron), and
+  nothing is claimed while Google is not connected, so the waiting rows
+  spend no try and are added once the token is set.
+- Its own refresh token (`GOOGLE_SHEETS_REFRESH_TOKEN`), not Meet's: the
+  calendar token was granted the Calendar scope alone.
+
+### 2026-11-09 — A number with a known shape takes only what it holds
+The user, on the creator's payment details: "it says 12 digits but you
+never lock to just able to enter 12 digits. same goes to NRIC", and the
+name's label to read Full name as per NRIC, Full name as per passport,
+Registered company name. The ID box took 24 characters of anything and
+only `creator_pay_check` refused a wrong one on Submit; the NRIC typed was
+also carried into the company number box when Billing as changed. Built:
+`input[data-shape]` in `js/form.js` (# a digit, X a letter or digit, a
+separator laid in by itself, the caret kept), used for the NRIC
+(XXXXXX-XX-XXXX), the BRN (12 digits) and the passport (20) on the
+creator's page, and for the supplier form's NRIC and BRN, which had the
+same gap; a kind changed clears the number. `tests/creator.js`,
+`tests/suppliers.js`.
+
+The gate caught it before the merge: the new helper was first named
+`shape`, which `js/form.js` already held for the DD/MM/YYYY date box, so
+the later declaration replaced it and every date field threw
+(`el.getAttribute is not a function`, `tests/settings.js`). Renamed
+`holdShape`; a new function in a shared script is grepped by name first.

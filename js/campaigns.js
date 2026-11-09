@@ -584,8 +584,12 @@
   }
   function readPayDetails() {
     var c = payFor;
-    db.rpc('creator_pay_list', { p_creator: c.id }).then(function (r) {
+    Promise.all([db.rpc('creator_pay_list', { p_creator: c.id }),
+      /* The payments sheet's row for each set (2026-11-09); a refusal leaves the line out. */
+      db.rpc('creator_sheet_state', { p_creator: c.id }).then(function (x) { return x; }, function () { return {}; })]).then(function (both) {
+      var r = both[0], sh = both[1] || {};
       var d = r.data || {};
+      if (!r.error && !d.error) d.sheet = (sh.data && !sh.data.error && sh.data.rows) || [];
       if (r.error || d.error) {
         UI.failLine($('cpayBody'), 'The payment details', (r.error && r.error.message) || PAY_SAID[d.error] || d.error, readPayDetails);
         return;
@@ -593,6 +597,13 @@
       payRows = d;
       paintPayDetails();
     }).catch(function (e) { UI.failLine($('cpayBody'), 'The payment details', e.message, readPayDetails); });
+  }
+  /* Where the set stands on the finance team's sheet (2026-11-09). */
+  function sheetFact(req) {
+    var x = ((payRows && payRows.sheet) || []).filter(function (y) { return y.request === req; })[0];
+    if (!x) return '';
+    var w = x.status === 'added' ? 'Added ' + (x.added_at ? ADspaceClock.date(x.added_at) : '') : x.status === 'failed' ? 'Not added' : 'Waiting';
+    return '<div><dt>Creator payments sheet</dt><dd>' + esc(w) + '</dd></div>';
   }
   function paintPayDetails() {
     var d = payRows, rows = (d.rows || []).filter(function (x) { return x.status !== 'withdrawn'; });
@@ -620,6 +631,7 @@
           fact('Account holder', cur.payee) +
           fact('Email', cur.email) +
           fact('WhatsApp', cur.whatsapp) +
+          sheetFact(cur.id) +
         '</dl></section>';
       if (rows.length > 1) {
         html += '<section class="fsec"><h4 class="fsec-h">Earlier details</h4><dl class="ovfacts">' +

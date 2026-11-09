@@ -561,6 +561,7 @@
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
+    creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
@@ -9285,6 +9286,38 @@ function opsCodeRange(cid, period, ty, src, seq) {
         body: fill(t.body), status: 'queued', created_at: new Date().toISOString() });
     }
 
+    if (/^creator_sheet_/.test(name)) {
+      var csA = args || {}, csOut;
+      DB.creator_sheet_settings = DB.creator_sheet_settings || { on_send: true, spreadsheet_id: '1UDXqCkUZQ-cyfB5j7dEvf2p7fmJZeIYZiWL6_byi-HA', tab: null };
+      DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+      var csS = DB.creator_sheet_settings;
+      if (name === 'creator_sheet_claim' || name === 'creator_sheet_done') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
+      if (name === 'creator_sheet_state') {
+        csOut = !opsMe() || !opsAllowed('campaigns.creators', 'view') ? { error: 'denied' } : { ok: true, rows: DB.creator_sheet_rows.map(function (x) {
+          var rq = (DB.creator_pay_requests || []).filter(function (q) { return q.id === x.request_id; })[0];
+          return rq && rq.creator_id === csA.p_creator ? { request: rq.id, ref: rq.ref, status: x.status, added_at: x.added_at || null } : null; }).filter(Boolean) };
+      } else if (!opsGranted('team.settings', 'work')) csOut = { error: 'denied' };
+      else if (name === 'creator_sheet_get') {
+        csOut = { ok: true, on: csS.on_send, spreadsheet_id: csS.spreadsheet_id, tab: csS.tab,
+          added: DB.creator_sheet_rows.filter(function (x) { return x.status === 'added'; }).length,
+          waiting: DB.creator_sheet_rows.filter(function (x) { return x.status === 'queued'; }).length, failed: DB.creator_sheet_rows.filter(function (x) { return x.status === 'failed'; }).length };
+      } else {
+        var csId = String(csA.p_sheet || '').trim() || null, csTab = String(csA.p_tab || '').trim() || null, csMv = [];
+        var csM = csId && /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(csId); if (csM) csId = csM[1];
+        if (csId && !/^[A-Za-z0-9_-]{20,100}$/.test(csId)) csOut = { error: 'bad-sheet' };
+        else if (csA.p_on && !csId) csOut = { error: 'bad-sheet' };
+        else if (csTab && csTab.length > 100) csOut = { error: 'bad-tab' };
+        else {
+          if (csS.on_send !== !!csA.p_on) csMv.push('Add rows: ' + (csS.on_send ? 'On → Off' : 'Off → On'));
+          if (csS.spreadsheet_id !== csId) csMv.push('Google Sheets link changed');
+          if ((csS.tab || null) !== csTab) csMv.push('Tab: ' + (csS.tab || 'First tab') + ' → ' + (csTab || 'First tab'));
+          if (csMv.length) { csS.on_send = !!csA.p_on; csS.spreadsheet_id = csId; csS.tab = csTab; logAct('team.changed', 'Creator payments sheet', csMv.join(' · ')); }
+          csOut = { ok: true };
+        }
+      }
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(csOut)), error: null });
+    }
     if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
       var cbA = args || {}, cbOut;
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
@@ -9387,6 +9420,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var cpDc = DB.creators.filter(function (x) { return x.id === cpD.creator_id; })[0] || {};
           logAct('creator.updated', cpDc.name, (cpDc.creator_code ? cpDc.creator_code + ' · ' : '') + 'Payment details ' + (cpA.p_ok ? 'approved' : 'declined') + ' · ' + cpD.ref + (cpNote ? ' · ' + cpNote : ''));
           if (cpA.p_ok) cpQueue('approved', cpD);
+
+          if (cpA.p_ok && (!DB.creator_sheet_settings || DB.creator_sheet_settings.on_send)) {
+            DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+            if (!DB.creator_sheet_rows.some(function (x) { return x.request_id === cpD.id; })) DB.creator_sheet_rows.push({ id: nid('cs'), request_id: cpD.id, status: 'queued', created_at: new Date().toISOString() });
+          }
           cpOut = { ok: true };
         }
       } else if (!opsGranted('team.settings', 'work')) cpOut = { error: 'denied' };
@@ -13857,6 +13895,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return Promise.resolve({ data: { draft: cbOut, left: cbR.left - 1 }, error: null });
         }
 
+        if (name === 'creator-mail') {
+          var cmb = (opts && opts.body) || {};
+          if (cmb.action !== 'check') return Promise.resolve({ data: { error: 'denied' }, error: null });
+          if (!opsMe() || !opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+          if (!window.__sheetHeaders) return Promise.resolve({ data: { error: 'google-not-set-up' }, error: null });
+          return Promise.resolve({ data: { ok: true, tab: 'Sheet1', columns: window.__sheetHeaders.map(function (h) { return { header: h[0], value: h[1] || null }; }) }, error: null });
+        }
         if (name === 'bukku-sync') {
           var bkb = (opts && opts.body) || {};
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
