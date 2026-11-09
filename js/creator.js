@@ -438,7 +438,7 @@
     var list = profiles();
     $('crLinks').innerHTML = list.length
       ? list.map(function (p) {
-          return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(linkWord(p)) + OUTMARK() + '</a>';
+          return '<a class="plink" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' + esc(linkWord(p)) + OUTMARK() + '</a>';
         }).join('')
       : '<p class="crlinks-none">' + esc(t().linksNone) + '</p>';
     $('linksEditWord').textContent = list.length ? t().linksEdit : t().linksAdd;

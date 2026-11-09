@@ -510,6 +510,21 @@
     return { starts: starts, ends: ends, bad: bad ? 'Choose an end after the start, and later than now.' : '' };
   }
   if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
+  /* The media pass and what this browser kept of the colleague's work
+     (the notes for Write with AI, the inputs asked up front and the
+     uploaded drafts) go with the session (second audit, item 7), whichever
+     way it ends: the account menu's Sign out, the Access denied cover's,
+     or a session lost while the console was open (security audit
+     2026-11-09). */
+  function forgetLocal() {
+    if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget();
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (/^adspace-[a-z]+-(notes|inputs):|^adspace_drafts_/.test(k)) localStorage.removeItem(k);
+      });
+    } catch (e) { /* private mode */ }
+    var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve();
+  }
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
@@ -524,24 +539,13 @@
       P.off(true).then(once, once);
       setTimeout(once, 1500);
     };
-    /* The media pass and what this browser kept of the colleague's work
-       (the notes for Write with AI, the inputs asked up front and the
-       uploaded drafts) go with the session (second audit, item 7). */
-    var forget = function () {
-      if (window.ADspaceMedia && window.ADspaceMedia.forget) window.ADspaceMedia.forget();
-      try {
-        Object.keys(localStorage).forEach(function (k) {
-          if (/^adspace-[a-z]+-(notes|inputs):|^adspace_drafts_/.test(k)) localStorage.removeItem(k);
-        });
-      } catch (e) { /* private mode */ }
-      var D = window.ADspaceDocs; return D && D.forgetFiles ? D.forgetFiles() : Promise.resolve();
-    };
-    var out = function () { quiet(function () { forget().then(function () { return db.auth.signOut(); }).then(function () { location.reload(); }); }); };
+    var out = function () { quiet(function () { forgetLocal().then(function () { return db.auth.signOut(); }).then(function () { location.reload(); }); }); };
     if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
   $('noTeamRetry').addEventListener('click', function () { location.reload(); });
   $('noTeamOut').addEventListener('click', function () {
-    db.auth.signOut().then(function () { location.reload(); });
+    var go = function () { location.reload(); };
+    forgetLocal().then(function () { return db.auth.signOut(); }).then(go, go);
   });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
   /* A proof of who you are (a passkey on My records) runs a sign-in, and
@@ -611,6 +615,7 @@
     actor = inApp ? session.user.email : '';
 
     if (!inApp) {
+      if (entered) forgetLocal();
       entered = false;
       enteredAs = '';
       meLoaded = false;

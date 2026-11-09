@@ -1209,7 +1209,7 @@
          side and wrap when the width runs out. */
       var links = (o.profiles || []).map(function (p) {
         var name = t().platform[p.platform] || platLabel(p.platform);
-        return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+        return '<a class="plink" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' +
           esc(t().viewOn(name)) + EXT_ICON + '</a>';
       }).join('');
 

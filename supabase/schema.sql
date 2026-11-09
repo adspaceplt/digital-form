@@ -103142,5 +103142,201 @@ grant execute on function public.mail_log(date) to authenticated;
 
 -- END OF CREATOR PAYMENT DETAILS ---------------------------------------------
 
+-- CLIENT DECISIONS WRITTEN BY THEIR FUNCTIONS --------------------------------
+
+/* A decision recorded as the client's is the client's own, and the team's is
+   filed under the colleague (security audit 2026-11-09): reviews and
+   option_reviews took insert, update and delete at their section's Work and
+   Manage through the generated policies, so a colleague could insert an
+   approval marked as the client's under a client's name, or rewrite the
+   client's own request for changes, with no Activity record. Every writer is
+   a security definer function (submit_review, submit_review_seen,
+   review_draft, review_confirm, review_revert_confirm, campaign_proceed,
+   campaign_send_back, campaign_revert_approval, campaign_revert_changes), so
+   the direct write policies admit nothing, as campaign_confirmations' do.
+   A post's round, which binds a decision to what the client saw, is the
+   database's alone (posts_revision, review_caption_undo): a page's own update
+   cannot move it, and review_reset_at only moves forward, never cleared or
+   set back (posts_round_guard, run as the caller). */
+alter policy reviews_write on public.reviews with check (false);
+alter policy reviews_edit on public.reviews using (false) with check (false);
+alter policy reviews_del on public.reviews using (false);
+alter policy option_reviews_write on public.option_reviews with check (false);
+alter policy option_reviews_edit on public.option_reviews using (false) with check (false);
+alter policy option_reviews_del on public.option_reviews using (false);
+
+create or replace function public.posts_round_guard() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  -- Runs as the caller: a page's own update is 'authenticated' here, while
+  -- review_caption_undo's checked rewind runs as the database.
+  if current_user = 'authenticated' then
+    if new.round is distinct from old.round then
+      raise exception 'round-function' using errcode = '42501';
+    end if;
+    if new.review_reset_at is distinct from old.review_reset_at
+       and (new.review_reset_at is null or (old.review_reset_at is not null and new.review_reset_at < old.review_reset_at)) then
+      raise exception 'reset-forward' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end $$;
+revoke all on function public.posts_round_guard() from public, anon, authenticated;
+create or replace trigger posts_round_guard before update of round, review_reset_at on public.posts
+  for each row execute function public.posts_round_guard();
+
+-- END OF CLIENT DECISIONS WRITTEN BY THEIR FUNCTIONS -------------------------
+
+-- CREATOR PROFILES THROUGH THEIR FUNCTION ------------------------------------
+
+/* A creator's profile links are saved through profiles_replace alone
+   (security audit 2026-11-09): creator_profiles took direct writes at
+   Creators List Work, which skipped profile_of (a real profile on the four
+   platforms, its link rebuilt, one holder) and the change log, and stored any
+   address, which the client's selection page drew as View on {platform}. The
+   console saves through creator_save_profiles and the creator's page through
+   creator_set_profiles, both security definer, so the direct write policies
+   admit nothing, and the column is held to https as the other stored links
+   are (FILE LINKS HELD TO THE WEB). Checked live on 2026-11-09 before adding
+   it: none of 20 profiles fails. */
+alter policy creator_profiles_write on public.creator_profiles with check (false);
+alter policy creator_profiles_edit on public.creator_profiles using (false) with check (false);
+alter policy creator_profiles_del on public.creator_profiles using (false);
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'creator_profiles_url_web') then
+    alter table public.creator_profiles add constraint creator_profiles_url_web
+      check (url ~* '^https://[^\s"''<>`\\]+$');
+  end if;
+end $$;
+
+-- END OF CREATOR PROFILES THROUGH THEIR FUNCTION -----------------------------
+
+-- INVOICE RECIPIENTS ASK CONTACTS --------------------------------------------
+
+/* Review and send offers a client's contacts only to a colleague who may read
+   them (security audit 2026-11-09): invoice_recipients asked Clients: Billing
+   alone and listed every contact holding an email, its name and role. A
+   client's addresses are Clients: Contacts' (as email_recipients and
+   client_email_prepare ask since 2026-11-07); without it the list holds only
+   what Billing owns, the billing contact and the finance email. */
+create or replace function public.invoice_recipients(p_client uuid, p_contact bigint)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  rcp  jsonb;
+  opts jsonb;
+begin
+  if (public.ops_me()).id is null or not public.allowed('clients.billing', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if p_client is null or not public.client_seen(p_client, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  rcp := public.invoice_recipient_for(p_client, p_contact);
+  opts := public.invoice_recipient_options(p_client, p_contact);
+  if not public.allowed('clients.contacts', 'view') then
+    select coalesce(jsonb_agg(o), '[]'::jsonb) into opts
+      from jsonb_array_elements(coalesce(opts, '[]'::jsonb)) o
+     where coalesce((o->>'billing')::boolean, false) or coalesce((o->>'finance')::boolean, false);
+  end if;
+  return jsonb_build_object('ok', true, 'to', nullif(btrim(coalesce(rcp->>'email', '')), ''),
+    'cc', nullif(btrim(coalesce(rcp->>'cc', '')), ''), 'options', opts);
+end $$;
+revoke all on function public.invoice_recipients(uuid, bigint) from public, anon;
+grant execute on function public.invoice_recipients(uuid, bigint) to authenticated;
+
+-- END OF INVOICE RECIPIENTS ASK CONTACTS -------------------------------------
+
+-- WHATSAPP LOG KEEPS COLLEAGUE NUMBERS --------------------------------------
+
+/* A colleague's mobile is Team's to read (security audit 2026-11-09): the
+   team table withholds it from its column grants, and the namecard shows it
+   only where the colleague chose Show. The reminders queued on WhatsApp to a
+   colleague carry no client, so wa_messages returned their number whole to
+   every Messages View holder. A colleague recipient's number now reads as
+   its last four digits to a reader without Team View, as wa_recent read it. */
+create or replace function public.wa_messages(p_month date default null)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  me     public.team_members := public.ops_me();
+  v_from date := date_trunc('month', coalesce(p_month, (now() at time zone 'Asia/Kuala_Lumpur')::date))::date;
+  v_a    timestamptz;
+  v_b    timestamptz;
+  v_team boolean := public.allowed('team', 'view');
+begin
+  if me.id is null or not public.allowed('whatsapp', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  v_a := v_from::timestamp at time zone 'Asia/Kuala_Lumpur';
+  v_b := (v_from + interval '1 month')::timestamp at time zone 'Asia/Kuala_Lumpur';
+  return jsonb_build_object(
+    'month', v_from,
+    'items', coalesce((select jsonb_agg(x order by x.created_at desc) from (
+        select o.id, o.purpose, o.template, o.category, o.to_kind, o.to_name,
+               case when o.to_kind = 'colleague' and not v_team and o.to_number <> ''
+                    then '••••' || right(o.to_number, 4) else o.to_number end as to_number, o.client_id,
+               c.name as client, o.state, o.error, o.created_at, o.sent_at, o.created_by,
+               o.delivered_at, o.read_at, o.failed_at, o.fail_code, o.fail_title, o.ref_kind, o.ref_id
+          from public.wa_outbox o
+          left join public.clients c on c.id = o.client_id
+         where o.created_at >= v_a and o.created_at < v_b
+           and (o.client_id is null or public.client_seen(o.client_id, 'view'))
+         order by o.created_at desc
+         limit 2000) x), '[]'::jsonb),
+    'counts', (select jsonb_build_object(
+        'utility',        count(*) filter (where o.category = 'utility'),
+        'marketing',      count(*) filter (where o.category = 'marketing'),
+        'authentication', count(*) filter (where o.category = 'authentication'))
+      from public.wa_outbox o
+     where o.state = 'sent' and o.failed_at is null and o.created_at >= v_a and o.created_at < v_b),
+    'queue', (select jsonb_build_object(
+        'queued',  count(*) filter (where o.state = 'queued'),
+        'sending', count(*) filter (where o.state = 'sending'),
+        'failed',  count(*) filter (where o.state = 'failed' and o.created_at > now() - interval '7 days'),
+        -- Not confirmed: may have reached the person, so a colleague looks
+        -- before sending again (2026-10-17).
+        'unknown', count(*) filter (where o.state = 'unknown' and o.created_at > now() - interval '7 days'),
+        'oldest',  min(o.created_at) filter (where o.state in ('queued', 'sending')))
+      from public.wa_outbox o));
+end $$;
+revoke all on function public.wa_messages(date) from public, anon;
+grant execute on function public.wa_messages(date) to authenticated;
+
+-- END OF WHATSAPP LOG KEEPS COLLEAGUE NUMBERS -------------------------------
+
+-- CREATOR AND CAMPAIGN IDS TAKEN AS THE DATABASE ---------------------------
+
+/* Adding a creator or a campaign takes its next ID (security audit
+   2026-11-09, a defect found beside it): creators_creator_code and
+   campaigns_campaign_code ran as the colleague and called id_take, which no
+   colleague may run, so every insert failed with permission denied. They
+   run as the database now, and an ID once given never changes; a signed-in
+   caller cannot set one on a row that has none (only the SQL Editor or the
+   migration's backfill, with no signed-in caller, may). */
+create or replace function public.creators_creator_code()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.creator_code := public.id_take('creator');
+  elsif new.creator_code is distinct from old.creator_code
+        and (old.creator_code is not null or coalesce(auth.jwt() ->> 'email', '') <> '') then
+    raise exception 'code-fixed';
+  end if;
+  return new;
+end $$;
+revoke all on function public.creators_creator_code() from public, anon, authenticated;
+
+create or replace function public.campaigns_campaign_code()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if tg_op = 'INSERT' then
+    new.campaign_code := public.id_take('campaign');
+  elsif new.campaign_code is distinct from old.campaign_code
+        and (old.campaign_code is not null or coalesce(auth.jwt() ->> 'email', '') <> '') then
+    raise exception 'code-fixed';
+  end if;
+  return new;
+end $$;
+revoke all on function public.campaigns_campaign_code() from public, anon, authenticated;
+
+-- END OF CREATOR AND CAMPAIGN IDS TAKEN AS THE DATABASE ---------------------
 
 select public.functions_tidy();
