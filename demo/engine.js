@@ -277,7 +277,7 @@
     supplier_form_read: 'p_key',
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
-    meeting_message_get: '', meeting_message_save: 'p_body',
+    meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -4394,6 +4394,24 @@ function cardSlugFree(name, self, email) {
     (DB.creators || []).slice().sort(byMade).forEach(function (c) { if (!c.creator_code) c.creator_code = idTake('creator'); });
     (DB.campaigns || []).slice().sort(byMade).forEach(function (m) { if (!m.campaign_code) m.campaign_code = idTake('campaign'); });
   }
+
+  var TPL_FIELDS = {
+    supplier: ['contact name', 'supplier name', 'supplier id', 'payment term', 'currency', 'document title', 'document reference', 'document date', 'sender name'],
+    client: ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name'],
+    free: ['contact name', 'company name', 'client name', 'supplier name', 'sender name'],
+    invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices'],
+    'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
+    'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
+    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link']
+  };
+  function tplCheck(text, kind) {
+    var re = /\{\s*([^{}]*?)\s*\}/g, m, list = TPL_FIELDS[kind] || [];
+    while ((m = re.exec(String(text || '')))) {
+      if (list.indexOf(m[1].toLowerCase().replace(/\s+/g, ' ')) < 0) return { error: 'unknown-field', field: '{' + m[1] + '}', fields: list.slice() };
+    }
+    return null;
+  }
+  function tplNo(bad) { return Promise.resolve({ data: JSON.parse(JSON.stringify(bad)), error: null }); }
   function idTake(kind) {
     var f = idFormats()[kind], v;
     var held = function (c) { return (DB.creators || []).some(function (x) { return x.creator_code === c; }) || (DB.campaigns || []).some(function (x) { return x.campaign_code === c; }); };
@@ -9440,6 +9458,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!t) cpOut = { error: 'bad-request' };
           else if (String(x.subject || '').trim().length < 3 || String(x.subject).length > 200) cpOut = { error: 'bad-subject', purpose: t.purpose };
           else if (String(x.body || '').trim().length < 10 || String(x.body).length > 5000) cpOut = { error: 'bad-body', purpose: t.purpose };
+          else if (tplCheck(x.subject + '\n' + x.body, /^(request|posted|paid)$/.test(t.purpose) ? 'creator-booking' : 'creator-details'))
+            cpOut = Object.assign(tplCheck(x.subject + '\n' + x.body, /^(request|posted|paid)$/.test(t.purpose) ? 'creator-booking' : 'creator-details'), { purpose: t.purpose });
           else if (t.purpose === 'review' && (!to || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to))) cpOut = { error: 'bad-email' };
           else {
             if (t.purpose !== 'review') to = null;
@@ -11342,6 +11362,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (tn.length < 2 || tn.length > 80) return emNo('bad-name');
         if (tsub.length < 2 || tsub.length > 200) return emNo('bad-subject');
         if (tb.length < 2 || tb.length > 5000) return emNo('bad-body');
+        if (tplCheck(tsub + '\n' + tb, 'free')) return tplNo(tplCheck(tsub + '\n' + tb, 'free'));
         var tt = args.p_id ? DB.email_templates.filter(function (t) { return t.id === args.p_id; })[0] : null;
         if (args.p_id && !tt) return emNo('not-found');
         var aud0 = tt ? tt.audience : args.p_audience;
@@ -11890,6 +11911,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
     if (name === 'meeting_message_get' || name === 'meeting_message_save') {
       var mmMe = opsMe();
       var mmNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
@@ -11905,6 +11927,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var mb = String(args.p_body || '').replace(/\r/g, '').trim();
       if (mb.length < 2 || mb.length > 3000) return mmNo('bad-body');
       if (!/\{\s*date\s*\}/i.test(mb)) return mmNo('no-date');
+      if (tplCheck(mb, 'meeting')) return tplNo(tplCheck(mb, 'meeting'));
       if (mb !== mm.body) {
         Object.assign(mm, { body: mb, updated_at: new Date().toISOString(), updated_by: mmMe.id });
         DB.activity_log.unshift({ id: nid('al'), actor: mmMe.name, action: 'team.changed', subject: 'Meeting message', detail: 'Message', created_at: new Date().toISOString() });
@@ -11939,6 +11962,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (vb.length < 2 || vb.length > 5000) return ivNo('bad-body');
         if (!/\{\s*invoices\s*\}/i.test(vb)) return ivNo('no-invoices');
         if (vl.length > 1000 || vd.length > 1000) return ivNo('too-long');
+        var ivBad = tplCheck([v1, vn, vb, vl, vd].join('\n'), 'invoice');
+        if (ivBad) return tplNo(ivBad);
         var ts = ivTpl[0], moved = [];
         if (ts.subject_one !== v1) moved.push('Subject, one invoice: ' + ts.subject_one + ' → ' + v1);
         if (ts.subject_many !== vn) moved.push('Subject, several invoices: ' + ts.subject_many + ' → ' + vn);
@@ -12314,6 +12339,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var cs = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), cb = String(args.p_body || '').replace(/\r/g, '').trim();
         if (cs.length < 2 || cs.length > 200) return spNo('bad-subject');
         if (cb.length < 2 || cb.length > 5000) return spNo('bad-body');
+        if (tplCheck(cs + '\n' + cb, 'client')) return tplNo(tplCheck(cs + '\n' + cb, 'client'));
         var moved = [];
         if (ct.subject !== cs) moved.push('Subject: ' + ct.subject + ' → ' + cs);
         if (ct.body !== cb) moved.push('Message');
@@ -12590,6 +12616,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var es = String(args.p_subject || '').trim(), eb = String(args.p_body || '').trim();
           if (es.length < 2 || es.length > 200) return spNo('bad-subject');
           if (eb.length < 2 || eb.length > 5000) return spNo('bad-body');
+          if (tplCheck(es + '\n' + eb, 'supplier')) return tplNo(tplCheck(es + '\n' + eb, 'supplier'));
           et.subject = es; et.body = eb;
           return spOk();
         }

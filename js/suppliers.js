@@ -59,6 +59,7 @@
     var m = r && r.error && (r.error.message || '');
     if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     var k = (r && r.data && r.data.error) || m;
+    if (k === 'unknown-field' && r.data) return window.ADspaceWords.line.unknownField(r.data.field, r.data.fields);
     if (k === 'code-taken' && r.data.name) return 'This Supplier ID is already used by ' + r.data.name + '.';
     return SAID[k] || k || 'The request failed.';
   }
