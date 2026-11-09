@@ -24,7 +24,7 @@
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Your bookings', zh: '您的合作' }, steps: [
     { at: '#workList .qrow', text: { en: 'Your bookings, the most urgent first. Open a booking for its brief and dates.', zh: '您的合作项目，需要您处理的排在最前。点开即可查看简介与日期。' } },
-    { at: '#linksEdit', text: { en: 'Keep your profile links up to date.', zh: '请保持您的主页链接为最新。' } }] };
+    { at: '#crTabs', text: { en: 'Your payments and your profile links are on their own tabs.', zh: '您的付款与主页链接各在一个分页。' } }] };
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
   var KEY = 'adspace-creator';
@@ -87,6 +87,12 @@
       linkNone: 'Keep at least one profile link.',
       linkFail: 'Not saved. Please try again.',
       payHead: 'Payment details',
+      tabs: { bookings: 'Bookings', payments: 'Payments', profile: 'Profile' },
+      profHead: 'Profile links', contactHead: 'Contact', contactWa: 'WhatsApp', contactEmail: 'Email',
+      paysHead: 'Payments', paysNone: 'No payments.',
+      paysWord: { processing: 'Processing', paid: 'Paid', due: 'Not due' },
+      paysPosted: 'Posted {d}', paysPaid: 'Paid {d}', paysBy: 'Payment by {d}', paysNotPosted: 'Not posted',
+      paysNote: 'Payments in MYR are made within {myr} working days of the post date, and payments in other currencies within {other} working days.',
       payGo: 'Submit details', payChange: 'Change details',
       payNone: 'Please submit your payment details before your first payment.',
       payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Declined', payChangePending: 'Change under review',
@@ -188,6 +194,12 @@
       rateStar: function (n) { return n + '星（满分5星）'; },
       rateThanks: '感谢您的评分。',
       payHead: '付款资料',
+      tabs: { bookings: '合作', payments: '付款', profile: '个人资料' },
+      profHead: '主页链接', contactHead: '联络资料', contactWa: 'WhatsApp', contactEmail: '电邮',
+      paysHead: '付款', paysNone: '暂无付款。',
+      paysWord: { processing: '处理中', paid: '已付款', due: '未到期' },
+      paysPosted: '发布于{d}', paysPaid: '付款于{d}', paysBy: '最迟于{d}付款', paysNotPosted: '未发布',
+      paysNote: '马币款项于发布日期后{myr}个工作日内支付，其他货币款项于{other}个工作日内支付。',
       payGo: '提交资料', payChange: '更改资料',
       payNone: '首次付款前，请提交您的付款资料。',
       payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
@@ -393,6 +405,106 @@
 
     paintPay();
     paintQueue(rows);
+    paintTabs();
+  }
+
+  /* ---- Bookings, Payments and Profile (2026-11-10) ----------------------
+     One pane at a time, in `?tab=` (Bookings left out); Bookings carries the
+     red count of what waits on the creator. Payments is drawn once payment
+     details are asked or a booking has a payment to show. */
+  var PANES = ['bookings', 'payments', 'profile'];
+  var crPane = 'bookings';
+  function crTab(name) { return document.querySelector('#crTabs .tab[data-pane="' + name + '"]'); }
+  function crPaneOf() { var p = new URLSearchParams(location.search).get('tab'); return PANES.indexOf(p) >= 0 ? p : 'bookings'; }
+  function showCrPane(name, push) {
+    var tab = crTab(name);
+    if (!tab || tab.hidden) { name = 'bookings'; tab = crTab(name); }
+    crPane = name;
+    Array.prototype.forEach.call(document.querySelectorAll('#crTabs .tab'), function (b) {
+      var on = b === tab;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.cr-pane'), function (x) { x.hidden = x.getAttribute('data-pane') !== name; });
+    var url = new URL(location.href);
+    if (name === 'bookings') url.searchParams.delete('tab'); else url.searchParams.set('tab', name);
+    if (url.href === location.href) return;
+    if (push) history.pushState(history.state, '', url.href); else history.replaceState(history.state, '', url.href);
+  }
+  function paintTabs() {
+    var T0 = t();
+    $('crTabBookingsWord').textContent = T0.tabs.bookings;
+    $('crTabPaymentsWord').textContent = T0.tabs.payments;
+    $('crTabProfileWord').textContent = T0.tabs.profile;
+    var owed = ((feed && feed.bookings) || []).filter(needsCreator).length;
+    $('crTabOwed').hidden = !owed;
+    $('crTabOwed').textContent = owed ? String(owed) : '';
+    $('crTabPayments').hidden = !(pay && (pay.due || (pay.payments || []).length));
+    paintContact();
+    showCrPane(crTab(crPane) && !crTab(crPane).hidden ? crPane : crPaneOf(), false);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#crTabs .tab'), function (b) {
+    b.addEventListener('click', function () { showCrPane(b.getAttribute('data-pane'), true); });
+  });
+  $('crTabs').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.filter.call(this.querySelectorAll('.tab'), function (b) { return !b.hidden; });
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    tabs[to].focus();
+    tabs[to].click();
+  });
+  window.addEventListener('popstate', function () { if (feed) showCrPane(crPaneOf(), false); });
+  crPane = crPaneOf();
+
+  /* The contact the team reaches them on: the WhatsApp the team holds and
+     the email of their payment details. */
+  function paintContact() {
+    var T0 = t(), cr = (feed && feed.creator) || {};
+    var held = pay && (pay.paid || pay.last);
+    var wa = (pay && pay.whatsapp) || cr.whatsapp || (held && held.whatsapp) || '';
+    var mail = held && held.email;
+    $('profTitle').textContent = T0.profHead;
+    $('contactTitle').textContent = T0.contactHead;
+    var rows = [[T0.contactWa, wa], [T0.contactEmail, mail]].filter(function (r) { return r[1]; });
+    $('contactBox').hidden = !rows.length;
+    $('contactFacts').innerHTML = rows.map(function (r) { return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>'; }).join('');
+  }
+
+  /* Each booking's payment as Bukku holds it (`creator_pay_form`
+     `payments`): Processing while a balance stands, Paid at none, Not due
+     before the bill. */
+  function paintPays() {
+    var T0 = t(), list = (pay && pay.payments) || [];
+    $('crPaysTitle').textContent = T0.paysHead;
+    var day = function (d) { return d ? ADspaceClock.date(d, { zh: lang === 'zh' }) : ''; };
+    var money = function (b) {
+      if (!b || b.amount == null) return '<span class="muted">\u2014</span>';
+      var cur = String(b.currency || 'MYR').toUpperCase();
+      var n = Number(b.amount).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return esc((cur === 'SGD' ? 'S$' : cur === 'MYR' ? 'RM' : cur) + '\u00a0' + n);
+    };
+    $('crPaysList').innerHTML = !list.length ? '<p class="crlinks-none">' + esc(T0.paysNone) + '</p>' : list.map(function (x) {
+      var b = x.bill, st = b ? (b.status === 'paid' ? 'paid' : 'processing') : 'due';
+      var tone = st === 'paid' ? 'is-ok' : st === 'processing' ? 'is-warn' : 'is-off';
+      var sub = [x.job];
+      if (st === 'paid' && b.date) sub.push(fill(T0.paysPaid, { d: day(b.date) }));
+      else if (x.posted_on) { sub.push(fill(T0.paysPosted, { d: day(x.posted_on) })); if (st !== 'paid' && x.pay_by) sub.push(fill(T0.paysBy, { d: day(x.pay_by) })); }
+      else if (x.state !== 'posted' && x.state !== 'completed') sub.push(T0.paysNotPosted);
+      return '<div class="crpay-row">' +
+        '<span class="crpay-what">' + esc(x.campaign || '') + '</span>' +
+        '<span class="crpay-amt">' + money(b) + '</span>' +
+        '<small class="crpay-sub">' + sub.map(function (w, i) { return '<span class="crpay-part">' + (i ? '<span class="crpay-sep"> · </span>' : '') + esc(w) + '</span>'; }).join('') + '</small>' +
+        '<span class="crpay-st"><span class="chip-state ' + tone + '">' + esc(T0.paysWord[st]) + '</span></span>' +
+      '</div>';
+    }).join('');
+    var dd = (pay && pay.days) || {};
+    $('crPaysNote').hidden = !(dd.myr != null && dd.other != null);
+    $('crPaysNote').textContent = dd.myr != null && dd.other != null ? fill(T0.paysNote, { myr: dd.myr, other: dd.other }) : '';
   }
 
   /* ---- Who they are, and their profile links ----------------------------
@@ -1000,6 +1112,8 @@
   function paintPay() {
     var box = $('payBox');
     if (!box) return;
+    paintPays();
+    if (feed) paintTabs();
     box.hidden = !(pay && pay.due);
     if (box.hidden) return;
     var T0 = t(), last = pay.last, paid = pay.paid;

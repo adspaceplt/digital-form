@@ -341,14 +341,18 @@
     if (!box) return;
     var q = ($('rosterSearch').value || '').trim().toLowerCase();
     var plat = $('rosterPlatform') ? $('rosterPlatform').value : 'all';
+    /* Where each creator's payment details stand (2026-11-10, the approved
+       mockup): Not submitted, To review, Approved or Declined. */
+    var payF = $('rosterPay') ? $('rosterPay').value : 'all';
     var shown = state.creators.filter(function (c) {
       if (plat !== 'all' && !(c.creator_profiles || []).some(function (p) { return p.platform === plat; })) return false;
+      if (payF !== 'all' && ((state.payStates || {})[c.id] || 'none') !== payF) return false;
       if (!q) return true;
       var hay = c.name + ' ' + (c.creator_code || '') + ' ' +
         (c.creator_profiles || []).map(function (p) { return p.handle || p.url; }).join(' ');
       return hay.toLowerCase().indexOf(q) > -1;
     });
-    var narrowed = q || plat !== 'all';
+    var narrowed = q || plat !== 'all' || payF !== 'all';
     $('rosterCount').textContent = !state.creators.length ? '' :
       (narrowed ? shown.length + ' of ' + state.creators.length
                 : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
@@ -364,6 +368,7 @@
       UI.emptyLine(box, 'No matches.', 'Clear filters', function () {
         $('rosterSearch').value = '';
         if ($('rosterPlatform')) $('rosterPlatform').value = 'all';
+        if ($('rosterPay')) $('rosterPay').value = 'all';
         paintRoster();
       });
       return;
@@ -442,7 +447,9 @@
           (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
           (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') +
           /* Details waiting on the team are the exception the row names. */
-          ((state.payStates || {})[c.id] === 'pending' ? '<span class="cr-pay"><span class="chip-state is-warn">Payment details to review</span></span>' : '') + '</span>' +
+          /* Payment details as they stand, Not submitted left unsaid. */
+          (PAY_STATE[(state.payStates || {})[c.id]] ? '<span class="cr-pay"><span class="chip-state ' + PAY_STATE[state.payStates[c.id]][1] + '">' +
+            esc('Payment details ' + PAY_STATE[state.payStates[c.id]][0].toLowerCase()) + '</span></span>' : '') + '</span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
         '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
@@ -455,7 +462,7 @@
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
             menuItem('links', 'Link history') +
-            ((state.payStates || {})[c.id] ? menuItem('pay', 'Payment details') : '') +
+            menuItem('pay', 'Payment details') +
             menuItem('del', 'Delete', 'is-danger', 'campaigns:manage') +
           '</div>' +
         '</span>';
@@ -1066,6 +1073,7 @@
   $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null, ROSTER_CTX)); });
   $('rosterSearch').addEventListener('input', paintRoster);
   $('rosterPlatform').addEventListener('change', paintRoster);
+  $('rosterPay').addEventListener('change', paintRoster);
   $('crName').addEventListener('input', function () { warnDupes(ROSTER_CTX); });
 
   $('saveCreator').addEventListener('click', function () {
