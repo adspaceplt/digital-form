@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261110a">
-<link rel="stylesheet" href="/css/console.css?v=20261109b">
+<link rel="stylesheet" href="/css/console.css?v=20261110b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -155,8 +155,9 @@
 <script src="/js/maintenance.js?v=20261102a"></script>
 <script src="/js/announce.js?v=20261031w"></script>
 <script src="/js/notice.js?v=20261103l"></script>
-<script src="/js/whatsapp.js?v=20261110"></script>
-<script src="/js/docmail.js?v=20261110"></script>
+<script src="/js/whatsapp.js?v=20261110a"></script>
+<script src="/js/mailtpl.js?v=20261110a"></script>
+<script src="/js/docmail.js?v=20261110a"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261109"></script>
 <script src="/js/media.js?v=20261022zr"></script>
@@ -4480,23 +4481,49 @@
         </div>
       </div>
     </div>
-    <!-- Email templates (2026-11-04): the team's saved words for a New
-         email, for clients or for suppliers; Settings, Templates. -->
-    <div class="sheet" id="etplSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="etplTitle">
+    <!-- Email templates (2026-11-10): every email the portal sends, by
+         recipient, and one editor: the words at the left, the email as it
+         reads at the right, the fields its sender fills as chips. -->
+    <div class="sheet" id="mtSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="mtTitle">
         <div class="sheet-head">
-          <h3 id="etplTitle">Email templates</h3>
-          <button class="iconbtn" id="etplClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          <h3 id="mtTitle">Email templates</h3>
+          <button class="iconbtn" id="mtClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
         <div class="sheet-body">
-          <div class="readgroup-head etpl-head"><h4 class="fsec-h">Templates</h4>
-            <button class="btn btn-sm" id="etplAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add template</button></div>
-          <div id="etplList"></div>
-          <div class="msg" id="etplMsg" role="status"></div>
+          <div class="mt-rec" id="mtRecRow" hidden>
+            <label class="field-label" id="mtRecL" for="mtRec">Recipient</label>
+            <select class="select select-sm" id="mtRec" data-seg aria-labelledby="mtRecL"></select>
+          </div>
+          <div class="msg" id="mtMsg" role="status"></div>
+          <div id="mtList"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-quiet" id="mtDone" type="button">Close</button>
         </div>
       </div>
     </div>
-    <!-- An email as it was sent (2026-11-04): who it went to, its copy, who
+    <div class="sheet" id="mtEdSheet" hidden>
+      <div class="sheet-card formsheet inv-sheet" role="dialog" aria-modal="true" aria-labelledby="mtEdTitle">
+        <div class="sheet-head">
+          <h3 id="mtEdTitle">Template</h3>
+          <button class="iconbtn" id="mtEdClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body mt-ed" data-narrow="720">
+          <div class="mt-ed-form" id="mtEdForm"></div>
+          <div class="mt-ed-pv">
+            <p class="field-label" id="mtPvL">Preview</p>
+            <div class="inv-mail" id="mtPreview" aria-labelledby="mtPvL"></div>
+          </div>
+        </div>
+        <div class="msg" id="mtEdMsg" role="status"></div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="mtEdSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="mtEdCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+        <!-- An email as it was sent (2026-11-04): who it went to, its copy, who
          sent it, where it stands at each step, and the message; read only. -->
     <div class="sheet" id="emlSheet" hidden>
       <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="emlSheetHead">
@@ -6160,35 +6187,6 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<!-- Supplier emails (Settings, Documents; Suppliers Full Access): each
-     template's subject and body, {fields} filled from the supplier. -->
-<div class="sheet" id="supTplSheet" hidden>
-  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="supTplTitle">
-    <div class="sheet-head">
-      <h3 id="supTplTitle">Supplier emails</h3>
-      <button class="iconbtn" id="supTplClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body">
-      <div class="row fgrid">
-        <div class="span-all"><label class="field-label" for="supTplPick">Template</label>
-          <select class="select" id="supTplPick" data-seg><option value="approved">Supplier approved</option><option value="document">Document</option></select></div>
-        <div class="span-all"><label class="field-label" for="supTplSubject">Subject</label>
-          <textarea class="input" id="supTplSubject" rows="1" data-oneline maxlength="200" aria-required="true"></textarea></div>
-        <div class="span-all"><label class="field-label" for="supTplBody">Message</label>
-          <textarea class="textarea" id="supTplBody" rows="10" maxlength="5000" aria-required="true"></textarea></div>
-      </div>
-      <div class="sup-fields" id="supTplFields" role="group" aria-label="Insert a field"></div>
-      <div class="msg" id="supTplMsg"></div>
-    </div>
-    <div class="sheet-foot">
-      <button class="btn btn-primary" id="supTplGo" type="button">Save</button>
-      <button class="btn btn-quiet" id="supTplCancel" type="button">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <!-- Send by email (2026-10-31, js/docmail.js): a client's quotation, Letter
      of Offer or client letter to one of its contacts, the words the
      template's filled from the record, the PDF attached, sent by
@@ -6231,35 +6229,6 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-foot">
       <button class="btn btn-primary" id="dmGo" type="button">Send</button>
       <button class="btn btn-quiet" id="dmCancel" type="button">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Client emails (Settings, Templates; Business settings): each kind's
-     subject and message, {fields} filled from the record. -->
-<div class="sheet" id="dmTplSheet" hidden>
-  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="dmTplTitle">
-    <div class="sheet-head">
-      <h3 id="dmTplTitle">Client emails</h3>
-      <button class="iconbtn" id="dmTplClose" type="button" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
-    </div>
-    <div class="sheet-body">
-      <div class="row fgrid">
-        <div class="span-all"><label class="field-label" for="dmTplPick">Template</label>
-          <select class="select" id="dmTplPick" data-seg data-nodraft><option value="quotation">Quotation</option><option value="offer">Letter of Offer</option><option value="letter">Client letter</option></select></div>
-        <div class="span-all"><label class="field-label" for="dmTplSubject">Subject</label>
-          <textarea class="input" id="dmTplSubject" rows="1" data-oneline maxlength="200" aria-required="true" data-nodraft></textarea></div>
-        <div class="span-all"><label class="field-label" for="dmTplBody">Message</label>
-          <textarea class="textarea" id="dmTplBody" rows="10" maxlength="5000" aria-required="true" data-nodraft></textarea></div>
-      </div>
-      <div class="sup-fields" id="dmTplFields" role="group" aria-label="Insert a field"></div>
-      <div class="msg" id="dmTplMsg"></div>
-    </div>
-    <div class="sheet-foot">
-      <button class="btn btn-primary" id="dmTplGo" type="button">Save</button>
-      <button class="btn btn-quiet" id="dmTplCancel" type="button">Cancel</button>
     </div>
   </div>
 </div>
@@ -6384,9 +6353,9 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/smreport.js?v=20261103e"></script>
 <script src="/js/reports.js?v=20261106e"></script>
 <script src="/js/register.js?v=20261107"></script>
-<script src="/js/suppliers.js?v=20261110b"></script>
+<script src="/js/suppliers.js?v=20261110c"></script>
 <script src="/js/bukku.js?v=20261110b"></script>
-<script src="/js/invoices.js?v=20261110"></script>
+<script src="/js/invoices.js?v=20261110a"></script>
 <script src="/js/engage.js?v=20261103l"></script>
 <script src="/js/quotes.js?v=20261110b"></script>
 <script src="/js/quotepdf.js?v=20261107g"></script>
@@ -6408,6 +6377,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/search.js?v=20261030e"></script>
 <script src="/js/overview.js?v=20261105a"></script>
 <script src="/js/analytics.js?v=20261031w"></script>
-<script src="/js/settings.js?v=20261110"></script>
+<script src="/js/settings.js?v=20261110a"></script>
 </body>
 </html>

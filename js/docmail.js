@@ -26,14 +26,12 @@
  *                                     Delivered), by its id, read once a
  *                                     visit to the client
  *   ADspaceDocMail.forget(clientId)   the next lines() reads again
- *   ADspaceDocMail.openTemplates(btn) Settings, Templates: Client emails
  *                                     (`team.settings`)
  */
 (function () {
   'use strict';
   var API = window.ADspaceAPI;
   var KIND = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
-  var FIELDS = ['contact name', 'client name', 'company name', 'document title', 'document reference', 'document date', 'valid until', 'sender name'];
   var SAID = {
     denied: 'You do not have permission to send this document. Please ask an admin.',
     'not-found': 'This document no longer exists.',
@@ -238,68 +236,6 @@
   }
   function shut() { cx = null; }
 
-  // ---- Templates (Settings, Templates: Client emails) ------------------------
-  var tpls = null;
-  function openTemplates(btn) {
-    tpls = { rows: {}, last: 'body' };
-    msg('dmTplMsg', '');
-    $('dmTplFields').innerHTML = FIELDS.map(function (f) {
-      return '<button class="btn btn-sm" type="button" data-f="' + esc(f) + '">{' + esc(f) + '}</button>';
-    }).join('');
-    $('dmTplSubject').value = ''; $('dmTplBody').value = '';
-    window.ADspaceSheet.show($('dmTplSheet'), { opener: btn || null });
-    db().rpc('client_email_templates_list').then(function (r) {
-      var code = codeOf(r);
-      if (code) { msg('dmTplMsg', code === 'unknown-field' ? window.ADspaceWords.line.unknownField(r.data.field, r.data.fields) : said(code), 'err'); return; }
-      (r.data.rows || []).forEach(function (t) { tpls.rows[t.kind] = { subject: t.subject, body: t.body, was: t.subject + '\n' + t.body }; });
-      $('dmTplPick').value = 'quotation';
-      $('dmTplPick').dispatchEvent(new Event('change'));
-    });
-  }
-  function tplShow() {
-    var t = tpls && tpls.rows[$('dmTplPick').value];
-    if (!t) return;
-    tpls.on = $('dmTplPick').value;
-    $('dmTplSubject').value = t.subject; $('dmTplBody').value = t.body;
-    if (window.ADspaceGrow) window.ADspaceGrow.fit($('dmTplBody'));
-  }
-  function tplKeep() {
-    var t = tpls && tpls.rows[tpls.on];
-    if (!t) return;
-    t.subject = $('dmTplSubject').value; t.body = $('dmTplBody').value;
-  }
-  function tplSave() {
-    if (!tpls) return;
-    tplKeep();
-    var changed = Object.keys(tpls.rows).filter(function (k) { var t = tpls.rows[k]; return t.subject + '\n' + t.body !== t.was; });
-    if (!changed.length) { window.ADspaceSheet.close(); return; }
-    var go = $('dmTplGo'); go.disabled = true;
-    var next = function (i) {
-      if (i >= changed.length) { go.disabled = false; window.ADspaceSheet.close(); return; }
-      var k = changed[i], t = tpls.rows[k];
-      db().rpc('client_email_template_save', { p_kind: k, p_subject: t.subject.trim(), p_body: t.body.trim() }).then(function (r) {
-        var code = codeOf(r);
-        if (code) {
-          go.disabled = false;
-          $('dmTplPick').value = k; $('dmTplPick').dispatchEvent(new Event('change'));
-          msg('dmTplMsg', code === 'unknown-field' ? window.ADspaceWords.line.unknownField(r.data.field, r.data.fields) : said(code), 'err');
-          return;
-        }
-        t.was = t.subject + '\n' + t.body;
-        next(i + 1);
-      }).catch(function () { go.disabled = false; msg('dmTplMsg', 'Not saved. Try again.', 'err'); });
-    };
-    next(0);
-  }
-  /* What the Settings row holds. */
-  function templatesLine() {
-    return db().rpc('client_email_templates_list').then(function (r) {
-      if (r.error || (r.data && r.data.error)) throw r.error || new Error(r.data.error);
-      var n = ((r.data && r.data.rows) || []).length;
-      return n + (n === 1 ? ' template' : ' templates');
-    });
-  }
-
   function wire() {
     if (!$('dmSheet') || $('dmSheet').__wired) return;
     $('dmSheet').__wired = true;
@@ -309,24 +245,8 @@
     $('dmCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
     $('dmClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
     new MutationObserver(function () { if ($('dmSheet').hidden) shut(); }).observe($('dmSheet'), { attributes: true, attributeFilter: ['hidden'] });
-    $('dmTplPick').addEventListener('change', function () { if (!tpls) return; tplKeep(); tplShow(); });
-    $('dmTplGo').addEventListener('click', tplSave);
-    $('dmTplCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    $('dmTplClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-    new MutationObserver(function () { if ($('dmTplSheet').hidden) tpls = null; }).observe($('dmTplSheet'), { attributes: true, attributeFilter: ['hidden'] });
-    $('dmTplFields').addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('[data-f]');
-      if (!b || !tpls) return;
-      var el = tpls.last === 'subject' ? $('dmTplSubject') : $('dmTplBody');
-      var w = '{' + b.getAttribute('data-f') + '}', at = el.selectionStart == null ? el.value.length : el.selectionStart;
-      el.value = el.value.slice(0, at) + w + el.value.slice(el.selectionEnd == null ? at : el.selectionEnd);
-      el.focus(); el.selectionStart = el.selectionEnd = at + w.length;
-    });
-    $('dmTplSubject').addEventListener('focus', function () { if (tpls) tpls.last = 'subject'; });
-    $('dmTplBody').addEventListener('focus', function () { if (tpls) tpls.last = 'body'; });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
 
-  window.ADspaceDocMail = { may: may, compose: compose, lines: lines, forget: forget, openTemplates: openTemplates,
-    templatesLine: templatesLine, KIND: KIND };
+  window.ADspaceDocMail = { may: may, compose: compose, lines: lines, forget: forget, KIND: KIND };
 })();
