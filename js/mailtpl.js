@@ -22,8 +22,8 @@
   var NOT_YET = 'This feature is not available yet. Please contact an admin.';
   var SAID = {
     denied: 'You do not have permission to change these templates. Please ask an admin.',
-    'bad-subject': 'Enter a subject of 2 to 200 characters.',
-    'bad-body': 'Enter a message of 2 to 5,000 characters.',
+    'bad-subject': window.ADspaceWords.line.subject,
+    'bad-body': window.ADspaceWords.line.message,
     'bad-name': 'Enter a template name of 2 to 80 characters.',
     taken: 'A template of this name already exists. Choose another name.',
     'bad-email': 'Enter a valid email address for the finance team.',
