@@ -758,6 +758,20 @@ button.appver {
 .cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
 .cr-record-when { flex: 0 0 auto; white-space: pre; }
 .cr-who > .cr-pay { margin-top: 4px; }  /* a creator's payment details to review (2026-11-08) */
+/* A creator's payments (2026-11-09): a booking a row, its Job reference
+   over its campaign, the bill's state over its number and amount, the pen
+   for an earlier job ID at the right edge. */
+.cpay-job { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.cpay-job:first-child, .cpay-earlier-h + .cpay-job { border-top: 0; }
+.cpay-job-l, .cpay-job-r { display: grid; gap: 2px; min-width: 0; }
+.cpay-job-r { justify-items: end; text-align: right; }
+.cpay-job-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.cpay-job-sub { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.cpay-job-pen { margin-block: calc((var(--ctl-h) - 20px) / -2); }
+.cpay-part { white-space: nowrap; }
+.cpay-spacer { visibility: hidden; }
+.cpay-earlier-h { margin: 16px 0 4px; }
+.cpay-read { font-size: 12.5px; margin: 8px 0 0; }
 
 /* What this creator has run, on their own card. A row a campaign, the name
    and the month it was shot, and the whole row opens it — the shape every
