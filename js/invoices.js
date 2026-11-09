@@ -54,7 +54,10 @@
   SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
   SAID['bad-recipient'] = 'That address is no longer listed for this client. Refresh the page, then choose another address.';
   SAID['bad-copy'] = 'A copy can go to five of this client\'s contacts at most, each once and not to the recipient.';
-  function said(d) { return (d && SAID[d.error]) || SAID.failed; }
+  function said(d) {
+    if (d && d.error === 'unknown-field') return window.ADspaceWords.line.unknownField(d.field, d.fields);
+    return (d && SAID[d.error]) || SAID.failed;
+  }
   /* The instalments a line covers, as the email names them. */
   function partWord(p) {
     if (!p || !p.of) return '';

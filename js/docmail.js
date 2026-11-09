@@ -250,7 +250,7 @@
     window.ADspaceSheet.show($('dmTplSheet'), { opener: btn || null });
     db().rpc('client_email_templates_list').then(function (r) {
       var code = codeOf(r);
-      if (code) { msg('dmTplMsg', said(code), 'err'); return; }
+      if (code) { msg('dmTplMsg', code === 'unknown-field' ? window.ADspaceWords.line.unknownField(r.data.field, r.data.fields) : said(code), 'err'); return; }
       (r.data.rows || []).forEach(function (t) { tpls.rows[t.kind] = { subject: t.subject, body: t.body, was: t.subject + '\n' + t.body }; });
       $('dmTplPick').value = 'quotation';
       $('dmTplPick').dispatchEvent(new Event('change'));
@@ -282,7 +282,7 @@
         if (code) {
           go.disabled = false;
           $('dmTplPick').value = k; $('dmTplPick').dispatchEvent(new Event('change'));
-          msg('dmTplMsg', said(code), 'err');
+          msg('dmTplMsg', code === 'unknown-field' ? window.ADspaceWords.line.unknownField(r.data.field, r.data.fields) : said(code), 'err');
           return;
         }
         t.was = t.subject + '\n' + t.body;
