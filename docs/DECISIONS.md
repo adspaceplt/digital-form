@@ -8893,3 +8893,24 @@ user: "all four shows same width left right").
   (`creator-mail`), woken as the WhatsApp queue is; the page sends no words.
   They join the existing status webhook, sweep, retention and Email log
   rather than a parallel copy.
+
+
+### 2026-11-09 · Emails in the brand palette; Sales by as a Clients filter
+- The user, with a phone screenshot of the sign-in code: "Email template
+  text dont do true black, use our color palatte: #1a1a1a for black /
+  #515151 for dark grey / #f5f5f5 for whitesmoke / #ffffff white", and
+  "Split the 81100, to next row". Every email the portal sends
+  (`_shared/mail.ts`, bukku-sync's invoice table, quote-request's code
+  box) and the Supabase templates (`docs/SIGN-IN-EMAILS.md`) now take the
+  four colours; the fine print, which the user had asked lighter
+  (#a19d97, 2026-10-28), takes the palette's dark grey. The code read as
+  true black because Apple Mail detects a run of digits as a number and
+  draws it in its own ink: `format-detection` is off and
+  `a[x-apple-data-detectors]` inherits the colour. The address breaks
+  before its postcode. `mailfn` holds every colour to the palette.
+- The user, before the PR: "Why not the code be at the center?" The code
+  box (sign-in, and the quotation's signing code) centres its digits, the
+  left padded by the letter spacing the last digit carries after it.
+- The same day: "Missing the filter for sales by" (the Clients Filters
+  sheet held Stage, Person in charge and VIC). `#crmSales` filters by the
+  colleague's id, as Sales by is stored; Clear takes it off.
