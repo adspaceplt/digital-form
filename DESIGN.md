@@ -57,7 +57,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 **How colour is used:**
 - Every colour is a token; a literal cannot follow the theme.
-- An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary and fine print `#515151`, the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, and Apple Mail's number detection is kept off (the user, 2026-11-09).
+- An email (`_shared/mail.ts`, `docs/SIGN-IN-EMAILS.md`) is light alone, in its own palette: text `#1a1a1a` (never true black), secondary and fine print `#515151`, the page and a shaded box `#f5f5f5`, the card `#ffffff`, the action blue for its one button; the address breaks before its postcode, a code's digits are centred in their box, and Apple Mail's number detection is kept off (the user, 2026-11-09).
 - `color-scheme: light dark` is set on `:root`, and `color: inherit` on
   `button`.
 - A fill and its text are always a pair (`--action` / `--on-action`, never

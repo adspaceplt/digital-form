@@ -8908,6 +8908,9 @@ user: "all four shows same width left right").
   draws it in its own ink: `format-detection` is off and
   `a[x-apple-data-detectors]` inherits the colour. The address breaks
   before its postcode. `mailfn` holds every colour to the palette.
+- The user, before the PR: "Why not the code be at the center?" The code
+  box (sign-in, and the quotation's signing code) centres its digits, the
+  left padded by the letter spacing the last digit carries after it.
 - The same day: "Missing the filter for sales by" (the Clients Filters
   sheet held Stage, Person in charge and VIC). `#crmSales` filters by the
   colleague's id, as Sales by is stored; Clear takes it off.
