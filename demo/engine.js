@@ -9360,7 +9360,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var cpMine = cpReqs.filter(function (r) { return r.creator_id === cpC.id; });
           var cpLast = cpMine.filter(function (r) { return r.status !== 'withdrawn'; }).sort(function (a, b) { return b.seq - a.seq; })[0];
           var cpPaid = cpMine.filter(function (r) { return r.status === 'approved'; }).sort(function (a, b) { return String(b.decided_at).localeCompare(String(a.decided_at)); })[0];
-          cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpC.whatsapp || null, last: cpJson(cpLast, false), paid: cpJson(cpPaid, false) };
+
+          var cpPays = (DB.campaign_options || []).filter(function (o) { return o.creator_id === cpC.id && BOOKED_OUT.indexOf(o.state) < 0; }).map(function (o) {
+            var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
+            var b = (DB.creator_bills || []).filter(function (x) { return x.option_id === o.id && !x.gone; })
+              .sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];
+            return { job: jobRefOf(o), campaign: m.title || m.name || '', state: o.state, posted_on: o.posted_on || null, pay_by: o.pay_by || null,
+              bill: b ? { number: b.number, status: b.status, date: b.bill_date, amount: b.amount, currency: b.currency } : null };
+          });
+          cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpC.whatsapp || null, last: cpJson(cpLast, false), paid: cpJson(cpPaid, false),
+            days: { myr: appSet('creator_pay_days_myr', appToday()), other: appSet('creator_pay_days_other', appToday()) }, payments: cpPays };
         } else if (!cpDue(cpC.id)) cpOut = { error: 'not-due' };
         else if (cpReqs.filter(function (r) { return r.creator_id === cpC.id && Date.now() - Date.parse(r.created_at) < 86400000; }).length >= 5) cpOut = { error: 'too-many' };
         else {
