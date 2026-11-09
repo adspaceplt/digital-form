@@ -1024,17 +1024,17 @@
   var POLICY = {
     batches: { r: 'review.sets:view', i: 'review.sets:work', u: 'review.sets:work', d: 'review.sets:manage' },
     posts: { r: 'review.sets:view', i: 'review.sets:work', u: 'review.sets:work', d: 'review.sets:manage' },
-    reviews: { r: 'review.sets:view', i: 'review.sets:work', u: 'review.sets:work', d: 'review.sets:manage' },
+    reviews: { r: 'review.sets:view' },
     drive_assets: { r: 'review.sets:view', i: 'review.sets:work', u: 'review.sets:work', d: 'review.sets:manage' },
     post_versions: { r: 'review.sets:view' },
     campaigns: { r: 'campaigns.campaigns:view', i: 'campaigns.campaigns:work', u: 'campaigns.campaigns:work', d: 'campaigns.campaigns:manage' },
     campaign_options: { r: 'campaigns.campaigns:view', i: 'campaigns.campaigns:work', u: 'campaigns.campaigns:work', d: 'campaigns.campaigns:manage' },
     option_posts: { r: 'campaigns.campaigns:view', i: 'campaigns.campaigns:work', u: 'campaigns.campaigns:work', d: 'campaigns.campaigns:manage' },
-    option_reviews: { r: 'campaigns.campaigns:view', i: 'campaigns.campaigns:work', u: 'campaigns.campaigns:work', d: 'campaigns.campaigns:manage' },
+    option_reviews: { r: 'campaigns.campaigns:view' },
     campaign_deliverables: { r: 'campaigns.campaigns:view', i: 'campaigns.campaigns:work', u: 'campaigns.campaigns:work', d: '+campaigns.files_delete:work' },
     campaign_confirmations: { r: 'campaigns.campaigns:view' },
     creators: { r: 'campaigns.creators:view', i: 'campaigns.creators:work', u: 'campaigns.creators:work', d: 'campaigns.creators:manage' },
-    creator_profiles: { r: 'campaigns.creators:view', i: 'campaigns.creators:work', u: 'campaigns.creators:work', d: 'campaigns.creators:manage' },
+    creator_profiles: { r: 'campaigns.creators:view' },
     creator_profile_changes: { r: 'campaigns.creators:view' },
     option_qc: { r: 'team' },
     clients: { r: 'clients:view|review:view|campaigns:view|reports:view', i: 'clients:work', u: 'clients:work|review.settings:work' },
@@ -1636,7 +1636,7 @@
     api.single = function () { single = 'one'; return api; };
     api.maybeSingle = function () { single = 'maybe'; return api; };
 
-    var FN_ONLY = { campaign_confirmations: 1 };
+    var FN_ONLY = { campaign_confirmations: 1, reviews: 1, option_reviews: 1, creator_profiles: 1 };
     api.insert = function (row) { api.__wrote = true;
       if (FN_ONLY[table]) { rows = []; api.__err = { code: '42501', message: 'new row violates row-level security policy for table "' + table + '"' }; return api; }
 
@@ -11521,7 +11521,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .sort(function (a, b) { return Date.parse(b.created_at) - Date.parse(a.created_at); }).map(function (o) {
             var c = (DB.clients || []).filter(function (x) { return x.id === o.client_id; })[0];
             return { id: o.id, purpose: o.purpose, template: o.template, category: o.category || null, to_kind: o.to_kind || null,
-                     to_name: o.to_name, to_number: o.to_number, client_id: o.client_id || null, client: c ? c.name : null,
+                     to_name: o.to_name, to_number: (o.to_kind === 'colleague' && !opsAllowed('team', 'view') && o.to_number) ? '\u2022\u2022\u2022\u2022' + String(o.to_number).slice(-4) : o.to_number, client_id: o.client_id || null, client: c ? c.name : null,
                      state: o.state, error: o.error || null, created_at: o.created_at, sent_at: o.sent_at || null, created_by: o.created_by,
                      delivered_at: o.delivered_at || null, read_at: o.read_at || null, failed_at: o.failed_at || null,
                      fail_code: o.fail_code || null, fail_title: o.fail_title || null, ref_kind: o.ref_kind || null, ref_id: o.ref_id || null };
@@ -11946,7 +11946,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'invoice_recipients') {
         if (!args.p_client || !ivSeen(args.p_client)) return ivNo('not-found');
         var rr0 = recipientFor(args.p_client, Number(args.p_contact)) || {};
-        return ivOk({ to: rr0.email || null, cc: rr0.cc || null, options: invOptions(args.p_client, Number(args.p_contact)) });
+        var opt0 = invOptions(args.p_client, Number(args.p_contact)) || [];
+
+        if (!opsAllowed('clients.contacts', 'view')) opt0 = opt0.filter(function (o) { return o.billing || o.finance; });
+        return ivOk({ to: rr0.email || null, cc: rr0.cc || null, options: opt0 });
       }
       if (name === 'invoice_reminders') {
         var want = (args.p_contacts || []).map(Number);
