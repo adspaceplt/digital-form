@@ -8966,3 +8966,17 @@ Left for the owner: the unversioned `npm:@anthropic-ai/sdk` imports and the
 creator's unbounded signed uploads (both depend on deployed facts), and the
 client portal's one sign-in, outside this run's scope.
 
+
+### 2026-11-09 · Creator payments sheet (Creator R4)
+- The user, 2026-11-08: a row added to the payments spreadsheet on
+  approval, the full bank number in it, the columns matched by their
+  headers.
+- The values are put under the headers the sheet already holds rather than
+  a fixed column order, so the team can keep its own layout and add or move
+  a column without a release; Settings' save reads the headers back and
+  says how many take a value, so a renamed header is seen at once.
+- The rows ride `creator-mail`'s wake (the same secret, the same cron), and
+  nothing is claimed while Google is not connected, so the waiting rows
+  spend no try and are added once the token is set.
+- Its own refresh token (`GOOGLE_SHEETS_REFRESH_TOKEN`), not Meet's: the
+  calendar token was granted the Calendar scope alone.

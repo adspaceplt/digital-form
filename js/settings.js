@@ -188,6 +188,16 @@
         return parts([on + ' of ' + (d.rows || []).length + ' sent', fin && fin.to_email ? 'Finance: ' + fin.to_email : ''].filter(Boolean));
       });
     },
+    /* The payments sheet (2026-11-09): on or off, and rows added. */
+    crsheet: function () {
+      return db.rpc('creator_sheet_get').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) throw new Error('unread');
+        if (!d.on) return 'Off';
+        return parts(['On', plural(Number(d.added || 0), 'row added', 'rows added'),
+          Number(d.failed || 0) ? plural(Number(d.failed), 'row not added', 'rows not added') : ''].filter(Boolean));
+      });
+    },
     /* The meeting message (2026-10-29): who last changed its words. */
     meetmsg: function () { return window.ADspaceOps && window.ADspaceOps.meetMessageLine && window.ADspaceOps.meetMessageLine(); },
     /* Task templates (2026-10-29): the families, and how many fill a task. */
@@ -257,8 +267,10 @@
       biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids') },
       /* When a creator is paid after their post (2026-11-09). */
       biz && { id: 'creatorpay', name: 'Creator payments', kind: 'edit',
-        meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR within ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
-          'Other currencies within ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
+        meta: num('creator_pay_days_myr') == null ? '' : parts(['MYR ' + plural(num('creator_pay_days_myr'), 'working day', 'working days'),
+          'Other ' + plural(num('creator_pay_days_other'), 'working day', 'working days')]) },
+      /* Approved payment details as a row of the finance team's Google Sheet (2026-11-09). */
+      biz && { id: 'crsheet', name: 'Creator payments sheet', kind: 'edit', meta: line('crsheet') },
       biz && { id: 'followup', name: 'Follow-up limits', kind: 'edit',
         meta: lead == null ? '' : parts(['Lead ' + plural(lead, 'hour', 'hours'), 'Proposal ' + plural(prop, 'day', 'days'),
           num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
@@ -569,6 +581,7 @@
     if (a === 'numbering') { if (window.ADspaceOps && window.ADspaceOps.openNumbering) window.ADspaceOps.openNumbering(rowSay('numbering')); return; }
     if (a.indexOf('perf-') === 0) { if (window.ADspacePerf && window.ADspacePerf.openSettings) window.ADspacePerf.openSettings(a.slice(5), btn); return; }
     if (a === 'creatormail') { openCreatorMail(); return; }
+    if (a === 'crsheet') { openCrSheet(); return; }
     if (a === 'meetmsg') { if (window.ADspaceOps && window.ADspaceOps.openMeetMessage) window.ADspaceOps.openMeetMessage(btn, rowSay('meetmsg')); return; }
     if (a === 'tasktpl') { if (window.ADspaceOps && window.ADspaceOps.openTemplates) window.ADspaceOps.openTemplates(btn); return; }
     if (a === 'wording') { if (window.ADspaceCRM && window.ADspaceCRM.openWording) window.ADspaceCRM.openWording(btn); return; }
@@ -621,6 +634,53 @@
     'bad-prefix': 'Enter a prefix of 1 to 6 capital letters.', 'bad-width': 'Choose 2 to 6 digits.',
     'bad-next': 'Enter a next number of 1 or more.', 'bad-pattern': 'Enter a job reference of up to 40 characters that includes {creator} and {campaign}.',
     'bad-request-pattern': 'Enter a payment details reference of up to 40 characters that includes {creator} and {nnn}.' };
+  /* ---- Creator payments sheet (2026-11-09) ----------------------------------
+     Whether approved payment details are added as a row, the spreadsheet's
+     link and its tab; after a save the sheet's headers are read and the
+     row says how many take a value. */
+  var CS_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.',
+    'bad-sheet': 'Enter the Google Sheets link or ID.', 'bad-tab': 'Enter a tab name of up to 100 characters.',
+    'no-sheet': 'Enter the Google Sheets link or ID.',
+    'google-not-set-up': 'Google Sheets is not connected yet. Please contact an admin.',
+    'google-refused': 'Google could not open the sheet. Share it with the ADspace Google account, then try again.',
+    'needs-update': 'This feature is not available yet. Please contact an admin.' };
+  function checkCrSheet() {
+    return db.functions.invoke('creator-mail', { body: { action: 'check' } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) {
+        var d = code ? { error: code } : (r.data || {});
+        if (d.error) { rowSay('crsheet')(CS_SAID[d.error] || 'The sheet could not be read.', 'err'); return; }
+        var cols = d.columns || [], used = cols.filter(function (c) { return c.value; }).length;
+        rowSay('crsheet')('Saved. ' + used + ' of ' + plural(cols.length, 'column', 'columns') + ' in ' + d.tab + ' take a value.', used ? 'ok' : 'err');
+      });
+    }).catch(function () { rowSay('crsheet')('Saved. The sheet could not be read.', 'err'); });
+  }
+  function openCrSheet() {
+    db.rpc('creator_sheet_get').then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        rowSay('crsheet')(r.error && /function|schema cache/i.test(r.error.message) ? CS_SAID['needs-update'] : (CS_SAID[d.error] || 'Could not load.'), 'err');
+        return;
+      }
+      window.ADspaceConfirm.ask({
+        title: 'Creator payments sheet', go: 'Save', wait: true,
+        fields: [
+          { name: 'on', label: 'Add a row when payment details are approved', tick: true, value: d.on ? 'on' : '' },
+          { name: 'sheet', label: 'Google Sheets link', value: d.spreadsheet_id ? 'https://docs.google.com/spreadsheets/d/' + d.spreadsheet_id : '', required: false },
+          { name: 'tab', label: 'Tab', value: d.tab || '', required: false, note: 'Leave empty for the first tab.' }
+        ]
+      }, function (v) {
+        return db.rpc('creator_sheet_set', { p_on: v.on === 'on', p_sheet: String(v.sheet || '').trim() || null, p_tab: String(v.tab || '').trim() || null }).then(function (r2) {
+          if (r2.error) return /function|schema cache/i.test(r2.error.message) ? CS_SAID['needs-update'] : r2.error.message;
+          var e = (r2.data || {}).error;
+          if (e) return CS_SAID[e] || 'Not saved.';
+          readLine('crsheet');
+          if (v.on === 'on') checkCrSheet(); else rowSay('crsheet')('Saved.', 'ok');
+          return '';
+        }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
+      });
+    }).catch(function () { rowSay('crsheet')('Could not load.', 'err'); });
+  }
+
   /* ---- Creator emails (2026-11-08) ----------------------------------------
      The three emails a creator's payment details send: each sent or not, its
      subject and message, and the finance address Details to review goes to. */
