@@ -6736,11 +6736,12 @@
           var odd = (text.match(/\{\s*([^{}]*?)\s*\}/g) || []).filter(function (m) {
             return MEET_FIELDS.indexOf(m.replace(/[{}\s]/g, '').toLowerCase()) < 0;
           })[0];
-          return odd ? 'Unknown field ' + odd + '. Use {meeting}, {date}, {time}, {month}, {channel} or {link}.' : '';
+          return odd ? window.ADspaceWords.line.unknownField(odd, MEET_FIELDS) : '';
         }
       }, function (v) {
         return db.rpc('meeting_message_save', { p_body: String(v.body || '').trim() }).then(function (r) {
           if (r.error) return /function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+          if (r.data && r.data.error === 'unknown-field') return window.ADspaceWords.line.unknownField(r.data.field, r.data.fields);
           if (r.data && r.data.error) return MEET_SAID[r.data.error] || r.data.error;
           meetMsg.body = String(v.body || '').replace(/\r/g, '').trim();
           if (say) say('Saved.', 'ok');

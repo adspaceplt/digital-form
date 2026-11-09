@@ -164,7 +164,7 @@
     return db().rpc(name, args || {}).then(function (r) {
       if (r.error) throw r.error;
       var d = r.data || {};
-      if (d && d.error) throw { code: d.error };
+      if (d && d.error) throw { code: d.error, field: d.field, fields: d.fields };
       return d;
     });
   }
@@ -1282,6 +1282,7 @@
      confirmed, never as sent (audit 2026-11-04). */
   function neSaid(e) {
     var c = (e && (e.code || e.error)) || e;
+    if (c === 'unknown-field') return window.ADspaceWords.line.unknownField(e.field, e.fields);
     if (c === 'again' && e && /^(sending|unknown|failed)$/.test(String(e.status || ''))) return NE_SAID['not-confirmed'];
     return NE_SAID[c] || said(e);
   }
