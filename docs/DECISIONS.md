@@ -8965,6 +8965,7 @@ adding a creator or a campaign failed live (no one had since 25 Sept).
 Left for the owner: the unversioned `npm:@anthropic-ai/sdk` imports and the
 creator's unbounded signed uploads (both depend on deployed facts), and the
 client portal's one sign-in, outside this run's scope.
+- **2026-11-09 · Copy prompts on a video script.** The user shared a guide to AI short dramas (Claude writes the script, an image model the cast, MiniMax H3 on RunningHub the clips with voice, CapCut the edit) and asked how it fits. The portal already holds most of the guide's inputs (the shot table, the plan); what it lacked was the per-segment prompt. Option A chosen: build the prompts on the page, copied by hand into the video tool. Option B (RunningHub's API, clips stored and played in the animatic) held: client scripts and photos would go to a China-based service, billed in RMB, and real-cast photos cannot be likeness references. Copy review: the button read as a noun beside Play (now Copy prompts), the Avoid line was fragments (now sentences), Spoken language repeated the facts card's Language.
 
 ### 2026-11-09 · A creator's uploads are counted
 The second audit's needs-validation lead 2: a creator's code signed any

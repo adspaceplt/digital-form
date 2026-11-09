@@ -571,7 +571,8 @@
      writer answers that it is set up, with what is left today. */
   function drawAct() {
     /* Play: the scenes as an animatic, for anyone who reads the script. */
-    var play = st.scenes.length ? '<button class="btn btn-sm btn-icon" type="button" id="vsPlay">' + ICON.play + 'Play</button>' : '';
+    var play = st.scenes.length ? '<button class="btn btn-sm" type="button" id="vsPrompts">Copy prompts</button>' +
+      '<button class="btn btn-sm btn-icon" type="button" id="vsPlay">' + ICON.play + 'Play</button>' : '';
     if (!may('work') || !st.drawReady) return play ? '<span class="vs-draw">' + play + '</span>' : '';
     return '<span class="vs-draw"><span class="vs-draw-left" id="vsDrawLeft">' + (st.drawLeft == null ? '' : esc(String(st.drawLeft)) + ' left today') + '</span>' +
       play + '<button class="btn btn-sm btn-icon" type="button" id="vsDraw">' + AI_GLYPH + 'Draw with AI</button></span>';
@@ -898,6 +899,7 @@
     });
     if ($('vsDraw')) $('vsDraw').addEventListener('click', function () { drawWithAi($('vsDraw')); });
     if ($('vsPlay')) $('vsPlay').addEventListener('click', function () { openPlay($('vsPlay')); });
+    if ($('vsPrompts')) $('vsPrompts').addEventListener('click', function () { openPrompts($('vsPrompts')); });
   }
   /* Is the picture writer set up? Asked once a visit, counting nothing. */
   function pingDraw() {
@@ -1081,6 +1083,123 @@
       b.disabled = false; $('vsPlayGo').disabled = false;
     });
   });
+
+  /* Video prompts (2026-11-09; the user: "A"): the script's scenes as
+     prompts for an AI video model the team runs outside the portal, one a
+     segment of 5 to 15 seconds, in the shape the team's short drama guide
+     sets out (references, positions, picture by the second, sound, what to
+     avoid). Built on the page from the script as it stands: nothing is
+     sent anywhere and no AI use is counted. Words the script does not hold
+     (who stands where, which picture is which) are left in brackets for
+     the person to fill. */
+  var PW = {
+    en: { seg: 'Segment', secs: ' seconds', scenes: 'Scenes', scene: 'Scene', whole: 'Whole video', refs: 'References', voice: 'Voices',
+          pos: 'Positions', pic: 'Picture', sound: 'Sound', avoid: 'Avoid', says: 'says', vo: 'Narrator voice-over', fx: 'Sound effect',
+          ratio: 'Aspect ratio', length: 'Video length', message: 'Core message', products: 'Products and context', story: 'Hook and story',
+          cast: 'Cast roles', locs: 'Locations', props: 'Props', lang: 'Language',
+          refFill: '@Image1: (the main character’s identity board) @Image2: (this segment’s location)',
+          voiceFill: '(For each speaking role: age, tone, pace. Copy the same line into every segment.)',
+          posFill: '(Who stands left and right, where the door is, which side the camera is on, who holds each prop.)',
+          voRead: 'continues, read from the script’s voice-over for these seconds',
+          avoidLine: 'No one who is not in the script. Props stay with whoever holds them and stay in view. No one changes position between shots. Lines as written. No subtitles or background music.',
+          sep: ': ', q: ['“', '”'], unit: 's', open: '[', shut: '] ' },
+    zh: { seg: '素材段落', secs: '秒', scenes: '镜头', scene: '镜头', whole: '整支视频', refs: '参考', voice: '声音描述',
+          pos: '站位', pic: '画面', sound: '声音', avoid: '禁止', says: '说', vo: '旁白画外音', fx: '音效',
+          ratio: '画面比例', length: '视频时长', message: '核心信息', products: '产品与场景', story: '开场与故事',
+          cast: '角色', locs: '场景', props: '道具', lang: '语言',
+          refFill: '@图片1：（主角的身份板） @图片2：（这一段的场景图）',
+          voiceFill: '（每个说话的角色一句：年龄、音色、语速，每一段原样复制）',
+          posFill: '（谁在左、谁在右，门在哪边，摄影机在哪一侧，道具在谁手里）',
+          voRead: '继续，读脚本旁白中这几秒的部分',
+          avoidLine: '不加脚本里没有的人，道具不换手、不消失，人物不瞬移，不改台词，不要字幕和音乐。',
+          sep: '：', q: ['「', '」'], unit: '秒', open: '【', shut: '】' }
+  };
+  var SHOT_ZH = { 'Extreme wide': '大远景', 'Wide': '全景', 'Medium': '中景', 'Medium close-up': '中近景',
+                  'Close-up': '近景', 'Extreme close-up': '特写', 'Insert': '细节镜头',
+                  'Eye level': '平视', 'High angle': '俯拍', 'Low angle': '仰拍', 'Overhead': '顶拍',
+                  'From behind': '背后拍', 'Over the shoulder': '过肩镜头', 'Through objects': '透过物体拍', 'Point of view': '主观镜头' };
+  /* Each scene's seconds as Play counts them, then scenes gathered in order
+     into segments: up to 15 seconds and four scenes each. */
+  function promptSegments(s) {
+    var n = st.scenes.length, each = s.length_seconds && n ? s.length_seconds / n : 3, out = [], cur = null;
+    st.scenes.forEach(function (sc, i) {
+      var secs = sc.t_to != null && sc.t_from != null && Number(sc.t_to) > Number(sc.t_from) ? Number(sc.t_to) - Number(sc.t_from) : each;
+      secs = Math.max(1, Math.min(15, secs));
+      if (!cur || cur.secs + secs > 15.01 || cur.list.length === 4) { cur = { secs: 0, list: [] }; out.push(cur); }
+      cur.list.push({ n: i + 1, sc: sc, secs: secs });
+      cur.secs += secs;
+    });
+    out.forEach(function (g) { g.secs = Math.max(5, Math.min(15, Math.round(g.secs))); });
+    return out;
+  }
+  function promptWhole(s, lang) {
+    var w = PW[lang], p = s.plan || {}, rows = [];
+    if (s.aspect) rows.push(w.ratio + w.sep + s.aspect);
+    if (s.length_seconds) rows.push(w.length + w.sep + s.length_seconds + w.unit);
+    if (s.language) rows.push(w.lang + w.sep + langWord(s.language));
+    if (p.core_message) rows.push(w.message + w.sep + p.core_message);
+    if (p.cast) rows.push(w.cast + w.sep + p.cast);
+    if (p.locations) rows.push(w.locs + w.sep + p.locations);
+    if (p.props) rows.push(w.props + w.sep + p.props);
+    if (CONTEXT_WORD[s.kind] && s.context) rows.push((s.kind === 'story' ? w.story : w.products) + w.sep + s.context);
+    if (s.kind === 'story' && s.vo) rows.push(w.vo + w.sep + w.q[0] + s.vo + w.q[1]);
+    return rows.length ? w.open + w.whole + w.shut.trim() + '\n' + rows.join('\n') : '';
+  }
+  function promptOf(s, g, k, lang) {
+    var w = PW[lang], zh = lang === 'zh', t = 0, pic = [], sound = [];
+    var tr = function (v) { return zh && SHOT_ZH[v] ? SHOT_ZH[v] : v; };
+    g.list.forEach(function (x) {
+      var sc = x.sc, a = Math.round(t), b = Math.round(t + x.secs);
+      t += x.secs;
+      var cam = [tr(sc.shot_size), tr(sc.angle), sc.camera_move].filter(Boolean).join(zh ? '，' : ', ');
+      var seen = String(sc.visual || '').trim();
+      pic.push(a + '–' + b + w.unit + w.sep + [cam, seen].filter(Boolean).join(zh ? '。' : '. ') + (seen && !/[.。!?！？]$/.test(seen) ? (zh ? '。' : '.') : ''));
+      if (s.kind === 'scenes' && String(sc.line || '').trim()) sound.push((zh ? '（' + w.scene + x.n + '）' : '(' + w.scene + ' ' + x.n + ') ') + w.q[0] + sc.line.trim() + w.q[1]);
+      if (sc.sound) sound.push(w.fx + w.sep + sc.sound);
+    });
+    if (s.kind === 'story' && s.vo) sound.unshift(w.vo + ' ' + w.voRead);
+    var nums = g.list[0].n + (g.list.length > 1 ? '–' + g.list[g.list.length - 1].n : '');
+    var L = function (x) { return w.open + x + w.shut; };
+    return [w.open + w.seg + ' ' + k + w.shut.trim() + (zh ? '（' : ' (') + g.secs + w.secs + (zh ? '）' : ')') + ' · ' + (g.list.length > 1 ? w.scenes : w.scene) + ' ' + nums,
+            L(w.refs) + w.refFill,
+            L(w.voice) + w.voiceFill,
+            L(w.pos) + w.posFill,
+            w.open + w.pic + w.shut.trim() + '\n' + pic.join('\n'),
+            w.open + w.sound + w.shut.trim() + (sound.length ? '\n' + sound.join('\n') : (zh ? '无' : ' None')),
+            L(w.avoid) + w.avoidLine].join('\n');
+  }
+  var PROMPTS = { list: [], whole: '' };
+  function paintPrompts() {
+    var s = st.open, lang = $('vsPromptLang').value === 'zh' ? 'zh' : 'en', segs = promptSegments(s);
+    PROMPTS.whole = promptWhole(s, lang);
+    PROMPTS.list = segs.map(function (g, i) { return promptOf(s, g, i + 1, lang); });
+    var head = PROMPTS.whole ? [{ title: 'Whole video', text: PROMPTS.whole }] : [];
+    var items = head.concat(PROMPTS.list.map(function (t, i) {
+      return { title: 'Segment ' + (i + 1), text: t };
+    }));
+    $('vsPromptCount').textContent = segs.length + (segs.length === 1 ? ' segment' : ' segments');
+    $('vsPromptList').innerHTML = items.map(function (x, i) {
+      return '<section class="vs-prompt"><div class="vs-prompt-head"><h4 class="fsec-h">' + esc(x.title) + '</h4>' +
+        '<button class="btn btn-sm btn-icon" type="button" data-pc="' + i + '">' + ICON.copy + 'Copy</button></div>' +
+        '<pre class="vs-prompt-text">' + esc(x.text) + '</pre></section>';
+    }).join('');
+    Array.prototype.forEach.call($('vsPromptList').querySelectorAll('[data-pc]'), function (b) {
+      b.addEventListener('click', function () { window.ADspaceCopy.to(b, items[Number(b.getAttribute('data-pc'))].text); });
+    });
+  }
+  function openPrompts(opener) {
+    var s = st.open;
+    if (!s || !st.scenes.length) return;
+    $('vsPromptTitle').textContent = 'Copy prompts';
+    paintPrompts();
+    window.ADspaceSheet.show($('vsPromptSheet'), { opener: opener || null });
+  }
+  $('vsPromptLang').addEventListener('change', function () { if (st.open) paintPrompts(); });
+  $('vsPromptAll').addEventListener('click', function () {
+    window.ADspaceCopy.to($('vsPromptAll'), [PROMPTS.whole].concat(PROMPTS.list).filter(Boolean).join('\n\n'));
+  });
+  $('vsPromptCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('vsPromptClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
   function wireRecord() {
     var on = onAct;
