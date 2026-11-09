@@ -169,7 +169,7 @@
       sizeMany: '{n}个文件超过 {mb} MB 上限。',
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n}个文件上传失败，请重试。',
-      uploadMany: '此合作今日的上传已达上限，请明天再试，或联系 ADspace。',
+      uploadMany: '此合作今日的上传数量已达上限，请明天再试或联系 ADspace。',
 
       since: '{d} 起合作',
       bookingsN: function (n) { return n + '个合作'; },
