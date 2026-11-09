@@ -53,7 +53,8 @@
                      ['cta', 'Call to action'], ['must_include', 'Must include'], ['must_avoid', 'Must avoid'], ['tone', 'Tone'], ['format', 'Format']];
   function wordOf(list, k) { var m = list.filter(function (x) { return x[0] === k; })[0]; return m ? m[1] : k; }
   /* A second into the video as the crew reads it: 0:03. */
-  function clockOf(n) { n = Number(n); return Math.floor(n / 60) + ':' + ('0' + (n % 60)).slice(-2); }
+  /* Seconds as m:ss (one copy: a second, below, once replaced this one). */
+  function clockOf(t) { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); }
   function timeOf(sc) {
     if (sc.t_from == null && sc.t_to == null) return '';
     return (sc.t_from == null ? '' : clockOf(sc.t_from)) + (sc.t_to == null ? '' : '\u2013' + clockOf(sc.t_to));
@@ -1011,7 +1012,6 @@
      three seconds), its best picture moved as its camera moves, with its
      on-screen text. Download records the same in the browser. */
   var PLAY = { player: null, rec: false };
-  function clockOf(t) { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + ('0' + (t % 60)).slice(-2); }
   function playItems(s) {
     var n = st.scenes.length, F = window.ADspaceFrames;
     var each = s.length_seconds && n ? s.length_seconds / n : 3;

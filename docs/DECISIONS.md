@@ -9125,3 +9125,25 @@ not put back; the permission and not-available lines are read from
 `ADspaceWords.line`. The stand-in filed a creator payment setting with no
 word for it and threw; it has one now. Held: the Website quotations row
 (its figure limits nothing since 2026-10-26) and Departments' list.
+
+### 2026-11-10: the day's gate findings, one function name declared twice
+The overnight full gate on 2a6b928 failed seven suites outside the Settings
+releases. Four (sql, bukkufn, results, demo) were the tests repo holding the
+Creator payments review fixes before their release merged; three were
+tests that still asked for what later releases changed on purpose: the old
+per-booking payment line (`results`; the page's own card on its Payments
+tab since 2026-11-08), `#crmSales` read as the removed Sales view
+(`sales`; the Sales by filter since 2026-11-09), and exactly two hashes in
+documents.js (`pdflibhash`; pdf.js's two files pinned beside them since
+2026-11-07). Each now names what it guards. uxaudit crashed asking for the
+creator page's Payments tab on a creator with nothing posted; the walk
+takes it on its posted booking, where the stand-in also gives a campaign a
+seed added late its Campaign ID, as the database does. `sgd` found a real
+fault: Creator R3 declared `money(n, cur)` for a bill's amount in
+campaigns.js, and a second declaration of a name replaces the first for
+every caller, so a campaign billed in S$ read its creators' rates as RM.
+It is `billMoney` now, and `camp`'s foot total, which R3 had moved to the
+wrong figure (RM 935.00) to pass, reads RM 935 again; the same pass found `clockOf` declared twice in
+scripts.js (alike in effect), now once. `tests/jsdupes.js` fails any
+script declaring a function twice at its top level.
+
