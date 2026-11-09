@@ -564,16 +564,17 @@ section holds only what is true of the project as a whole.
   and 390 hold both sides of it; 2026-10-18, to keep the daily gate short).
 
 ### Open security findings
-- The audit of 2026-11-07 (run 1, 0a858d0): its eight confirmed findings
-  and the two `javascript:` file-link leads closed the same day
-  (`docs/DECISIONS.md`). Open: media passes and private links share one
-  CloudFront key group, so a CDN path quirk could reach `private/` (the
-  owner checks `--path-as-is` dot-segment requests, or gives `private/` its
-  own key group); and seven areas the critics accepted were not hunted
-  (other console screens, direct table writes and storage policies, the
-  WhatsApp log's colleague numbers, console sessions, anonymous write
-  volume, edge-function import pinning, the Settings, Scripts, Checklists,
-  Handbook and Invoices functions), for a second run.
+- The audit of 2026-11-07 (run 1, 0a858d0) and its scoped second run of
+  2026-11-09 (5bd5452, the seven areas run 1 left): every confirmed finding
+  of both closed the day it was found (`docs/DECISIONS.md`). Open, each the
+  owner's to check: media passes and private links share one CloudFront key
+  group (`--path-as-is` dot-segment requests, or a key group of its own for
+  `private/`); seven edge functions import `npm:@anthropic-ai/sdk` with no
+  version and none has a lock file (pin each to the version deployed, read
+  back from the live bundle); a creator's code mints signed 2 GB uploads
+  with no count a booking (S3 lifecycle, AWS Budgets, the function's rate
+  limit). Not yet hunted: the client portal's one sign-in (`portal_work`,
+  `portal_link_pass`, its sign-out), new since run 1.
 - None open from the audit of 2026-10-16's five must-fix findings: 1
   (`delete_client` refused no one), 2 (a creator's file address drawn
   unescaped in the console), 3 (a post link holding a quote) and 4

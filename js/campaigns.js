@@ -433,7 +433,7 @@
       var profs = c.creator_profiles || [];
       var links = profs.map(function (p) {
         var h = String(p.handle || '');
-        return '<a class="plink plink-bare" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+        return '<a class="plink plink-bare" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' +
           esc(PLATFORM_LABEL[p.platform] || p.platform) +
           (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + EXT + '</a>';
       }).join('');
@@ -514,7 +514,7 @@
               '<button class="btn btn-sm" type="button" data-restore="' + esc(h.id) + '">Restore</button></div>' +
             '<ul class="lhist-diff">' + d.map(function (x) {
               return '<li><span class="tone ' + x.tone + '">' + x.word + '</span> ' +
-                esc(PLATFORM_LABEL[x.p.platform] || x.p.platform) + ' <a class="plink" href="' + esc(x.p.url) + '" target="_blank" rel="noopener">' + esc(x.p.url.replace(/^https?:\/\/(www\.)?/i, '')) + '</a></li>';
+                esc(PLATFORM_LABEL[x.p.platform] || x.p.platform) + ' <a class="plink" href="' + esc(absUrl(x.p.url)) + '" target="_blank" rel="noopener">' + esc(x.p.url.replace(/^https?:\/\/(www\.)?/i, '')) + '</a></li>';
             }).join('') + '</ul>' +
           '</div>';
         }).join('');

@@ -1405,6 +1405,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     into an empty table.
   - Admin alone is ensured on every run.
   - `on conflict do nothing` does not protect a deleted row.
+- A record whose rows are written only by security-definer functions takes
+  no direct write policy (`with check (false)`): `reviews`,
+  `option_reviews` and `creator_profiles` as `campaign_confirmations`
+  (security audit 2026-11-09: a colleague at Work filed approvals as the
+  client's and stored any profile link); a post's `round` moves only by
+  the database (`posts_round_guard`, run as the caller).
+- A trigger that calls a function closed to `authenticated` is security
+  definer itself (2026-11-09: the creator and campaign ID triggers called
+  `id_take` as the colleague, so adding either failed).
 - Every `ops_`/`perf_` write goes through a security-definer function. The
   tables carry a select policy only, or no policy at all (`perf_`).
 - Supabase grants EXECUTE on every new function to `anon` and
@@ -7217,7 +7226,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`wa_may_send`, `ADspaceWhatsApp.may`); at No Access no record offers
   WhatsApp. Groups started once: Admin Full Access, Clients Work or above
   Work, Clients View View, else none.
-- Messages (the landing view, `wa_messages(p_month)`, client scope): one
+- Messages (the landing view, `wa_messages(p_month)`, client scope; a
+  colleague recipient's number reads as its last four digits without Team
+  View, security audit 2026-11-09): one
   table of the chosen month's messages (Malaysia time, read from
   `ADspaceClock`, `9 Oct, 2:05pm`), never a card naming the month again,
   newest first (2026-10-22, WA-2, WA-3), a row who it

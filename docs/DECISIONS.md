@@ -8893,3 +8893,33 @@ user: "all four shows same width left right").
   (`creator-mail`), woken as the WhatsApp queue is; the page sends no words.
   They join the existing status webhook, sweep, retention and Email log
   rather than a parallel copy.
+
+### 2026-11-09 · The scoped second audit and its fixes
+The user scheduled a second run of the security audit (Cloudflare's
+security-audit skill, run 2 on 5bd5452) for the seven areas run 1 left for
+budget, and asked that confirmed findings be fixed and released as #942
+was. Nine hunters, three coverage critics (the last a clean pass), and two
+independent verifications of every record. Five confirmed, all low, each
+reproduced on a throwaway Postgres or in a sandboxed browser and fixed:
+- The Access denied cover's Sign out kept the media pass, notes, drafts and
+  drawn PDFs the account menu's Sign out clears: both, and a session lost
+  while open, now run one routine (`forgetLocal`).
+- `reviews` and `option_reviews` took direct writes at Work, so a colleague
+  could file an approval as the client's under the client's name, or turn
+  a request for changes into an approval, with no Activity record: closed
+  as `campaign_confirmations` was. The verifier rejected a sibling lead
+  (moving `posts.round` back) as the same capability; once the policies
+  closed it would have been the remaining path, so a caller-rights trigger
+  holds the round to the database.
+- `creator_profiles` took direct writes, skipping `profile_of`: closed,
+  the column held to https, and the three profile links drawn through
+  `absUrl`.
+- `invoice_recipients` listed every contact to Billing without Contacts.
+- `wa_messages` returned colleagues' mobiles to every Messages reader.
+Found beside them, not a security finding: the creator and campaign ID
+triggers ran as the colleague and called `id_take`, closed to them, so
+adding a creator or a campaign failed live (no one had since 25 Sept).
+Left for the owner: the unversioned `npm:@anthropic-ai/sdk` imports and the
+creator's unbounded signed uploads (both depend on deployed facts), and the
+client portal's one sign-in, outside this run's scope.
+
