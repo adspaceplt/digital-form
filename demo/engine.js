@@ -3182,6 +3182,8 @@ function cardSlugFree(name, self, email) {
   function billMarket(c) { return c && String(c.market || "").toUpperCase() === "SG" && c.bill_sgd ? "SG" : "MY"; }
 
   function jobRefOf(o) {
+
+    idBackfill();
     var c = (DB.creators || []).filter(function (x) { return x.id === o.creator_id; })[0];
     var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
     var f = (DB.id_formats && DB.id_formats.job && DB.id_formats.job.pattern) || '{creator}/{campaign}';

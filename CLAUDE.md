@@ -413,6 +413,9 @@ added to all three in the same push.
 - A word table holds one key a word: a new field's label takes a key of
   its own, grepped in the table first (2026-10-29: /quote/'s Planned
   commencement took `start`, and the opening page's Start button read it).
+- A function's name is declared once in its script: a second declaration
+  of the same name replaces the first for every caller (2026-11-09 form.js's
+  `shape`, 2026-11-10 campaigns.js's `money`); `tests/jsdupes.js` holds it.
 - A function removed is first grepped by name across the suites with no
   cap on the output: a suite that cuts a script at `'  function name('`
   uses it (2026-10-19: `smsql` cut `periodWord` at `mix`).

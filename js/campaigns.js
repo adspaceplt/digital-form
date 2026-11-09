@@ -690,7 +690,9 @@
       paintJobs();
     }).catch(function (e) { if (btn) btn.disabled = false; UI.failLine(host, 'The payments', e.message, function () { readJobs(fresh); }); });
   }
-  function money(n, cur) {
+  /* A bill's amount in its own currency (named apart from money(n), the
+     campaign's, which a second declaration of the same name replaced). */
+  function billMoney(n, cur) {
     if (n == null) return '';
     return (cur === 'SGD' ? 'S$ ' : cur && cur !== 'MYR' ? cur + ' ' : 'RM ') + Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
@@ -709,7 +711,7 @@
       else st = '<span class="chip-state is-off">Not due</span>';
       var sub = [esc(j.campaign || '')];
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
-      var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(money(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
+      var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
         : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
       return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
         '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
@@ -725,7 +727,7 @@
         return '<div class="cpay-job"><div class="cpay-job-l"><span class="cpay-job-ref">' + esc(b.number || '') + '</span>' +
           '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
           '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
-          (b.amount != null ? '<span class="cpay-job-sub">' + esc(money(b.amount, b.currency)) + '</span>' : '') + '</div>' +
+          (b.amount != null ? '<span class="cpay-job-sub">' + esc(billMoney(b.amount, b.currency)) + '</span>' : '') + '</div>' +
           (work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
       }).join('');
     }
