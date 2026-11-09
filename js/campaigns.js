@@ -558,7 +558,7 @@
      Work (`creator_pay_decide`), a decline asking its reason, which the
      creator reads. */
   var payFor = null, payRows = null, payOpener = null;
-  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (passport)', brn: 'Company' };
+  var PAY_KIND = { nric: 'Individual (NRIC)', passport: 'Individual (Passport)', brn: 'Company' };
   var PAY_STATE = { pending: ['To review', 'is-warn'], approved: ['Approved', 'is-ok'], declined: ['Declined', 'is-danger'],
     replaced: ['Replaced', 'is-off'], withdrawn: ['Withdrawn', 'is-off'] };
   var PAY_MAIL = { received: 'Details received', review: 'Details to review', approved: 'Details approved',
@@ -610,7 +610,7 @@
           (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
           fact('Reason', cur.status === 'declined' ? cur.note : '') +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
-          fact(cur.bill_kind === 'brn' ? 'Registration no.' : cur.bill_kind === 'passport' ? 'Passport no.' : 'NRIC no.', cur.id_no || 'Ending ' + cur.id_end) +
+          fact(cur.bill_kind === 'brn' ? 'Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
           fact('Billing address', cur.address) +

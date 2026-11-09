@@ -50,9 +50,9 @@
     'billing-access': 'Approving fills in Billing, which you do not have permission to change. Please ask the chosen reviewer or an admin.',
     'bad-day': 'Choose the day it was signed, from the day it was issued to today.',
     'bad-scan': 'Enter the scan as a web address starting https://.',
-    'bad-legal_name': 'Enter the registered name.', 'bad-company_no': 'Enter the registration number: 6 to 20 letters or digits.',
-    'bad-company_no_old': 'Enter the old registration number: 4 to 20 letters or digits.',
-    'bad-tin': 'Enter the TIN: 6 to 20 letters or digits.', 'bad-sst_no': 'Enter the SST number: 6 to 25 letters or digits.',
+    'bad-legal_name': 'Enter the Registered Company Name.', 'bad-company_no': 'Enter the Registration Number: 6 to 20 letters or digits.',
+    'bad-company_no_old': 'Enter the Old Registration Number: 4 to 20 letters or digits.',
+    'bad-tin': 'Enter the TIN: 6 to 20 letters or digits.', 'bad-sst_no': 'Enter the SST Number: 6 to 25 letters or digits.',
     'bad-billing_address': 'Enter the billing address in full.', 'bad-finance_email': 'Enter a valid email address.',
     'bad-contact_salutation': 'Choose a salutation from the list.', 'bad-contact_name': 'Enter the billing contact\'s name.',
     'bad-contact_phone': 'Enter the billing contact\'s phone number.', 'bad-contact_email': 'Enter a valid email address.',
@@ -682,8 +682,8 @@
      approves (Billing filled where it was empty, the lines confirmed) or
      sends it back with a note. */
   var PEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
-  var CO = [['legal_name', 'Registered name'], ['company_no', 'Registration no.'], ['company_no_old', 'Old registration no.'],
-    ['tin', 'TIN'], ['sst_no', 'SST no.'], ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
+  var CO = [['legal_name', 'Registered Company Name'], ['company_no', 'Registration No.'], ['company_no_old', 'Old Registration No.'],
+    ['tin', 'TIN'], ['sst_no', 'SST No.'], ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var CO_NEED = { legal_name: 1, company_no: 1, billing_address: 1 };
   /* The company as the database holds it (the details form's reading). */
   function coNorm(k, v) {

@@ -53,7 +53,7 @@
     'not-held': 'Bukku and the portal hold different details. Choose Send to Bukku or Use Bukku\'s first.',
     stale: 'Not saved. This record was changed in Bukku. The latest version is now shown.',
     'bad-email': 'Enter a valid email address.',
-    'no-name': 'Enter the company name as registered.',
+    'no-name': 'Enter the Registered Company Name.',
     'no-address': 'Enter the billing address.',
     'bad-contact': 'Choose one of the client\'s contacts.',
     'not-linked': 'This record is no longer linked to Bukku. Refresh the page.',
@@ -83,8 +83,8 @@
 
   /* What was last read from Bukku, a record at a time, for this visit. */
   var READ = {};
-  var WORD = { legal_name: 'Registered name', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
-    tin: 'TIN', sst_no: 'SST registration no.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
+  var WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
+    tin: 'TIN', sst_no: 'SST Registration No.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
   function held(kind, id) { var r = READ[kind + ':' + id]; return r && r.held && !r.error && r.hash ? r : null; }
   function state(kind, id) {
     var r = READ[kind + ':' + id];
@@ -350,7 +350,7 @@
   }
   function shut() { if (sheet) sheet.hidden = true; if (window.ADspaceSheet && window.ADspaceSheet.isOpen(sheet)) window.ADspaceSheet.close(); cur = null; }
   function say(text, tone) { var m = $('bkMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (text && tone ? ' ' + tone : ''); } }
-  var WHY = { brn: 'Same registration no.', name: 'Same name', similar: 'Similar name' };
+  var WHY = { brn: 'Same Registration No.', name: 'Same name', similar: 'Similar name' };
 
   function send(kind, id, btn, done) {
     build();

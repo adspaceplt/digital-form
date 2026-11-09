@@ -397,10 +397,10 @@
   /* The database answers in one word; the console says what it means. */
   var ISSUE_WORD = {
     'bad-entity': 'That billing entity no longer bills this client. Close the sheet and open it again.',
-    'entity-incomplete': 'The billing entity needs its registered name, registration no. and billing address. Complete it on Billing first.',
+    'entity-incomplete': 'The billing entity needs its Registered Company Name, Registration No. and billing address. Complete it on Billing first.',
     'not-allowed': 'You do not have permission to issue a letter.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
-    'needs-billing': 'Add the registered company name, business registration no., billing address and a billing contact on Billing before issuing a Letter of Offer.',
+    'needs-billing': 'Add the Registered Company Name, Business Registration No., billing address and a billing contact on Billing before issuing a Letter of Offer.',
     'no-client': 'That client could not be found.',
     'no-lines': 'Choose at least one service.',
     'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',

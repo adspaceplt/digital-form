@@ -561,6 +561,7 @@
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
+    creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
@@ -1543,7 +1544,7 @@
         });
         if (blocked) {
           rows = [];
-          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this registration no. already exists. Add that entity instead.', hint: 'brn-taken' }
+          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this Registration No. already exists. Add that entity instead.', hint: 'brn-taken' }
             : { code: 'P0001', message: blocked };
           return api;
         }
@@ -2968,8 +2969,8 @@ function cardSlugFree(name, self, email) {
     return ks[0] || null;
   }
 
-  var BK_WORD = { legal_name: 'Registered name', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
-    tin: 'TIN', sst_no: 'SST registration no.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
+  var BK_WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
+    tin: 'TIN', sst_no: 'SST Registration No.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
   var BK_ORDER = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
   function bkLinkRow(k, id) {
     var L = DB.bukku_links || [];
@@ -8347,7 +8348,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (DB.bukku_links_gone) DB.bukku_links_gone = DB.bukku_links_gone.filter(function (g) { return !(g.kind === 'entity' && g.record_id === eg.id); });
       DB.billing_entities.splice(DB.billing_entities.indexOf(eg), 1);
       DB.activity_log.unshift({ id: nid('al'), actor: egMe.name, action: 'client.billing', subject: egC.name,
-        detail: 'Billing entity deleted: ' + (eg.legal_name || 'no registered name'), created_at: new Date().toISOString() });
+        detail: 'Billing entity deleted: ' + (eg.legal_name || 'no Registered Company Name'), created_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }
@@ -8467,8 +8468,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (enDigits(sv.company_no) && enDigits(sv.company_no) !== enDigits(ent.company_no)) {
           var held2 = enHeld(sv.company_no, ent.id); if (held2) return enAns({ error: 'brn-taken', entity: { id: held2.id, legal_name: held2.legal_name } });
         }
-        var WORD = { legal_name: 'Company name as registered', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
-          tin: 'TIN', sst_no: 'SST registration no.', bill_contact_id: 'Billing contact', finance_email: 'Finance department email', billing_address: 'Company billing address' };
+        var WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
+          tin: 'TIN', sst_no: 'SST Registration No.', bill_contact_id: 'Billing contact', finance_email: 'Finance department email', billing_address: 'Company billing address' };
         var mv = ENT_COLS.filter(function (f) { return entNull(ent[f]) !== entNull(sv[f]); });
         if (!mv.length) return enAns({ ok: true, updated_at: ent.updated_at });
         mv.forEach(function (f) { ent[f] = entNull(sv[f]); });
@@ -9285,6 +9286,38 @@ function opsCodeRange(cid, period, ty, src, seq) {
         body: fill(t.body), status: 'queued', created_at: new Date().toISOString() });
     }
 
+    if (/^creator_sheet_/.test(name)) {
+      var csA = args || {}, csOut;
+      DB.creator_sheet_settings = DB.creator_sheet_settings || { on_send: true, spreadsheet_id: '1UDXqCkUZQ-cyfB5j7dEvf2p7fmJZeIYZiWL6_byi-HA', tab: null };
+      DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+      var csS = DB.creator_sheet_settings;
+      if (name === 'creator_sheet_claim' || name === 'creator_sheet_done') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function ' + name } });
+      if (name === 'creator_sheet_state') {
+        csOut = !opsMe() || !opsAllowed('campaigns.creators', 'view') ? { error: 'denied' } : { ok: true, rows: DB.creator_sheet_rows.map(function (x) {
+          var rq = (DB.creator_pay_requests || []).filter(function (q) { return q.id === x.request_id; })[0];
+          return rq && rq.creator_id === csA.p_creator ? { request: rq.id, ref: rq.ref, status: x.status, added_at: x.added_at || null } : null; }).filter(Boolean) };
+      } else if (!opsGranted('team.settings', 'work')) csOut = { error: 'denied' };
+      else if (name === 'creator_sheet_get') {
+        csOut = { ok: true, on: csS.on_send, spreadsheet_id: csS.spreadsheet_id, tab: csS.tab,
+          added: DB.creator_sheet_rows.filter(function (x) { return x.status === 'added'; }).length,
+          waiting: DB.creator_sheet_rows.filter(function (x) { return x.status === 'queued'; }).length, failed: DB.creator_sheet_rows.filter(function (x) { return x.status === 'failed'; }).length };
+      } else {
+        var csId = String(csA.p_sheet || '').trim() || null, csTab = String(csA.p_tab || '').trim() || null, csMv = [];
+        var csM = csId && /\/spreadsheets\/d\/([A-Za-z0-9_-]+)/.exec(csId); if (csM) csId = csM[1];
+        if (csId && !/^[A-Za-z0-9_-]{20,100}$/.test(csId)) csOut = { error: 'bad-sheet' };
+        else if (csA.p_on && !csId) csOut = { error: 'bad-sheet' };
+        else if (csTab && csTab.length > 100) csOut = { error: 'bad-tab' };
+        else {
+          if (csS.on_send !== !!csA.p_on) csMv.push('Add rows: ' + (csS.on_send ? 'On → Off' : 'Off → On'));
+          if (csS.spreadsheet_id !== csId) csMv.push('Google Sheets link changed');
+          if ((csS.tab || null) !== csTab) csMv.push('Tab: ' + (csS.tab || 'First tab') + ' → ' + (csTab || 'First tab'));
+          if (csMv.length) { csS.on_send = !!csA.p_on; csS.spreadsheet_id = csId; csS.tab = csTab; logAct('team.changed', 'Creator payments sheet', csMv.join(' · ')); }
+          csOut = { ok: true };
+        }
+      }
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(csOut)), error: null });
+    }
     if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
       var cbA = args || {}, cbOut;
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
@@ -9387,6 +9420,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var cpDc = DB.creators.filter(function (x) { return x.id === cpD.creator_id; })[0] || {};
           logAct('creator.updated', cpDc.name, (cpDc.creator_code ? cpDc.creator_code + ' · ' : '') + 'Payment details ' + (cpA.p_ok ? 'approved' : 'declined') + ' · ' + cpD.ref + (cpNote ? ' · ' + cpNote : ''));
           if (cpA.p_ok) cpQueue('approved', cpD);
+
+          if (cpA.p_ok && (!DB.creator_sheet_settings || DB.creator_sheet_settings.on_send)) {
+            DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+            if (!DB.creator_sheet_rows.some(function (x) { return x.request_id === cpD.id; })) DB.creator_sheet_rows.push({ id: nid('cs'), request_id: cpD.id, status: 'queued', created_at: new Date().toISOString() });
+          }
           cpOut = { ok: true };
         }
       } else if (!opsGranted('team.settings', 'work')) cpOut = { error: 'denied' };
@@ -10705,7 +10743,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
           }
           Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
-          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Company name as registered', company_no: 'Business registration no.', company_no_old: 'Old registration no.', tin: 'TIN', sst_no: 'SST registration no.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
@@ -12123,7 +12161,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var ph = DB.clients.filter(function (x) { return x.id === entHome(pe.id); })[0] || {};
           var pk = entContact(pe.id) || {};
           var pmiss = [];
-          if (!pe.legal_name) pmiss.push('Registered name');
+          if (!pe.legal_name) pmiss.push('Registered Company Name');
           if (!ph.client_code) pmiss.push('Client ID');
           if (pmiss.length) return bkNo('incomplete', { missing: pmiss });
           var psh = bkLink ? null : bkShared('entity', pe.id);
@@ -12136,7 +12174,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bc = DB.clients.filter(function (x) { return x.id === args.p_id; })[0];
           if (!bc) return bkNo('not-found');
           var miss = [];
-          if (!bc.legal_name) miss.push('Registered name');
+          if (!bc.legal_name) miss.push('Registered Company Name');
           if (!bc.client_code) miss.push('Client ID');
           if (miss.length) return bkNo('incomplete', { missing: miss });
           var bck = (DB.client_contacts || []).filter(function (t) { return t.client_id === bc.id && !t.archived_at && (t.id === bc.bill_contact_id); })[0] ||
@@ -13857,6 +13895,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return Promise.resolve({ data: { draft: cbOut, left: cbR.left - 1 }, error: null });
         }
 
+        if (name === 'creator-mail') {
+          var cmb = (opts && opts.body) || {};
+          if (cmb.action !== 'check') return Promise.resolve({ data: { error: 'denied' }, error: null });
+          if (!opsMe() || !opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+          if (!window.__sheetHeaders) return Promise.resolve({ data: { error: 'google-not-set-up' }, error: null });
+          return Promise.resolve({ data: { ok: true, tab: 'Sheet1', columns: window.__sheetHeaders.map(function (h) { return { header: h[0], value: h[1] || null }; }) }, error: null });
+        }
         if (name === 'bukku-sync') {
           var bkb = (opts && opts.body) || {};
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
@@ -14120,7 +14165,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (bkb.action === 'preview') {
               return { data: { ok: true, code: ct ? ct.contact_code : nextC(), rows: [
                 { field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
-                { field: 'Registration no.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
+                { field: 'Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
                 { field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
                 { field: p.kind === 'client' ? 'Client ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
                 { field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };

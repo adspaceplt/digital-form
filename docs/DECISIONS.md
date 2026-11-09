@@ -8979,3 +8979,21 @@ and what to do. Rate limits stay figures in the function, as the link,
 device and invitation counts do. The bucket's lifecycle rule and a budget
 alarm remain the owner's.
 
+
+### 2026-11-10 · Official terms keep their capitals
+The user, 2026-11-09, relayed from the Creator payments session: "when an
+item is a proper or professional noun, it is good to capital it isnt it —
+eg. Passport, Tax Identification Number (TIN) etc. not every wordings
+should only capital the very first word". Asked whether "Full Name as per
+NRIC" counted, they left it to judgement; the field names of Malaysian
+identity, bank, LHDN and SSM forms were taken as official. DESIGN.md §6
+had made every label sentence case but formal document names, so labels
+read Business registration no. and Name as on passport. The rule now
+keeps an official term's capitals wherever it is written; the sweep
+covered the console, the client pages, the creator's payment details,
+the details and supplier forms, /quote/, bukku-sync's comparison and six
+functions' words (what bukku_prepare names as missing and five Activity
+record lines or refusals, OFFICIAL TERMS CAPITALISED). Registered name
+became Registered Company Name throughout, one term for one thing; the
+short No. forms stayed where the column is narrow. Chinese is unaffected.
+A tests/words.js pattern fails a lower-case official term from now on.

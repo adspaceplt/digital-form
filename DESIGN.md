@@ -678,7 +678,7 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
 - What a client reads (client pages, the quotation website, every PDF) is
   formal Malaysian business English, as a corporate letter here writes it
   (the user, 2026-10-13: "natural corporate, professional, formal"): Per
-  month, billed separately, incl. SST, Registered company name; never a
+  month, billed separately, incl. SST, Registered Company Name; never a
   clipped or coined phrase (a month, billed apart, see my price). Nothing is
   said twice and nothing non-essential is said; a whole term's total is
   stated in the PDF alone, never on a screen.
@@ -707,6 +707,20 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   Social Media Accounts Report).
   - Articles and short prepositions stay lower; acronyms keep their capitals;
     Pre-Advertising Checklist.
+  - An official or professional term keeps its capitals wherever it is
+    written, a label, a refusal, a placeholder, an email and a PDF line
+    included (the user, 2026-11-09: "Passport, Tax Identification Number
+    (TIN) etc. not every wordings should only capital the very first
+    word"): the field names of Malaysian identity, bank, LHDN and SSM
+    forms (Full Name as per NRIC, Full Name as per Passport, Registered
+    Company Name, NRIC, NRIC Number, MyKad, Passport, Passport Number,
+    Business Registration Number (BRN), Business Registration No.,
+    Registration No., Old Registration No., Tax Identification Number
+    (TIN), SST Registration Number, SST Registration No., SST No.) and the
+    formal names above. The label's other words stay sentence case
+    (Billing address, Finance email, Payment method); a term not plainly an
+    official one stays sentence case. `tests/words.js` fails a lower-case
+    official term.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".
 - Remove and Delete are two promises (the user, 2026-10-31: "Remove means
