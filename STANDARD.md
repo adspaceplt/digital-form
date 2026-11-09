@@ -619,6 +619,17 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- The full gate of 2026-11-10 on 2a6b928 (tests 349e78a), in code the
+  overnight Settings releases did not touch:
+  - `sql`, `bukkufn`, `results`, `demo`: the tests repo holds the Creator
+    payments review fixes (8128917, ab62890; a migration
+    `2026-11-10-creator-payments-reviewed.sql` and the stand-in) whose
+    portal release is not yet on main;
+  - `uxaudit` crashed at the creator page's Payments tab (`#crTabPayments`
+    not visible), after every console screen it walks;
+  - `sales` ("the Clients list has no Sales view"), `pdflibhash` ("the
+    committed page pins both libraries by their hash"), `sgd` (a
+    campaign's S$ rate typed).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
