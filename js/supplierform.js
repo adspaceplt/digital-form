@@ -86,10 +86,10 @@
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Supplier type', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Supplier type')) +
         field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
-        field('sfBrn', 'Business registration no.', input('sfBrn', 'brn', !ind, 'data-shape="############" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
+        field('sfBrn', 'Business Registration No.', input('sfBrn', 'brn', !ind, 'data-shape="############" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
         (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'data-shape="######-##-####" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
         field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
-        field('sfSst', 'SST registration no.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
+        field('sfSst', 'SST Registration No.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
         field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
         field('sfAddr', 'Billing address', '<textarea class="textarea" id="sfAddr" data-k="address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.address || '') + '</textarea>') +
       '</section>' +
@@ -153,9 +153,9 @@
     finance_email: 'sfFin', swift: 'sfSwift', bank_address: 'sfBankAddr' };
   /* Each field's own fault, as supplier_values_check refuses it. */
   var FAULT = {
-    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit registration number, digits only.',
+    name: 'Enter a name of 2 to 160 characters.', brn: 'Enter the 12-digit Business Registration Number, digits only.',
     nric: 'Enter the NRIC as XXXXXX-XX-XXXX.', tin: 'Enter the TIN, 5 to 20 letters or digits.',
-    sst_no: 'Enter the SST no. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
+    sst_no: 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', phone: 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     mobile: 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', address: 'Enter the full billing address.',
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',

@@ -1544,7 +1544,7 @@
         });
         if (blocked) {
           rows = [];
-          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this registration no. already exists. Add that entity instead.', hint: 'brn-taken' }
+          api.__err = blocked === 'brn-taken' ? { code: '23505', message: 'An entity with this Business Registration No. already exists. Add that entity instead.', hint: 'brn-taken' }
             : { code: 'P0001', message: blocked };
           return api;
         }
@@ -2969,8 +2969,8 @@ function cardSlugFree(name, self, email) {
     return ks[0] || null;
   }
 
-  var BK_WORD = { legal_name: 'Registered name', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
-    tin: 'TIN', sst_no: 'SST registration no.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
+  var BK_WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
+    tin: 'TIN', sst_no: 'SST Registration No.', person: 'Billing contact', finance_email: 'Finance email', billing_address: 'Billing address' };
   var BK_ORDER = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'person', 'finance_email', 'billing_address'];
   function bkLinkRow(k, id) {
     var L = DB.bukku_links || [];
@@ -8366,7 +8366,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (DB.bukku_links_gone) DB.bukku_links_gone = DB.bukku_links_gone.filter(function (g) { return !(g.kind === 'entity' && g.record_id === eg.id); });
       DB.billing_entities.splice(DB.billing_entities.indexOf(eg), 1);
       DB.activity_log.unshift({ id: nid('al'), actor: egMe.name, action: 'client.billing', subject: egC.name,
-        detail: 'Billing entity deleted: ' + (eg.legal_name || 'no registered name'), created_at: new Date().toISOString() });
+        detail: 'Billing entity deleted: ' + (eg.legal_name || 'Registered Company Name not set'), created_at: new Date().toISOString() });
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }
@@ -8486,8 +8486,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (enDigits(sv.company_no) && enDigits(sv.company_no) !== enDigits(ent.company_no)) {
           var held2 = enHeld(sv.company_no, ent.id); if (held2) return enAns({ error: 'brn-taken', entity: { id: held2.id, legal_name: held2.legal_name } });
         }
-        var WORD = { legal_name: 'Company name as registered', company_no: 'Business registration no.', company_no_old: 'Old registration no.',
-          tin: 'TIN', sst_no: 'SST registration no.', bill_contact_id: 'Billing contact', finance_email: 'Finance department email', billing_address: 'Company billing address' };
+        var WORD = { legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.',
+          tin: 'TIN', sst_no: 'SST Registration No.', bill_contact_id: 'Billing contact', finance_email: 'Finance department email', billing_address: 'Company billing address' };
         var mv = ENT_COLS.filter(function (f) { return entNull(ent[f]) !== entNull(sv[f]); });
         if (!mv.length) return enAns({ ok: true, updated_at: ent.updated_at });
         mv.forEach(function (f) { ent[f] = entNull(sv[f]); });
@@ -10772,7 +10772,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
           }
           Object.assign(sq2, { submitted_at: qtNow.toISOString(), submitted_by: qtMe.name, reviewer_id: rv.id, reviewer_name: rv.name, returned_at: null, return_note: null, returned_by: null });
-          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Company name as registered', company_no: 'Business registration no.', company_no_old: 'Old registration no.', tin: 'TIN', sst_no: 'SST registration no.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
+          qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
@@ -12195,7 +12195,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var ph = DB.clients.filter(function (x) { return x.id === entHome(pe.id); })[0] || {};
           var pk = entContact(pe.id) || {};
           var pmiss = [];
-          if (!pe.legal_name) pmiss.push('Registered name');
+          if (!pe.legal_name) pmiss.push('Registered Company Name');
           if (!ph.client_code) pmiss.push('Client ID');
           if (pmiss.length) return bkNo('incomplete', { missing: pmiss });
           var psh = bkLink ? null : bkShared('entity', pe.id);
@@ -12208,7 +12208,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bc = DB.clients.filter(function (x) { return x.id === args.p_id; })[0];
           if (!bc) return bkNo('not-found');
           var miss = [];
-          if (!bc.legal_name) miss.push('Registered name');
+          if (!bc.legal_name) miss.push('Registered Company Name');
           if (!bc.client_code) miss.push('Client ID');
           if (miss.length) return bkNo('incomplete', { missing: miss });
           var bck = (DB.client_contacts || []).filter(function (t) { return t.client_id === bc.id && !t.archived_at && (t.id === bc.bill_contact_id); })[0] ||
@@ -14201,7 +14201,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (bkb.action === 'preview') {
               return { data: { ok: true, code: ct ? ct.contact_code : nextC(), rows: [
                 { field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
-                { field: 'Registration no.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
+                { field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
                 { field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
                 { field: p.kind === 'client' ? 'Client ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
                 { field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };

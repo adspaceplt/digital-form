@@ -9040,3 +9040,30 @@ sheet's Bukku band says it), and the row opening a record page (the ⋯
 Payment details opens the sheet holding the details, Bukku and payments for
 every creator).
 
+
+### 2026-11-10 · Official terms keep their capitals
+The user, 2026-11-09, relayed from the Creator payments session: "when an
+item is a proper or professional noun, it is good to capital it isnt it —
+eg. Passport, Tax Identification Number (TIN) etc. not every wordings
+should only capital the very first word". Asked whether "Full Name as per
+NRIC" counted, they left it to judgement; the field names of Malaysian
+identity, bank, LHDN and SSM forms were taken as official. DESIGN.md §6
+had made every label sentence case but formal document names, so labels
+read Business registration no. and Name as on passport. The rule now
+keeps an official term's capitals wherever it is written; the sweep
+covered the console, the client pages, the creator's payment details,
+the details and supplier forms, /quote/, bukku-sync's comparison and six
+functions' words (what bukku_prepare names as missing and five Activity
+record lines or refusals, OFFICIAL TERMS CAPITALISED). Registered name
+became Registered Company Name throughout, one term for one thing; the
+short No. forms stayed where the column is narrow. Chinese is unaffected.
+Asked again the same night ("not just cover the billing section but
+entire portal"), the sweep read every page's words for proper and
+professional nouns: the platforms and products (Meta, WhatsApp, Google
+Meet, Bukku) and the section names were already capitalised in every
+sentence; the Creators List was written lower case in five sentences and
+now takes its capitals, and the finance team's sheet reads Individual
+(Passport). The rate card, a quotation and an invoice are the industry's
+common nouns and stay sentence case, the Rate Card wording the team wrote
+kept as written. A tests/words.js pattern fails a lower-case official
+term from now on.

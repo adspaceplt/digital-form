@@ -356,11 +356,11 @@
      not active until the required ones are here. The billing contact is one
      of the client's contacts, the main contact unless another is chosen. */
   var BILLING = [
-    ['crmLegalName',    'legal_name',      'Company name as registered', true],
-    ['crmCompanyNo',    'company_no',      'Business registration no.',  true],
-    ['crmCompanyNoOld', 'company_no_old',  'Old registration no.'],
+    ['crmLegalName',    'legal_name',      'Registered Company Name', true],
+    ['crmCompanyNo',    'company_no',      'Business Registration No.',  true],
+    ['crmCompanyNoOld', 'company_no_old',  'Old Registration No.'],
     ['crmTin',          'tin',             'TIN'],
-    ['crmSstNo',        'sst_no',          'SST registration no.'],
+    ['crmSstNo',        'sst_no',          'SST Registration No.'],
     ['crmBillContact',  'bill_contact_id', 'Billing contact', true],
     ['crmFinanceEmail', 'finance_email',   'Finance email'],
     ['crmBillAddr',     'billing_address', 'Billing address', true]
@@ -900,7 +900,7 @@
     if (/clients_client_code_uidx|duplicate key/i.test(m)) return 'That Client ID is already used by another client.';
     if (/clients_client_code_fmt/i.test(m)) return 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.';
     if (/active-needs-code/.test(m)) return 'An Active client needs a Client ID.';
-    if (/active-needs-billing/.test(m)) return 'An Active client needs its registered name, BRN, billing address and billing contact.';
+    if (/active-needs-billing/.test(m)) return 'An Active client needs its Registered Company Name, BRN, billing address and billing contact.';
     return m;
   }
 
@@ -2753,16 +2753,16 @@
     var ents = state.entFor === c.id ? state.entities : null;
     var mainEnt = ents && ents.filter(function (e) { return e.main; })[0];
     var several = !!(ents && ents.length > 1);
-    var company = [['Registered name', t('legal_name'), true]];
+    var company = [['Registered Company Name', t('legal_name'), true]];
     if (mainEnt && mainEnt.brands.length) company.push(['Also bills', entBrands(mainEnt)]);
     box.innerHTML =
       readGroup('Company', company).replace('<h4 class="fsec-h">Company</h4>',
         '<h4 class="fsec-h">' + (several ? 'Primary billing entity' : 'Company') + '</h4>') +
       readGroup('Registration and tax', [
-        ['Business registration no.', t('company_no'), true],
-        ['Old registration no.', t('company_no_old')],
+        ['Business Registration No.', t('company_no'), true],
+        ['Old Registration No.', t('company_no_old')],
         ['TIN', t('tin')],
-        ['SST registration no.', t('sst_no')],
+        ['SST Registration No.', t('sst_no')],
         ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
       ].concat(String(c.market || '').toUpperCase() === 'SG' ? [['Bill in', c.bill_sgd ? 'S$' : 'RM']] : [])) +
       readGroup('Billing contact and address', [
@@ -2860,8 +2860,8 @@
       (work ? '<button class="btn btn-sm" id="crmEntAdd" type="button" data-need="clients.billing:work">Add entity</button>' : '') + '</div>' +
       (others.length ? '' : '<p class="muted ent-none">None.</p>') + '</section>' +
       others.map(function (e) {
-        var rows = [['Business registration no.', t(e.company_no), true]];
-        [['Old registration no.', t(e.company_no_old)], ['TIN', t(e.tin)], ['SST registration no.', t(e.sst_no)],
+        var rows = [['Business Registration No.', t(e.company_no), true]];
+        [['Old Registration No.', t(e.company_no_old)], ['TIN', t(e.tin)], ['SST Registration No.', t(e.sst_no)],
           ['Billing contact', entContact(e)], ['Finance email', t(e.finance_email)]].forEach(function (r) { if (r[1]) rows.push(r); });
         rows.push(['Billing address', t(e.billing_address), true, true]);
         if (e.brands.length || e.hidden) rows.push(['Also bills', entBrands(e)]);
@@ -2943,8 +2943,8 @@
         title: 'Delete ' + (nm || 'billing entity') + '?',
         body: 'The entity and its details are deleted from the portal. Bukku is not changed. This cannot be undone.',
         go: 'Delete', tone: 'danger', wait: true,
-        field: nm ? { label: 'Type the registered name to confirm', placeholder: nm, match: nm,
-          need: 'Type the registered name to confirm.', mismatch: 'The name does not match.' } : null
+        field: nm ? { label: 'Type the Registered Company Name to confirm', placeholder: nm, match: nm,
+          need: 'Type the Registered Company Name to confirm.', mismatch: 'The name does not match.' } : null
       }, function (v) {
         return db.rpc('client_entity_delete', { p_client: cid, p_entity: ent.id, p_name: typeof v === 'string' ? v : nm }).then(function (r) {
           var d = r.data || {};
@@ -3023,13 +3023,13 @@
   function entOf(id) { return (state.entities || []).filter(function (e) { return e.id === id; })[0]; }
   var ENT_SAID = {
     'denied': 'You do not have permission to change billing entities. Please ask an admin.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
-    'taken': 'This entity already bills this client.', 'no-name': 'Enter the company name as registered.',
+    'taken': 'This entity already bills this client.', 'no-name': 'Enter the Registered Company Name.',
     'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'held': 'Bukku holds this entity\'s details. They have been read from Bukku; press Edit again to save to Bukku.',
-    'brn-taken': 'An entity with this registration no. already exists. Add that entity instead.'
+    'brn-taken': 'An entity with this Business Registration No. already exists. Add that entity instead.'
   };
   function entSaid(r) {
     if (r.error) return /function|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
@@ -3150,7 +3150,7 @@
     var pick = billPickChange();
     if (state.billPick0) vals.bill_contact_id = (entOf(ed.id) || {}).bill_contact_id || null;
     if (vals.legal_name) vals.legal_name = vals.legal_name.toUpperCase();
-    if (!vals.legal_name) { msg('crmBillMsg', 'Enter the company name as registered.', 'err'); $('crmLegalName').focus(); return; }
+    if (!vals.legal_name) { msg('crmBillMsg', 'Enter the Registered Company Name.', 'err'); $('crmLegalName').focus(); return; }
     if (vals.finance_email && !ADspaceWords.emailOk(vals.finance_email)) {
       msg('crmBillMsg', 'Enter a valid email address.', 'err'); $('crmFinanceEmail').focus(); return;
     }
@@ -3174,8 +3174,8 @@
       var d = r.data || {};
       if (d.error === 'brn-taken' && d.entity) {
         window.ADspaceConfirm.ask({
-          title: 'Registration no. already in use', go: 'Add entity', wait: true,
-          body: d.entity.legal_name + ' already uses this business registration no. Add that entity to ' + state.client.name + ' instead?'
+          title: 'Business Registration No. already in use', go: 'Add entity', wait: true,
+          body: d.entity.legal_name + ' already uses this Business Registration No. Add that entity to ' + state.client.name + ' instead?'
         }, function () {
           return db.rpc('client_entity_add', { p_client: cid, p_entity: d.entity.id, p_values: null }).then(function (u) {
             if (u.error || (u.data && u.data.error)) return entSaid(u);
@@ -3216,7 +3216,7 @@
         entClose();
         entReload();
         if (k.error) { msg('crmBillNote', 'Added. Not created in Bukku: ' + (window.ADspaceBukku ? window.ADspaceBukku.said(k) : k.error), 'warn'); return; }
-        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this registration no.'
+        msg('crmBillNote', k.existing ? 'Added and linked to ' + k.code + ', which Bukku holds under this Business Registration No.'
           : 'Added and created in Bukku as ' + k.code + '.', 'ok');
       });
     };
@@ -3269,7 +3269,7 @@
   }
   function entPickNew() {
     return '<label class="ent-pick"><input type="radio" name="entPick" value="new" checked>' +
-      '<span><b>New entity</b><small>Registered name, registration no., address and billing contact</small></span></label>';
+      '<span><b>New entity</b><small>Registered Company Name, Business Registration No., address and billing contact</small></span></label>';
   }
   /* Bukku's customers holding every word typed, or the registration no. */
   function entBukkuFind() {
@@ -3436,8 +3436,8 @@
      to fill in (public link, no need any login …)"): a link made here,
      answered once on /details/, the answers waiting on this pane for the
      team to take into Billing with its own Save. */
-  var DF_ROWS = [['legal_name', 'Registered name'], ['company_no', 'Business registration no.'],
-    ['company_no_old', 'Old registration no.'], ['tin', 'TIN'], ['sst_no', 'SST registration no.'],
+  var DF_ROWS = [['legal_name', 'Registered Company Name'], ['company_no', 'Business Registration No.'],
+    ['company_no_old', 'Old Registration No.'], ['tin', 'TIN'], ['sst_no', 'SST Registration No.'],
     ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var DF_FIELDS = { legal_name: 'crmLegalName', company_no: 'crmCompanyNo', company_no_old: 'crmCompanyNoOld',
     tin: 'crmTin', sst_no: 'crmSstNo', finance_email: 'crmFinanceEmail', billing_address: 'crmBillAddr' };
@@ -6907,7 +6907,7 @@
     var billEnt = $('pickBillTo') && !$('pickBillBox').hidden
       ? (state.entities || []).filter(function (x) { return x.id === $('pickBillTo').value; })[0] : null;
     if (billEnt && !billEnt.main && billEnt.missing && billEnt.missing.length) {
-      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its registered name, registration no. and billing address. Complete it on Billing first.', 'err');
+      msg('pickMsg', (billEnt.legal_name || 'This entity') + ' needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.', 'err');
       $('pickBillTo').focus();
       return null;
     }
