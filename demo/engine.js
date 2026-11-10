@@ -6171,7 +6171,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 return x.client_id === e.client_id && !x.brand_id && !x.on_request && (x.kind || 'social') === k &&
                   x.period_end >= sp0[0] && x.period_end <= sp0[1];
               }).sort(function (x, y) { return String(y.created_at || '').localeCompare(String(x.created_at || '')); })[0];
-              if (rep0) smTaskFollow(rep0, true);
+              if (rep0) smTaskFollow(rep0, false);
             }
           } else if (moved) live.forEach(function (x) {
             if (x.completed_at) return;
