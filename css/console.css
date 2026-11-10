@@ -2713,6 +2713,12 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .ind-row.is-tax .ind-acts { gap: 4px; }
 .ind-row.is-tax.is-picking { cursor: pointer; }
 .ind-row.is-tax.is-past > .tax-code, .ind-row.is-tax.is-past > .tax-rate, .ind-row.is-tax.is-past > .tax-name { color: var(--ink-mute); }
+/* Departments as the same table (2026-11-10): Department · Colleagues ·
+   Prize · Status, then the pen and the ⋯. */
+.ind-row.is-dep { grid-template-columns: minmax(0, 1fr) 96px 112px 104px 80px; }
+.ind-row.is-dep .ind-acts { gap: 4px; }
+.ind-row.is-dep .dep-prize { font-size: 13px; }
+.ind-row.is-dep.is-past > .dep-name { color: var(--ink-mute); }
 @media (max-width: 640px) {
   .ind-row { grid-template-columns: minmax(0, 1fr) auto 44px; grid-template-areas: "name n acts" "zh n acts"; row-gap: 2px; }
   .ind-row.ind-head { display: none; }
@@ -2729,6 +2735,11 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
   .ind-row.is-tax:not(.ind-head) { grid-template-columns: auto minmax(0, 1fr) auto 80px; grid-template-areas: "name rate . acts" "zh zh on acts"; column-gap: 8px; }
   .ind-row.is-tax > .tax-rate { grid-area: rate; }
   .ind-row.is-tax > .tax-on { grid-area: on; justify-self: end; }
+  .ind-row.is-dep:not(.ind-head) { grid-template-columns: minmax(0, 1fr) auto 80px; grid-template-areas: "name on acts" "zh zh acts"; column-gap: 8px; }
+  .ind-row.is-dep > .dep-name { grid-area: name; }
+  .ind-row.is-dep > .dep-on { grid-area: on; justify-self: end; }
+  .ind-row.is-dep > .dep-n { grid-area: zh; display: inline; }
+  .ind-row.is-dep > .dep-prize { display: none; }
 }
 .tax-pick { display: grid; gap: 4px; }
 .tax-pick .tickline { min-height: var(--ctl-h); }

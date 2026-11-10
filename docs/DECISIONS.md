@@ -9175,3 +9175,13 @@ It now counts the day's Quotation ready messages to website quotations, not
 failed, under one lock; Send quotation and a website quotation's Resend on
 WhatsApp are refused `wa-limit` at it, changing nothing, while Publish (no
 message) and a team's quotation are not held.
+
+### 2026-11-10: Departments as the shared table
+The user, answering the Settings review's held item 5: "yes". Departments was
+the one Settings list still drawn as rows of a name over a line with Edit;
+it is now the table Industries, Public holidays and Tax codes share:
+Department · Colleagues · Prize (Included) · Status, the pen and a ⋯ (Set
+inactive or Set active, Delete where nothing names it). The pen still asks
+in a question, a department's five prize criteria being too many for its
+row. On a phone the name stands over its colleagues and prize, the status
+at the right.

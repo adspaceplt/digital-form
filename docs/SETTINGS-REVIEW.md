@@ -31,12 +31,12 @@ Fixed findings shipped in the Part B release; HELD waits on the owner.
 | 12 | Reels share refuses 0 on the page; the database takes 0 to 100 | SET_BOUND | Fixed, Part B release |
 | 13 | A holiday's date refusal says "from 2023"; the field's floor is 14 Aug 2023 | Public holidays | Fixed, Part B release |
 | 14 | Notices reads every database refusal as a connection fault | `js/notice.js` | Fixed, Part B release |
-| 15 | The permission sentence typed seven times; "No change." and "No changes."; Departments drawn as another kind of list than Industries, Holidays and Tax codes | several | Words fixed; Departments list HELD |
+| 15 | The permission sentence typed seven times; "No change." and "No changes."; Departments drawn as another kind of list than Industries, Holidays and Tax codes | several | Words fixed; Departments list redrawn as the shared table (2026-11-10) |
 | 16 | Undo on Page availability restores page by page and never says which failed | `openPages` | Fixed, Part B release |
 
 ## Held for the owner
 
-1. **One template store.** Folding the six template tables into one would
+1. **One template store.** Kept as six tables (the user, 2026-11-10). Folding the six template tables into one would
    restate about twenty live send functions (supplier, client, invoice,
    creator and New email), none of which can be tested against Resend from
    here. The editor already shows them as one. Approve to schedule it with a
@@ -44,9 +44,7 @@ Fixed findings shipped in the Part B release; HELD waits on the owner.
 2. **One permission rule a recipient.** A supplier's two fixed emails are
    Suppliers Full Access; a supplier's New email templates are
    `team.settings`. Making them one rule changes who may edit them.
-3. **Send test to me.** A new send path in `supplier-mail`, sending the
-   wording to the colleague's own address.
-4. **Website quotations (finding 5).** Remove the row, or make the figure
-   limit the messages again.
-5. **Departments' list (finding 15).** Redraw it as the shared table with
-   the pen, as Industries and Public holidays are.
+3. **Send test to me.** Not wanted (the user, 2026-11-10: "skip").
+4. **Website quotations (finding 5).** Built 2026-11-10: the figure limits
+   the day's Quotation ready messages again (#984).
+5. **Departments' list (finding 15).** Built 2026-11-10: the shared table.
