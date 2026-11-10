@@ -1823,8 +1823,13 @@
   var kept = '';
   try { kept = localStorage.getItem(KEY) || ''; } catch (e) {}
   var start = fromLink || kept;
-  // The link's code is stored, so the address bar stops carrying it around.
-  if (fromLink) history.replaceState(null, '', location.pathname);
+  /* The link's code is stored, so the address bar stops carrying it around;
+     the pane and the booking an email named (`?tab=`, `#b=`) stay. */
+  if (fromLink) {
+    var rest = new URLSearchParams(location.search);
+    rest.delete('k');
+    history.replaceState(null, '', location.pathname + (rest.toString() ? '?' + rest.toString() : '') + location.hash);
+  }
   /* The page's own turning mark stands while it loads (`.pageload`, 2026-10-15). */
   if (start.length === 8) load(start);
   else { askCode(); if (fromLink) linkWrong(fromLink); }

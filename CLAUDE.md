@@ -3881,7 +3881,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   bills matching no booking read under Earlier payments
   (`creator_bills_list`, Creators List View, amounts at `campaigns.pay`
   View). The three emails' words are Settings, Messages: Email templates under Creators,
-  Payment request to Details to review's finance address.
+  Payment request to Details to review's finance address. Post recorded and Payment sent
+  end in one button to the creator's own page (View booking, `#b=` the
+  booking; View payment, `?tab=payments`; on their code, `PORTAL_URL`),
+  the others in none, and the page keeps the pane and booking a link names
+  as it drops the code (the user, 2026-11-10: "A").
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is

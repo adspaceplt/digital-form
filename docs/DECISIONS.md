@@ -9402,3 +9402,14 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   hold no My Work at Work, which `ops_create_task` refuses; the task is then
   made as the month's manager, as the morning's repeats are made as their
   colleague, rather than leaving the month out of step.
+
+- **2026-11-10 · Creator emails open the creator's own page.** The user
+  asked whether the emails to creators should carry a button to their page,
+  and chose A: one button on the emails that ask the creator to look
+  (Post recorded opens the booking, Payment sent opens Payments), none on
+  the confirmations, rather than a bare page that asks for the code. The
+  link carries the code, as the WhatsApp booking message already does; the
+  page shows payment details masked. Building it found the creator page
+  dropped the whole query and hash when it took the code out of the
+  address, so a link naming a pane or a booking landed on Bookings; it now
+  removes the code alone.
