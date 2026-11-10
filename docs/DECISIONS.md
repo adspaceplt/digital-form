@@ -9262,3 +9262,6 @@ retired phrase. Timings are `ADSPACE_CONFIG.loading`.
   The three dates stay required and keep their order.
 - **Shipped:** the seed through the connector; `app_settings_set` taking the
   key is the SQL Editor part (its body holds a delete).
+
+### 2026-11-10 · Rate Card keeps its capitals
+The user, asked whether the rate card should read Rate Card throughout, answered "Ok proceed". It is the team's own priced document and a section's product, so it joins Creators List and Content Review in DESIGN.md §6: every string a person reads (the Services strip, its search, the Settings row Rate Card wording, Build quote's "Rate Card RM …" note, refusals and the Team panel's line) now says Rate Card, and `tests/words.js` fails a lower-case one. Left as they were: comments, and the Activity record's subjects and details the database writes (`Rate card`, `Rate card wording`, `· rate card v.`), since the record's panes key on the subject it was filed with and a rename would split the history; the team's own Rate Card wording, which they edit.

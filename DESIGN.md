@@ -721,10 +721,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
     Business Registration Number (BRN), Old Registration No., Tax
     Identification Number (TIN), SST Registration No. and SST Registration
     Number); the formal names above; and a section's or product's own name
-    (Creators List, Content Review, Google Meet, Meta Business Suite,
-    Bukku). The label's other words stay sentence case (Billing address,
-    Finance email, Payment method), as does a common noun (rate card,
-    quotation, invoice) and a term not plainly an official one.
+    (Creators List, Content Review, Rate Card, Google Meet, Meta Business
+    Suite, Bukku; the user, 2026-11-10: Rate Card on every screen). The label's other words stay sentence case (Billing address,
+    Finance email, Payment method), as does a common noun (quotation,
+    invoice, letter) and a term not plainly an official one.
     `tests/words.js` fails a lower-case official term.
   - Everything else is sentence case.
 - Back / Revert / Restore / Reinstate / Undo as in `CLAUDE.md`; never "Return".

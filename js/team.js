@@ -1233,7 +1233,7 @@
                work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, return, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
-    services: { none: 'Services is hidden.', view: 'Read the rate card.', manage: 'Add, edit and delete rate card lines, and publish the rate card.' },
+    services: { none: 'Services is hidden.', view: 'Read the Rate Card.', manage: 'Add, edit and delete Rate Card lines, and publish the Rate Card.' },
     team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Invitations need Send invitation.' },
     activity: { none: 'The activity record is hidden.', view: 'Read the activity record, tab by tab.' }
   };

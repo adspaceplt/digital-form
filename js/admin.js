@@ -1697,7 +1697,7 @@
     register:  'Every document issued through the portal, and its reference.',
     suppliers: 'The suppliers ADspace pays, and the details each one submitted.',
     reports:   'Client reports, from first draft to the version the client reads.',
-    services:  'The rate card every quotation is priced from.',
+    services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
@@ -1754,7 +1754,7 @@
       { at: '#showAddLink', text: 'Add link creates a short address and its QR code.' },
       { at: '#linkList .crm-group-head', text: 'Live, Namecards and Paused, followed by the addresses the portal creates for clients and creators. Every address in use is listed, so none is used twice.' }] },
     services: { name: 'Services', steps: [
-      { at: '#svcAdd', text: 'Add a service or an add-on to the rate card.' },
+      { at: '#svcAdd', text: 'Add a service or an add-on to the Rate Card.' },
       { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line is the starting point for a client\'s service line, which can then be edited.' }] },
     team: { name: 'Team', steps: [
       { at: '#teamTabs', text: 'Members, the user groups that control what each member can open, Performance and Health.' },
@@ -2574,7 +2574,7 @@
     'service.off':           ['Rate line inactive', 'is-warn', 'services'],
     'service.on':            ['Rate line active', 'is-ok', 'services'],
     'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
-    'service.published':     ['Rate card published', 'is-ok', 'services'],
+    'service.published':     ['Rate Card published', 'is-ok', 'services'],
     'client.touch':          ['Call/visit logged', '', 'clients'],
     /* WhatsApp (2026-10-10): a message sent by hand, and a purpose's
        template chosen or switched. */

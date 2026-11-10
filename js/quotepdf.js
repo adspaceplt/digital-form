@@ -255,7 +255,7 @@
     }
     if ((t.on_request || []).length) {
       notes.push('The following are quoted on request: ' + t.on_request.map(function (x) {
-        return x === 'budget' ? 'an advertising budget above the highest tier on our rate card' : x;
+        return x === 'budget' ? 'an advertising budget above the highest tier on our Rate Card' : x;
       }).join(', ') + '.');
     }
     if (t.month) {

@@ -192,7 +192,7 @@
     wording: function () {
       return db.from('rate_card_text').select('key').then(function (r) {
         if (r.error) throw r.error;
-        return parts([plural((r.data || []).length, 'block', 'blocks'), 'published with the rate card']);
+        return parts([plural((r.data || []).length, 'block', 'blocks'), 'published with the Rate Card']);
       });
     },
     types: function () {
@@ -355,7 +355,7 @@
         open: function (btn) { if (W.ADspaceRegister && W.ADspaceRegister.openTypes) W.ADspaceRegister.openTypes(btn); } },
       W.ADspaceOps && may('ops.workflows') && { id: 'tasktpl', name: 'Task templates', kind: 'open', meta: line('tasktpl'),
         open: function (btn) { if (W.ADspaceOps.openTemplates) W.ADspaceOps.openTemplates(btn); } },
-      W.ADspaceCRM && W.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate card wording', kind: 'open', meta: line('wording'),
+      W.ADspaceCRM && W.ADspaceCRM.openWording && full('services') && { id: 'wording', name: 'Rate Card wording', kind: 'open', meta: line('wording'),
         open: function (btn) { W.ADspaceCRM.openWording(btn); } }]]]);
     return out;
   }
