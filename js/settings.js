@@ -323,7 +323,7 @@
         /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
            nothing the portal emails by itself goes; a colleague's send does. */
         biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'),
-          meta: autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Kept as Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
+          meta: autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
         /* Send by email (2026-10-31): whether a quotation, a Letter of Offer
            and a client letter offer it at all. */
         biz && W.ADspaceDocMail && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: num('client_email_on') === 1,

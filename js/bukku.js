@@ -437,8 +437,8 @@
          then each one not chosen, every part held whole. */
       var F = [['Client ID', d.field_client], ['Supplier ID', d.field_supplier], ['Creator ID', d.field_creator]];
       var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
-      var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not chosen'; });
-      if (!on.length) return 'Not chosen';
+      var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not set'; });
+      if (!on.length) return 'Not set';
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
       return [list + (on.length === 1 ? ' field' : ' fields')].concat(off)
         .map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · ');

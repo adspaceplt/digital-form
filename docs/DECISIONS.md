@@ -9438,3 +9438,6 @@ draws the Clients list's mark (`.cl-mark`: the logo on a white disc,
 initials while none is held or where the picture fails), and a VIC's
 ring carries the crown in place of the tag, as the Clients list does.
 `tests/vic.js` holds both.
+
+### 2026-11-10 · Copy review of #992 to #1005
+A second reader went through the 120 lines of new words in the fourteen releases merged after #991. Three broke DESIGN.md §6 and are fixed: the Bukku Settings row said "Client ID not chosen" and "Not chosen" while its own sheet says Not set (one word per thing); Automatic emails read "Off · Kept as Not sent", a system word in a fragment, now "Off · Not sent"; a Content Review refusal named a new thing, "no internal decision to revert", now "There is nothing to revert on this post. Refresh the page.". Nothing a client, prospect, creator or supplier reads broke a rule.
