@@ -197,7 +197,7 @@ language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'UPDATE' and new.undone_at is not distinct from old.undone_at then return null; end if;
   perform public.ops_post_follow(new.post_id,
-    case when tg_op = 'UPDATE' then 'Decision taken back in Content Review'
+    case when tg_op = 'UPDATE' then 'Decision reverted in Content Review'
          when new.decision = 'approved' and new.source = 'team' then 'Confirmed internally in Content Review'
          when new.decision = 'approved' then 'Approved by the client in Content Review'
          when new.source = 'team' then 'Changes received on WhatsApp'
@@ -306,7 +306,7 @@ begin
   values (coalesce(nullif(auth.jwt() ->> 'email', ''), me.name), 'review.unconfirmed', v_client,
           coalesce(v_title, '') || ' · ' || coalesce(nullif(v_post.platform, ''), 'post') ||
           case when v_rv.decision = 'approved' then ' · internal confirmation reverted'
-               else ' · changes received on WhatsApp taken back' end);
+               else ' · changes received on WhatsApp reverted' end);
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.review_revert_confirm(uuid) from public, anon;

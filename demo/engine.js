@@ -9203,8 +9203,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!cstand || cstand.source !== 'team') return Promise.resolve({ data: { error: 'not-confirmed' }, error: null });
       cstand.undone_at = new Date().toISOString(); cstand.undone_by = cme.id;
       DB.activity_log.push({ id: nid('a'), actor: cwho, action: 'review.unconfirmed', subject: ccl.name || null,
-        detail: cwhat + (cstand.decision === 'approved' ? ' · internal confirmation reverted' : ' · changes received on WhatsApp taken back'), created_at: new Date().toISOString() });
-        postFollow(cp.id, 'Decision taken back in Content Review');
+        detail: cwhat + (cstand.decision === 'approved' ? ' · internal confirmation reverted' : ' · changes received on WhatsApp reverted'), created_at: new Date().toISOString() });
+        postFollow(cp.id, 'Decision reverted in Content Review');
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }

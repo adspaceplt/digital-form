@@ -6111,8 +6111,8 @@
     'no-post': 'This post no longer exists.',
     'not-published': 'Publish the set first. The client sees only a published set.',
     'already-approved': 'Already approved.',
-    'not-confirmed': 'There is no internal confirmation to take back.',
-    decided: 'The client has already decided on this round.',
+    'not-confirmed': 'This post has no internal decision to revert. Refresh the page.',
+    decided: 'The client has already decided on this round. Refresh the page.',
     'no-note': 'Enter the changes.',
     'too-long': 'Shorten the changes to 2,000 characters.'
   };
@@ -6494,7 +6494,7 @@
             /* The client's changes sent on WhatsApp, kept on the post they
                are about (the content loop, 2026-11-10). */
             (!review && state.batch && state.batch.published
-              ? '<button class="kmenu-item" data-g="4" data-a="changes" data-need="review.sets:work" type="button" role="menuitem">Record changes</button>' : '') +
+              ? '<button class="kmenu-item" data-g="4" data-a="changes" data-need="review.sets:work" type="button" role="menuitem">Add changes</button>' : '') +
             (review && review.decision === 'approved' && review.source === 'team'
               ? '<button class="kmenu-item" data-g="4" data-a="unconfirm" data-need="review.sets:work" type="button" role="menuitem">Revert confirmation</button>' : '') +
             (review && review.decision === 'approved' && review.source !== 'team'
@@ -6654,10 +6654,10 @@
       if (chg) chg.addEventListener('click', function () {
         shutPostMenus();
         window.ADspaceConfirm.ask({
-          title: 'Record changes',
-          body: 'The changes the client sent on WhatsApp. Their review page reads Changes requested with these words.',
+          title: 'Add changes',
+          body: 'The client\u2019s review page will show Changes requested with these words.',
           field: { label: 'Changes', rows: 4, need: 'Enter the changes.' },
-          go: 'Record'
+          go: 'Save'
         }, function (note) {
           db.rpc('review_record_changes', { p_post: p.id, p_note: note }).then(function (res) {
             var d = (res && res.data) || {};
@@ -6674,7 +6674,7 @@
               /* The task following the post has moved with it. */
               if (state.batch) loadSetTasks(state.batch);
               var at = document.querySelector('#postList .saved[data-post="' + p.id + '"]');
-              undoHere(postName(p) + ': changes recorded.', back, at || $('setMsg'));
+              undoHere(postName(p) + ': changes added.', back, at || $('setMsg'));
             });
           }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
         });
