@@ -260,7 +260,8 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
-| Creator payment details (the CREATOR PAYMENT DETAILS section, `supabase/functions/creator-mail/`, `#payBox`, `#cpaySheet`) | creator, sql, camp, settings, perms, menus, whatsapp, then `ui` |
+| Creator payment details (the CREATOR PAYMENT DETAILS section, `supabase/functions/creator-mail/`, `#payBox`, the creator page's Payment pane) | creator, sql, camp, settings, perms, menus, whatsapp, then `ui` |
+| A creator's page (`#crRec`, `creator=`, the Creators List rows) | camp, cprofile, search, whatsapp, then `ui` |
 | Creator payments (the CREATOR PAYMENTS sections, bukku-sync `bills`, `#cpayJobs`, `creator_bills`) | camp, bukkufn, sql, settings, creator, then `ui` |
 | Creator payments sheet (the CREATOR PAYMENTS SHEET section, `creator-mail` sheet rows and `check`) | mailfn, sql, settings, camp |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
@@ -659,7 +660,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#mtEdSheet`): the words at the left, the email as it reads at the right
   (stacked under 720), the sender's fields from `template_fields_all()` as
   chips inserting at the caret, a field it cannot fill marked as it is
-  typed. A row carries what a press opens (`open`); a switch acts at the
+  typed; Send test to me (`#mtEdTest`, 2026-11-10) sends the words as they
+  stand, saved or not, every field a made-up value, to the colleague's own
+  sign-in address alone, from that template's sender, its subject led by
+  Test: (`supplier-mail` `test`, `mail_test_begin`: the save's own parts,
+  `template_check`, twenty a colleague a day in `mail_tests`, RLS on, no
+  policy, no grant; nothing filed; `2026-11-10-template-test-email.sql`). A row carries what a press opens (`open`); a switch acts at the
   press with Undo under its card. A search heads the group list (a
   phone's page), finding a row by its name, group or value across every
   group and opening its group on its control (Enter takes the first);
@@ -3789,12 +3795,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   blank keeps the number held where its kind, or its method, bank and
   currency, did not move. A set sent while one is pending withdraws it.
   The console: the Creators List names a creator whose details wait
-  (Payment details to review), its ⋯ Payment details opening `#cpaySheet`
-  (`creator_pay_list`, Creators List View; the numbers whole only at the
-  granted part `campaigns.pay` View), Approve and Decline (a reason the
+  (To review), their page's Payment pane holding them (`creator_pay_list`,
+  Creators List View; the numbers whole only at the granted part
+  `campaigns.pay` View), Approve and Decline in its head (a reason the
   creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
   `no-note`; filed `creator.updated`); the newest approval is paid to, the
-  one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens it.
+  one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens
+  their page on Payment.
   The emails (`creator_emails`, RLS on, no policy, no grant) are queued in
   their templates' words (`creator_email_templates`: Details received to
   the creator, Details to review to the finance address with the account's
@@ -3809,7 +3816,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Creator payments (`2026-11-09-creator-payments.sql`, its SQL Editor part
   `-editor.sql`; Creator R3, the flow the user approved 2026-11-08): a
   creator is a Bukku supplier contact (`bukku_links` kind `creator`), sent
-  or linked from the payment details approved last on `#cpaySheet`'s Bukku
+  or linked from the payment details approved last on the Payment pane's Bukku
   band (the Creator ID in Bukku's Supplier ID field, the ID number at
   `campaigns.pay` View alone; read at the Creators List, sent, linked and
   unlinked at `campaigns.pay` Work, filed `creator.updated`). The move into
@@ -3859,14 +3866,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   many headers will be filled. The pay sheet reads each set's Creator payments sheet
   line (`creator_sheet_state`).
 - The Creators List:
-  - Under each name, its payment details as they stand (Payment details to
-    review, approved or declined; none said while not submitted) and a
-    Payment details filter (`#rosterPay`: Not submitted, To review,
-    Approved, Declined); the row's ⋯ Payment details opens `#cpaySheet` for
-    every creator (2026-11-10).
-  - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
+  - A row is one button opening the creator's page (2026-11-10, the user:
+    "only an open button then inside contains all their information (like
+    clients / suppliers)"): Creator (name over Creator ID) · Platforms (words,
+    never links) · Campaigns · Client rate · Payment details (To review,
+    Approved or Declined; a mute em dash while not submitted) · the chevron;
+    no ⋯ and no profile link on the row. On a phone two lines: the name with
+    the payment details' standing, then Creator ID · platforms · campaigns
+    (one line, cut at its end) with the rate. A Payment details filter
+    (`#rosterPay`: Not submitted, To review, Approved, Declined). The
     figure is the client's price with markup, never the creator's payout, so
     it is never headed Fee.
+  - A creator's page (`#crRec`, `creator=` and `pane=` in the address, the
+    list and its bar stepping away; search opens it): Back, the record head
+    (the name over Creator ID · platforms, Active or Inactive, one ⋯ of Reset
+    link, Set inactive or Set active with Undo where it happened, Delete),
+    the view strip and a pane: Overview (Details: Creator ID, then Name,
+    Client rate, WhatsApp and Notes each changed where it is read, its pen,
+    filed `creator.updated` from and to; Profiles: each link a `.plink`
+    opening the profile, Edit links opening the creator sheet on its links
+    alone (`#addCreatorBox.is-links`), Link history a fold with Restore;
+    Creator page: the link and access code, Copy link, Preview), Payment
+    (Creators List View: the payment details with Approve and Decline, the
+    Bukku band, the payments; its tab counts details to review), Bookings
+    (every campaign they were booked on, its step, opening the campaign) and
+    Activity (`activity.campaigns` View: the record filed under their name);
+    the rail's Next action (Review payment details) and Record (campaigns,
+    last shoot). New creator is the one sheet left and opens the new
+    creator's page.
   - Rate bands: Up to RM 300, RM 301 to 500, RM 501 to 800, Above RM 800, On
     quote. Inactive in its own band.
   - A platform filter.

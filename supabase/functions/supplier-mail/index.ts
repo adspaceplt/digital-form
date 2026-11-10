@@ -46,6 +46,15 @@
  *                          MAIL_CLIENT_FROM, a supplier's from MAIL_FROM;
  *                          replies to the colleague who sends.
  *
+ *   POST { test: true, kind, subject, body, legal, disclaimer }
+ *                          Send test to me from Email templates (2026-11-10,
+ *                          2026-11-10-template-test-email.sql): the words as
+ *                          typed, every field filled with a made-up value by
+ *                          `mail_test_begin` as the colleague, who alone is
+ *                          sent it, at their sign-in address; twenty a day;
+ *                          from the sender that template's emails come from,
+ *                          the subject led by Test:. Nothing is filed.
+ *
  * The email is the portal's one layout (_shared/mail.ts, the sign-in
  * emails' white card on the light grey page, docs/SIGN-IN-EMAILS.md): the subject as its heading,
  * then the message the colleague wrote in the Send email sheet, word for
@@ -139,6 +148,7 @@ Deno.serve(async (req) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const uuid = /^[0-9a-f-]{36}$/i;
+  if (body.test === true) return testMail(req, body, origin);
   if (body.manual === true) return manualMail(req, body, origin, uuid);
   if (body.client === true) return clientMail(req, body, origin, uuid);
   const supplier = String(body.supplier || ''), purpose = String(body.purpose || '');
@@ -299,4 +309,43 @@ async function manualMail(req: Request, body: Record<string, any>, origin: strin
   if (done.error) console.error('supplier-mail: new email not closed', done.error.message);
   if (status !== 'sent') console.error('supplier-mail:', status, error);
   return json(status === 'sent' ? { ok: true, id: b.id, to: b.to, cc: b.cc || null } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
+}
+
+/* Send test to me (2026-11-10): the template as typed, its fields filled
+   with made-up values by the database, to the colleague's own address. An
+   invoice email's table is a sample row; nothing is filed. */
+const FIN_FROM = () => secret('MAIL_FINANCE_FROM') || 'ADspace Finance <noreply-finance@sc.adspace.me>';
+const CREATOR_FROM = () => secret('MAIL_CREATOR_FROM') || 'ADspace <noreply-creator@sc.adspace.me>';
+const TEST_FROM: Record<string, () => string> = {
+  supplier: FROM, client: CLIENT_FROM, free: CLIENT_FROM, invoice: FIN_FROM,
+  'creator-details': CREATOR_FROM, 'creator-booking': CREATOR_FROM
+};
+const SAMPLE_TABLE = '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ' +
+  'style="margin:0 0 16px;border-collapse:collapse;font-size:14px;line-height:1.5;color:#1a1a1a;">' +
+  '<tr><td style="padding:8px 0;border-bottom:1px solid #ececec;">INV-00001</td>' +
+  '<td style="padding:8px 0;border-bottom:1px solid #ececec;text-align:right;">RM 1,000.00</td></tr></table>';
+async function testMail(req: Request, body: Record<string, any>, origin: string | null): Promise<Response> {
+  const kind = String(body.kind || '');
+  if (!TEST_FROM[kind]) return json({ error: 'bad-request' }, 400, origin);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
+  const begun = await db.rpc('mail_test_begin', { p_kind: kind, p_subject: String(body.subject || ''),
+    p_body: String(body.body || ''), p_legal: String(body.legal || ''), p_disclaimer: String(body.disclaimer || '') });
+  if (begun.error) return json({ error: 'needs-update' }, 200, origin);
+  const b = (begun.data || {}) as Record<string, any>;
+  if (b.error) return json(b, 200, origin);
+  const subject = 'Test: ' + String(b.subject || '');
+  const html = layout({
+    heading: String(b.subject || '').replace(/\s*[·|-]\s*ADspace\s*$/i, '').trim() || String(b.subject || ''),
+    body: String(b.body || ''), preheader: subject,
+    block: kind === 'invoice' ? SAMPLE_TABLE : undefined,
+    fine: kind === 'invoice' ? [String(b.legal || ''), String(b.disclaimer || '')] : undefined
+  });
+  const msg: Record<string, unknown> = {
+    from: TEST_FROM[kind](), to: [String(b.to || '')], subject, html,
+    text: String(b.body || '').replace(/\{\s*invoices\s*\}/gi, 'INV-00001  RM 1,000.00')
+  };
+  const { status, error } = await resend(msg, 'test-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
+  if (status !== 'sent') console.error('supplier-mail: test', status, error);
+  return json(status === 'sent' ? { ok: true, to: b.to, left: b.left } : { error: status === 'unknown' ? 'not-confirmed' : 'not-sent' }, 200, origin);
 }

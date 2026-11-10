@@ -327,8 +327,8 @@
       } },
     { key: 'creators', head: 'Creators List', can: function () { return may('campaigns.creators'); },
       read: function (q) {
-        return read(db.from('creators').select('id, name, active, creator_profiles(platform)')
-          .ilike('name', like(q)).order('name').limit(LIMIT));
+        return read(db.from('creators').select('id, name, creator_code, active, creator_profiles(platform)')
+          .or(any(['name', 'creator_code'], q)).order('name').limit(LIMIT));
       },
       row: function (k) {
         var plats = [];
@@ -337,9 +337,10 @@
           if (w && plats.indexOf(w) < 0) plats.push(w);
         });
         return {
-          id: 'creator-' + k.id, name: k.name, code: '',
+          id: 'creator-' + k.id, name: k.name, code: k.creator_code || '',
           meta: [k.active === false ? 'Inactive' : '', plats.join(', ')],
-          open: function () { go('/admin/?s=campaigns&tab=roster', 'campaigns', ['rosterSearch', k.name]); }
+          /* The creator's own page (2026-11-10). */
+          open: function () { go('/admin/?s=campaigns&tab=roster&creator=' + encodeURIComponent(k.id), 'campaigns'); }
         };
       } },
     /* Reports (2026-10-14): by the client's name or code, a white-label

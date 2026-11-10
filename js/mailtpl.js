@@ -279,6 +279,49 @@
   }
   function edMsg(t, tone) { $('mtEdMsg').textContent = t || ''; $('mtEdMsg').className = 'msg' + (tone ? ' ' + tone : ''); }
 
+  /* What the sheet holds, or the first refusal: [field, words]. */
+  function typed() {
+    var it = st.ed;
+    var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), legal: val('legal'),
+      disclaimer: val('disclaimer'), to: val('to'), on: $('mtOn') ? $('mtOn').getAttribute('aria-checked') === 'true' : true };
+    var bad = odd(texts(), fieldsOf(it.kind));
+    v.refuse = it.named && (v.name.length < 2 || v.name.length > 80) ? ['name', SAID['bad-name']]
+      : it.to && !window.ADspaceWords.emailOk(v.to) ? ['to', SAID['bad-email']]
+      : v.subject.length < 2 ? ['subject', SAID['bad-subject']]
+      : it.two && v.subject2.length < 2 ? ['subject2', SAID['bad-subject']]
+      : v.body.length < 2 ? ['body', SAID['bad-body']]
+      : it.kind === 'invoice' && !/\{\s*invoices\s*\}/i.test(v.body) ? ['body', SAID['no-invoices']]
+      : bad.length ? ['body', L().unknownField(bad[0], fieldsOf(it.kind))] : null;
+    return v;
+  }
+  /* Send test to me (2026-11-10): the words as they stand, saved or not,
+     their fields filled with made-up values, to the colleague's own
+     sign-in address (supplier-mail `test`, mail_test_begin); twenty a day. */
+  var TEST_SAID = {
+    'too-many': 'Twenty test emails have been sent today. Send another tomorrow.',
+    'no-email': 'Your account has no sign-in email. Please ask an admin.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff,
+    'not-sent': 'The test email was not sent. Please try again.',
+    'not-confirmed': 'The test email may not have been sent. Check your inbox before sending another.'
+  };
+  function sendTest() {
+    var it = st.ed, go = $('mtEdTest');
+    var v = typed();
+    if (v.refuse) { edMsg(v.refuse[1], 'err'); var f = $('mt-' + v.refuse[0]); if (f) f.focus(); return; }
+    go.disabled = true;
+    edMsg('');
+    var api = window.ADspaceAPI;
+    cli().functions.invoke('supplier-mail', { body: { test: true, kind: it.kind, subject: v.subject, body: v.body,
+      legal: v.legal, disclaimer: v.disclaimer } }).then(function (r) {
+      return (api && api.fnRefusal ? api.fnRefusal(r) : Promise.resolve(r.error ? 'failed' : '')).then(function (code) {
+        var d = r.data && r.data.error ? r.data : code ? { error: code } : (r.data || { error: 'not-sent' });
+        go.disabled = false;
+        if (d.error) { edMsg(TEST_SAID[d.error] || said(d) || TEST_SAID['not-sent'], 'err'); return; }
+        edMsg('Test sent to ' + d.to + '.', 'ok');
+      });
+    }).catch(function () { go.disabled = false; edMsg(TEST_SAID['not-sent'], 'err'); });
+  }
+
   function save() {
     var it = st.ed, go = $('mtEdSave');
     var v = { name: val('name'), subject: val('subject'), subject2: val('subject2'), body: val('body'), legal: val('legal'),
@@ -354,6 +397,7 @@
       if (sw) sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
     });
     $('mtEdSave').addEventListener('click', save);
+    $('mtEdTest').addEventListener('click', sendTest);
     function back() { var id = st.ed && !st.ed.isNew ? st.ed.id : ''; st.ed = null; showList(id); }
     $('mtEdCancel').addEventListener('click', back);
     $('mtEdClose').addEventListener('click', back);

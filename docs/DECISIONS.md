@@ -9197,3 +9197,26 @@ colleague at Suppliers Full Access the supplier templates alone. The SQL
 Editor part restates `email_template_delete`, which the connector holds.
 The held item 1 (one template store) stays six tables; item 3 (Send test to
 me) is not wanted.
+
+### 2026-11-10 — A creator is a page of their own; Send test to me
+
+The user, on the Creators List: "link history, payment details and edits
+all three are different modal … make them together in one … only an open
+button then inside contains all their information (like clients /
+suppliers)". Approved the proposal (one page, four tabs, the row one
+button, no profile links on the row). The row's ⋯ (Edit, Set inactive,
+Link history, Payment details, Delete) and the three sheets it opened are
+gone: Link history and payment details are parts of the page, the details
+are changed where they are read (as a colleague's record), Edit links
+opens the creator sheet on its links alone, and the ⋯ that stays on the
+page holds what is rare (Reset link, Set inactive, Delete). The finance
+email's `pay=` link opens the page on Payment.
+
+The same release adds Send test to me to the email template editor, from
+the Settings brief ("Send test to me is offered where the channel allows
+it"; the user, 2026-11-10: "in same release", answering this session's
+proposal after the entry above recorded it as not wanted). Email only: a WhatsApp test
+would be a paid template send. A test goes to the colleague's own sign-in
+address alone, never one the page names, its fields filled with the
+placeholder set of DESIGN.md §6 by the database, twenty a day, and nothing
+is filed in the Email log or the Activity record.

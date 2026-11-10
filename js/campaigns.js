@@ -208,7 +208,10 @@
       b.classList.toggle('is-on', b.getAttribute('data-tab') === name);
     });
     setUrl();
-    if (name === 'roster') loadRoster(function () { rosterDraft.restore(); restoreScroll(); });
+    if (name === 'roster') {
+      if (crRec.id) paintCrRec(); else crView();
+      loadRoster(function () { rosterDraft.restore(); if (!crRec.id) restoreScroll(); });
+    }
     if (name === 'campaigns' && !state.campaign) { loadCampaigns(); campDraft.restore(); restoreScroll(); }
   }
   /* A record stands alone, as a client's and a colleague's do: the section's
@@ -216,10 +219,10 @@
      (2026-11-03, the user: "check all others too"). */
   function campStrip() {
     var strip = $('campSectionTabs');
-    if (strip) strip.hidden = state.tab === 'campaigns' && !!state.campaign;
+    if (strip) strip.hidden = (state.tab === 'campaigns' && !!state.campaign) || (state.tab === 'roster' && !!crRec.id);
   }
   Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
-    b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
+    b.addEventListener('click', function () { crRec.id = null; showTab(b.getAttribute('data-tab')); });
   });
 
   // ---- Creators list ------------------------------------------------------
@@ -240,7 +243,7 @@
       /* Each creator's payment details standing (2026-11-08), one read. */
       var states = db.rpc('creator_pay_states').then(function (p) { state.payStates = (!p.error && p.data) || {}; })
         .catch(function () { state.payStates = {}; });
-      loadRecord(function () { states.then(function () { paintRoster(); if (then) then(); }); });
+      loadRecord(function () { states.then(function () { paintRoster(); if (crRec.id) paintCrRec(); if (then) then(); }); });
     });
   }
 
@@ -295,8 +298,8 @@
              the question in. */
           var camp = o.campaigns || {};
           var seen = rec.on.filter(function (x) { return x.id === o.campaign_id; })[0];
-          if (seen) { if (when > seen.when) seen.when = when; return; }
-          rec.on.push({ id: o.campaign_id, title: campName(camp), when: when });
+          if (seen) { if (when > seen.when) { seen.when = when; seen.st = o.state; } return; }
+          rec.on.push({ id: o.campaign_id, title: campName(camp), when: when, st: o.state });
         });
         Object.keys(state.record).forEach(function (k) {
           state.record[k].on.sort(function (a, b) { return a.when < b.when ? 1 : -1; });
@@ -400,7 +403,7 @@
         shut: !narrowed && GRP.shut('creators', g[0], g[3], g[2].length === shown.length),
         table: function () {
           var table = GRP.table('svc-row cr-row',
-            ['Creator', 'Profiles', 'Campaigns', { text: 'Client rate', cls: 'svc-rate' }, '']);
+            ['Creator', 'Platforms', 'Campaigns', { text: 'Client rate', cls: 'svc-rate' }, 'Payment details', '']);
           GRP.more(table, g[2], 30, 'creators', rosterRow);
           return table;
         }
@@ -415,80 +418,332 @@
      identical platform chips is decoration standing where information should
      be. The name starts the row now, and what follows it is what differs. */
 
+  /* A creator is a record of their own (2026-11-10, the user: "only an open
+     button then inside contains all their information (like clients /
+     suppliers)"): the row is one button, its platforms words, its payment
+     details' standing at the right; on a phone two lines, the name with that
+     standing, then Creator ID · platforms · campaigns with the rate. */
+  var CR_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
+  function platsOf(c) {
+    var out = [];
+    (c.creator_profiles || []).forEach(function (p) {
+      var w = PLATFORM_LABEL[p.platform] || p.platform;
+      if (w && out.indexOf(w) < 0) out.push(w);
+    });
+    return out;
+  }
+  function payChip(c) {
+    var w = PAY_STATE[(state.payStates || {})[c.id]];
+    return w ? '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>' : '';
+  }
   function rosterRow(c) {
-    {
-      var row = document.createElement('div');
-      var off = c.active === false;
-      row.className = 'svc-row cr-row' + (off ? ' is-off' : '');
-      /* One line under the name carrying everything that differs: where they
-         post, who they are there, and what they have done for us. The profile
-         used to be a column of outbound buttons, which on a phone took a third
-         line of its own and left a row 110px tall with an empty half; the
-         platform is a word here and opening the profile is an item in the ⋯,
-         because on this screen a creator is a record being managed rather than
-         a profile being browsed. The handle rides along only where it reads as
-         a name: rednote keeps a profile id in that field and
-         5e3262fd00000000010015b6 is longer than the creator it belongs to. */
-      /* The profile is a link on the row again, as the word and the mark that
-         says it leaves the page, without the chip's border: a creator is
-         looked up constantly and a link folded into the ⋯ costs two taps for
-         the commonest thing on this screen. The handle rides along only where
-         it reads as a name, because rednote keeps a profile id in that field
-         and 5e3262fd00000000010015b6 says nothing to anybody. */
-      var profs = c.creator_profiles || [];
-      var links = profs.map(function (p) {
-        var h = String(p.handle || '');
-        return '<a class="plink plink-bare" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' +
-          esc(PLATFORM_LABEL[p.platform] || p.platform) +
-          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + EXT + '</a>';
-      }).join('');
-      row.innerHTML =
-        '<span class="svc-name cr-who"><b>' + esc(c.name) +
-          (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
-          (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') +
-          /* Details waiting on the team are the exception the row names. */
-          /* Payment details as they stand, Not submitted left unsaid. */
-          (PAY_STATE[(state.payStates || {})[c.id]] ? '<span class="cr-pay"><span class="chip-state ' + PAY_STATE[state.payStates[c.id]][1] + '">' +
-            esc('Payment details ' + PAY_STATE[state.payStates[c.id]][0].toLowerCase()) + '</span></span>' : '') + '</span>' +
-        '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
-        '<span class="cr-record">' + recordCell(c) + '</span>' +
-        '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
-                                                   : '<span class="muted">RM</span>') + '</span>' +
-        '<span class="team-act">' +
-          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-menu hidden>' +
-            menuItem('edit', 'Edit') +
-            /* Standing a creator down was named by the error you got when a
-               delete was refused and existed nowhere on the page. */
-            menuItem('state', off ? 'Set active' : 'Set inactive') +
-            menuItem('links', 'Link history') +
-            menuItem('pay', 'Payment details') +
-            menuItem('del', 'Delete', 'is-danger', 'campaigns:manage') +
-          '</div>' +
-        '</span>';
-      rowMenu(row);
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () {
-        creatorOpener = this; openCreator(c);
+    var row = document.createElement('button');
+    var off = c.active === false;
+    row.type = 'button';
+    row.className = 'svc-row cr-row' + (off ? ' is-off' : '');
+    row.setAttribute('data-id', c.id);
+    var plats = platsOf(c), rec = state.record && state.record[c.id];
+    var n = rec ? rec.on.length : 0;
+    var line = [c.creator_code ? '<span class="nb cr-line-code">' + esc(c.creator_code) + '</span>' : '']
+      .concat(plats.length ? ['<span class="nb">' + esc(plats.join(', ')) + '</span>'] : [])
+      .concat(n ? ['<span class="nb">' + n + (n === 1 ? ' campaign' : ' campaigns') + '</span>'] : [])
+      .filter(Boolean).join(' · ');
+    row.innerHTML =
+      '<span class="svc-name cr-who"><b>' + esc(c.name) +
+        (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
+        (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') + '</span>' +
+      '<span class="cr-plats">' + (plats.length ? esc(plats.join(', ')) : '<span class="muted">—</span>') + '</span>' +
+      '<span class="cr-record">' + recordCell(c) + '</span>' +
+      '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate)) : '<span class="muted">On quote</span>') + '</span>' +
+      '<span class="cr-pay">' + (payChip(c) || '<span class="muted">—</span>') + '</span>' +
+      '<span class="cr-line">' + line + '</span>' +
+      '<span class="cr-go">' + CR_CHEV + '</span>';
+    row.addEventListener('click', function () { openCrRec(c.id, 'overview', row); });
+    return row;
+  }
+
+  /* ---- A creator's page ----------------------------------------------------
+     Back, the record head (the name over Creator ID and platforms, the
+     state, one ⋯ of Reset link, Set inactive or Set active, and Delete), then
+     Overview (details changed where they are read, the profiles with Edit
+     links and Link history, the creator's page link), Payment (the payment
+     details with Approve and Decline, Bukku, the payments), Bookings and
+     Activity, and a rail of what waits. `creator=` and `pane=` in the
+     address. */
+  var CR_PANES = [['overview', 'Overview'], ['payment', 'Payment'], ['bookings', 'Bookings'], ['activity', 'Activity']];
+  var crRec = { id: null, pane: 'overview', opener: null };
+  var CR_PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var CR_BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';
+  var CR_DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  function crPaneOk(k) {
+    if (k === 'payment') return mayPart('campaigns.creators', 'view');
+    if (k === 'activity') return Boolean(bridge.may && bridge.may('activity.campaigns', 'view'));
+    return true;
+  }
+  function crOf(id) { return state.creators.filter(function (c) { return c.id === id; })[0] || null; }
+  function crView() {
+    var open = state.tab === 'roster' && Boolean(crRec.id);
+    if ($('crRec')) $('crRec').hidden = !open;
+    if ($('rosterBar')) $('rosterBar').hidden = open;
+    if ($('rosterList')) $('rosterList').hidden = open;
+    campStrip();
+  }
+  function openCrRec(id, pane, opener) {
+    crRec.id = id;
+    crRec.pane = pane && crPaneOk(pane) ? pane : 'overview';
+    crRec.opener = opener || null;
+    crRec.hist = false; crRec.histSaid = '';
+    payJobs = null;
+    pushUrl();
+    paintCrRec();
+    window.scrollTo(0, 0);
+  }
+  function closeCrRec() {
+    var id = crRec.id;
+    crRec.id = null;
+    pushUrl();
+    crView();
+    var back = id && document.querySelector('#rosterList .cr-row[data-id="' + id + '"]');
+    if (back) back.focus({ preventScroll: false });
+  }
+  function crMsg(text, tone) { msg('crRecMsg', text || '', tone || ''); }
+  function paintCrRec() {
+    var box = $('crRec');
+    if (!box) return;
+    crView();
+    if (!crRec.id) { box.innerHTML = ''; return; }
+    var c = crOf(crRec.id);
+    if (!c) {
+      if (!state.creators.length) { UI.skeleton(box, 3); return; }
+      crRec.id = null; setUrl(); crView();
+      msg('rosterMsgLine', 'This creator no longer exists.', 'warn');
+      return;
+    }
+    if (!crPaneOk(crRec.pane)) crRec.pane = 'overview';
+    var work = mayPart('campaigns.creators', 'work'), manage = mayPart('campaigns.creators', 'manage');
+    var off = c.active === false;
+    var items = (work && c.access_code ? menuItem('reset', 'Reset link') : '') +
+      (work ? menuItem('state', off ? 'Set active' : 'Set inactive') : '') +
+      (manage ? menuItem('del', 'Delete', 'is-danger', 'campaigns.creators:manage') : '');
+    var meta = [c.creator_code || ''].concat(platsOf(c).length ? [platsOf(c).join(', ')] : []).filter(Boolean)
+      .map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }).join(' · ');
+    var panes = CR_PANES.filter(function (x) { return crPaneOk(x[0]); });
+    box.innerHTML =
+      '<button class="backlink" type="button" data-r="back">' + CR_BACK + 'Back</button>' +
+      '<section class="panel rec-head crr-head"><div class="rec-id is-nomark">' +
+        '<div class="rec-who"><div class="rec-name"><h2>' + esc(c.name) + '</h2></div>' +
+          '<p class="rec-id-meta">' + meta + '</p></div>' +
+        '<div class="rec-ctl"><span class="chip-state ' + (off ? 'is-off' : 'is-ok') + '">' + (off ? 'Inactive' : 'Active') + '</span>' +
+          (items ? '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + CR_DOTS + '</button>' +
+            '<div class="kmenu" data-menu hidden>' + items + '</div></span>' : '') + '</div>' +
+      '</div></section>' +
+      '<div class="rec crr-body">' +
+        '<nav class="rectabs crr-tabs" role="tablist" aria-label="Creator" data-swipe="crrTabs" id="crrTabs">' + panes.map(function (x) {
+          var on = x[0] === crRec.pane;
+          var n = x[0] === 'payment' && (state.payStates || {})[c.id] === 'pending' ? '<span class="tab-n">1</span>' : '';
+          return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + n + '</button>';
+        }).join('') + '</nav>' +
+        '<div class="rec-panes"><div class="msg" id="crRecMsg" role="status"></div>' +
+          '<div class="rec-pane crr-pane" id="crRecPane" data-narrow="640" data-swipe="crrTabs"></div></div>' +
+        '<aside class="rec-rail" id="crRecRail" aria-label="Creator facts"></aside>' +
+      '</div>';
+    box.querySelector('[data-r="back"]').addEventListener('click', closeCrRec);
+    var head = box.querySelector('.rec-ctl');
+    rowMenu(head);
+    var it = function (a) { return head.querySelector('[data-a="' + a + '"]'); };
+    if (it('reset')) it('reset').addEventListener('click', function () { shutMenus(); resetCode(c, head.querySelector('[data-a="menu"]')); });
+    if (it('state')) it('state').addEventListener('click', function () { shutMenus(); setCreatorActive(c, off); });
+    if (it('del')) it('del').addEventListener('click', function () { shutMenus(); removeCreator(c); });
+    Array.prototype.forEach.call(box.querySelectorAll('.crr-tabs .tab'), function (b) {
+      b.addEventListener('click', function () {
+        if (b.getAttribute('data-pane') === crRec.pane) return;
+        crRec.pane = b.getAttribute('data-pane');
+        pushUrl();
+        paintCrRec();
       });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () { removeCreator(c); });
-      row.querySelector('[data-a="links"]').addEventListener('click', function () { shutMenus(); openLinkHistory(c, this); });
-      var payItem = row.querySelector('[data-a="pay"]');
-      if (payItem) payItem.addEventListener('click', function () { shutMenus(); openPayDetails(c, row.querySelector('[data-a="menu"]')); });
-      row.querySelector('[data-a="state"]').addEventListener('click', function () {
-        shutMenus();
-        db.from('creators').update({ active: off }).eq('id', c.id).select('id').then(function (r) {
-          if (r.error || !(r.data || []).length) {
-            window.ADspaceConfirm.ask({
-              title: 'Not saved', body: r.error ? r.error.message : 'The database refused the request.', go: 'Close', cancel: false
-            });
-            return;
+    });
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(box.querySelector('.crr-tabs'));
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
+    paintCrPane(c);
+    paintCrRail(c);
+  }
+  function paintCrPane(c) {
+    var host = $('crRecPane');
+    if (crRec.pane === 'payment') {
+      host.innerHTML = '<div class="panel crr-card"><div id="cpayBody"></div></div>';
+      payFor = c; payRows = null;
+      UI.skeleton($('cpayBody'), 4);
+      readPayDetails();
+      return;
+    }
+    if (crRec.pane === 'bookings') return paneCrBookings(c, host);
+    if (crRec.pane === 'activity') return paneCrActivity(c, host);
+    paneCrOverview(c, host);
+  }
+  function crGroup(title, inner, act) {
+    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">' + esc(title) + '</h4>' + (act || '') + '</div>' + inner + '</section>';
+  }
+  var CR_LOG = [['name', 'Name'], ['client_rate', 'Client rate', function (v) { return v == null ? '' : money(v); }],
+    ['whatsapp', 'WhatsApp'], ['notes', 'Notes']];
+  function paneCrOverview(c, host) {
+    var work = mayPart('campaigns.creators', 'work');
+    var word = function (k, label, shown) {
+      return '<div><dt>' + esc(label) + '</dt><dd class="mfield' + (shown ? '' : ' is-empty') + '"><span class="mval" data-k="' + k + '">' +
+        esc(shown || 'Not set') + '</span>' +
+        (work ? '<button class="tl-pen" type="button" data-pen="' + k + '" aria-label="Edit ' + esc(label.toLowerCase()) + '">' + CR_PEN + '</button>' : '') + '</dd></div>';
+    };
+    var fact = function (label, v) { return v ? '<div><dt>' + esc(label) + '</dt><dd>' + esc(v) + '</dd></div>' : ''; };
+    var profs = (c.creator_profiles || []).map(function (p) {
+      var h = String(p.handle || '');
+      return '<a class="plink" href="' + esc(absUrl(p.url)) + '" target="_blank" rel="noopener">' +
+        esc(PLATFORM_LABEL[p.platform] || p.platform) + (h && h.length <= 24 ? ' ' + esc(h) : '') + EXT + '</a>';
+    }).join('');
+    var link = c.access_code ? creatorLink(c.access_code) : '';
+    host.innerHTML = '<div class="panel crr-card"><div class="readgroups">' +
+      crGroup('Details', '<dl class="ovfacts">' +
+        fact('Creator ID', c.creator_code) +
+        word('name', 'Name', c.name) +
+        word('client_rate', 'Client rate', c.client_rate != null && c.client_rate !== '' ? money(c.client_rate) : '') +
+        word('whatsapp', 'WhatsApp', c.whatsapp) +
+        word('notes', 'Notes', c.notes) + '</dl>') +
+      crGroup('Profiles', '<div class="crr-profs">' + (profs || '<p class="emptyline">No profile links.</p>') + '</div>' +
+          '<details class="crr-hist" id="crrHist"><summary class="btn btn-quiet btn-sm">Link history</summary>' +
+          '<div id="linkHistList"></div><div class="msg" id="linkHistMsg" role="status"></div></details>',
+        work ? '<button class="btn btn-sm" type="button" data-a="links">' + CR_PEN + 'Edit links</button>' : '') +
+      (link ? crGroup('Creator page', '<dl class="ovfacts">' +
+          '<div><dt>Link</dt><dd class="crr-link">' + esc(link.replace(/^https?:\/\//, '')) + '</dd></div>' +
+          fact('Access code', prettyCode(c.access_code)) + '</dl>' +
+          '<div class="crr-linkacts"><button class="btn btn-sm" type="button" data-a="copy">Copy link</button>' +
+          '<button class="btn btn-sm" type="button" data-a="preview">Preview</button></div>') : '') +
+      '</div></div>';
+    var hist = $('crrHist');
+    /* The fold stays open through a repaint (a restore reads the list
+       again), its answer said once it is drawn. */
+    hist.addEventListener('toggle', function () {
+      crRec.hist = hist.open;
+      if (!hist.open) return;
+      histFor = c; msg('linkHistMsg', crRec.histSaid || '', crRec.histSaid ? 'ok' : ''); crRec.histSaid = '';
+      paintLinkHistory();
+    });
+    if (crRec.hist) hist.open = true;
+    var b = function (a) { return host.querySelector('[data-a="' + a + '"]'); };
+    if (b('links')) b('links').addEventListener('click', function () { creatorOpener = this; openCreator(c, false, true); });
+    if (b('copy')) b('copy').addEventListener('click', function () { window.ADspaceCopy.to(this, link); });
+    if (b('preview')) b('preview').addEventListener('click', function () { window.open(link, '_blank', 'noopener'); });
+    Array.prototype.forEach.call(host.querySelectorAll('[data-pen]'), function (pen) {
+      var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
+      pen.addEventListener('click', function () {
+        var raw = c[k] == null ? '' : String(c[k]);
+        val.textContent = raw;
+        window.ADspaceAsk.rename(val, pen, {
+          value: raw, type: k === 'client_rate' ? 'number' : 'text',
+          label: pen.getAttribute('aria-label').replace(/^Edit /, ''),
+          allowEmpty: k !== 'name',
+          check: function (v) {
+            v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+            if (k === 'name' && !v) return 'Enter a name.';
+            if (k === 'name' && nameHolder(v, c)) return nameHolder(v, c).name + ' is already in the Creators List.';
+            if (k === 'client_rate' && v !== '' && !(Number(v) >= 0)) return 'Enter a rate of 0 or more.';
+            if (k === 'whatsapp' && v && (v.replace(/\D/g, '').length < 8 || v.replace(/\D/g, '').length > 15)) return 'Enter a number of 8 to 15 digits.';
+            return '';
+          },
+          save: function (v) {
+            v = k === 'notes' ? String(v == null ? '' : v).trim() : String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+            var f = {};
+            f[k] = k === 'client_rate' ? (v === '' ? null : Number(v)) : (v || null);
+            var was = k === 'client_rate' ? (c.client_rate == null ? null : Number(c.client_rate)) : (c[k] || null);
+            if (was === f[k]) { paneCrOverview(c, host); return; }
+            patchCreator(c, f, function (ok) { if (!ok) paneCrOverview(c, host); });
           }
-          log(off ? 'creator.on' : 'creator.off', c.name, '');
-          loadRoster();
         });
       });
-      return row;
+    });
+  }
+  /* One value of a creator saved alone, filed from and to, put back on a
+     refusal. */
+  function patchCreator(c, fields, back) {
+    db.from('creators').update(fields).eq('id', c.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) {
+        crMsg(r.error ? (/duplicate|unique/i.test(r.error.message) ? 'That name is already in the Creators List.' : r.error.message)
+          : 'Not saved. The database refused the request.', 'err');
+        back(false); return;
+      }
+      var moved = window.ADspaceRecords && window.ADspaceRecords.changes ? window.ADspaceRecords.changes(c, fields, CR_LOG) : '';
+      log('creator.updated', fields.name || c.name, moved || '');
+      Object.assign(c, fields);
+      back(true);
+      paintRoster();
+      paintCrRec();
+      crMsg('Saved.', 'ok');
+    }).catch(function () { crMsg('Not saved. Please try again.', 'err'); back(false); });
+  }
+  function setCreatorActive(c, on) {
+    db.from('creators').update({ active: on }).eq('id', c.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) {
+        crMsg(r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
+        return;
+      }
+      log(on ? 'creator.on' : 'creator.off', c.name, '');
+      c.active = on;
+      loadRoster(function () {
+        var A = window.ADspaceAdmin;
+        if (A && A.undoHere && crRec.id === c.id) A.undoHere(c.name + (on ? ' is active.' : ' is inactive.'), function () { setCreatorActive(c, !on); }, $('crRecMsg'));
+      });
+    });
+  }
+  function paneCrBookings(c, host) {
+    var rec = state.record && state.record[c.id];
+    if (state.recordFailed) { UI.failLine(host, 'The bookings', '', function () { loadRecord(function () { paneCrBookings(c, host); }); }); return; }
+    if (!rec || !rec.on.length) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No bookings.</p></div>'; return; }
+    host.innerHTML = '<div class="panel crr-card crr-bk">' + rec.on.map(function (x) {
+      var st = OPTION_WORD[x.st] || x.st || '';
+      return '<button class="crr-bkrow" type="button" data-camp="' + esc(x.id) + '">' +
+        '<span class="crr-bk-name"><b>' + esc(x.title) + '</b><small>' + (x.when ? esc(monthOf(x.when)) : '') + '</small></span>' +
+        '<span class="crr-bk-st">' + (st ? '<span class="chip-state ' + (W.tone ? W.tone(x.st) : '') + '">' + esc(st) + '</span>' : '') + '</span>' +
+        '<span class="cr-go">' + CR_CHEV + '</span></button>';
+    }).join('') + '</div>';
+    Array.prototype.forEach.call(host.querySelectorAll('[data-camp]'), function (b) {
+      b.addEventListener('click', function () {
+        crRec.id = null; crView();
+        openCampaignById(b.getAttribute('data-camp'));
+      });
+    });
+  }
+  function paneCrActivity(c, host) {
+    UI.skeleton(host, 3);
+    db.from('activity_log').select('*').eq('subject', c.name).order('created_at', { ascending: false }).limit(50).then(function (r) {
+      if ($('crRecPane') !== host) return;
+      if (r.error) { UI.failLine(host, 'The activity record', r.error.message, function () { paneCrActivity(c, host); }); return; }
+      var rows = r.data || [];
+      if (!rows.length) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No entries.</p></div>'; return; }
+      var A = window.ADspaceAdmin;
+      host.innerHTML = '<div class="softpanel recpanel"></div>';
+      window.ADspaceRecords.paint(host.firstChild, rows.map(function (x) {
+        var e = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
+        if (e.key == null) e.key = 'creator';
+        return e;
+      }));
+    }).catch(function (e) { UI.failLine(host, 'The activity record', e.message, function () { paneCrActivity(c, host); }); });
+  }
+  /* What waits on the team, and the record: a block with nothing leaves. */
+  function paintCrRail(c) {
+    var rail = $('crRecRail');
+    if (!rail) return;
+    var rec = state.record && state.record[c.id];
+    var html = '';
+    if ((state.payStates || {})[c.id] === 'pending' && crPaneOk('payment') && crRec.pane !== 'payment') {
+      html += '<section class="railblock"><h3 class="railtitle">Next action</h3>' +
+        '<button class="railnext" type="button" data-a="pay"><span class="railnext-text">Review payment details</span>' + OVCHEV + '</button></section>';
     }
+    if (rec && rec.on.length) {
+      html += '<section class="railblock"><h3 class="railtitle">Campaigns</h3><dl class="raildates">' +
+        '<div><dt>Campaigns</dt><dd>' + rec.on.length + '</dd></div>' +
+        (rec.last ? '<div><dt>Last shoot</dt><dd>' + esc(monthOf(rec.last)) + '</dd></div>' : '') + '</dl></section>';
+    }
+    rail.innerHTML = html;
+    rail.hidden = !html;
+    var go = rail.querySelector('[data-a="pay"]');
+    if (go) go.addEventListener('click', function () { crRec.pane = 'payment'; pushUrl(); paintCrRec(); });
   }
 
   /* ---- Link history ------------------------------------------------------
@@ -538,8 +793,7 @@
                   : 'Not restored. The database refused the request.', 'err');
                 return;
               }
-              msg('linkHistMsg', dd.changed === false ? 'No change.' : 'Restored.', 'ok');
-              paintLinkHistory();
+              crRec.histSaid = dd.changed === false ? 'No change.' : 'Restored.';
               loadRoster();
             });
           });
@@ -550,15 +804,6 @@
     var day = ts ? ADspaceClock.date(ts) : '';
     return day ? day + ', ' + ADspaceClock.clock(ts) : '';
   }
-  function openLinkHistory(c, opener) {
-    histFor = c;
-    $('linkHistTitle').textContent = 'Link history · ' + c.name;
-    msg('linkHistMsg', '');
-    window.ADspaceSheet.show($('linkHistSheet'), { opener: opener });
-    paintLinkHistory();
-  }
-  $('linkHistClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
-
   /* ---- Payment details (2026-11-08) --------------------------------------
      The newest set a creator sent (`creator_pay_list`), the ID and account
      numbers whole only at Payment details View; Approve and Decline at its
@@ -581,14 +826,7 @@
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
     'no-note': 'Enter a reason.', 'too-long': 'Enter a reason of up to 300 characters.' };
-  function openPayDetails(c, opener) {
-    payFor = c; payRows = null; payOpener = opener || null;
-    $('cpayTitle').textContent = 'Payment details · ' + c.name;
-    UI.skeleton($('cpayBody'), 4);
-    $('cpayApprove').hidden = true; $('cpayDecline').hidden = true;
-    window.ADspaceSheet.show($('cpaySheet'), { opener: opener });
-    readPayDetails();
-  }
+  /* Read on the creator's page, its Payment pane (2026-11-10). */
   function readPayDetails() {
     var c = payFor;
     Promise.all([db.rpc('creator_pay_list', { p_creator: c.id }),
@@ -597,13 +835,14 @@
       var r = both[0], sh = both[1] || {};
       var d = r.data || {};
       if (!r.error && !d.error) d.sheet = (sh.data && !sh.data.error && sh.data.rows) || [];
+      if (payFor !== c || !$('cpayBody')) return;
       if (r.error || d.error) {
         UI.failLine($('cpayBody'), 'The payment details', (r.error && r.error.message) || PAY_SAID[d.error] || d.error, readPayDetails);
         return;
       }
       payRows = d;
       paintPayDetails();
-    }).catch(function (e) { UI.failLine($('cpayBody'), 'The payment details', e.message, readPayDetails); });
+    }).catch(function (e) { if ($('cpayBody')) UI.failLine($('cpayBody'), 'The payment details', e.message, readPayDetails); });
   }
   /* Where the set stands on the finance team's sheet (2026-11-09). */
   function sheetFact(req) {
@@ -619,9 +858,12 @@
     var chip = function (st) { var w = PAY_STATE[st] || [st, '']; return '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>'; };
     var fact = function (k, v) { return v ? '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>' : ''; };
     var html = '';
-    if (!cur) html = '<p class="emptyline">No payment details.</p>';
+    var open = cur && cur.status === 'pending' && d.decide;
+    if (!cur) html = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details</h4></div><p class="emptyline">Not submitted.</p></section>';
     else {
-      html += '<section class="fsec"><h4 class="fsec-h">' + esc(cur.ref) + '</h4>' +
+      html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details · ' + esc(cur.ref) + '</h4>' +
+        (open ? '<span class="crr-acts"><button class="btn btn-sm" type="button" id="cpayDecline">Decline</button>' +
+          '<button class="btn btn-sm btn-primary" type="button" id="cpayApprove">Approve</button></span>' : '') + '</div>' +
         '<dl class="ovfacts">' +
           '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
           fact('Submitted', day(cur.created_at)) +
@@ -641,13 +883,13 @@
           sheetFact(cur.id) +
         '</dl></section>';
       if (rows.length > 1) {
-        html += '<section class="fsec"><h4 class="fsec-h">Earlier details</h4><dl class="ovfacts">' +
+        html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Earlier details</h4></div><dl class="ovfacts">' +
           rows.slice(1).map(function (x) {
             return '<div><dt>' + esc(x.ref) + '</dt><dd>' + chip(x.status) + ' · ' + esc(x.method_word + ' ending ' + x.account_end) + '</dd></div>';
           }).join('') + '</dl></section>';
       }
       if ((d.emails || []).length) {
-        html += '<section class="fsec"><h4 class="fsec-h">Emails</h4><dl class="ovfacts">' +
+        html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4></div><dl class="ovfacts">' +
           d.emails.map(function (e) {
             return '<div><dt>' + esc(PAY_MAIL[e.purpose] || e.purpose) + '</dt><dd>' + esc(day(e.created_at)) + ' · ' +
               esc(window.ADspaceWords.en.mailStatus ? window.ADspaceWords.en.mailStatus(e.status) : ({ queued: 'Queued', sending: 'Sending', sent: 'Sent',
@@ -659,15 +901,17 @@
     /* Bukku and the payments (2026-11-09): the creator a supplier in Bukku,
        sent from the details approved last; each booking's bill read back. */
     var approved = rows.some(function (x) { return x.status === 'approved'; });
-    if (approved) html += '<section class="fsec"><div class="readgroup" id="cpayBukku"></div></section>';
-    html += '<section class="fsec" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
+    if (approved) html += '<div class="readgroup" id="cpayBukku"></div>';
+    html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
       '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></div><div id="cpayJobs"></div></section>';
-    $('cpayBody').innerHTML = html + '<div class="msg" id="cpayMsg" role="status"></div>';
+    $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (approved && window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
     if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
-    var open = cur && cur.status === 'pending' && d.decide;
-    $('cpayApprove').hidden = !open; $('cpayDecline').hidden = !open;
+    if (open) {
+      $('cpayApprove').addEventListener('click', approvePay);
+      $('cpayDecline').addEventListener('click', declinePay);
+    }
   }
   /* The bookings and their bills: as last read, or read from Bukku at the press. */
   function readJobs(fresh) {
@@ -764,26 +1008,30 @@
       }
       readPayDetails();
       payJobs = null;
-      db.rpc('creator_pay_states').then(function (p) { if (!p.error) { state.payStates = p.data || {}; paintRoster(); } });
+      db.rpc('creator_pay_states').then(function (p) {
+        if (p.error) return;
+        state.payStates = p.data || {};
+        paintRoster();
+        var c = crRec.id && crOf(crRec.id);
+        if (c) paintCrRail(c);
+      });
       return '';
     });
   }
-  $('cpayApprove').addEventListener('click', function () {
+  function approvePay() {
     var btn = this; btn.disabled = true;
     decidePay(true).then(function (said) {
       btn.disabled = false;
       var m = $('cpayMsg'); if (m) { m.textContent = said || 'Approved.'; m.className = 'msg ' + (said ? 'err' : 'ok'); }
     }).catch(function (e) { btn.disabled = false; var m = $('cpayMsg'); if (m) { m.textContent = e.message; m.className = 'msg err'; } });
-  });
-  $('cpayDecline').addEventListener('click', function () {
+  }
+  function declinePay() {
     window.ADspaceConfirm.ask({ title: 'Decline payment details?', go: 'Decline', wait: true,
       body: 'The creator will see the reason and be asked to submit their details again.',
       field: { name: 'note', label: 'Reason', rows: 3, maxlength: 300 } }, function (v) {
       return decidePay(false, String((v && v.note) || v || '').trim());
     });
-  });
-  $('cpayCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
-  $('cpayClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  }
 
   /* A creators list ⋯ hangs off a table row, so it is placed on the viewport
      rather than inside the row that would clip it. */
@@ -928,7 +1176,7 @@
     if (!d || !d.open) return;
     var editing = d.meta && d.meta.editing
       ? state.creators.filter(function (c) { return c.id === d.meta.editing; })[0] : null;
-    openCreator(editing || null, true);
+    openCreator(editing || null, true, Boolean(d.meta && d.meta.links));
     rosterDraft.fill(d);
     warnDupes(ROSTER_CTX);
   };
@@ -936,9 +1184,14 @@
     if (e.target.closest && e.target.closest('#profRows')) rosterDraft.save();
   });
 
-  function openCreator(c, restoring) {
+  /* New creator asks a name, a rate and the links; Edit links on a
+     creator's page opens the same sheet on its links alone (2026-11-10),
+     the rest held as it is. */
+  function openCreator(c, restoring, linksOnly) {
     state.editing = c || null;
-    $('creatorFormTitle').textContent = c ? 'Edit creator' : 'New creator';
+    var links = Boolean(c && linksOnly);
+    $('addCreatorBox').classList.toggle('is-links', links);
+    $('creatorFormTitle').textContent = links ? 'Edit links' : c ? 'Edit creator' : 'New creator';
     $('saveCreator').textContent = c ? 'Save' : 'Create';
     $('crName').value = c ? c.name : '';
     $('crRate').value = c && c.client_rate != null ? c.client_rate : '';
@@ -949,47 +1202,12 @@
     var ps = (c && c.creator_profiles) || [];
     if (!ps.length) rows.appendChild(profRow(null, ROSTER_CTX));
     else ps.forEach(function (p) { rows.appendChild(profRow(p, ROSTER_CTX)); });
-    paintCode(c);
-    paintCreatorCamps(c);
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
-    if (!restoring) rosterDraft.note({ editing: c ? c.id : null });
+    if (!restoring) rosterDraft.note({ editing: c ? c.id : null, links: links });
     /* Nothing is focused when the form opens: on a phone a field taking
        focus raises the keyboard and zooms the page past the rest of the
        form, and the first field is rarely the one somebody came to change. */
-  }
-
-  /* Which campaigns this creator has been on, on their own card. The list's
-     one cell names the latest and counts the rest, which is all a column can
-     carry; the question "what have they done for us" is answered here, where
-     there is room for a row each and a way into every one of them.
-     Composed from `state.record`, which `loadRecord` has already read for the
-     list: no second query, and a creator opened from a list that could not
-     read the bookings shows nothing rather than an empty history. */
-  function paintCreatorCamps(c) {
-    var box = $('crCampBox');
-    if (!box) return;
-    var rec = (c && state.record && state.record[c.id]) || null;
-    box.hidden = !(rec && rec.on.length);
-    if (box.hidden) return;
-    var list = $('crCamps');
-    list.innerHTML = '';
-    rec.on.forEach(function (x) {
-      var row = document.createElement('button');
-      row.className = 'crcamp';
-      row.type = 'button';
-      row.innerHTML =
-        '<span class="crcamp-name">' + esc(x.title) + '</span>' +
-        '<span class="crcamp-when">' + (x.when ? esc(monthOf(x.when)) : '') + '</span>';
-      /* The campaign opens where every campaign opens, from its own row in
-         the list, so there is one way in and the address stays right. */
-      row.addEventListener('click', function () {
-        $('addCreatorBox').hidden = true;
-        rosterDraft.clear();
-        openCampaignById(x.id);
-      });
-      list.appendChild(row);
-    });
   }
 
   /* The code reads in two groups of four, because it is meant to be read down
@@ -1006,44 +1224,22 @@
     var long = location.origin + '/creator/?k=' + encodeURIComponent(c || '');
     return bridge.shortLink ? bridge.shortLink('creator', c, long) : long;
   }
-  function paintCode(c) {
-    var box = $('crCodeBox');
-    if (!box) return;
-    // Nothing to show until the row exists: the code is made when it is saved.
-    box.hidden = !(c && c.access_code);
-    msg('crCodeMsg', '');
-    if (box.hidden) return;
-    $('crCode').value = prettyCode(c.access_code);
-    $('crCodeLink').value = creatorLink(c.access_code);
-  }
-  if ($('crCodeCopy')) {
-    $('crCodeCopy').addEventListener('click', function () {
-      window.ADspaceCopy.to(this, $('crCodeLink').value);
-    });
-  }
-  /* Resetting is how a code that has been forwarded to the wrong person is
-     taken back, so it asks first: the creator's old link stops working and
-     they have to be sent the new one. */
-  if ($('crCodeReset')) {
-    $('crCodeReset').addEventListener('click', function () {
-      var c = state.editing;
-      if (!c) return;
-      window.ADspaceConfirm.ask({
-        title: 'Reset the access code',
-        body: 'The link ' + c.name + ' already has stops working immediately. '
-            + 'The new one has to be sent to them.',
-        go: 'Reset code',
-        tone: 'warn'
-      }, function () {
-        db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
-          if (r.error) { msg('crCodeMsg', r.error.message, 'err'); return; }
-          var code = (r.data && r.data.code) || '';
-          c.access_code = code;
-          paintCode(c);
-          msg('crCodeMsg', 'New code issued. Send them the new link.', 'ok');
-          log('creator.code', c.name, '');
-          loadRoster();
-        });
+  /* Reset link (the creator's page ⋯) is how a code forwarded to the wrong
+     person is taken back, so it asks first: the creator's old link stops
+     working and they have to be sent the new one. */
+  function resetCode(c, opener) {
+    window.ADspaceConfirm.ask({
+      title: 'Reset link?',
+      body: c.name + '\'s current link will stop working immediately. Send the new link to ' + c.name + '.',
+      go: 'Reset link',
+      tone: 'warn',
+      opener: opener || null
+    }, function () {
+      db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
+        if (r.error) { crMsg(r.error.message, 'err'); return; }
+        c.access_code = (r.data && r.data.code) || '';
+        log('creator.code', c.name, '');
+        loadRoster(function () { crMsg('Link reset. Send the new link to ' + c.name + '.', 'ok'); });
       });
     });
   }
@@ -1129,6 +1325,8 @@
         if (created) log('creator.added', name, '');
         else if (fieldsMoved) log('creator.updated', name, '');
         shutCreatorSheet();
+        /* A new creator opens on their own page (2026-11-10). */
+        if (created) { crRec.id = id; crRec.pane = 'overview'; pushUrl(); }
         loadRoster();
       });
     };
@@ -1184,6 +1382,7 @@
           return;
         }
         log('creator.removed', c.name, '');
+        if (crRec.id === c.id) { crRec.id = null; setUrl(); crView(); msg('rosterMsgLine', c.name + ' was deleted.', 'ok'); }
         loadRoster();
       });
     });
@@ -5736,9 +5935,12 @@
       return {
         campaign: state.campaign ? state.campaign.id : '',
         tab: (!state.campaign && state.tab === 'roster') ? 'roster' : '',
+        /* A creator's page (2026-11-10), its pane after it. */
+        creator: (!state.campaign && state.tab === 'roster' && crRec.id) ? crRec.id : '',
         /* Overview is the default, so a link to a campaign is the campaign
            and not the campaign on its first pane. */
-        pane: (state.campaign && campPane !== 'overview') ? campPane : ''
+        pane: (state.campaign && campPane !== 'overview') ? campPane
+          : (!state.campaign && state.tab === 'roster' && crRec.id && crRec.pane !== 'overview') ? crRec.pane : ''
       };
     },
     /* On entry, read the address rather than starting from the list. An open
@@ -5762,15 +5964,12 @@
         return;
       }
       if (state.campaign) { showTab('campaigns'); return; }
-      showTab(params.get('tab') === 'roster' ? 'roster' : 'campaigns');
-      /* A creator's payment details to review, the finance email's link. */
-      var payId = params.get('pay');
-      if (payId && params.get('tab') === 'roster') {
-        loadRoster(function () {
-          var who = state.creators.filter(function (c) { return c.id === payId; })[0];
-          if (who) openPayDetails(who, null);
-        });
-      }
+      /* A creator's page (`creator=`, its pane); the finance email's link
+         to payment details to review (`pay=`) opens its Payment pane. */
+      var roster = params.get('tab') === 'roster';
+      crRec.id = roster ? (params.get('creator') || params.get('pay') || null) : null;
+      crRec.pane = params.get('pay') && !params.get('creator') ? 'payment' : (params.get('pane') || 'overview');
+      showTab(roster ? 'roster' : 'campaigns');
       var forClient = params.get('new');
       if (forClient) {
         loadClients(function () {
