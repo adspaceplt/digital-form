@@ -14534,11 +14534,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var idNow = ct ? ((ct.fields || []).filter(function (f) { return f.field_id === p.field_id; })[0] || {}).value || '' : '';
             if (bkb.action === 'preview') {
               return { data: { ok: true, code: ct ? ct.contact_code : nextC(), rows: [
-                { field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
-                { field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
-                { field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
-                { field: p.kind === 'client' ? 'Client ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
-                { field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };
+                { key: 'legal_name', pick: !!ct, field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
+                { key: 'reg_no', pick: !!ct, field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
+                { key: 'address', pick: !!ct, field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
+                { key: 'our_id', pick: !!ct, field: p.kind === 'client' ? 'Client ID' : p.kind === 'creator' ? 'Creator ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
+                { key: 'types', pick: false, field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };
             }
 
             if (bkb.action === 'link') {
@@ -14561,7 +14561,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!ct) { ct = { id: Math.max.apply(null, held.map(function (c) { return Number(c.id) || 0; }).concat([600])) + 1, contact_code: nextC(), legal_name: p.legal_name, reg_no: p.reg_no, types: [], fields: [] }; held.push(ct); }
             ct.legal_name = p.legal_name; ct.address = p.address || ct.address; if (ct.types.indexOf(p.type) < 0) ct.types.push(p.type);
             ct.fields = (ct.fields || []).filter(function (f) { return f.field_id !== p.field_id; }).concat([{ field_id: p.field_id, value: p.our_id }]);
-            window.__bukkuSent = { kind: p.kind, id: p.id, contact: ct.id, code: ct.contact_code };
+            window.__bukkuSent = { kind: p.kind, id: p.id, contact: ct.id, code: ct.contact_code, skip: bkb.skip || [] };
             if (p.email) ct.email = p.email;
             ['old_reg_no', 'tax_id_no', 'sst_reg_no'].forEach(function (k) { if (p[k]) ct[k] = p[k]; });
             if (p.person) ct.person = [p.salutation, p.person].filter(Boolean).join(' ');
