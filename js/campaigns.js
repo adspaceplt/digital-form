@@ -139,6 +139,9 @@
        link copied from either is accepted. */
     { id: 'xhs',       label: 'rednote',   re: /(?:xiaohongshu\.com|rednote\.com)\/user\/profile\/([0-9a-zA-Z]{8,40})/i },
     { id: 'xhs',       label: 'rednote',   re: /xhslink\.(?:com|cn)\/\S+/i, anonymous: true },
+    /* A rednote search for a creator's ID or name (2026-11-10), kept as a
+       short link is: it finds them, and names nobody. */
+    { id: 'xhs',       label: 'rednote',   re: /(?:xiaohongshu\.com|rednote\.com)\/search_result\?(?:[^#]*&)?keyword=[A-Za-z0-9%._~+-]+/i, anonymous: true },
     { id: 'instagram', label: 'Instagram', re: /instagram\.com\/([A-Za-z0-9._]{1,40})/i },
     { id: 'tiktok',    label: 'TikTok',    re: /tiktok\.com\/@([A-Za-z0-9._]{1,40})/i },
     { id: 'facebook',  label: 'Facebook',  re: /facebook\.com\/([A-Za-z0-9.]{2,60})/i }
@@ -602,6 +605,7 @@
     host.innerHTML = '<div class="panel crr-card"><div class="readgroups">' +
       crGroup('Details', '<dl class="ovfacts">' +
         fact('Creator ID', c.creator_code) +
+        (c.active === false ? fact('Inactive reason', c.inactive_reason) : '') +
         word('name', 'Name', c.name) +
         word('client_rate', 'Client rate', c.client_rate != null && c.client_rate !== '' ? money(c.client_rate) : '') +
         word('whatsapp', 'WhatsApp', c.whatsapp) +
@@ -677,17 +681,28 @@
       crMsg('Saved.', 'ok');
     }).catch(function () { crMsg('Not saved. Please try again.', 'err'); back(false); });
   }
-  function setCreatorActive(c, on) {
-    db.from('creators').update({ active: on }).eq('id', c.id).select('id').then(function (r) {
+  /* Set inactive asks why (Blacklisted, 2026-11-10), kept beside it and
+     read on Overview; Set active clears it. The way back asks nothing. */
+  function setCreatorActive(c, on, reason) {
+    if (!on && reason === undefined) {
+      window.ADspaceConfirm.ask({ title: 'Set inactive?', body: c.name + ' is no longer offered for campaigns.',
+        go: 'Set inactive', field: { name: 'reason', label: 'Reason', value: '', maxlength: 200, required: false, placeholder: 'Optional' }
+      }, function (v) { setCreatorActive(c, false, String((v && typeof v === 'object' ? v.reason : v) || '').trim()); });
+      return;
+    }
+    var was = c.inactive_reason || '';
+    var why = on ? null : (reason || null);
+    db.from('creators').update({ active: on, inactive_reason: why }).eq('id', c.id).select('id').then(function (r) {
       if (r.error || !(r.data || []).length) {
         crMsg(r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
         return;
       }
-      log(on ? 'creator.on' : 'creator.off', c.name, '');
+      log(on ? 'creator.on' : 'creator.off', c.name, why ? 'Reason: ' + why : '');
       c.active = on;
+      c.inactive_reason = why;
       loadRoster(function () {
         var A = window.ADspaceAdmin;
-        if (A && A.undoHere && crRec.id === c.id) A.undoHere(c.name + (on ? ' is active.' : ' is inactive.'), function () { setCreatorActive(c, !on); }, $('crRecMsg'));
+        if (A && A.undoHere && crRec.id === c.id) A.undoHere(c.name + (on ? ' is active.' : ' is inactive.'), function () { setCreatorActive(c, !on, on ? was : null); }, $('crRecMsg'));
       });
     });
   }
@@ -875,7 +890,9 @@
           fact(cur.bill_kind === 'brn' ? 'Business Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
-          fact('Billing address', cur.address) +
+          (cur.address ? fact('Billing address', cur.address) :
+            '<div><dt>Billing address</dt><dd class="muted">Not given. Asked for on their creator page.</dd></div>') +
+          fact('From', cur.source === 'import' ? 'AP01 form, brought in' : '') +
           fact('Currency', cur.currency) +
           fact('Method', cur.method_word) +
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
