@@ -2039,7 +2039,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     Paused again, counted as a resume): the stages either side that match
     become one from the earlier day, keeping the later reason, and the
     stage clock and the client's reason follow; Undo where it happened puts
-    the history back; filed `client.edited` (Timeline: Active from … removed).
+    the history back; filed `client.edited` (Timeline: Active from … removed; removal undone).
     - Client since is the first stage's start, opened on its Malaysian day
       (`dayOf`).
     - A stage never begins before the one before it, and no date is in the

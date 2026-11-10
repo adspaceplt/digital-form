@@ -2311,7 +2311,7 @@
         if (last.stage === c.stage && (last.reason || null) !== (c.stage_reason || null)) {
           back = { stage_reason: last.reason || null, stage_note: last.note || null };
         }
-        var bad2 = saveDates(c, was, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' put back', back);
+        var bad2 = saveDates(c, was, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' removal undone', back);
         if (bad2) msg('crmSinceMsg', bad2, 'err');
       }, host);
     });
