@@ -2002,6 +2002,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Services, Letters; a section whose part the reader may not open is not
     drawn, and one whose read was refused reads Could not load., never empty
     (`ovFailed`, 2026-10-11).
+  - Contact details names the primary contact's phone, then a WhatsApp
+    number of its own (none, or another than the phone) as its own row,
+    the number and the WhatsApp chip (2026-11-10).
   - Built only from what the record has already loaded.
   - Enquired lines are left out.
   - An empty section says so in one line.
@@ -3227,7 +3230,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`invoice_email_done`, filed `client.edited` on the client). A page never
   files or names a figure: begin and done are the service role's alone.
   Shut while sending, Review and send sends no further email and reads the
-  list again once the one on its way answers.
+  list again once the one on its way answers. Once every email has gone
+  its foot holds Done alone, tonal, never blue (it only shuts the sheet;
+  the user, 2026-11-10).
   The words are Settings, Messages: Email templates, Overdue reminder (`invoice_email_template`,
   `team.settings`; two subjects, the message holding `{invoices}`, the
   legal note and the disclaimer, in the dark grey). Resend's word

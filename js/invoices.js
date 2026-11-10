@@ -496,6 +496,11 @@
     var left = rv.groups.filter(function (x) { return !(rv.done[x.contact] && rv.done[x.contact].ok); });
     var n = left.length;
     $('odGo').textContent = n ? 'Send ' + plural(n, 'email', 'emails') : 'Done';
+    /* Done only shuts the sheet once every email has gone: an
+       acknowledgement, never the view's blue action (the user, 2026-11-10:
+       "this Done button has no action just acknowledge"). */
+    $('odGo').classList.toggle('btn-primary', Boolean(n));
+    $('odCancel').hidden = !n;
     var lines = [];
     left.forEach(function (x) { lines = lines.concat(x.lines); });
     $('odRvCount').textContent = n ? plural(lines.length, 'invoice', 'invoices') + ' · ' + plural(n, 'client', 'clients') + ' · ' + totals(lines).join(' · ') : '';
