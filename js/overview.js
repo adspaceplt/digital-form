@@ -513,6 +513,19 @@
         });
       });
     } },
+    /* A month completed with no invoice in Bukku (the content loop, phase 3,
+       2026-11-10): a row a month, opening the client's Months. */
+    { key: 'uninvoiced', word: 'Not invoiced', title: 'Months not invoiced',
+      can: function () { return may('clients.billing', 'manage') && may('ops', 'view'); }, load: function () {
+      return db.rpc('ops_months_not_invoiced').then(rows).then(function (list) {
+        return (list || []).map(function (m) {
+          var M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'], p = String(m.period).split('-');
+          return { name: m.name, meta: M[Number(p[1]) - 1] + ' ' + p[0] + ' · Completed, no invoice in Bukku', tag: 'Task', who: m.owner || '',
+                   client: m.client, days: daysSince(m.since), since: sinceWord(m.since), tone: 'warn',
+                   url: '/admin/?s=work&view=months&wc=' + encodeURIComponent(m.slug || m.client), section: 'work' };
+        });
+      });
+    } },
     { key: 'reviews', word: 'Reviews', title: function () { return 'Reviews for ' + lastMonth().word; }, can: function () { return may('team.performance'); }, load: function () {
       var P = window.ADspacePerf, words = (P && P.status) || {};
       return R.reviews().then(function (list) {
