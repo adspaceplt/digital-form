@@ -166,6 +166,12 @@
       '<span class="sup-who' + (s.contact_name ? '' : ' is-none') + '">' + (s.contact_name ? esc(s.contact_name) + (s.designation ? '<small>' + esc(s.designation) + '</small>' : '') : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-term' + (s.payment_term ? '' : ' is-none') + '">' + (s.payment_term ? esc(s.payment_term) : '<span class="muted">—</span>') + '</span>' +
       '<span class="sup-state">' + chip(s) + '</span>' +
+      /* A phone's second line, as Clients reads (the user, 2026-11-10): the
+         Supplier ID leads it, then the person in charge and their position,
+         each part kept whole; what is not known is left out. */
+      '<span class="sup-line">' + [s.name ? '<span class="nb sup-line-code">' + esc(s.code) + '</span>' : '']
+        .concat([s.contact_name, s.designation].filter(Boolean).map(function (x) { return '<span class="nb">' + esc(x) + '</span>'; }))
+        .filter(Boolean).join(' · ') + '</span>' +
       '<span class="sup-go">' + CHEV + '</span>';
     b.addEventListener('click', function () { state.open = s.id; state.pane = 'overview'; setUrl(); openRec(s.id); });
     return b;
