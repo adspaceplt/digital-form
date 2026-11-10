@@ -644,8 +644,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   dates, Priority deadlines, Task reminders, Task numbering), Reports (Meta
   checks, Posts linked to tasks, Reach allowance, Ad benchmarks), Money (Tax
   and terms, Tax codes, Bukku), AI (AI usage and limits, AI prices),
-  Messages (Email: Send by email, Email templates, Sent again: WhatsApp and
-  emails; WhatsApp: WhatsApp templates at WhatsApp Full Access, Meeting
+  Messages (Email: Automatic emails, Send by email, Email templates, Sent
+  again: WhatsApp and emails; WhatsApp: Automatic WhatsApp, WhatsApp
+  templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Templates
@@ -2501,6 +2502,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   the team's Meeting message filled from it (`ADspaceOps.meetingMessage`,
   the one builder the month's card uses too; no content month, so no
   agenda line), copied to paste into the client's WhatsApp group.
+- Automatic emails and Automatic WhatsApp (`2026-11-10-automatic-sends-switch.sql`;
+  the user, 2026-11-10: "automatic only"): two switches in Settings,
+  Messages (`auto_email_on`, `auto_whatsapp_on`, seeded On; `auto_send_set`,
+  `team.settings`, filed). Off, the creator emails (`creator_mail_queue`,
+  `creator_mail_job`) are kept as Not sent (`off: Automatic emails are
+  off.`) and never sent later, and `wa_enqueue` queues no colleague
+  reminder or creator booking message; whatever a colleague presses goes
+  as before. A new automatic send asks `auto_send_on(kind)`.
 - Nothing reaches a client by itself (the user, 2026-10-31): every
   client-facing send is a colleague's press, and most go into the client's
   WhatsApp group, which no API can post to, so a record offers its message
