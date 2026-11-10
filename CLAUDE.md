@@ -650,7 +650,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.performance` View, behind the master code; 2026-10-29), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access). Email templates (`js/mailtpl.js`,
-  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access) lists
+  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
+  supplier's every template, fixed or New email's, at either, a client's and
+  a creator's at `team.settings` alone: `email_template_may`, 2026-11-10) lists
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
@@ -6560,7 +6562,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
   is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
   link button the key), when a colleague sends the quotation; nothing is
-  sent by itself (`quote_wa_day` now limits nothing). On the lead's Services a website quotation reads Ready to
+  sent by itself; Send quotation and a website quotation's Resend on WhatsApp
+  stop at `quote_wa_day` Quotation ready messages a day (MYT, `quote_wa_allowed`,
+  `wa-limit`; Publish and a team's quotation are not held; 2026-11-10). On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
   WhatsApp composer) and in its ⋯ Do not contact / Allow

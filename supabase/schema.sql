@@ -105807,6 +105807,379 @@ grant execute on function public.creator_pay_form(text) to anon, authenticated;
 
 -- END OF CREATOR PAYMENTS REVIEWED ---------------------------------------------
 
+-- ===========================================================================
+-- WEBSITE QUOTATIONS ON WHATSAPP LIMITED AGAIN — `quote_wa_day` holds the
+-- day's Quotation ready messages to website prospects (2026-11-10)
+-- ===========================================================================
+-- WHY (the user, 2026-11-10: "limit work"): since a website quotation waits
+-- for the team (2026-10-29), every Quotation ready message is a colleague's
+-- Send quotation or Resend on WhatsApp, and `quote_wa_day` (Settings,
+-- Messages: Website quotations) limited nothing.
+--
+-- WHAT CHANGED
+--   * `quote_wa_allowed(p_id)` counts the day's (MYT) Quotation ready
+--     messages to website quotations not failed, under one lock, against
+--     `quote_wa_day`; 0 allows none.
+--   * `quotation_release` (Send quotation) and `quotation_resend` (a website
+--     quotation's Resend on WhatsApp) refuse `wa-limit` with the `cap` at the
+--     limit, changing nothing. Publish and a team's quotation are not held.
+--
+-- ORDER: the pages, then this file (connector). A page served before reads
+-- `wa-limit` as a generic refusal. Safe to run twice.
+--
+-- ROLLBACK: QUOTATION PUBLISHED WITHOUT WHATSAPP's quotation_release,
+-- QUOTATION LINK ON WHATSAPP's quotation_resend and WEBSITE QUOTATION
+-- WHATSAPP CAP's quote_wa_allowed.
+-- ===========================================================================
+
+-- WEBSITE QUOTATIONS ON WHATSAPP LIMITED AGAIN -------------------------------
+
+create or replace function public.quote_wa_allowed(p_id uuid)
+returns boolean
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_cap numeric := coalesce(public.app_setting('quote_wa_day', v_today), 30);
+  v_sent integer;
+begin
+  if v_cap <= 0 then return false; end if;
+  perform pg_advisory_xact_lock(hashtextextended('quote-web-wa-day', 0));
+  -- p_id is kept for the signature; every message counts, a resend included.
+  select count(*) into v_sent from public.wa_outbox o
+    join public.quotations q on q.id = o.ref_id and q.source = 'website'
+   where o.purpose = 'quote_ready' and o.state <> 'failed'
+     and o.created_at >= (v_today::timestamp at time zone 'Asia/Kuala_Lumpur');
+  return v_sent < v_cap;
+end $$;
+revoke all on function public.quote_wa_allowed(uuid) from public, anon, authenticated;
+
+create or replace function public.quotation_release(p_id uuid, p_whatsapp boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_days int;
+  v_wa text;
+  v_name text;
+  v_queued boolean := false;
+  v_on boolean;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.source <> 'website' then return jsonb_build_object('error', 'bad-quotation'); end if;
+  if q.released_at is not null then return jsonb_build_object('ok', true, 'again', true, 'valid_until', q.valid_until); end if;
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if exists (select 1 from public.quotations x where x.replaces = q.id and x.removed_at is null) then
+    return jsonb_build_object('error', 'revised');
+  end if;
+  -- A prospect marked Do not contact is not messaged (audit 2026-10-30);
+  -- publishing sends them nothing.
+  if coalesce(p_whatsapp, true) and q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+  -- The day's WhatsApp messages for website quotations are held to
+  -- `quote_wa_day` (counted under one lock); at the limit nothing changes and
+  -- Publish still shows the rates.
+  if coalesce(p_whatsapp, true) and not public.quote_wa_allowed(q.id) then
+    return jsonb_build_object('error', 'wa-limit', 'cap', coalesce(public.app_setting('quote_wa_day', v_today), 30));
+  end if;
+  -- Valid from the day it is shown, as the prospect first sees it.
+  v_days := coalesce(public.app_setting('quote_valid_days', v_today), 30)::int;
+  update public.quotations
+     set released_at = now(), released_by = me.name, valid_until = v_today + v_days
+   where id = q.id returning * into q;
+  if coalesce(p_whatsapp, true) then
+    v_wa := public.quote_website_number(q.contact->>'whatsapp');
+    v_name := coalesce(nullif(btrim(q.contact->>'name'), ''), q.brand);
+    -- Sent on WhatsApp only where its template is on: wa_enqueue says nothing
+    -- when it is off (audit 2026-10-30).
+    select exists (select 1 from public.wa_templates x where x.purpose = 'quote_ready' and x.active and x.name <> '') into v_on;
+    begin
+      if v_on and v_wa ~ '^(60|65)[0-9]{8,10}$' then
+        perform public.wa_enqueue('quote_ready', v_wa, v_name,
+          jsonb_build_array(public.contact_greeting(q.contact->>'salutation', v_name),
+                            coalesce(q.contact->>'brand', q.brand), q.ref),
+          'quotation', q.id, q.client_id, q.access_key);
+        v_queued := true;
+      end if;
+    exception when others then v_queued := false;
+    end;
+  end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand,
+          q.ref || case when coalesce(p_whatsapp, true)
+                        then ' sent to the prospect' || case when v_queued then ' on WhatsApp' else '' end
+                        else ' published on the quotation link' end ||
+          ' · valid until ' || public.register_day(q.valid_until));
+  return jsonb_build_object('ok', true, 'valid_until', q.valid_until, 'whatsapp', v_queued);
+end $$;
+revoke all on function public.quotation_release(uuid, boolean) from public, anon, authenticated;
+
+create or replace function public.quotation_resend(p_id uuid, p_again boolean default false)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  t  public.wa_templates;
+  o  public.wa_outbox;
+  k  public.client_contacts;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_hours numeric;
+  v_wa text;
+  v_name text;
+  v_greet text;
+  v_team boolean;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or q.removed_at is not null or not public.client_scope_ok('client', q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  v_team := q.source <> 'website';
+  if not v_team and q.access_key is null then return jsonb_build_object('error', 'bad-quotation'); end if;
+  if not v_team and q.released_at is null then return jsonb_build_object('error', 'not-sent'); end if;
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if exists (select 1 from public.quotations x where x.replaces = q.id and x.removed_at is null) then
+    return jsonb_build_object('error', 'revised');
+  end if;
+  if q.valid_until is not null and q.valid_until < v_today then return jsonb_build_object('error', 'expired'); end if;
+  if q.no_contact_at is not null then return jsonb_build_object('error', 'no-contact'); end if;
+  if v_team and q.signed_at is not null then return jsonb_build_object('error', 'signed'); end if;
+  select * into t from public.wa_templates x where x.purpose = 'quote_ready' and x.active and x.name <> '';
+  if t.purpose is null then return jsonb_build_object('error', 'wa-off'); end if;
+  if v_team then
+    select * into k from public.client_contacts x
+     where x.client_id = q.client_id and x.archived_at is null and x.is_primary
+     order by x.created_at limit 1;
+    v_wa := public.wa_number(case when btrim(coalesce(k.whatsapp, '')) <> '' and btrim(k.whatsapp) !~ '^@' then k.whatsapp else k.phone end);
+    v_name := coalesce(nullif(btrim(coalesce(k.name, '')), ''), q.brand);
+    v_greet := public.contact_greeting(k.salutation, v_name);
+  else
+    v_wa := public.quote_website_number(q.contact->>'whatsapp');
+    v_name := coalesce(nullif(btrim(q.contact->>'name'), ''), q.brand);
+    v_greet := public.contact_greeting(q.contact->>'salutation', v_name);
+  end if;
+  if v_wa is null or v_wa !~ '^(60|65)[0-9]{8,10}$' then return jsonb_build_object('error', 'no-number'); end if;
+  v_hours := coalesce(public.app_setting('wa_repeat_hours', v_today), 24);
+  if v_hours > 0 and not coalesce(p_again, false) then
+    select * into o from public.wa_outbox x
+     where x.purpose = 'quote_ready' and x.ref_id = q.id and x.state <> 'failed'
+       and x.created_at > now() - make_interval(secs => v_hours * 3600)
+     order by x.created_at desc limit 1;
+    if o.id is not null then
+      return jsonb_build_object('error', 'recent', 'recent', jsonb_build_object('at', o.created_at,
+        'by', case when coalesce(o.created_by, 'system') = 'system' then null else o.created_by end));
+    end if;
+  end if;
+  if not v_team and not public.quote_wa_allowed(q.id) then
+    return jsonb_build_object('error', 'wa-limit', 'cap', coalesce(public.app_setting('quote_wa_day', v_today), 30));
+  end if;
+  -- A team's quotation takes its link the first time it is sent.
+  if q.access_key is null then
+    update public.quotations set access_key = public.new_link_key() where id = q.id returning * into q;
+  end if;
+  perform public.wa_enqueue('quote_ready', v_wa, v_name,
+    jsonb_build_array(v_greet, coalesce(q.contact->>'brand', q.brand), q.ref),
+    'quotation', q.id, q.client_id, q.access_key);
+  update public.wa_outbox x set created_by = me.name
+   where x.purpose = 'quote_ready' and x.ref_id = q.id and x.created_at = now() and x.created_by = 'system';
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand,
+          q.ref || case when v_team then ' link sent on WhatsApp to ' || v_name else ' sent again to the prospect on WhatsApp' end);
+  return jsonb_build_object('ok', true, 'key', q.access_key);
+end $$;
+revoke all on function public.quotation_resend(uuid, boolean) from public, anon;
+grant execute on function public.quotation_resend(uuid, boolean) to authenticated;
+
+-- END OF WEBSITE QUOTATIONS ON WHATSAPP LIMITED AGAIN ------------------------
+
+-- ===========================================================================
+-- SUPPLIER EMAIL TEMPLATES, ONE RULE — every supplier email's wording is
+-- edited at Suppliers Full Access or Business settings (2026-11-10)
+-- ===========================================================================
+-- WHY (the user, 2026-11-10: "ok", the Settings review's held item 2): a
+-- supplier's two fixed emails (Supplier approved, Document) were edited at
+-- Suppliers Full Access, its New email templates at Business settings alone,
+-- so one recipient's emails answered two rules.
+--
+-- WHAT CHANGED
+--   * `email_template_may(p_audience)` (no page's): a supplier's template at
+--     Suppliers Full Access or `team.settings`; a client's at `team.settings`.
+--   * `email_template_save`, `supplier_email_template_save` ask it;
+--     `email_templates_list` answers a Suppliers Full Access colleague the
+--     supplier templates alone; `supplier_email_templates_list` answers
+--     `team.settings` too. The client templates keep their rule.
+--   * `email_template_delete` asks it in the SQL Editor part
+--     (2026-11-10-supplier-templates-one-rule-editor.sql).
+--
+-- ORDER: this file (connector), its SQL Editor part, then the pages. A page
+-- served before offers a supplier's New email templates to Business settings
+-- alone, as before. Safe to run twice.
+--
+-- ROLLBACK: NEW EMAIL's email_template_save and email_templates_list,
+-- TEMPLATE FIELDS CHECKED's supplier_email_template_save, SUPPLIER EMAILS'
+-- supplier_email_templates_list; email_template_may is then unused.
+-- ===========================================================================
+
+-- SUPPLIER EMAIL TEMPLATES, ONE RULE ----------------------------------------
+
+create or replace function public.email_template_may(p_audience text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select (public.ops_me()).id is not null and case p_audience
+    when 'supplier' then public.allowed('suppliers', 'manage') or public.ops_granted('team.settings', 'work')
+    when 'client' then public.ops_granted('team.settings', 'work')
+    else false end;
+$$;
+revoke all on function public.email_template_may(text) from public, anon, authenticated;
+
+create or replace function public.email_template_save(p_id uuid, p_audience text, p_name text, p_subject text, p_body text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me    public.team_members := public.ops_me();
+  t     public.email_templates;
+  v_n   text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g'));
+  v_s   text := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_b   text := btrim(replace(coalesce(p_body, ''), E'\r', ''));
+  moved text[] := '{}';
+  v_bad jsonb;
+  v_id  uuid;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if length(v_n) < 2 or length(v_n) > 80 then return jsonb_build_object('error', 'bad-name'); end if;
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  v_bad := public.template_check(v_s || E'\n' || v_b, 'free');
+  if v_bad is not null then return v_bad; end if;
+  if p_id is null then
+    if p_audience is null or p_audience not in ('client', 'supplier') then return jsonb_build_object('error', 'bad-request'); end if;
+    if not public.email_template_may(p_audience) then return jsonb_build_object('error', 'denied'); end if;
+    if exists (select 1 from public.email_templates x where x.audience = p_audience and lower(x.name) = lower(v_n)) then
+      return jsonb_build_object('error', 'taken');
+    end if;
+    insert into public.email_templates (audience, name, subject, body, updated_by) values (p_audience, v_n, v_s, v_b, me.id)
+    returning id into v_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'team.changed', 'Email templates', 'Added: ' || v_n || ' (' || case p_audience when 'client' then 'Clients' else 'Suppliers' end || ')');
+    return jsonb_build_object('ok', true, 'id', v_id);
+  end if;
+  select * into t from public.email_templates x where x.id = p_id for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.email_template_may(t.audience) then return jsonb_build_object('error', 'denied'); end if;
+  if exists (select 1 from public.email_templates x where x.audience = t.audience and lower(x.name) = lower(v_n) and x.id <> t.id) then
+    return jsonb_build_object('error', 'taken');
+  end if;
+  if t.name is distinct from v_n then moved := moved || ('Name: ' || t.name || ' → ' || v_n); end if;
+  if t.subject is distinct from v_s then moved := moved || ('Subject: ' || t.subject || ' → ' || v_s); end if;
+  if t.body is distinct from v_b then moved := moved || 'Message'::text; end if;
+  if array_length(moved, 1) is null then return jsonb_build_object('ok', true, 'id', t.id); end if;
+  update public.email_templates x set name = v_n, subject = v_s, body = v_b, updated_at = now(), updated_by = me.id where x.id = t.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Email templates', t.name || ' · ' || array_to_string(moved, ' · '));
+  return jsonb_build_object('ok', true, 'id', t.id);
+end $$;
+
+create or replace function public.email_templates_list()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not (public.allowed('whatsapp', 'work') or public.ops_granted('team.settings', 'view')
+                                          or public.email_template_may('supplier')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('id', t.id, 'audience', t.audience, 'name', t.name, 'subject', t.subject, 'body', t.body,
+             'updated_at', t.updated_at, 'updated_by', (select m.name from public.team_members m where m.id = t.updated_by))
+             order by t.audience, lower(t.name))
+      from public.email_templates t
+     where t.audience = 'supplier' or public.allowed('whatsapp', 'work') or public.ops_granted('team.settings', 'view')), '[]'::jsonb));
+end $$;
+revoke all on function public.email_templates_list() from public, anon;
+grant execute on function public.email_templates_list() to authenticated;
+
+create or replace function public.supplier_email_template_save(p_purpose text, p_subject text, p_body text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  t   public.supplier_email_templates;
+  v_s text := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_b text := btrim(replace(coalesce(p_body, ''), E'\r', ''));
+  moved text[] := '{}';
+  v_bad jsonb;
+begin
+  if me.id is null or not public.email_template_may('supplier') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.supplier_email_templates x where x.purpose = p_purpose for update;
+  if t.purpose is null then return jsonb_build_object('error', 'bad-purpose'); end if;
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  v_bad := public.template_check(v_s || E'\n' || v_b, 'supplier');
+  if v_bad is not null then return v_bad; end if;
+  if t.subject is distinct from v_s then moved := moved || ('Subject: ' || t.subject || ' → ' || v_s); end if;
+  if t.body is distinct from v_b then moved := moved || 'Body'::text; end if;
+  if array_length(moved, 1) is null then return jsonb_build_object('ok', true); end if;
+  update public.supplier_email_templates x set subject = v_s, body = v_b, updated_at = now(), updated_by = me.id
+   where x.purpose = p_purpose;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'supplier.edited', 'Supplier emails',
+          case p_purpose when 'approved' then 'Supplier approved' else 'Document' end || ' · ' || array_to_string(moved, ' · '));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.supplier_email_templates_list()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if (public.ops_me()).id is null or not (public.allowed('suppliers', 'view') or public.email_template_may('supplier')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((
+    select jsonb_agg(jsonb_build_object('purpose', t.purpose, 'subject', t.subject, 'body', t.body,
+             'updated_at', t.updated_at, 'updated_by', m.name) order by t.purpose)
+      from public.supplier_email_templates t left join public.team_members m on m.id = t.updated_by), '[]'::jsonb));
+end $$;
+revoke all on function public.supplier_email_templates_list() from public, anon;
+grant execute on function public.supplier_email_templates_list() to authenticated;
+
+-- END OF SUPPLIER EMAIL TEMPLATES, ONE RULE ---------------------------------
+
+-- ===========================================================================
+-- SUPPLIER EMAIL TEMPLATES, ONE RULE, THE SQL EDITOR PART — a New email
+-- template is deleted under the rule its recipient's templates are edited
+-- by (2026-11-10)
+-- ===========================================================================
+-- Run in the SQL Editor after SUPPLIER EMAIL TEMPLATES, ONE RULE: the
+-- connector holds a statement holding the word delete. Safe to run twice.
+--
+-- ROLLBACK: NEW EMAIL's email_template_delete.
+-- ===========================================================================
+
+create or replace function public.email_template_delete(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  t  public.email_templates;
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.email_templates x where x.id = p_id for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.email_template_may(t.audience) then return jsonb_build_object('error', 'denied'); end if;
+  delete from public.email_templates x where x.id = t.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Email templates', 'Deleted: ' || t.name);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.email_template_delete(uuid) from public, anon;
+grant execute on function public.email_template_delete(uuid) to authenticated;
+
+-- END OF SUPPLIER EMAIL TEMPLATES, ONE RULE, THE SQL EDITOR PART -------------
+
 
 -- ===========================================================================
 -- TEMPLATE TEST EMAIL — Send test to me in Email templates (2026-11-10; the

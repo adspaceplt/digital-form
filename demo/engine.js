@@ -11018,6 +11018,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return qtOk({ ok: true });
       }
 
+      var qtWaAllowed = function () {
+        var cap = Number(appSet('quote_wa_day', qtToday)); if (!(cap >= 0)) cap = 30;
+        if (cap <= 0) return false;
+        var from = Date.parse(qtToday + 'T00:00:00+08:00');
+        return (DB.wa_outbox || []).filter(function (o) {
+          var qo = DB.quotations.filter(function (x) { return x.id === o.ref_id; })[0];
+          return o.template === 'quote_ready' && qo && qo.source === 'website' && o.status !== 'failed' && o.state !== 'failed' && Date.parse(o.created_at) >= from;
+        }).length < cap;
+      };
+
       if (name === 'quotation_send' || name === 'quotation_publish') {
         var qsSend = name === 'quotation_send';
         if (qq.removed_at) return qtOk({ error: 'not-found' });
@@ -11026,6 +11036,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (qq.status === 'not_proceeding') return qtOk({ error: 'not-proceeding' });
         if (DB.quotations.some(function (x) { return x.replaces === qq.id && !x.removed_at; })) return qtOk({ error: 'revised' });
         if (qsSend && qq.no_contact_at) return qtOk({ error: 'no-contact' });
+
+        if (qsSend && !qtWaAllowed()) return qtOk({ error: 'wa-limit', cap: Number(appSet('quote_wa_day', qtToday)) });
         var qsv = new Date(qtToday + 'T00:00:00Z'); qsv.setUTCDate(qsv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         qq.released_at = qtNow.toISOString(); qq.released_by = qtMe.name; qq.valid_until = qsv.toISOString().slice(0, 10);
 
@@ -11065,6 +11077,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             Date.parse(o.created_at) > Date.now() - qrH * 3600e3; }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
           if (qrO) return qtOk({ error: 'recent', recent: { at: qrO.created_at, by: qrO.created_by && qrO.created_by !== 'system' ? qrO.created_by : null } });
         }
+        if (!qrTeam && !qtWaAllowed()) return qtOk({ error: 'wa-limit', cap: Number(appSet('quote_wa_day', qtToday)) });
         if (!qq.access_key) qq.access_key = Math.random().toString(36).slice(2, 10).replace(/[^a-z0-9]/g, 'x').padEnd(8, 'k');
         (DB.wa_outbox = DB.wa_outbox || []).push({ id: nid('wa'), template: 'quote_ready', purpose: 'quote_ready', ref_id: qq.id, client_id: qq.client_id,
           to_number: qrNum, button: qq.access_key, status: 'queued', created_by: qtMe.name, created_at: qtNow.toISOString() });
@@ -11360,15 +11373,18 @@ function opsCodeRange(cid, period, ty, src, seq) {
           o.push({ email: String(s0.finance_email).trim(), name: null, role: null, finance: true, billing: false });
         return o;
       };
+
+      var tplMay = function (aud) { return aud === 'supplier' ? (opsAllowed('suppliers', 'manage') || opsGranted('team.settings', 'work')) : aud === 'client' ? opsGranted('team.settings', 'work') : false; };
       if (name === 'email_templates_list') {
-        if (!(opsAllowed('whatsapp', 'work') || opsGranted('team.settings', 'view'))) return emNo('denied');
-        return emOk({ rows: DB.email_templates.slice().sort(function (a, b) { return a.audience < b.audience ? -1 : a.audience > b.audience ? 1 : a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; }) });
+        var tlAll = opsAllowed('whatsapp', 'work') || opsGranted('team.settings', 'view');
+        if (!(tlAll || tplMay('supplier'))) return emNo('denied');
+        return emOk({ rows: DB.email_templates.filter(function (t) { return tlAll || t.audience === 'supplier'; }).sort(function (a, b) { return a.audience < b.audience ? -1 : a.audience > b.audience ? 1 : a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1; }) });
       }
       if (name === 'email_template_save' || name === 'email_template_delete') {
-        if (!opsGranted('team.settings', 'work')) return emNo('denied');
         if (name === 'email_template_delete') {
           var td = DB.email_templates.filter(function (t) { return t.id === args.p_id; })[0];
           if (!td) return emNo('not-found');
+          if (!tplMay(td.audience)) return emNo('denied');
           DB.email_templates = DB.email_templates.filter(function (t) { return t !== td; });
           DB.activity_log.unshift({ id: nid('al'), actor: emMe.name, action: 'team.changed', subject: 'Email templates', detail: 'Deleted: ' + td.name, created_at: new Date().toISOString() });
           return emOk();
@@ -11383,6 +11399,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (args.p_id && !tt) return emNo('not-found');
         var aud0 = tt ? tt.audience : args.p_audience;
         if (aud0 !== 'client' && aud0 !== 'supplier') return emNo('bad-request');
+        if (!tplMay(aud0)) return emNo('denied');
         if (DB.email_templates.some(function (t) { return t !== tt && t.audience === aud0 && t.name.toLowerCase() === tn.toLowerCase(); })) return emNo('taken');
         if (tt) Object.assign(tt, { name: tn, subject: tsub, body: tb, updated_at: new Date().toISOString(), updated_by: emMe.name });
         else { tt = { id: nid('et'), audience: aud0, name: tn, subject: tsub, body: tb, updated_at: new Date().toISOString(), updated_by: emMe.name }; DB.email_templates.push(tt); }
@@ -12631,11 +12648,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var emFill = function (t, v) { return String(t || '').replace(/\{\s*([a-z ]+?)\s*\}/gi, function (m, k) { k = k.toLowerCase(); return Object.prototype.hasOwnProperty.call(v, k) ? v[k] : m; }); };
         var emMe = opsMe();
         if (name === 'supplier_email_templates_list') {
-          if (!opsAllowed('suppliers', 'view')) return spNo('denied');
+          if (!(opsAllowed('suppliers', 'view') || opsAllowed('suppliers', 'manage') || opsGranted('team.settings', 'work'))) return spNo('denied');
           return spOk({ rows: DB.supplier_email_templates.map(function (t) { return { purpose: t.purpose, subject: t.subject, body: t.body }; }) });
         }
         if (name === 'supplier_email_template_save') {
-          if (!opsAllowed('suppliers', 'manage')) return spNo('denied');
+          if (!(opsAllowed('suppliers', 'manage') || opsGranted('team.settings', 'work'))) return spNo('denied');
           var et = DB.supplier_email_templates.filter(function (t) { return t.purpose === args.p_purpose; })[0];
           if (!et) return spNo('bad-purpose');
           var es = String(args.p_subject || '').trim(), eb = String(args.p_body || '').trim();

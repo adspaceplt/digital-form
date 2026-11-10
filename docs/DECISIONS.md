@@ -9166,6 +9166,38 @@ is cancelled at once (16 seconds). The next commit on main deploys the site
 whole, this one's changes included; a re-run of a timed-out deploy is not
 tried again.
 
+### 2026-11-10: Website quotations on WhatsApp limited again
+The user, answering the Settings review's held item 4: "limit work". Since a
+website quotation waits for the team (2026-10-29), every Quotation ready
+message is a colleague's press, and `quote_wa_day` counted website
+quotations made, which no longer sent anything: the figure limited nothing.
+It now counts the day's Quotation ready messages to website quotations, not
+failed, under one lock; Send quotation and a website quotation's Resend on
+WhatsApp are refused `wa-limit` at it, changing nothing, while Publish (no
+message) and a team's quotation are not held.
+
+### 2026-11-10: Departments as the shared table
+The user, answering the Settings review's held item 5: "yes". Departments was
+the one Settings list still drawn as rows of a name over a line with Edit;
+it is now the table Industries, Public holidays and Tax codes share:
+Department · Colleagues · Prize (Included) · Status, the pen and a ⋯ (Set
+inactive or Set active, Delete where nothing names it). The pen still asks
+in a question, a department's five prize criteria being too many for its
+row. On a phone the name stands over its colleagues and prize, the status
+at the right.
+
+### 2026-11-10: a supplier's email templates answer one rule
+The user, answering the Settings review's held item 2: "ok". A supplier's two
+fixed emails (Supplier approved, Document) were edited at Suppliers Full
+Access and its New email templates at Business settings alone, so one
+recipient's emails answered two rules. `email_template_may(audience)` now
+holds both: a supplier's template at Suppliers Full Access or Business
+settings, a client's at Business settings. `email_templates_list` answers a
+colleague at Suppliers Full Access the supplier templates alone. The SQL
+Editor part restates `email_template_delete`, which the connector holds.
+The held item 1 (one template store) stays six tables; item 3 (Send test to
+me) is not wanted.
+
 ### 2026-11-10 — A creator is a page of their own; Send test to me
 
 The user, on the Creators List: "link history, payment details and edits
@@ -9182,7 +9214,8 @@ email's `pay=` link opens the page on Payment.
 
 The same release adds Send test to me to the email template editor, from
 the Settings brief ("Send test to me is offered where the channel allows
-it"; the user, 2026-11-10: "in same release"). Email only: a WhatsApp test
+it"; the user, 2026-11-10: "in same release", answering this session's
+proposal after the entry above recorded it as not wanted). Email only: a WhatsApp test
 would be a paid template send. A test goes to the colleague's own sign-in
 address alone, never one the page names, its fields filled with the
 placeholder set of DESIGN.md §6 by the database, twenty a day, and nothing
