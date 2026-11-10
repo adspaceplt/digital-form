@@ -3987,7 +3987,7 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 /* SUPPLIERS (2026-10-18, js/suppliers.js): Documents' second tab. A row is
    one button opening the supplier: name over its Supplier ID, the person in
    charge over their designation, the payment term, the state, the chevron.
-   On a phone, name over who at the left, the state over the term at the
+   On a phone, name over one line (Supplier ID · person · position) at the left, the state over the term at the
    right. */
 .sup-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 96px var(--state-w) 16px; }
 button.sup-row { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
@@ -4015,7 +4015,13 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .sup-go svg { width: 15px; height: 15px; }
 .is-narrow .sup-row { grid-template-columns: minmax(0, 1fr) 120px; grid-template-areas: "name state" "who term"; align-items: start; }
 .is-narrow .sup-row > .svc-name { grid-area: name; }
-.is-narrow .sup-row > .sup-who { grid-area: who; }
+.sup-line { display: none; }
+.is-narrow .sup-row > .sup-who { display: none; }
+.is-narrow .sup-row .svc-name > .sup-code { display: none; }
+.is-narrow .sup-row > .sup-line { display: block; grid-area: who; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .sup-row > .sup-line:empty { display: none; }
+.sup-line .nb { white-space: nowrap; }
+.sup-line-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
 .is-narrow .sup-row > .sup-state { grid-area: state; justify-self: end; }
 .is-narrow .sup-row > .sup-term { grid-area: term; text-align: right; }
 .is-narrow .sup-row > .sup-go { display: none; }
