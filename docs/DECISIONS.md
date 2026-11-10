@@ -9429,3 +9429,12 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   moved under its title (the user). The screenshot found Set inactive's
   question answering an object, not the reason, so the reason was dropped;
   read from either shape.
+
+### 2026-11-10 · Content Review's list shows each client's logo
+The user: "content review is only for clients only, other than the name,
+you could show the logo profile card circle too right". Every row in
+Content Review's list is a client, yet it drew the name alone. It now
+draws the Clients list's mark (`.cl-mark`: the logo on a white disc,
+initials while none is held or where the picture fails), and a VIC's
+ring carries the crown in place of the tag, as the Clients list does.
+`tests/vic.js` holds both.
