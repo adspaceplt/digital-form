@@ -455,7 +455,7 @@
       var choices = [['', 'Not set']].concat(list.map(function (x) { return [String(x.id), x.name]; }));
       window.ADspaceConfirm.ask({
         title: 'Bukku', go: 'Save', wait: true,
-        body: 'The Bukku contact fields that hold the Client ID, the Supplier ID and the Creator ID.',
+        body: 'Choose the Bukku contact field that holds each ID.',
         fields: [
           { name: 'client', label: 'Client ID field', choices: choices, value: c.field_client ? String(c.field_client) : '', required: false },
           { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false },
