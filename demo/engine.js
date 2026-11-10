@@ -267,7 +267,7 @@
     supplier_create: 'p_code p_name',
     supplier_link: 'p_id p_reset',
     supplier_link_close: 'p_id',
-    bukku_config: '', bukku_config_set: 'p_client p_supplier', bukku_link_get: 'p_kind p_id',
+    bukku_config: '', bukku_config_set: 'p_client p_supplier p_creator', bukku_link_get: 'p_kind p_id',
     bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     bukku_read_may: 'p_kind p_id p_level', bukku_prepare_with: 'p_kind p_id p_values',
     client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_contact: 'p_client p_entity p_contact p_every', client_entity_remove: 'p_client p_entity', client_entities_removed: 'p_client', client_entity_delete: 'p_client p_entity p_name',
@@ -12310,11 +12310,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       if (name === 'bukku_config') {
         if (!bkMe || !(opsAllowed('clients.billing', 'work') || opsAllowed('suppliers', 'work') || opsGranted('team.settings', 'work'))) return bkNo('denied');
-        return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null });
+        return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,
+          field_creator: DB.bukku_settings.field_creator || null });
       }
       if (name === 'bukku_config_set') {
         if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
-        DB.bukku_settings = { field_client: args.p_client || null, field_supplier: args.p_supplier || null };
+
+        DB.bukku_settings = { field_client: args.p_client || null, field_supplier: args.p_supplier || null,
+          field_creator: 'p_creator' in args ? (args.p_creator || null) : (DB.bukku_settings.field_creator || null) };
         DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'team.changed', subject: 'Bukku', detail: 'Bukku fields set', created_at: new Date().toISOString() });
         return bkOk();
       }
@@ -12428,7 +12431,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return bkOk({ kind: 'creator', id: pcr.id, legal_name: pco ? String(pq.legal_name).toUpperCase() : pq.legal_name, other_name: pcr.name,
             reg_no: pco || pw ? String(pq.id_no || '').replace(/[^0-9A-Za-z]/g, '') || null : null, tax_id_no: pq.tin || null, email: pq.email || null,
             address: pq.address || null, currency: pq.currency, person: pco ? null : pq.legal_name, our_id: pcr.creator_code,
-            field_id: DB.bukku_settings.field_supplier || null, type: 'supplier', contact_id: bkLink ? bkLink.contact_id : null });
+            field_id: DB.bukku_settings.field_creator || DB.bukku_settings.field_supplier || null, type: 'supplier', contact_id: bkLink ? bkLink.contact_id : null });
         }
         if (args.p_kind === 'entity') {
           var pe = (DB.billing_entities || []).filter(function (x) { return x.id === args.p_id; })[0];

@@ -433,11 +433,15 @@
       /* A refused read reads Could not load. on the row, never nothing;
          each field is said for itself (2026-10-22, SET2-3). */
       if (d.error) throw new Error(d.error);
-      if (d.field_client && d.field_supplier) return 'Client ID and Supplier ID fields';
-      var nb = function (a, b) { return [a, b].map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · '); };
-      if (d.field_client) return nb('Client ID field', 'Supplier ID not chosen');
-      if (d.field_supplier) return nb('Supplier ID field', 'Client ID not chosen');
-      return 'Not chosen';
+      /* Three fields (2026-11-10: the Creator ID's own); the chosen named,
+         then each one not chosen, every part held whole. */
+      var F = [['Client ID', d.field_client], ['Supplier ID', d.field_supplier], ['Creator ID', d.field_creator]];
+      var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
+      var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not chosen'; });
+      if (!on.length) return 'Not chosen';
+      var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
+      return [list + (on.length === 1 ? ' field' : ' fields')].concat(off)
+        .map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · ');
     });
   }
   function openConfig(btn, sayRow) {
@@ -447,18 +451,23 @@
       if (c.error) { sayRow(said(c), 'err'); return; }
       if (f.error) { sayRow(said(f), 'err'); return; }
       var list = (f.fields || []);
-      if (!list.length) { sayRow('Bukku has no custom contact fields. Add Client ID and Supplier ID in Bukku first.', 'err'); return; }
+      if (!list.length) { sayRow('Bukku has no custom contact fields. Add Client ID, Supplier ID and Creator ID in Bukku first.', 'err'); return; }
       var choices = [['', 'Not set']].concat(list.map(function (x) { return [String(x.id), x.name]; }));
       window.ADspaceConfirm.ask({
         title: 'Bukku', go: 'Save', wait: true,
-        body: 'The Bukku contact fields that hold the Client ID and the Supplier ID.',
+        body: 'Choose the Bukku contact field that holds each ID.',
         fields: [
           { name: 'client', label: 'Client ID field', choices: choices, value: c.field_client ? String(c.field_client) : '', required: false },
-          { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false }
+          { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false },
+          { name: 'creator', label: 'Creator ID field', choices: choices, value: c.field_creator ? String(c.field_creator) : '', required: false,
+            note: 'Not set: the Creator ID goes in the Supplier ID field.' }
         ],
-        check: function (v) { return v.client && v.client === v.supplier ? 'Choose two different fields.' : ''; }
+        check: function (v) {
+          return v.client && (v.client === v.supplier || v.client === v.creator) ? 'Choose a different field for the Client ID.' : '';
+        }
       }, function (v) {
-        return rpc('bukku_config_set', { p_client: v.client ? Number(v.client) : null, p_supplier: v.supplier ? Number(v.supplier) : null }).then(function (d) {
+        return rpc('bukku_config_set', { p_client: v.client ? Number(v.client) : null, p_supplier: v.supplier ? Number(v.supplier) : null,
+          p_creator: v.creator ? Number(v.creator) : null }).then(function (d) {
           if (d.error) return said(d);
           sayRow('Saved.', 'ok');
           return '';
