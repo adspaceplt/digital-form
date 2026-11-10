@@ -250,14 +250,18 @@
      2026-10-07: modern, minimalist, elegant; the platforms' own fluorescent
      brand colours read loud beside each other): each platform's hue, none
      brighter than the rest. */
+  /* One Pantone family a colour as bright as the next (the user,
+     2026-11-10, set A): Marina, Ultimate Gray, Living Coral; the rest from
+     Pantone's Colours of the Year, chosen to sit beside them. */
   var PLAT_COLOR = {
-    facebook: '#3A5DAE' /* 7455 C */, instagram: '#B7295A' /* 7425 C */, meta: '#004C97' /* 2945 C */,
-    tiktok: '#101820' /* Black 6 C */, rednote: '#C8102E' /* 186 C */, xhs: '#C8102E',
-    youtube: '#BA0C2F' /* 200 C */, linkedin: '#00558C' /* 7462 C */, x: '#101820', threads: '#101820',
-    wechat: '#4C8C2B' /* 362 C */
+    facebook: '#4F84C4' /* Marina 17-4041 */, instagram: '#FF6F61' /* Living Coral 16-1546 */,
+    meta: '#6667AB' /* Very Peri 17-3938 */,
+    tiktok: '#939597' /* Ultimate Gray 17-5104 */, rednote: '#BF1932' /* True Red 19-1664 */, xhs: '#BF1932',
+    youtube: '#9B1B30' /* Chili Pepper 19-1557 */, linkedin: '#0F4C81' /* Classic Blue 19-4052 */,
+    x: '#939597', threads: '#939597', wechat: '#88B04B' /* Greenery 15-0343 */
   };
-  var MORE_COLOR = ['#007681' /* 7474 C */, '#B58500' /* 7556 C */, '#5F259F' /* 267 C */,
-                    '#7A6855' /* 7531 C */, '#425563' /* 7545 C */, '#75787B' /* Cool Gray 9 C */];
+  var MORE_COLOR = ['#45B5AA' /* Turquoise 15-5519 */, '#A47864' /* Mocha Mousse 17-1230 */, '#5A5B9F' /* Blue Iris 18-3943 */,
+                    '#009473' /* Emerald 17-5641 */, '#D65076' /* Honeysuckle 18-2120 */, '#DD4124' /* Tangerine Tango 17-1463 */];
   function groupColors(groups) {
     var used = {}, extra = 0;
     return groups.map(function (g) {
