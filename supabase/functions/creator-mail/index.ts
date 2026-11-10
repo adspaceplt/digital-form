@@ -36,18 +36,27 @@
  * client meet-create uses) and GOOGLE_SHEETS_REFRESH_TOKEN, a refresh token
  * with the Sheets scope (docs/GOOGLE-SHEETS-SETUP.md).
  *
+ * Post recorded and Payment sent end in one button to the creator's own
+ * page (2026-11-10, the user: "A"): the booking (`#b=`) or Payments
+ * (`?tab=payments`), on the creator's code, at PORTAL_URL (unset:
+ * https://digital.adspace.me). The other emails ask nothing of the creator
+ * and carry none.
+ *
  * From MAIL_CREATOR_FROM (unset: ADspace <noreply-creator@sc.adspace.me>),
  * replies to MAIL_CREATOR_REPLY_TO (unset: ap@adspacestudios.com).
  * Secrets: RESEND_API_KEY, plus the platform's SUPABASE_URL and
  * SUPABASE_SERVICE_ROLE_KEY. Verify JWT is off: pg_net calls with no session.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { layout, resend } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT } from '../_shared/mail.ts';
 import { cors, json as cjson } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const FROM = () => secret('MAIL_CREATOR_FROM') || 'ADspace <noreply-creator@sc.adspace.me>';
 const REPLY_TO = () => secret('MAIL_CREATOR_REPLY_TO') || 'ap@adspacestudios.com';
+const PORTAL = () => (secret('PORTAL_URL') || 'https://digital.adspace.me').replace(/\/+$/, '');
+/* The emails that end in a way to the creator's page, and its words. */
+const ACTIONS: Record<string, string> = { posted: 'View booking', paid: 'View payment' };
 const BUDGET = 90000;
 const ROUNDS = 20;
 
@@ -55,7 +64,30 @@ function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
-type Row = { id: string; purpose: string; to_email: string; subject: string; body: string };
+type Row = { id: string; purpose: string; to_email: string; subject: string; body: string; creator_id: string | null; option_id: string | null };
+
+/* The creator's own page for this email, else nothing. */
+async function pageOf(db: any, r: Row): Promise<{ label: string; url: string } | null> {
+  const label = ACTIONS[r.purpose];
+  if (!label || !r.creator_id) return null;
+  const { data } = await db.from('creators').select('access_code').eq('id', r.creator_id).maybeSingle();
+  const code = data && String(data.access_code || '');
+  if (!/^[A-Za-z0-9]{8}$/.test(code)) return null;
+  let url = PORTAL() + '/creator/?k=' + encodeURIComponent(code);
+  if (r.purpose === 'paid') url += '&tab=payments';
+  else if (r.option_id) url += '#b=' + encodeURIComponent(r.option_id);
+  return { label, url };
+}
+/* One button after the message, the overdue reminder's own (bukku-sync). The
+   layout draws `block` where a paragraph reads `{invoices}`; the creator's
+   words never hold it, so it is added at the end.
+   shortcut: rides layout's `{invoices}` slot rather than a button option of
+   its own, so mail.ts and its two other functions are not redeployed. */
+function buttonOf(a: { label: string; url: string }): string {
+  return '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 16px;"><tr><td style="background:#0071e3;border-radius:8px;">' +
+    '<a href="' + esc(a.url) + '" style="display:inline-block;padding:9px 16px;font-family:' + FONT + ';font-size:14px;line-height:18px;font-weight:500;color:#ffffff;text-decoration:none;">' +
+    esc(a.label) + '</a></td></tr></table>';
+}
 
 // ---- The payments sheet ------------------------------------------------------
 /* What each value is called in a header: a header holding every word of one
@@ -206,10 +238,12 @@ Deno.serve(async (req) => {
     const rows = (Array.isArray(batch) ? batch : []) as Row[];
     if (!rows.length) break;
     for (const r of rows) {
+      const act = await pageOf(db, r).catch(() => null);
       const out = await resend({
         from: FROM(), to: [r.to_email], reply_to: REPLY_TO(), subject: r.subject,
-        html: layout({ heading: r.subject, body: r.body }),
-        text: r.body
+        html: act ? layout({ heading: r.subject, body: r.body + '\n\n{invoices}', block: buttonOf(act) })
+                  : layout({ heading: r.subject, body: r.body }),
+        text: act ? r.body + '\n\n' + act.label + ': ' + act.url : r.body
       }, 'creator-' + r.id, apiKey);
       await db.rpc('creator_mail_done', { p_id: r.id, p_status: out.status, p_provider: out.provider, p_error: out.error });
       if (out.status === 'sent') sent++; else failed++;
