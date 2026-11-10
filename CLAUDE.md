@@ -3812,7 +3812,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   counts it; `not-due`, `bad` with `field`, `too-many` past five a day)
   answer the ID and account numbers by their last four alone; one left
   blank keeps the number held where its kind, or its method, bank and
-  currency, did not move. A set sent while one is pending withdraws it.
+  currency, did not move. The rest the link answers masked (the name and account
+  holder a letter a word, the email its first two and last letter, a
+  number its first two and last four digits, the address its last part,
+  the TIN its last four; `creator_pay_masked`,
+  `2026-11-10-creator-page-details-masked.sql`; the user, 2026-11-10: a
+  link can reach others): each field opens empty, and left blank keeps the
+  one held. The console, the emails and the sheet read them whole. A set sent while one is pending withdraws it.
   The console: the Creators List names a creator whose details wait
   (To review), their page's Payment pane holding them (`creator_pay_list`,
   Creators List View; the numbers whole only at the granted part

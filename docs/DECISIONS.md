@@ -9301,3 +9301,15 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   linked. The band now stands 16px from the group either side, the hairline
   after it left out, and a band with no line under its name keeps its acts
   on the name's row (it had spanned an empty second row). Found by the user.
+
+- **2026-11-10 · A creator's link shows their details masked; its cards keep one step.**
+  The user: a creator's link "could accidentally fall to others and it looks
+  dangerous to have full details". `creator_pay_form` answered the legal
+  name, account holder, address, TIN, email and WhatsApp whole; it now
+  answers them masked, and a blank field keeps the one held. The audit of
+  the same day (CRE-2 to CRE-5) found the Payment details hairline at 0px
+  under its status line because `.ovfacts { margin: 0 }`, later in
+  portal.css, cancelled `.crpay-facts`; the four cards now share one rule
+  (head, 12px, hairline, 12px), Save on Post and results stands at its own
+  width, and the platforms keep 16px either side of their hairline. Found
+  by the user and the audit.
