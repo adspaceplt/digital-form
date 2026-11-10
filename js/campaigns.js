@@ -891,8 +891,8 @@
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
           (cur.address ? fact('Billing address', cur.address) :
-            '<div><dt>Billing address</dt><dd class="muted">Not given. Asked for on their creator page.</dd></div>') +
-          fact('From', cur.source === 'import' ? 'AP01 form, brought in' : '') +
+            '<div><dt>Billing address</dt><dd>Not set. The creator is asked for it on their creator page.</dd></div>') +
+          fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : '') +
           fact('Currency', cur.currency) +
           fact('Method', cur.method_word) +
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
