@@ -9147,3 +9147,13 @@ wrong figure (RM 935.00) to pass, reads RM 935 again; the same pass found `clock
 scripts.js (alike in effect), now once. `tests/jsdupes.js` fails any
 script declaring a function twice at its top level.
 
+
+### 2026-11-10: the full gate on a9ba590
+Every suite passed but two. uxaudit met the creator page's tab strip
+(`crTabs`, Creator R5) its list of strips did not name, and found Open on
+the client portal (Engagements and the Content Review, Video Scripts and
+Creator Campaigns rows) drawn as words alone where the console's Open
+carries its mark: a way to another page in the same tab now carries the
+chevron after its words. `corners` read every box round because the
+container's Chromium (153) computes the squircle as `superellipse(2)`;
+the suite reads both spellings of the one shape.
