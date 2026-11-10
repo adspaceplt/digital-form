@@ -52,6 +52,11 @@ window.ADSPACE_CONFIG = {
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3d3VpZ3ZkZnVidXltY2hzdnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5Mzg4NzIsImV4cCI6MjEwNDUxNDg3Mn0.c4g_r0W3zeA0rmQ-qYFVE2Iw3l4uAg5ub0EfKBgSsUs',
   storageBucket: 'content',
 
+  // Loading said on the page (js/api.js, js/state.js): the loading line after
+  // showAfter, Still loading… after slowAfter, a read given up at
+  // giveUpAfter (milliseconds).
+  loading: { showAfter: 300, slowAfter: 8000, giveUpAfter: 20000 },
+
   // Supabase caps uploads per plan. Free is 50 MB and cannot be raised.
   // On Pro you can raise it in Dashboard > Storage > Settings, then change
   // this number to match. Anything bigger should be pasted as a link instead.

@@ -9,14 +9,101 @@
      for a moment drew "Clients could not be loaded" over a list the server
      had already answered (2026-09-28). Only a GET is retried; a write is
      never sent twice. */
+  /* ---- Loading, said on the page (the user, 2026-11-10: "it does stay
+     there, gray out … we're not sure how long it take to complete, or is it
+     really loading?") ----
+     Every request the page sends counts here. Once one has been out for
+     `showAfter`, a thin line slides under the page's top bar until the last
+     answers, so a press that is working says so; the minute's own check
+     (`page_pulse`) never shows it. A read (GET) that has not answered in
+     `giveUpAfter` is given up, never tried again, so the page says it could
+     not load with Try again rather than waiting for ever; a write is never
+     cut off (it may have reached the database). */
+  /* Read at each use, so a page (or a suite) may set its own. */
+  const LOAD_FIRST = { showAfter: 300, slowAfter: 8000, giveUpAfter: 20000 };
+  function LOADING() { return Object.assign({}, LOAD_FIRST, (window.ADSPACE_CONFIG || {}).loading || {}); }
+  const QUIET = /\/rpc\/(page_pulse|guide_seen_mark)\b/;
+  let busyN = 0, barTimer = null, bar = null;
+  function barEl() {
+    if (bar && bar.isConnected) return bar;
+    bar = document.createElement('div');
+    bar.className = 'loadbar';
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('aria-label', 'Loading');
+    bar.innerHTML = '<span></span>';
+    (document.body || document.documentElement).appendChild(bar);
+    return bar;
+  }
+  /* Under the page's own bar, across its width (the console's head beside
+     the rail, a client page's bar edge to edge); a page with none, at the
+     top of the screen. */
+  function placeBar(el) {
+    const heads = document.querySelectorAll('.console-head, .topbar');
+    let r = null;
+    for (let i = 0; i < heads.length; i++) {
+      const b = heads[i].getBoundingClientRect();
+      if (b.width && b.height && b.bottom > 0) { r = b; break; }
+    }
+    el.style.top = (r ? Math.round(r.bottom) : 0) + 'px';
+    el.style.left = (r ? Math.round(r.left) : 0) + 'px';
+    el.style.width = (r ? Math.round(r.width) : window.innerWidth) + 'px';
+  }
+  function loadBegin() {
+    busyN++;
+    if (busyN === 1 && !barTimer) {
+      barTimer = setTimeout(function () {
+        barTimer = null;
+        if (busyN <= 0 || !document.body) return;
+        const el = barEl();
+        placeBar(el);
+        el.classList.add('is-on');
+      }, LOADING().showAfter);
+    }
+  }
+  function loadEnd() {
+    busyN = Math.max(0, busyN - 1);
+    if (busyN) return;
+    if (barTimer) { clearTimeout(barTimer); barTimer = null; }
+    if (bar) bar.classList.remove('is-on');
+  }
+  function urlOf(input) { return String((input && input.url) || input || ''); }
+
   function steadyFetch(input, init) {
     const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-    const go = () => fetch(input, init);
-    if (method !== 'GET') return go();
-    return go().catch((e) => {
-      if (init && init.signal && init.signal.aborted) throw e;
+    const quiet = QUIET.test(urlOf(input));
+    let opts = init;
+    let timer = null, gaveUp = false;
+    const giveUp = LOADING().giveUpAfter;
+    if (method === 'GET' && giveUp > 0 && typeof AbortController === 'function') {
+      const ctl = new AbortController();
+      const theirs = init && init.signal;
+      if (theirs) {
+        if (theirs.aborted) ctl.abort();
+        else theirs.addEventListener('abort', function () { ctl.abort(); });
+      }
+      timer = setTimeout(function () { gaveUp = true; ctl.abort(); }, giveUp);
+      opts = Object.assign({}, init || {}, { signal: ctl.signal });
+    }
+    const go = () => fetch(input, opts);
+    const run = method !== 'GET' ? go() : go().catch((e) => {
+      if (gaveUp) {
+        const t = new Error('The connection was lost or is too slow.');
+        t.name = 'TimeoutError';
+        throw t;
+      }
+      if (opts && opts.signal && opts.signal.aborted) throw e;
       return new Promise((res) => setTimeout(res, 600)).then(go);
+    }).catch((e) => {
+      if (gaveUp && e && e.name !== 'TimeoutError') {
+        const t = new Error('The connection was lost or is too slow.');
+        t.name = 'TimeoutError';
+        throw t;
+      }
+      throw e;
     });
+    if (!quiet) loadBegin();
+    const done = () => { if (timer) clearTimeout(timer); if (!quiet) loadEnd(); };
+    return run.then((r) => { done(); return r; }, (e) => { done(); throw e; });
   }
 
   let client = null;
@@ -261,6 +348,8 @@
 
   window.ADspaceAPI = {
     readPages,
+    steadyFetch,
+    loading: { begin: loadBegin, end: loadEnd, get slowAfter() { return LOADING().slowAfter; } },
     accessToken,
     fnRefusal,
     uploadAccept,

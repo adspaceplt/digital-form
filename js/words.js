@@ -46,6 +46,9 @@
     notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     /* A supplier holds no account manager (2026-10-27, SPF-6). */
     notSentAdspace: 'Not sent. Please try again, or contact ADspace.',
+    // A wait past the expected, and a read the connection lost (2026-11-10).
+    stillLoading: 'Still loading…',
+    offline: 'The connection was lost or is too slow. Please try again.',
     tooLong: 'Not sent. A name may contain up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
     // A file sign-upload does not take (2026-10-17).
     uploadType: 'This file type is not supported. Please upload a video, an image or a PDF.',
@@ -144,6 +147,8 @@
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
     notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
     notSentAdspace: '未能提交，请重试或联系 ADspace。',
+    stillLoading: '仍在加载…',
+    offline: '网络连接中断或过慢，请重试。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
     uploadType: '此类文件无法上传，请使用视频、图片或 PDF。',
     uploadSize: '{file}超过{n}MB的上限。',

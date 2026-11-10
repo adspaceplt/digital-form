@@ -17,6 +17,40 @@
     var s = '';
     for (var i = 0; i < (n || 3); i++) s += '<div class="skel-row"></div>';
     box.innerHTML = '<div class="softpanel"><div class="skel">' + s + '</div></div>';
+    stillLoading(box.querySelector('.skel'));
+  }
+
+  /* A wait past the expected says it is still at work (the user,
+     2026-11-10: "is it really loading?"), under the shape of what is
+     coming; the request itself is given up in `ADspaceAPI` after its own
+     limit, and the page then says it could not load. */
+  function words() {
+    var W = window.ADspaceWords || {};
+    var zh = /^zh/i.test(document.documentElement.lang || '');
+    return (zh ? W.zh : W.en) || W.en || {};
+  }
+  function stillLoading(skel) {
+    if (!skel) return;
+    var api = window.ADspaceAPI && window.ADspaceAPI.loading;
+    var after = (api && api.slowAfter) || 8000;
+    setTimeout(function () {
+      if (!skel.isConnected || skel.querySelector('.skel-slow')) return;
+      var p = document.createElement('p');
+      p.className = 'skel-slow';
+      p.setAttribute('role', 'status');
+      p.textContent = words().stillLoading || '';
+      skel.appendChild(p);
+    }, after);
+  }
+
+  /* A read the connection dropped, or the request given up, said in
+     people's words, never the browser's (Failed to fetch, Load failed). */
+  function plainWhy(why) {
+    var s = String(why || '');
+    if (/TimeoutError|Failed to fetch|Load failed|NetworkError|network connection was lost/i.test(s)) {
+      return words().offline || s;
+    }
+    return s;
   }
 
   /* What could not be read, what the database said about it, and the one
@@ -25,7 +59,7 @@
     if (!box) return;
     box.innerHTML = '<div class="softpanel"><div class="errline">' +
       '<b>' + esc(what) + ' could not be loaded.</b>' +
-      (why ? '<span>' + esc(why) + '</span>' : '') +
+      (why ? '<span>' + esc(plainWhy(why)) + '</span>' : '') +
       (again ? '<button class="btn btn-sm" data-a="retry" type="button">Try again</button>' : '') +
       '</div></div>';
     var go = box.querySelector('[data-a="retry"]');
@@ -128,7 +162,7 @@
   }
 
   window.ADspaceState = {
-    skeleton: skeleton, failLine: failLine, emptyLine: emptyLine,
+    skeleton: skeleton, failLine: failLine, emptyLine: emptyLine, stillLoading: stillLoading,
     initials: initials, fit: fit
   };
 }());

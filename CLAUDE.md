@@ -272,6 +272,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Departments (`departments`, `ADspaceAdmin.depts`, the DEPARTMENTS sections) | depts, perf, perfui, team, teamrec, settings, sql, then `ui` |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
+| The loading line, `steadyFetch`, a skeleton, `failLine` | loadbar, state, crm, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
 | Any ⋯ menu, a bulk bar, `ADspaceMenu.items` | menus, deletes, then `ui` |
 | `handbook.js` | handbook |
@@ -866,7 +867,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   failed to load reads Unable to load and records nothing, and a review
   decision is shown only on the database's own `ok` (audit F5, 2026-10-10). It retries a GET once when the
   connection drops before the answer (`steadyFetch`); a write is never sent
-  twice.
+  twice. Every request it sends is counted: one out `showAfter` (300ms)
+  draws the loading line (`.loadbar`, 2px under the page's own bar across
+  its width; the minute's `page_pulse` never shows it) until the last
+  answers; a read (GET) unanswered at `giveUpAfter` (20s) is given up,
+  never tried again, so the page says it could not load with Try again; a
+  write is never cut off; a skeleton past `slowAfter` (8s) reads Still
+  loading… (`ADspaceState.stillLoading`), and a dropped connection reads
+  `W.offline`, never the browser's words; the three from
+  `ADSPACE_CONFIG.loading` (the user, 2026-11-10: "is it really loading?";
+  `tests/loadbar.js`). Refresh app and pull to refresh turn their ring and
+  run the line until the page reloads.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
   - RM, or S$ for a Singapore client billed in S$ (`curOf(c)`: a payload's

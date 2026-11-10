@@ -9234,3 +9234,19 @@ Could it not in blue button?" Review and send kept its Send button blue
 when its words turned to Done after every email went, so an
 acknowledgement read as the view's primary act. It is now the tonal
 button, and Cancel leaves beside it.
+
+### 2026-11-10 — Loading is said on the page: the line, Still loading…, and a read given up
+The user, 2026-11-10: "when it is in loading or pending … it does stay there,
+gray out, being a static waiting … we're not sure how long it take to
+complete, or is it really loading? Did we actually click it". The skeleton's
+sweep ran between two greys too close to read as moving; nothing showed a
+request at work outside a button's ring; and a read on a dead connection had
+no limit, so a list could wait for ever. Approved as proposed (A to D):
+every request through `steadyFetch` draws a 2px loading line under the
+page's bar once out 300ms (the minute's check never does); the skeleton
+sweeps a light across it and reads Still loading… past 8 seconds; a GET is
+given up at 20 seconds (never tried again; a write never cut off), so the
+page's own failLine says it with Try again, its words `W.offline` in place of
+the browser's; Refresh app and pull to refresh run the line and their ring
+until the page reloads. The copy review caught "check your connection", a
+retired phrase. Timings are `ADSPACE_CONFIG.loading`.
