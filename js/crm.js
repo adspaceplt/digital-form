@@ -2124,7 +2124,7 @@
           (cut ? '<span class="team-act tl-act"><button class="tl-pen kmenu-btn" type="button" data-stage-menu="' + s.i + '" aria-label="More actions for ' + esc(s.word) + '" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" hidden>' +
               '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-stage-edit="' + s.i + '">Edit date</button>' +
-              '<button class="kmenu-item" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Remove</button></div></span>'
+              '<button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Remove</button></div></span>'
             : pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
