@@ -9413,3 +9413,19 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   dropped the whole query and hash when it took the code out of the
   address, so a link naming a pane or a booking landed on Bookings; it now
   removes the code alone.
+
+- **2026-11-10 · Creators come in from AP01.** The user wanted the creators
+  on record (the AP01 form and its spreadsheet) in the portal without
+  making them submit payment details again. A creator already paid through
+  Bukku comes in approved; AP01 asked no billing address before January
+  2026, so such a set may hold none, and the creator's page asks for the
+  address alone (the user: "ask to resubmit address only"), with no
+  approval round since payee, bank and account do not move. A blacklisted
+  creator comes in Inactive with the reason kept (Set inactive now asks
+  one). A rednote ID or name the sheet holds becomes a rednote search
+  link, which `profile_of` reads as a profile with no handle (the user's
+  rule). The form gained an e-Invoice section (each payment's e-Invoice to
+  LHDN is issued with these details), and Payments' working-days line
+  moved under its title (the user). The screenshot found Set inactive's
+  question answering an object, not the reason, so the reason was dropped;
+  read from either shape.

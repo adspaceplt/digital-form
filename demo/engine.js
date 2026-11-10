@@ -36,7 +36,7 @@
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
-    creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code',
+    creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
     doc_types: 'id family code name title salutation closing body_en body_zh body_ms signed position active fields schedule',
     document_deletions: 'id serial family kind actor reason deleted_at',
     documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id',
@@ -565,7 +565,7 @@
     departments_list: '',
     industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
-    creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_list: 'p_creator', creator_pay_states: '',
+    creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
@@ -9405,6 +9405,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return { platform: 'facebook', handle: h[1], url: 'https://www.facebook.com/' + h[1] };
       }
       if (bare === 'xiaohongshu.com' || bare === 'rednote.com') {
+        if (/^\/search_result\/?$/i.test(path)) {
+          h = /[?&]keyword=([A-Za-z0-9%._~+-]{1,120})(&|$)/.exec(q);
+          return h ? { platform: 'xhs', handle: null, url: 'https://www.rednote.com/search_result?keyword=' + h[1] } : null;
+        }
         h = /^\/user\/profile\/([0-9a-zA-Z]{8,40})\/?$/.exec(path);
         return h ? { platform: 'xhs', handle: h[1], url: 'https://' + host + '/user/profile/' + h[1] } : null;
       }
@@ -9506,7 +9510,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return { id: r.id, ref: r.ref, status: r.status, created_at: r.created_at, decided_at: r.decided_at || null, note: r.note || null,
         bill_kind: r.bill_kind, id_no: whole ? r.id_no : null, id_end: r.id_no.replace(/\W/g, '').slice(-4), legal_name: r.legal_name,
         tin: r.tin || null, address: r.address, currency: r.currency, method: r.method, method_word: cpMethod(r.method, r.bank), bank: r.bank || null,
-        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp };
+        account: whole ? r.account : null, account_end: r.account.slice(-4), payee: r.payee, email: r.email, whatsapp: r.whatsapp, source: r.source || 'creator' };
     }
     var CP_BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank', 'Alliance Bank',
       'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB', '[SG] Maybank', '[SG] Bank of China'];
@@ -9616,12 +9620,26 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.creator_pay_requests = DB.creator_pay_requests || [];
       var cpA = args || {}, cpOut;
       var cpReqs = DB.creator_pay_requests;
-      if (name === 'creator_pay_form' || name === 'creator_pay_submit') {
+      if (name === 'creator_pay_form' || name === 'creator_pay_submit' || name === 'creator_pay_address') {
         var cpT = creatorTry(cpA.p_code);
         var cpC = cpT.id ? DB.creators.filter(function (x) { return x.id === cpT.id; })[0] : null;
         if (cpT.locked) cpOut = { error: 'locked', minutes: cpT.locked };
         else if (!cpC) cpOut = { error: 'not-found' };
         else if (cpC.active === false) cpOut = { error: 'inactive' };
+        else if (name === 'creator_pay_address') {
+
+          var caAddr = String(cpA.p_address || '').replace(/\s+/g, ' ').trim();
+          var caPaid = cpReqs.filter(function (r) { return r.creator_id === cpC.id && r.status === 'approved'; })
+            .sort(function (a, b) { return String(b.decided_at).localeCompare(String(a.decided_at)); })[0];
+          if (caAddr.length < 5 || caAddr.length > 300) cpOut = { error: 'bad', field: 'address' };
+          else if (!caPaid || caPaid.address) cpOut = { error: 'not-needed' };
+          else {
+            caPaid.address = caAddr;
+            logAct('creator.updated', cpC.name, (cpC.creator_code ? cpC.creator_code + ' · ' : '') + 'Billing address added · ' + caPaid.ref);
+            DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
+            cpOut = { ok: true };
+          }
+        }
         else if (name === 'creator_pay_form') {
           var cpMine = cpReqs.filter(function (r) { return r.creator_id === cpC.id; });
           var cpLast = cpMine.filter(function (r) { return r.status !== 'withdrawn'; }).sort(function (a, b) { return b.seq - a.seq; })[0];
@@ -9643,7 +9661,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return Object.assign(j, { legal_name: cpWords(j.legal_name), payee: cpWords(j.payee), email: cpMail(j.email), whatsapp: cpPhone(j.whatsapp),
               address: !a ? null : a.indexOf(',') >= 0 ? '****, ' + a.replace(/^.*,/, '').trim() : cpWords(a),
               tin: tn ? new Array(Math.max(tn.length - 4, 1) + 1).join('*') + tn.slice(-4) : null, masked: true }); };
-          cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpPhone(cpC.whatsapp), last: cpMask(cpJson(cpLast, false)), paid: cpMask(cpJson(cpPaid, false)),
+          cpOut = { ok: true, due: cpDue(cpC.id), address_needed: !!(cpPaid && !cpPaid.address), whatsapp: cpPhone(cpC.whatsapp), last: cpMask(cpJson(cpLast, false)), paid: cpMask(cpJson(cpPaid, false)),
             days: { myr: appSet('creator_pay_days_myr', appToday()), other: appSet('creator_pay_days_other', appToday()) }, payments: cpPays };
         } else if (!cpDue(cpC.id)) cpOut = { error: 'not-due' };
         else if (cpReqs.filter(function (r) { return r.creator_id === cpC.id && Date.now() - Date.parse(r.created_at) < 86400000; }).length >= 5) cpOut = { error: 'too-many' };

@@ -94,6 +94,9 @@
       paysPosted: 'Posted {d}', paysPaid: 'Paid {d}', paysBy: 'Payment by {d}', paysNotPosted: 'Not posted',
       paysNote: 'Payments in MYR are made within {myr} working days of the post date, and payments in other currencies within {other} working days.',
       payGo: 'Submit details', payChange: 'Change details',
+      payEinvHead: 'e-Invoice',
+      payEinv: 'Every payment ADspace makes to you requires an e-Invoice to be submitted to the Inland Revenue Board of Malaysia (LHDN). The e-Invoice is issued with the details you provide here, so please ensure your name, identification number, Tax Identification Number (TIN) and billing address are accurate and match your official records.',
+      payAddrNeeded: 'Billing address needed', payAddrGo: 'Add billing address', payAddrSent: 'Billing address saved.',
       payNone: 'Please submit your payment details before your first payment.',
       payPending: 'Under review', payApproved: 'Approved', payDeclined: 'Declined', payChangePending: 'Change under review',
       paySentOn: 'Submitted on {d}', payAgain: 'Please submit your details again.',
@@ -202,6 +205,9 @@
       paysPosted: '发布于{d}', paysPaid: '付款于{d}', paysBy: '最迟于{d}付款', paysNotPosted: '未发布',
       paysNote: '马币款项于发布日期后{myr}个工作日内支付，其他货币款项于{other}个工作日内支付。',
       payGo: '提交资料', payChange: '更改资料',
+      payEinvHead: '电子发票（e-Invoice）',
+      payEinv: 'ADspace 向您支付的每笔款项均须向马来西亚内陆税收局（LHDN）提交电子发票。电子发票将依据您在此提供的资料开具，请确保您的姓名、身份证明号码、税务识别号（TIN）及账单地址准确无误，并与您的官方记录一致。',
+      payAddrNeeded: '需提供账单地址', payAddrGo: '添加账单地址', payAddrSent: '账单地址已保存。',
       payNone: '首次付款前，请提交您的付款资料。',
       payPending: '审核中', payApproved: '已核准', payDeclined: '已拒绝', payChangePending: '更改审核中',
       paySentOn: '提交于{d}', payAgain: '请重新提交您的资料。',
@@ -442,7 +448,10 @@
     var owed = ((feed && feed.bookings) || []).filter(needsCreator).length;
     $('crTabOwed').hidden = !owed;
     $('crTabOwed').textContent = owed ? String(owed) : '';
-    $('crTabPayments').hidden = !(pay && (pay.due || (pay.payments || []).length));
+    $('crTabPayments').hidden = !(pay && (pay.due || pay.address_needed || (pay.payments || []).length));
+    /* Details brought in with no billing address (AP01, 2026-11-10) open
+       the page on Payments once, where the address is asked for. */
+    if (pay && pay.address_needed && !addrShown && !new URLSearchParams(location.search).get('tab')) { addrShown = true; crPane = 'payments'; }
     paintContact();
     showCrPane(crTab(crPane) && !crTab(crPane).hidden ? crPane : crPaneOf(), false);
   }
@@ -1098,6 +1107,9 @@
      back for approval. The ID and account numbers come back as their last
      four alone; one left blank keeps the number held. */
   var pay = null;
+  var addrShown = false;
+  /* 'address' asks the billing address alone, on the set approved. */
+  var payMode = '';
   var BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
     'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
     '[SG] Maybank', '[SG] Bank of China'];
@@ -1116,7 +1128,7 @@
     if (!box) return;
     paintPays();
     if (feed) paintTabs();
-    box.hidden = !(pay && pay.due);
+    box.hidden = !(pay && (pay.due || pay.address_needed));
     if (box.hidden) return;
     var T0 = t(), last = pay.last, paid = pay.paid;
     $('payTitle').textContent = T0.payHead;
@@ -1128,10 +1140,11 @@
     else if (last.status === 'pending') line = chip('is-warn', paid ? T0.payChangePending : T0.payPending) +
       part(esc(fill(T0.paySentOn, { d: payDay(last.created_at) }))) + part(esc(last.ref));
     else if (last.status === 'declined') line = chip('is-danger', T0.payDeclined) + part(esc(last.note ? last.note : T0.payAgain));
+    else if (pay.address_needed) line = chip('is-warn', T0.payAddrNeeded) + part(esc((paid || last).ref));
     else line = chip('is-ok', T0.payApproved) + part(esc((paid || last).ref));
     $('payLine').innerHTML = line;
-    var asks = !last || last.status === 'declined';
-    $('payEdit').textContent = asks && !paid ? T0.payGo : T0.payChange;
+    var asks = !last || last.status === 'declined' || pay.address_needed;
+    $('payEdit').textContent = pay.address_needed ? T0.payAddrGo : asks && !paid ? T0.payGo : T0.payChange;
     $('payEdit').className = 'btn btn-sm' + (asks ? ' btn-primary' : '');
     var f = $('payFacts');
     f.hidden = !paid;
@@ -1177,8 +1190,20 @@
       payTyped[el.getAttribute('data-k')] = el.type === 'checkbox' ? el.checked : el.value;
     });
   }
+  /* What the details are for (2026-11-10): each payment's e-Invoice to
+     LHDN is issued with them, said in its own section above the tick. */
+  function einv(more) {
+    var T0 = t();
+    return '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payEinvHead) + '</h4><p class="crpay-einv">' + esc(T0.payEinv) + '</p>' + (more || '') + '</section>';
+  }
   function payFields() {
     var T0 = t(), v = payTyped, h = payHeld();
+    if (payMode === 'address') {
+      $('payFields').innerHTML = '<div class="row"><div><label class="field-label" for="pf_address">' + esc(T0.payAddress) + '</label>' +
+        '<textarea class="input" id="pf_address" data-k="address" aria-required="true" rows="3" maxlength="300">' + esc(v.address || '') + '</textarea>' +
+        '<span class="msg" id="pf_addressMsg"></span></div></div>' + einv() + '<div class="msg" id="paySheetMsg" role="status"></div>';
+      return;
+    }
     var keepId = h && h.bill_kind === v.bill_kind && h.id_end;
     var kept = function (k) { return h && h.masked && h[k] ? h[k] : ''; };
     var keepAs = function (k) { return kept(k) ? fill(T0.payKeepAs, { v: kept(k) }) : ''; };
@@ -1221,17 +1246,17 @@
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.contact) + '</h4>' +
         field('email', T0.payEmail, input('email', !kept('email'), 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"'), keepAs('email')) +
         field('whatsapp', T0.payWhatsapp, input('whatsapp', !kept('whatsapp'), 'type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="012-345 6789"'), keepAs('whatsapp')) +
-        '<label class="tickline"><input type="checkbox" id="pf_confirm" data-k="confirm"' + (v.confirm ? ' checked' : '') + '><span>' + esc(T0.payConfirm) + '</span></label>' +
-        '<span class="msg" id="pf_confirmMsg"></span>' +
-      '</section>' +
+      '</section>' + einv('<label class="tickline"><input type="checkbox" id="pf_confirm" data-k="confirm"' + (v.confirm ? ' checked' : '') + '><span>' + esc(T0.payConfirm) + '</span></label>' +
+        '<span class="msg" id="pf_confirmMsg"></span>') +
       '<div class="msg" id="paySheetMsg" role="status"></div>';
     if (window.ADspaceForm) window.ADspaceForm.scan($('payFields'));
   }
-  function openPay(opener) {
+  function openPay(opener, mode) {
     var T0 = t();
+    payMode = mode || '';
     payStart();
-    $('paySheetTitle').textContent = T0.payHead;
-    $('paySend').textContent = T0.payGo;
+    $('paySheetTitle').textContent = payMode === 'address' ? T0.payAddrGo : T0.payHead;
+    $('paySend').textContent = payMode === 'address' ? T0.save : T0.payGo;
     $('payCancel').textContent = T0.cancel;
     $('payClose').setAttribute('aria-label', T0.close);
     payFields();
@@ -1249,6 +1274,20 @@
       if (m) { m.textContent = said || T0.payFail; m.className = 'msg err'; }
       if (el) { el.setAttribute('aria-invalid', 'true'); try { el.focus(); } catch (e) {} }
     };
+    if (payMode === 'address') {
+      if (String(payTyped.address || '').trim().length < 5) { wrong('address'); return; }
+      btn.disabled = true;
+      db.rpc('creator_pay_address', { p_code: code, p_address: payTyped.address }).then(function (r) {
+        btn.disabled = false;
+        var d = r.data || {};
+        if (d.error === 'bad') { wrong('address'); return; }
+        if (d.error === 'locked') { $('paySheetMsg').textContent = W.lockedLine(T0, d.minutes); $('paySheetMsg').className = 'msg err'; return; }
+        if (r.error || d.error) { $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; return; }
+        window.ADspaceSheet.close();
+        loadPay().then(function () { paySay(T0.payAddrSent, 'ok'); });
+      }).catch(function () { btn.disabled = false; $('paySheetMsg').textContent = T0.payFail; $('paySheetMsg').className = 'msg err'; });
+      return;
+    }
     if (!payTyped.confirm) { wrong('confirm'); return; }
     btn.disabled = true;
     var vals = {};
@@ -1747,7 +1786,7 @@
     forget(); askCode();
   });
   $('linksEdit').addEventListener('click', openLinks);
-  $('payEdit').addEventListener('click', function () { paySay(''); openPay($('payEdit')); });
+  $('payEdit').addEventListener('click', function () { paySay(''); openPay($('payEdit'), pay && pay.address_needed ? 'address' : ''); });
   $('paySend').addEventListener('click', sendPay);
   $('payCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('payClose').addEventListener('click', function () { window.ADspaceSheet.close(); });

@@ -3829,6 +3829,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-11-10-creator-page-details-masked.sql`; the user, 2026-11-10: a
   link can reach others): each field opens empty, and left blank keeps the
   one held. The console, the emails and the sheet read them whole. A set sent while one is pending withdraws it.
+  Details brought in from the AP01 form (`2026-11-10-creators-from-ap01.sql`,
+  its SQL Editor part letting the column be empty; the user, 2026-11-10)
+  are filed approved (`source` `import`) where Bukku already paid the
+  creator, and may hold no billing address: the creator's page then opens
+  on Payments once and asks the address alone (`creator_pay_form`
+  `address_needed`, `creator_pay_address`, anon: `bad`, `not-needed`),
+  kept on the set approved with no approval again, filed under Creator
+  page; the console reads Billing address Not set and Source Imported from
+  AP01 form. The form's last section, e-Invoice, says each payment's
+  e-Invoice to LHDN is issued with these details, above the tick.
+  Set inactive asks a reason (`creators.inactive_reason`, Blacklisted;
+  held to inactive creators by a check), read on Overview; Set active
+  clears it. `profile_of` reads a rednote search
+  (`rednote.com/search_result?keyword=…`) as a profile with no handle.
   The console: the Creators List names a creator whose details wait
   (To review), their page's Payment pane holding them (`creator_pay_list`,
   Creators List View; the numbers whole only at the granted part
