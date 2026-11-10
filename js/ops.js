@@ -6296,7 +6296,7 @@
     var pastDays = Number(window.ADspaceMoney.setting('task_past_days'));
     if (!isFinite(pastDays) || pastDays < 0) pastDays = 0;
     var floorDay = CK.addDays(CK.today(), -pastDays);
-    var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
+    var DATE_WORD = { draft: 'Draft due', due: 'Due date', post: 'Post date' };
     for (var ri = 0; ri < rows.length; ri++) {
       var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
       /* Every post its three dates (the user, 2026-10-09: "to curb
@@ -6309,8 +6309,9 @@
       ['draft', 'due', 'post'].some(function (k) {
         if (rv[k] && rv[k] < floorDay) {
           bad = k;
-          said2 = pastDays ? 'The ' + DATE_WORD[k] + ' can be at most ' + pastDays + (pastDays === 1 ? ' day' : ' days') + ' ago.'
-            : 'The ' + DATE_WORD[k] + ' cannot be in the past.';
+          var whose = (rows.length > 1 ? 'Post ' + (ri + 1) + '\u2019s ' : '') + DATE_WORD[k];
+          said2 = pastDays ? whose + ' is more than ' + pastDays + (pastDays === 1 ? ' day' : ' days') + ' ago. Choose a later date.'
+            : whose + ' is in the past. Choose today or a later date.';
           return true;
         }
         return false;

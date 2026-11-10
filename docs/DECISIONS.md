@@ -9257,8 +9257,8 @@ retired phrase. Timings are `ADSPACE_CONFIG.loading`.
   week could not be keyed in afterwards; the team asked for at least 30 days.
 - **Changed:** the page reads `task_past_days` (30, a Business setting from
   a day on, 0 to 365, Settings, My Work: Due dates); a date further back
-  reads "The due date can be at most 30 days ago." (0: "cannot be in the
-  past"). The database never refused a past date, so nothing else moves.
+  reads "Post 3's Due date is more than 30 days ago. Choose a later date."
+  (0: "… is in the past. Choose today or a later date."). The database never refused a past date, so nothing else moves.
   The three dates stay required and keep their order.
 - **Shipped:** the seed through the connector; `app_settings_set` taking the
   key is the SQL Editor part (its body holds a delete).
