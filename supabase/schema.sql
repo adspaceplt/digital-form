@@ -107165,7 +107165,7 @@ begin
     values (t.id, 'video_changed', v_me, null,
             jsonb_build_object('script_ready', v.script_ready, 'footage_ready', v.footage_ready, 'shoot_at', v.shoot_at),
             jsonb_build_object('script_ready', s.status = 'shared', 'footage_ready', v_shot, 'shoot_at', v_at),
-            jsonb_build_object('note', 'From its script in Video Scripts', 'script_id', s.id));
+            jsonb_build_object('note', 'Updated from its script in Video Scripts', 'script_id', s.id));
     update public.ops_tasks set version = version + 1, updated_at = now() where id = t.id;
   end if;
   -- The footage in: a task not started moves into its work.

@@ -7423,7 +7423,7 @@
     return { linked: Boolean(r.data.linked), by: by };
   }
   var INV_SAID = {
-    'not-linked': 'This client has no Bukku contact. Link one on its Billing.',
+    'not-linked': 'This client has no Bukku contact. Link one from the client\u2019s Billing.',
     'not-completed': 'Complete the month first.',
     'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
     denied: 'You do not have permission to read invoices. Please ask an admin.'

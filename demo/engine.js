@@ -4648,7 +4648,7 @@ function cardSlugFree(name, self, email) {
       DB.ops_task_events.push({ id: opsId('ev'), task_id: t.id, event_type: 'video_changed',
         from_value: { script_ready: v.script_ready, footage_ready: v.footage_ready, shoot_at: v.shoot_at },
         to_value: { script_ready: sc.status === 'shared', footage_ready: shot, shoot_at: at },
-        detail: { note: 'From its script in Video Scripts', script_id: sc.id }, actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
+        detail: { note: 'Updated from its script in Video Scripts', script_id: sc.id }, actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
       v.script_ready = sc.status === 'shared'; v.footage_ready = shot; v.shoot_at = at; v.shoot_required = Boolean(sc.shoot_on);
       t.version = (t.version || 1) + 1;
     }
