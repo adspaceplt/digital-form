@@ -6533,7 +6533,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`quote_proceed_remind`, pg_cron every fifteen minutes). The prospect
   is sent one WhatsApp, `quote_ready` (greeting, brand, reference; its
   link button the key), when a colleague sends the quotation; nothing is
-  sent by itself (`quote_wa_day` now limits nothing). On the lead's Services a website quotation reads Ready to
+  sent by itself; Send quotation and a website quotation's Resend on WhatsApp
+  stop at `quote_wa_day` Quotation ready messages a day (MYT, `quote_wa_allowed`,
+  `wa-limit`; Publish and a team's quotation are not held; 2026-11-10). On the lead's Services a website quotation reads Ready to
   proceed · Contact by {day}, offers Adjust and send (Build quote on its
   selection, saved as its revision through `quotation_replace`, then the
   WhatsApp composer) and in its ⋯ Do not contact / Allow
