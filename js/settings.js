@@ -320,6 +320,10 @@
     var rep2 = num('wa_repeat_hours'), qwa = num('quote_wa_day');
     add('messages', 'Messages', 'whatsapp', [
       ['Email', [
+        /* Automatic emails (2026-11-10, the user: "automatic only"): Off,
+           nothing the portal emails by itself goes; a colleague's send does. */
+        biz && { id: 'automail', name: 'Automatic emails', kind: 'switch', on: autoOn('auto_email_on'),
+          meta: autoOn('auto_email_on') ? 'On · Creator payment emails' : 'Off · Kept as Not sent', open: function (sw) { flipAuto(sw, 'automail', 'email', 'Automatic emails'); } },
         /* Send by email (2026-10-31): whether a quotation, a Letter of Offer
            and a client letter offer it at all. */
         biz && W.ADspaceDocMail && { id: 'clientmailon', name: 'Send by email', kind: 'switch', on: num('client_email_on') === 1,
@@ -332,6 +336,8 @@
         biz && { id: 'resend', name: 'Sent again', kind: 'edit',
           meta: rep2 == null ? '' : rep2 === 0 ? 'Off' : parts(['WhatsApp and emails', 'Within ' + plural(rep2, 'hour', 'hours')]) }]],
       ['WhatsApp', [
+        biz && { id: 'autowa', name: 'Automatic WhatsApp', kind: 'switch', on: autoOn('auto_whatsapp_on'),
+          meta: autoOn('auto_whatsapp_on') ? 'On · Booking confirmed and reminders' : 'Off', open: function (sw) { flipAuto(sw, 'autowa', 'whatsapp', 'Automatic WhatsApp'); } },
         W.ADspaceWhatsApp && full('whatsapp') && { id: 'whatsapp', name: 'WhatsApp templates', kind: 'open', meta: line('whatsapp'),
           open: function (btn) { W.ADspaceWhatsApp.manage(btn); } },
         /* The content meeting's message to the client, copied from a month's
@@ -570,11 +576,14 @@
   /* Send by email (2026-10-31): on or off from today through its own
      function, saved at the press and put back on a refusal. */
   function flipMail(sw) { flipOwn(sw, 'clientmailon', 'client_email_set', 'Send by email'); }
-  function flipOwn(sw, id, fn, word) {
+  /* A switch unset reads On, as the database seeds it. */
+  function autoOn(key) { var v = num(key); return v == null || v === 1; }
+  function flipAuto(sw, id, kind, word) { flipOwn(sw, id, 'auto_send_set', word, { p_kind: kind }); }
+  function flipOwn(sw, id, fn, word, extra) {
     var to = sw.getAttribute('aria-checked') !== 'true';
     sw.setAttribute('aria-checked', to ? 'true' : 'false');
     sw.disabled = true;
-    db.rpc(fn, { p_on: to }).then(function (r) {
+    db.rpc(fn, Object.assign({ p_on: to }, extra || {})).then(function (r) {
       var d = r.data || {};
       if (r.error || d.error) {
         throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)

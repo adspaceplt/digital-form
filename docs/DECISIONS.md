@@ -9313,3 +9313,11 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   (head, 12px, hairline, 12px), Save on Post and results stands at its own
   width, and the platforms keep 16px either side of their hairline. Found
   by the user and the audit.
+
+- **2026-11-10 · Automatic emails and WhatsApp each have a switch.**
+  The user approved a creator's payment details in arrears and the creator
+  emails went out unnoticed, against "nothing reaches a client by itself".
+  Settings, Messages now holds Automatic emails and Automatic WhatsApp; Off
+  keeps an automatic email as Not sent in the Email log (never sent later)
+  and queues no automatic WhatsApp. Sends a colleague presses are not held
+  (the user: "automatic only").

@@ -286,7 +286,7 @@
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
     client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
     client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
-    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on',
+    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', auto_send_set: 'p_kind p_on',
     get_scripts: 'p_token',
     ops_add_checklist_item: 'p_task p_label',
     ops_add_comment: 'p_body p_task',
@@ -1621,8 +1621,8 @@
             if (!r.pay_by) { var pb = new Date(r.posted_on + 'T00:00:00Z'), pn = poDays; while (pn > 0) { pb.setUTCDate(pb.getUTCDate() + 1); if (pb.getUTCDay() % 6) pn--; } r.pay_by = pb.toISOString().slice(0, 10); }
             DB.creator_emails = DB.creator_emails || [];
             if (!DB.creator_emails.some(function (e) { return e.option_id === r.id && (e.purpose === 'request' || e.purpose === 'posted'); })) {
-              ['request', 'posted'].forEach(function (pp) { DB.creator_emails.push({ id: nid('cp'), purpose: pp, creator_id: r.creator_id, option_id: r.id,
-                to_email: pp === 'request' ? 'ap@adspacestudios.com' : (poReq && poReq.email) || 'creator@example.com', subject: pp, body: '', status: 'queued', created_at: new Date().toISOString() }); });
+              ['request', 'posted'].forEach(function (pp) { DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: pp, creator_id: r.creator_id, option_id: r.id,
+                to_email: pp === 'request' ? 'ap@adspacestudios.com' : (poReq && poReq.email) || 'creator@example.com', subject: pp, body: '', status: 'queued', created_at: new Date().toISOString() })); });
             }
           }
           if (table === 'campaigns' && 'slots' in pending) selectionClose(r.id);
@@ -3213,8 +3213,8 @@ function cardSlugFree(name, self, email) {
       var tell = function (b2) {
         b2.paid_told_at = now; told++;
         DB.creator_emails = DB.creator_emails || [];
-        DB.creator_emails.push({ id: nid('cp'), purpose: 'paid', creator_id: creator, option_id: opt, to_email: 'creator@example.com', subject: 'Payment sent: ' + jobRefOf(o0),
-          body: '', status: 'queued', created_at: now });
+        DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: 'paid', creator_id: creator, option_id: opt, to_email: 'creator@example.com', subject: 'Payment sent: ' + jobRefOf(o0),
+          body: '', status: 'queued', created_at: now }));
       };
       seen.push(x.id);
       if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
@@ -3248,6 +3248,9 @@ function cardSlugFree(name, self, email) {
     return { ok: true, pay: pay, linked: Boolean(link), read_at: reads.length ? reads[reads.length - 1] : null, jobs: jobs,
       earlier: bills.filter(function (b) { return !b.option_id; }).map(function (b) { return Object.assign(billOf(b), { ref: b.ref }); }) };
   }
+
+  function autoMail() { var v = appSet('auto_email_on', appToday()); return v == null || Number(v) === 1; }
+  function autoMailRow(o) { if (!autoMail()) { o.status = 'failed'; o.error = 'off: Automatic emails are off.'; } return o; }
   function appSet(key, at) {
     appDb();
     var rows = DB.app_settings.filter(function (r) { return r.key === key; }).sort(function (a, b) { return a.from_date < b.from_date ? -1 : 1; });
@@ -9309,8 +9312,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         'account ending': r.account.slice(-4), 'review link': 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + c.id };
       var fill = function (x) { Object.keys(vals).forEach(function (k) { x = x.replace(new RegExp('\\{\\s*' + k + '\\s*\\}', 'gi'), vals[k]); }); return x; };
       DB.creator_emails = DB.creator_emails || [];
-      DB.creator_emails.push({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
-        body: fill(t.body), status: 'queued', created_at: new Date().toISOString() });
+      DB.creator_emails.push(autoMailRow({ id: nid('cp'), purpose: purpose, creator_id: c.id, request_id: r.id, to_email: to, subject: fill(t.subject).slice(0, 200),
+        body: fill(t.body), status: 'queued', created_at: new Date().toISOString() }));
     }
 
     if (/^creator_sheet_/.test(name)) {
@@ -9395,7 +9398,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return { job: jobRefOf(o), campaign: m.title || m.name || '', state: o.state, posted_on: o.posted_on || null, pay_by: o.pay_by || null,
               bill: b ? { number: b.number, status: b.status, date: b.bill_date, paid_at: b.paid_seen_at || null, amount: b.amount, currency: b.currency } : null };
           });
-          cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpC.whatsapp || null, last: cpJson(cpLast, false), paid: cpJson(cpPaid, false),
+
+          var cpWords = function (v) { v = String(v || '').trim(); return v ? v.split(/\s+/).map(function (w) { return w.charAt(0) + new Array(Math.max(w.length - 1, 1) + 1).join('*'); }).join(' ') : null; };
+          var cpPhone = function (v) { var d = String(v || '').replace(/\D/g, ''); return d.length < 6 ? (d ? new Array(d.length + 1).join('*') : null) : d.slice(0, 2) + new Array(d.length - 5).join('*') + d.slice(-4); };
+          var cpMail = function (v) { v = String(v || ''); if (v.indexOf('@') < 0) return cpWords(v); var l = v.split('@')[0];
+            return (l.length <= 2 ? l.charAt(0) + '*' : l.slice(0, 2) + new Array(Math.max(l.length - 3, 1) + 1).join('*') + l.slice(-1)) + '@' + v.split('@')[1]; };
+          var cpMask = function (j) { if (!j) return j; var a = String(j.address || '').trim(), tn = String(j.tin || '');
+            return Object.assign(j, { legal_name: cpWords(j.legal_name), payee: cpWords(j.payee), email: cpMail(j.email), whatsapp: cpPhone(j.whatsapp),
+              address: !a ? null : a.indexOf(',') >= 0 ? '****, ' + a.replace(/^.*,/, '').trim() : cpWords(a),
+              tin: tn ? new Array(Math.max(tn.length - 4, 1) + 1).join('*') + tn.slice(-4) : null, masked: true }); };
+          cpOut = { ok: true, due: cpDue(cpC.id), whatsapp: cpPhone(cpC.whatsapp), last: cpMask(cpJson(cpLast, false)), paid: cpMask(cpJson(cpPaid, false)),
             days: { myr: appSet('creator_pay_days_myr', appToday()), other: appSet('creator_pay_days_other', appToday()) }, payments: cpPays };
         } else if (!cpDue(cpC.id)) cpOut = { error: 'not-due' };
         else if (cpReqs.filter(function (r) { return r.creator_id === cpC.id && Date.now() - Date.parse(r.created_at) < 86400000; }).length >= 5) cpOut = { error: 'too-many' };
@@ -9406,6 +9418,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!String(cpIn.id_no || '').trim() && cpIn.bill_kind === cpHeld.bill_kind) cpIn.id_no = cpHeld.id_no;
             if (!String(cpIn.account || '').trim() && cpIn.method === cpHeld.method && String(cpIn.currency || '').toUpperCase() === cpHeld.currency
                 && String(cpIn.bank || '') === String(cpHeld.bank || '')) cpIn.account = cpHeld.account;
+            ['legal_name', 'tin', 'address', 'payee', 'email', 'whatsapp'].forEach(function (k) {
+              if (!String(cpIn[k] || '').trim() && cpHeld[k] != null) cpIn[k] = cpHeld[k]; });
           }
           var cpK = cpCheck(cpIn);
           if (cpK.field) cpOut = { error: 'bad', field: cpK.field };
@@ -12342,7 +12356,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (/^client_email/.test(name)) {
+    if (/^client_email|^auto_send_set$/.test(name)) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
@@ -12395,6 +12409,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.app_settings.push({ key: 'report_post_links', from_date: rlDay, value: rlTo, set_by: cmMe.id, set_at: new Date().toISOString() });
         DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
           detail: 'Posts linked to tasks: ' + (rlWas === 1 ? 'On' : 'Off') + ' → ' + (rlTo ? 'On' : 'Off') + ' · from ' + rlDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
+      if (name === 'auto_send_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var asKey = { email: 'auto_email_on', whatsapp: 'auto_whatsapp_on' }[args.p_kind];
+        if (!asKey) return spNo('bad-kind');
+        var asDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), asTo = args.p_on ? 1 : 0;
+        var asWas = appSet(asKey, asDay); asWas = asWas == null ? 1 : Number(asWas);
+        if (asWas === asTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === asKey && x.from_date === asDay); });
+        DB.app_settings.push({ key: asKey, from_date: asDay, value: asTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Settings',
+          detail: (args.p_kind === 'email' ? 'Automatic emails: ' : 'Automatic WhatsApp: ') + (asWas === 1 ? 'On' : 'Off') + ' → ' + (asTo ? 'On' : 'Off') + ' · from ' + asDay, created_at: new Date().toISOString() });
         return spOk();
       }
       if (name === 'client_email_set') {
