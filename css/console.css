@@ -4271,6 +4271,10 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-tr > span { overflow-wrap: anywhere; min-width: 0; }
 .bk-th { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .bk-f { color: var(--ink-mute); }
+/* A change ticked to go to Bukku; one left unticked keeps Bukku's (2026-11-10). */
+.bk-pick { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.bk-pick input { width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
+.bk-tr:has(.bk-pick input:not(:checked)) .bk-after { color: var(--ink-mute); text-decoration: line-through; }
 .bk-after { font-weight: 600; }
 .is-narrow .bk-tr, .is-tight .bk-tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .is-narrow .bk-f, .is-tight .bk-f { grid-column: 1 / -1; }

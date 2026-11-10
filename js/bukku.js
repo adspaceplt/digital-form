@@ -403,7 +403,12 @@
         : '<div class="bk-table" role="table"><div class="bk-tr bk-th" role="row"><span role="columnheader">Field</span>' +
             '<span role="columnheader">' + (me.contact ? 'In Bukku' : 'Now') + '</span><span role="columnheader">' + (linking ? 'In the portal' : 'After') + '</span></div>' +
           rows.map(function (r) {
-            return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + esc(r.field) + '</span>' +
+            /* Sending to a contact Bukku holds, each change is ticked to go
+               (2026-11-10, the user: "choose which one to send"). */
+            var tick = !linking && r.pick && r.key
+              ? '<label class="bk-pick"><input type="checkbox" name="bkSend" value="' + esc(r.key) + '" checked aria-label="Send ' + esc(r.field) + '"> ' + esc(r.field) + '</label>'
+              : esc(r.field);
+            return '<div class="bk-tr" role="row"><span role="cell" class="bk-f">' + tick + '</span>' +
               '<span role="cell" class="bk-now">' + (r.now ? esc(r.now) : '<span class="muted">—</span>') + '</span>' +
               '<span role="cell" class="bk-after">' + (r.after ? esc(r.after) : '<span class="muted">—</span>') + '</span></div>';
           }).join('') + '</div>';
@@ -414,7 +419,9 @@
     var me = cur;
     if (!me) return;
     $('bkGo').disabled = true; $('bkLink').disabled = true; say('');
-    call({ action: action, kind: me.kind, id: me.id, contact: me.contact || null }).then(function (d) {
+    var skip = Array.prototype.slice.call(document.querySelectorAll('#bkRows input[name="bkSend"]'))
+      .filter(function (x) { return !x.checked; }).map(function (x) { return x.value; });
+    call({ action: action, kind: me.kind, id: me.id, contact: me.contact || null, skip: skip }).then(function (d) {
       if (cur !== me) return;
       $('bkGo').disabled = false; $('bkLink').disabled = false;
       if (d.error) { say(said(d), 'err'); return; }

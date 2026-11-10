@@ -3125,7 +3125,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   in place of a salutation Bukku's name opens on, never both;
   a person or address added ticks default billing alone, never default
   shipping; a supplier's payment term is set as Bukku's own term of the same
-  days where Bukku holds one (the user, 2026-10-19). Link only (`#bkLink`,
+  days where Bukku holds one (the user, 2026-10-19). Sending to a contact
+  Bukku holds, each change is a tick (`#bkRows input[name=bkSend]`, all
+  ticked, the type never), an unticked one sent as Bukku holds it
+  (`skip`, `keepAsHeld`; the user, 2026-11-10: "choose which one to
+  send"); a state goes under Bukku's own name (Penang as Pulau Pinang,
+  `STATE_AS`: Bukku refused Penang), and Bukku's refusal names its fields'
+  reasons, never only "The given data was invalid.". Link only (`#bkLink`,
   beside Link and send for a contact Bukku holds; kept apart from Link and
   send, the user, 2026-10-31) links it as it stands and sends nothing (`bukku-sync` `link`, `bukku_link_only`, filed Linked to
   Bukku, nothing sent; `2026-10-19-bukku-as-bukku-holds-it.sql`). What a

@@ -9457,3 +9457,16 @@ Campaigns each lead their rows with it. A VIC's ring carries the crown, so
 the row drops its tag (a white-label report keeps the tag, its mark being
 the brand's initials). The lesson: a change asked of one list is checked
 against every list of the same shape in the same push.
+
+### 2026-11-10 · Send to Bukku: a change chosen field by field
+Sending ADC0010's details to the Bukku contact C-K0028 was refused with
+"The given data was invalid." The address read "Penang"; Bukku keeps the
+LHDN list of states and holds that contact under "Pulau Pinang", so the
+portal both saw a change that was none and sent a state Bukku refuses.
+The function now names states as Bukku does, and passes Bukku's own
+field reasons on rather than its generic line. The user asked, the same
+day, to choose which changes go ("sometimes i dont want it to change the
+address, sometimes the billing contact, but the creator id i need"):
+each change to a contact Bukku holds is ticked, and an unticked one goes
+as Bukku holds it.
+

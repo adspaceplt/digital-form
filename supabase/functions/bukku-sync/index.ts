@@ -148,7 +148,11 @@ async function bukku(method: string, path: string, body?: unknown): Promise<any>
   try { data = text ? JSON.parse(text) : null; } catch { data = null; }
   if (res.status === 401 || res.status === 403) throw new BukkuError('bukku-token', res.status, 'refused');
   if (!res.ok) {
-    const msg = (data && (data.message || (data.errors && JSON.stringify(data.errors)))) || text.slice(0, 300);
+    /* Bukku's reason field by field where it gives one, never only "The
+       given data was invalid." (2026-11-10). */
+    const errs = data && data.errors && typeof data.errors === 'object'
+      ? Object.values(data.errors).flat().map((x) => String(x)).filter(Boolean).slice(0, 3).join(' ') : '';
+    const msg = (data && (errs || data.message)) || text.slice(0, 300);
     throw new BukkuError('bukku-refused', res.status, String(msg).slice(0, 400));
   }
   return data;
@@ -185,8 +189,15 @@ function nextCode(contacts: any[], name: string): string {
   return 'C-' + first + String(n + 1).padStart(4, '0');
 }
 
-const STATES = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Pulau Pinang', 'Perak',
+const STATES = ['Wilayah Persekutuan Kuala Lumpur', 'Wilayah Persekutuan Labuan', 'Wilayah Persekutuan Putrajaya',
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Malacca', 'Negeri Sembilan', 'Pahang', 'Penang', 'Pulau Pinang', 'Perak',
   'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu', 'Kuala Lumpur', 'Labuan', 'Putrajaya'];
+/* A state as Bukku names it (2026-11-10: Bukku refused Penang, "The given
+   data was invalid"; it holds the LHDN list's names). */
+const STATE_AS: Record<string, string> = { 'penang': 'Pulau Pinang', 'malacca': 'Melaka',
+  'kuala lumpur': 'Wilayah Persekutuan Kuala Lumpur', 'labuan': 'Wilayah Persekutuan Labuan',
+  'putrajaya': 'Wilayah Persekutuan Putrajaya' };
+const stateAs = (v: string | null) => v ? (STATE_AS[v.toLowerCase()] || v) : v;
 /* One typed address read into Bukku's parts (2026-10-19, the user: Bukku
    holds the street, postcode, city, state and country apart): the country
    and the state taken off its end, the postcode and the town after it,
@@ -226,7 +237,7 @@ function addressOf(text: string, country: string) {
   if (!state) state = STATES.find((x) => new RegExp('\\b' + x + '\\b', 'i').test(flat)) || null;
   if (country === 'SG' && !city && pc) city = 'Singapore';
   const street = parts.join(', ') || flat;
-  return { street: street.slice(0, 255), postcode: pc, city: city && city.length <= 50 ? city : null, state, country_code: country };
+  return { street: street.slice(0, 255), postcode: pc, city: city && city.length <= 50 ? city : null, state: stateAs(state), country_code: country };
 }
 /* The same address however it is punctuated or cased. */
 const plain = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -351,21 +362,40 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   const termName = (id: unknown) => { const t = terms.find((x: any) => Number(x.id) === Number(id)); return t ? String(t.name) : ''; };
   const idOf = (x: any) => { const f = (x.fields || []).find((y: any) => Number(y.field_id) === Number(p.field_id)); return f ? String(f.value ?? '') : ''; };
   const T: Record<string, string> = { customer: 'Customer', supplier: 'Supplier', employee: 'Employee' };
-  const list: [string, string, string][] = [
-    ['Legal name', c.legal_name || '', next.legal_name || ''],
-    ['Business Registration No.', c.reg_no || '', next.reg_no || ''],
-    ['Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
-    ['TIN', c.tax_id_no || '', next.tax_id_no || ''],
-    ['SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
-    ['Email', c.email || '', next.email || ''],
-    ['Phone', c.phone_no || '', next.phone_no || ''],
-    ['Billing person', person(c), person(next)],
-    ['Billing address', addr(c), addr(next)],
-    ['Payment term', termName(c.default_term_id), termName(next.default_term_id)],
-    [p.kind === 'supplier' ? 'Supplier ID' : p.kind === 'creator' ? 'Creator ID' : 'Client ID', idOf(c), idOf(next)],
-    ['Type', (c.types || []).map((t: string) => T[t] || t).join(', '), (next.types || []).map((t: string) => T[t] || t).join(', ')]
+  const list: [string, string, string, string][] = [
+    ['legal_name', 'Legal name', c.legal_name || '', next.legal_name || ''],
+    ['reg_no', 'Business Registration No.', c.reg_no || '', next.reg_no || ''],
+    ['old_reg_no', 'Old Registration No.', c.old_reg_no || '', next.old_reg_no || ''],
+    ['tax_id_no', 'TIN', c.tax_id_no || '', next.tax_id_no || ''],
+    ['sst_reg_no', 'SST Registration No.', c.sst_reg_no || '', next.sst_reg_no || ''],
+    ['email', 'Email', c.email || '', next.email || ''],
+    ['phone_no', 'Phone', c.phone_no || '', next.phone_no || ''],
+    ['person', 'Billing person', person(c), person(next)],
+    ['address', 'Billing address', addr(c), addr(next)],
+    ['term', 'Payment term', termName(c.default_term_id), termName(next.default_term_id)],
+    ['our_id', p.kind === 'supplier' ? 'Supplier ID' : p.kind === 'creator' ? 'Creator ID' : 'Client ID', idOf(c), idOf(next)],
+    ['types', 'Type', (c.types || []).map((t: string) => T[t] || t).join(', '), (next.types || []).map((t: string) => T[t] || t).join(', ')]
   ];
-  return list.map(([field, now, after]) => ({ field, now, after, same: now === after }));
+  /* An existing contact's change is chosen field by field (2026-11-10, the
+     user: "choose which one to send"); the type is always sent. */
+  return list.map(([key, field, now, after]) => ({ key, field, now, after, same: now === after,
+    pick: !!cur && key !== 'types' }));
+}
+
+/* The fields left unticked kept as Bukku holds them. */
+const KEEP: Record<string, string[]> = { legal_name: ['legal_name'], reg_no: ['reg_no', 'reg_no_type'],
+  old_reg_no: ['old_reg_no'], tax_id_no: ['tax_id_no'], sst_reg_no: ['sst_reg_no'], email: ['email'], phone_no: ['phone_no'],
+  person: ['contact_persons'], address: ['addresses'], term: ['default_term_id'], our_id: ['fields'] };
+export function keepAsHeld(next: Record<string, any>, cur: any, skip: unknown): Record<string, any> {
+  if (!cur || !Array.isArray(skip)) return next;
+  const out = { ...next };
+  // Lists in the shape a send writes them (merged's own), as Bukku holds them.
+  const held = merged({}, cur, cur.contact_code || '');
+  for (const k of skip) for (const f of KEEP[String(k)] || []) {
+    const v = ['contact_persons', 'addresses', 'fields'].includes(f) ? held[f] : cur[f];
+    if (v === undefined || v === null) delete out[f]; else out[f] = v;
+  }
+  return out;
 }
 
 
@@ -1119,7 +1149,7 @@ Deno.serve(async (req) => {
       return json({ ok: true, code, rows: rowsOf(p, cur, next, terms) }, 200, origin);
     }
     if (action === 'send') {
-      const r = cur ? await bukku('PUT', `/contacts/${contact}`, next) : await bukku('POST', '/contacts', next);
+      const r = cur ? await bukku('PUT', `/contacts/${contact}`, keepAsHeld(next, cur, body.skip)) : await bukku('POST', '/contacts', next);
       const saved = r && r.contact;
       if (!saved || !saved.id) return json({ error: 'bukku-refused', message: 'No contact came back.' }, 200, origin);
       const l = await db.rpc('bukku_linked', { p_kind: kind, p_id: id, p_contact: saved.id, p_code: saved.contact_code || code });
