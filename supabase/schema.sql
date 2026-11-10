@@ -107767,8 +107767,8 @@ begin
      where id = e.id;
     perform public.ops_engagement_log(e.id, 'edited', jsonb_build_object(
       'reports', to_jsonb(array_append(coalesce(e.reports, '{}'::text[]), new.kind)),
-      'note', case new.kind when 'social' then 'Accounts report' else 'Advertising report' end
-              || ' ticked: the report was made in Reports', 'report_id', new.id));
+      'note', case new.kind when 'social' then 'Accounts Report' else 'Advertising Report' end
+              || ' added to the month. The report was started in Reports.', 'report_id', new.id));
     perform public.ops_engagement_sync_reports(e.id);
     v_done := true;
   exception when others then
@@ -107785,8 +107785,8 @@ begin
          where id = e.id;
         perform public.ops_engagement_log(e.id, 'edited', jsonb_build_object(
           'reports', to_jsonb(array_append(coalesce(e.reports, '{}'::text[]), new.kind)),
-          'note', case new.kind when 'social' then 'Accounts report' else 'Advertising report' end
-                  || ' ticked: the report was made in Reports', 'report_id', new.id));
+          'note', case new.kind when 'social' then 'Accounts Report' else 'Advertising Report' end
+                  || ' added to the month. The report was started in Reports.', 'report_id', new.id));
         perform public.ops_engagement_sync_reports(e.id);
       exception when others then
         null;
@@ -107836,7 +107836,7 @@ begin
    where id = t.id;
   perform public.ops_log(t.id, 'stage_changed',
     jsonb_build_object('stage_key', t.stage_key), jsonb_build_object('stage_key', v_to),
-    jsonb_build_object('note', 'The report was already made in Reports', 'report_id', r.id));
+    jsonb_build_object('note', 'The report was already started in Reports.', 'report_id', r.id));
   return null;
 exception when others then
   return null;
