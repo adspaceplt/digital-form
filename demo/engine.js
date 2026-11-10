@@ -59,7 +59,7 @@
     ops_task_assignees: 'id task_id team_member_id responsibility assigned_by assigned_at ended_at',
     ops_task_checklist_items: 'id task_id label position required completed_at completed_by created_at',
     ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at',
-    ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id',
+    ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
     ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
     ops_template_variants: 'id template_id format estimate_minutes created_at',
@@ -320,6 +320,7 @@
     ops_granted: 'p_key p_level',
     ops_hand_over_task: 'p_owner p_note p_task p_version',
     ops_link_record: 'p_ref p_task p_type p_version',
+    ops_link_post: 'p_post p_task p_version',
     ops_log: 'p_task p_detail p_to p_from p_type',
     ops_mark_live: 'p_note p_reason p_live_at p_assignee p_task p_version',
     ops_may_see_engagement: 'p_engagement',
@@ -497,6 +498,7 @@
     review_confirm: 'p_post',
     review_draft: 'p_passcode p_option p_note p_reviewer p_token p_decision',
     review_revert_confirm: 'p_post',
+    review_record_changes: 'p_note p_post',
     review_set_counts: 'p_sets',
     review_caption_undo: 'p_post p_round p_caption p_caption_zh',
     s3_keys_in_use: 'p_keys',
@@ -1626,6 +1628,18 @@
             }
           }
           if (table === 'campaigns' && 'slots' in pending) selectionClose(r.id);
+
+          var flb = api.__before[api.__before.length - 1][1];
+          if (table === 'posts' && (r.content_version !== flb.content_version || r.round !== flb.round || r.review_reset_at !== flb.review_reset_at)) {
+            postFollow(r.id, r.review_reset_at !== flb.review_reset_at ? 'Re-approval requested in Content Review' : 'Post updated in Content Review');
+          }
+          if (table === 'batches' && r.published && !flb.published) {
+            (DB.ops_task_links || []).forEach(function (l) {
+              if (!l.post_id || l.archived_at) return;
+              var lq = (DB.posts || []).filter(function (q) { return q.id === l.post_id; })[0];
+              if (lq && lq.batch_id === r.id) postFollow(l.post_id, 'Published to the client in Content Review');
+            });
+          }
         });
         rows = DB[table].filter(function (r) { return String(r[f]) === String(v); });
       } else {
@@ -4559,6 +4573,43 @@ function cardSlugFree(name, self, email) {
     persist();
   }
 
+  function postTarget(postId) {
+    var p = (DB.posts || []).filter(function (q) { return q.id === postId; })[0];
+    if (!p) return null;
+    var b = (DB.batches || []).filter(function (x) { return x.id === p.batch_id; })[0] || {};
+    var d = (DB.reviews || []).filter(function (r) { return r.post_id === p.id && (r.round || 1) === (p.round || 1) && !r.undone_at &&
+        (!p.review_reset_at || r.created_at > p.review_reset_at); })
+      .sort(function (a, c) { return String(c.created_at).localeCompare(String(a.created_at)); })[0];
+    if (d && d.decision === 'approved') return 'approved';
+    if (d) return 'revision_client';
+    if (b.published) return 'client_review';
+    return (p.media || []).length ? 'internal_review' : null;
+  }
+  function postFollow(postId, note) {
+    var k = (DB.ops_task_links || []).filter(function (l) { return l.post_id === postId && !l.archived_at; })[0];
+    if (!k) return;
+    var to = postTarget(postId), t = opsTask(k.task_id);
+    if (!to || !t || t.completed_at || t.cancelled_at || t.archived_at || t.stage_key === to) return;
+    if (['ready', 'in_production', 'internal_review', 'revision_internal', 'client_review', 'revision_client'].indexOf(t.stage_key) < 0) return;
+    var from = opsStage(t.workflow_id, t.stage_key), dest = opsStage(t.workflow_id, to);
+    if (!from || !dest || dest.retired) return;
+    if (!(dest.position > from.position || (t.stage_key === 'revision_internal' && to === 'internal_review') ||
+          (t.stage_key === 'revision_client' && to === 'client_review'))) return;
+    var was = t.stage_key;
+    t.stage_key = to; t.version = (t.version || 1) + 1; t.updated_at = nowIso();
+    var me = opsMe();
+    DB.ops_task_events.push({ id: opsId('ev'), task_id: t.id, event_type: 'stage_changed',
+      from_value: { stage_key: was }, to_value: { stage_key: to },
+      detail: { note: note, post_id: postId, content_review: true },
+      actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
+    var own = opsOwner(t.id);
+    if (own && (!me || own.team_member_id !== me.id)) {
+      DB.ops_notifications.push({ id: opsId('nt'), team_member_id: own.team_member_id, task_id: t.id, kind: 'stage_changed',
+        body: 'Moved to ' + dest.label + ': ' + note + '.', read_at: null, created_at: nowIso() });
+    }
+    persist();
+  }
+
   function opsEngJson(id) {
     var e = DB.ops_engagements.filter(function (x) { return x.id === id; })[0];
     if (!e) return null;
@@ -5422,6 +5473,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return { link_id: rl.id, task: Object.assign({}, t) };
     }
+    if (name === 'ops_link_post') {
+      if (!opsMe()) return { error: 'not-team' };
+      if (!opsAllowed('ops', 'work') || !opsAllowed('review', 'view')) return { error: 'denied' };
+      t = opsTask(args.p_task);
+      if (!t) return { error: 'not-found' };
+      if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
+      var lp = (DB.posts || []).filter(function (q) { return q.id === args.p_post; })[0];
+      if (!lp) return { error: 'record-not-found' };
+      var lb = (DB.batches || []).filter(function (x) { return x.id === lp.batch_id; })[0] || {};
+      if (!t.client_id || lb.client_id !== t.client_id) return { error: 'other-client' };
+      if (DB.ops_task_links.some(function (l) { return l.task_id === t.id && l.post_id && !l.archived_at; })) return { error: 'has-post' };
+      var lheld = DB.ops_task_links.filter(function (l) { return l.post_id === lp.id && !l.archived_at; })[0];
+      if (lheld) return { error: 'post-taken', task: opsSerial((opsTask(lheld.task_id) || {}).task_no) };
+      var lno = (DB.posts || []).filter(function (q) { return q.batch_id === lp.batch_id; })
+        .sort(function (a, c) { return (a.position || 0) - (c.position || 0) || String(a.created_at).localeCompare(String(c.created_at)); })
+        .map(function (q) { return q.id; }).indexOf(lp.id) + 1;
+      var lrf = opsRefOf('set', lb.id) || {};
+      var pl = { id: opsId('ln'), task_id: t.id, kind: 'record', label: (String(lb.title || '').trim() || 'Content set') + ' \u00b7 Post ' + lno,
+        url: lrf.url, created_by: opsMe().id, created_at: now, archived_at: null, ref_type: 'set', ref_id: lb.id, post_id: lp.id };
+      DB.ops_task_links.push(pl);
+      t.version = (t.version || 1) + 1;
+      opsRefFile(pl, 'linked');
+      postFollow(lp.id, 'Linked to its post in Content Review');
+      persist();
+      return { link_id: pl.id, task: Object.assign({}, t) };
+    }
 
     if (name === 'client_vic_set') {
       var vm = opsMe();
@@ -5535,6 +5612,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           stage: st.label || tt.stage_key, stage_group: st.stage_group || null,
           owner: om ? om.name : null, final_due_at: tt.current_final_due_at || null,
           completed_at: tt.completed_at || null, cancelled_at: tt.cancelled_at || null, link_id: l.id,
+          post_id: l.post_id || null,
+          post_no: l.post_id ? (DB.posts || []).filter(function (q) { return q.batch_id === args.p_ref; })
+            .sort(function (a, c) { return (a.position || 0) - (c.position || 0) || String(a.created_at).localeCompare(String(c.created_at)); })
+            .map(function (q) { return q.id; }).indexOf(l.post_id) + 1 : null,
           _done: Boolean(tt.completed_at || tt.cancelled_at), _no: tt.task_no
         };
       }).filter(Boolean);
@@ -9074,7 +9155,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: { ok: true, round: args.p_round }, error: null });
     }
-    if (name === 'review_confirm' || name === 'review_revert_confirm') {
+    if (name === 'review_confirm' || name === 'review_revert_confirm' || name === 'review_record_changes') {
       var rfz = window.__refuseRpc && window.__refuseRpc[name];
       if (rfz) return Promise.resolve({ data: { error: rfz }, error: null });
       if (!opsAllowed('review.sets', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
@@ -9099,13 +9180,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
           source: 'team', undone_at: null, undone_by: null });
         DB.activity_log.push({ id: nid('a'), actor: cwho, action: 'review.approved', subject: ccl.name || null,
           detail: cwhat + (cn > 1 ? ' · revision ' + cn : '') + ' · confirmed internally', created_at: new Date().toISOString() });
+        postFollow(cp.id, 'Confirmed internally in Content Review');
         persist();
         return Promise.resolve({ data: { ok: true, reviewer: cme.name }, error: null });
       }
-      if (!cstand || cstand.decision !== 'approved' || cstand.source !== 'team') return Promise.resolve({ data: { error: 'not-confirmed' }, error: null });
+      if (name === 'review_record_changes') {
+        var cnote = String(args.p_note || '').trim();
+        if (!cnote) return Promise.resolve({ data: { error: 'no-note' }, error: null });
+        if (cnote.length > 2000) return Promise.resolve({ data: { error: 'too-long' }, error: null });
+        if (!cb2.published) return Promise.resolve({ data: { error: 'not-published' }, error: null });
+        if (cstand) return Promise.resolve({ data: { error: 'decided', decision: cstand.decision }, error: null });
+        DB.reviews = DB.reviews || [];
+        DB.reviews.push({ id: nid('r'), post_id: cp.id, decision: 'changes', note: cnote, reviewer: cme.name,
+          created_at: new Date().toISOString(), round: cn, suggested_caption: null, suggested_caption_zh: null,
+          source: 'team', undone_at: null, undone_by: null });
+        DB.activity_log.push({ id: nid('a'), actor: cwho, action: 'review.changes', subject: ccl.name || null,
+          detail: cwhat + (cn > 1 ? ' · revision ' + cn : '') + ' · changes received on WhatsApp', created_at: new Date().toISOString() });
+        postFollow(cp.id, 'Changes received on WhatsApp');
+        persist();
+        return Promise.resolve({ data: { ok: true }, error: null });
+      }
+      if (!cstand || cstand.source !== 'team') return Promise.resolve({ data: { error: 'not-confirmed' }, error: null });
       cstand.undone_at = new Date().toISOString(); cstand.undone_by = cme.id;
       DB.activity_log.push({ id: nid('a'), actor: cwho, action: 'review.unconfirmed', subject: ccl.name || null,
-        detail: cwhat + ' · internal confirmation reverted', created_at: new Date().toISOString() });
+        detail: cwhat + (cstand.decision === 'approved' ? ' · internal confirmation reverted' : ' · changes received on WhatsApp taken back'), created_at: new Date().toISOString() });
+        postFollow(cp.id, 'Decision taken back in Content Review');
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }
@@ -9776,6 +9875,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.reviews.push({ id: nid('r'), post_id: sp.id, decision: args.p_decision, note: String(args.p_note || '').trim() || null,
         reviewer: portalNameOf(sc && sc.id) || String(args.p_reviewer || '').trim() || null, created_at: new Date().toISOString(),
         round: sp.round || 1, suggested_caption: cap, suggested_caption_zh: capZh, source: 'client', undone_at: null });
+      postFollow(sp.id, args.p_decision === 'approved' ? 'Approved by the client in Content Review' : 'Changes requested by the client in Content Review');
       persist();
       return Promise.resolve({ data: { ok: true }, error: null });
     }

@@ -6111,11 +6111,14 @@
     'no-post': 'This post no longer exists.',
     'not-published': 'Publish the set first. The client sees only a published set.',
     'already-approved': 'Already approved.',
-    'not-confirmed': 'There is no internal confirmation to take back.'
+    'not-confirmed': 'There is no internal confirmation to take back.',
+    decided: 'The client has already decided on this round.',
+    'no-note': 'Enter the changes.',
+    'too-long': 'Shorten the changes to 2,000 characters.'
   };
   function confirmSaid(e) {
     var k = String(e || '');
-    if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return window.ADspaceWords.line.notYet;
+    if (/review_((revert_)?confirm|record_changes)/.test(k) && /(does not exist|Could not find)/i.test(k)) return window.ADspaceWords.line.notYet;
     return CONFIRM_SAID[k] || k || 'Not saved.';
   }
 
@@ -6488,6 +6491,10 @@
                nothing for them to have agreed to. */
             ((!review || review.decision !== 'approved') && state.batch && state.batch.published
               ? '<button class="kmenu-item" data-g="4" data-a="confirm" data-need="review.sets:work" type="button" role="menuitem">Confirm internally</button>' : '') +
+            /* The client's changes sent on WhatsApp, kept on the post they
+               are about (the content loop, 2026-11-10). */
+            (!review && state.batch && state.batch.published
+              ? '<button class="kmenu-item" data-g="4" data-a="changes" data-need="review.sets:work" type="button" role="menuitem">Record changes</button>' : '') +
             (review && review.decision === 'approved' && review.source === 'team'
               ? '<button class="kmenu-item" data-g="4" data-a="unconfirm" data-need="review.sets:work" type="button" role="menuitem">Revert confirmation</button>' : '') +
             (review && review.decision === 'approved' && review.source !== 'team'
@@ -6639,6 +6646,35 @@
               };
               var at = document.querySelector('#postList .saved[data-post="' + p.id + '"]');
               undoHere(postName(p) + ' confirmed internally.', back, at || $('setMsg'));
+            });
+          }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
+        });
+      });
+      var chg = row.querySelector('[data-a="changes"]');
+      if (chg) chg.addEventListener('click', function () {
+        shutPostMenus();
+        window.ADspaceConfirm.ask({
+          title: 'Record changes',
+          body: 'The changes the client sent on WhatsApp. Their review page reads Changes requested with these words.',
+          field: { label: 'Changes', rows: 4, need: 'Enter the changes.' },
+          go: 'Record'
+        }, function (note) {
+          db.rpc('review_record_changes', { p_post: p.id, p_note: note }).then(function (res) {
+            var d = (res && res.data) || {};
+            if (res.error || d.error) { msg('setMsg', confirmSaid(res.error ? res.error.message : d.error), 'err'); return; }
+            loadPosts(function () {
+              var back = function () {
+                db.rpc('review_revert_confirm', { p_post: p.id }).then(function (res2) {
+                  var d2 = (res2 && res2.data) || {};
+                  if (res2.error || d2.error) { msg('setMsg', confirmSaid(res2.error ? res2.error.message : d2.error), 'err'); return; }
+                  loadPosts();
+                  if (state.batch) loadSetTasks(state.batch);
+                });
+              };
+              /* The task following the post has moved with it. */
+              if (state.batch) loadSetTasks(state.batch);
+              var at = document.querySelector('#postList .saved[data-post="' + p.id + '"]');
+              undoHere(postName(p) + ': changes recorded.', back, at || $('setMsg'));
             });
           }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
         });

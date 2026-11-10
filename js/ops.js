@@ -155,6 +155,8 @@
     'no-code': 'This task has no code to change.',
     'other-client': 'That record belongs to another client.',
     'record-not-found': 'This record no longer exists.',
+    'post-taken': 'Another task already follows that post.',
+    'has-post': 'This task already follows a post. Remove that link first.',
     'record-link': 'A record link is removed and linked again, not edited.',
     'stale': 'Updated by someone else. Reloaded.',
     'not-yours': 'Not yours to decide.',
@@ -3556,7 +3558,7 @@
   var REF_PART = { campaign: 'campaigns', set: 'review' };
   var REF_NONE = { campaign: 'Untitled campaign', set: 'Content set' };
   function linkWord(l) {
-    if (l.ref_type) return l.gone ? 'Deleted' : (REF_WORD[l.ref_type] || 'Record');
+    if (l.ref_type) return l.gone ? 'Deleted' : l.post_id ? 'Post' : (REF_WORD[l.ref_type] || 'Record');
     return LINK_WORD[l.kind] || sentence(l.kind);
   }
   function refHref(l) {
@@ -3589,6 +3591,8 @@
         links.forEach(function (l) {
           if (l.ref_type !== type || l.archived_at) return;
           var row = by[l.ref_id];
+          /* A post's link keeps its own words: the set's title and its number. */
+          if (l.post_id && row) return;
           if (!row) { l.gone = true; return; }
           l.label = String(row.title || '').trim() || REF_NONE[type];
         });
@@ -3632,7 +3636,18 @@
     }
     sel.innerHTML = '<option value="">Loading</option>';
     sel.disabled = true;
+    /* A content task follows one post (the content loop, 2026-11-10): the
+       client's posts are offered by their set while the task follows none. */
+    var hasPost = (state.detail.links || []).some(function (l) { return l.post_id && !l.archived_at; });
     Promise.all(reads.map(function (x) { return x[2]; })).then(function (res) {
+      var setRead = reads.map(function (x) { return x[0]; }).indexOf('set');
+      var sets = setRead >= 0 && res[setRead] && !res[setRead].error ? (res[setRead].data || []) : [];
+      if (hasPost || !sets.length) return [res, null];
+      return db.from('posts').select('id, batch_id, position, created_at')
+        .in('batch_id', sets.map(function (b) { return b.id; }))
+        .order('position').order('created_at').then(function (p) { return [res, p, sets]; });
+    }).then(function (all) {
+      var res = all[0], posts = all[1], sets = all[2];
       var html = '', n = 0, failed = false;
       res.forEach(function (r, i) {
         if (!r || r.error) { failed = true; return; }
@@ -3645,6 +3660,20 @@
             esc(String(row.title || '').trim() || REF_NONE[type]) + '</option>';
         }).join('') + '</optgroup>';
       });
+      if (posts && posts.error) failed = true;
+      else if (posts) {
+        var byBatch = {};
+        (posts.data || []).forEach(function (q) { (byBatch[q.batch_id] = byBatch[q.batch_id] || []).push(q); });
+        var opts = '';
+        sets.forEach(function (b) {
+          (byBatch[b.id] || []).forEach(function (q, i) {
+            n++;
+            opts += '<option value="' + esc('post:' + q.id) + '">' +
+              esc((String(b.title || '').trim() || REF_NONE.set) + ' \u00b7 Post ' + (i + 1)) + '</option>';
+          });
+        });
+        if (opts) html += '<optgroup label="Content Review posts">' + opts + '</optgroup>';
+      }
       sel.innerHTML = n ? '<option value="">Select record</option>' + html
         : '<option value="">' + (failed ? 'Unable to load records' : 'No records to link') + '</option>';
       sel.disabled = false;
@@ -3664,8 +3693,12 @@
   var DW_REF = { kind: 'dwLinkKind', ref: 'dwLinkRef', refField: 'dwLinkRefField',
                  hide: ['dwLinkUrlField', 'dwLinkLabelLab', 'dwLinkLabel'] };
   function linkRecord(t, pick, where, then) {
-    var m = /^(campaign|set):(.+)$/.exec(String(pick || ''));
+    var m = /^(campaign|set|post):(.+)$/.exec(String(pick || ''));
     if (!m) { msg(where, 'Select a record.', 'err'); return; }
+    if (m[1] === 'post') {
+      call('ops_link_post', { p_task: t.id, p_post: m[2], p_version: t.version }, where, then);
+      return;
+    }
     call('ops_link_record', { p_task: t.id, p_type: m[1], p_ref: m[2], p_version: t.version }, where, then);
   }
   /* A draft sent through Content Review is the client's review link. Where
@@ -3709,7 +3742,8 @@
         var tone = STAGE_TONE[x.stage_group] || '';
         var done = x.completed_at || x.cancelled_at;
         return '<a class="ovrow ovrow-task' + (done ? ' is-off' : '') + '" href="/admin/?s=work&amp;open=' + encodeURIComponent(x.id) + '">' +
-          '<span class="ovname">' + esc(x.title || x.serial) + '<small class="ovtok">' + esc(x.serial) + '</small></span>' +
+          '<span class="ovname">' + esc(x.title || x.serial) + '<small class="ovtok">' + esc(x.serial) +
+            (x.post_no ? ' \u00b7 Post ' + esc(String(x.post_no)) : '') + '</small></span>' +
           '<span class="ovdim">' + (x.owner ? esc(x.owner) : '<span class="muted">—</span>') + '</span>' +
           '<span><span class="tone ' + esc(tone || 'tone-plain') + '">' + esc(x.cancelled_at ? 'Cancelled' : x.stage) + '</span></span>' +
           '<span class="ovamt">' + (x.final_due_at ? esc(niceDate(x.final_due_at)) : '<span class="muted">—</span>') + '</span></a>';

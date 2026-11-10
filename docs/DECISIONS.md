@@ -9329,3 +9329,18 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   Instagram Living Coral, TikTok Ultimate Gray; the rest from Pantone's
   Colours of the Year to sit beside them (Very Peri for the two together,
   True Red for rednote).
+
+- **2026-11-10 · A task follows its post (the content loop, Phase 1).**
+  The user asked that a post's
+  journey in Content Review move its My Work task by itself: one task one
+  post; Draft due met by the upload, Due date by the publish; changes the
+  client sends on WhatsApp recorded on the post; Scheduled left manual; and
+  no Settings switch ("there would be too many switches in the settings").
+  Linking a task to its post is the opt-in, so a team not yet working in
+  the portal is unchanged. The link rides the existing set link
+  (`ops_task_links.post_id`), so the set's backlinks list it with no change
+  to the record kinds. Moves go forward along the line, or round the two
+  revision loops, from Ready to start through Revision (Client) alone, so a
+  person's On hold, Blocked or Approved is never undone by the post.
+  Phase 2 (reel scripts and the shoot) and Phase 3 (the month closed
+  against its invoice in Bukku) wait.
