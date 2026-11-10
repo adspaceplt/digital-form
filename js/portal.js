@@ -49,6 +49,8 @@
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   /* The leaving mark from the client pages' one icon set (js/icons.js). */
   var EXT = window.ADspaceIcons ? window.ADspaceIcons.svg('out') : '';
+  /* A way to another page in this tab carries the chevron after its words. */
+  var GO = window.ADspaceIcons ? window.ADspaceIcons.svg('chevron') : '';
   /* Download carries the console's own mark (Reports' Download). */
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
@@ -608,7 +610,7 @@
     return lang === 'zh' ? m[1] + '年' + Number(m[2]) + '月' : MON_EN[Number(m[2]) - 1] + ' ' + m[1];
   }
   function openCell(w, url) {
-    return '<span class="team-act cp-go"><a class="btn btn-sm" href="' + esc(url) + '">' + esc(w.open) + '</a></span>';
+    return '<span class="team-act cp-go"><a class="btn btn-sm" href="' + esc(url) + '">' + esc(w.open) + ' ' + GO + '</a></span>';
   }
   function paintWork(w, c, feed) {
     var camps = (feed && feed.campaigns) || [];
@@ -1150,7 +1152,7 @@
         var row = document.createElement('div');
         row.className = 'svc-row cp-eng-row';
         row.innerHTML = '<span class="cx-tile">' + glyph(e.glyph) + '</span><span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + parts([e.sub]) + '</small>' : '') + '</span>' +
-          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '">' + esc(w.open) + '</a>';
+          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '">' + esc(w.open) + ' ' + GO + '</a>';
         etb.appendChild(row);
       });
       ebox.innerHTML = ''; ebox.appendChild(etb);
