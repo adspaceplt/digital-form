@@ -6111,7 +6111,7 @@
     'no-post': 'This post no longer exists.',
     'not-published': 'Publish the set first. The client sees only a published set.',
     'already-approved': 'Already approved.',
-    'not-confirmed': 'This post has no internal decision to revert. Refresh the page.',
+    'not-confirmed': 'There is nothing to revert on this post. Refresh the page.',
     decided: 'The client has already decided on this round. Refresh the page.',
     'no-note': 'Enter the changes.',
     'too-long': 'Shorten the changes to 2,000 characters.'

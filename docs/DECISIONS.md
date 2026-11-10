@@ -9413,3 +9413,6 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   dropped the whole query and hash when it took the code out of the
   address, so a link naming a pane or a booking landed on Bookings; it now
   removes the code alone.
+
+### 2026-11-10 · Copy review of #992 to #1005
+A second reader went through the 120 lines of new words in the fourteen releases merged after #991. Three broke DESIGN.md §6 and are fixed: the Bukku Settings row said "Client ID not chosen" and "Not chosen" while its own sheet says Not set (one word per thing); Automatic emails read "Off · Kept as Not sent", a system word in a fragment, now "Off · Not sent"; a Content Review refusal named a new thing, "no internal decision to revert", now "There is nothing to revert on this post. Refresh the page.". Nothing a client, prospect, creator or supplier reads broke a rule.
