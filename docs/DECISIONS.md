@@ -9250,3 +9250,15 @@ page's own failLine says it with Try again, its words `W.offline` in place of
 the browser's; Refresh app and pull to refresh run the line and their ring
 until the page reloads. The copy review caught "check your connection", a
 retired phrase. Timings are `ADSPACE_CONFIG.loading`.
+
+### 2026-11-10 — A new task's dates may go back 30 days, a setting
+- **Reported:** the New sheet refused any Draft due, Due date or Post date
+  before today ("That draft due has already passed."), so work done last
+  week could not be keyed in afterwards; the team asked for at least 30 days.
+- **Changed:** the page reads `task_past_days` (30, a Business setting from
+  a day on, 0 to 365, Settings, My Work: Due dates); a date further back
+  reads "Post 3's Due date is more than 30 days ago. Choose a later date."
+  (0: "… is in the past. Choose today or a later date."). The database never refused a past date, so nothing else moves.
+  The three dates stay required and keep their order.
+- **Shipped:** the seed through the connector; `app_settings_set` taking the
+  key is the SQL Editor part (its body holds a delete).

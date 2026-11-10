@@ -2877,6 +2877,8 @@ function cardSlugFree(name, self, email) {
 
     task_remind_hours: 3, task_start_days: 2,
 
+    task_past_days: 30,
+
     quote_valid_days: 30, details_form_days: 14,
 
     wa_repeat_hours: 24,
@@ -2899,7 +2901,7 @@ function cardSlugFree(name, self, email) {
     ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
-    task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
+    task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
     health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
@@ -3284,7 +3286,7 @@ function cardSlugFree(name, self, email) {
           (/^term_/.test(k) && (v < -100 || v > 100)) || (/^ai_price_/.test(k) && (v < 0 || v > 1000)) ||
           ((k === 'meta_checks' || k === 'client_email_on') && v !== 0 && v !== 1) || (k === 'reach_allowance_pct' && (v < 0 || v > 5)) ||
           (/^priority_.*_hours$/.test(k) && (v < 1 || v > 720 || v % 1)) ||
-          (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
+          (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||

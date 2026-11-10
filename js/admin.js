@@ -5663,7 +5663,9 @@
     tax: { title: 'Tax and terms', keys: TAX_KEYS.map(function (k) { return k.concat(SET_TAX_WORD[k[0]]); }) },
     due: { title: 'Due dates', keys: [['report_due_days', 'Report due (days after the month ends)', 'due', '', 'Report', per('day')],
       ['revision_due_days', 'Revision (Client) due (working days after changes are requested)', 'due', '', 'Revision', per('working day')],
-      ['approval_reminder_days', 'Remind after (days without client approval)', 'due', '', 'Approval reminder', per('day')]] },
+      ['approval_reminder_days', 'Remind after (days without client approval)', 'due', '', 'Approval reminder', per('day')],
+      /* How far back a new task's dates may go (2026-11-10). */
+      ['task_past_days', 'Past dates on new tasks (days before today, 0 allows none)', 'due', '', 'Past dates', per('day')]] },
     priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent (hours from when it is set)', 'hours', '', 'Urgent', per('hour')],
       ['priority_high_hours', 'High (hours from when it is set)', 'hours', '', 'High', per('hour')],
       ['priority_medium_hours', 'Medium (hours from when it is set)', 'hours', '', 'Medium', per('hour')]] },
