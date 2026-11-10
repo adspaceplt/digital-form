@@ -109,6 +109,7 @@
       payAcctLabel: { bank: 'Account number', duitnow: 'DuitNow ID', paynow: 'PayNow ID (mobile number or UEN)', tng: 'Touch \u2019n Go eWallet mobile number' },
       payPayee: 'Account holder name', payWhatsapp: 'WhatsApp number',
       payKeep: 'Leave blank to keep the number ending {n}.',
+      payKeepAs: 'Leave blank to keep {v}.',
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
       paySent: 'Submitted. ADspace will review your details and inform you by email once they are approved.',
       payBad: { bill_kind: 'Choose how you are billed.', id_no: { nric: 'Enter a valid NRIC Number.', passport: 'Enter a valid Passport Number.', brn: 'Enter a valid 12-digit Business Registration Number.' },
@@ -216,6 +217,7 @@
       payAcctLabel: { bank: '银行账号', duitnow: 'DuitNow ID', paynow: 'PayNow ID（手机号码或 UEN）', tng: 'Touch \u2019n Go 电子钱包手机号码' },
       payPayee: '账户持有人姓名', payWhatsapp: 'WhatsApp号码',
       payKeep: '留空即保留尾号为{n}的号码。',
+      payKeepAs: '留空即保留{v}。',
       payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
       paySent: '已提交。ADspace 审核通过后将以电邮通知您。',
       payBad: { bill_kind: '请选择开票身份。', id_no: { nric: '请输入有效的身份证号码。', passport: '请输入有效的护照号码。', brn: '请输入有效的12位公司注册号。' },
@@ -1163,9 +1165,12 @@
   function payHeld() { return pay && (pay.last && pay.last.status !== 'declined' ? pay.last : pay.paid); }
   function payStart() {
     var h = payHeld() || (pay && pay.last) || {};
-    payTyped = { bill_kind: h.bill_kind || 'nric', id_no: '', legal_name: h.legal_name || '', tin: h.tin || '',
-      address: h.address || '', currency: h.currency || 'MYR', method: h.method || 'bank', bank: h.bank || '', account: '',
-      payee: h.payee || '', email: h.email || '', whatsapp: h.whatsapp || (pay && pay.whatsapp) || '', confirm: false };
+    /* The page holds these details masked (2026-11-10): a field opens empty,
+       and left blank keeps the one held. */
+    var m = !!h.masked;
+    payTyped = { bill_kind: h.bill_kind || 'nric', id_no: '', legal_name: m ? '' : h.legal_name || '', tin: m ? '' : h.tin || '',
+      address: m ? '' : h.address || '', currency: h.currency || 'MYR', method: h.method || 'bank', bank: h.bank || '', account: '',
+      payee: m ? '' : h.payee || '', email: m ? '' : h.email || '', whatsapp: m ? '' : h.whatsapp || '', confirm: false };
   }
   function payRead() {
     Array.prototype.forEach.call($('payFields').querySelectorAll('[data-k]'), function (el) {
@@ -1175,6 +1180,8 @@
   function payFields() {
     var T0 = t(), v = payTyped, h = payHeld();
     var keepId = h && h.bill_kind === v.bill_kind && h.id_end;
+    var kept = function (k) { return h && h.masked && h[k] ? h[k] : ''; };
+    var keepAs = function (k) { return kept(k) ? fill(T0.payKeepAs, { v: kept(k) }) : ''; };
     var keepAcct = h && h.method === v.method && h.currency === v.currency && String(h.bank || '') === String(v.bank || '') && h.account_end;
     var field = function (k, label, inner, hint) {
       return '<div class="row"><div><label class="field-label" for="pf_' + k + '">' + esc(label) + '</label>' + inner +
@@ -1197,9 +1204,10 @@
         field('id_no', T0.payIdLabel[v.bill_kind], input('id_no', !keepId, 'autocomplete="off" autocapitalize="characters" spellcheck="false" ' +
           ID_SHAPE[v.bill_kind]),
           keepId ? fill(T0.payKeep, { n: h.id_end }) : '') +
-        field('legal_name', T0.payNameLabel[v.bill_kind], input('legal_name', true, 'maxlength="120" autocomplete="name"')) +
-        field('tin', T0.payTin, input('tin', false, 'maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="' + esc(T0.payOptional) + '"')) +
-        field('address', T0.payAddress, '<textarea class="input" id="pf_address" data-k="address" aria-required="true" rows="3" maxlength="300">' + esc(v.address || '') + '</textarea>') +
+        field('legal_name', T0.payNameLabel[v.bill_kind], input('legal_name', !kept('legal_name'), 'maxlength="120" autocomplete="name"'), keepAs('legal_name')) +
+        field('tin', T0.payTin, input('tin', false, 'maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="' + esc(T0.payOptional) + '"'), keepAs('tin')) +
+        field('address', T0.payAddress, '<textarea class="input" id="pf_address" data-k="address"' + (kept('address') ? '' : ' aria-required="true"') +
+          ' rows="3" maxlength="300">' + esc(v.address || '') + '</textarea>', keepAs('address')) +
       '</section>' +
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.payment) + '</h4>' +
         field('currency', T0.payCurrency, '<select class="select" id="pf_currency" data-k="currency" data-seg aria-required="true">' + options(['MYR', 'SGD'], null, v.currency) + '</select>') +
@@ -1208,11 +1216,11 @@
           esc(T0.payChooseBank) + '</option>' + options(banks, null, v.bank) + '</select>') : '') +
         field('account', T0.payAcctLabel[v.method], input('account', !keepAcct, 'inputmode="' + (v.method === 'bank' ? 'numeric' : 'text') + '" autocomplete="off" spellcheck="false" maxlength="40"'),
           keepAcct ? fill(T0.payKeep, { n: h.account_end }) : '') +
-        field('payee', T0.payPayee, input('payee', true, 'maxlength="120"')) +
+        field('payee', T0.payPayee, input('payee', !kept('payee'), 'maxlength="120"'), keepAs('payee')) +
       '</section>' +
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.contact) + '</h4>' +
-        field('email', T0.payEmail, input('email', true, 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"')) +
-        field('whatsapp', T0.payWhatsapp, input('whatsapp', true, 'type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="012-345 6789"')) +
+        field('email', T0.payEmail, input('email', !kept('email'), 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"'), keepAs('email')) +
+        field('whatsapp', T0.payWhatsapp, input('whatsapp', !kept('whatsapp'), 'type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="012-345 6789"'), keepAs('whatsapp')) +
         '<label class="tickline"><input type="checkbox" id="pf_confirm" data-k="confirm"' + (v.confirm ? ' checked' : '') + '><span>' + esc(T0.payConfirm) + '</span></label>' +
         '<span class="msg" id="pf_confirmMsg"></span>' +
       '</section>' +

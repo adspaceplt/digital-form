@@ -5211,6 +5211,14 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .post-entry-day { font-size: 13px; color: var(--ink-soft); margin: 6px 0 0; }
 .post-entry-day[hidden] { display: none; }
 .booking-posts > .kactions { margin-top: 16px; }
+/* Save is a forward move at its own width at the right edge on a desk, the
+   column's width on a phone; one 16px step either side of the hairline
+   between platforms (2026-11-10, CRE-4). */
+@media (min-width: 641px) {
+  .booking-posts > .kactions { justify-content: flex-end; }
+  .booking-posts > .kactions > .btn { flex: 0 0 auto; }
+}
+.post-entry + .post-entry > .post-entry-head { margin-top: 0; }
 /* What the team released, in the sheet the client decides in: the creator's
    own files and the caption that goes out with them. The caption is read, not
    typed, so it is text on the sunk ground and not a field. */
@@ -5760,7 +5768,14 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .cr-pane > .crpay:first-child, .cr-pane > .crprof:first-child { margin-top: 12px; }
 .cr-pane[data-pane="bookings"] > :first-child { margin-top: 12px; }
 .crpays { margin-top: 12px; }
-.crpays > .crpay-title { margin-bottom: 4px; }
+.crpays > .crpay-title { margin-bottom: 0; }
+/* Every card on the creator's page one way (2026-11-10, CRE-2, CRE-3): its
+   head, then 12px, a hairline, 12px, what it holds. `.ovfacts` sets no
+   margin later in this sheet, so these rules name the card as well. */
+.crpay .crpay-facts, .crprof .crpay-facts, .crprof .crlinks, .crpays #crPaysList {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.crpays #crPaysList > .crpay-row:first-child { padding-top: 0; }
 .crpay-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px;
   padding: 10px 0; border-top: 1px solid var(--line-soft);
@@ -5770,10 +5785,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .crpay-amt { font-size: 14px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .crpay-sub { grid-column: 1; font-size: 12.5px; color: var(--ink-mute); }
 .crpay-st { justify-self: end; align-self: start; }
-.crpays-note { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.crpays-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .crpays-note[hidden] { display: none; }
-.crprof .crlinks { margin-top: 12px; }
-.crprof > .crpay-title + .crpay-facts { margin-top: 12px; }
 @media (max-width: 640px) { .crpay-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
 .input[aria-invalid="true"] { border-color: var(--err); }
 @media (max-width: 640px) {
