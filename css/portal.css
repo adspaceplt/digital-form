@@ -4716,7 +4716,7 @@ body > .shell { width: 100%; }
 /* The client's logo before the name, the record head's mark at row size:
    white disc and hairline for a logo (light in both themes, as a logo is),
    initials on the quiet fill while none is held. */
-.crm-row.client-row .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.crm-row:is(.client-row, .cr-client-row) .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .cl-mark {
   flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center;
@@ -4788,6 +4788,11 @@ body > .shell { width: 100%; }
   }
   /* A lone dash says nothing on a phone, so it is not drawn. */
   .crm-row.cr-client-row .crm-c-code.is-none { display: none; }
+  /* The mark at 28px beside the name, the sets line starting where the
+     name does, as the Clients list's meta line (2026-11-10). */
+  .crm-row.cr-client-row .crm-c-name { gap: 10px; align-items: flex-start; overflow: visible; }
+  .crm-row.cr-client-row .cl-mark { margin-bottom: -6px; }
+  .crm-row.cr-client-row .crm-c-sets { padding-left: 38px; }
 }
 
 /* ---------- The campaign register ----------
