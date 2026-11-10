@@ -7350,7 +7350,8 @@
         checkInvoice(e).then(function (d) {
           ic.disabled = false;
           var m = el.querySelector('[data-a="msg"]');
-          if (d && d.error) { if (m) { m.textContent = INV_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
+          if (d && d.error) { if (m) { m.textContent = d.error === 'not-started'
+            ? 'This month has not started. Check Bukku from ' + window.ADspaceClock.date(String(e.period) + '-01') + '.' : INV_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
           readClientWork();
         }).catch(function (x) { ic.disabled = false; var m = el.querySelector('[data-a="msg"]'); if (m) { m.textContent = (x && x.message) || 'Bukku could not be read. Try again.'; m.className = 'msg err'; } });
       });
@@ -7421,7 +7422,6 @@
   }
   var INV_SAID = {
     'not-linked': 'This client has no Bukku contact. Link one from the client\u2019s Billing.',
-    'not-started': 'The month has not started. Its invoice is issued on the 1st.',
     cancelled: 'This month is cancelled.',
     'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
     denied: 'You do not have permission to read invoices. Please ask an admin.'
