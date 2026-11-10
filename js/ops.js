@@ -7027,9 +7027,10 @@
         });
         var ids = cw.engs.map(function (e) { return e.id; });
         if (!ids.length) { cw.checks = []; cw.counts = {}; cw.inv = null; paintClientWork(); return; }
-        /* A completed month's invoice in Bukku (the content loop, phase 3):
+        /* A month's invoice in Bukku from its 1st (the content loop, phase 3):
            read once for the client, at Clients: Billing View alone. */
-        var wantInv = may('clients.billing', 'view') && cw.engs.some(function (e) { return e.status === 'completed'; });
+        var invNow = window.ADspaceClock.today().slice(0, 7);
+        var wantInv = may('clients.billing', 'view') && cw.engs.some(function (e) { return e.status !== 'cancelled' && String(e.period) <= invNow; });
         return Promise.all([
           db.from('ops_engagement_checks').select('*').in('engagement_id', ids),
           db.rpc('ops_engagement_counts', { p_engagements: ids }),
@@ -7404,14 +7405,10 @@
     return el;
   }
   /* Completed, Cancelled and a reopen (back to Planning) are the only
-     stages a person sets; the rest follow the month's facts. A month
-     completed is checked against Bukku at once (phase 3, 2026-11-10). */
+     stages a person sets; the rest follow the month's facts. */
   function setStatus(e, want, el, onFail) {
     call2('ops_engagement_set_status', { p_engagement: e.id, p_status: want, p_version: e.version }, el,
-      function () {
-        if (want === 'completed' && may('clients.billing', 'view')) checkInvoice(e).then(readClientWork, readClientWork);
-        else readClientWork();
-      }, onFail);
+      function () { readClientWork(); }, onFail);
   }
   /* The month's invoice, as `ops_month_invoices_of` answers it: by month,
      whether the client has a Bukku contact at all, or a failed read. */
@@ -7424,7 +7421,8 @@
   }
   var INV_SAID = {
     'not-linked': 'This client has no Bukku contact. Link one from the client\u2019s Billing.',
-    'not-completed': 'Complete the month first.',
+    'not-started': 'The month has not started. Its invoice is issued on the 1st.',
+    cancelled: 'This month is cancelled.',
     'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
     denied: 'You do not have permission to read invoices. Please ask an admin.'
   };
@@ -7437,12 +7435,14 @@
     return cur === 'MYR' || cur === 'SGD' ? window.ADspaceMoney.money2(n, cur === 'SGD' ? 'SG' : 'MY')
       : (cur || '') + ' ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  /* The Invoice row of a completed month: each invoice found (its number,
-     amount and Paid or Unpaid), else Not invoiced with the day it was
-     checked, else Not checked; Check Bukku reads it again. */
+  /* The Invoice row of a month from its 1st (invoiced in advance; the
+     user, 2026-11-10): each invoice dated in the content month (its
+     number, amount and Paid or Unpaid), else Not invoiced with the day it
+     was checked, else Not checked; Check Bukku reads it again. Never on a
+     cancelled month or one not yet begun. */
   function invoiceRow(e) {
     var I = cw.inv;
-    if (!I || e.status !== 'completed') return '';
+    if (!I || e.status === 'cancelled' || String(e.period) > window.ADspaceClock.today().slice(0, 7)) return '';
     var x = I.by[e.id], val;
     if (I.failed) val = '<span class="mute">Could not load.</span>';
     else if (!I.linked) val = '<span class="mute">No Bukku contact</span>';
