@@ -803,6 +803,9 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .crr-bkrow { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
 .is-narrow .crr-bkrow > .cr-go { display: none; }
 .is-narrow .crr-card { padding: 14px; }
+/* The bookings card's rows carry its padding: the narrow card's own padding
+   stacked on them read as a double gap (2026-11-10). */
+.is-narrow .crr-card.crr-bk { padding: 0; }
 /* Edit links: the sheet holds the profile links alone. */
 #addCreatorBox.is-links .crf-full { display: none; }
 .crr-tabs { margin-bottom: 12px; }
