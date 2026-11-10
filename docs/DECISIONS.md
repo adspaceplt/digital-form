@@ -9227,3 +9227,10 @@ keyed with a WhatsApp number and no phone (a website lead) showed only its
 email on the Overview: the WhatsApp row was drawn for a `@username` alone,
 and the chip rode the Phone row. A WhatsApp number with no phone, or other
 than the phone, is now its own row: the number, then the WhatsApp chip.
+
+### 2026-11-10 — Done after sending reminders is tonal, not blue
+The user, 2026-11-10: "this Done button has no action just acknowledge.
+Could it not in blue button?" Review and send kept its Send button blue
+when its words turned to Done after every email went, so an
+acknowledgement read as the view's primary act. It is now the tonal
+button, and Cancel leaves beside it.
