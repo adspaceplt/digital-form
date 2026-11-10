@@ -525,7 +525,22 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
       if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
     }
   }
-  return json({ ok: true, read, failed, left: rows.length - read - failed, bills }, 200, origin);
+  /* Completed months not yet matched to their invoice (2026-11-10), in the
+     time left. */
+  let months = 0;
+  const mdue = Date.now() < until ? await svc.rpc('ops_month_invoices_due') : { data: [], error: null };
+  for (const m of ((mdue.data || []) as any[])) {
+    if (Date.now() > until) break;
+    try {
+      const found = await monthInvoices((m.contacts || []).map(Number), String(m.from), String(m.to));
+      const t = await svc.rpc('ops_month_invoice_take', { p_engagement: m.engagement, p_invoices: found });
+      if (!t.error) months++;
+    } catch (e) {
+      console.error('bukku-sync: nightly month', m.engagement, String((e as Error).message || e));
+      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
+    }
+  }
+  return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months }, 200, origin);
 }
 
 // ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
@@ -723,6 +738,31 @@ async function unpaid(contacts?: number[]): Promise<any[]> {
     }
   }
   return Array.from(seen.values());
+}
+/* A month's invoices (the content loop, phase 3, 2026-11-10): every invoice
+   Bukku holds for the contacts asked, dated within the month's own span,
+   paid or not, never a draft or a void. Read, never written. */
+export async function monthInvoices(contacts: number[], from: string, to: string): Promise<any[]> {
+  const want = new Set(contacts.map(Number));
+  const out: any[] = [];
+  for (const c of Array.from(want).slice(0, 10)) {
+    for (let page = 1; page <= 10; page++) {
+      const r = await bukku('GET', `/sales/invoices?contact_id=${c}&date_from=${from}&date_to=${to}&status=ready&page=${page}&page_size=100`);
+      const rows = (r && r.transactions) || [];
+      for (const x of rows) {
+        const d = String(x && x.date || '').slice(0, 10);
+        if (!x || !want.has(Number(x.contact_id)) || d < from || d > to || out.some((o) => o.id === Number(x.id))) continue;
+        const link = String(x.short_link || '');
+        out.push({ id: Number(x.id), number: String(x.number || '').slice(0, 60), date: d, amount: cents(x.amount),
+          currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+          paid: cents(x.balance) <= 0, link: LINK.test(link) ? link : null });
+      }
+      const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+      const total = Number(r && r.paging && r.paging.total) || 0;
+      if (!rows.length || page * per >= total || rows.length < per) break;
+    }
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date) || a.number.localeCompare(b.number));
 }
 async function oneInvoice(id: number): Promise<any | null> {
   return bukku('GET', `/sales/invoices/${id}`).then((r) => (r && r.transaction) || null)
@@ -962,6 +1002,20 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'invoices' || action === 'remind' || action === 'deliver') return await invoiceAction(action, body, db, origin);
+    /* A completed month's invoice (2026-11-10): asked as the caller, read
+       from Bukku, kept by the service role. */
+    if (action === 'month') {
+      const eid = String(body.engagement || '');
+      if (!/^[0-9a-f-]{36}$/i.test(eid)) return json({ error: 'bad-request' }, 400, origin);
+      const ask = await db.rpc('ops_month_invoice_ask', { p_engagement: eid });
+      if (ask.error) return json({ error: 'needs-update' }, 200, origin);
+      const a = ask.data || {};
+      if (a.error) return json({ error: a.error }, 200, origin);
+      const found = await monthInvoices((a.contacts || []).map(Number), String(a.from), String(a.to));
+      const t = await svcDb().rpc('ops_month_invoice_take', { p_engagement: eid, p_invoices: found });
+      if (t.error) return json({ error: 'failed' }, 200, origin);
+      return json(t.data || { error: 'failed' }, 200, origin);
+    }
     if (action === 'read' || action === 'hold' || action === 'save') {
       const k = String(body.kind || ''), rid = String(body.id || '');
       if (!['client', 'entity'].includes(k) || !/^[0-9a-f-]{36}$/i.test(rid)) return json({ error: 'bad-request' }, 400, origin);

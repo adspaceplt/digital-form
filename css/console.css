@@ -4644,3 +4644,11 @@ span.inv-amt { font-weight: 600; }
 .stg-hit .stg-name, .stg-hit .stg-meta { display: block; }
 @media (hover: hover) { .stg-hit:hover { background: var(--sunk); } }
 .mt-rec .field-label { margin: 0; }
+
+/* A script's task (the content loop, 2026-11-10): its stage a mute line under it. */
+.vs-facts .vs-task-stage { display: block; font-size: 12.5px; color: var(--ink-mute); margin-top: 2px; }
+
+/* A completed month's invoice (the content loop, phase 3, 2026-11-10): an
+   invoice a line, the check's day a mute word after Not invoiced. */
+.eng-invrow .eng-inv { display: block; }
+.eng-invrow .eng-inv-when { margin-left: 8px; font-size: 12.5px; color: var(--ink-mute); }

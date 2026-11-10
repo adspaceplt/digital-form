@@ -9344,3 +9344,16 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   person's On hold, Blocked or Approved is never undone by the post.
   Phase 2 (reel scripts and the shoot) and Phase 3 (the month closed
   against its invoice in Bukku) wait.
+
+- **2026-11-10 · The content loop, Phases 2 and 3.** The user kept Draft
+  due at least a day before the Due date, and asked for Phases 2 and 3
+  built through to the day's full gate. Phase 2: a reel task links its
+  video script as it links a post; publishing the script stands for its
+  approval (the user: internal or client approval, either works), its shoot
+  day fills the task's Shoot, and every scene ticked shot marks the footage
+  in and starts a task not yet begun. Phase 3: a completed month is matched
+  to an invoice in Bukku dated within the month's own span, with no figure
+  of its own (a window setting would have restated `app_settings_set`, an
+  SQL Editor run); the invoice's figures are billing data, so they live
+  apart from the month (`ops_month_invoices`) and read only at Clients:
+  Billing.

@@ -257,7 +257,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
 | `js/clock.js` | myclock, then `all` (every script reads it) |
-| The content loop (`ops_link_post`, `ops_post_follow`, Add changes) | contentloop, reflink, sets, work, sql, then `ui` |
+| The content loop (`ops_link_post`, `ops_post_follow`, Add changes, `ops_link_script`, `ops_script_follow`, the month's invoice) | contentloop, reflink, sets, work, vs, overview, bukkufn, sql, then `ui` |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
@@ -4754,7 +4754,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   Add changes (`review_record_changes`, a published set, no decision on
   the round) keeps the client's WhatsApp words as the team's changes, Undo
   where it happened (`review_revert_confirm`, any team decision); the set's
-  panel names each task's post (`tests/contentloop.js`).
+  panel names each task's post (`tests/contentloop.js`). Phase 2
+  (`2026-11-10-script-follows-task.sql`): the picker offers the client's
+  video scripts (`ops_link_script`, `ops_task_links.script_id`, one each
+  way: `has-script`, `script-taken`); the script fills its task's Video
+  (`ops_script_follow`, triggers on `video_scripts` and its scenes): Script
+  Ready once published, the shoot from its day, Footage Ready once every
+  scene is ticked shot, which moves a task at Ready to start into In
+  progress; the script's facts name its task (`ops_script_task`). Phase 3
+  (`2026-11-10-month-invoice-check.sql`): a month completed is checked
+  against Bukku at once and every night for four months while none is
+  found (`bukku-sync` `month`, `ops_month_invoice_ask` as the caller,
+  `ops_month_invoice_take` and `ops_month_invoices_due` the service
+  role's; `ops_month_invoices`, RLS on, no policy, no grant): an invoice
+  of the client's Bukku contacts dated within the month's span is its
+  invoice; the completed month's card reads Invoice (number, amount, Paid
+  or Unpaid; Not invoiced and when checked; Check Bukku) at Clients:
+  Billing View (`ops_month_invoices_of`), and the Dashboard lists Months
+  not invoiced at Billing Full Access (`ops_months_not_invoiced`).
 - Dates:
   - The first draft is the team's own (`ops_due_decider` null) and must fall
     before the final date by calendar day (`ops_due_order_ok`, checked inside

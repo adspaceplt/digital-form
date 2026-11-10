@@ -157,6 +157,8 @@
     'record-not-found': 'This record no longer exists.',
     'post-taken': 'Another task is already linked to that post.',
     'has-post': 'This task is already linked to a post. Remove that link first.',
+    'script-taken': 'Another task is already linked to that script.',
+    'has-script': 'This task is already linked to a script. Remove that link first.',
     'record-link': 'A record link is removed and linked again, not edited.',
     'stale': 'Updated by someone else. Reloaded.',
     'not-yours': 'Not yours to decide.',
@@ -3144,10 +3146,10 @@
     // Files and links
     var live = state.detail.links.filter(function (l) { return !l.archived_at; });
     $('dwLinks').innerHTML = live.length ? '<ul class="qlinks">' + live.map(function (l) {
-      var href = l.ref_type ? refHref(l) : safeUrl(l.url);
+      var href = l.ref_type || l.script_id ? refHref(l) : safeUrl(l.url);
       var menu = work && !fin ? itemMenu(l.label || l.url, linkMenu(l)) : '';
       return '<li class="qitem" data-link="' + esc(l.id) + '"><span class="qlink-main"><span class="tone">' + esc(linkWord(l)) + '</span>' +
-        (href ? '<a href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
+        (href ? '<a href="' + esc(href) + '"' + (l.ref_type || l.script_id ? '' : ' target="_blank" rel="noopener"') + '>' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
         '</span>' + menu + '</li>';
     }).join('') + '</ul>' : '<p class="qempty">No files or links.</p>';
     Array.prototype.forEach.call($('dwLinks').querySelectorAll('.qitem'), function (row) {
@@ -3558,18 +3560,20 @@
   var REF_PART = { campaign: 'campaigns', set: 'review' };
   var REF_NONE = { campaign: 'Untitled campaign', set: 'Content set' };
   function linkWord(l) {
+    if (l.script_id) return 'Script';
     if (l.ref_type) return l.gone ? 'Deleted' : l.post_id ? 'Post' : (REF_WORD[l.ref_type] || 'Record');
     return LINK_WORD[l.kind] || sentence(l.kind);
   }
   function refHref(l) {
+    if (l.script_id) return may('scripts', 'view') && /^\/admin\/\?/.test(String(l.url || '')) ? String(l.url) : '';
     if (!l.ref_type || l.gone || !may(REF_PART[l.ref_type], 'view')) return '';
     return /^\/admin\/\?/.test(String(l.url || '')) ? String(l.url) : '';
   }
   function linkMenu(l) {
-    return l.ref_type ? [['remove', 'Remove', true]] : [['edit', 'Edit'], ['remove', 'Remove', true]];
+    return l.ref_type || l.script_id ? [['remove', 'Remove', true]] : [['edit', 'Edit'], ['remove', 'Remove', true]];
   }
   function mayLinkRecord(t) {
-    return Boolean(t && t.client_id) && (may('campaigns', 'view') || may('review', 'view'));
+    return Boolean(t && t.client_id) && (may('campaigns', 'view') || may('review', 'view') || may('scripts', 'view'));
   }
   /* The title a record has now, read with the task: the link keeps the one
      it had when it was made. A record since deleted reads Deleted; one the
@@ -3639,6 +3643,11 @@
     /* A content task follows one post (the content loop, 2026-11-10): the
        client's posts are offered by their set while the task follows none. */
     var hasPost = (state.detail.links || []).some(function (l) { return l.post_id && !l.archived_at; });
+    /* And its video script (phase 2): the client's scripts, newest month first. */
+    if (may('scripts', 'view') && !(state.detail.links || []).some(function (l) { return l.script_id && !l.archived_at; })) {
+      reads.push(['script', 'Video Scripts', db.from('video_scripts').select('id, code, title, period')
+        .eq('client_id', t.client_id).order('period', { ascending: false }).order('seq')]);
+    }
     Promise.all(reads.map(function (x) { return x[2]; })).then(function (res) {
       var setRead = reads.map(function (x) { return x[0]; }).indexOf('set');
       var sets = setRead >= 0 && res[setRead] && !res[setRead].error ? (res[setRead].data || []) : [];
@@ -3657,7 +3666,8 @@
         html += '<optgroup label="' + esc(reads[i][1]) + '">' + rows.map(function (row) {
           n++;
           return '<option value="' + esc(type + ':' + row.id) + '">' +
-            esc(String(row.title || '').trim() || REF_NONE[type]) + '</option>';
+            esc(type === 'script' ? [row.code, String(row.title || '').trim()].filter(Boolean).join(' \u00b7 ') || 'Video script'
+              : String(row.title || '').trim() || REF_NONE[type]) + '</option>';
         }).join('') + '</optgroup>';
       });
       if (posts && posts.error) failed = true;
@@ -3693,10 +3703,14 @@
   var DW_REF = { kind: 'dwLinkKind', ref: 'dwLinkRef', refField: 'dwLinkRefField',
                  hide: ['dwLinkUrlField', 'dwLinkLabelLab', 'dwLinkLabel'] };
   function linkRecord(t, pick, where, then) {
-    var m = /^(campaign|set|post):(.+)$/.exec(String(pick || ''));
+    var m = /^(campaign|set|post|script):(.+)$/.exec(String(pick || ''));
     if (!m) { msg(where, 'Select a record.', 'err'); return; }
     if (m[1] === 'post') {
       call('ops_link_post', { p_task: t.id, p_post: m[2], p_version: t.version }, where, then);
+      return;
+    }
+    if (m[1] === 'script') {
+      call('ops_link_script', { p_task: t.id, p_script: m[2], p_version: t.version }, where, then);
       return;
     }
     call('ops_link_record', { p_task: t.id, p_type: m[1], p_ref: m[2], p_version: t.version }, where, then);
@@ -7012,13 +7026,18 @@
           cw.ownerIds[a.task_id] = a.team_member_id;
         });
         var ids = cw.engs.map(function (e) { return e.id; });
-        if (!ids.length) { cw.checks = []; cw.counts = {}; paintClientWork(); return; }
+        if (!ids.length) { cw.checks = []; cw.counts = {}; cw.inv = null; paintClientWork(); return; }
+        /* A completed month's invoice in Bukku (the content loop, phase 3):
+           read once for the client, at Clients: Billing View alone. */
+        var wantInv = may('clients.billing', 'view') && cw.engs.some(function (e) { return e.status === 'completed'; });
         return Promise.all([
           db.from('ops_engagement_checks').select('*').in('engagement_id', ids),
-          db.rpc('ops_engagement_counts', { p_engagements: ids })
+          db.rpc('ops_engagement_counts', { p_engagements: ids }),
+          wantInv ? db.rpc('ops_month_invoices_of', { p_client: c.id }) : Promise.resolve(null)
         ]).then(function (q) {
           cw.checks = (q[0] && !q[0].error && q[0].data) || [];
           cw.counts = countsOf(q[1]);
+          cw.inv = invOf(q[2], wantInv);
           paintClientWork();
         }).catch(function () { cw.checks = []; cw.counts = null; paintClientWork(); });
       });
@@ -7320,6 +7339,21 @@
         setStatus(e, 'completed', el, function () { done.disabled = false; });
       });
     }
+    var invRow = invoiceRow(e);
+    if (invRow) {
+      var ib = el.querySelector('.eng-facts') || el.querySelector('.eng-meta');
+      if (ib) ib.insertAdjacentHTML('afterbegin', invRow);
+      var ic = el.querySelector('[data-a="invcheck"]');
+      if (ic) ic.addEventListener('click', function () {
+        ic.disabled = true;
+        checkInvoice(e).then(function (d) {
+          ic.disabled = false;
+          var m = el.querySelector('[data-a="msg"]');
+          if (d && d.error) { if (m) { m.textContent = INV_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
+          readClientWork();
+        }).catch(function (x) { ic.disabled = false; var m = el.querySelector('[data-a="msg"]'); if (m) { m.textContent = (x && x.message) || 'Bukku could not be read. Try again.'; m.className = 'msg err'; } });
+      });
+    }
     /* While the month is planned, last month's best and weakest posts by
        views (2026-10-10; the user: "content not interesting"), from the
        results recorded a week after each went live. */
@@ -7370,10 +7404,56 @@
     return el;
   }
   /* Completed, Cancelled and a reopen (back to Planning) are the only
-     stages a person sets; the rest follow the month's facts. */
+     stages a person sets; the rest follow the month's facts. A month
+     completed is checked against Bukku at once (phase 3, 2026-11-10). */
   function setStatus(e, want, el, onFail) {
     call2('ops_engagement_set_status', { p_engagement: e.id, p_status: want, p_version: e.version }, el,
-      function () { readClientWork(); }, onFail);
+      function () {
+        if (want === 'completed' && may('clients.billing', 'view')) checkInvoice(e).then(readClientWork, readClientWork);
+        else readClientWork();
+      }, onFail);
+  }
+  /* The month's invoice, as `ops_month_invoices_of` answers it: by month,
+     whether the client has a Bukku contact at all, or a failed read. */
+  function invOf(r, wanted) {
+    if (!wanted) return null;
+    if (!r || r.error || !r.data || r.data.error) return { failed: true, by: {} };
+    var by = {};
+    (r.data.rows || []).forEach(function (x) { by[x.engagement] = x; });
+    return { linked: Boolean(r.data.linked), by: by };
+  }
+  var INV_SAID = {
+    'not-linked': 'This client has no Bukku contact. Link one from the client\u2019s Billing.',
+    'not-completed': 'Complete the month first.',
+    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    denied: 'You do not have permission to read invoices. Please ask an admin.'
+  };
+  function checkInvoice(e) {
+    return db.functions.invoke('bukku-sync', { body: { action: 'month', engagement: e.id } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    });
+  }
+  function invMoney(n, cur) {
+    return cur === 'MYR' || cur === 'SGD' ? window.ADspaceMoney.money2(n, cur === 'SGD' ? 'SG' : 'MY')
+      : (cur || '') + ' ' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  /* The Invoice row of a completed month: each invoice found (its number,
+     amount and Paid or Unpaid), else Not invoiced with the day it was
+     checked, else Not checked; Check Bukku reads it again. */
+  function invoiceRow(e) {
+    var I = cw.inv;
+    if (!I || e.status !== 'completed') return '';
+    var x = I.by[e.id], val;
+    if (I.failed) val = '<span class="mute">Could not load.</span>';
+    else if (!I.linked) val = '<span class="mute">No Bukku contact</span>';
+    else if (!x) val = '<span class="mute">Not checked</span>';
+    else if (x.state === 'none') val = '<span class="chip-state is-warn">Not invoiced</span><small class="eng-inv-when">Checked ' + esc(niceDate(x.checked_at)) + '</small>';
+    else val = (x.invoices || []).map(function (v) {
+      return '<span class="eng-inv">' + (v.link ? '<a class="plink" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(v.number) + '</a>' : esc(v.number)) +
+        ' · ' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span>';
+    }).join('');
+    var act = I.linked && !I.failed ? '<span class="eng-meetacts"><button class="btn btn-sm" data-a="invcheck" type="button">' + (x ? 'Check again' : 'Check Bukku') + '</button></span>' : '';
+    return '<div class="eng-row eng-invrow"><span class="eng-lab">Invoice</span><span class="eng-val">' + val + '</span>' + act + '</div>';
   }
   /* Deleting a month: ops Manage, a reason, and the tasks it held stay. */
   function askDeleteMonth(e, client, after) {

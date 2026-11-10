@@ -59,7 +59,7 @@
     ops_task_assignees: 'id task_id team_member_id responsibility assigned_by assigned_at ended_at',
     ops_task_checklist_items: 'id task_id label position required completed_at completed_by created_at',
     ops_task_events: 'id task_id event_type actor_id actor_email from_value to_value detail source created_at',
-    ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id',
+    ops_task_links: 'id task_id kind label url created_by created_at archived_at ref_type ref_id post_id script_id',
     ops_task_templates: 'id name deliverable_type workflow_id default_complexity first_draft_offset_business_days final_offset_business_days default_estimate_minutes required_fields checklist active created_at updated_at default_title default_owner_id due_offset_days',
     ops_tasks: 'id task_no scope client_id campaign_id batch_id source_type source_id parent_task_id template_id workflow_id stage_key title description remarks deliverable_type language_codes priority_level complexity estimate_minutes publish_at original_first_draft_due_at current_first_draft_due_at first_draft_submitted_at original_final_due_at current_final_due_at delivered_at completed_at blocked_category blocked_note blocked_at created_by created_at updated_at archived_at cancelled_at version legacy_source legacy_key data_quality idem_key task_type code code_period code_week code_seq content_desc manager_id engagement_id live_at rating rating_note rated_by rated_at open_at open_by result_views result_engagements result_at result_by priority_at held_from delayed_at delayed_by delayed_reason delayed_note delayed_report',
     ops_template_variants: 'id template_id format estimate_minutes created_at',
@@ -321,6 +321,11 @@
     ops_hand_over_task: 'p_owner p_note p_task p_version',
     ops_link_record: 'p_ref p_task p_type p_version',
     ops_link_post: 'p_post p_task p_version',
+    ops_link_script: 'p_script p_task p_version',
+    ops_script_task: 'p_script',
+    ops_month_invoices_of: 'p_client',
+    ops_months_not_invoiced: '',
+    ops_month_invoice_ask: 'p_engagement',
     ops_log: 'p_task p_detail p_to p_from p_type',
     ops_mark_live: 'p_note p_reason p_live_at p_assignee p_task p_version',
     ops_may_see_engagement: 'p_engagement',
@@ -4610,6 +4615,56 @@ function cardSlugFree(name, self, email) {
     persist();
   }
 
+  function monthContacts(client) {
+    var L = DB.bukku_links || [], out = [];
+    L.forEach(function (b) {
+      var hit = (b.kind === 'client' && b.record_id === client) ||
+        (b.kind === 'supplier' && (DB.suppliers || []).some(function (x) { return x.id === b.record_id && x.client_id === client; })) ||
+        (b.kind === 'entity' && (DB.client_entities || []).some(function (x) { return x.entity_id === b.record_id && x.client_id === client; }));
+      if (hit && out.indexOf(Number(b.contact_id)) < 0) out.push(Number(b.contact_id));
+    });
+    return out;
+  }
+  function monthSpan(e) {
+    var p = String(e.period).split('-'), d = Math.max(1, Math.min(28, Number(e.start_day) || 1));
+    var a = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, d)), b = new Date(Date.UTC(Number(p[0]), Number(p[1]), d - 1));
+    return [a.toISOString().slice(0, 10), b.toISOString().slice(0, 10)];
+  }
+
+  function scriptFollow(scriptId) {
+    var k = (DB.ops_task_links || []).filter(function (l) { return l.script_id === scriptId && !l.archived_at; })[0];
+    if (!k) return;
+    var sc = (DB.video_scripts || []).filter(function (x) { return x.id === scriptId; })[0];
+    var t = opsTask(k.task_id);
+    if (!sc || !t || t.completed_at || t.cancelled_at || t.archived_at) return;
+    var scenes = (DB.video_script_scenes || []).filter(function (c) { return c.script_id === sc.id; });
+    var shot = scenes.length > 0 && scenes.every(function (c) { return c.shot_at; });
+    var at = sc.shoot_on ? new Date(sc.shoot_on + 'T' + String(sc.shoot_time || '09:00:00').slice(0, 8) + '+08:00').toISOString() : null;
+    DB.ops_video_details = DB.ops_video_details || [];
+    var v = DB.ops_video_details.filter(function (x) { return x.task_id === t.id; })[0];
+    if (!v) { v = { task_id: t.id, script_ready: null, footage_ready: null, shoot_required: false, shoot_at: null, subtitle_required: false, variant_count: 1 }; DB.ops_video_details.push(v); }
+    var wasFoot = v.footage_ready, me = opsMe();
+    if (v.script_ready !== (sc.status === 'shared') || v.footage_ready !== shot || v.shoot_at !== at) {
+      DB.ops_task_events.push({ id: opsId('ev'), task_id: t.id, event_type: 'video_changed',
+        from_value: { script_ready: v.script_ready, footage_ready: v.footage_ready, shoot_at: v.shoot_at },
+        to_value: { script_ready: sc.status === 'shared', footage_ready: shot, shoot_at: at },
+        detail: { note: 'Updated from its script in Video Scripts', script_id: sc.id }, actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
+      v.script_ready = sc.status === 'shared'; v.footage_ready = shot; v.shoot_at = at; v.shoot_required = Boolean(sc.shoot_on);
+      t.version = (t.version || 1) + 1;
+    }
+    if (shot && wasFoot !== true && t.stage_key === 'ready') {
+      t.stage_key = 'in_production'; t.version = (t.version || 1) + 1; t.updated_at = nowIso();
+      DB.ops_task_events.push({ id: opsId('ev'), task_id: t.id, event_type: 'stage_changed', from_value: { stage_key: 'ready' },
+        to_value: { stage_key: 'in_production' }, detail: { note: 'Every scene shot in Video Scripts', script_id: sc.id },
+        actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
+      var own = opsOwner(t.id), dest = opsStage(t.workflow_id, 'in_production') || {};
+      if (own && (!me || own.team_member_id !== me.id)) DB.ops_notifications.push({ id: opsId('nt'), team_member_id: own.team_member_id,
+        task_id: t.id, kind: 'stage_changed', body: 'Moved to ' + (dest.label || 'In progress') + ': every scene shot in Video Scripts.', read_at: null, created_at: nowIso() });
+    }
+    persist();
+  }
+  window.__scriptFollow = scriptFollow;
+
   function opsEngJson(id) {
     var e = DB.ops_engagements.filter(function (x) { return x.id === id; })[0];
     if (!e) return null;
@@ -5498,6 +5553,50 @@ function opsCodeRange(cid, period, ty, src, seq) {
       postFollow(lp.id, 'Linked to its post in Content Review');
       persist();
       return { link_id: pl.id, task: Object.assign({}, t) };
+    }
+    if (name === 'ops_link_script') {
+      if (!opsMe()) return { error: 'not-team' };
+      if (!opsAllowed('ops', 'work') || !opsAllowed('scripts', 'view')) return { error: 'denied' };
+      t = opsTask(args.p_task);
+      if (!t) return { error: 'not-found' };
+      if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
+      var ls = (DB.video_scripts || []).filter(function (x) { return x.id === args.p_script; })[0];
+      if (!ls) return { error: 'record-not-found' };
+      if (!t.client_id || ls.client_id !== t.client_id) return { error: 'other-client' };
+      if (DB.ops_task_links.some(function (l) { return l.task_id === t.id && l.script_id && !l.archived_at; })) return { error: 'has-script' };
+      if (DB.ops_task_links.some(function (l) { return l.script_id === ls.id && !l.archived_at; })) return { error: 'script-taken' };
+      var sl = { id: opsId('ln'), task_id: t.id, kind: 'record', label: [ls.code, String(ls.title || '').trim()].filter(Boolean).join(' \u00b7 ') || 'Video script',
+        url: '/admin/?s=scripts&script=' + ls.id, created_by: opsMe().id, created_at: now, archived_at: null, ref_type: null, ref_id: null, post_id: null, script_id: ls.id };
+      DB.ops_task_links.push(sl);
+      t.version = (t.version || 1) + 1;
+      opsLog(t.id, 'file_added', null, { link_id: sl.id, kind: 'record', ref_type: 'script', label: sl.label }, null);
+      scriptFollow(ls.id);
+      persist();
+      return { link_id: sl.id, task: Object.assign({}, t) };
+    }
+    if (name === 'ops_month_invoices_of') {
+      if (!opsMe() || !opsAllowed('clients.billing', 'view') || !scopeSeen(args.p_client, 'view')) return { error: 'denied' };
+      return { ok: true, linked: monthContacts(args.p_client).length > 0,
+        rows: (DB.ops_month_invoices || []).filter(function (x) { return x.client_id === args.p_client; }).map(function (x) {
+          return { engagement: x.engagement_id, state: x.state, invoices: x.invoices, checked_at: x.checked_at };
+        }) };
+    }
+    if (name === 'ops_months_not_invoiced') {
+      if (!opsMe() || !opsAllowed('clients.billing', 'manage')) return [];
+      return (DB.ops_month_invoices || []).filter(function (x) { return x.state === 'none'; }).map(function (x) {
+        var e = (DB.ops_engagements || []).filter(function (y) { return y.id === x.engagement_id; })[0];
+        var c = (DB.clients || []).filter(function (y) { return y.id === x.client_id; })[0];
+        if (!e || e.status !== 'completed' || !c || !scopeSeen(c.id, 'view')) return null;
+        return { engagement: e.id, client: c.id, name: c.name, slug: c.slug, owner: c.owner, period: e.period, checked_at: x.checked_at, since: e.updated_at };
+      }).filter(Boolean);
+    }
+    if (name === 'ops_script_task') {
+      if (!opsMe() || !opsAllowed('scripts', 'view')) return null;
+      var stl = DB.ops_task_links.filter(function (l) { return l.script_id === args.p_script && !l.archived_at; })[0];
+      var stt = stl && opsTask(stl.task_id);
+      if (!stt) return null;
+      var sts = opsStage(stt.workflow_id, stt.stage_key) || {};
+      return { id: stt.id, serial: opsSerial(stt.task_no), title: opsTitle(stt), stage: sts.label || stt.stage_key, stage_group: sts.stage_group || null };
     }
 
     if (name === 'client_vic_set') {
@@ -13056,6 +13155,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var pc = vsClient(ps.client_id);
           if (args.p_on && !pc.script_key) pc.script_key = vsKey();
           vsLog(args.p_on ? 'script.shared' : 'script.unshared', pc.name, vsLabel(ps));
+          if (window.__scriptFollow) window.__scriptFollow(ps.id);
           cnt++;
         }
         return vsOk({ count: cnt });
@@ -13080,6 +13180,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (args.p_vc != null) tgt.vc = vsBlank(args.p_vc);
           if (on != null && Boolean(on) !== was) vsLog('script.shot', vsCn, vsLabel(vs0) + ' · Scene ' + tgt.position + ' ' + (on ? 'shot' : 'not shot'));
         }
+        if (window.__scriptFollow) window.__scriptFollow(vs0.id);
         return vsOk();
       }
       if (name === 'video_script_save') {
@@ -13211,6 +13312,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           review_version: vsRevSet ? (vsRev ? vs0.version + 1 : null) : (vs0.review_version == null ? null : vs0.review_version),
           version: vs0.version + 1, updated_at: vsNow, updated_by_name: vsWho });
         vsLog('script.saved', vsCn, vsLabel(vs0) + ' · ' + moves.join('; '));
+        if (window.__scriptFollow) window.__scriptFollow(vs0.id);
         return vsOk({ version: vs0.version, round: vs0.round, changed: true, code: vs0.code });
       }
     }
@@ -14096,6 +14198,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bkR = function (d) { return Promise.resolve({ data: d, error: null }); };
           if (window.__bukkuOff) return bkR({ error: 'bukku-not-set-up' });
 
+          if (bkb.action === 'month') {
+            var mE = (DB.ops_engagements || []).filter(function (x) { return x.id === bkb.engagement; })[0];
+            if (!opsMe() || !opsAllowed('clients.billing', 'view') || !mE) return bkR({ error: 'denied' });
+            if (mE.status !== 'completed') return bkR({ error: 'not-completed' });
+            var mC = monthContacts(mE.client_id);
+            if (!mC.length) return bkR({ error: 'not-linked' });
+            var mS = monthSpan(mE);
+            var mFound = (window.__bukkuInvoices || []).filter(function (x) {
+              return mC.indexOf(Number(x.contact_id)) > -1 && String(x.date) >= mS[0] && String(x.date) <= mS[1];
+            }).map(function (x) {
+              return { id: Number(x.id), number: String(x.number), date: String(x.date).slice(0, 10), amount: Number(x.amount),
+                currency: x.currency_code || 'MYR', paid: Number(x.balance) <= 0, link: x.short_link || null };
+            });
+            DB.ops_month_invoices = (DB.ops_month_invoices || []).filter(function (x) { return x.engagement_id !== mE.id; });
+            var mRow = { engagement_id: mE.id, client_id: mE.client_id, state: mFound.length ? 'found' : 'none', invoices: mFound, checked_at: new Date().toISOString() };
+            DB.ops_month_invoices.push(mRow);
+            persist();
+            return bkR({ ok: true, state: mRow.state, invoices: mFound, checked_at: mRow.checked_at });
+          }
           if (bkb.action === 'bills') {
             var blk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === bkb.creator; })[0];
             if (!opsMe() || !opsAllowed('campaigns.creators', 'view')) return bkR({ error: 'denied' });

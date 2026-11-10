@@ -764,6 +764,28 @@
         facts(s) + '</section>' +
       '<section class="panel vs-sheetview">' + scriptBody(s) + '</section>';
     wireRecord();
+    taskFact(s);
+  }
+  /* The task in My Work this script feeds (the content loop, 2026-11-10):
+     a fact among the script's own, opening the task. Read after the card is
+     drawn; nothing is said where no task follows it or My Work is shut. */
+  function taskFact(s) {
+    if (!bridge.may || !bridge.may('ops', 'view')) return;
+    db.rpc('ops_script_task', { p_script: s.id }).then(function (r) {
+      var t = r && !r.error && r.data;
+      var dl = document.querySelector('#vsRecBody .vs-facts');
+      if (!t || !t.id || !dl || !st.open || st.open.id !== s.id) return;
+      var row = document.createElement('div');
+      row.className = 'vs-task';
+      row.innerHTML = '<dt>Task</dt><dd><button class="linkbtn" type="button">' + esc(t.serial + ' \u00b7 ' + (t.title || '')) +
+        '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</button><small class="vs-task-stage">' + esc(t.stage || '') + '</small></dd>';
+      dl.appendChild(row);
+      row.querySelector('button').addEventListener('click', function () {
+        history.pushState(null, '', '?s=work&open=' + encodeURIComponent(t.id));
+        if (bridge.restore) bridge.restore();
+      });
+    }).catch(function () {});
   }
 
   function onAct(root, a, fn) { var b = root && root.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); }
