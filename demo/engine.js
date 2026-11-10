@@ -277,7 +277,7 @@
     supplier_form_read: 'p_key',
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
-    meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '', mail_test_begin: 'p_kind p_subject p_body p_legal p_disclaimer',
+    meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -11946,15 +11946,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (name === 'mail_test_begin') {
-      var tme = opsMe();
-      if (!tme || !opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
-      window.__mailTests = window.__mailTests || [];
-      if (window.__mailTests.length >= 20) return Promise.resolve({ data: { error: 'too-many' }, error: null });
-      window.__mailTests.push({ kind: args.p_kind, subject: args.p_subject, body: args.p_body });
-      return Promise.resolve({ data: { ok: true, to: String(tme.email || '').toLowerCase(), name: tme.name, subject: args.p_subject,
-        body: args.p_body, left: 20 - window.__mailTests.length }, error: null });
-    }
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
     if (name === 'meeting_message_get' || name === 'meeting_message_save') {
       var mmMe = opsMe();
@@ -14278,12 +14269,6 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
-        if (name === 'supplier-mail' && opts && opts.body && opts.body.test === true) {
-          if (window.__mailOff) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
-          var tb = opts.body;
-          return rpc('mail_test_begin', { p_kind: tb.kind, p_subject: tb.subject, p_body: tb.body, p_legal: tb.legal || '', p_disclaimer: tb.disclaimer || '' })
-            .then(function (r) { return { data: r.data && r.data.error ? r.data : { ok: true, to: r.data.to, left: r.data.left }, error: null }; });
-        }
         if (name === 'supplier-mail' && opts && opts.body && opts.body.manual === true) {
           var nb = opts.body;
           window.__newMailAsked = { audience: nb.audience, client: nb.client, supplier: nb.supplier, template: nb.template, to: nb.to, ccs: nb.ccs,

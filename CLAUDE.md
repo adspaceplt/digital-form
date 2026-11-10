@@ -661,12 +661,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#mtEdSheet`): the words at the left, the email as it reads at the right
   (stacked under 720), the sender's fields from `template_fields_all()` as
   chips inserting at the caret, a field it cannot fill marked as it is
-  typed; Send test to me (`#mtEdTest`, 2026-11-10) sends the words as they
-  stand, saved or not, every field a made-up value, to the colleague's own
-  sign-in address alone, from that template's sender, its subject led by
-  Test: (`supplier-mail` `test`, `mail_test_begin`: the save's own parts,
-  `template_check`, twenty a colleague a day in `mail_tests`, RLS on, no
-  policy, no grant; nothing filed; `2026-11-10-template-test-email.sql`). A row carries what a press opens (`open`); a switch acts at the
+  typed; no test email (Send test to me removed, the user, 2026-11-10;
+  `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
   press with Undo under its card. A search heads the group list (a
   phone's page), finding a row by its name, group or value across every
   group and opening its group on its control (Enter takes the first);

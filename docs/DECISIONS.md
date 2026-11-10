@@ -9265,3 +9265,11 @@ retired phrase. Timings are `ADSPACE_CONFIG.loading`.
 
 ### 2026-11-10 · Rate Card keeps its capitals
 The user, asked whether the rate card should read Rate Card throughout, answered "Ok proceed". It is the team's own priced document and a section's product, so it joins Creators List and Content Review in DESIGN.md §6: every string a person reads (the Services strip, its search, the Settings row Rate Card wording, Build quote's "Rate Card RM …" note, refusals and the Team panel's line) now says Rate Card, and `tests/words.js` fails a lower-case one. Left as they were: comments, and the Activity record's subjects and details the database writes (`Rate card`, `Rate card wording`, `· rate card v.`), since the record's panes key on the subject it was filed with and a rename would split the history; the team's own Rate Card wording, which they edit.
+
+### 2026-11-10 — Send test to me removed from Email templates
+- **Decided:** the user, 2026-11-10: "remove". The editor's button, its
+  `supplier-mail` `test` branch, and `mail_test_begin`, `template_sample` and
+  `mail_tests` (no row held) are taken out
+  (`2026-11-10-template-test-email-removed.sql`, run after the page and the
+  function stop asking for them). `tests/mailfn.js` holds that a request for
+  a test sends nothing; `tests/settings.js` that the editor offers none.
