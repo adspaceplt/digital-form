@@ -9294,3 +9294,10 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   both now draw the word as a status after its dot. On a narrow pane
   `.is-narrow .crr-card` padded the bookings card on top of its rows' own
   padding; `.crr-bk` keeps none at every width. Found by the user.
+
+- **2026-11-10 · The Bukku band on a creator's Payment pane sat crowded.**
+  The user's screenshot: the band stood 20px under Emails and on the
+  Payments group's hairline, with Send to Bukku lower than Bukku · Not
+  linked. The band now stands 16px from the group either side, the hairline
+  after it left out, and a band with no line under its name keeps its acts
+  on the name's row (it had spanned an empty second row). Found by the user.

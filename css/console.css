@@ -4237,6 +4237,14 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-band .bk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 400; }
 .bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }
+/* With no line under its name the acts share the name's one row, centred on
+   it, never spanning an empty second row (2026-11-10). */
+.bk-band:not(:has(> .bk-sub)) > .bk-acts { grid-row: 1; }
+/* On a creator's Payment pane the band stands between two groups: the same
+   16px step either side, the hairline the group after it would draw left out
+   (2026-11-10). */
+#cpayBody .readgroups > .readgroup.bk-band { margin: 0 0 16px; }
+#cpayBody .readgroups > .readgroup.bk-band + .readgroup { border-top: 0; padding-top: 0; }
 .bk-band > .msg, .bk-band > .bk-note { grid-column: 1 / -1; margin: 6px 0 0; }
 /* What Bukku names that Contacts lacks, its act at the line's right edge (2026-10-30). */
 .bk-band > .bk-person { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 8px 0 0; }
