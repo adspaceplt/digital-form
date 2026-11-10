@@ -38,6 +38,10 @@
   function may(key) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(key, 'work')); }
   function full(sec) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(sec, 'manage')); }
   function biz() { return may('team.settings'); }
+  /* A supplier's emails answer one rule (2026-11-10): Suppliers Full Access
+     or Business settings, as email_template_may holds it. */
+  function sup() { return full('suppliers') || biz(); }
+  function canAdd(rec) { return rec === 'suppliers' ? sup() : rec === 'clients' ? biz() : false; }
 
   /* One read of a list; a refusal or a missing function is null, so a
      recipient whose part the reader may not open is left out. */
@@ -70,8 +74,8 @@
       biz() ? soft(rpc('client_email_templates_list')) : null,
       biz() && ins ? soft(rpc('invoice_email_template_get')) : null,
       biz() && ins ? soft(rpc('invoice_send_template_get')) : null,
-      biz() ? soft(rpc('email_templates_list')) : null,
-      full('suppliers') ? soft(rpc('supplier_email_templates_list')) : null,
+      sup() ? soft(rpc('email_templates_list')) : null,
+      sup() ? soft(rpc('supplier_email_templates_list')) : null,
       biz() ? soft(rpc('creator_email_templates_get')) : null
     ]).then(function (a) {
       st.fields = a[0] || {};
@@ -92,7 +96,7 @@
           } });
       });
       ((a[4] && a[4].rows) || []).forEach(function (t) {
-        out.push(free(t));
+        if (canAdd(t.audience === 'supplier' ? 'suppliers' : 'clients')) out.push(free(t));
       });
       var SK = { approved: 'Supplier approved', document: 'Document' };
       ((a[5] && a[5].rows) || []).forEach(function (t) {
@@ -124,7 +128,7 @@
   /* ---- The list ---------------------------------------------------------- */
   function recs() {
     return REC.filter(function (r) {
-      return st.items.some(function (i) { return i.rec === r[0]; }) || (st.free && r[0] !== 'creators');
+      return st.items.some(function (i) { return i.rec === r[0]; }) || (st.free && canAdd(r[0]));
     });
   }
   function msg(text, tone) { var m = $('mtMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (tone ? ' ' + tone : ''); } }
@@ -146,11 +150,11 @@
     var mine = st.items.filter(function (i) { return i.rec === st.rec; });
     var secs = [];
     mine.forEach(function (i) { if (secs.indexOf(i.sec) < 0) secs.push(i.sec); });
-    if (st.free && st.rec !== 'creators' && secs.indexOf('New email') < 0) secs.push('New email');
+    if (st.free && canAdd(st.rec) && secs.indexOf('New email') < 0) secs.push('New email');
     if (!secs.length) { box.innerHTML = '<p class="emptyline">No templates.</p>'; return; }
     box.innerHTML = secs.map(function (s) {
       var rows = mine.filter(function (i) { return i.sec === s; });
-      var add = s === 'New email' && st.free;
+      var add = s === 'New email' && st.free && canAdd(st.rec);
       return '<section class="mt-sec"><div class="mt-sec-head"><h4 class="fsec-h">' + esc(s) + '</h4>' +
         (add ? '<button class="btn btn-sm" type="button" data-a="add">' + PLUS + 'Add template</button>' : '') + '</div>' +
         (rows.length ? '<div class="stg-card mt-card">' + rows.map(rowHtml).join('') + '</div>'

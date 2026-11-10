@@ -9185,3 +9185,15 @@ inactive or Set active, Delete where nothing names it). The pen still asks
 in a question, a department's five prize criteria being too many for its
 row. On a phone the name stands over its colleagues and prize, the status
 at the right.
+
+### 2026-11-10: a supplier's email templates answer one rule
+The user, answering the Settings review's held item 2: "ok". A supplier's two
+fixed emails (Supplier approved, Document) were edited at Suppliers Full
+Access and its New email templates at Business settings alone, so one
+recipient's emails answered two rules. `email_template_may(audience)` now
+holds both: a supplier's template at Suppliers Full Access or Business
+settings, a client's at Business settings. `email_templates_list` answers a
+colleague at Suppliers Full Access the supplier templates alone. The SQL
+Editor part restates `email_template_delete`, which the connector holds.
+The held item 1 (one template store) stays six tables; item 3 (Send test to
+me) is not wanted.
