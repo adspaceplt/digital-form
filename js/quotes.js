@@ -23,7 +23,7 @@
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var SAID = {
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'This client is outside your access.',
-    'no-card': 'No rate card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live rate card.',
+    'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
     'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
@@ -1060,7 +1060,7 @@
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
     card(ctx, function (c, err) {
-      if (!c) { ctx.msg('qtMsg', said(err) || 'No rate card version is live.', 'err'); B = null; return; }
+      if (!c) { ctx.msg('qtMsg', said(err) || 'No Rate Card version is live.', 'err'); B = null; return; }
       B.card = c;
       $('qbFor').textContent += ' · priced from v.' + c.version;
       var chosen = planOf();
@@ -1339,7 +1339,7 @@
         /* Quantity, rate and months are typed where they are read; a line
            quoted off the card names the card's rate under it. */
         var sub = [];
-        if (l.list_rate != null) sub.push('Rate card ' + CUR + ' ' + rm(l.list_rate));
+        if (l.list_rate != null) sub.push('Rate Card ' + CUR + ' ' + rm(l.list_rate));
         /* The line's tax code (2026-10-22): the client's SST, or one the team
            bills with, chosen where it is read; drawn while any is offered.
            The client's own reads as the rate alone (SST 8%), the codes by

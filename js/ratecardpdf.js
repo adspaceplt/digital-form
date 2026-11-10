@@ -35,7 +35,7 @@
   function draw(card) {
     var docs = D();
     if (!docs) return Promise.reject(new Error('The PDF tools are not loaded.'));
-    if (!card || !card.snapshot) return Promise.reject(new Error('No published version of the rate card.'));
+    if (!card || !card.snapshot) return Promise.reject(new Error('No published version of the Rate Card.'));
     return docs.lib().then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {

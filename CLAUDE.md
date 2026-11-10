@@ -6224,7 +6224,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (2026-10-27, SVC-10).
 - `detail` (one inclusion per line) and `min_months` seed a client's line.
 - A line's key is its slug, made from its name: a name already on the card
-  is refused as such ("A service with this name is already on the card."),
+  is refused as such ("A service with this name is already on the Rate Card."),
   the SKU's own clash as the SKU's; Set inactive, Save and Delete repaint
   the list from the row as written, a new line reading the card alone
   (2026-10-22, SVC2-1, SVC2-7).
@@ -6268,7 +6268,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   only what the draft holds that the live version does not: the lines
   changed, each naming what moved from and to (`ADspaceRecords.changes`),
   the lines removed, the blocks of wording changed, under Showing the n
-  changes not published. with Show the whole card, the search set aside;
+  changes not published. with Show the whole Rate Card, the search set aside;
   Publish's question lists the same, five, then and n more (SVC2-M1).
 - A block of wording is edited as the card prints it (`#rcwBox`; the user,
   2026-10-13: one box of lines read "ugly and untidy unstructured"): a list

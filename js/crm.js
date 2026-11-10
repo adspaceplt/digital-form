@@ -7060,7 +7060,7 @@
      would proceed proper updates to the site and export"). */
   /* The card's words are edited from Settings' Templates (2026-10-29):
      an older `tab=words` address opens the card. */
-  var SVC_TABS = [['card', 'Rate card'], ['versions', 'Versions']];
+  var SVC_TABS = [['card', 'Rate Card'], ['versions', 'Versions']];
   var svcTab = 'card', live = null, liveRead = false, svcText = null, svcVers = null, diffNow = { lines: {}, words: {}, n: 0 };
   /* Review n changes (2026-10-22, SVC2-M1): the card shows only what the
      draft holds that the live version does not. */
@@ -7220,7 +7220,7 @@
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
     'no-change': 'Nothing has changed since the live version.', 'too-long': 'The note is too long.',
-    denied: 'You do not have permission to publish the rate card. Please ask an admin.' };
+    denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
   var SVC_LIST = 5;
@@ -7269,7 +7269,7 @@
     /* The same changes Review shows, five, then how many more (SVC2-M1). */
     var list = changeList(d), more = list.length - SVC_LIST;
     window.ADspaceConfirm.ask({
-      title: 'Publish the rate card',
+      title: 'Publish the Rate Card',
       body: (said ? said.charAt(0).toUpperCase() + said.slice(1) + '.\n' : '') +
         (list.length ? list.slice(0, SVC_LIST).join('\n') + (more > 0 ? '\nand ' + more + ' more' : '') + '\n\n' : '') +
         'Quotes, client service lines and the export use this version from now on.',
@@ -7466,7 +7466,7 @@
     db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
       btn.disabled = false;
       var no = r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
-        : r.data && r.data.error ? (r.data.error === 'denied' ? 'You do not have permission to change the rate card wording. Please ask an admin.'
+        : r.data && r.data.error ? (r.data.error === 'denied' ? 'You do not have permission to change the Rate Card wording. Please ask an admin.'
           : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.') : '';
       if (no) { msg('rcwMsg', no, 'err'); return; }
       b.value = v;
@@ -7703,7 +7703,7 @@
 
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
-        '<b>The rate card is empty.</b>' +
+        '<b>The Rate Card is empty.</b>' +
         (maySvc() ? '<button class="btn btn-sm" data-a="first" type="button">Add service</button>' : '') +
         '</div></div>';
       var first = box.querySelector('[data-a="first"]');
@@ -7765,7 +7765,7 @@
     var note = document.createElement('p');
     note.className = 'msg svc-review-note';
     note.innerHTML = 'Showing the ' + d.n + ' change' + (d.n === 1 ? '' : 's') + ' not published. ' +
-      '<button class="linkbtn" type="button" data-a="whole">Show the whole card</button>';
+      '<button class="linkbtn" type="button" data-a="whole">Show the whole Rate Card</button>';
     box.appendChild(note);
     note.querySelector('[data-a="whole"]').addEventListener('click', function () { reviewCard(false); });
     var seen = {};
@@ -7949,12 +7949,12 @@
        version goes live without it. */
     var liveRow = live && (live.snapshot.services || []).filter(function (x) { return x.slug === s.slug; })[0];
     if (liveRow && liveRow.active !== false) {
-      msg('svcListMsg', s.name + ' is offered by the live version. Publish the rate card with it inactive first.', 'warn');
+      msg('svcListMsg', s.name + ' is offered by the live version. Publish the Rate Card with it inactive first.', 'warn');
       return;
     }
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: s.name + ' leaves the rate card and cannot be quoted again. This '
+      body: s.name + ' leaves the Rate Card and cannot be quoted again. This '
           + 'cannot be undone. Letters already issued keep the line as it was written.',
       go: 'Delete',
       tone: 'danger',
@@ -8032,7 +8032,7 @@
         var m = r.error.message || '';
         if (/services_sku_idx/i.test(m)) { msg('svcMsg', 'That SKU is already on another line.', 'err'); $('svcSku').focus(); return; }
         if (/duplicate key|services_pkey|23505/i.test(m) || r.error.code === '23505') {
-          msg('svcMsg', 'A service with this name is already on the card.', 'err'); $('svcName').focus(); return;
+          msg('svcMsg', 'A service with this name is already on the Rate Card.', 'err'); $('svcName').focus(); return;
         }
         msg('svcMsg', m || 'Not saved.', 'err');
         return;

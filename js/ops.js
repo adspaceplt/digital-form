@@ -216,7 +216,7 @@
     'bad-channel': 'Choose where the meeting is held.',
     'checklist-open': 'Tick both checklists, or mark one not needed, first.',
     'workflow-required': 'No workflow set up. Contact an admin.',
-    'bad-format': 'A format is listed twice or is not on the rate card.',
+    'bad-format': 'A format is listed twice or is not on the Rate Card.',
     'name-taken': 'Another template has this name.',
     'name-required': 'A name is required.',
     'bad-kind': 'Invalid link type.',
