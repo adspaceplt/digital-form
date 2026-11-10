@@ -649,7 +649,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.performance` View, behind the master code; 2026-10-29), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access). Email templates (`js/mailtpl.js`,
-  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access) lists
+  `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
+  supplier's every template, fixed or New email's, at either, a client's and
+  a creator's at `team.settings` alone: `email_template_may`, 2026-11-10) lists
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
