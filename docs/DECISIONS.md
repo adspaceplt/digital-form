@@ -9220,3 +9220,10 @@ would be a paid template send. A test goes to the colleague's own sign-in
 address alone, never one the page names, its fields filled with the
 placeholder set of DESIGN.md §6 by the database, twenty a day, and nothing
 is filed in the Email log or the Activity record.
+
+### 2026-11-10 — The client Overview shows a WhatsApp number held without a phone
+The user, 2026-11-10: "usually we communicate via WhatsApp". A contact
+keyed with a WhatsApp number and no phone (a website lead) showed only its
+email on the Overview: the WhatsApp row was drawn for a `@username` alone,
+and the chip rode the Phone row. A WhatsApp number with no phone, or other
+than the phone, is now its own row: the number, then the WhatsApp chip.

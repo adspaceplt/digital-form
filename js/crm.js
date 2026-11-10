@@ -1707,12 +1707,22 @@
     var rows = [['Primary contact', '<b>' + esc(ADspaceWords.person(m.salutation, m.name)) + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     var mUser = waHandle(m.whatsapp);
+    /* A WhatsApp number of its own (no phone, or another number) is a row
+       of its own: the number, then the WhatsApp chip (the user, 2026-11-10:
+       "usually we communicate via WhatsApp"). One equal to the phone rides
+       on the phone's row. */
+    var mWa = !mUser && m.whatsapp && waNumber(m.whatsapp) &&
+      waNumber(m.whatsapp) !== waNumber(m.phone || '') ? m.whatsapp : '';
     if (m.phone) {
       /* A button, not a word run against the number with nothing between them:
          it is a thing to press and it is the same `.plink` the contact row
          and the client's own page already draw. */
       rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:' + esc(m.phone) + '">' + reachGlyph('phone') + esc(m.phone) + '</a>' +
-        (mUser ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
+        (mUser || mWa ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
+    }
+    if (mWa) {
+      rows.push(['WhatsApp', '<span class="ovreach">' + esc(mWa) +
+        waLink(mWa, (state.client || {}).market) + '</span>']);
     }
     if (mUser) {
       rows.push(['WhatsApp', '<span class="ovreach">@' + esc(mUser) +

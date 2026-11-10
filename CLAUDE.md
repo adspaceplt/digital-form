@@ -2002,6 +2002,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Services, Letters; a section whose part the reader may not open is not
     drawn, and one whose read was refused reads Could not load., never empty
     (`ovFailed`, 2026-10-11).
+  - Contact details names the primary contact's phone, then a WhatsApp
+    number of its own (none, or another than the phone) as its own row,
+    the number and the WhatsApp chip (2026-11-10).
   - Built only from what the record has already loaded.
   - Enquired lines are left out.
   - An empty section says so in one line.
