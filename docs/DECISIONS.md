@@ -9285,3 +9285,12 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   later reason; Undo puts it back. Page-side: the timeline was already
   written whole by the page (`clients_stage_clock` only appends on a real
   move), so no migration.
+
+- **2026-11-10 · A creator's Bookings read "Completed,is-ok" in a padded card.**
+  The user's screenshot of a creator's Bookings pane: the state read
+  `Completed,is-ok` and the card stood with a wide gap above and below its
+  rows. `OPTION_WORD` holds a step's word and its tone as a pair, and the
+  pane (and Add creators' rows already in a campaign) drew the pair as text;
+  both now draw the word as a status after its dot. On a narrow pane
+  `.is-narrow .crr-card` padded the bookings card on top of its rows' own
+  padding; `.crr-bk` keeps none at every width. Found by the user.

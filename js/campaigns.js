@@ -696,10 +696,12 @@
     if (state.recordFailed) { UI.failLine(host, 'The bookings', '', function () { loadRecord(function () { paneCrBookings(c, host); }); }); return; }
     if (!rec || !rec.on.length) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No bookings.</p></div>'; return; }
     host.innerHTML = '<div class="panel crr-card crr-bk">' + rec.on.map(function (x) {
-      var st = OPTION_WORD[x.st] || x.st || '';
+      /* OPTION_WORD holds a step's word and its tone (2026-11-10: the pair
+         was drawn as text, Completed,is-ok). */
+      var sw = OPTION_WORD[x.st] || [x.st || '', W.tone ? W.tone(x.st) : ''];
       return '<button class="crr-bkrow" type="button" data-camp="' + esc(x.id) + '">' +
         '<span class="crr-bk-name"><b>' + esc(x.title) + '</b><small>' + (x.when ? esc(monthOf(x.when)) : '') + '</small></span>' +
-        '<span class="crr-bk-st">' + (st ? '<span class="chip-state ' + (W.tone ? W.tone(x.st) : '') + '">' + esc(st) + '</span>' : '') + '</span>' +
+        '<span class="crr-bk-st">' + (sw[0] ? '<span class="chip-state ' + esc(sw[1] || '') + '">' + esc(sw[0]) + '</span>' : '') + '</span>' +
         '<span class="cr-go">' + CR_CHEV + '</span></button>';
     }).join('') + '</div>';
     Array.prototype.forEach.call(host.querySelectorAll('[data-camp]'), function (b) {
@@ -3703,7 +3705,7 @@
     row.innerHTML = '<div class="ac-pick">' +
       '<span class="ac-who"><span class="ac-name">' + esc(c.name) + '</span>' +
         '<span class="ac-meta">' + esc(metaOf(c).concat(o.rate ? ['Offered at ' + money(o.rate)] : []).join(' · ')) + '</span></span>' +
-      '<span class="chip ' + W.tone(o.state) + '">' + esc(OPTION_WORD[o.state] || o.state) + '</span></div>';
+      '<span class="chip ' + W.tone(o.state) + '">' + esc((OPTION_WORD[o.state] || [o.state])[0]) + '</span></div>';
     return row;
   }
 
