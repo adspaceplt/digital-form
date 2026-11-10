@@ -9380,3 +9380,15 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   made after the 1st has ended, so the night's read before the invoice is
   issued flags nothing, with no figure of its own. An invoice found unpaid
   is read again each night so Paid follows Bukku.
+
+- **2026-11-10 · The Creator ID has its own Bukku field.** The user added a
+  Creator ID custom field in Bukku and asked for it beside the Client ID and
+  Supplier ID fields. Settings, Money, Bukku now chooses three; a creator's
+  Creator ID goes in its own field, and in the Supplier ID field while none
+  is chosen, so sending a creator never stops for a field not yet picked.
+  The two-argument `bukku_config_set` stays for a tab opened before, leaving
+  the Creator ID field as it is. Asked the same day whether Settings'
+  Automatic emails and Send by email should become one Automatic / Manual /
+  Off choice: kept as two switches, since one governs what the portal sends
+  by itself and the other a colleague's press, and Automatic would read as
+  documents leaving with no one sending them.

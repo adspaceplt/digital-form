@@ -3852,7 +3852,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `-editor.sql`; Creator R3, the flow the user approved 2026-11-08): a
   creator is a Bukku supplier contact (`bukku_links` kind `creator`), sent
   or linked from the payment details approved last on the Payment pane's Bukku
-  band (the Creator ID in Bukku's Supplier ID field, the ID number at
+  band (the Creator ID in Bukku's Creator ID field, chosen beside the
+  Client ID and Supplier ID fields in Settings, Money, Bukku, else the
+  Supplier ID field while none is chosen, `bukku_settings.field_creator`,
+  `2026-11-10-bukku-creator-id-field.sql`; the ID number at
   `campaigns.pay` View alone; read at the Creators List, sent, linked and
   unlinked at `campaigns.pay` Work, filed `creator.updated`). The move into
   Posted stamps `campaign_options.posted_on` (the first post's day, else
