@@ -9357,3 +9357,14 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   SQL Editor run); the invoice's figures are billing data, so they live
   apart from the month (`ops_month_invoices`) and read only at Clients:
   Billing.
+
+- **2026-11-10 · Two suite misses found by the day's full gate.** The gate
+  on 67d5f5f read PROBLEM (2). `uxaudit` crashed at its strip count: the
+  creator's page (#987) drew a new strip, `crrTabs`, that the push did not
+  add to `STRIP_NAMES`, against the rule that a new pane joins the walk in
+  the push that builds it; the crash hid every screen after it, so the walk
+  was run again once named (ok, 0 warnings). `revise` still expected a
+  waiting post's ⋯ to read Edit, Confirm internally, Delete: the content
+  loop (#999) added Add changes for a round with no decision, which the
+  suite's post is on, and the push did not grep the suites for the menu's
+  items. Both suites changed in the tests repository (202c27b).
