@@ -1520,7 +1520,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   From day, and only a figure differing from it is sent, so one typed back
   to the figure before a planned change withdraws it (2026-10-20, SET-1)):
   Follow-up limits, Tax and terms (`ADspaceAdmin.TAX_KEYS`, eight figures
-  in three sections), Due dates (report and revision days), each the
+  in three sections), Due dates (report and revision days, past dates on new tasks), each the
   Settings page's alone (2026-10-29), `team.settings`. Every sheet is
   `ADspaceAdmin.SETTING_SHEETS`, read by the Settings rows and every other
   door alike, so it asks and says the same from each (2026-10-22, SET2-4);
@@ -4925,8 +4925,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-09-piece-dates-required.sql`): a line missing one is refused
     on the page and by `ops_create_pieces` (`dates-required` with the
     `piece`, "Post 2 needs its Draft due, Due date and Post date."), and
-    nothing is made; a passed date, a draft due after the due date, or a
-    post date before it is refused on its line. A task made before keeps
+    nothing is made; a date further back than `task_past_days` (30, 0 to
+    365; Settings, My Work: Due dates; `2026-11-10-task-dates-in-the-past.sql`,
+    the setting saved by its SQL Editor part; the user's team, 2026-11-10:
+    last week's work is keyed in afterwards), a draft due after the due date,
+    or a post date before it is refused on its line. A task made before keeps
     what it has (Not set where blank); Add task, templates, copies, repeats
     and report tasks are unchanged. With several posts the button reads
     Create N tasks.

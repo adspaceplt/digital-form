@@ -6289,10 +6289,13 @@
     if (scope === 'client' && !ntEng()) {
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
-    /* A date already passed is a slip of the finger, and the three keep
-       their order (draft before due, the post not before it); each caught on
-       its own line. */
-    var todayMyt = CK.today();
+    /* A date may go back as far as the setting allows (`task_past_days`,
+       30; the user, 2026-11-10: last week's work is keyed in afterwards),
+       and the three keep their order (draft before due, the post not before
+       it); each caught on its own line. */
+    var pastDays = Number(window.ADspaceMoney.setting('task_past_days'));
+    if (!isFinite(pastDays) || pastDays < 0) pastDays = 0;
+    var floorDay = CK.addDays(CK.today(), -pastDays);
     var DATE_WORD = { draft: 'draft due', due: 'due date', post: 'post date' };
     for (var ri = 0; ri < rows.length; ri++) {
       var rv = ntRowVals(rows[ri]), bad = null, said2 = '';
@@ -6304,7 +6307,12 @@
       });
       if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
       ['draft', 'due', 'post'].some(function (k) {
-        if (rv[k] && rv[k] < todayMyt) { bad = k; said2 = 'That ' + DATE_WORD[k] + ' has already passed.'; return true; }
+        if (rv[k] && rv[k] < floorDay) {
+          bad = k;
+          said2 = pastDays ? 'The ' + DATE_WORD[k] + ' can be at most ' + pastDays + (pastDays === 1 ? ' day' : ' days') + ' ago.'
+            : 'The ' + DATE_WORD[k] + ' cannot be in the past.';
+          return true;
+        }
         return false;
       });
       if (!bad && rv.draft && rv.due && rv.draft >= rv.due) { bad = 'draft'; said2 = said('draft-not-before-final'); }
