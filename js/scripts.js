@@ -187,7 +187,7 @@
        the id, so a page boundary never repeats or drops a row. */
     return API.readPages(function () {
       return db.from('video_scripts')
-        .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code)')
+        .select('id, client_id, period, seq, code, video_no, kind, title, status, shoot_on, venue, updated_at, created_at, clients(name, client_code, logo_url)')
         .order('period', { ascending: false }).order('seq').order('id');
     })
       .then(function (r) {
@@ -276,9 +276,13 @@
     var days = list.map(function (x) { return x.shoot_on; }).filter(Boolean).sort();
     var ahead = days.filter(function (d) { return d >= today; })[0], shoot = ahead || days[days.length - 1];
     row.setAttribute('data-id', list[0].id);
+    var A = window.ADspaceAdmin && window.ADspaceAdmin.clientMark ? window.ADspaceAdmin : null;
     row.innerHTML =
-      '<span class="vs-c-name"><b>' + esc(g.client.name || 'Client') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(list[0].client_id, true) : '') + '</b><small>' +
-        esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span>' +
+      /* Led by the client's logo, as every list a client heads (2026-11-10). */
+      '<span class="vs-c-name cl-lead">' + (A ? A.clientMark(g.client, list[0].client_id) : '') +
+        '<span class="cl-who"><b>' + esc(g.client.name || 'Client') +
+        (A && A.vic(list[0].client_id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</b><small>' +
+        esc((n === 1 ? codes[0] : codes[0] + ' to ' + codes[n - 1]) + ' · ' + n + (n === 1 ? ' script' : ' scripts')) + '</small></span></span>' +
       '<span class="vs-c-shoot">' + (shoot ? esc(dayWord(shoot)) + (ahead ? '' : ' <span class="mute">· Last</span>') : '<span class="mute">Not set</span>') + '</span>' +
       '<span class="vs-c-state">' + (pub === n ? chip('shared') : pub ? '<span class="chip-state is-warn">' + pub + ' of ' + n + '</span>' : chip('draft')) + '</span>' + GO;
     row.addEventListener('click', function () { openMonth(list[0].id, true); });

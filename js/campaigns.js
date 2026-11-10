@@ -1619,7 +1619,10 @@
     row.type = 'button';
     row.className = 'crm-row camp-row';
     row.innerHTML =
-      '<span class="crm-c crm-c-name">' + esc(campName(c)) + '</span>' +
+      /* Led by the client's logo, as the campaign's record head is
+         (2026-11-10). */
+      '<span class="crm-c crm-c-name cl-lead">' + (window.ADspaceAdmin && window.ADspaceAdmin.clientMark
+        ? window.ADspaceAdmin.clientMark(cl, c.client_id) : '') + '<span class="cl-who">' + esc(campName(c)) + '</span></span>' +
       '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(c.client_id, true) : '') + '</span>' +
       '<span class="crm-c camp-c-slots">' + esc(booked) + '</span>' +
       /* A campaign nobody has been booked on yet has no amount, and the

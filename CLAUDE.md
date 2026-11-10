@@ -3453,9 +3453,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   right edge, the three filled tonal buttons. Below 860 it is one scroll: the
   post whole, then its copy and the decision; each post opens at its top.
 - Console:
-  - The list leads each client with its logo (`.cl-mark`, the Clients
-    list's own: initials while none is held or where it fails to load;
-    the user, 2026-11-10).
+  - The list leads each client with its logo (`ADspaceAdmin.clientMark`,
+    the Clients list's own mark: initials while none is held or where it
+    fails to load, a VIC's ring with the crown; the user, 2026-11-10), as
+    do Video Scripts', Reports' (a white-label brand its initials) and
+    Creator Campaigns' rows (`.cl-lead`).
   - The client is a record: the mark, name and handles, and one ⋯ (Access
     code as a sheet with one Save, the handles and logo Brand's alone since
     2026-10-29, Reset link, Remove), the review link under it as every record's client link

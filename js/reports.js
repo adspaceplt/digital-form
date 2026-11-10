@@ -5764,7 +5764,7 @@
   }
   var clientsReady = Promise.resolve();
   function loadClients() {
-    clientsReady = db.from('clients').select('id, name, slug, stage, client_code, white_label').order('name', { ascending: true }).then(function (c) {
+    clientsReady = db.from('clients').select('id, name, slug, stage, client_code, white_label, logo_url').order('name', { ascending: true }).then(function (c) {
       var all = c.data || [];
       hub.byClient = {};
       all.forEach(function (x) { hub.byClient[x.id] = x; });
@@ -5885,12 +5885,18 @@
             var wl = r.brand_id && r.brand_name;
             b2.innerHTML = (picking ? '<span class="rh-pick"><input class="trow-pick" type="checkbox"' + (hub.pick[r.id] ? ' checked' : '') +
                 ' aria-label="Select ' + esc((wl ? r.brand_name : (c.name || '')) + ' ' + periodWord(r.period_start, r.period_end)) + '"></span>' : '') +
-              '<span class="rp-name"><span class="rp-line"><b>' + esc(wl ? r.brand_name : (c.name || '')) + '</b>' + (window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.client_id, true) : '') + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
+              /* Led by the client's logo (a white-label brand's initials), as
+                 every list a client heads (2026-11-10). */
+              '<span class="rp-name cl-lead">' + (window.ADspaceAdmin && window.ADspaceAdmin.clientMark
+                ? window.ADspaceAdmin.clientMark(wl ? { name: r.brand_name } : c, wl ? null : r.client_id) : '') +
+              '<span class="cl-who"><span class="rp-line"><b>' + esc(wl ? r.brand_name : (c.name || '')) +
+                (!wl && window.ADspaceAdmin && window.ADspaceAdmin.vic(r.client_id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</b>' +
+                (wl && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.client_id, true) : '') + (wl ? '<span class="chip rp-wl">White label</span>' : '') +
                 (r.on_request ? '<span class="chip rp-wl">On request</span>' : '') +
                 '</span><small>' + esc((wl ? (c.name || '') + ' · ' : '') + (TYPE_WORD[r.kind] || '') +
                 (r.status === 'review' && r.reviewer_id && nameOf(r.reviewer_id) ? ' · With ' + nameOf(r.reviewer_id) : '') +
                 (wholeMonth(r) ? '' : ' · ' + periodWord(r.period_start, r.period_end)) +
-                '') + (r.status === 'published' ? '<span class="rh-sentin">' + esc(r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') + '</span>' : '') + '</small></span>' +
+                '') + (r.status === 'published' ? '<span class="rh-sentin">' + esc(r.sent_on ? ' · Sent ' + dayWord(r.sent_on) : ' · Not sent') + '</span>' : '') + '</small></span></span>' +
               /* On a narrow pane Sent or Not sent takes the right column, never
                  cut off the end of the name's line (2026-10-27, RPT-11). */
               (r.status === 'published' ? '<span class="rp-ver rh-sent">' + esc(r.sent_on ? 'Sent ' + dayWord(r.sent_on) : 'Not sent') + '</span>' : '') +

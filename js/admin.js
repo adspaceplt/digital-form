@@ -857,6 +857,26 @@
   function vicBadge(id) {
     return vicOf(id) ? '<span class="vic-crown" data-vic="' + esc(id) + '" aria-hidden="true">' + CROWN + '</span>' : '';
   }
+  /* A client's mark at row size, the Clients list's own (2026-11-10, the
+     user: every list led by a client shows its logo): the logo on a white
+     disc, else its initials, a VIC's ring with the crown on it. A logo that
+     will not load gives way to the initials (the one listener below). */
+  function clientMark(c, id) {
+    c = c || {};
+    var ini = window.ADspaceState ? window.ADspaceState.initials(c.name || '') : '';
+    var logo = window.ADspaceWords && window.ADspaceWords.absUrl ? window.ADspaceWords.absUrl(c.logo_url || '') : (c.logo_url || '');
+    var vic = !!vicOf(id);
+    return '<span class="cl-markbox"><span class="cl-mark' + (logo ? ' has-logo' : '') + (vic ? ' is-vic' : '') +
+      '" aria-hidden="true" data-initials="' + esc(ini) + '">' +
+      (logo ? '<img src="' + esc(logo) + '" alt="" loading="lazy" decoding="async">' : esc(ini)) +
+      '</span>' + vicBadge(id) + '</span>';
+  }
+  document.addEventListener('error', function (e) {
+    var t = e.target, mk = t && t.tagName === 'IMG' ? t.parentNode : null;
+    if (!mk || !mk.classList || !mk.classList.contains('cl-mark') || !mk.hasAttribute('data-initials')) return;
+    mk.classList.remove('has-logo');
+    mk.textContent = mk.getAttribute('data-initials');
+  }, true);
   /* VIC clients first, keeping the order otherwise (Array.sort is stable). */
   function vicFirst(list, idOf) {
     return list.map(function (x, i) { return [vicOf(idOf(x)) ? 0 : 1, i, x]; })
@@ -2477,12 +2497,7 @@
       var vic = !!vicOf(c.id);
       row.innerHTML =
         '<span class="crm-c crm-c-name">' +
-          '<span class="cl-markbox">' +
-            '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + (vic ? ' is-vic' : '') + '" aria-hidden="true">' +
-              (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">'
-                : esc(window.ADspaceState.initials(c.name || ''))) +
-            '</span>' + vicBadge(c.id) +
-          '</span>' +
+          clientMark(c, c.id) +
           '<span class="cl-who"><span class="cl-name">' + esc(c.name) +
             (vic ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span></span>' +
         '</span>' +
@@ -2492,13 +2507,6 @@
         '<span class="crm-c crm-c-code' + (c.passcode ? '' : ' is-none') + '">' + (c.passcode
           ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
-      /* A logo that will not load gives way to the initials. */
-      var logo = row.querySelector('.cl-mark img');
-      if (logo) logo.addEventListener('error', function () {
-        var mk = logo.parentNode;
-        mk.classList.remove('has-logo');
-        mk.textContent = window.ADspaceState.initials(c.name || '');
-      });
       row.addEventListener('click', function () { openClient(c); });
       table.appendChild(row);
     });
@@ -5930,6 +5938,7 @@
     /* The crown alone, for a mark worn on a tile (Waiting for you, 2026-11-04). */
     vicCrown: CROWN,
     vicBadge: vicBadge,
+    clientMark: clientMark,
     vicFirst: vicFirst,
     vicByName: vicByName,
     vicReload: loadVic,
