@@ -5473,6 +5473,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     reason, and `late-reason` once past due until one is given; Submit's
     question asks for it beside the reviewer, kept as `gate_note` /
     `late_reason` and filed. At Work a month not in order rests Submit.
+  - A report made in Reports for a month that does not ask for it (an
+    admin or Reports Full Access, Not planned) ticks that report on the
+    month and makes its report task, as its maker, else as the month's
+    manager (`sm_reports_month_tick`); a report task made after its report
+    stands (a tick added in My Work later) takes the report's step at once (`ops_tasks_report_catch_up`;
+    `2026-11-10-report-ticks-its-month.sql`; the user, 2026-11-10).
   - The month's report task follows its report
     (`2026-10-08-report-tasks-follow.sql`, trigger `sm_reports_task_follow`,
     the task found as `sm_report_gate` finds it; the user, 2026-10-08): a
