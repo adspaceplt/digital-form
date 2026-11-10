@@ -2471,14 +2471,34 @@
       row.type = 'button';
       row.className = 'crm-row cr-client-row';
       row.setAttribute('data-id', c.id);
+      /* The client's logo before the name, as the Clients list draws it
+         (the user, 2026-11-10): every row here is a client, and a logo is
+         found faster than a name is read. A VIC's ring carries the crown. */
+      var vic = !!vicOf(c.id);
       row.innerHTML =
-        '<span class="crm-c crm-c-name">' + esc(c.name) + vicTag(c.id, true) + '</span>' +
+        '<span class="crm-c crm-c-name">' +
+          '<span class="cl-markbox">' +
+            '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + (vic ? ' is-vic' : '') + '" aria-hidden="true">' +
+              (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">'
+                : esc(window.ADspaceState.initials(c.name || ''))) +
+            '</span>' + vicBadge(c.id) +
+          '</span>' +
+          '<span class="cl-who"><span class="cl-name">' + esc(c.name) +
+            (vic ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span></span>' +
+        '</span>' +
         '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
         /* An access code is the exception, so the row says nothing where there
            is none rather than printing "Open" on almost every line. */
         '<span class="crm-c crm-c-code' + (c.passcode ? '' : ' is-none') + '">' + (c.passcode
           ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
         '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
+      /* A logo that will not load gives way to the initials. */
+      var logo = row.querySelector('.cl-mark img');
+      if (logo) logo.addEventListener('error', function () {
+        var mk = logo.parentNode;
+        mk.classList.remove('has-logo');
+        mk.textContent = window.ADspaceState.initials(c.name || '');
+      });
       row.addEventListener('click', function () { openClient(c); });
       table.appendChild(row);
     });

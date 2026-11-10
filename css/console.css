@@ -945,7 +945,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
   font-variant-numeric: tabular-nums;
 }
 /* The header's Client label starts where the names do. */
-.crm-head.client-row > :first-child { padding-left: 44px; }
+.crm-head:is(.client-row, .cr-client-row) > :first-child { padding-left: 44px; }
 /* The date over what it was, the way the stage cell carries its clock: one
    cell, two lines, the second in the same small mute face as `.crm-age`. */
 .crm-c-seen {
@@ -4037,7 +4037,7 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 /* Room for a VIC ring inside the name cell, which clips its overflow. */
 .crm-row.client-row .crm-c-name { padding-block: 4px; margin-block: -4px; padding-left: 4px; margin-left: -4px; }
 /* The head's first cell takes the same 4px, so Client stays over its column. */
-.crm-head.client-row > :first-child { margin-left: -4px; padding-left: 48px; }
+.crm-head:is(.client-row, .cr-client-row) > :first-child { margin-left: -4px; padding-left: 48px; }
 .crm-head.client-row.is-picking > :first-child { padding-left: 78px; }
 .wfy-what .chip-vic { margin-left: 6px; }
 .cr-client-row .crm-c-name .chip-vic, .camp-c-client .chip-vic, .vs-c-name b .chip-vic,

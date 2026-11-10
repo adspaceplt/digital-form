@@ -4716,7 +4716,7 @@ body > .shell { width: 100%; }
 /* The client's logo before the name, the record head's mark at row size:
    white disc and hairline for a logo (light in both themes, as a logo is),
    initials on the quiet fill while none is held. */
-.crm-row.client-row .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.crm-row:is(.client-row, .cr-client-row) .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .cl-mark {
   flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
   display: inline-flex; align-items: center; justify-content: center;
@@ -4788,6 +4788,11 @@ body > .shell { width: 100%; }
   }
   /* A lone dash says nothing on a phone, so it is not drawn. */
   .crm-row.cr-client-row .crm-c-code.is-none { display: none; }
+  /* The mark at 28px beside the name, the sets line starting where the
+     name does, as the Clients list's meta line (2026-11-10). */
+  .crm-row.cr-client-row .crm-c-name { gap: 10px; align-items: flex-start; overflow: visible; }
+  .crm-row.cr-client-row .cl-mark { margin-bottom: -6px; }
+  .crm-row.cr-client-row .crm-c-sets { padding-left: 38px; }
 }
 
 /* ---------- The campaign register ----------
@@ -5785,8 +5790,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .crpay-amt { font-size: 14px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .crpay-sub { grid-column: 1; font-size: 12.5px; color: var(--ink-mute); }
 .crpay-st { justify-self: end; align-self: start; }
-.crpays-note { margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.crpays-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .crpays-note[hidden] { display: none; }
+/* The e-Invoice section of the payment details form: one line of fact above the tick. */
+.crpay-einv { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
 @media (max-width: 640px) { .crpay-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
 .input[aria-invalid="true"] { border-color: var(--err); }
 @media (max-width: 640px) {

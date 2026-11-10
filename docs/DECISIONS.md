@@ -9414,5 +9414,30 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   address, so a link naming a pane or a booking landed on Bookings; it now
   removes the code alone.
 
+- **2026-11-10 · Creators come in from AP01.** The user wanted the creators
+  on record (the AP01 form and its spreadsheet) in the portal without
+  making them submit payment details again. A creator already paid through
+  Bukku comes in approved; AP01 asked no billing address before January
+  2026, so such a set may hold none, and the creator's page asks for the
+  address alone (the user: "ask to resubmit address only"), with no
+  approval round since payee, bank and account do not move. A blacklisted
+  creator comes in Inactive with the reason kept (Set inactive now asks
+  one). A rednote ID or name the sheet holds becomes a rednote search
+  link, which `profile_of` reads as a profile with no handle (the user's
+  rule). The form gained an e-Invoice section (each payment's e-Invoice to
+  LHDN is issued with these details), and Payments' working-days line
+  moved under its title (the user). The screenshot found Set inactive's
+  question answering an object, not the reason, so the reason was dropped;
+  read from either shape.
+
+### 2026-11-10 · Content Review's list shows each client's logo
+The user: "content review is only for clients only, other than the name,
+you could show the logo profile card circle too right". Every row in
+Content Review's list is a client, yet it drew the name alone. It now
+draws the Clients list's mark (`.cl-mark`: the logo on a white disc,
+initials while none is held or where the picture fails), and a VIC's
+ring carries the crown in place of the tag, as the Clients list does.
+`tests/vic.js` holds both.
+
 ### 2026-11-10 · Copy review of #992 to #1005
 A second reader went through the 120 lines of new words in the fourteen releases merged after #991. Three broke DESIGN.md §6 and are fixed: the Bukku Settings row said "Client ID not chosen" and "Not chosen" while its own sheet says Not set (one word per thing); Automatic emails read "Off · Kept as Not sent", a system word in a fragment, now "Off · Not sent"; a Content Review refusal named a new thing, "no internal decision to revert", now "There is nothing to revert on this post. Refresh the page.". Nothing a client, prospect, creator or supplier reads broke a rule.

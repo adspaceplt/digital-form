@@ -2391,7 +2391,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   carrying no tag; a VICs view drawn while any is held), the record head (tag and ring; the ⋯'s
   Mark as VIC, asking VIC since and a note, or Remove VIC, never asked,
   Undo where it happened; VIC since under Key dates, its pen at the part),
-  Content Review's list and client head, My Work's rows, board cards and
+  Content Review's list (the logo ringed with the crown, as the Clients
+  list) and client head, My Work's rows, board cards and
   task card (a VIC client's work leads each band of the day axis, Urgent
   delivery a band above it), Waiting for you (VIC rows first, the tile ringed in gold with the
   crown on its corner in place of the tag), the
@@ -3452,6 +3453,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   right edge, the three filled tonal buttons. Below 860 it is one scroll: the
   post whole, then its copy and the decision; each post opens at its top.
 - Console:
+  - The list leads each client with its logo (`.cl-mark`, the Clients
+    list's own: initials while none is held or where it fails to load;
+    the user, 2026-11-10).
   - The client is a record: the mark, name and handles, and one ⋯ (Access
     code as a sheet with one Save, the handles and logo Brand's alone since
     2026-10-29, Reset link, Remove), the review link under it as every record's client link
@@ -3829,6 +3833,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-11-10-creator-page-details-masked.sql`; the user, 2026-11-10: a
   link can reach others): each field opens empty, and left blank keeps the
   one held. The console, the emails and the sheet read them whole. A set sent while one is pending withdraws it.
+  Details brought in from the AP01 form (`2026-11-10-creators-from-ap01.sql`,
+  its SQL Editor part letting the column be empty; the user, 2026-11-10)
+  are filed approved (`source` `import`) where Bukku already paid the
+  creator, and may hold no billing address: the creator's page then opens
+  on Payments once and asks the address alone (`creator_pay_form`
+  `address_needed`, `creator_pay_address`, anon: `bad`, `not-needed`),
+  kept on the set approved with no approval again, filed under Creator
+  page; the console reads Billing address Not set and Source Imported from
+  AP01 form. The form's last section, e-Invoice, says each payment's
+  e-Invoice to LHDN is issued with these details, above the tick.
+  Set inactive asks a reason (`creators.inactive_reason`, Blacklisted;
+  held to inactive creators by a check), read on Overview; Set active
+  clears it. `profile_of` reads a rednote search
+  (`rednote.com/search_result?keyword=…`) as a profile with no handle.
   The console: the Creators List names a creator whose details wait
   (To review), their page's Payment pane holding them (`creator_pay_list`,
   Creators List View; the numbers whole only at the granted part
