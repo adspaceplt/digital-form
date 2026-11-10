@@ -9392,3 +9392,13 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   Off choice: kept as two switches, since one governs what the portal sends
   by itself and the other a colleague's press, and Automatic would read as
   documents leaving with no one sending them.
+
+- **2026-11-10 · A report and its month's tick keep in step.** The user: a
+  report made by hand in Reports for its content month, whose Reports tick
+  was not ticked, left the month and its report task out of step (the
+  override for an admin or Reports Full Access made the report and nothing
+  else). The report now ticks the month and makes its task, and a task made
+  after its report takes the report's step. The suite found the maker may
+  hold no My Work at Work, which `ops_create_task` refuses; the task is then
+  made as the month's manager, as the morning's repeats are made as their
+  colleague, rather than leaving the month out of step.

@@ -4832,6 +4832,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var refused = opsRefused(name);
     if (refused) return refused;
 
+    if (name === '__month_report_tick') {
+      var tk = args.e;
+      tk.reports = (tk.reports || []).concat([args.kind]); tk.version = (tk.version || 1) + 1; tk.updated_at = now;
+      return monthReportSync(tk, false);
+    }
+
     if (!me && name === 'vic_clients') return [];
     if (!me) return { error: 'not-team' };
 
@@ -6154,11 +6160,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
               content_desc: k === 'social' ? 'Accounts report' : 'Advertising report', code_period: e.period,
               first_draft_due_at: draft, final_due_at: due, source_type: 'report_' + k, owner_id: e.manager_id, manager_id: e.manager_id } });
             if (made && made.error) bad = bad || made.error;
-            else DB.ops_tasks.forEach(function (x) {
-              if (x.engagement_id === e.id && x.source_type === 'report_' + k && !x.cancelled_at && !x.archived_at && !x.first_draft_submitted_at) {
-                x.original_first_draft_due_at = null; x.current_first_draft_due_at = null;
-              }
-            });
+            else {
+              DB.ops_tasks.forEach(function (x) {
+                if (x.engagement_id === e.id && x.source_type === 'report_' + k && !x.cancelled_at && !x.archived_at && !x.first_draft_submitted_at) {
+                  x.original_first_draft_due_at = null; x.current_first_draft_due_at = null;
+                }
+              });
+
+              var sp0 = smSpan(e), rep0 = (DB.sm_reports || []).filter(function (x) {
+                return x.client_id === e.client_id && !x.brand_id && !x.on_request && (x.kind || 'social') === k &&
+                  x.period_end >= sp0[0] && x.period_end <= sp0[1];
+              }).sort(function (x, y) { return String(y.created_at || '').localeCompare(String(x.created_at || '')); })[0];
+              if (rep0) smTaskFollow(rep0, true);
+            }
           } else if (moved) live.forEach(function (x) {
             if (x.completed_at) return;
             x.current_final_due_at = due;
@@ -7326,6 +7340,27 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var was = t.stage_key;
     Object.assign(t, { stage_key: 'todo', version: (t.version || 1) + 1, updated_at: new Date().toISOString(), blocked_at: null, blocked_category: null });
     opsLog(t.id, 'stage_changed', { stage_key: was }, { stage_key: 'todo' }, 'Report deleted', { report_id: r.id });
+  }
+
+  function smMonthTick(r) {
+    if (!r || r.brand_id || r.on_request || r.period_start < '2026-10-01') return;
+    var e = (DB.ops_engagements || []).filter(function (x) {
+      if (x.client_id !== r.client_id || x.status === 'cancelled' || x.status === 'completed') return false;
+      var sp = smSpan(x); return r.period_end >= sp[0] && r.period_end <= sp[1];
+    }).sort(function (x, y) { return y.period.localeCompare(x.period); })[0];
+    if (!e || (e.reports || []).indexOf(r.kind || 'social') > -1) return;
+    var was = (e.reports || []).slice(), v = e.version, n0 = DB.ops_tasks.length;
+    var undo = function () { e.reports = was.slice(); e.version = v; DB.ops_tasks.length = n0; };
+    var bad = opsRpc('__month_report_tick', { e: e, kind: r.kind || 'social' });
+    if (!bad) return;
+    undo();
+
+    var mgr = (DB.team_members || []).filter(function (x) { return x.id === e.manager_id && x.active && x.email; })[0];
+    if (!mgr || !session || !session.user) return;
+    var who = session.user.email;
+    session.user.email = mgr.email;
+    try { bad = opsRpc('__month_report_tick', { e: e, kind: r.kind || 'social' }); } finally { session.user.email = who; }
+    if (bad) undo();
   }
   function smTaskFollow(r, made) {
     if (!r || r.brand_id || r.on_request) return;
@@ -9154,6 +9189,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (sout && !sout.error) {
         var smId = (args || {}).p_id || (/^sm_report_create/.test(name) ? sout.id : null);
         var smR = (DB.sm_reports || []).filter(function (x) { return x.id === smId; })[0];
+        if (smR && !smWas) smMonthTick(smR);
         if (smR && (!smWas || smWas !== smR.status + '|' + (smR.sent_on || ''))) smTaskFollow(smR, !smWas);
       }
       persist();
