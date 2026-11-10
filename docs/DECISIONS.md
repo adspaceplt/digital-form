@@ -9447,3 +9447,13 @@ The user's screenshot showed the gold ring cut at its left and foot: the
 name cell clips its overflow, and the 4px of room the Clients list gives
 the ring was never given to Content Review's row. The same rule now covers
 both lists.
+
+### 2026-11-10 · Every list a client leads shows its logo
+The user, after Content Review's logo: "how bout video script? why need me
+to point out one by one". One helper now draws the mark
+(`ADspaceAdmin.clientMark`, one listener putting initials in place of a
+logo that fails) and Content Review, Video Scripts, Reports and Creator
+Campaigns each lead their rows with it. A VIC's ring carries the crown, so
+the row drops its tag (a white-label report keeps the tag, its mark being
+the brand's initials). The lesson: a change asked of one list is checked
+against every list of the same shape in the same push.
