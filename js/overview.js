@@ -520,7 +520,7 @@
       return db.rpc('ops_months_not_invoiced').then(rows).then(function (list) {
         return (list || []).map(function (m) {
           var M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'], p = String(m.period).split('-');
-          return { name: m.name, meta: M[Number(p[1]) - 1] + ' ' + p[0] + ' · Completed', tag: 'Task', who: m.owner || '',
+          return { name: m.name, meta: M[Number(p[1]) - 1] + ' ' + p[0] + (m.checked_at ? ' · Checked ' + window.ADspaceClock.date(m.checked_at) : ''), tag: 'Task', who: m.owner || '',
                    client: m.client, days: daysSince(m.since), since: sinceWord(m.since), tone: 'warn',
                    url: '/admin/?s=work&view=months&wc=' + encodeURIComponent(m.slug || m.client), section: 'work' };
         });

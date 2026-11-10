@@ -4625,11 +4625,13 @@ function cardSlugFree(name, self, email) {
     });
     return out;
   }
+
   function monthSpan(e) {
-    var p = String(e.period).split('-'), d = Math.max(1, Math.min(28, Number(e.start_day) || 1));
-    var a = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, d)), b = new Date(Date.UTC(Number(p[0]), Number(p[1]), d - 1));
+    var p = String(e.period).split('-');
+    var a = new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, 1)), b = new Date(Date.UTC(Number(p[0]), Number(p[1]), 0));
     return [a.toISOString().slice(0, 10), b.toISOString().slice(0, 10)];
   }
+  function myDay(t) { return new Date((t ? Date.parse(t) : Date.now()) + 8 * 3600e3).toISOString().slice(0, 10); }
 
   function scriptFollow(scriptId) {
     var k = (DB.ops_task_links || []).filter(function (l) { return l.script_id === scriptId && !l.archived_at; })[0];
@@ -5586,8 +5588,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return (DB.ops_month_invoices || []).filter(function (x) { return x.state === 'none'; }).map(function (x) {
         var e = (DB.ops_engagements || []).filter(function (y) { return y.id === x.engagement_id; })[0];
         var c = (DB.clients || []).filter(function (y) { return y.id === x.client_id; })[0];
-        if (!e || e.status !== 'completed' || !c || !scopeSeen(c.id, 'view')) return null;
-        return { engagement: e.id, client: c.id, name: c.name, slug: c.slug, owner: c.owner, period: e.period, checked_at: x.checked_at, since: e.updated_at };
+        if (!e || e.status === 'cancelled' || !c || !scopeSeen(c.id, 'view') || myDay(x.checked_at) <= monthSpan(e)[0]) return null;
+        return { engagement: e.id, client: c.id, name: c.name, slug: c.slug, owner: c.owner, period: e.period, checked_at: x.checked_at, since: monthSpan(e)[0] };
       }).filter(Boolean);
     }
     if (name === 'ops_script_task') {
@@ -14201,10 +14203,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (bkb.action === 'month') {
             var mE = (DB.ops_engagements || []).filter(function (x) { return x.id === bkb.engagement; })[0];
             if (!opsMe() || !opsAllowed('clients.billing', 'view') || !mE) return bkR({ error: 'denied' });
-            if (mE.status !== 'completed') return bkR({ error: 'not-completed' });
+            if (mE.status === 'cancelled') return bkR({ error: 'cancelled' });
+            var mS = monthSpan(mE);
+            if (mS[0] > myDay()) return bkR({ error: 'not-started' });
             var mC = monthContacts(mE.client_id);
             if (!mC.length) return bkR({ error: 'not-linked' });
-            var mS = monthSpan(mE);
             var mFound = (window.__bukkuInvoices || []).filter(function (x) {
               return mC.indexOf(Number(x.contact_id)) > -1 && String(x.date) >= mS[0] && String(x.date) <= mS[1];
             }).map(function (x) {

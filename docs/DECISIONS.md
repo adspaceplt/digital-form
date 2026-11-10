@@ -9368,3 +9368,15 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   loop (#999) added Add changes for a round with no decision, which the
   suite's post is on, and the push did not grep the suites for the menu's
   items. Both suites changed in the tests repository (202c27b).
+
+- **2026-11-10 · A month's invoice is looked for from its 1st.** Phase 3
+  first checked a month for its invoice once the month was completed. The
+  user: "our way is invoice issued 01/11 for November (its pre-issued basis
+  not upon completion)". The check now starts on the 1st of the content
+  month, at any stage but Cancelled, and matches an invoice dated within
+  that calendar month, not the month's span (a month starting on the 16th
+  is still invoiced in its own calendar month, and a span would claim the
+  next month's 1st). Months not invoiced on the Dashboard waits for a read
+  made after the 1st has ended, so the night's read before the invoice is
+  issued flags nothing, with no figure of its own. An invoice found unpaid
+  is read again each night so Paid follows Bukku.

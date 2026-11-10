@@ -4762,16 +4762,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   Ready once published, the shoot from its day, Footage Ready once every
   scene is ticked shot, which moves a task at Ready to start into In
   progress; the script's facts name its task (`ops_script_task`). Phase 3
-  (`2026-11-10-month-invoice-check.sql`): a month completed is checked
-  against Bukku at once and every night for four months while none is
-  found (`bukku-sync` `month`, `ops_month_invoice_ask` as the caller,
-  `ops_month_invoice_take` and `ops_month_invoices_due` the service
-  role's; `ops_month_invoices`, RLS on, no policy, no grant): an invoice
-  of the client's Bukku contacts dated within the month's span is its
-  invoice; the completed month's card reads Invoice (number, amount, Paid
-  or Unpaid; Not invoiced and when checked; Check Bukku) at Clients:
-  Billing View (`ops_month_invoices_of`), and the Dashboard lists Months
-  not invoiced at Billing Full Access (`ops_months_not_invoiced`).
+  (`2026-11-10-month-invoice-check.sql`,
+  `2026-11-10-month-invoice-from-the-1st.sql`; the user: invoiced in
+  advance, "issued 01/11 for November"): a month not cancelled is checked
+  against Bukku from the 1st of its content month, whatever its stage,
+  every night for four months while none is found or one stands unpaid
+  (`bukku-sync` `month`, `ops_month_invoice_ask` as the caller,
+  `not-started`, `cancelled`; `ops_month_invoice_take` and
+  `ops_month_invoices_due` the service role's; `ops_month_invoices`, RLS
+  on, no policy, no grant): an invoice of the client's Bukku contacts
+  dated within the content month's calendar month (`month_invoice_window`)
+  is its invoice; the month's card reads Invoice (number, amount, Paid or
+  Unpaid; Not invoiced and when checked; Check Bukku) at Clients: Billing
+  View (`ops_month_invoices_of`), and the Dashboard lists Months not
+  invoiced at Billing Full Access once a read after the 1st found none
+  (`ops_months_not_invoiced`).
 - Dates:
   - The first draft is the team's own (`ops_due_decider` null) and must fall
     before the final date by calendar day (`ops_due_order_ok`, checked inside
