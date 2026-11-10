@@ -755,9 +755,69 @@ button.appver {
 /* The record column carries a campaign's name now, not a bare count, so it is
    measured against one: 200px holds `Promote Newly La… +2 · Sept 2026` at
    12.5px, and the name is the half that gives way. */
-.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
+.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) 150px 96px var(--state-w) 16px; }
 .cr-record-when { flex: 0 0 auto; white-space: pre; }
-.cr-who > .cr-pay { margin-top: 4px; }  /* a creator's payment details to review (2026-11-08) */
+/* A row is one button opening the creator's page (2026-11-10): name over
+   Creator ID, platforms, campaigns, rate, payment details, chevron. On a
+   phone two lines: the name with the payment details' standing, then
+   Creator ID · platforms · campaigns with the rate. */
+button.cr-row { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+button.cr-row:last-child { border-bottom: 0; }
+@media (hover: hover) { button.cr-row:hover { background: var(--sunk); } }
+button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+.cr-plats { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-line { display: none; }
+.cr-go { display: flex; color: var(--ink-mute); }
+.cr-go svg { width: 15px; height: 15px; }
+.is-narrow .cr-row { grid-template-columns: minmax(0, 1fr) 120px; grid-template-areas: "name pay" "line rate"; row-gap: 4px; align-items: start; }
+.is-narrow .cr-row > .cr-who { grid-area: name; }
+.is-narrow .cr-row > .cr-who > .svc-sku, .is-narrow .cr-row > .cr-plats, .is-narrow .cr-row > .cr-record, .is-narrow .cr-row > .cr-go { display: none; }
+.is-narrow .cr-row > .cr-pay { grid-area: pay; justify-self: end; }
+.is-narrow .cr-row > .cr-pay:has(> .muted) { visibility: hidden; }
+.is-narrow .cr-row > .cr-line { display: block; grid-area: line; min-width: 0; font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.is-narrow .cr-row > .svc-rate { grid-area: rate; text-align: right; align-self: start; white-space: nowrap; font-size: 13px; }
+.cr-line .nb { white-space: nowrap; }
+.cr-line-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+/* A creator's page (2026-11-10): the record's grid, a white card a pane,
+   the facts changed where they are read. */
+.crr-card { padding: 18px 20px; }
+.crr-profs { display: flex; flex-wrap: wrap; gap: 8px; }
+.crr-hist { margin-top: 12px; }
+.crr-hist > summary { list-style: none; display: inline-flex; width: auto; }
+.crr-hist > summary::-webkit-details-marker { display: none; }
+.crr-hist[open] > summary { margin-bottom: 4px; }
+.crr-link { overflow-wrap: anywhere; }
+.crr-linkacts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.crr-linkacts .btn { flex: 0 0 auto; }
+.crr-acts { display: flex; gap: 8px; }
+.crr-acts .btn { flex: 0 0 auto; }
+.crr-bk { padding: 0; overflow: hidden; }
+.crr-bkrow { display: grid; grid-template-columns: minmax(0, 1fr) var(--state-w) 16px; gap: 12px; align-items: center; width: 100%; padding: 12px 20px;
+  border: 0; border-bottom: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.crr-bkrow:last-child { border-bottom: 0; }
+@media (hover: hover) { .crr-bkrow:hover { background: var(--sunk); } }
+.crr-bkrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+.crr-bk-name { display: flex; flex-direction: column; min-width: 0; }
+.crr-bk-name b { font-weight: 600; overflow-wrap: anywhere; }
+.crr-bk-name small { font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .crr-bkrow { grid-template-columns: minmax(0, 1fr) auto; padding: 12px 14px; }
+.is-narrow .crr-bkrow > .cr-go { display: none; }
+.is-narrow .crr-card { padding: 14px; }
+/* Edit links: the sheet holds the profile links alone. */
+#addCreatorBox.is-links .crf-full { display: none; }
+.crr-tabs { margin-bottom: 12px; }
+#crRecMsg { margin: 0 0 12px; }
+#crRecMsg:empty, #rosterMsgLine:empty { display: none; }
+.crr-body > .rec-panes { gap: 0; }
+.crr-body:has(> .rec-rail[hidden]) { grid-template-columns: minmax(0, 1fr); grid-template-areas: "tabs" "pane"; }
+.crr-body > .rec-rail[hidden] { display: none; }
+.crr-card dd.mfield { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; }
+.crr-card dd.mfield > .mval { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.crr-card dd.mfield.is-empty > .mval { color: var(--ink-mute); }
+.crr-card dd.mfield > .tl-pen { flex: 0 0 auto; }
+#crRecPane.is-tight .readgroup-head:has(.crr-acts) { flex-wrap: wrap; }
+#crRecPane.is-tight .crr-acts { flex: 1 0 100%; }
+#crRecPane.is-tight .crr-acts .btn { flex: 1 1 0; min-width: 0; }
 /* A creator's payments (2026-11-09): a booking a row, its Job reference
    over its campaign, the bill's state over its number and amount, the pen
    for an earlier job ID at the right edge. */
@@ -803,22 +863,13 @@ button.appver {
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
    nobody can see. */
-.is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 104px 0; }
-.is-narrow .cr-row > .svc-name { align-self: center; }
 /* Both meta cells sit on one baseline: the record reads on the first chip's
    own line. Centred, the record floated to the middle of a links cell that
    had wrapped to two rows; started at the top, it sat 9px above the text of
    a 38px outlined chip (2026-09-28). */
-.is-narrow .cr-row > .cr-links { grid-area: links; align-self: baseline; }
 /* The profile links are the row's last line. As bare text their 5px of
    padding read as extra space and the cell took it back (2026-09-21); as
    outlined chips the edge is the ink, so the row's own padding stands. */
-.is-narrow .cr-row > .cr-record {
-  grid-area: rec; align-self: baseline;
-  /* A flex box is not moved by `text-align`; this is what actually ends the
-     record at the card's own margin. */
-  justify-content: flex-end;
-}
 .is-narrow .reg-row > .reg-who { grid-area: who; }
 .is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
 .is-narrow .task-row > .trow-check { grid-area: check; align-self: start; }
@@ -833,7 +884,6 @@ button.appver {
    block margin is the same trick the selection tick uses, so the footprint
    is the name's and the thing under a thumb is still 38px (44 on a touch
    screen). */
-.is-narrow .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
 /* The rate card row too: the ⋯ is drawn for an admin only, so the same
    row was 97px on an admin's phone and 68px on everybody else's, with the
    name pinned to the top of the tall one and the unit floating 30px under
