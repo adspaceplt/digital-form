@@ -8128,6 +8128,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (refused without, served with, is a browser fault). The media pass broke
   this way twice (2026-10-12, 2026-10-15).
 - Partial work is labelled partial, never reported as done.
+- A change asked of one list or screen is made on every one of the same
+  shape in the same push (2026-11-10, the user: "why need me to point out
+  one by one": the client logo asked of Content Review was owed to Video
+  Scripts, Reports and Creator Campaigns too).
 - A value only read is drawn as words at the field's height with no box
   (`.readfield` on a `p` or `div` is that, on an `.input` the shaded copy
   field): a shaded slab with its words on the edge, out of line with the
