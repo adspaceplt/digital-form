@@ -384,7 +384,9 @@ added to all three in the same push.
 - A new state (a second row, a file, an error) is seeded in the walk, because a
   pane that walks empty is a pane nobody has measured.
 - The deploy is confirmed from the GitHub Pages workflow run for the merge
-  commit (`pages build and deployment`, success). `curl` to the site returns
+  commit (`pages build and deployment`, success). A deploy GitHub cancelled on its
+  timeout is never re-run (the re-run reuses the cancelled deployment): the
+  next commit on main deploys the site whole. `curl` to the site returns
   403 from the sandbox and proves nothing.
 - Assert the mechanism, not the sentence: measure geometry. Never read a value
   out of markup or a comment.

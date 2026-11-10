@@ -9157,3 +9157,11 @@ carries its mark: a way to another page in the same tab now carries the
 chevron after its words. `corners` read every box round because the
 container's Chromium (153) computes the squircle as `superellipse(2)`;
 the suite reads both spellings of the one shape.
+
+### 2026-11-10: a Pages deploy that timed out is deployed by the next commit
+The Pages run for 16945c8 (#981) built, then its deploy step sat at
+syncing files for ten minutes and GitHub cancelled the deployment. A
+re-run of the failed job reuses that deployment, named for the commit, and
+is cancelled at once (16 seconds). The next commit on main deploys the site
+whole, this one's changes included; a re-run of a timed-out deploy is not
+tried again.
