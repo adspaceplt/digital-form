@@ -296,8 +296,8 @@
   var TEST_SAID = {
     'too-many': 'Twenty test emails have been sent today. Send another tomorrow.',
     'no-email': 'Your account has no sign-in email. Please ask an admin.',
-    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.',
-    'not-sent': 'The test email was not sent. Try again.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff,
+    'not-sent': 'The test email was not sent. Please try again.',
     'not-confirmed': 'The test email may not have been sent. Check your inbox before sending another.'
   };
   function sendTest() {

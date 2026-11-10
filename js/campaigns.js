@@ -516,7 +516,7 @@
     if (!c) {
       if (!state.creators.length) { UI.skeleton(box, 3); return; }
       crRec.id = null; setUrl(); crView();
-      msg('rosterMsgLine', 'That creator is no longer in the Creators List.', 'warn');
+      msg('rosterMsgLine', 'This creator no longer exists.', 'warn');
       return;
     }
     if (!crPaneOk(crRec.pane)) crRec.pane = 'overview';
@@ -641,7 +641,7 @@
           allowEmpty: k !== 'name',
           check: function (v) {
             v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
-            if (k === 'name' && !v) return 'A name is required.';
+            if (k === 'name' && !v) return 'Enter a name.';
             if (k === 'name' && nameHolder(v, c)) return nameHolder(v, c).name + ' is already in the Creators List.';
             if (k === 'client_rate' && v !== '' && !(Number(v) >= 0)) return 'Enter a rate of 0 or more.';
             if (k === 'whatsapp' && v && (v.replace(/\D/g, '').length < 8 || v.replace(/\D/g, '').length > 15)) return 'Enter a number of 8 to 15 digits.';
@@ -736,7 +736,7 @@
         '<button class="railnext" type="button" data-a="pay"><span class="railnext-text">Review payment details</span>' + OVCHEV + '</button></section>';
     }
     if (rec && rec.on.length) {
-      html += '<section class="railblock"><h3 class="railtitle">Record</h3><dl class="raildates">' +
+      html += '<section class="railblock"><h3 class="railtitle">Campaigns</h3><dl class="raildates">' +
         '<div><dt>Campaigns</dt><dd>' + rec.on.length + '</dd></div>' +
         (rec.last ? '<div><dt>Last shoot</dt><dd>' + esc(monthOf(rec.last)) + '</dd></div>' : '') + '</dl></section>';
     }
@@ -1230,8 +1230,7 @@
   function resetCode(c, opener) {
     window.ADspaceConfirm.ask({
       title: 'Reset link?',
-      body: 'The link ' + c.name + ' already has stops working immediately. '
-          + 'The new one has to be sent to them.',
+      body: c.name + '\'s current link will stop working immediately. Send the new link to ' + c.name + '.',
       go: 'Reset link',
       tone: 'warn',
       opener: opener || null
@@ -1240,7 +1239,7 @@
         if (r.error) { crMsg(r.error.message, 'err'); return; }
         c.access_code = (r.data && r.data.code) || '';
         log('creator.code', c.name, '');
-        loadRoster(function () { crMsg('New link issued. Send it to them.', 'ok'); });
+        loadRoster(function () { crMsg('Link reset. Send the new link to ' + c.name + '.', 'ok'); });
       });
     });
   }

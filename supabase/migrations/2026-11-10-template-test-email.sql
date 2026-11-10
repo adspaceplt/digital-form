@@ -34,7 +34,7 @@ create or replace function public.template_sample(p_field text, p_kind text, p_n
 returns text
 language sql stable set search_path = public as $$
   select case lower(regexp_replace(coalesce(p_field, ''), '\s+', ' ', 'g'))
-    when 'contact name' then 'Jane Doe'
+    when 'contact name' then 'John Doe'
     when 'creator name' then 'Jane Doe'
     when 'payee' then 'Jane Doe'
     when 'client name' then 'ADspace Advertising'
@@ -48,7 +48,7 @@ language sql stable set search_path = public as $$
     when 'document reference' then case p_kind when 'supplier' then 'AD/SCA/AS001/261101' else 'AQL/AC001/261101' end
     when 'document date' then public.register_day((now() at time zone 'Asia/Kuala_Lumpur')::date)
     when 'valid until' then public.register_day((now() at time zone 'Asia/Kuala_Lumpur')::date + 30)
-    when 'sender name' then coalesce(nullif(p_name, ''), 'Jane Doe')
+    when 'sender name' then coalesce(nullif(p_name, ''), 'John Doe')
     when 'invoice no' then 'INV-00001'
     when 'count' then '2'
     when 'total' then 'RM 1,000.00'
@@ -59,7 +59,7 @@ language sql stable set search_path = public as $$
     when 'account ending' then '1234'
     when 'review link' then 'https://digital.adspace.me/admin/'
     when 'job reference' then 'ADC0001/CC001'
-    when 'campaign' then 'Sample campaign'
+    when 'campaign' then 'Festive Launch 2026'
     when 'posted date' then public.register_day((now() at time zone 'Asia/Kuala_Lumpur')::date)
     when 'pay by' then public.register_day((now() at time zone 'Asia/Kuala_Lumpur')::date + 14)
     when 'amount' then 'RM 500.00'
