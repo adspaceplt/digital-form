@@ -6213,9 +6213,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     Format column: the Post column takes their room, a post named by its type
     and day says both, and a titled post carries them on a line under it.
   - Views by week colours each platform as its own (`PLAT_COLOR`, one
-    Pantone family of equal depth, never the platforms' fluorescent brand
-    colours: Facebook 7455 C, Instagram 7425 C, the two together 2945 C,
-    TikTok Black 6 C, rednote 186 C;
+    Pantone family of equal brightness, never the platforms' fluorescent
+    brand colours or a black (the user, 2026-11-10, set A): Facebook Marina,
+    Instagram Living Coral, the two together Very Peri, TikTok Ultimate
+    Gray, rednote True Red;
     a missing or repeated colour takes the next of `MORE_COLOR`); only the
     marks take colour. An account on platform Other is named by the account
     (the PDF names the platform otherwise, never the handle).

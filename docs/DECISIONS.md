@@ -9321,3 +9321,11 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   keeps an automatic email as Not sent in the Email log (never sent later)
   and queues no automatic WhatsApp. Sends a colleague presses are not held
   (the user: "automatic only").
+
+- **2026-11-10 · The report's platform colours are Pantone's brighter family.**
+  The user found the report's Views by week colours (7455 C blue, Black 6 C,
+  7425 C crimson) unattractive, then refused muted sets, a black for
+  TikTok and vivid ones in turn. Approved, set A: Facebook Marina,
+  Instagram Living Coral, TikTok Ultimate Gray; the rest from Pantone's
+  Colours of the Year to sit beside them (Very Peri for the two together,
+  True Red for rednote).
