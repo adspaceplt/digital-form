@@ -2298,6 +2298,14 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 11px; line-height: 1.4; color: var(--ink-mute);
   font-variant-numeric: tabular-nums; letter-spacing: 0;
 }
+/* Refresh app at work: a small ring before the build until the page reloads. */
+.appver.is-busy { cursor: progress; color: var(--ink-soft); }
+.appver.is-busy::before {
+  content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 6px; vertical-align: -1px;
+  border-radius: 50%; border: 1.5px solid currentColor; border-right-color: transparent;
+  animation: btnspin .7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) { .appver.is-busy::before { animation: none; border-right-color: currentColor; opacity: .6; } }
 @media (hover: hover) {
   button.appver:hover { color: var(--ink-soft); }
 }
@@ -5542,11 +5550,35 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .console.is-booting .sidebar-foot,
 .console.is-booting .console-head > * { visibility: hidden; }
 .console.is-booting .console-body { display: none; }
+/* A light sweeping across, so the shape reads as at work, never as greyed
+   out (the user, 2026-11-10: "it does stay there, gray out"). */
 .skel-row {
   height: 14px; margin: 14px 15px; border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, var(--line-soft) 0%, var(--sunk) 50%, var(--line-soft) 100%);
-  background-size: 200% 100%;
-  animation: skel 1.4s var(--ease) infinite;
+  background: linear-gradient(90deg, var(--line-soft) 0%, var(--line-soft) 30%, var(--card) 50%, var(--line-soft) 70%, var(--line-soft) 100%);
+  background-size: 250% 100%;
+  animation: skel 1.3s linear infinite;
+}
+/* Past the expected wait, one line under the shape (js/state.js). */
+.skel-slow { margin: 4px 15px 12px; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
+
+/* The loading line (js/api.js): 2px under the page's top bar while a
+   request has been out a moment, a segment of the soft ink sliding across
+   it; placed by the script on the bar it sits under. */
+.loadbar {
+  position: fixed; top: 0; left: 0; height: 2px; z-index: 96;
+  overflow: hidden; pointer-events: none; opacity: 0;
+  transition: opacity var(--t) var(--ease-out);
+}
+.loadbar.is-on { opacity: 1; }
+.loadbar > span {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 38%;
+  background: linear-gradient(90deg, transparent, var(--ink-soft) 40%, var(--ink-soft) 60%, transparent);
+  transform: translateX(-100%);
+}
+.loadbar.is-on > span { animation: loadslide 1.15s var(--ease) infinite; }
+@keyframes loadslide { from { transform: translateX(-100%); } to { transform: translateX(280%); } }
+@media (prefers-reduced-motion: reduce) {
+  .loadbar.is-on > span { animation: none; transform: none; width: 100%; background: var(--ink-mute); opacity: .5; }
 }
 .skel-row:nth-child(2n) { width: 62%; }
 .skel-row:nth-child(3n) { width: 78%; }

@@ -601,6 +601,7 @@
     $('topbar').hidden = inApp;
     $('publicShell').hidden = inApp;
     $('console').classList.toggle('is-booting', inApp && !meLoaded);
+    if (inApp && !meLoaded && window.ADspaceState && ADspaceState.stillLoading) ADspaceState.stillLoading(document.querySelector('#consoleBoot .skel'));
     $('console').hidden = !inApp;
     $('authPanel').hidden = inApp;
     $('acctWrap').hidden = !inApp;
@@ -2755,6 +2756,13 @@
      button, and this also takes an old copy off the phone (js/refresh.js)
      and keeps the sign-in. */
   if ($('appVersion')) $('appVersion').addEventListener('click', function () {
+    /* The press says it is at work until the page reloads (2026-11-10):
+       the line turns its ring and the loading line runs under the head. */
+    var b = $('appVersion');
+    if (b.classList.contains('is-busy')) return;
+    b.classList.add('is-busy');
+    b.setAttribute('aria-busy', 'true');
+    if (window.ADspaceAPI && ADspaceAPI.loading) ADspaceAPI.loading.begin();
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
   });
 

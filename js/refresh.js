@@ -154,6 +154,7 @@
         m.classList.add('is-busy');
         m.style.transform = 'translate(-50%, ' + LIMIT + 'px)';
         m.style.opacity = '1';
+        if (window.ADspaceAPI && window.ADspaceAPI.loading) window.ADspaceAPI.loading.begin();
         reload();
       } else hide();
       dist = 0; armed = false;
