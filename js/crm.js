@@ -2100,7 +2100,15 @@
     /* The dates are corrected at the record's own band at Work, as every
        write to it is (`client_scope_guard`); a View group reads them. */
     var pens = bandMay(c.stage || 'lead', 'work');
-    var trip = journeyOf(c).map(function (s) {
+    /* A stage between the first and the one running now can be removed
+       (the user, 2026-11-10: a client made Active for a few days to finish
+       last month's reports, then Paused again, counted as a resume in the
+       Dashboard and Analytics), at the band's Full Access: its row's ⋯
+       holds Edit date and Remove in place of the pen. */
+    var cuts = bandMay(c.stage || 'lead', 'manage');
+    var stages = journeyOf(c), lastI = stages.length ? stages[stages.length - 1].i : -1;
+    var trip = stages.map(function (s) {
+      var cut = pens && cuts && s.i > 0 && s.i < lastI;
       var span = s.days === 0 ? (s.now ? 'Today' : 'Same day') : spanWord(s.days);
       var over = s.now && isStale(c);
       return '<div class="tl-row tl-stage' + (s.now ? ' is-now' : '') + '">' +
@@ -2113,7 +2121,11 @@
             : '') + '</span>' +
         '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
           esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
-          (pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
+          (cut ? '<span class="team-act tl-act"><button class="tl-pen kmenu-btn" type="button" data-stage-menu="' + s.i + '" aria-label="More actions for ' + esc(s.word) + '" aria-expanded="false">' + DOTS + '</button>' +
+              '<div class="kmenu" hidden>' +
+              '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-stage-edit="' + s.i + '">Edit date</button>' +
+              '<button class="kmenu-item" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Remove</button></div></span>'
+            : pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
 
@@ -2194,7 +2206,7 @@
       msg('crmSinceMsg', 'Not saved. This record was changed by someone else. The latest version is now shown.', 'err');
     }).catch(function () { msg('crmSinceMsg', 'Not saved. This record was changed by someone else.', 'err'); });
   }
-  function saveDates(c, list, created, what) {
+  function saveDates(c, list, created, what, extra, then) {
     var days = list.map(function (x) { return dayOf(x.at); });
     for (var i = 1; i < days.length; i++) {
       if (days[i] < days[i - 1]) {
@@ -2202,7 +2214,7 @@
       }
     }
     if (days.concat([dayOf(created)]).some(function (d) { return d > today(); })) return 'A date cannot be in the future.';
-    var row = { stage_log: list, stage_since: list.length ? list[list.length - 1].at : c.stage_since, created_at: created };
+    var row = Object.assign({ stage_log: list, stage_since: list.length ? list[list.length - 1].at : c.stage_since, created_at: created }, extra || {});
     var send = function (again) {
     db.from('clients').update(row).eq('id', c.id).eq('updated_at', c.updated_at).select('id, updated_at').then(function (r) {
       if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
@@ -2211,8 +2223,9 @@
       c.stage_log = list; c.stage_since = row.stage_since; c.created_at = created;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) { mine.stage_log = list; mine.stage_since = row.stage_since; mine.created_at = created; }
+      if (extra) { Object.assign(c, extra); if (mine) Object.assign(mine, extra); }
       railDates(c);
-      msg('crmSinceMsg', 'Saved.', 'ok');
+      if (then) then(); else msg('crmSinceMsg', 'Saved.', 'ok');
       log('client.edited', c.name, what);
     });
     };
@@ -2267,7 +2280,84 @@
       });
     });
   }
+  /* A stage removed: the stages either side of it become one where they
+     are the same (Paused, Active, Paused reads Paused from the first day),
+     keeping the later one's reason, the latest said; the stage running now
+     and the first are never removed. Undo where it happened puts the
+     history back as it was. */
+  function removeStage(c, i, menuBtn) {
+    var was = logOf(c), list = logOf(c);
+    if (!(i > 0 && i < list.length - 1)) return;
+    var gone = list[i], word = stageWord(gone.stage)[1];
+    list.splice(i, 1);
+    var prev = list[i - 1], next = list[i];
+    if (prev && next && prev.stage === next.stage) {
+      var one = { stage: prev.stage, at: prev.at };
+      var why = next.reason ? next : prev;
+      if (why.reason) one.reason = why.reason;
+      if (why.note) one.note = why.note;
+      list.splice(i - 1, 2, one);
+    }
+    var tail = list[list.length - 1], extra = null;
+    if (tail.stage === c.stage && (tail.reason || null) !== (c.stage_reason || null)) {
+      extra = { stage_reason: tail.reason || null, stage_note: tail.note || null };
+    }
+    var host = $('crmTimeline');
+    var bad = saveDates(c, list, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' removed', extra, function () {
+      if (!host) return;
+      window.ADspaceAdmin.undoHere(word + ' from ' + niceDate(gone.at) + ' removed.', function () {
+        var back = null;
+        var last = was[was.length - 1];
+        if (last.stage === c.stage && (last.reason || null) !== (c.stage_reason || null)) {
+          back = { stage_reason: last.reason || null, stage_note: last.note || null };
+        }
+        var bad2 = saveDates(c, was, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' removal undone', back);
+        if (bad2) msg('crmSinceMsg', bad2, 'err');
+      }, host);
+    });
+    if (bad) { msg('crmSinceMsg', bad, 'err'); railDates(c); }
+    if (menuBtn) menuBtn.focus();
+  }
+  function editStage(c, i, pen, val) {
+    var log = logOf(c);
+    var word = stageWord(log[i].stage)[1];
+    ADspaceAsk.rename(val, pen, {
+      type: 'date',
+      value: dayOf(log[i].at),
+      label: word + ' date',
+      saveLabel: 'Save the ' + word + ' date',
+      save: function (day) {
+        var at = day + 'T00:00:00.000Z';
+        log[i].at = at;
+        var created = i === 0 ? at : c.created_at;
+        var bad = saveDates(c, log, created, word + ' from ' + niceDate(at));
+        if (bad) { msg('crmSinceMsg', bad, 'err'); railDates(c); }
+      }
+    });
+  }
   function wireStages(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTimeline [data-stage-menu]'), function (btn) {
+      var i = Number(btn.getAttribute('data-stage-menu'));
+      var menu = btn.parentNode.querySelector('.kmenu');
+      var val = document.querySelector('#crmTimeline [data-stage-val="' + i + '"]');
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        /* Editing its date, the ⋯ is the tick that saves it (js/ask.js). */
+        if (btn.classList.contains('is-saving')) return;
+        var open = menu.hidden;
+        document.querySelectorAll('#crmTimeline .kmenu').forEach(function (x) { x.hidden = true; });
+        menu.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(btn, menu);
+      });
+      menu.addEventListener('click', function (e) {
+        var t = e.target.closest && e.target.closest('.kmenu-item');
+        if (!t) return;
+        e.stopPropagation();
+        menu.hidden = true; btn.setAttribute('aria-expanded', 'false');
+        if (t.hasAttribute('data-stage-edit')) { if (val) editStage(c, i, btn, val); return; }
+        if (t.hasAttribute('data-stage-cut')) removeStage(c, i, btn);
+      });
+    });
     Array.prototype.forEach.call(document.querySelectorAll('#crmTimeline [data-stage-pen]'), function (pen) {
       var i = Number(pen.getAttribute('data-stage-pen'));
       var val = document.querySelector('#crmTimeline [data-stage-val="' + i + '"]');

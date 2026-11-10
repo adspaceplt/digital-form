@@ -2033,6 +2033,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The running stage carries `.tl-row.is-now` and the overdue mark.
   - Every stage date and Client since are edited in place
     (`ADspaceAsk.rename`, type date).
+  - A stage between the first and the one running now is removed from its
+    row's ⋯ (Edit date, Remove; the band's Full Access; the user,
+    2026-11-10: a client made Active for days to finish reports, then
+    Paused again, counted as a resume): the stages either side that match
+    become one from the earlier day, keeping the later reason, and the
+    stage clock and the client's reason follow; Undo where it happened puts
+    the history back; filed `client.edited` (Timeline: Active from … removed; removal undone).
     - Client since is the first stage's start, opened on its Malaysian day
       (`dayOf`).
     - A stage never begins before the one before it, and no date is in the

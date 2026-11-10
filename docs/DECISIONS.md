@@ -9273,3 +9273,15 @@ The user, asked whether the rate card should read Rate Card throughout, answered
   (`2026-11-10-template-test-email-removed.sql`, run after the page and the
   function stop asking for them). `tests/mailfn.js` holds that a request for
   a test sends nothing; `tests/settings.js` that the editor offers none.
+
+### 2026-11-10 — A stage entered by mistake or for a few days is removed from the Timeline
+- **Reported:** a client paused on 30 Oct was made Active to finish last
+  month's reports, then Paused again; the Timeline kept Paused, Active,
+  Paused, which the Dashboard and Analytics read as a resume and a second
+  pause.
+- **Changed:** a stage between the first and the current one has a ⋯ (Edit
+  date, Remove) at the band's Full Access. Remove takes the entry out and
+  joins matching neighbours into one stage from the earlier day, keeping the
+  later reason; Undo puts it back. Page-side: the timeline was already
+  written whole by the page (`clients_stage_clock` only appends on a real
+  move), so no migration.
