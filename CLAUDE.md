@@ -257,6 +257,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `sales.js` | sales, crm, then `ui` |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink, take, leave, waiting, myclock |
 | `js/clock.js` | myclock, then `all` (every script reads it) |
+| The content loop (`ops_link_post`, `ops_post_follow`, Add changes) | contentloop, reflink, sets, work, sql, then `ui` |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop, waiting, confirmpage, seenpage, seensql |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas, confirmpage |
 | `creator.js` | creator, cprofile, results, push |
@@ -4738,6 +4739,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     where one does;
   - a task still owing its draft, with a set named, opens the link form on
     Draft with the client's review link written in.
+- The content loop (`2026-11-10-content-loop.sql`; the user, 2026-11-10: one
+  task one post, no switch): the Record picker also offers the client's
+  posts (Content Review posts, `{set} · Post n`), linked by `ops_link_post`
+  (`ops_task_links.post_id` on a `set` link; one post a task, one task a
+  post: `has-post`, `post-taken`). A linked post moves its task by trigger
+  (`ops_post_follow`, from `posts`, `reviews`, `batches`): its file AQC
+  review, the set published Client review, the client's changes Revision
+  (Client), the next round Client review, approval Approved; forward along
+  the line or round the revision loop alone, from Ready to start through
+  Revision (Client) only (On hold, Blocked, Approved and after are a
+  person's; Scheduled stays manual), filed on the task and told to its
+  owner, never failing the write. An unlinked task is unchanged. A post's ⋯
+  Add changes (`review_record_changes`, a published set, no decision on
+  the round) keeps the client's WhatsApp words as the team's changes, Undo
+  where it happened (`review_revert_confirm`, any team decision); the set's
+  panel names each task's post (`tests/contentloop.js`).
 - Dates:
   - The first draft is the team's own (`ops_due_decider` null) and must fall
     before the final date by calendar day (`ops_due_order_ok`, checked inside
