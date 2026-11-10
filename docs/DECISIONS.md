@@ -9165,3 +9165,13 @@ re-run of the failed job reuses that deployment, named for the commit, and
 is cancelled at once (16 seconds). The next commit on main deploys the site
 whole, this one's changes included; a re-run of a timed-out deploy is not
 tried again.
+
+### 2026-11-10: Website quotations on WhatsApp limited again
+The user, answering the Settings review's held item 4: "limit work". Since a
+website quotation waits for the team (2026-10-29), every Quotation ready
+message is a colleague's press, and `quote_wa_day` counted website
+quotations made, which no longer sent anything: the figure limited nothing.
+It now counts the day's Quotation ready messages to website quotations, not
+failed, under one lock; Send quotation and a website quotation's Resend on
+WhatsApp are refused `wa-limit` at it, changing nothing, while Publish (no
+message) and a team's quotation are not held.
