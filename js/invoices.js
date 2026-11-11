@@ -523,7 +523,7 @@
     var t = rv.tpl || {}, ed = rv.edits[g.contact] || {}, n = g.lines.length;
     window.ADspaceConfirm.ask({
       title: 'Edit email', go: 'Done',
-      body: 'For ' + g.name + ' alone. {invoices} is where the table of invoices goes.',
+      body: 'Changes apply to ' + g.name + ' only. {invoices} marks where the table of invoices goes.',
       fields: [{ name: 'subject', label: 'Subject', value: ed.subject || (n === 1 ? t.subject_one : t.subject_many) || '' },
         { name: 'body', label: 'Message', rows: 12, value: ed.body || t.body || '' }],
       check: function (v) {

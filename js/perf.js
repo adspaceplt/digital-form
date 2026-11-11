@@ -470,7 +470,7 @@
     var t = window.ADspaceGroup.table('perf-row', ['Person', 'Status', 'Score', 'Grade', 'Reward', '']);
     if (!list.length) {
       var e = document.createElement('div');
-      e.className = 'emptyline'; e.innerHTML = '<b>Nobody.</b>';
+      e.className = 'emptyline'; e.innerHTML = '<b>No colleagues.</b>';
       t.appendChild(e);
       return t;
     }
@@ -809,8 +809,8 @@
       return '<section class="qcard qnext">' +
         '<h3 class="qnext-title">' + (ret ? 'Revert to draft' : 'Reopen') + '</h3>' +
         '<p class="qnext-line">' + esc(ret
-          ? (r.member.name || 'They') + ' stops seeing this month until it is shared again.'
-          : 'A new version is opened in draft with the same reference. The final version is kept on the record.') + '</p>' +
+          ? (r.member.name || 'They') + ' will no longer see this month until it is shared again.'
+          : 'A new version will be opened in draft with the same reference. The final version is kept.') + '</p>' +
         '<form class="qform" id="pvReasonForm" autocomplete="off">' +
           '<label class="field-label" for="pvReason">Reason</label>' +
           '<textarea class="input" id="pvReason" rows="2" maxlength="500"></textarea>' +
@@ -1063,10 +1063,10 @@
     var less = function (k) { return pts[k] == null ? '' : ' (−' + num(pts[k]) + ')'; };
     return '<form class="qform" id="pvBreachForm" autocomplete="off">' +
       '<div class="row"><div><label class="field-label" for="pvBDate">Date</label><input class="input" id="pvBDate" type="date" value="' + iso + '" min="' + r.period + '" max="' + iso + '"></div>' +
-      '<div><label class="field-label" for="pvBSev">Severity</label><select class="select" id="pvBSev">' +
+      '<div><label class="field-label" for="pvBSev">Level</label><select class="select" id="pvBSev">' +
         Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + less(k)) + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
-      '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
+      '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Automatic</option><option value="yes">Yes' + less('repeat') + '</option><option value="no">No</option></select></div></div>' +
       '<label class="field-label" for="pvBClient">Client</label><select class="select" id="pvBClient"><option value="">None</option>' +
         (issueClients || []).map(function (c) {
           var F = window.ADspaceForm, A = window.ADspaceAdmin;
@@ -1145,7 +1145,7 @@
         '<select class="select" id="pvDec_' + d.id + '" data-f="decision"><option value="">Choose</option>' +
         '<option value="upheld">Agreed</option><option value="partly">Partly agreed</option><option value="not_upheld">Not agreed</option></select></div>' +
       (d.item === 'breach'
-        ? '<div data-show="partly" hidden><label class="field-label" for="pvVal_' + d.id + '">Lower it to</label><select class="select" id="pvVal_' + d.id + '" data-f="value">' +
+        ? '<div data-show="partly" hidden><label class="field-label" for="pvVal_' + d.id + '">New level</label><select class="select" id="pvVal_' + d.id + '" data-f="value">' +
             [1, 2, 3].filter(function (k) { return !sev || k < sev; }).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k]) + '</option>'; }).join('') + '</select></div>'
         : '<div data-show="change" hidden><label class="field-label" for="pvVal_' + d.id + '">New score, out of ' + max + '</label>' +
             '<input class="input perf-num" id="pvVal_' + d.id + '" data-f="value" type="number" inputmode="decimal" min="0" max="' + max + '" step="0.1" value="' + (cur == null ? '' : esc(cur)) + '"></div>') +
@@ -1157,11 +1157,11 @@
     var opts = CATS.map(function (c) { return { key: c[0], label: c[1], breach: null }; })
       .concat((r.breaches || []).map(function (b) { return { key: 'breach', label: 'Issue: ' + b.what, breach: b.id }; }));
     return '<form class="qform" id="pvDisputeForm" autocomplete="off">' +
-      '<p class="perf-quiet">Tick what you would like looked at again and say why. One query a month, until ' + esc(timeWord(r.dispute_until)) + '.</p>' +
+      '<p class="perf-quiet">Tick each item to be reviewed again and give a reason. One query per month, until ' + esc(timeWord(r.dispute_until)) + '.</p>' +
       opts.map(function (o, i) {
         return '<div class="perf-dpick"><label class="tickline"><input type="checkbox" data-i="' + i + '" data-item="' + o.key + '"' +
           (o.breach ? ' data-breach="' + esc(o.breach) + '"' : '') + '> <span>' + esc(o.label) + '</span></label>' +
-          '<textarea class="input" rows="2" maxlength="1000" data-why="' + i + '" aria-label="Why, ' + esc(o.label) + '" hidden></textarea></div>';
+          '<textarea class="input" rows="2" maxlength="1000" data-why="' + i + '" aria-label="Reason, ' + esc(o.label) + '" hidden></textarea></div>';
       }).join('') +
       '<div class="qform-acts"><button class="btn btn-sm btn-go" type="submit">Send query</button>' +
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
@@ -1299,8 +1299,8 @@
       save(function (d) {
         if (!d.result || !d.result.complete) { paintSheet(); msg('pvMsg', said({ error: 'incomplete' }), 'err'); return; }
         call('perf_release', { p_token: token, p_review: d.id, p_rev: d.rev, p_notify: tell }, function (x) {
-          var who = (x.member && x.member.name) || 'They';
-          if (after(x, tell ? 'Shared. ' + who + ' has been told.' : 'Shared. ' + who + ' was not notified.')) sheetDirty = true;
+          var who = (x.member && x.member.name) || 'The colleague';
+          if (after(x, tell ? 'Shared. ' + who + ' has been notified.' : 'Shared. ' + who + ' was not notified.')) sheetDirty = true;
         });
       });
     });
@@ -1375,7 +1375,7 @@
         call('perf_breach_log', { p_token: token, p_member: r.team_member_id, p_payload: pay }, function (d) {
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
           st.editing = null; sheetDirty = true;
-          reread(function () { msg('pvMsg', 'Added. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + (d.vic ? ', a VIC client\'s' : '') + '.', 'ok'); });
+          reread(function () { msg('pvMsg', 'Added. ' + num(d.deduction) + ' this month' + (d.repeated ? ', as a repeat' : '') + (d.vic ? ', on a VIC client\'s work' : '') + '.', 'ok'); });
         });
       };
       /* A breach against a month nobody has started starts it, so the
@@ -2293,7 +2293,7 @@
       shut: G.shut('team-perf', 'flex', true),
       table: function () {
         var t = G.table('rw-row rwf-row', ['Person', 'Score', 'Grade', 'Flexible hours']);
-        if (!f.people.length) { var e = document.createElement('div'); e.className = 'emptyline'; e.innerHTML = '<b>Nobody.</b>'; t.appendChild(e); return t; }
+        if (!f.people.length) { var e = document.createElement('div'); e.className = 'emptyline'; e.innerHTML = '<b>No colleagues.</b>'; t.appendChild(e); return t; }
         G.more(t, f.people, 30, '', function (p) {
           if (p.own) return youRow('rwf-row', p, 3);
           var has = p.final != null;
@@ -2829,7 +2829,7 @@
     call('perf_settings_set', { p_token: token, p_from: rwSet.from, p_values: vals }, function (d) {
       b.disabled = false;
       if (d.error) {
-        msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or pick a later quarter.'
+        msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or choose a later quarter.'
           : d.error === 'bad-value' && RW_LABEL[d.key] ? setName(d.key) + ' is out of range.'
           : d.error === 'bad-order' ? 'Set each grade above the next: A above B, B above C, C above D, and D above 0.' : rwSaid(d), 'err');
         return;
@@ -3457,7 +3457,7 @@
     };
     if (!on) { go(); return; }
     window.ADspaceConfirm.ask({
-      title: 'Share your reflection',
+      title: 'Share your reflection?',
       body: 'Management reads it beside your ' + st.refl.month + ' review. It is never scored.',
       go: 'Share'
     }, go);

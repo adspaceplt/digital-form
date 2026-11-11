@@ -174,7 +174,7 @@
 
   <section class="panel" id="notConfigured" hidden>
     <h3>Not connected</h3>
-    <p class="hint">Supabase keys are not set in <code>js/config.js</code>. See <code>docs/CONTENT-REVIEW-SETUP.md</code>.</p>
+    <p class="hint">The portal is not set up yet. Please contact an admin.</p>
   </section>
 
   <section class="signin" id="authPanel" hidden>
@@ -1063,7 +1063,7 @@
                     <input class="input" id="crmCompanyNo" aria-required="true" placeholder="202201012345"></div>
                   <div><label class="field-label" for="crmCompanyNoOld">Old Registration No.</label>
                     <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
-                  <div><label class="field-label" for="crmTin">TIN</label>
+                  <div><label class="field-label" for="crmTin">Tax Identification Number (TIN)</label>
                     <input class="input" id="crmTin" placeholder="C 1234567890"></div>
                   <div><label class="field-label" for="crmSstNo">SST Registration No.</label>
                     <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
@@ -1440,7 +1440,7 @@
         <div class="sheet" id="voidSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="voidTitle">
             <div class="sheet-head">
-              <h3 id="voidTitle">Void letter</h3>
+              <h3 id="voidTitle">Void</h3>
               <button class="iconbtn" id="voidClose" type="button" aria-label="Close">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
               </button>
@@ -1584,7 +1584,7 @@
                   <div class="span-all"><label class="field-label" for="qsgPLegal">Registered Company Name</label><textarea class="input" id="qsgPLegal" data-oneline rows="1" maxlength="160" aria-required="true" placeholder="COMPANY NAME SDN BHD"></textarea></div>
                   <div><label class="field-label" for="qsgPNo">Business Registration No.</label><input class="input" id="qsgPNo" maxlength="20" autocapitalize="characters" spellcheck="false" aria-required="true"></div>
                   <div><label class="field-label" for="qsgPNoOld">Old Registration No.</label><input class="input" id="qsgPNoOld" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
-                  <div><label class="field-label" for="qsgPTin">TIN</label><input class="input" id="qsgPTin" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
+                  <div><label class="field-label" for="qsgPTin">Tax Identification Number (TIN)</label><input class="input" id="qsgPTin" maxlength="20" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
                   <div><label class="field-label" for="qsgPSst">SST Registration No.</label><input class="input" id="qsgPSst" maxlength="25" autocapitalize="characters" spellcheck="false" placeholder="Optional"></div>
                   <div class="span-all"><label class="field-label" for="qsgPAddress">Billing address</label><textarea class="input" id="qsgPAddress" rows="3" maxlength="400" aria-required="true"></textarea></div>
                   <div class="span-all"><label class="field-label" for="qsgPFinance">Finance email</label><input class="input" id="qsgPFinance" type="email" maxlength="160" placeholder="Optional"></div>
@@ -2776,7 +2776,7 @@
             <div class="tickstack">
               <label class="tickline"><input type="checkbox" id="dupDesc" checked> <span>Keep the description</span></label>
               <label class="tickline"><input type="checkbox" id="dupDates"> <span>Copy the dates</span></label>
-              <label class="tickline"><input type="checkbox" id="dupPeople"> <span>Copy the owner and contributors</span></label>
+              <label class="tickline"><input type="checkbox" id="dupPeople"> <span>Copy the people assigned</span></label>
             </div>
             <div class="row fgrid" id="dupCodeRow">
               <div class="field">
@@ -3264,7 +3264,7 @@
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="qkCheck">Checklist</label>
-                  <textarea class="input" id="qkCheck" rows="3" placeholder="One item a line" data-some="Checklist"></textarea>
+                  <textarea class="input" id="qkCheck" rows="3" placeholder="One item per line" data-some="Checklist"></textarea>
                 </div>
               </div>
             </details>
@@ -3609,7 +3609,7 @@
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="teCheck">Items</label>
-                  <textarea class="input textarea" id="teCheck" rows="4" placeholder="One item a line"></textarea>
+                  <textarea class="input textarea" id="teCheck" rows="4" placeholder="One item per line"></textarea>
                 </div>
               </div>
             </section>
@@ -5459,7 +5459,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-          <input class="input input-sm" id="linkSearch" type="search" placeholder="Search slug, destination or label" aria-label="Search links">
+          <input class="input input-sm" id="linkSearch" type="search" placeholder="Search short link, destination or label" aria-label="Search links">
         </span>
         <span class="cmdbar-end">
           <span class="cmdbar-quiet">
@@ -5767,7 +5767,7 @@ raya-2026        https://example.com/raya"></textarea>
           <span class="pboxes">
             <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangEn" checked disabled> English</label></span>
             <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangZh"> Chinese</label></span>
-            <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangMs"> Malay</label></span>
+            <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangMs"> Bahasa Melayu</label></span>
           </span></div>
       </div>
       <!-- An agreement's clauses are the type's wording: folded, read on
@@ -6051,7 +6051,7 @@ raya-2026        https://example.com/raya"></textarea>
       <section class="fsec">
         <h4 class="fsec-h">Tax and contact</h4>
         <div class="row fgrid">
-          <div id="supEdTinWrap"><label class="field-label" for="supEdTin">TIN</label>
+          <div id="supEdTinWrap"><label class="field-label" for="supEdTin">Tax Identification Number (TIN)</label>
             <input class="input" id="supEdTin" aria-required="true" autocapitalize="characters"></div>
           <div id="supEdSstWrap"><label class="field-label" for="supEdSst">SST Registration No.</label>
             <input class="input" id="supEdSst" autocapitalize="characters" placeholder="Optional"></div>
@@ -6273,7 +6273,7 @@ raya-2026        https://example.com/raya"></textarea>
 <div class="sheet" id="rvoidSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rvoidTitle">
     <div class="sheet-head">
-      <h3 id="rvoidTitle">Void document</h3>
+      <h3 id="rvoidTitle">Void</h3>
       <button class="iconbtn" id="rvoidClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>

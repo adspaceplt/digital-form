@@ -844,7 +844,7 @@
           var e = emojiImage(s);
           flush();
           atoms.push({ runs: [{ f: 'emoji', s: s, entry: e, ok: e.ok, ratio: e.ratio }], space: false, brk: true });
-          if (!e.ok && warn) warn('An emoji could not be displayed: ' + s);
+          if (!e.ok && warn) warn('An emoji could not be displayed: ' + s + '.');
           continue;
         }
         if (f === fonts.cjk && isCjkCp(cp)) {
@@ -945,15 +945,15 @@
   // ---- Rendering ---------------------------------------------------------------
   function render(snap, opts) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
+    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
     return D.lib().then(function () { return drawReport(snap, opts); });
   }
   function drawReport(snap, opts) {
     opts = opts || {};
     var PDF = window.PDFLib;
     var DOCS = window.ADspaceDocs;
-    if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
-    if (!DOCS) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
+    if (!PDF) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
+    if (!DOCS) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
     /* The report's template is always English (the user, 2026-10-01: Meta's
@@ -975,7 +975,7 @@
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       if (needsCjk && !fonts.cjk) {
-        throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Check fontCjk in js/config.js.');
+        throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Please contact an admin.');
       }
       sh = Shaper(PDF, pdf, fonts, warn);
       /* Every fixed English string reaches the page through here, so a

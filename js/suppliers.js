@@ -493,7 +493,7 @@
     /* Close link (2026-10-18): the link stops opening and no new one is
        made; Create link makes one again. */
     on('close', function () {
-      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent stops opening. A new link can be made later.', go: 'Close link', tone: 'warn', wait: true },
+      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent will stop working. A new link can be created later.', go: 'Close link', tone: 'warn', wait: true },
         function () {
           return rpc('supplier_link_close', { p_id: state.open }).then(function (r) {
             var d = r.data || {};

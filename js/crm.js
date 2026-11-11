@@ -3756,7 +3756,7 @@
     if (a === 'close') {
       box.querySelector('[data-df-menu]').hidden = true;
       var cid = state.client.id;
-      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent stops opening. A new link can be made later.', go: 'Close link', tone: 'warn', wait: true },
+      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent will stop working. A new link can be created later.', go: 'Close link', tone: 'warn', wait: true },
         function () {
           return db.rpc('client_details_close', { p_client: cid }).then(function (r) {
             var d = r.data || {};

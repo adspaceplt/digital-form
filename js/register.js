@@ -1589,7 +1589,7 @@
       title: 'Delete',
       body: 'Deleting ' + d.serial + ' removes the document. ' +
         (d.source === 'portal' ? 'The PDF is generated on Download and is not stored, so it cannot be recovered. ' : '') +
-        'The reference will not be used again. This cannot be undone.',
+        'This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [
         { name: 'serial', label: 'Type the reference to confirm', placeholder: d.serial, match: d.serial,

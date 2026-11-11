@@ -491,7 +491,7 @@
           { name: 'notes', label: 'Notes for the checklist', rows: 3, required: false, placeholder: 'Optional', value: was.notes || '' }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
-          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Monthly ad budget: a figure above 0.' : '';
+          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
         }
       }, function (v) {
         var inputs = { budget: String(v.budget == null ? '' : v.budget).trim(), objective: v.objective || '', destination: v.destination || '',
