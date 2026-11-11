@@ -387,7 +387,7 @@
           '<label class="tickline bk-cand"><input type="radio" name="bkPick" value=""' + (list.length ? '' : ' checked') + '> ' +
           '<span><b>New contact</b><span class="muted"> · ' + esc(d.next_code || '') + '</span></span></label>');
         /* Linked only, a creator is never made in Bukku from here. */
-        if (me.only && !list.length) say('No Bukku contact holds this creator\'s name or a bill for their earlier job IDs. Add an earlier job ID, or approve their payment details.', 'warn');
+        if (me.only && !list.length) say('No Bukku contact matches this creator\'s name or a bill for their earlier job IDs. Add an earlier job ID, or approve their payment details.', 'warn');
       }
       preview();
     });

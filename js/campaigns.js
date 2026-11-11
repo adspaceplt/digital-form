@@ -877,16 +877,17 @@
     '[SG] Maybank', '[SG] Bank of China'];
   var PAY_HOW = [['MYR|bank', 'Bank transfer (MYR)'], ['MYR|duitnow', 'DuitNow (MYR)'], ['MYR|tng', 'Touch \u2019n Go eWallet (MYR)'],
     ['SGD|bank', 'Bank transfer (SGD)'], ['SGD|paynow', 'PayNow (SGD)']];
-  var PAY_FIELD = { bill_kind: 'Billing as', id_no: 'the ID number', legal_name: 'the legal name', tin: 'the TIN', address: 'the billing address',
-    currency: 'the payment method', method: 'the payment method', bank: 'the bank', account: 'the account number', payee: 'the account holder',
-    email: 'the email address', whatsapp: 'the WhatsApp number' };
+  var PAY_FIELD = { bill_kind: 'Choose how the creator is billed.', id_no: 'Enter a valid ID number.', legal_name: 'Enter the legal name.',
+    tin: 'Enter a valid TIN.', address: 'Enter the billing address.', currency: 'Choose a payment method.', method: 'Choose a payment method.',
+    bank: 'Choose the bank for this currency.', account: 'Enter a valid account number.', payee: 'Enter the account holder.',
+    email: 'Enter a valid email address.', whatsapp: 'Enter a valid WhatsApp number.' };
   function addPayDetails(btn, held) {
     var c = payFor;
     if (!c) return;
     var h = held || {};
-    var blank = held ? 'Leave blank to keep ending ' : '';
-    window.ADspaceConfirm.ask({ title: held ? 'Edit payment details' : 'Add payment details', go: 'Save and approve', wait: true, opener: btn,
-      body: 'Saved as approved and marked as added by you. No email goes to the creator.',
+    var blank = held ? 'Leave blank to keep the number ending ' : '';
+    window.ADspaceConfirm.ask({ title: held ? 'Edit details' : 'Add details', go: 'Save and approve', wait: true, opener: btn,
+      body: 'These details will be approved and shown as added by you. The creator will not be emailed.',
       fields: [
         { name: 'bill_kind', label: 'Billing as', choices: [['nric', 'Individual (NRIC)'], ['passport', 'Individual (Passport)'], ['brn', 'Company']], value: h.bill_kind || 'nric' },
         { name: 'id_no', label: 'NRIC, Passport or Business Registration No.', value: h.id_no || '', required: !held, note: held && !h.id_no ? blank + h.id_end + '.' : '' },
@@ -905,7 +906,7 @@
       return db.rpc('creator_pay_add', { p_creator: c.id, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error) return /could not find|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
-        if (d.error === 'bad') return 'Check ' + (PAY_FIELD[d.field] || d.field) + '.';
+        if (d.error === 'bad') return PAY_FIELD[d.field] || 'Check the details entered.';
         if (d.error) return d.error === 'denied' ? 'You do not have permission to add payment details. Please ask an admin.' : PAY_SAID[d.error] || d.error;
         readPayDetails();
         if (window.ADspaceCreators && window.ADspaceCreators.reloadStates) window.ADspaceCreators.reloadStates();
