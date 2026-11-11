@@ -9634,3 +9634,15 @@ worded for a client or a colleague as the template is; a send that fails
 answers `invite_failed`, never success. The pages read `sent`, so each
 message says what happened. `invitefn` holds both wordings, the link and
 that nothing is emailed when no invitation was asked.
+
+### 2026-11-11 · Copy review of the two invitation emails
+Read the Invite user template's client welcome and colleague access (#1024)
+and the copy `invite-member` sends itself to an address with a login (#1025).
+Four fixed: a client contact was greeted by bare name (Dear Jane Doe) where
+every client letter greets with the salutation (Dear Ms Jane Doe), and a
+contact with no name read "Dear ,": `invite-member` now sends `greeting`
+(salutation and whole name said once, a colleague's whole name, else Sir or
+Madam); the client version's tab title read the colleague's; "meetings with
+ADspace" repeated the name the sentence before gave; "Thereafter" hung off a
+button sentence, now "After this first visit". The dashboard template is
+pasted again by hand.
