@@ -117,48 +117,48 @@
 
   /* What the database said, in the team's words. */
   var SAID = {
-    'title': 'Name the initiative in three letters or more.',
+    'title': 'Enter a title of at least 3 characters.',
     'title-long': 'Keep the initiative to 140 characters.',
     'improves': 'Choose what it improves.',
-    'link': 'A link starts with https://.',
+    'link': 'Enter a link that starts with https://.',
     'decided': 'It has been decided. Ask for it to be moved back to Proposed first.',
-    'bad-month': 'Only this month and last month can be written.',
+    'bad-month': 'Choose this month or last month.',
     'final': 'That month is final.',
     'empty': 'Write at least one line first.',
     'too-long': 'Keep each line to 1,000 characters.',
-    'own': 'Nobody decides on their own.',
+    'own': 'You cannot decide on your own initiative. Please ask another manager.',
     'bad-move': 'That step is not open from here.',
     'no-code': 'No master code is set. Please ask an admin to set one.',
     'code-needed': 'Locked. Enter the master code again.',
-    'denied': 'Your group cannot open performance reviews.',
+    'denied': 'You do not have permission to open performance reviews. Please ask an admin.',
     'not-team': 'Only a team member can open this.',
-    'own-review': 'Your own review is not yours to change.',
+    'own-review': 'You cannot change your own review. Please ask another manager.',
     'not-draft': 'A shared month keeps its scores. Revert it to draft to change them.',
     'incomplete': 'Score all six categories first.',
     'no-staff-code': 'Set their Employee ID on the Team page first. The reference is built from it.',
-    'stale': 'Somebody else changed this review. It has been reloaded.',
-    'bad-score': 'A score is outside its range.',
-    'bad-rate': 'A rate is outside its range.',
-    'bad-date': 'That date is not valid.',
-    'bad-eval-date': 'The date of evaluation falls on or after the first day of the month reviewed, and not after today.',
-    'bad-payload': 'That could not be saved.',
-    'bad-category': 'Pick a category.',
-    'bad-client': 'Pick a client from the list.',
+    'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
+    'bad-score': 'Enter each score within its range.',
+    'bad-rate': 'Enter each rate within its range.',
+    'bad-date': 'Enter a valid date.',
+    'bad-eval-date': 'Choose a date of evaluation from the first day of the month reviewed up to today.',
+    'bad-payload': 'Not saved. Please try again.',
+    'bad-category': 'Choose a category.',
+    'bad-client': 'Choose a client from the list.',
     'bad-severity': 'Choose a lower level than the issue has now.',
     'what-needed': 'Enter a description.',
-    'reason-needed': 'A reason is needed.',
+    'reason-needed': 'Enter a reason.',
     'cannot-return': 'Only a shared month with no query can go back to draft.',
     'open-dispute': 'Answer the query first.',
     'not-released': 'Share it first.',
     'already-decided': 'Already answered.',
-    'bad-decision': 'Pick a decision.',
+    'bad-decision': 'Choose a decision.',
     'dispute-closed': 'This month can no longer be queried.',
     'window-closed': 'The time to raise a query has passed.',
     'nothing-disputed': 'Tick at least one item.',
     'bad-item': 'That item cannot be queried.',
     'not-final': 'Only a final record can be reopened.',
     'confirm-mismatch': 'The name and month typed do not match.',
-    'admin-only': 'Only an admin can do this.',
+    'admin-only': 'Only an admin can do this. Please ask an admin.',
     'shared': 'That month has been shared, so it can no longer be rated.',
     'not-reviewed': 'That month is not open to rate.',
     'not-found': 'Not found.'
@@ -174,7 +174,7 @@
     if (d.error === 'month-released') return (d.month || 'That month') + ' is shared. Revert it to draft to change its issues.';
     if (d.error === 'wrong-code') return 'Incorrect code. ' + d.left + (d.left === 1 ? ' attempt' : ' attempts') + ' left.';
     if (d.error === 'locked') return 'Too many incorrect attempts. Please try again after ' + timeWord(d.until) + '.';
-    if (d.error === 'bad-score' && d.max) return 'A score is 0 to ' + d.max + ', in steps of 0.1.';
+    if (d.error === 'bad-score' && d.max) return 'Enter a score from 0 to ' + d.max + ', in steps of 0.1.';
     return SAID[d.error] || d.error;
   }
 
@@ -540,7 +540,7 @@
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'who', label: 'Type ' + typed + ' to confirm', match: typed, mismatch: 'Type ' + typed + ' to confirm.' },
-        { name: 'why', label: 'Reason', need: 'A reason is required.' }
+        { name: 'why', label: 'Reason', need: 'Enter a reason.' }
       ]
     }, function (v) {
       call('perf_delete', { p_token: token, p_review: rec.id, p_confirm: v.who, p_reason: v.why }, function (d) {
@@ -1743,7 +1743,7 @@
       if (btn) msg('pvMsg', 'The file could not be generated: ' + ((e && e.message) || e), 'err');
       if (then) then(false);
     };
-    if (!PDF || !D) { fail(new Error('PDF library not loaded')); return; }
+    if (!PDF || !D) { fail(new Error('the PDF library did not load')); return; }
     if (btn) btn.disabled = true;
     /* The download is filed before anything is drawn, and the file prints
        the filing: the server's time and who took it, so a copy found later
@@ -2089,16 +2089,16 @@
     'dept-scores-needed': 'Enter every department’s scores first.',
     'confirmed': 'Confirmed. Reopen it to change it.',
     'not-confirmed': 'Not confirmed.',
-    'admin-only': 'Only an admin can do this.',
+    'admin-only': 'Only an admin can do this. Please ask an admin.',
 
     'bad-amount': 'Enter each amount in RM, to the cent.',
-    'bad-pct': 'The rate is above 0 and at most 100, to two decimals.',
-    'bad-month': 'Pick a month from June 2026 to this month.',
-    'bad-member': 'Pick a team member.',
-    'bad-client': 'Pick a client.',
+    'bad-pct': 'Enter a rate above 0 and up to 100, to two decimals.',
+    'bad-month': 'Choose a month from June 2026 to this month.',
+    'bad-member': 'Choose a team member.',
+    'bad-client': 'Choose a client.',
     'description-needed': 'Describe the deal.',
-    'bad-department': 'Pick a department.',
-    'own-department': 'Your own department’s scores are entered by somebody outside it.',
+    'bad-department': 'Choose a department.',
+    'own-department': 'Your own department’s scores must be entered by someone outside it. Please ask another manager.',
     'figures-needed': 'Enter the company figures first.'
   };
   /* The quarter waits on reviews, one a person a month (6 people over July
@@ -2171,7 +2171,7 @@
     var el = document.createElement('div');
     el.className = 'crm-row rw-row ' + cls + ' is-own';
     el.innerHTML = (lead ? Array(lead + 1).join('<span class="rw-c">' + dash() + '</span>') : '') +
-      whoCell(p, 'Your own is in My records') +
+      whoCell(p, 'Your own rewards are in My records.') +
       Array(cells).join('x').split('x').map(function () { return '<span class="rw-c">' + dash() + '</span>'; }).join('') +
       '<span class="rw-sum"></span>';
     var cs = el.querySelectorAll('.rw-c'), last = cs[cs.length - 1];
@@ -2512,7 +2512,7 @@
       if (v === '' || isNaN(Number(v)) || Number(v) < 0 || Number(v) > c[1]) { bad = bad || el; return; }
       vals.push(Number(v));
     });
-    if (bad) { msg('rwDMsg', 'Each criterion is 0 to its maximum.', 'err'); bad.focus(); return; }
+    if (bad) { msg('rwDMsg', 'Enter each criterion from 0 to its maximum.', 'err'); bad.focus(); return; }
     var b = this; b.disabled = true;
     call('perf_dept_save', { p_token: token, p_quarter: st.q, p_department: dep,
                              p_payload: { criteria: vals, critical: $('rwDCrit').checked } }, function (d) {
@@ -2671,9 +2671,9 @@
       ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
       ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
     /* An issue on a VIC client's work (2026-10-15): its points times this. */
-    ['VIC clients', [['ded_vic', 'Points on an issue on a VIC client\'s work, times', 'times', 'Points times, VIC client']], '', 'months'],
+    ['VIC clients', [['ded_vic', 'Multiplier for an issue on a VIC client\'s work', 'times', 'VIC client multiplier']], '', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
-    ['Reminders (0 for none)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
+    ['Reminders (0 turns this off)', [['remind_before_days', 'Days before a month or half month ends', 'remind', 'Reminder, days before the end'],
       ['remind_again_days', 'Days after the 1st to remind again', 'remind', 'Second reminder, days after the 1st']], 'fgrid', 'months'],
     ['Quarterly prizes', [['prize_individual', 'Top scorer of the quarter (RM)', 'money', 'Top scorer prize'],
       ['prize_department', 'Top department (RM)', 'money', 'Top department prize'],
@@ -2831,7 +2831,7 @@
       if (d.error) {
         msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or pick a later quarter.'
           : d.error === 'bad-value' && RW_LABEL[d.key] ? setName(d.key) + ' is out of range.'
-          : d.error === 'bad-order' ? 'Each grade starts above the next: A above B above C above D, D above 0.' : rwSaid(d), 'err');
+          : d.error === 'bad-order' ? 'Set each grade above the next: A above B, B above C, C above D, and D above 0.' : rwSaid(d), 'err');
         return;
       }
       rwSet.data = d;

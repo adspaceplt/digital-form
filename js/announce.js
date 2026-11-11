@@ -196,12 +196,12 @@
   }
   var SAID = {
     denied: 'You do not have permission to manage announcements. Please ask an admin.',
-    'bad-text': 'Enter the announcement, 300 characters at most.',
-    'bad-link': 'The link starts with https://.',
+    'bad-text': 'Enter an announcement of up to 300 characters.',
+    'bad-link': 'Enter a web address starting with https://.',
     'bad-window': 'Choose an end after the start, and later than now.',
     'bad-tone': 'Choose Info or Important.',
-    over: 'Its end has passed. Post it again with a new end.',
-    live: 'Stop it first.',
+    over: 'Its end has passed. Choose a new end, then post it again.',
+    live: 'Stop this announcement before deleting it.',
     'not-found': 'This announcement no longer exists.'
   };
   function said(e) {
@@ -299,7 +299,7 @@
           });
           on('edit', function (b) { edit(aud, a, b); });
           on('stop', function () {
-            window.ADspaceConfirm.ask({ title: 'Stop this announcement?', body: 'It leaves every ' + (aud === 'team' ? 'console' : 'client page') + ' at once.', go: 'Stop', tone: 'warn' },
+            window.ADspaceConfirm.ask({ title: 'Stop this announcement?', body: 'It will be removed from every ' + (aud === 'team' ? 'console' : 'client page') + ' at once.', go: 'Stop', tone: 'warn' },
               function () { end(a, false); });
           });
           on('restore', function () { end(a, true); });

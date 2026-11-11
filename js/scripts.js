@@ -138,13 +138,13 @@
     'not-found': 'This script is no longer available.',
     'bad-kind': 'Choose the script type.',
     'bad-period': 'Choose the content month.',
-    'bad-title': 'A title is 200 characters at most.',
-    'bad-link': 'A reference link starts with https://.',
+    'bad-title': 'Enter a title of up to 200 characters.',
+    'bad-link': 'Enter a reference link that starts with https://.',
     'bad-duration': 'Choose a duration between 5 minutes and 24 hours.',
     'bad-date': 'Choose a date from 14 Aug 2023.',
-    'too-long': 'A field is too long to save.',
+    'too-long': 'A field is too long. Shorten it, then save again.',
     'too-many': 'A month can have up to 99 scripts, and a script up to 60 scenes.',
-    'bad-scenes': 'The scenes could not be read.',
+    'bad-scenes': 'The scenes could not be saved. Please try again.',
     'bad-time': 'Enter each scene\'s time in whole seconds from 0 to 600, the end after the start.',
     'bad-aspect': 'Choose the aspect ratio.',
     'bad-length': 'Choose the video length.',
@@ -492,7 +492,7 @@
     var issues = Array.isArray(rv.issues) ? rv.issues : [];
     var first = rv.first && Array.isArray(rv.first.issues) ? rv.first.issues : [];
     var qs = Array.isArray(rv.questions) ? rv.questions.filter(Boolean) : [];
-    var notes = ['', stale ? 'The script changed after this review.' : ''].filter(Boolean).join(' ');
+    var notes = ['', stale ? 'The script has changed since this review.' : ''].filter(Boolean).join(' ');
     var out = '<div class="vs-rvhead"><h4 class="fsec-h">AI review</h4>' +
       '<span class="chip chip-state ' + (pass ? 'is-ok' : 'is-warn') + '">' + (pass ? 'Passed' : 'Check needed') + '</span></div>';
     if (notes) out += '<p class="vs-rvnote">' + esc(notes) + '</p>';
@@ -952,7 +952,7 @@
       choices.push(['all', 'All scenes (' + st.scenes.length + ')']);
       window.ADspaceConfirm.ask({
         title: 'Draw with AI',
-        body: 'A storyboard picture is drawn for each scene from its shot. ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
+        body: 'A storyboard picture will be drawn for each scene from its shot. ' + left.left + (left.left === 1 ? ' picture' : ' pictures') + ' left today.',
         go: 'Draw',
         /* Under a finger the card takes focus, so the keyboard never rises over
            the choice of scenes (2026-11-07). */
@@ -1354,12 +1354,12 @@
       }).catch(function (e) { if (btn) btn.disabled = false; say(m, said(e)); });
     };
     if (on || quiet) { go(); return; }
-    window.ADspaceConfirm.ask({ title: 'Unpublish?', body: 'The client no longer sees this script on their link. Its clip numbers are kept.',
+    window.ADspaceConfirm.ask({ title: 'Unpublish?', body: 'The client will no longer see this script on their link. Its clip numbers are kept.',
       go: 'Unpublish', tone: 'warn' }, go);
   }
   function resetLink() {
-    window.ADspaceConfirm.ask({ title: 'Reset the script link',
-      body: 'The current link for ' + (((st.open || {}).clients || {}).name || 'this client') + ' stops working immediately. The new one has to be sent to the client.',
+    window.ADspaceConfirm.ask({ title: 'Reset link?',
+      body: 'The current link for ' + (((st.open || {}).clients || {}).name || 'this client') + ' will stop working immediately. Send the new link to the client.',
       go: 'Reset link', tone: 'warn' }, function () {
       withKey(true).then(function () { paintLink(); say($('vsRecMsg'), 'Link reset.', 'ok'); })
         .catch(function (e) { say($('vsRecMsg'), said(e)); });
@@ -1504,7 +1504,7 @@
   function leaveEditor() {
     if (!dirty()) { closeEditor(); return; }
     var s = edited();
-    window.ADspaceConfirm.ask({ title: 'Discard changes?', body: s.id || !st.pending ? 'The changes to ' + label(s) + ' are not saved.' : 'The new script is not saved.',
+    window.ADspaceConfirm.ask({ title: 'Discard changes?', body: s.id || !st.pending ? 'The changes to ' + label(s) + ' will not be saved.' : 'The new script will not be saved.',
       go: 'Discard', tone: 'warn' }, function () { closeEditor(); if (st.open) paintRecord(); });
   }
   window.addEventListener('beforeunload', function (e) {
@@ -1726,8 +1726,8 @@
     'ai-busy': 'The AI service is busy. Try again in a minute.',
     'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
-    'ai-failed': 'No script came back. Try again.',
-    'ai-incomplete': 'No script came back. Try again.',
+    'ai-failed': 'No script was written. Try again.',
+    'ai-incomplete': 'No script was written. Try again.',
     denied: 'You do not have permission to change video scripts. Please ask an admin.',
     'client-scope': 'This client is outside your access.',
     'not-found': 'This script is no longer available.'
@@ -1745,7 +1745,7 @@
   }
   function writeLimit(d) {
     d = d || {};
-    if (d.scope === 'stopped' || d.limit === 0) return 'Scripts with AI are turned off for you. An admin can turn them on.';
+    if (d.scope === 'stopped' || d.limit === 0) return 'Write with AI is turned off for you. Please ask an admin to turn it on.';
     var n = d.limit || 10;
     return 'You have used your ' + n + (n === 1 ? ' script' : ' scripts') + ' for today.' + (d.next ? ' Resets at ' + writeClock(d.next) + '.' : '');
   }
@@ -1840,7 +1840,7 @@
         value: keep('adspace-script-notes:' + noteKey) });
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: (st.pending && !st.pending.s.id ? 'The new script is saved first, taking its number. ' : '') + (hasWords(kind) ? 'Replaces the script in these fields. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
+        body: (st.pending && !st.pending.s.id ? 'The new script is saved first, taking its number. ' : '') + (hasWords(kind) ? 'The script in these fields will be replaced. ' : '') + left.left + (left.left === 1 ? ' script' : ' scripts') + ' left today.',
         go: 'Write', fields: fields
       }, function (v) {
         var notes = String(v.notes || '').trim();
@@ -1925,7 +1925,7 @@
       }).catch(function (e) {
         btn.disabled = false;
         if (window.ADspaceDocs.shut) window.ADspaceDocs.shut(tab);
-        say(m, 'Not drawn. ' + said(e));
+        say(m, 'The PDF could not be generated. ' + said(e));
       });
     };
     if (!many) { go(month); return; }

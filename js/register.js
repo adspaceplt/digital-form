@@ -213,7 +213,7 @@
     LET.listAll.offers = mayFamily('offer', 'view');
     loadPeople(function () {
       LET.listAll(function (rows, err) {
-        if (err) { state.err = err; UI.failLine(box, 'the register', err.message || String(err), load); return; }
+        if (err) { state.err = err; UI.failLine(box, 'Documents', err.message || String(err), load); return; }
         perfRows(function (pr) {
           state.docs = (rows || []).concat(pr);
           paint();
@@ -338,7 +338,7 @@
            team can see both versions and the word tells them which is which;
            the verify page never says it. */
         (d.voided_at || d.superseded_by
-          ? ' <span class="tone">' + esc(d.voided_at ? (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : 'Superseded') + '</span>'
+          ? ' <span class="tone">' + esc(d.voided_at ? (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : 'Replaced') + '</span>'
           : '') + '</b>' +
         '<small>' + esc(sub) + '</small></span>' +
       (own ? '' : '<span class="reg-brand">' + (brandOf(d) ? esc(brandOf(d)) : '<span class="muted">—</span>') + '</span>') +
@@ -996,7 +996,7 @@
       if (forIssue && !r.client_id) return need(k + 'c', 'Choose the client for account ' + (i + 1) + '.');
       if (forIssue && !r.account) return need(k + 'a', 'Enter the ad account for account ' + (i + 1) + '.');
       if (forIssue && !(spend > 0)) return need(k + 's', 'Enter the ad spend per month for account ' + (i + 1) + '.');
-      if (r.start && r.end && r.end < r.start) return need(k + 'e', 'The end date is before the start date.');
+      if (r.start && r.end && r.end < r.start) return need(k + 'e', 'Choose an end date after the start date.');
       var c = clientOf(r.client_id);
       out.push({ client_id: r.client_id || null, client: c ? c.name : '', account: r.account || '',
         spend: spend > 0 ? Math.round(spend * 100) / 100 : null, currency: marketOf(r.client_id) === 'SG' ? 'SGD' : 'MYR',
@@ -1015,7 +1015,7 @@
     msg('docMsg', '');
     var go = function () {
       var allowed = fillKinds();
-      if (!allowed.length) { say('You do not have permission to issue a document.', 'err'); return; }
+      if (!allowed.length) { say('You do not have permission to issue documents. Please ask an admin.', 'err'); return; }
       fillClients(); fillMembers(); fillSuppliers(re && re.supplier_id);
       if (issuing.client) $('docClient').value = issuing.client.id;
       if (issuing.supplier) $('docSupplier').value = issuing.supplier.id;
@@ -1109,7 +1109,7 @@
     if (!t) { msg('docMsg', 'Choose a document type.', 'err'); return; }
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     var serial = $('docSerial').value.trim();
-    if (quote && !serial) { msg('docMsg', 'Type the reference from the accounting portal.', 'err'); $('docSerial').focus(); return; }
+    if (quote && !serial) { msg('docMsg', 'Enter the reference from the accounting portal.', 'err'); $('docSerial').focus(); return; }
     var sup = t.family === 'supplier';
     var client = issuing.client ? issuing.client.id : $('docClient').value;
     var supplier = issuing.supplier ? issuing.supplier.id : $('docSupplier').value;
@@ -1150,7 +1150,7 @@
       }
       if (keys.length) body.fields = fieldValues();
     }
-    if (!body.en) { msg('docMsg', 'The letter needs a body.', 'err'); $('docBodyEn').focus(); return; }
+    if (!body.en) { msg('docMsg', 'Enter the body of the letter.', 'err'); $('docBodyEn').focus(); return; }
     var agreeing = isSca(t) || Boolean(re && re.body && re.body.agreement);
     if (agreeing) {
       var ag = scaGather(forIssue, $('docDate').value || today());
@@ -1167,7 +1167,7 @@
     if (!hr && !agreeing && !recipient.name) { msg('docMsg', 'Enter the recipient.', 'err'); $('docTo').focus(); return; }
     var signed = $('docSigned').checked;
     var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
-    if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
+    if (signed && !signatory) { msg('docMsg', 'Enter the signatory.', 'err'); $('docSigName').focus(); return; }
     return { re: re, t: t, args: {
       type: t.id, client: hr || sup ? null : client, member: hr ? $('docMember').value : null, supplier: sup ? supplier : null,
       serial: serial || null, issued_at: $('docDate').value || null, title: title,
@@ -1226,9 +1226,9 @@
       if (!share || !r.id) { finish(); return; }
       db.rpc('document_share', { p_id: r.id, p_on: true }).then(function (s2) {
         var d2 = s2.data || {};
-        if (s2.error || d2.error) finish('Not shared: the database refused the request.', 'warn');
+        if (s2.error || d2.error) finish('Not shared. The database refused the request.', 'warn');
         else finish('Shared with ' + shareTo + '.');
-      }).catch(function () { finish('Not shared: the database refused the request.', 'warn'); });
+      }).catch(function () { finish('Not shared. The database refused the request.', 'warn'); });
     };
     if (re) LET.reissue(re, args, back); else LET.issue(args, back);
   }
@@ -1243,15 +1243,15 @@
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var dt = { all: [], editing: null, kinds: {} };
   var DT_SAID = {
-    'denied':       'You do not have permission to do this.',
-    'bad-name':     'A name is 2 to 80 characters.',
-    'taken':        'Another document type has that name.',
+    'denied':       'You do not have permission to change document types. Please ask an admin.',
+    'bad-name':     'Enter a name of 2 to 80 characters.',
+    'taken':        'A document type with this name already exists.',
     'bad-family':   'Choose a group.',
-    'family-fixed': 'The group stays as the type was made.',
-    'bad-code':     'An HR letter takes a reference code of 1 to 4 capital letters or digits, as IC.',
-    'code-taken':   'Another HR letter uses that reference code.',
-    'bad-fields':   'A field name is up to 40 characters.',
-    'too-long':     'The wording is too long.',
+    'family-fixed': 'The group cannot be changed once the type is created.',
+    'bad-code':     'Enter a reference code of 1 to 4 capital letters or digits, such as IC.',
+    'code-taken':   'Another HR letter already uses this reference code.',
+    'bad-fields':   'Enter field names of up to 40 characters.',
+    'too-long':     'The wording is too long. Shorten it, then save again.',
     'not-found':    'This document type no longer exists.'
   };
   function dtSaid(r) {
@@ -1406,7 +1406,7 @@
   function saveType() {
     var t = dt.editing, fam = dtFamily(), btn = $('dtSave');
     var name = $('dtName').value.trim().replace(/\s+/g, ' ');
-    if (name.length < 2) { msg('dtEditMsg', 'A name is required.', 'err'); $('dtName').focus(); return; }
+    if (name.length < 2) { msg('dtEditMsg', 'Enter a name of 2 to 80 characters.', 'err'); $('dtName').focus(); return; }
     var code = $('dtCode').value.trim().toUpperCase();
     if (fam === 'hr' && !/^[A-Z0-9]{1,4}$/.test(code)) { msg('dtEditMsg', DT_SAID['bad-code'], 'err'); $('dtCode').focus(); return; }
     var fields = {};
@@ -1542,9 +1542,9 @@
     var serial = $('regAddSerial').value.trim(), typed = $('regAddKindPick').value === '__new';
     var kind = nameOf(kindNow());
     if (typed) $('regAddKind').value = kind;
-    if (!serial) { msg('regAddMsg', 'A reference is required.', 'err'); $('regAddSerial').focus(); return; }
+    if (!serial) { msg('regAddMsg', 'Enter the reference.', 'err'); $('regAddSerial').focus(); return; }
     if (!kind) {
-      msg('regAddMsg', typed ? 'Type the new document type.' : 'Choose a document type.', 'err');
+      msg('regAddMsg', typed ? 'Enter the new document type.' : 'Choose a document type.', 'err');
       $(typed ? 'regAddKind' : 'regAddKindPick').focus(); return;
     }
     var sup = $('regAddFam').value === 'supplier';
@@ -1575,8 +1575,8 @@
   var voiding = null;
   function openVoid(d, onChange) {
     voiding = { d: d, then: onChange };
-    $('rvoidWhat').textContent = 'Voiding ' + d.serial + ' marks it as no longer standing. ' +
-      'The row and its reference are kept, the verify page answers Void from now on, and the reference is never reused.';
+    $('rvoidWhat').textContent = 'Voiding ' + d.serial + ' marks it as void. ' +
+      'The document and its reference are kept, the verify page will show it as Void, and the reference will not be used again.';
     $('rvoidReason').value = '';
     msg('rvoidMsg', '');
     $('rvoidSheet').hidden = false;
@@ -1587,14 +1587,14 @@
   function openDelete(d, onChange) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: 'Deleting ' + d.serial + ' removes the record. ' +
-        (d.source === 'portal' ? 'The file is drawn from the record on Download and is not stored, so nothing is left to recover: ' : '') +
-        'this is immediate and cannot be undone. The reference is remembered and never reused.',
+      body: 'Deleting ' + d.serial + ' removes the document. ' +
+        (d.source === 'portal' ? 'The PDF is generated on Download and is not stored, so it cannot be recovered. ' : '') +
+        'The reference will not be used again. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [
         { name: 'serial', label: 'Type the reference to confirm', placeholder: d.serial, match: d.serial,
           need: 'Type ' + d.serial + ' to confirm.', mismatch: 'Type ' + d.serial + ' to confirm.' },
-        { name: 'why', label: 'Reason', rows: 3, need: 'A reason is required.' }
+        { name: 'why', label: 'Reason', rows: 3, need: 'Enter a reason.' }
       ]
     }, function (v) {
       return new Promise(function (done) {
@@ -1669,7 +1669,7 @@
     on('rvoidGo', function () {
       if (!voiding) return;
       var why = $('rvoidReason').value.trim();
-      if (!why) { msg('rvoidMsg', 'A reason is required.', 'err'); $('rvoidReason').focus(); return; }
+      if (!why) { msg('rvoidMsg', 'Enter a reason.', 'err'); $('rvoidReason').focus(); return; }
       var v = voiding, go = $('rvoidGo');
       go.disabled = true;
       LET.setVoid(v.d, why, function (err) {

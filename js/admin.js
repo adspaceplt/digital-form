@@ -233,7 +233,7 @@
     db.auth.verifyOtp({ email: authEmailSent, token: code, type: 'email' }).then(function (r) {
       b.disabled = false;
       var m = String((r && r.error && r.error.message) || '');
-      if (r && r.error && /rate limit|too many/i.test(m)) { msg('authMsg', 'Too many tries. Please wait a few minutes, then send a new code.', 'err'); return; }
+      if (r && r.error && /rate limit|too many/i.test(m)) { msg('authMsg', 'Too many attempts. Please wait a few minutes, then request a new code.', 'err'); return; }
       if (r && r.error) { msg('authMsg', 'The code is incorrect or has expired. Please request a new code.', 'err'); return; }
       msg('authMsg', '');
     }, function () { b.disabled = false; msg('authMsg', 'Not signed in. Please try again.', 'err'); });
@@ -379,7 +379,7 @@
   var PUSH_WHY = {
     install: 'On iPhone, add the console to the Home Screen, then turn notifications on from there.',
     blocked: 'Notifications are blocked for this site in the browser settings.',
-    failed: 'Notifications could not be turned on. Try again.'
+    failed: 'Notifications could not be turned on. Please try again.'
   };
   var pushOn = false;
   function paintPush(s) {
@@ -717,7 +717,7 @@
     try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
   }
   var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An administrator is never blocked.',
-    denied: 'This sign-in is not on the team.' };
+    denied: 'This account is not a team member.' };
   function paintAbroad(st) {
     var panel = $('noTeamShell').querySelector('.cover-panel');
     var where = countryName(st.country);
@@ -1626,14 +1626,14 @@
       db.rpc('rail_order_set', { p_sections: send }).then(function (r) {
         btn.disabled = false;
         var why = r.error ? (/PGRST202|Could not find the function/i.test((r.error.code || '') + ' ' + (r.error.message || ''))
-          ? window.ADspaceWords.line.notYet : 'Not saved. Try again.')
-          : (r.data && r.data.error) ? 'Not saved. Try again.' : '';
+          ? window.ADspaceWords.line.notYet : 'Not saved. Please try again.')
+          : (r.data && r.data.error) ? 'Not saved. Please try again.' : '';
         if (why) { m.textContent = why; m.className = 'msg ro-msg err'; return; }
         keepRail(send);
         paintTabbar();
         window.ADspaceSheet.clean();
         window.ADspaceSheet.close();
-      }).catch(function () { btn.disabled = false; m.textContent = 'Not saved. Try again.'; m.className = 'msg ro-msg err'; });
+      }).catch(function () { btn.disabled = false; m.textContent = 'Not saved. Please try again.'; m.className = 'msg ro-msg err'; });
     }
     var edit = $('railEdit');
     if (edit) edit.addEventListener('click', function () {
@@ -1747,7 +1747,7 @@
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
   var GUIDES = {
     analytics: { name: 'Analytics', steps: [
-      { at: '#anlTabs', text: 'Each tab covers one subject: sales, clients, and the sections still building their history.' },
+      { at: '#anlTabs', text: 'Each tab covers one subject. A section gains a tab once it holds enough history to show a trend.' },
       { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
@@ -1817,8 +1817,8 @@
       { at: '#waSend', text: 'The preview shows the message as it will be sent. Send asks you to confirm the number and the category.' }] },
     phone: { name: 'Your sections', steps: [
       { at: '#tabBar .tabbar-tab:not(#tabMore)', text: 'Your first four sections. Press one to open it.' },
-      { at: '#tabMore', text: 'More opens the other sections, the Activity record and the app version.' },
-      { at: '#acctBtn', text: 'Your name opens My records, Settings and Arrange sections, where you choose the four sections on this bar.' }] },
+      { at: '#tabMore', text: 'More opens the other sections, Settings, the Activity record and Arrange sections, where you choose the four sections on this bar.' },
+      { at: '#acctBtn', text: 'Your name opens My records and My namecard.' }] },
     arrange: { name: 'Arrange sections', within: '#railSheet', steps: [
       { at: '#railLists .ro-grip', text: 'Drag a section by its grip, or press the grip and move it with the arrow keys.' },
       { at: '#railLists .ro-tab', text: 'Tab bar marks the sections shown in the bar at the bottom of your phone.' },
@@ -2645,7 +2645,7 @@
     'service.on':            ['Rate line active', 'is-ok', 'services'],
     'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
     'service.published':     ['Rate Card published', 'is-ok', 'services'],
-    'client.touch':          ['Call/visit logged', '', 'clients'],
+    'client.touch':          ['Call or visit logged', '', 'clients'],
     /* WhatsApp (2026-10-10): a message sent by hand, and a purpose's
        template chosen or switched. */
     'wa.sent':               ['Sent on WhatsApp', '', 'whatsapp'],
@@ -2660,14 +2660,14 @@
     'request.added':         ['Request recorded', '', 'clients'],
     'request.deleted':       ['Request deleted', 'is-danger', 'clients'],
     'request.changed':       ['Request changed', '', 'clients'],
-    'request.replied':       ['Request replied', '', 'clients'],
+    'request.replied':       ['Request answered', '', 'clients'],
     'contact.added':         ['Contact added', 'is-ok', 'clients'],
     'contact.edited':        ['Contact edited', '', 'clients'],
     'contact.restored':      ['Contact restored', 'is-ok', 'clients'],
-    'client.touch_edited':   ['Call/visit edited', '', 'clients'],
-    'client.touch_removed':  ['Call/visit removed', 'is-warn', 'clients'],
-    'client.touch_deleted':  ['Call/visit deleted', 'is-danger', 'clients'],
-    'client.touch_restored': ['Call/visit restored', 'is-ok', 'clients'],
+    'client.touch_edited':   ['Call or visit edited', '', 'clients'],
+    'client.touch_removed':  ['Call or visit removed', 'is-warn', 'clients'],
+    'client.touch_deleted':  ['Call or visit deleted', 'is-danger', 'clients'],
+    'client.touch_restored': ['Call or visit restored', 'is-ok', 'clients'],
     'client.action_done':    ['Action done', 'is-ok', 'clients'],
     'client.action_reopened':['Action reopened', 'is-warn', 'clients'],
     'contact.primary':       ['Primary contact set', '', 'clients'],
@@ -2704,7 +2704,7 @@
     'campaign.keyed':        ['Picked for client', '', 'campaigns'],
     'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
     'campaign.offered':      ['Creators offered', '', 'campaigns'],
-    'campaign.unoffered':    ['Creators taken off', 'is-warn', 'campaigns'],
+    'campaign.unoffered':    ['Creators removed', 'is-warn', 'campaigns'],
     'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
     'campaign.stage':        ['Stage changed', '', 'campaigns'],
     'campaign.task_linked':  ['Task linked', '', 'campaigns'],
@@ -2717,7 +2717,7 @@
     'campaign.rated':        ['Booking rated', '', 'campaigns'],
     'campaign.replaced':     ['Creator replaced', 'is-danger', 'campaigns'],
     'campaign.reinstated':   ['Creator reinstated', 'is-ok', 'campaigns'],
-    'campaign.invoice':      ['Invoice no. set', '', 'campaigns'],
+    'campaign.invoice':      ['Invoice number set', '', 'campaigns'],
     'campaign.invoice_file': ['Invoice uploaded', 'is-ok', 'campaigns'],
     'campaign.invoice_removed': ['Invoice removed', 'is-warn', 'campaigns'],
     'campaign.bulk':         ['Dates applied', '', 'campaigns'],
@@ -2740,7 +2740,7 @@
     'document.signed':       ['Letter signed', 'is-ok', 'register'],
     'document.unsigned':     ['Signature cleared', 'is-warn', 'register'],
     'document.verified':     ['Letter verified', 'is-ok', 'register'],
-    'document.superseded':   ['Letter superseded', 'is-warn', 'register'],
+    'document.superseded':   ['Letter replaced', 'is-warn', 'register'],
     'campaign.review':       ['Draft reviewed', '', 'campaigns'],
     'campaign.results':      ['Results entered', '', 'campaigns'],
     'service.override':      ['Price overridden', 'is-warn', 'clients'],
@@ -2755,7 +2755,7 @@
     'client.handles':        ['Handles updated', '', 'review'],
     'client.profile':        ['Settings updated', '', 'review'],
     'client.drive':          ['Drive folder set', '', 'review'],
-    'drive.imported':        ['Drive imported', 'is-ok', 'review'],
+    'drive.imported':        ['Imported from Drive', 'is-ok', 'review'],
     /* A file the team handed in for a creator, from the console. */
     'campaign.file_added':   ['Draft uploaded', '', 'campaigns'],
     'campaign.file_hidden':  ['File hidden from the client', '', 'campaigns'],
@@ -3224,7 +3224,7 @@
     $('wsLock').hidden = !state.client.passcode;
   }
 
-  var PASS_SHORT = 'The access code needs at least 6 characters.';
+  var PASS_SHORT = 'Enter an access code of at least 6 characters.';
 
   /* The access code is edited here, and clearing the field removes it. */
   function saveProfile(done) {
@@ -3258,9 +3258,9 @@
   $('resetLink').addEventListener('click', function () {
     shutWsMenu();
     window.ADspaceConfirm.ask({
-      title: 'Reset the review link',
+      title: 'Reset link?',
       body: 'The current link for ' + state.client.name + ' stops working immediately. '
-          + 'The new one has to be sent to the client.',
+          + 'Send the new link to the client.',
       go: 'Reset link',
       tone: 'warn'
     }, function () {
@@ -3411,11 +3411,11 @@
     'needs-update': window.ADspaceWords.line.notYet,
     'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
     'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
-    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-busy': 'The AI service is busy. Please try again in a minute.',
     'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
-    'ai-failed': 'No caption came back. Try again.',
-    'ai-incomplete': 'No caption came back. Try again.',
+    'ai-failed': 'No caption was returned. Please try again.',
+    'ai-incomplete': 'No caption was returned. Please try again.',
     'denied': 'You do not have permission to change content sets. Please ask an admin.',
     'not-found': 'This set no longer exists.'
   };
@@ -3774,7 +3774,7 @@
           + ' no caption.'
         : '';
       window.ADspaceConfirm.ask({
-        title: 'Publish to the client',
+        title: 'Publish?',
         body: posts.length + ' post' + (posts.length === 1 ? '' : 's') + ' become'
             + (posts.length === 1 ? 's' : '') + ' visible to ' + state.client.name
             + ' immediately.' + warn,
@@ -4231,7 +4231,7 @@
       renderDrafts();
       if (slow.length) {
         msg('setMsg', slow.join(', ') + ': not web-optimised, so playback waits for the full download. ' +
-          'Re-export with Fast Start.', 'err');
+          'Export it again with Fast Start turned on.', 'err');
       }
     });
   }
@@ -4552,14 +4552,12 @@
     return API.fnRefusal(r).then(function (code) {
       if (code === 'bad_extension') throw new Error(window.ADspaceWords.en.uploadType);
       if (code === 'too_large') throw new Error(window.ADspaceWords.en.uploadTooLarge.replace('{n}', capMB().toLocaleString('en-GB')));
-      if (code) throw new Error('Upload was refused: ' + code);
-      var fn = (window.ADSPACE_CONFIG.s3 || {}).functionName || 'sign-upload';
-      var m = (r.error && r.error.message) || 'unknown reason';
+      if (code) throw new Error('The upload was refused. Please try again, or contact an admin.');
+      var m = (r.error && r.error.message) || '';
       var hint = /failed to send|fetch/i.test(m)
-        ? ' The browser could not reach it. In the Supabase dashboard, open Edge ' +
-          'Functions, check a function named "' + fn + '" exists, and turn OFF its "Verify JWT" setting.'
-        : '';
-      throw new Error('Could not start the upload. ' + m + hint);
+        ? 'Uploads are not available at the moment. Please contact an admin.'
+        : 'Please try again.';
+      throw new Error('The upload could not be started. ' + hint);
     });
   }
 
@@ -4592,11 +4590,11 @@
       xhr.onload = function () {
         forget();
         if (xhr.status >= 200 && xhr.status < 300) { if (onProgress) onProgress(1); resolve(); }
-        else reject(new Error('S3 rejected the upload (HTTP ' + xhr.status + ').'));
+        else reject(new Error('The upload was refused (error ' + xhr.status + '). Please try again.'));
       };
       xhr.onerror = function () {
         forget();
-        reject(new Error('The connection to storage dropped part way through the upload.'));
+        reject(new Error('The connection was lost during the upload. Please try again.'));
       };
       xhr.onabort = function () { forget(); reject(new Error('cancelled')); };
       xhr.send(blob);
@@ -4653,8 +4651,8 @@
                  holds (2026-10-12). */
               if (M && M.renew && (cfg.s3 || {}).privateMedia) return true;
               throw new Error(
-                'The file was stored, but the CDN did not return it at ' + url + '. Reload the ' +
-                'page and add the files again. Where it persists, see docs/S3-UPLOAD-SETUP.md.');
+                'The file was uploaded but could not be opened. Refresh the page and add the ' +
+                'files again. If this persists, please contact an admin.');
             });
         }
         return state.storageCheck.then(function () { return r.data.publicUrl; });
@@ -4780,13 +4778,13 @@
     if (isDriveLink(url)) { handleDriveLink(url); return; }
 
     if (!/^https:\/\//i.test(url)) {
-      msg('setMsg', 'The link needs to start with https://', 'err');
+      msg('setMsg', 'Enter a link that starts with https://.', 'err');
       return;
     }
     msg('setMsg', 'Verifying the link…');
     probeUrl(url).then(function (info) {
       if (!info.ok) {
-        msg('setMsg', 'Link could not be loaded. It must point directly to the file.', 'err');
+        msg('setMsg', 'The link could not be loaded. Use a link that points directly to the file.', 'err');
         return;
       }
       pushDraft(url, info);
@@ -4797,7 +4795,7 @@
 
   function handleDriveLink(url) {
     if (!driveKey()) {
-      msg('setMsg', 'Drive import requires a Google API key in js/config.js. See docs/DRIVE-IMPORT-CHECK.md.', 'err');
+      msg('setMsg', 'Drive import is not set up yet. Please contact an admin.', 'err');
       return;
     }
 
@@ -4813,7 +4811,7 @@
 
     var fileId = driveFileId(url);
     if (!fileId) {
-      msg('setMsg', 'No file id found in that Drive link. Use Share in Drive and copy the link.', 'err');
+      msg('setMsg', 'That Drive link does not name a file. Use Share in Drive and copy the link.', 'err');
       return;
     }
 
@@ -4836,8 +4834,8 @@
       });
     }).catch(function (e) {
       if (e.name === 'AbortError') {
-        msg('setMsg', 'Timed out reading that file from Drive.', 'err');
-      } else if (/uploaded to s3|s3 rejected|could not start/i.test(e.message || '')) {
+        msg('setMsg', 'Reading that file from Drive took too long. Please try again.', 'err');
+      } else if (/uploaded to s3|upload was refused|upload could not be started|lost during the upload|could not be opened/i.test(e.message || '')) {
         // A storage problem, not a Drive one. Do not muddy it with sharing advice.
         msg('setMsg', e.message, 'err');
       } else {
@@ -4869,7 +4867,7 @@
   /* Reads bytes with progress, so a large video does not look like it has hung. */
   function fetchWithProgress(url, onProgress) {
     return driveFetch(url, 600000).then(function (r) {
-      if (!r.ok) throw new Error('Drive refused the file (HTTP ' + r.status + ')');
+      if (!r.ok) throw new Error('Drive refused the file (error ' + r.status + ').');
       var total = Number(r.headers.get('content-length')) || 0;
       if (!r.body || !total) return r.blob();
 
@@ -4949,7 +4947,7 @@
       .then(function (r) {
         return r.json().then(function (body) {
           if (r.status !== 200) {
-            throw new Error((body.error && body.error.message) || ('Google returned ' + r.status));
+            throw new Error((body.error && body.error.message) || ('Drive refused the request (error ' + r.status + ').'));
           }
           var m = body.imageMediaMetadata || body.videoMediaMetadata || {};
           return {
@@ -5014,7 +5012,7 @@
     }).then(function (res) {
       if (res.status !== 200) {
         msg('driveMsg', (res.body.error && res.body.error.message) ||
-          ('Google returned ' + res.status) +
+          ('Drive refused the request (error ' + res.status + ')') +
           '. Check the folder is shared as Anyone with the link.', 'err');
         return;
       }
@@ -5055,8 +5053,8 @@
       });
     }).catch(function (e) {
       msg('driveMsg', e.name === 'AbortError'
-        ? 'Timed out reading the folder.'
-        : 'Could not reach Google. ' + e.message, 'err');
+        ? 'Reading the folder took too long. Please try again.'
+        : 'Could not reach Google Drive. Please try again.', 'err');
     });
   });
 
@@ -5173,7 +5171,7 @@
       .catch(function (e) {
         showProgress(null);
         msg('driveMsg', e.name === 'AbortError'
-          ? 'Timed out reading a file from Drive. Large videos can take a while, try fewer at a time.'
+          ? 'Reading a file from Drive took too long. Large videos take longer, so try fewer at a time.'
           : e.message, 'err');
       });
   });
@@ -5378,10 +5376,10 @@
           });
           if (pairs.length) Promise.all(pairs).then(function (out) {
             var bad = out.filter(function (o) { return o.error || !o.data || !o.data.length; }).length;
-            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was added unpaired. Pair it' : ' covers were added unpaired. Pair them') + ' from the ⋯.', 'warn');
+            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was added without its video. Pair it' : ' covers were added without their videos. Pair them') + ' from the ⋯ menu.', 'warn');
             loadPosts();
           }).catch(function () {
-            msg('setMsg', 'Covers were added unpaired. Pair them from the ⋯.', 'warn');
+            msg('setMsg', 'Covers were added without their videos. Pair them from the ⋯ menu.', 'warn');
             loadPosts();
           });
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
@@ -5923,7 +5921,7 @@
      says it to the client as a lock, never as a link unknown. */
   var UNLOCK_SAID = {
     denied: 'Not cleared. You do not have permission to change this link. Please ask an admin.',
-    'client-scope': 'Not cleared. This client is outside the clients you hold.',
+    'client-scope': 'Not cleared. You do not have access to this client.',
     'not-found': 'Not cleared. The link was not found.'
   };
   function linkLock(box, kind, id, hasPass, need) {
@@ -7381,7 +7379,7 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'Anywhere /' + l.slug + ' is already printed, posted or sent stops working. '
-          + 'This cannot be undone. To turn it off and keep it, pause it instead.',
+          + 'To turn it off and keep it, pause it instead. This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
       field: { label: 'Type the short link to confirm', placeholder: l.slug, match: l.slug, need: 'Type the short link to confirm.', mismatch: 'The short link does not match.' }
@@ -7435,7 +7433,7 @@
     window.ADspaceConfirm.ask({
       title: 'Pause',
       body: '/' + l.slug + ' stops redirecting, wherever it is already printed, '
-          + 'posted or sent. Resume puts it back.',
+          + 'posted or sent. Resume turns it back on.',
       go: 'Pause',
       tone: 'warn'
     }, run);
@@ -7461,15 +7459,15 @@
     var slug = cleanSlug($('newSlug').value);
     var target = cleanTarget($('newTarget').value);
     ['newSlug', 'newTarget'].forEach(function (id) { $(id).removeAttribute('aria-invalid'); });
-    if (!slug)       { linkBad('newSlug', 'A short link needs a slug.'); return; }
+    if (!slug)       { linkBad('newSlug', 'Enter the short link.'); return; }
     if (!slugOk(slug)) {
       linkBad('newSlug', 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.');
       return;
     }
     if (!target) {
       linkBad('newTarget', $('newTarget').value.trim()
-        ? 'That destination does not look like a web address.'
-        : 'A destination is required.');
+        ? 'Enter a web address.'
+        : 'Enter the destination.');
       return;
     }
 
@@ -7515,7 +7513,7 @@
       msg('linkListMsg', '/' + slug + (was ? ' saved.' : ' added.'), 'ok');
     }).catch(function () {
       go.disabled = false;
-      msg('linkMsg', 'Not saved. The connection was lost; try again.', 'err');
+      msg('linkMsg', 'Not saved. The connection was lost. Please try again.', 'err');
     });
   });
 
@@ -7669,9 +7667,9 @@
        that asks first is one more thing between somebody and the correction. */
     if (next) { save(); return; }
     window.ADspaceConfirm.ask({
-      title: 'Revoke this code',
-      body: 'Scans of ' + (q.label || 'this code') + ' are turned away. '
-          + '/' + q.slug + ' keeps working, and the code can be reinstated here.',
+      title: 'Revoke',
+      body: 'Scans of ' + (q.label || 'this code') + ' no longer open the link. '
+          + '/' + q.slug + ' keeps working, and the code can be restored here.',
       go: 'Revoke',
       tone: 'warn'
     }, save);
@@ -7696,7 +7694,7 @@
       loadQrs();
     }).catch(function () {
       go.disabled = false;
-      msg('qrMsg', 'Not saved. The connection was lost; try again.', 'err');
+      msg('qrMsg', 'Not saved. The connection was lost. Please try again.', 'err');
     });
   });
 
@@ -7734,7 +7732,7 @@
   $('runImport').addEventListener('click', function () {
     var parsed = parseImport($('importText').value);
     if (!parsed.rows.length) {
-      msg('importMsg', 'Nothing to import. Each line needs a slug and a destination.', 'err');
+      msg('importMsg', 'Nothing to import. Each line needs a short link and a destination.', 'err');
       return;
     }
     // Last one wins, so a list with a repeated slug still imports cleanly.
@@ -7765,7 +7763,7 @@
       msg('linkListMsg', note, 'ok');
     }).catch(function () {
       go.disabled = false;
-      msg('importMsg', 'Not imported. The connection was lost; try again.', 'err');
+      msg('importMsg', 'Not imported. The connection was lost. Please try again.', 'err');
     });
   });
 })();

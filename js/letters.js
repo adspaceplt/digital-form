@@ -31,26 +31,26 @@
   /* The database answers in one word; the console says what it means. */
   var WORD = {
     'no-type':        'Choose a document type.',
-    'not-allowed':    'You do not have permission to do this.',
+    'not-allowed':    'You do not have permission to issue documents. Please ask an admin.',
     'no-client':      'Choose a client.',
     'no-member':      'Choose a colleague.',
     'no-supplier':    'Choose a supplier.',
     'agreement-incomplete': 'Complete the schedules: the supplier\'s legal name, the start date, the fee and at least one account.',
     'no-staff-code':  'Add an Employee ID to that colleague on the Team page first.',
-    'no-signatory':   'A signatory is required.',
+    'no-signatory':   'Enter the signatory.',
     'issuer-name':    'A letter is signed by a person. Set your name on the Team page, then issue it.',
-    'serial-required':'A reference is required.',
+    'serial-required':'Enter the reference.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
-    'serial-shape':   'A reference is 3 to 40 letters, digits, slashes, dots or dashes.',
-    'serial-taken':   'That reference is already in the register.',
-    'bad-family':     'That is not a kind of document.',
+    'serial-shape':   'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots or dashes.',
+    'serial-taken':   'This reference is already used by another document. Enter another reference.',
+    'bad-family':     'Choose the kind of document.',
     'kind-required':  'Choose a document type.',
     'reason-required':'Enter a reason.',
     'confirm-mismatch':'That is not this document\'s reference.',
     'not-found':      'That document could not be found.',
-    'not-manual':     'A document issued by the portal is a snapshot and is not edited.',
+    'not-manual':     'A document issued by the portal cannot be edited. Reissue it instead.',
     'not-portal':     'Only a document issued by the portal can be reissued.',
-    'not-current':    'A later version of this document already stands. Reissue that one.'
+    'not-current':    'A later version of this document already exists. Reissue that version.'
   };
 
   function missingWord(m) {
@@ -102,10 +102,10 @@
       issued_by: d.issued_by,
       source: 'portal',
       voided_at: d.voided_at,
-      /* A letter that was replaced reads Superseded on this list for the same
+      /* A letter that was replaced reads Replaced on this list for the same
          reason a reissued register document reads Reissued: the team can see
          both versions and the word says which is which. */
-      void_reason: d.voided_at ? 'Void' : (d.superseded_by ? 'Superseded' : ''),
+      void_reason: d.voided_at ? 'Void' : (d.superseded_by ? 'Replaced' : ''),
       superseded_by: d.superseded_by,
       offer: d
     };
@@ -216,7 +216,7 @@
 
   function render(doc) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
+    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools are not loaded.'));
     return D.lib().then(function () { return doc.body && doc.body.agreement ? drawAgreement(doc) : drawLetter(doc); });
   }
   function drawLetter(doc) {
@@ -231,7 +231,7 @@
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
       if (wantsCjk && !fonts.cjk) {
-        throw new Error('The Chinese font could not be loaded, so the Chinese block cannot be drawn. Check fontCjk in js/config.js.');
+        throw new Error('The Chinese typeface could not be loaded, so the Chinese text cannot be drawn. Please try again.');
       }
       var drawn = DOCS.letterPages(pdf, PDF, fonts, logo, doc);
       var footWord = 'This is a computer-generated document. ' + (doc.signed ? '' : 'No signature required. ') +

@@ -263,11 +263,11 @@
             num('vic_lead_followup_hours') == null ? '' : 'VIC ' + plural(num('vic_lead_followup_hours'), 'hour', 'hours') + ' and ' + plural(num('vic_proposal_followup_days'), 'day', 'days')].filter(Boolean)) },
         /* Its days open a supplier's link too (2026-10-22, SET2-2). */
         biz && { id: 'details', name: 'Details forms', kind: 'edit',
-          meta: num('details_form_days') == null ? '' : 'Client and supplier links open ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
+          meta: num('details_form_days') == null ? '' : 'Client and supplier links open for ' + plural(num('details_form_days'), 'day', 'days').replace(' ', ' ') },
         /* The month Analytics counts leads and clients from (2026-10-25). */
         biz && { id: 'analytics', name: 'Analytics', kind: 'edit',
           meta: num('analytics_from') == null ? '' : parts(['Counts from ' + bridge.monthOfSetting(num('analytics_from'))]
-            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% a quarter'])) }]],
+            .concat(num('analytics_churn_pct') == null ? [] : ['Churn alert ' + num('analytics_churn_pct') + '% per quarter'])) }]],
       ['Creators', [
         /* Creator and campaign IDs and the Job reference (2026-11-08). */
         biz && { id: 'ids', name: 'Creator and campaign IDs', kind: 'edit', meta: line('ids'), open: function () { openIds(); } },
@@ -347,7 +347,7 @@
         /* Website quotations (2026-10-29): how many a day are sent on
            WhatsApp, each a message ADspace pays for. */
         biz && { id: 'quotewa', name: 'Website quotations', kind: 'edit',
-          meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' a day on WhatsApp' }]]]);
+          meta: qwa == null ? '' : qwa === 0 ? 'Not sent on WhatsApp' : 'Up to ' + plural(qwa, 'quotation', 'quotations') + ' per day on WhatsApp' }]]]);
     /* Performance (the user, 2026-10-29: "approve all"): one row a view,
        each opening the one sheet on its part behind the master code. */
     add('performance', 'Performance', 'mine', [['', perfMay() ? W.ADspacePerf.VIEWS.map(function (v) {
@@ -706,7 +706,7 @@
         fields: [
           { name: 'on', label: 'Add a row when payment details are approved', tick: true, value: d.on ? 'on' : '' },
           { name: 'sheet', label: 'Google Sheets link', value: d.spreadsheet_id ? 'https://docs.google.com/spreadsheets/d/' + d.spreadsheet_id : '', required: false },
-          { name: 'tab', label: 'Tab', value: d.tab || '', required: false, note: 'Leave empty for the first tab.' }
+          { name: 'tab', label: 'Tab', value: d.tab || '', required: false, note: 'Leave blank to use the first tab.' }
         ]
       }, function (v) {
         return db.rpc('creator_sheet_set', { p_on: v.on === 'on', p_sheet: String(v.sheet || '').trim() || null, p_tab: String(v.tab || '').trim() || null }).then(function (r2) {
@@ -926,7 +926,7 @@
   }
   function holMsg(text, tone) { var m = $('holMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function holDelete(h) {
-    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', is removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', will be removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('public_holiday_delete', { p_day: h.day }).then(function (r) {
           var said = holSaid(r);
@@ -945,8 +945,8 @@
   var dep = { rows: null, err: null };
   var DEP_SAID = {
     denied: window.ADspaceWords.line.noSettings, 'bad-name': 'Enter a name of 2 to 40 characters.',
-    taken: 'A department with this name already exists.', 'criteria-needed': 'Name its five criteria to put it in the department prize.',
-    'bad-criteria': 'Each criterion is 2 to 60 characters, and all five are named.', 'not-found': 'This department was removed in the meantime.'
+    taken: 'A department with this name already exists.', 'criteria-needed': 'Enter all five criteria to include this department in the prize.',
+    'bad-criteria': 'Enter all five criteria, each of 2 to 60 characters.', 'not-found': 'This department was removed in the meantime.'
   };
   function depSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
@@ -1017,7 +1017,7 @@
     CRIT_MAX.forEach(function (mx, i) {
       fields.push({ name: 'c' + i, label: 'Criterion ' + (i + 1) + ', out of ' + mx, value: crit[i] || '', required: false,
         head: i === 0 ? 'Department prize criteria' : undefined,
-        note: i === 0 ? 'Needed to put the department in the prize.' : undefined });
+        note: i === 0 ? 'Required to include the department in the prize.' : undefined });
     });
     window.ADspaceConfirm.ask({
       title: d ? 'Edit department' : 'Add department', go: 'Save', wait: true, fields: fields,
