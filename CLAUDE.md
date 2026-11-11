@@ -3138,7 +3138,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Bukku holds, each change is a tick (`#bkRows input[name=bkSend]`, all
   ticked, the type never), an unticked one sent as Bukku holds it
   (`skip`, `keepAsHeld`; the user, 2026-11-10: "choose which one to
-  send"); a state goes under Bukku's own name (Penang as Pulau Pinang,
+  send") and never copied back to the portal: while one still differs the
+  link is not held and reads Differs from Bukku (`takeAfterSend`, audit
+  2026-11-11); a state goes under Bukku's own name (Penang as Pulau Pinang,
   `STATE_AS`: Bukku refused Penang), and Bukku's refusal names its fields'
   reasons, never only "The given data was invalid.". Link only (`#bkLink`,
   beside Link and send for a contact Bukku holds; kept apart from Link and
@@ -4847,8 +4849,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `not-started`, `cancelled`; `ops_month_invoice_take` and
   `ops_month_invoices_due` the service role's; `ops_month_invoices`, RLS
   on, no policy, no grant): an invoice of the client's Bukku contacts
-  dated within the content month's calendar month (`month_invoice_window`)
-  is its invoice; the month's card reads Invoice (number, amount, Paid or
+  (a company billing other brands too left out, its invoice perhaps
+  another brand's) dated within the content month's calendar month
+  (`month_invoice_window`) is its invoice, one Bukku lists with no balance
+  read Unpaid, never Paid (audit 2026-11-11); the month's card reads Invoice (number, amount, Paid or
   Unpaid; Not invoiced and when checked; Check Bukku) at Clients: Billing
   View (`ops_month_invoices_of`), and the Dashboard lists Months not
   invoiced at Billing Full Access once a read after the 1st found none
@@ -7812,8 +7816,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   nowhere): Supabase invites only an address with no login, so for one that
   has a login `invite-member` sends the same invitation itself through
   `_shared/mail.ts` (from the sign-in emails' sender, a one-time sign-in
-  link from `generateLink`), and a page says Invitation sent only on
-  `sent`, never on `already`.
+  link from `generateLink`, a key of its own each send), and a page says
+  Invitation sent only on `sent`, never on `already`. A colleague is
+  greeted by the name on their record, an admin alone wording it otherwise
+  (audit 2026-11-11).
 - An active colleague's first sign-in makes their login (2026-11-11, the
   user: one added with no invitation read Active and was sent no code): the
   console asks `portal-login` before the code, which makes a login for a
@@ -7924,7 +7930,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
     `portal_access`, and answers `{ok: true}` to every address, each in the
-    same least time (`FLOOR_MS`, 900 ms; a fault logged, never a 500), so
+    same least time (`FLOOR_MS`, 1,500 ms, a slower run at the next whole
+    step; a fault logged, never a 500), so
     the wait never says who is a client (2026-10-25, `tests/portalloginfn.js`).
   - `signInWithOtp` with `shouldCreateUser: false`.
   - The email's code signs in on the page as well as its link (`#signCode`,

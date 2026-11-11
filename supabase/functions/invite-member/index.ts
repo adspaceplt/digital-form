@@ -154,8 +154,12 @@ Deno.serve(async (req) => {
   // (Team audit, item 8).
   if (kind === 'team') {
     const { data: member } = await admin.from('team_members')
-      .select('id').ilike('email', exactEmail(email)).eq('active', true).limit(1).maybeSingle();
+      .select('id, name').ilike('email', exactEmail(email)).eq('active', true).limit(1).maybeSingle();
     if (!member) return json({ error: 'not_team_member' }, 403, origin);
+    /* A colleague is greeted by the name on their record; an admin alone may
+       word it otherwise (audit 2026-11-11: anyone holding team.invite could
+       put any words into an ADspace email). */
+    greeting = greetingOf('', (isAdmin && name) ? name : (member.name || name));
   }
   // Twenty invitations a day each, counted by the database before a login is
   // made; a database that cannot count makes none.
@@ -198,7 +202,10 @@ Deno.serve(async (req) => {
       }
       const mail = invitation(kind, greeting, href);
       const sent = await resend({ from: FROM(), to: [email], subject: mail.subject, html: mail.html },
-        'invite:' + kind + ':' + email + ':' + Math.floor(Date.now() / 60000), apiKey);
+        /* A key of its own: each press is a new link, so the same key a
+           minute refused the second email as a repeat while its link had
+           already replaced the first (audit 2026-11-11). */
+        'invite:' + kind + ':' + email + ':' + crypto.randomUUID(), apiKey);
       if (sent.status === 'failed') {
         console.error('invite-member: send failed', sent.error);
         return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);

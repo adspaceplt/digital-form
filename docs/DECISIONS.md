@@ -9686,3 +9686,17 @@ and took a column; the user chose a green dot after the name for approved
 (it tells approved apart from none submitted), To review and Declined
 keeping their word, the column gone. The dot alone is named for a screen
 reader and on hover, so no state is carried by colour alone.
+
+### 2026-11-12 — Audit fixes of 11 November: Bukku, invitations and sign-in
+The same audit found a send to Bukku with fields left unticked copied those
+fields' Bukku values back over the portal's billing (the hold that follows a
+send took every field that differed); a month's invoice Bukku listed with no
+balance read Paid and left the nightly check for good; the creator match read
+three tables a thousand rows at most; a second Send invitation within a
+minute was refused by Resend as a repeat while its new link had already
+killed the first email's; a team invitation's greeting was the name the
+sender typed; and portal-login's equal wait was sized before the colleague
+path made it the slowest. The user approved each ("ok"; 14: "admin can
+overwrite"). `bukkufn` and `invitefn` were also failing on main before this
+(the legal note's new grey, `_shared/mail.ts` not copied); both brought up to
+date.
