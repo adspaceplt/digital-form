@@ -9622,3 +9622,15 @@ product's name, the line naming what the button does (Open Client Portal),
 a preview line that does not repeat the body, ADspace named rather than
 "us", and "your ADspace account manager" as the client pages say it. The
 template takes effect once pasted in the Supabase dashboard.
+
+### 2026-11-11 · Send invitation always sends one
+The user's two test invitations went nowhere: both addresses already had a
+login, and Supabase invites only an address it does not hold (auth log:
+422 email_exists). The client record then said "A login already exists.
+Sign-in link sent to …", which was untrue. `invite-member` (v43) now, for an
+address with a login, makes a one-time sign-in link (`generateLink`
+magiclink) and sends the same invitation itself through `_shared/mail.ts`,
+worded for a client or a colleague as the template is; a send that fails
+answers `invite_failed`, never success. The pages read `sent`, so each
+message says what happened. `invitefn` holds both wordings, the link and
+that nothing is emailed when no invitation was asked.
