@@ -17,7 +17,7 @@
     en: {
       title: 'Verify document', text: 'Enter the reference printed on the document.',
       kicker: 'Verify', go: 'Verify', checking: 'Checking…', lang: '中文',
-      notFound: 'Not found', notFoundText: 'Check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
+      notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
       issued: 'Issued', state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced' }
@@ -32,7 +32,8 @@
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
       kind: { 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
-        'letter to client': '客户函件', 'thank you letter': '感谢函', 'quotation cover': '报价单封面函' }
+        'letter to client': '客户函件', 'thank you letter': '感谢函', 'quotation cover': '报价单封面函',
+        'supplier service agreement': '供应商服务协议', 'letter to supplier': '供应商函件' }
     }
   };
   var lang = 'en';

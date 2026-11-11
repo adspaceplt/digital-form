@@ -24,14 +24,14 @@
 <script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');var dk=/^\/client\//.test(location.pathname)||/[?&]k=demo0/i.test(location.search)||(/^\/creator\//.test(location.pathname)&&!/[?&]k=/.test(location.search)&&!/^(?!DEMO0)./.test(localStorage.getItem('adspace-creator')||''));if(dm&&dm.until>Date.now()&&dk){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261111a"><\/script>');}}catch(e){}</script>
 <script src="/js/config.js?v=20261111"></script>
 <script src="/js/demo.js?v=20261029m"></script>
-<script src="/js/words.js?v=20261112"></script>
+<script src="/js/words.js?v=20261112g"></script>
 <script src="/js/clock.js?v=20261102a"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/state.js?v=20261110p"></script>
 <script src="/js/api.js?v=20261110p"></script>
 <script src="/js/maintenance.js?v=20261112"></script>
-<script src="/js/announce.js?v=20261110d"></script>
+<script src="/js/announce.js?v=20261112g"></script>
 <script src="/js/menu.js?v=20261111a"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/push.js?v=20261001a"></script>
@@ -40,7 +40,7 @@
 </head>
 <body>
 
-<script src="/js/chrome.js?v=20261017" data-kicker="Creator Portal" data-for data-actions="push lang"></script>
+<script src="/js/chrome.js?v=20261112g" data-kicker="Creator Portal" data-for data-actions="push lang"></script>
 
 <main class="shell">
   <div class="pageload" role="status" aria-label="Loading"><span class="pageload-spin" aria-hidden="true"></span></div>
@@ -81,7 +81,7 @@
 
     <!-- Bookings, Payments and Profile (2026-11-10, the approved mockup): one
          pane at a time, in `?tab=` (Bookings left out). -->
-    <nav class="rectabs cr-tabs" id="crTabs" role="tablist" aria-label="Your page">
+    <nav class="rectabs cr-tabs" id="crTabs" role="tablist" aria-label="Sections">
       <button class="tab is-on" data-pane="bookings" type="button" role="tab" aria-selected="true" id="crTabBookings"><span class="tab-w" id="crTabBookingsWord">Bookings</span><span class="tab-n is-err" id="crTabOwed" hidden></span></button>
       <button class="tab" data-pane="payments" type="button" role="tab" aria-selected="false" id="crTabPayments" hidden><span class="tab-w" id="crTabPaymentsWord">Payments</span></button>
       <button class="tab" data-pane="profile" type="button" role="tab" aria-selected="false" id="crTabProfile"><span class="tab-w" id="crTabProfileWord">Profile</span></button>
@@ -187,6 +187,6 @@
 
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/icons.js?v=20261102a"></script>
-<script src="/js/creator.js?v=20261112"></script>
+<script src="/js/creator.js?v=20261112g"></script>
 </body>
 </html>

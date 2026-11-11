@@ -9711,6 +9711,21 @@ reader and on hover, so no state is carried by colour alone.
   `tests/words.js` RETIRED. The creator page's e-Invoice paragraph and its
   中文 passed.
 
+- 2026-11-12, the client pages read whole, page by page (step 2 of the
+  sweep). Five readers who did not write the words read every line a client,
+  prospect, creator or supplier sees, English and Chinese, against §6: the
+  client portal and shared words (24), Content Review and Video Scripts (9),
+  the selection and creator pages (28), the quotation website and its PDF
+  (20), the details and supplier forms, /verify/, the namecard, the front
+  door and the 404 (18). 98 fixed: refusals now say what to do next and ask
+  Please, steps still to come in the future tense, "we" and "our team" read
+  ADspace, official terms in full (Tax Identification Number (TIN),
+  Registered Company Name, Full Name as per NRIC), one Chinese name a thing
+  (客户门户, 初稿, 播放量, 待确认, 申请新报价), full-width Chinese punctuation
+  with no Latin spaces, 下午2:00 for times, and the access-code and tab
+  labels follow 中文. Held: Malay to Bahasa Melayu on /quote/, whose three
+  language cards cannot hold the longer word at 390 until their layout
+  stacks; Script (read here) stays, an approved section name.
 - 2026-11-12 · A creator's payment reads Bukku's day and no amount (the
   user: "could you not show the price … anyone who holds the link would be
   able to see"; "the paid date is not even accurate, it should follow

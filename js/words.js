@@ -29,7 +29,7 @@
     failTextAdspace: 'Please refresh the page, or contact ADspace.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
-    passWrong: 'Incorrect access code.',
+    passWrong: 'Incorrect access code. Please try again.',
     // A link locked after wrong access codes from this connection. A wait
     // keeps its figure and its unit on one line (a no-break space).
     lockedTitle: 'Link temporarily locked',
@@ -52,8 +52,8 @@
     tooLong: 'Not sent. A name may contain up to 80 characters, a note up to 2,000 and a caption up to 5,000.',
     // A file sign-upload does not take (2026-10-17).
     uploadType: 'This file type is not supported. Please upload a video, an image or a PDF.',
-    uploadSize: '{file} is over the {n} MB limit.',
-    uploadTooLarge: 'A file is over the {n} MB limit.',
+    uploadSize: '{file} is over the {n} MB limit. Please choose a smaller file.',
+    uploadTooLarge: 'A file is over the {n} MB limit. Please choose a smaller file.',
     // The name decisions are recorded under (js/decide.js, 2026-10-08).
     decideAs: 'Deciding as',
     back: 'Back',
@@ -120,7 +120,7 @@
       client: 'Receive a notification when a draft is ready for review or a post is live.',
       creator: 'Receive a notification when a booking is confirmed, changes are requested or a draft is approved.',
       install: 'On iPhone, add this page to the Home Screen, then turn notifications on from there.',
-      blocked: 'Notifications are blocked for this site in the browser settings.',
+      blocked: 'Notifications are blocked for this site. Please allow them in the browser settings.',
       failed: 'Notifications could not be turned on. Please try again.',
       close: 'Close'
     }
@@ -133,7 +133,7 @@
     failTextAdspace: '请刷新页面，或联系 ADspace。',
     passTitle: '访问码',
     passText: '请输入访问码。',
-    passWrong: '访问码不正确。',
+    passWrong: '访问码不正确，请重新输入。',
     lockedTitle: '链接已暂时锁定',
     lockedText: '访问码多次输入错误。请于{wait}后重试。',
     /* No space between a figure and its Chinese unit (2026-10-20, VER-1). */
@@ -151,8 +151,8 @@
     offline: '网络连接中断或过慢，请重试。',
     tooLong: '未能提交。名字最多80个字符，备注最多2,000个字符，文案最多5,000个字符。',
     uploadType: '此类文件无法上传，请使用视频、图片或 PDF。',
-    uploadSize: '{file}超过{n}MB的上限。',
-    uploadTooLarge: '有文件超过{n}MB的上限。',
+    uploadSize: '{file}超过{n}MB的上限，请选择较小的文件。',
+    uploadTooLarge: '有文件超过{n}MB的上限，请选择较小的文件。',
     decideAs: '当前审批人',
     back: '返回',
     decideChange: '更改',
@@ -161,7 +161,7 @@
     decideCancel: '取消',
     decideName: '您的姓名',
     maintTitle: '系统升级中',
-    maintText: '系统将于稍后恢复使用。',
+    maintText: '系统将稍后恢复使用。',
     maintBack: '系统将于{when}前恢复使用。',
     pausedTitle: '暂时无法使用',
     pausedText: '请稍后再查看。',
@@ -185,7 +185,7 @@
     svState: { enquired: '已询价', quoted: '待报价', confirmed: '已确认' },
     stage: {
       lead: '潜在客户', contacted: '已联系', proposal: '已发提案',
-      active: '合作中', paused: '暂停', past: '已结束'
+      active: '合作中', paused: '已暂停', past: '已结束'
     },
     rqState: {
       requested: '已提交', reviewing: '审核中', approved: '已批准',
@@ -208,7 +208,7 @@
       client: '初稿待审阅或帖子发布时，在此设备上接收通知。',
       creator: '合作确认、需要修改或初稿通过时，在此设备上接收通知。',
       install: '在 iPhone 上，请先将此页面添加到主屏幕，再从主屏幕开启通知。',
-      blocked: '浏览器设置已阻止此网站的通知。',
+      blocked: '此网站的通知已被浏览器阻止，请在浏览器设置中允许通知。',
       failed: '未能开启通知，请重试。',
       close: '关闭'
     }

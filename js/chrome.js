@@ -221,7 +221,7 @@
     var zh = function () { return /^zh/i.test(document.documentElement.lang || ''); };
     var paint = function () {
       bar.innerHTML = '<p class="tzbar-text">' + esc(tzWords(zh(), gmt, zone)) + '</p>' +
-        '<button class="iconbtn tzbar-x" type="button" aria-label="' + (zh() ? '关闭' : 'Dismiss') + '">' +
+        '<button class="iconbtn tzbar-x" type="button" aria-label="' + (zh() ? '关闭' : 'Close') + '">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>';
       bar.querySelector('.tzbar-x').addEventListener('click', function () {
         try { sessionStorage.setItem(TZ_HIDE, '1'); } catch (e) { /* closes for now only */ }

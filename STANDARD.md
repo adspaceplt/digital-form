@@ -623,6 +623,10 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
 
+- `creator`: three Payments pane checks ("Payments lists the booking with its
+  Job reference and Pending payment", "a booking's payment is one line", "a
+  paid bill reads Paid on Bukku's payment day") fail on main before and after
+  the client-page copy sweep (2026-11-12); not yet found.
 - `bukkufn`: "Read from Bukku asks the contact's bills and keeps its own
   ready ones alone" answers `failed` on main since #1035 (Bukku's paid day);
   the suite or the bills read needs bringing together (2026-11-12).

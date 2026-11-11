@@ -17,7 +17,7 @@
      this browser, the moment the page shows what it is for. */
   var GUIDE = { name: { en: 'Your portal', zh: '客户门户' }, steps: [
     { at: '#cpTabs', text: { en: 'Your services, letters, reports and meetings are each on their own tab.', zh: '服务、函件、报告与会议，各在一个分页。' } },
-    { at: '#ovRequest', text: { en: 'Use Request change to ask your account manager for an upgrade, a downgrade or a change of details.', zh: '如需升级、调整服务或更新资料，请点「申请修改」，客户经理会为您跟进。' } }] };
+    { at: '#ovRequest', text: { en: 'Use Request change to ask your account manager for an upgrade, a downgrade or a change of details.', zh: '如需升级、降级或更新资料，请点击「申请修改」，客户经理将为您跟进。' } }] };
   var db  = API && API.client;
   var MON = window.ADspaceMoney;
   /* The shared list and record primitives: the same `initials` both console
@@ -69,13 +69,13 @@
       signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
-      addCal: 'Add to calendar', monthOf: function (a, b) { return 'Month ' + a + ' of ' + b; }, endsOn: function (d) { return 'ends ' + d; },
+      addCal: 'Add to calendar', monthOf: function (a, b) { return 'Month ' + a + ' of ' + b; }, endsOn: function (d) { return 'Ends ' + d; },
       legalName: 'Registered Company Name', regNo: 'Business Registration No.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
       contact: 'Contact', reach: 'Contact details', contacts: 'Contacts',
       mainContact: 'Primary contact', portal: 'Portal', noContacts: 'No contacts.',
-      service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
+      service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'Status', noServices: 'No services.',
       months: function (n) { return n + ' months'; }, from: function (d) { return 'from ' + d; }, fromAlone: function (d) { return 'From ' + d; }, mo: 'months',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
       /* Cancel service, never Cancel: the sheet's foot holds Cancel, which
@@ -85,7 +85,7 @@
       withdrawn: 'Withdrawn', withdrawnSay: 'Request withdrawn.',
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
-      reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
+      reports: 'Reports', report: 'Report', published: 'Published', version: 'Version',
       meetings: 'Meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
       join: 'Join meeting', discussion: 'content discussion', to: 'to',
       channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
@@ -94,29 +94,30 @@
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, reqKind: 'Request', line: 'Service', note: 'Note', noteFor: { upgrade: 'Requested change', downgrade: 'Requested change', cancel: 'Reason (optional)', details: 'Details to update' },
       send: 'Send request', close: 'Cancel', closeMark: 'Close', sent: 'Sent.', noteNeeded: 'Please describe the change required.', company: 'Company',
+      tabsLabel: 'Portal sections', sideLabel: 'Account manager and company',
       tabs: { overview: 'Overview', review: 'Content Review', scripts: 'Video Scripts', campaigns: 'Creator Campaigns',
         services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
       posts: function (n) { return n === 1 ? '1 post' : n + ' posts'; },
       toReview: function (n) { return n + ' to review'; }, changesAsked: 'Changes requested', allApproved: 'Approved',
-      noPosts: 'No posts', shoot: 'Shoot', noMonth: 'Month not set',
+      noPosts: 'No posts', shoot: function (d) { return 'Shooting on ' + d; }, noMonth: 'Month not set',
       scriptKind: { scenes: 'Detailed scenes', products: 'Products and scenes', story: 'Story and voice-over' },
       viewAll: 'View all', nextMeeting: 'Next meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
-      lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
+      lines: function (n) { return n === 1 ? '1 service' : n + ' services'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
     },
     zh: {
-      kicker: '客户平台', lang: 'EN', signOut: '退出登录',
+      kicker: '客户门户', lang: 'EN', signOut: '退出登录',
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送验证码',
       sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。请输入验证码，或打开链接。'; },
-      code: '邮件中的验证码', signIn: '登录', otherEmail: '使用其他邮箱',
+      code: '登录验证码', signIn: '登录', otherEmail: '使用其他邮箱',
       codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
       codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
       emailNeeded: '请输入电子邮箱。',
       emailBad: '请输入有效的电子邮箱。',
       signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
-      engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
-      addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + ' 结束'; },
-      legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
+      engagements: '合作项目', payment: '付款', account: '门户访问权限',
+      addCal: '加入日历', monthOf: function (a, b) { return '第' + a + '个月，共' + b + '个月'; }, endsOn: function (d) { return d + '结束'; },
+      legalName: '注册名称', regNo: '商业登记号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
       contact: '联系人', reach: '联系方式', contacts: '联系人',
@@ -129,20 +130,21 @@
       withdrawn: '已撤回', withdrawnSay: '申请已撤回。',
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '服务确认函',
-      reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
+      reports: '报告', report: '报告', published: '已发布', version: '版本',
       meetings: '会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论', to: '至',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
       review: '内容审阅', open: '打开', campaign: '创作者项目',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
-      reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
+      reqTitle: function (k) { return T.zh[k]; }, reqKind: '申请类型', line: '服务', note: '备注', noteFor: { upgrade: '所需更改', downgrade: '所需更改', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', closeMark: '关闭', sent: '已提交。', noteNeeded: '请描述所需的更改。', company: '公司',
+      tabsLabel: '门户分页', sideLabel: '客户经理与公司',
       tabs: { overview: '概览', review: '内容审阅', scripts: '视频脚本', campaigns: '创作者项目',
         services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
       posts: function (n) { return n + '篇帖子'; },
       toReview: function (n) { return n + '篇待审阅'; }, changesAsked: '已要求修改', allApproved: '已批准',
-      noPosts: '暂无帖子', shoot: '拍摄', noMonth: '未定月份',
+      noPosts: '暂无帖子', shoot: function (d) { return d + '拍摄'; }, noMonth: '未定月份',
       scriptKind: { scenes: '详细分镜', products: '产品与分镜', story: '故事与旁白' },
       viewAll: '查看全部', nextMeeting: '下次会议', latestReport: '最新报告', yourManager: '您的客户经理',
       lines: function (n) { return n + '项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
@@ -166,6 +168,8 @@
     $('signCode').setAttribute('aria-label', t().code);
     $('codeGo').textContent = t().signIn;
     $('codeBack').textContent = t().otherEmail;
+    if ($('cpTabs')) $('cpTabs').setAttribute('aria-label', t().tabsLabel);
+    if ($('cpSide')) $('cpSide').setAttribute('aria-label', t().sideLabel);
     if (feed) build(); else if (shownState) showState.apply(null, shownState);
   }
   if ($('langToggle')) $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
@@ -200,6 +204,7 @@
     if (!l.start_on) return count;
     var day = '<span class="nb">' + esc(niceDate(startDay(l.start_on))) + '</span>';
     var from = count ? t().from : t().fromAlone;
+    if (count && lang === 'zh') return count + '，自' + day + '起';
     return (count ? count + ' ' : '') + from(day);
   }
   /* A line's unit and its term note are the rate card's English. On the
@@ -207,7 +212,7 @@
      part it does not know is left as the team wrote it (2026-10-31, POR-6).
      The stored words never change. */
   var UNIT_ZH = {
-    'per month': '每月', 'per campaign': '每项活动', 'per post': '每篇帖子', 'per video': '每个视频',
+    'per month': '每月', 'per campaign': '每个项目', 'per post': '每篇帖子', 'per video': '每个视频',
     'per gif': '每个 GIF', 'per set': '每组', 'per account': '每个账号', 'per asset': '每项素材',
     'per affected asset': '每项受影响的素材', 'per round': '每轮', 'per language': '每种语言',
     'per unit / asset': '每单位／每项素材', 'per shoot': '每次拍摄', 'per scene / shoot': '每个场景／每次拍摄',
@@ -668,7 +673,7 @@
         if (list.length) {
           var stb = table('');
           list.forEach(function (x) {
-            var shoot = x.shoot_on ? w.shoot + ' ' + niceDate(x.shoot_on) : '';
+            var shoot = x.shoot_on ? w.shoot(niceDate(x.shoot_on)) : '';
             var row = document.createElement('div');
             row.className = 'svc-row cp-work-row';
             row.innerHTML = '<span class="svc-name"><b>' + esc([x.code, x.title].filter(Boolean).join(' · ')) + '</b><small>' +
@@ -707,7 +712,7 @@
     $('ovRepGo').hidden = false;
     if (!v) { box.innerHTML = ''; return; }
     box.innerHTML = '<p class="cp-line"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b></p>' +
-      '<p class="cp-sub">' + parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, w.published + ' ' + niceDate(v.published_at)]) + '</p>' +
+      '<p class="cp-sub">' + parts([SMR && SMR.titleOf ? SMR.titleOf(v) : v.title, (lang === 'zh' ? niceDate(v.published_at) + '发布' : w.published + ' ' + niceDate(v.published_at))]) + '</p>' +
       (SMR ? '<div class="cp-card-acts"><button class="btn btn-sm" type="button" data-a="dl">' + FILE + esc(w.download) + '</button></div>' : '');
     var dl = box.querySelector('[data-a="dl"]');
     if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg', dl); });
@@ -734,7 +739,7 @@
   var DAY_ZH = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
   function meetSpan(v) {
     var a = myt(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
-    return clock(a) + ' ' + t().to + ' ' + clock(b);
+    return lang === 'zh' ? clock(a) + t().to + clock(b) : clock(a) + ' ' + t().to + ' ' + clock(b);
   }
   function meetWhen(v) {
     var a = myt(v.at);
@@ -863,7 +868,7 @@
     }).then(done).catch(function () {
       done();
       window.ADspaceDocs.shut(tab);
-      msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
+      msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Please refresh the page and try again.', 'err');
     });
   }
 
@@ -1091,7 +1096,7 @@
         row.innerHTML =
           '<span class="svc-name"><b>' + parts([w[r.kind] || r.kind, r.service_label]) + '</b>' +
             (sub ? '<small>' + sub + '</small>' : '') +
-            (r.reply ? '<small>' + esc(w.reply + ': ' + r.reply) + '</small>' : '') + '</span>' +
+            (r.reply ? '<small>' + esc(w.reply + (lang === 'zh' ? '：' : ': ') + r.reply) + '</small>' : '') + '</span>' +
           /* No fee is a mute dash at a desk under its head, nothing on a
              phone, where the head is hidden (2026-10-20, POR-1). */
           '<span class="svc-rate svc-amt' + (r.fee != null && r.fee !== '' ? '' : ' is-none') + '">' + (r.fee != null && r.fee !== '' ? '<b>' + esc(money2(r.fee)) + '</b>' : '<span class="muted">\u2014</span>') + '</span>' +

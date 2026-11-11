@@ -94,13 +94,13 @@
         }).join('') +
       '</div></div>' +
       '<span class="annbar-acts">' +
-        '<a class="btn btn-sm annbar-open" target="_blank" rel="noopener" hidden>' + (cn ? '查看' : 'Open') + OUT + '</a>' +
+        '<a class="btn btn-sm annbar-open" target="_blank" rel="noopener" hidden>' + (cn ? '打开' : 'Open') + OUT + '</a>' +
         (many ? '<span class="annbar-pager">' +
           '<button class="iconbtn annbar-step" id="annPrev" type="button" aria-label="' + (cn ? '上一条' : 'Previous') + '">' + PREV + '</button>' +
           '<span class="annbar-n" aria-live="polite"></span>' +
           '<button class="iconbtn annbar-step" id="annNext" type="button" aria-label="' + (cn ? '下一条' : 'Next') + '">' + NEXT + '</button>' +
         '</span>' : '') +
-        '<button class="iconbtn annbar-x" type="button" aria-label="' + (cn ? '关闭' : 'Dismiss') + '">' + X + '</button>' +
+        '<button class="iconbtn annbar-x" type="button" aria-label="' + (cn ? '关闭' : 'Close') + '">' + X + '</button>' +
       '</span>';
     if (many) { bar.setAttribute('data-swipe-prev', 'annPrev'); bar.setAttribute('data-swipe-next', 'annNext'); }
     else { bar.removeAttribute('data-swipe-prev'); bar.removeAttribute('data-swipe-next'); }

@@ -57,13 +57,13 @@
       plan: 'Plan {p}', platOne: '1 platform', platUpTo: 'up to {n} platforms',
       contents: '{n} content pieces per month', mixOr: ' or ', mixAnd: ' and ',
       kindN: { graphic: ['{n} graphic', '{n} graphics'], reel: ['{n} reel of up to 60 seconds', '{n} reels of up to 60 seconds'] },
-      budgetUpTo: 'Manages an advertising budget of up to RM\u00a0{b} per month',
+      budgetUpTo: 'Includes management of an advertising budget of up to RM\u00a0{b} per month',
       ratesLater: 'The rates will be shown on the final page.', budgetSep: 'The advertising budget is billed separately.',
       planNone: 'Select a platform and a plan.',
       customT: 'Customise', customPlan: 'Customise Plan {p}',
       extra: 'Additional content pieces per month', mixH: 'Content pieces per month', fewer: 'One fewer', more: 'One more',
       langs: 'Languages', langsNote: 'Each content piece is published in one language. The monthly content pieces may be divided across the languages selected, for example 2 in English and 4 in Chinese, at no additional charge.',
-      translate: 'Make every content piece bilingual', translateNote: 'A content piece in more than one language is charged at the translation rate, per content piece, for each additional language.',
+      translate: 'Make every content piece bilingual', translateNote: 'Each additional language is charged at the translation rate per content piece.',
       budget: 'Advertising budget per month', budgetIn: 'Up to RM {b} (managed within the plan)', budgetUp: 'Up to RM {b}',
       budgetAbove: 'Above RM {b}', budgetOver: 'Advertising budget above {c} {b}', budgetReq: 'Advertising budget', term: 'Commitment', months: '{n} months',
       once: 'Content production', onceNote: 'One-off, charged per item',
@@ -74,7 +74,7 @@
       commence: 'Planned commencement', choose: 'Select', starts3: [['1_3', 'Within 3 months'], ['3_6', '3 to 6 months'], ['6_plus', 'More than 6 months']],
       consent: 'I consent to ADspace keeping these details to prepare my quotation and to contact me about it.',
       freeMail: 'A work email address is recommended.',
-      waBad: 'Enter a Malaysian or Singapore WhatsApp number.',
+      waBad: 'Enter a Malaysian or Singaporean WhatsApp number.',
       req: { name: 'Enter your name.', email: 'Enter a valid email address.', brand: 'Enter your brand name.', commence: 'Select when you plan to commence.', consent: 'Tick the box to continue.' },
       make: 'View quotation', making: 'Preparing…',
       quoteT: 'Your quotation', valid: 'Valid until {d}', expired: 'Expired on {d}', change: 'Change selection',
@@ -94,12 +94,12 @@
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
       billSentT: 'Billing details received', billSentP: 'ADspace will send your quotation for signing shortly.',
-      letterP: 'Please review and sign the Letter of Offer, then return the signed copy to us.',
+      letterP: 'Please review and sign the Letter of Offer, then return the signed copy to ADspace.',
       signedT: 'Signed copy received', signedP: 'ADspace will confirm your services shortly.', confirmed: 'Confirmed',
-      welcomeT: 'Welcome to ADspace', welcomeP: 'Your services, letters, reports and meetings are available in your client portal.',
-      portalBtn: 'Sign in to your client portal', portalLater: 'Your account manager will set up your client portal access.',
+      welcomeT: 'Welcome to ADspace', welcomeP: 'Your services, letters, reports and meetings are available in your Client Portal.',
+      portalBtn: 'Sign in to your Client Portal', portalLater: 'Your account manager will set up your Client Portal access.',
       goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ADspace on WhatsApp.',
-      goneAsked: 'Request received. Our team will contact you.',
+      goneAsked: 'Request received. ADspace will contact you shortly.',
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
       monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
@@ -108,10 +108,10 @@
       newQuote: 'New quotation',
       err: {
         captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
-        'bad-whatsapp': 'Enter a Malaysian or Singapore WhatsApp number.', 'bad-email': 'Enter a valid email address.',
+        'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
-        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
+        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace. It will be sent to you on WhatsApp once ready.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
@@ -121,7 +121,7 @@
         title: 'Accept this quotation', line: 'Confirm your company details and sign here. No printing or scanning is needed.',
         steps: ['Company details', 'Review and sign', 'Confirm with the code'], go: 'Accept and sign',
         legal: 'Registered Company Name', reg: 'Business Registration No.', regOld: 'Old Registration No.', addr: 'Billing address',
-        addrPh: 'Street, postcode, city, state', sst: 'SST Registration No.', tin: 'TIN', fin: 'Finance email', contactH: 'Billing contact',
+        addrPh: 'Street, postcode, city, state', sst: 'SST Registration No.', tin: 'Tax Identification Number (TIN)', fin: 'Finance email', contactH: 'Billing contact',
         mobile: 'Mobile', email: 'Email', minTerm: 'Minimum term', termTotal: 'Total for the term', termTotalIncl: 'Total for the term incl. SST',
         signer: 'Full name', desig: 'Designation', sig: 'Signature', clear: 'Clear', typeIn: 'Type instead', drawIn: 'Draw instead',
         pad: 'Signature area', padHint: 'Sign here', typedPh: 'Type your full name',
@@ -134,7 +134,7 @@
         doneP: 'ADspace will review your details and confirm your start date within 2 working days.',
         say: {
           legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Business Registration Number.', regOld: 'Enter a valid Old Registration Number.',
-          tin: 'Enter a valid TIN.', sst: 'Enter a valid SST Registration Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
+          tin: 'Enter a valid Tax Identification Number (TIN).', sst: 'Enter a valid SST Registration Number.', addr: 'Enter the full billing address.', email: 'Enter a valid email address.',
           sal: 'Select a salutation from the list.', name: 'Enter the name of the billing contact.', mobile: 'Enter a valid mobile number.',
           signer: 'Enter your full name.', desig: 'Enter your designation.', sig: 'Draw or type your signature.',
           agree: 'Tick the box to confirm you are authorised to sign.', code: 'Enter the six-digit code.',
@@ -153,7 +153,7 @@
       introT: '获取报价',
       introP: '选择品牌所需的服务，即可申请报价。',
       introH: '流程说明',
-      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
+      introSteps: ['选择所需服务。', '选择方案，并设定内容、语言及合约期。', '填写联系资料，ADspace 审核后将通过 WhatsApp 发送报价。', '在此页面接受并签署报价，ADspace 随后将与您确认开始日期。'],
       introNote: '整个流程约需三分钟。',
       start: '开始',
       needT: '您需要什么服务？',
@@ -168,7 +168,7 @@
       reqOnly: 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。',
       planT: '平台与方案', platsH: '平台', planH: '方案', noAds: '不含广告', withAds: '含广告',
       plan: '方案 {p}', platOne: '1个平台', platUpTo: '最多{n}个平台',
-      contents: '每月{n}条内容', mixOr: '，或 ', mixAnd: '、',
+      contents: '每月{n}条内容', mixOr: '，或', mixAnd: '、',
       kindN: { graphic: ['{n}条图文', '{n}条图文'], reel: ['{n}条短视频（60秒内）', '{n}条短视频（60秒内）'] },
       budgetUpTo: '代为管理每月最高 RM\u00a0{b} 的广告预算',
       ratesLater: '价格将在最后一页显示。', budgetSep: '广告预算另行收费。',
@@ -176,7 +176,7 @@
       customT: '自定义', customPlan: '自定义方案 {p}',
       extra: '每月额外内容', mixH: '每月内容', fewer: '减少一条', more: '增加一条',
       langs: '语言', langsNote: '每条内容使用一种语言。每月内容可分配至所选语言，例如2条英文、4条中文，不另收费。',
-      translate: '每条内容均制作为双语', translateNote: '一条内容使用多种语言时，按翻译费计算，每条内容、每增加一种语言收费。',
+      translate: '每条内容均制作为双语', translateNote: '每条内容每增加一种语言，按翻译费另行收费。',
       budget: '每月广告预算', budgetIn: '最高 RM {b}（由方案代为管理）', budgetUp: '最高 RM {b}',
       budgetAbove: 'RM {b} 以上', budgetOver: '广告预算 {c} {b} 以上', budgetReq: '广告预算', term: '合约期', months: '{n}个月',
       once: '内容制作', onceNote: '一次性，按件收费',
@@ -191,7 +191,7 @@
       req: { name: '请填写姓名。', email: '请填写有效的邮箱地址。', brand: '请填写品牌。', commence: '请选择计划开始时间。', consent: '请勾选后继续。' },
       make: '查看报价', making: '准备中…',
       quoteT: '您的报价', valid: '有效期至 {d}', expired: '已于 {d} 过期', change: '修改选择',
-      line: '服务', qty: '数量', rate: '单价 ({c})', sub: '小计 ({c})', onReq: '另行报价',
+      line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
       download: '下载', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
@@ -207,33 +207,33 @@
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
       billSentT: '已收到账单资料', billSentP: 'ADspace 将尽快向您发送报价单供您签署。',
-      letterP: '请审阅并签署服务确认函，然后将签署副本交回给我们。',
+      letterP: '请审阅并签署服务确认函，然后将签署副本交回 ADspace。',
       signedT: '已收到签署副本', signedP: 'ADspace 将尽快确认您的服务。', confirmed: '已确认',
       welcomeT: '欢迎加入 ADspace', welcomeP: '您的服务、函件、报告及会议均可在客户平台查看。',
       portalBtn: '登录客户平台', portalLater: '您的客户经理将为您开通客户平台。',
-      goneT: '本报价已过期', goneP: '您可按最新价格重新报价，或通过 WhatsApp 咨询 ADspace。',
-      goneAsked: '已收到您的确认，我们的团队将与您联系。',
+      goneT: '本报价已过期', goneP: '您可按最新价格申请新的报价，或通过 WhatsApp 咨询 ADspace。',
+      goneAsked: '已收到您的确认，ADspace 将尽快与您联系。',
       closed: '已取消', closedT: '本报价已取消',
       monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
       monthly: '每月（含 SST）', firstExcl: '首月（未含 SST）', first: '首月（含 SST）', oneOff: '一次性（含 SST）',
-      newQuote: '重新报价',
+      newQuote: '申请新报价',
       err: {
         captcha: '安全验证未完成，请重试。', limit: '此联系方式今日已获取五份报价，请通过 WhatsApp 联系 ADspace。',
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
         'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
-        expired: '本报价已过期，请重新报价。', 'not-proceeding': '本报价已取消，请重新报价。', 'not-sent': 'ADspace 仍在审核本报价。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
+        expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 仍在审核本报价，审核完成后将通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
-        empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '报价暂不可用，请通过 WhatsApp 联系 ADspace。',
+        empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
       },
       sg: {
         title: '接受报价', line: '在此确认公司资料并签署，无需打印或扫描。',
         steps: ['公司资料', '审阅并签署', '验证码确认'], go: '接受并签署',
-        legal: '公司注册名称', reg: '注册号码', regOld: '旧注册号码', addr: '账单地址',
-        addrPh: '街道、邮编、城市、州属', sst: 'SST 号码', tin: 'TIN', fin: '财务邮箱', contactH: '账单联系人',
+        legal: '公司注册名称', reg: '商业注册号码', regOld: '旧注册号码', addr: '账单地址',
+        addrPh: '街道、邮编、城市、州属', sst: 'SST 注册号码', tin: '税务识别号码（TIN）', fin: '财务邮箱', contactH: '账单联系人',
         mobile: '手机号码', email: '邮箱', minTerm: '最低合约期', termTotal: '合约期总额', termTotalIncl: '合约期总额（含 SST）',
         signer: '全名', desig: '职位', sig: '签名', clear: '清除', typeIn: '改为输入', drawIn: '改为手写',
         pad: '签名区', padHint: '请在此签名', typedPh: '请输入您的全名',
@@ -245,8 +245,8 @@
         doneT: '报价已接受', by: '签署人', forCo: '公司', on: '日期', dl: '下载已签署报价',
         doneP: 'ADspace 将审核您的资料，并于2个工作日内确认开始日期。',
         say: {
-          legal: '请填写公司注册名称。', reg: '请填写有效的注册号码。', regOld: '请填写有效的旧注册号码。',
-          tin: '请填写有效的 TIN。', sst: '请填写有效的 SST 号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
+          legal: '请填写公司注册名称。', reg: '请填写有效的商业注册号码。', regOld: '请填写有效的旧注册号码。',
+          tin: '请填写有效的税务识别号码（TIN）。', sst: '请填写有效的 SST 注册号码。', addr: '请填写完整的账单地址。', email: '请填写有效的邮箱地址。',
           sal: '请从列表中选择称谓。', name: '请填写账单联系人姓名。', mobile: '请填写有效的手机号码。',
           signer: '请填写您的全名。', desig: '请填写您的职位。', sig: '请手写或输入您的签名。',
           agree: '请勾选，确认您获授权签署。', code: '请输入六位数验证码。',
@@ -255,7 +255,7 @@
           noCode: '请重新发送验证码。', tooMany: '请求验证码次数过多，请一小时后再试。'
         }
       },
-      lostT: '找不到报价', lostP: '请检查链接，或重新报价。',
+      lostT: '找不到报价', lostP: '请检查链接，或申请新的报价。',
       offT: '无法加载', offP: '请刷新页面，或通过 WhatsApp 联系 ADspace。',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: '小红书', linkedin: 'LinkedIn' },
       lang3: { en: 'English', zh: '中文', ms: '马来文' }
@@ -683,7 +683,7 @@
   }
   function waLink(q) {
     var who = cfg.quoteWhatsApp || 'https://wa.me/adspace';
-    return who + '?text=' + encodeURIComponent('Hello ADspace, I would like to enquire about my quotation ' + (q ? q.ref : '') + '.');
+    return who + '?text=' + encodeURIComponent(q && q.ref ? 'Hello ADspace, I would like to enquire about my quotation ' + q.ref + '.' : 'Hello ADspace, I would like to enquire about a quotation.');
   }
   /* Beside the quotation (under it on a phone): the colleague who took the
      lead, once one has, with their own WhatsApp where their namecard shows
@@ -698,7 +698,7 @@
   function repHtml(q) {
     var w = t(), first = String(q.rep.name || '').split(' ')[0];
     var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
-      encodeURIComponent('Hi ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
+      encodeURIComponent('Hello ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
     /* A person card: the name and position on a white card with its way to
        reach them, never an initials disc (no stand-in for a person's
        picture; 2026-11-07). */

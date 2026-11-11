@@ -69,13 +69,14 @@
   var T = window.ADspaceWords.of({
     en: {
       kicker: 'Creator Selection',
+      openFile: 'Open file', newTag: 'New', accessCode: 'Access code', openCode: 'Open',
       preparedFor: 'Prepared for',
       lang: '中文',
       chooseMore: function (n) { return 'Select ' + n + ' more.'; },
-      complete: 'All chosen.',
+      complete: 'All selected.',
       over: 'The selection exceeds the number of creators for this campaign.',
       yourSelection: 'Your selection',
-      count: function (a, b) { return a + ' of ' + b + ' chosen'; },
+      count: function (a, b) { return a + ' of ' + b + ' selected'; },
       newAdded: function (n) { return n + ' creators were added recently'; },
       seeNew: 'View new creators',
       select: 'Select',
@@ -85,7 +86,7 @@
       backupHint: 'Select your creators. Backups are optional and not charged.',
       backupsNeeded: function () { return 'Backup creators are optional.'; },
       backupsDone: 'Backup creators selected.',
-      backupCount: function (a, b) { return a + ' of ' + b + ' marked'; },
+      backupCount: function (a, b) { return a + ' of ' + b + ' backups selected'; },
       priorityNotice: 'A creator is unavailable. Please select a replacement; your backups are listed first.',
       priority: 'Priority',
       oneMoreBackup: 'Please select one more backup.',
@@ -93,7 +94,7 @@
       viewProfile: 'View profile',
       viewOn: function (platform) { return 'View ' + platform + ' profile'; },
       platform: { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
-      full: 'All creators chosen',
+      full: 'All creators selected',
       confirm: 'Confirm selection',
       confirmHeading: 'Confirm your selection',
       confirmBlurb: 'Your selection will be confirmed under the name entered below.',
@@ -141,7 +142,7 @@
       creatorsLabel: 'Creators',
       dueLabel: 'Campaign due',
       pdf: 'PDF',
-      pdfFail: 'Unable to open the invoice. Please refresh and try again.',
+      pdfFail: 'Unable to open the invoice. Please refresh the page and try again.',
       pic: 'Contact',
       /* Post date, as the step track names it (2026-10-27, SEL-5). */
       goLive: 'Post date',
@@ -159,7 +160,7 @@
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
       proceededBy: function (who, when) { return 'Confirmed by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
-      reviewThanks: 'Thank you. Your response has been received, and our team will follow up.',
+      reviewThanks: 'Thank you. Your response has been received. ADspace will follow up shortly.',
       draftMoved: 'This draft has been updated since the page was opened. The page has been refreshed.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
@@ -167,7 +168,7 @@
       ratesChanged: 'The rates have been updated. Please review them and confirm again.',
       selectionChanged: 'A creator is no longer available. Please review your selection and confirm again.',
       overSlots: function (n) {
-        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be chosen. Please remove one and confirm again.'
+        return n > 0 ? 'Only ' + n + ' more ' + (n === 1 ? 'creator' : 'creators') + ' can be selected. Please remove one and confirm again.'
           : 'Every creator for this campaign has been booked. Please contact your ADspace account manager.';
       },
       unavailable: 'Unavailable. Please select a replacement below.',
@@ -185,6 +186,7 @@
     },
     zh: {
       kicker: '创作者选择',
+      openFile: '打开文件', newTag: '新增', accessCode: '访问码', openCode: '打开',
       preparedFor: '致',
       lang: 'EN',
       chooseMore: function (n) { return '再选' + n + '位。'; },
@@ -201,7 +203,7 @@
       backupHint: '请选择创作者。备选为可选项，不产生费用。',
       backupsNeeded: function () { return '备选为可选项。'; },
       backupsDone: '已设定备选创作者。',
-      backupCount: function (a, b) { return '已设备选 ' + a + ' / ' + b; },
+      backupCount: function (a, b) { return '已选备选 ' + a + ' / ' + b; },
       priorityNotice: '有一位创作者暂不可用，请选择替补。备选已优先显示。',
       priority: '优先',
       oneMoreBackup: '请再选一位备选。',
@@ -212,7 +214,7 @@
       full: '名额已满',
       confirm: '确认选择',
       confirmHeading: '确认您的选择',
-      confirmBlurb: '您的选择将以下方填写的姓名确认。',
+      confirmBlurb: '此选择将以您在下方填写的姓名确认。',
       nameLabel: '您的姓名',
       namePlaceholder: '陈小明',
       send: '确认',
@@ -241,7 +243,7 @@
         changes: '修改中', scheduled: '发布日期',
         posted: '7天后提供数据'
       },
-      tbc: '待定',
+      tbc: '待确认',
       amountLabel: '金额',
       detailsLabel: '合作详情',
       creatorsLabel: '创作者人数',
@@ -256,14 +258,14 @@
       openDraft: '打开初稿',
       noteLabel: '需要修改的内容',
       approve: '通过',
-      askChanges: '需要修改',
-      sendRequest: '提交修改',
+      askChanges: '要求修改',
+      sendRequest: '提交修改要求',
       theClient: '客户',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
       proceededBy: function (who, when) { return '已由' + who + '确认' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
-      reviewThanks: '谢谢，我们已收到您的回复，团队将跟进处理。',
-      draftMoved: '页面打开后此草稿已更新，页面已刷新。',
+      reviewThanks: '谢谢，您的回复已收到，ADspace 团队将尽快跟进。',
+      draftMoved: '页面打开后此初稿已更新，页面已刷新。',
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
       selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
@@ -336,6 +338,8 @@
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     $('langToggle').textContent = t().lang;
     $('kicker').textContent = t().kicker;
+    $('passInput').placeholder = t().accessCode;
+    $('passGo').textContent = t().openCode;
     paintPreparedFor();
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
     if (feed) { keepPicks = true; build(); keepPicks = false; }
@@ -373,7 +377,7 @@
     main.insertBefore(a, main.firstChild);
   }
   function load() {
-    if (!db) { showState('Not connected', 'This portal is not set up.', false); return; }
+    if (!db) { showState(t().failTitle, t().failText, false); return; }
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
     /* Opened by a contact signed in to the client portal (2026-11-08): no
@@ -908,7 +912,7 @@
       }
       if (f.kind === 'image') return '<img src="' + esc(f.url) + '" alt="" loading="lazy">';
       return '<a class="btn btn-sm" href="' + esc(absUrl(f.url)) + '" target="_blank" rel="noopener">' +
-        esc(f.name || 'Open file') + '</a>';
+        esc(f.name || t().openFile) + '</a>';
     }).join('');
     return '<div class="client-draft-preview">' +
       (media ? '<div class="client-draft-media">' + media + '</div>' : '') +
@@ -930,7 +934,7 @@
     if (!r || !r.decision) return '';
     /* The console's own stamp, the year included (2026-10-20, SEL-5). */
     var stamp = r.at && ADspaceClock.parts(r.at)
-      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true }) + ' ' + ADspaceClock.clock(r.at, { h24: true })
+      ? (lang === 'zh' ? ADspaceClock.date(r.at, { zh: true }) + ' ' + ADspaceClock.clock(r.at, { zh: true })
                        : ADspaceClock.date(r.at) + ', ' + ADspaceClock.clock(r.at))
       : '';
     /* An approval the team gave on the client's behalf names the colleague
@@ -1228,7 +1232,7 @@
           '<path d="m5 12.5 4.5 4.5L19 7.5"/></svg></button>' +
         '<div class="crow-name">' +
           '<b>' + esc(o.name) + '</b>' +
-          (isNew(o) ? '<span class="tag-new">NEW</span>' : '') +
+          (isNew(o) ? '<span class="tag-new">' + esc(t().newTag) + '</span>' : '') +
           (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
           (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
         '</div>' +
