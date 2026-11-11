@@ -29,7 +29,7 @@
     failTextAdspace: 'Please refresh the page, or contact ADspace.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
-    passWrong: 'Incorrect access code.',
+    passWrong: 'Incorrect access code. Please try again.',
     // A link locked after wrong access codes from this connection. A wait
     // keeps its figure and its unit on one line (a no-break space).
     lockedTitle: 'Link temporarily locked',
@@ -133,7 +133,7 @@
     failTextAdspace: '请刷新页面，或联系 ADspace。',
     passTitle: '访问码',
     passText: '请输入访问码。',
-    passWrong: '访问码不正确。',
+    passWrong: '访问码不正确，请重新输入。',
     lockedTitle: '链接已暂时锁定',
     lockedText: '访问码多次输入错误。请于{wait}后重试。',
     /* No space between a figure and its Chinese unit (2026-10-20, VER-1). */

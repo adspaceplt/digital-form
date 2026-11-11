@@ -394,7 +394,7 @@
           (post.asked.reviewer ? ' by ' + escapeHtml(post.asked.reviewer) : '') +
           ' · ' + fmtDate(post.asked.created_at) + '</b>' +
         (post.asked.note ? '<span class="reask-note">' + escapeHtml(post.asked.note) + '</span>' : '') +
-        (post.asked.suggested ? '<small>Caption edit applied.</small>' : '');
+        (post.asked.suggested ? '<small>Your caption edit has been applied.</small>' : '');
       card.appendChild(rev);
     }
 
@@ -641,7 +641,7 @@
       if (standing && !approveBtn.classList.contains('is-armed')) {
         approveBtn.classList.add('is-armed');
         approveBtn.textContent = 'Approve without changes';
-        say('Approving withdraws your request for changes.');
+        say('Approving will withdraw your request for changes.');
         return;
       }
       asker.need(function (name) {
@@ -703,7 +703,7 @@
       var note = textarea.value.trim();
       var cap = edited('caption', post.caption), capZh = edited('caption_zh', post.caption_zh);
       if (!note && cap === null && capZh === null) {
-        say('Describe the changes, or edit the caption.');
+        say('Please describe the changes required, or edit the caption.');
         textarea.focus();
         return;
       }
@@ -887,7 +887,7 @@
           n.appendChild(lab);
           var sc = document.createElement('span');
           sc.className = 'approve-note-cap';
-          sc.textContent = sug.length ? sug.join('\n\n') : 'Caption edit suggested.';
+          sc.textContent = sug.length ? sug.join('\n\n') : 'Your suggested caption has been sent.';
           n.appendChild(sc);
         }
         wrap.appendChild(n);
@@ -1133,7 +1133,7 @@
     var changes = section.querySelectorAll('.badge.is-changes').length;
 
     var label = done + ' of ' + total + ' approved';
-    if (changes) label += ' · ' + changes + ' with changes';
+    if (changes) label += ' · ' + changes + ' with changes requested';
     section.querySelector('.batch-progress').textContent = label;
     section.classList.toggle('is-done', done === total && total > 0);
 

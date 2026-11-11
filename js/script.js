@@ -48,7 +48,7 @@
     n = Number(n) || 0;
     if (!n) return '';
     var h = Math.floor(n / 60), m = n % 60;
-    return (h ? h + (h === 1 ? ' hour' : ' hours') : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
+    return (h ? h + (h === 1 ? ' hour' : ' hours') : '') + (h && m ? ' ' : '') + (m ? m + (m === 1 ? ' minute' : ' minutes') : '');
   }
   function monthWord(p) {
     var m = /^(\d{4})-(\d{2})$/.exec(p || '');
@@ -214,7 +214,7 @@
 
   function factsOf(s) {
     var f = [['Platform', s.platform], ['Language', s.language === 'Malay' ? 'Bahasa Melayu' : s.language],
-             ['Aspect ratio', s.aspect], ['Video length', s.length_seconds ? s.length_seconds + 's' : ''],
+             ['Aspect ratio', s.aspect], ['Video length', s.length_seconds ? s.length_seconds + ' seconds' : ''],
              ['Shooting date', [day(s.shoot_on), time(s.shoot_time)].filter(Boolean).join(', ')],
              ['Venue', s.venue], ['Estimated duration', dur(s.duration_minutes)], ['Cast', s.cast_names]];
     var ref = s.reference_url
