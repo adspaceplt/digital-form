@@ -4490,8 +4490,9 @@ span.inv-amt { font-weight: 600; }
 .inv-mail-card h4 { margin: 4px 0 0; font-size: 16px; font-weight: 600; color: #1a1a1a; }
 .inv-mail-mark { font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 18px; color: #1a1a1a; }
 /* The email's own palette (the user, 2026-11-09): #1a1a1a, #515151,
-   #f5f5f5 and #ffffff, never true black. */
-.inv-mail-card .inv-mail-fine { font-size: 11.5px; color: #515151; }
+   #f5f5f5 and #ffffff, never true black; the fine print the light grey
+   #a1a1a1 (2026-11-11). */
+.inv-mail-card .inv-mail-fine { font-size: 11.5px; color: #a1a1a1; }
 .inv-mail-t { background: #f5f5f5; border-radius: 10px; font-size: 12.5px; color: #1a1a1a; }
 .inv-mail-t .r { display: grid; grid-template-columns: minmax(0, 1fr) 92px 108px; gap: 8px; padding: 8px 12px; border-top: 1px solid #ececec; align-items: baseline; }
 .inv-mail-t .r:has(> :nth-child(4)) { grid-template-columns: minmax(0, 1fr) 92px 108px 60px; }
@@ -4635,7 +4636,7 @@ span.inv-amt { font-weight: 600; }
 .mt-odd { margin: -8px 0 0; }
 .mt-odd[hidden] { display: none; }
 .inv-mail-card .mt-pv-subj { font-weight: 600; }
-.inv-mail-card .mt-pv-fine { font-size: 12px; color: #515151; }
+.inv-mail-card .mt-pv-fine { font-size: 12px; color: #a1a1a1; }
 .inv-mail-card .mt-pv-none { color: #515151; }
 .inv-mail-card .mt-f { background: #eef3fb; color: #1a1a1a; border-radius: 4px; padding: 0 2px; }
 .inv-mail-card .mt-f.is-bad { background: #fdeceb; color: #b3261e; text-decoration: underline wavy; }
