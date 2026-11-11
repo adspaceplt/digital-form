@@ -9782,3 +9782,13 @@ its filter and the rail kept the old standing; a pen left unchanged showing
 the raw figure; and the console's email previews drawing the fine print in
 #a1a1a1, 2.6:1 on white. The user approved each (2026-11-12, "ok"); the
 emails keep #a1a1a1, the previews read #767676.
+
+- 2026-11-12 · Three suites logged against #1033 and #1035 cleared. `bukkufn`:
+  the paid-day read of `creator_bills` threw on the suite's stand-in client
+  (it holds only `rpc`) and failed the whole bills read; the read is now
+  held in a try, a failure meaning no day known, so the bills are still
+  kept. `camp`: the filter's approved count rose to two once the team-added
+  details test approved a second creator; it now counts the creators the
+  database holds approved. `creator` passed on main; it had been run on a
+  tests checkout behind #67.
+

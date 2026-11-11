@@ -692,8 +692,11 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
      applied to it, each with its date; the latest is the day it was paid.
      Read once a bill, ten a run, so a night never reads a creator's whole
      history again. */
-  const kept = await svcDb().from('creator_bills').select('bill_id').eq('creator_id', creator).not('paid_on', 'is', null);
-  const known = new Set<number>(((kept.data || []) as any[]).map((k) => Number(k.bill_id)));
+  const known = new Set<number>();
+  try {
+    const kept = await svcDb().from('creator_bills').select('bill_id').eq('creator_id', creator).not('paid_on', 'is', null);
+    for (const k of ((kept && kept.data) || []) as any[]) known.add(Number(k.bill_id));
+  } catch (_e) { /* none known: the day is read again, ten a run */ }
   let asked = 0;
   for (const b of out) {
     if (asked >= 10 || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
