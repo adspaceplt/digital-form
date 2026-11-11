@@ -949,11 +949,11 @@
     }, function () {});
     /* Asked beside me(), never after it (2026-10-26): neither needs its
        answer, and waiting for it cost the phone one more round trip. */
-    var vic = loadVic(), dep = loadDepts(), again = false;
+    var vic = loadVic(), dep = loadDepts(), due = loadDue(), again = false;
     var go = function () {
-      /* me() needed a fresh session: these two are asked again under it. */
-      if (again) { vic = loadVic(); dep = loadDepts(); }
-      Promise.all([rates.then(null, function () {}), sys, vic, dep]).then(then, then);
+      /* me() needed a fresh session: these are asked again under it. */
+      if (again) { vic = loadVic(); dep = loadDepts(); due = loadDue(); }
+      Promise.all([rates.then(null, function () {}), sys, vic, dep, due]).then(then, then);
     };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
@@ -1093,6 +1093,8 @@
     /* The Handbook is every colleague's to read (only an admin changes it),
        so it has no level of its own on the ladder. */
     if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
+    /* No access (2026-11-11) is every colleague's last stop. */
+    if (name === 'noaccess') return Boolean(me);
     /* The Overview is the start page of a group that oversees something: an
        admin, or a group one of whose cards is allowed (2026-09-28). It has no
        key of its own; each card asks its own, and the Overview asks them all
@@ -1289,10 +1291,14 @@
     var main = open.filter(function (b) { return !isAn(b); });
     /* Arrange sections, Settings and the Activity record are marks at the
        rail's foot, so the bar holds sections alone. */
-    var room = main.length < open.length ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
+    /* The rail's foot (the Handbook's mark, Settings', the Activity
+       record's) is reached through More, so More is drawn whenever one
+       of them is (2026-11-11). */
+    var foot = ['handbookOpen', 'settingsOpen', 'activityOpen'].some(function (id) { var m = $(id); return m && !m.hidden; });
+    var room = main.length < open.length || foot ? Math.min(4, main.length) : open.length <= 5 ? 5 : 4;
     tabRoom = room;
     var tabs = main.slice(0, room);
-    var more = open.length > tabs.length;
+    var more = open.length > tabs.length || foot || !tabs.length;
     var edit = $('railEdit');
     if (edit) edit.hidden = !(open.length > 2);
     tabbed = tabs.map(function (b) { return b.getAttribute('data-section'); });
@@ -1315,7 +1321,7 @@
         TAB_MORE + '<span class="tabbar-word">More</span></button>'
       : '');
     bar.style.setProperty('--tabs', String(tabs.length + (more ? 1 : 0)));
-    bar.hidden = !tabs.length;
+    bar.hidden = !tabs.length && !more;
     paintTabOn();
     paintTabDot();
   }
@@ -1688,6 +1694,7 @@
     services: 'Services',
     team: 'Team',
     handbook: 'Handbook',
+    noaccess: 'No access',
     mine: 'My records',
     settings: 'Settings'
   };
@@ -1720,6 +1727,7 @@
     services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
+    noaccess:  'Sections are given by an admin.',
     mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
     settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };
@@ -1956,19 +1964,34 @@
   /* The first section this person is allowed, for when the one asked for is
      not: the Overview, then the rail's own order, My Work first (it was left
      out, so a colleague whose day is My Work landed on Clients, or on the
-     Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
-     Handbook, so it is the floor. */
+     Handbook with My Work alone; audit, 2026-10-03). A colleague who holds
+     no section meets No access, which says to ask an admin; the Handbook
+     is a mark at the rail's foot, never a section's floor (2026-11-11). */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
-    return 'handbook';
+    return 'noaccess';
   }
+  /* HANDBOOK ACKNOWLEDGED (2026-11-11; the user: everyone reads the
+     Handbook's required files before the portal opens): the files due are
+     read beside me(), and while any is due the console holds the colleague
+     on the Handbook, its rail and tab bar put away (`body.hb-gate`). */
+  var hbDue = null;
+  function loadDue() {
+    return db.rpc('handbook_due').then(function (r) {
+      hbDue = !r.error && r.data && r.data.due ? r.data.due : [];
+    }, function () { hbDue = []; });
+  }
+  function hbGated() { return Boolean(me && hbDue && hbDue.length); }
+  function wearGate() { document.body.classList.toggle('hb-gate', hbGated()); }
 
   var enterLater = '';
 
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'clients';
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
+    if (hbGated()) name = 'handbook';
+    wearGate();
     section = name;
     $('sectionOverview').hidden  = name !== 'overview';
     $('sectionAnalytics').hidden = name !== 'analytics';
@@ -1986,6 +2009,7 @@
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionMine').hidden      = name !== 'mine';
     $('sectionHandbook').hidden  = name !== 'handbook';
+    $('sectionNoAccess').hidden  = name !== 'noaccess';
     $('sectionSettings').hidden  = name !== 'settings';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
@@ -1999,10 +2023,12 @@
     navItems().forEach(function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
-    if ($('settingsOpen')) {
-      $('settingsOpen').classList.toggle('is-on', name === 'settings');
-      if (name === 'settings') $('settingsOpen').setAttribute('aria-current', 'page'); else $('settingsOpen').removeAttribute('aria-current');
-    }
+    ['settings', 'handbook'].forEach(function (k) {
+      var mark = $(k + 'Open');
+      if (!mark) return;
+      mark.classList.toggle('is-on', name === k);
+      if (name === k) mark.setAttribute('aria-current', 'page'); else mark.removeAttribute('aria-current');
+    });
     showActivityLink();
     // Campaigns reads the address before it writes it, because on a reload the
     // address is the only record of which campaign or tab was open. Writing
@@ -2757,6 +2783,7 @@
   function showActivityLink() {
     $('activityOpen').hidden = !maySeeActivity;
     if ($('settingsOpen')) $('settingsOpen').hidden = !(meLoaded && sectionAllowed('settings'));
+    if ($('handbookOpen')) $('handbookOpen').hidden = !(meLoaded && sectionAllowed('handbook'));
     if (meLoaded) paintTabbar();
   }
 
@@ -2772,9 +2799,12 @@
       var at = new Date(v.built);
       if (isNaN(at)) return;
       var sha = String(v.commit || '').slice(0, 7);
-      box.textContent = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.')
-        + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : '');
-      box.setAttribute('aria-label', 'Refresh app, ' + box.textContent);
+      var ver = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.');
+      /* The line shows the commit's last four characters (2026-11-11: room
+         for the Handbook's mark); its name and hover hold all seven. */
+      box.textContent = ver + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha.slice(-4) : '');
+      box.setAttribute('aria-label', 'Refresh app, ' + ver + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : ''));
+      box.title = box.getAttribute('aria-label');
       box.hidden = false;
     }).catch(function () {});
   }
@@ -2800,6 +2830,13 @@
     if (rail && rail.isOpen && rail.isOpen()) rail.shut();
     visitSection('settings');
   });
+  /* The Handbook is a mark at the rail's foot (2026-11-11), beside
+     Settings', not a section of the rail. */
+  if ($('handbookOpen')) $('handbookOpen').addEventListener('click', function () {
+    if (rail && rail.isOpen && rail.isOpen()) rail.shut();
+    visitSection('handbook');
+  });
+  if ($('noAccessHandbook')) $('noAccessHandbook').addEventListener('click', function () { visitSection('handbook'); });
   $('activityOpen').addEventListener('click', function () {
     $('activitySheet').hidden = false;
     loadActivity();
@@ -6007,6 +6044,15 @@
       enterLater = '';
       window.ADspaceSettings.enter();
       setUrl();
+    },
+    /* HANDBOOK ACKNOWLEDGED: the required files still due, and the gate
+       lifted once each is acknowledged, onto the first section held. */
+    handbookDue: function () { return hbDue || []; },
+    handbookCleared: function () {
+      hbDue = [];
+      wearGate();
+      paintTabbar();
+      visitSection(firstAllowed());
     },
     handbookReady: function () {
       if (enterLater !== 'handbook' || section !== 'handbook') return;

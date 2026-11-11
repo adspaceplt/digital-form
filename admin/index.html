@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261110u">
-<link rel="stylesheet" href="/css/console.css?v=20261111b">
+<link rel="stylesheet" href="/css/console.css?v=20261111c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -145,7 +145,7 @@
 <script src="/js/form.js?v=20261110"></script>
 <script src="/js/state.js?v=20261110p"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261111"></script>
+<script src="/js/menu.js?v=20261111a"></script>
 <script src="/js/guide.js?v=20261014j"></script>
 <script src="/js/cmdbar.js?v=20261029m"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -331,9 +331,6 @@
         <button class="navitem" data-section="team" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
         </button>
-        <button class="navitem" data-section="handbook" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg><span>Handbook</span>
-        </button>
       </div>
     </nav>
 
@@ -357,6 +354,11 @@
     <div class="sidebar-foot">
       <button class="railrow railfoot" id="railEdit" type="button" aria-label="Arrange sections" title="Arrange sections" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 20V4M4 7l3-3 3 3"/><path d="M17 4v16M14 17l3 3 3-3"/></svg>
+      </button>
+      <!-- The Handbook (2026-11-11): read on arrival and kept at hand, a mark
+           beside Settings', never a section of the rail. -->
+      <button class="railrow railfoot" id="handbookOpen" type="button" aria-label="Handbook" title="Handbook" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg>
       </button>
       <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
@@ -4227,6 +4229,17 @@
       <div id="setList" data-narrow="640"></div>
     </div>
 
+    <div class="console-body" id="sectionNoAccess" hidden>
+      <!-- A colleague whose group opens no section (2026-11-11): what they
+           hold, and who gives the rest. -->
+      <div class="lockcard noaccess">
+        <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <h3 class="lockcard-title">No access</h3>
+        <p class="lockcard-line">Your account has no section access. Please contact an admin.</p>
+        <button class="btn" id="noAccessHandbook" type="button">Open Handbook</button>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionHandbook" hidden>
       <!-- The company's internal files: the Employee Handbook, SOPs, policies,
            templates and forms. Every colleague reads them; only an admin adds
@@ -4245,6 +4258,7 @@
         </span>
       </div>
       <div class="msg" id="hbListMsg"></div>
+      <div class="hb-onboard" id="hbGate" data-narrow="560" hidden></div>
       <div id="hbList" data-narrow="760"></div>
     </div>
 
@@ -6298,7 +6312,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261031w"></script>
-<script src="/js/admin.js?v=20261110x"></script>
+<script src="/js/admin.js?v=20261111"></script>
 <script src="/js/documents.js?v=20261110b"></script>
 <script src="/js/letters.js?v=20261105c"></script>
 <script src="/js/smreport.js?v=20261110a"></script>
@@ -6315,7 +6329,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261110r"></script>
 <script src="/js/namecard.js?v=20261102a"></script>
-<script src="/js/handbook.js?v=20261031w"></script>
+<script src="/js/handbook.js?v=20261111"></script>
 <script src="/js/frames.js?v=20261107a"></script>
 <script src="/js/animatic.js?v=20261106a"></script>
 <script src="/js/scripts.js?v=20261110b"></script>
