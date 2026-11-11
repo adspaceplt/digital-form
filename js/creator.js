@@ -46,18 +46,18 @@
       standDown: 'No bookings',
       standDownText: 'Please contact your ADspace account manager.',
       lang: '中文',
-      work: 'Your bookings',
+      work: 'Your bookings', openCode: 'Open', tabsLabel: 'Sections',
       /* The queue names the one that needs them, so nothing on it has to be
          opened to find out whether it does. */
       needsYou: 'Action required',
       none: 'No bookings',
-      noneText: 'Confirmed campaigns appear here.',
+      noneText: 'Confirmed bookings will appear here.',
       signOut: 'Forget this device',
       shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Post date',
       draftDue: 'Draft due', dueToday: 'Due today', overdue: 'Overdue by {n}', dueIn: 'Due in {n}',
-      whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
+      whereAt: 'Location', contact: 'Contact on the day', tracking: 'Tracking no.',
       platformsLabel: 'Posting on', tbc: 'To be confirmed',
-      briefHead: 'The brief',
+      briefHead: 'Brief',
       deliverHead: 'Submission',
       changesHead: 'Revision notes',
       changesBare: 'Please revise and submit again.',
@@ -71,8 +71,8 @@
       uploading: 'Uploading', saving: 'Saving', remove: 'Remove',
       filesHead: 'Submitted files',
       uploaded: 'Uploaded.',
-      sizeOne: '{file} is larger than {mb} MB.',
-      sizeMany: '{n} files are larger than {mb} MB.',
+      sizeOne: '{file} is larger than {mb} MB. Please upload a smaller file.',
+      sizeMany: '{n} files are larger than {mb} MB. Please upload smaller files.',
       failOne: '{file} could not be uploaded. Please try again.',
       failMany: '{n} files could not be uploaded. Please try again.',
       uploadMany: 'This booking has reached today\'s upload limit. Please try again tomorrow, or contact ADspace.',
@@ -82,7 +82,7 @@
       linksEdit: 'Edit links', linksAdd: 'Add links', linksTitle: 'Profile links',
       linksNone: 'No profile links.',
       save: 'Save', cancel: 'Cancel', close: 'Close', saved: 'Saved.', noChange: 'No change.',
-      linkBad: 'This is not a profile link: {url}',
+      linkBad: '{url} is not a profile link. Please enter the link to your profile.',
       linkTaken: 'This profile is registered to another creator. Please contact your ADspace account manager.',
       linkNone: 'Keep at least one profile link.',
       linkFail: 'Not saved. Please try again.',
@@ -126,7 +126,7 @@
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Posted on',
       countPeriod: 'Results period: {a} to {b}', periodWait: 'ADspace will set the results period shortly.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
-      linkWrong: 'This is not a {p} post link.', numWrong: 'Enter whole numbers.',
+      linkWrong: 'This is not a {p} post link. Please paste the link to your {p} post.', numWrong: 'Enter whole numbers.',
       rateHead: 'Your experience', foldHead: 'Booking details',
       rateStar: function (n) { return n + ' out of 5'; },
       rateThanks: 'Thank you.',
@@ -139,7 +139,7 @@
         submitted: 'Your submission is under review.',
         reviewing: 'Your submission is under review.',
         changes: 'Please revise as noted below and submit again.',
-        scheduled: 'Approved and scheduled.',
+        scheduled: 'Your submission has been approved and scheduled.',
         posted: 'Posted. Thank you.',
         completed: 'Completed. Thank you.'
       }
@@ -152,13 +152,13 @@
       standDown: '暂无合作',
       standDownText: '请联系您的 ADspace 客户经理。',
       lang: 'EN',
-      work: '您的合作',
+      work: '您的合作', openCode: '打开', tabsLabel: '页面分区',
       needsYou: '待您处理',
-      none: '暂无合作安排',
+      none: '暂无合作',
       noneText: '合作确认后将显示在此处。',
-      signOut: '退出此设备',
+      signOut: '不再记住此设备',
       shootOn: '拍摄', deliveryOn: '寄送', goLive: '发布日期',
-      draftDue: '作品截止', dueToday: '今天截止', overdue: '已逾期{n}', dueIn: '{n}后截止',
+      draftDue: '初稿截止', dueToday: '今天截止', overdue: '已逾期{n}', dueIn: '{n}后截止',
       whereAt: '地点', contact: '当天联系人', tracking: '快递单号',
       platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
@@ -166,7 +166,7 @@
       changesHead: '修改说明',
       changesBare: '请修改后重新提交。',
       addFiles: '文件', captionLabel: '文案',
-      nextUpWord: '下一步', handIn: '提交草稿', handInAgain: '提交修改稿',
+      nextUpWord: '下一步', handIn: '提交初稿', handInAgain: '提交修改稿',
       dropTitle: '添加照片或视频', dropSub: '每个文件不超过 1 GB',
       directions: '查看路线', call: '致电', whatsapp: 'WhatsApp',
       captionHint: '此作品的文案。',
@@ -175,8 +175,8 @@
       uploading: '上传中', saving: '保存中', remove: '移除',
       filesHead: '已提交文件',
       uploaded: '已上传。',
-      sizeOne: '{file} 超过 {mb} MB 上限。',
-      sizeMany: '{n}个文件超过 {mb} MB 上限。',
+      sizeOne: '{file}超过{mb}MB上限，请上传较小的文件。',
+      sizeMany: '{n}个文件超过{mb}MB上限，请上传较小的文件。',
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n}个文件上传失败，请重试。',
       uploadMany: '此合作今日的上传数量已达上限，请明天再试或联系 ADspace。',
@@ -186,14 +186,14 @@
       linksEdit: '编辑链接', linksAdd: '添加链接', linksTitle: '主页链接',
       linksNone: '暂无主页链接。',
       save: '保存', cancel: '取消', close: '关闭', saved: '已保存。', noChange: '没有更改。',
-      linkBad: '此链接不是主页链接：{url}',
+      linkBad: '{url} 不是主页链接，请输入您的主页链接。',
       linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ADspace 客户经理。',
       linkNone: '请至少保留一个主页链接。',
       linkFail: '未能保存，请重试。',
       postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '实际发布日期',
       countPeriod: '统计期间：{a} 至 {b}', periodWait: 'ADspace 将尽快设定数据统计期间。',
-      views: '浏览量', engagements: '互动量', impressions: '曝光量',
-      linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
+      views: '播放量', engagements: '互动量', impressions: '曝光量',
+      linkWrong: '这不是{p}的帖子链接，请粘贴您在{p}发布的帖子链接。', numWrong: '请输入整数。',
       rateHead: '合作体验', foldHead: '合作详情',
       rateStar: function (n) { return n + '星（满分5星）'; },
       rateThanks: '感谢您的评分。',
@@ -236,7 +236,7 @@
       payFail: '未能提交，请重试。',
       ended: '此合作已结束。',
       nextUp: {
-        confirmed: '我们会与您确认拍摄日期。',
+        confirmed: 'ADspace 将与您确认拍摄日期。',
         pending_visit: '拍摄已安排。',
         pending_delivery: '产品正在寄送中。',
         pending_draft: '请提交您的作品。',
@@ -1370,8 +1370,8 @@
           esc(kindLabel(f)) + '</span>'
         : '<span class="filecard-kind">' + esc(kindLabel(f)) + '</span>') +
       '<span class="filecard-name">' + esc(f.name) + '</span>' +
-      (mine ? '<button class="filecard-x" type="button" data-a="rm" aria-label="Remove ' +
-        esc(f.name) + '">×</button>' : '') +
+      (mine ? '<button class="filecard-x" type="button" data-a="rm" aria-label="' +
+        esc(t().remove + ' ' + f.name) + '">×</button>' : '') +
       '</div>';
   }
 
@@ -1755,6 +1755,9 @@
     if (window.ADspaceChrome && window.ADspaceChrome.kicker) window.ADspaceChrome.kicker(lang === 'zh' ? '创作者平台' : 'Creator Portal');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     $('codeInput').setAttribute('aria-label', t().codeTitle);
+    $('codeGo').textContent = t().openCode;
+    $('crTabs').setAttribute('aria-label', t().tabsLabel);
+    $('workQueue').setAttribute('aria-label', t().work);
     if (following && window.ADspacePush) window.ADspacePush.relabel();
     if (feed) paint(); else if (!$('stateBox').hidden) {
       if (!$('codeRow').hidden) askCode();

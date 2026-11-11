@@ -32,7 +32,7 @@
     title: 'QUOTATION FOR DIGITAL MARKETING SERVICES', salutation: 'Dear Sir/Madam,', closing: 'Yours sincerely,',
     body_en: 'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and ' +
       'requirements discussed, with full details set out in the attached quotation.\n\nShould you need any clarification or ' +
-      'additional information, please do not hesitate to reach out. We are happy to provide further materials to support ' +
+      'additional information, please do not hesitate to contact us. We would be pleased to provide further materials to support ' +
       'your evaluation.\n\nThank you for the opportunity. We look forward to working with you and your team.'
   };
   function inWords(n) {
@@ -160,7 +160,7 @@
     newPage();
     heading('Quotation');
     para('Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ' and valid until ' + longDay(q.valid_until) +
-      ', for ' + buyer + ', setting out the services and fees proposed.', 11, 14.5);
+      ', sets out the services and fees proposed for ' + buyer + '.', 11, 14.5);
     y -= 16;
 
     var TB = 10, SM = 8, cwQ = 30, cwR = 84, cwA = 92;
