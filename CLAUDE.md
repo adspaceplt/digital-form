@@ -3039,7 +3039,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   function stopped) reads Not confirmed (`mail_sweep`, pg_cron
   `mail-sweep` every fifteen minutes; overdue reminders alike). The two templates (`{contact name}` … `{sender name}`) are
   Settings, Messages: Email templates under Suppliers (`ADspaceMailTpl`,
-  Suppliers Full Access). `supplier_email_templates` and `supplier_emails` have RLS on,
+  Suppliers Full Access or `team.settings`, `email_template_may`). `supplier_email_templates` and `supplier_emails` have RLS on,
   no policy, no grant. The email carries no unmonitored-mailbox line; a
   document's ends Verify this document at digital.adspace.me/verify.
 - Send by email (`js/docmail.js`, `2026-10-31-client-document-emails.sql`;
@@ -5202,8 +5202,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   nobody is in it and no record names it (`departments_list` `in_records`:
   a colleague active or not, a review profile, a prize score;
   `2026-10-24-departments-in-records.sql`, TEAM2-15), asked under the title
-  Delete (`department_delete`, `in-use`); a row's line holds each part
-  whole (`team-part`); each filed
+  Delete (`department_delete`, `in-use`); the sheet is one table
+  (`.ind-row.is-dep`: Department · Colleagues · Prize · Status, the pen,
+  the ⋯ of Set inactive or Set active and Delete); each filed
   `team.changed` under Departments, from and to. The department prize
   (`perf_quarter_calc`, `perf_quarter_confirm`, `perf_dept_save`) takes
   every active department in the prize in the list's order, each with its
@@ -7514,7 +7515,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   log at Clients: Billing View alone (`2026-11-04-emails-keep-billing-and-history.sql`). `team_emails` (no foreign key, RLS on, no policy, no grant)
   joins the Email log (a row's subject over its file), Resend's word and
   `mail_sweep`. Settings, Messages: Email templates, New email under Clients
-  or Suppliers (`ADspaceMailTpl`, `team.settings`; `email_template_save` with
+  or Suppliers (`ADspaceMailTpl`, `team.settings`, a supplier's at Suppliers
+  Full Access too, `email_template_may`; `email_template_save` with
   `taken`, `email_template_delete` in the row's ⋯, filed under Email
   templates). A client's audience asks Clients: Contacts at View too
   (its addresses are that part's): without it no client is offered, its
