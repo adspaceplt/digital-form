@@ -273,7 +273,7 @@
     supplier_link: 'p_id p_reset',
     supplier_link_close: 'p_id',
     bukku_config: '', bukku_config_set: 'p_client p_supplier p_creator', bukku_link_get: 'p_kind p_id',
-    bukku_prepare: 'p_kind p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
+    bukku_prepare: 'p_kind p_id', bukku_creator_link_prep: 'p_id', bukku_linked: 'p_kind p_id p_contact p_code', bukku_contact_check: 'p_kind p_id p_contact', bukku_link_only: 'p_kind p_id p_contact p_code', bukku_unlink: 'p_kind p_id', bukku_unlink_undo: 'p_kind p_id p_stamp',
     bukku_read_may: 'p_kind p_id p_level', bukku_prepare_with: 'p_kind p_id p_values',
     client_entities_list: 'p_client', billing_entities_find: 'p_q', client_entity_add: 'p_client p_entity p_values', client_entity_from_bukku: 'p_client p_contact p_code p_values', client_entity_save: 'p_client p_entity p_values p_expected', client_entity_main: 'p_client p_entity', client_entity_contact: 'p_client p_entity p_contact p_every', client_entity_remove: 'p_client p_entity', client_entities_removed: 'p_client', client_entity_delete: 'p_client p_entity p_name',
     supplier_save: 'p_id p_values p_form',
@@ -571,7 +571,7 @@
     industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
-    creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
+    creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
@@ -9751,7 +9751,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           cpOut = { ok: true, whole: cpW, decide: opsGranted('campaigns.pay', 'work'),
             rows: cpReqs.filter(function (r) { return r.creator_id === cpA.p_creator; }).sort(function (a, b) { return b.seq - a.seq; }).map(function (r) {
               var j = cpJson(r, cpW), m = DB.team_members.filter(function (x) { return x.id === r.decided_by; })[0];
-              j.decided_by = m ? m.name : null; return j; }),
+              var ad = r.entered_by ? DB.team_members.filter(function (x) { return x.id === r.entered_by; })[0] : null;
+              j.decided_by = m ? m.name : null; j.added_by = ad ? ad.name : null; return j; }),
             emails: (DB.creator_emails || []).filter(function (e) { return e.creator_id === cpA.p_creator; }).map(function (e) {
               return { id: e.id, purpose: e.purpose, to_email: e.to_email, status: e.status, created_at: e.created_at }; }).reverse() };
         }
@@ -9762,6 +9763,42 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var was = cpOut[r.creator_id];
           cpOut[r.creator_id] = was === 'pending' || r.status === 'pending' ? 'pending' : was === 'approved' || r.status === 'approved' ? 'approved' : 'declined';
         });
+      } else if (name === 'creator_pay_add') {
+
+        var caC = DB.creators.filter(function (x) { return x.id === cpA.p_creator; })[0];
+        if (!opsGranted('campaigns.pay', 'work')) cpOut = { error: 'denied' };
+        else if (!caC) cpOut = { error: 'not-found' };
+        else {
+          var caIn = Object.assign({}, cpA.p_values || {}, { confirm: 'true' });
+          var caHeld = cpReqs.filter(function (r) { return r.creator_id === caC.id && (r.status === 'approved' || r.status === 'pending'); }).sort(function (a, b) { return b.seq - a.seq; })[0];
+          if (caHeld) {
+            if (!String(caIn.id_no || '').trim() && caIn.bill_kind === caHeld.bill_kind) caIn.id_no = caHeld.id_no;
+            if (!String(caIn.account || '').trim() && caIn.method === caHeld.method && String(caIn.currency || '').toUpperCase() === caHeld.currency
+                && String(caIn.bank || '') === String(caHeld.bank || '')) caIn.account = caHeld.account;
+            if (!String(caIn.address || '').trim() && caHeld.address) caIn.address = caHeld.address;
+          }
+          var caK = cpCheck(caIn);
+          if (caK.field) cpOut = { error: 'bad', field: caK.field };
+          else {
+            cpReqs.forEach(function (r) { if (r.creator_id === caC.id && r.status === 'pending') r.status = 'withdrawn'; });
+            var caSeq = cpReqs.filter(function (r) { return r.creator_id === caC.id; }).reduce(function (m, r) { return Math.max(m, r.seq); }, 0) + 1;
+            var caPat = idFormats().creator.pattern || '{creator}/R{nnn}', caRun = (caPat.match(/\{(n+)\}/) || [])[1];
+            var caRef = caPat.replace('{creator}', caC.creator_code || '');
+            caRef = caRun ? caRef.replace('{' + caRun + '}', (new Array(caRun.length + 1).join('0') + caSeq).slice(-Math.max(caRun.length, String(caSeq).length))) : caRef + caSeq;
+            cpReqs.forEach(function (r) { if (r.creator_id === caC.id && r.status === 'approved') r.status = 'replaced'; });
+            var caNow = new Date().toISOString();
+            var caNew = Object.assign({ id: nid('cp'), creator_id: caC.id, seq: caSeq, ref: caRef, status: 'approved', created_at: caNow, decided_at: caNow,
+              decided_by: opsMe().id, entered_by: opsMe().id, source: 'creator' }, caK.values);
+            cpReqs.push(caNew);
+            logAct('creator.updated', caC.name, (caC.creator_code ? caC.creator_code + ' · ' : '') + 'Payment details added by the team and approved · ' + caRef + ' · ' +
+              cpMethod(caNew.method, caNew.bank) + ' ending ' + caNew.account.slice(-4));
+            if (!DB.creator_sheet_settings || DB.creator_sheet_settings.on_send) {
+              DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+              DB.creator_sheet_rows.push({ id: nid('cs'), request_id: caNew.id, status: 'queued', created_at: caNow });
+            }
+            cpOut = { ok: true, ref: caRef };
+          }
+        }
       } else if (name === 'creator_pay_decide') {
         var cpD = cpReqs.filter(function (r) { return r.id === cpA.p_id; })[0], cpNote = String(cpA.p_note || '').trim();
         if (!opsGranted('campaigns.pay', 'work')) cpOut = { error: 'denied' };
@@ -12499,6 +12536,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         });
       }
+
+      if (name === 'bukku_creator_link_prep') {
+        if (!bkMay('creator', 'work', args.p_id)) return bkNo('denied');
+        var lcr = DB.creators.filter(function (x) { return x.id === args.p_id; })[0];
+        if (!lcr) return bkNo('not-found');
+        var lq = bkPay(lcr.id), lln = (DB.bukku_links || []).filter(function (x) { return x.kind === 'creator' && x.record_id === lcr.id; })[0];
+        var ljobs = (DB.creator_earlier_jobs || []).filter(function (e) { return e.creator_id === lcr.id && !e.removed_at; }).map(function (e) { return e.ref; })
+          .concat((DB.campaign_options || []).filter(function (o) { return o.creator_id === lcr.id && o.earlier_job; }).map(function (o) { return o.earlier_job; }))
+          .filter(function (j, i, a) { return a.indexOf(j) === i && String(j).replace(/[^0-9A-Za-z]/g, '').length >= 4; });
+        return bkOk({ kind: 'creator', id: lcr.id, legal_name: lq ? lq.legal_name : lcr.name, other_name: lcr.name, our_id: lcr.creator_code,
+          field_id: DB.bukku_settings.field_creator || DB.bukku_settings.field_supplier || null, contact_id: lln ? lln.contact_id : null,
+          details: !!lq, jobs: ljobs });
+      }
       if (!bkMay(args.p_kind, 'work', args.p_id)) return bkNo('denied');
       if (name === 'bukku_prepare_with') {
         if (['client', 'entity'].indexOf(args.p_kind) < 0) return bkNo('bad-kind');
@@ -14628,17 +14678,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
               });
             });
           }
-          return rpc('bukku_prepare', { p_kind: bkb.kind, p_id: bkb.id }).then(function (r) {
+          var bkLp = bkb.kind === 'creator' && (bkb.action === 'find' || bkb.action === 'link')
+            ? rpc('bukku_creator_link_prep', { p_id: bkb.id }) : Promise.resolve({ data: null });
+          return Promise.all([rpc('bukku_prepare', { p_kind: bkb.kind, p_id: bkb.id }), bkLp]).then(function (rr) {
+            var r = rr[0], lp = rr[1].data;
             var p = r.data || {};
+
+            var jobs = lp && lp.ok ? lp.jobs || [] : [];
+            if (lp && lp.ok && p.error === 'no-details') p = lp;
+            var rk = function (v) { return String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase(); };
+            var byJob = {};
+            (window.__bukkuBills || []).forEach(function (x) {
+              var ref = rk([x.number2, x.reference, x.title, x.description, x.remarks].filter(Boolean).join(' ')), no = rk(x.number);
+              jobs.forEach(function (j) { var k = rk(j); if (k.length >= 4 && (ref.indexOf(k) > -1 || no.indexOf(k) > -1) && !byJob[x.contact_id]) byJob[x.contact_id] = j; });
+            });
             if (p.error) return { data: p, error: null };
             if (!p.field_id) return { data: { error: 'no-field' }, error: null };
             var byId = function (id) { return held.filter(function (c) { return c.id === Number(id); })[0]; };
             var nextC = function () { var f = (String(p.legal_name).match(/[A-Z0-9]/) || ['X'])[0]; return 'C-' + f + '0001'; };
             if (bkb.action === 'find') {
               if (p.contact_id && byId(p.contact_id)) { var lc = byId(p.contact_id); return { data: { ok: true, linked: { id: lc.id, code: lc.contact_code, name: lc.legal_name, types: lc.types } }, error: null }; }
-              var cands = held.filter(function (c) { return (p.reg_no && c.reg_no === p.reg_no) || c.legal_name === p.legal_name; })
-                .map(function (c) { return { id: c.id, code: c.contact_code, name: c.legal_name, types: c.types, why: p.reg_no && c.reg_no === p.reg_no ? 'brn' : 'name' }; });
-              return { data: { ok: true, candidates: cands, next_code: nextC() }, error: null };
+              var cands = held.filter(function (c) { return byJob[c.id]; })
+                .map(function (c) { return { id: c.id, code: c.contact_code, name: c.legal_name, types: c.types, why: 'job', job: byJob[c.id] }; })
+                .concat(held.filter(function (c) { return !byJob[c.id] && ((p.reg_no && c.reg_no === p.reg_no) || c.legal_name === p.legal_name); })
+                .map(function (c) { return { id: c.id, code: c.contact_code, name: c.legal_name, types: c.types, why: p.reg_no && c.reg_no === p.reg_no ? 'brn' : 'name' }; }));
+              return { data: { ok: true, candidates: cands, next_code: nextC(), details: p.details !== false }, error: null };
             }
             if (!bkb.contact && p.contact_id) return { data: { error: 'linked' }, error: null };
 
@@ -14663,6 +14727,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
               if (!ct) return { data: { error: 'bad-request' }, error: null };
               window.__bukkuSent = { kind: p.kind, id: p.id, contact: ct.id, code: ct.contact_code, linkOnly: true };
               return rpc('bukku_link_only', { p_kind: p.kind, p_id: p.id, p_contact: ct.id, p_code: ct.contact_code }).then(function () {
+
+                if (p.kind === 'creator') creatorBillsTake(p.id, Number(ct.id), (window.__bukkuBills || []).filter(function (x) {
+                  return Number(x.contact_id) === Number(ct.id) && (!x.status || x.status === 'ready' || x.status === 'paid'); })
+                  .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
+                    amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; }));
                 return { data: { ok: true, contact: ct.id, code: ct.contact_code, linked: true }, error: null };
               });
             }
