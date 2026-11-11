@@ -9480,3 +9480,14 @@ Bukku's registration no., else by its legal name where one contact alone
 holds it. The list is read first; the links are then written as Link only
 writes them, so nothing in Bukku changes.
 
+### 2026-11-11 · WhatsApp template names and the prospect template
+The templates had grown two spellings (`quote_ready` beside
+`quotation_send`). Meta cannot rename a template, and a template made
+again under a new name starts its analytics afresh, so the user kept the
+names standing and asked that new ones follow one pattern:
+`{what it is about}_{what happened}`, the subject spelled whole. The first
+under it, `prospect_contact_made` (Utility; greeting, brand, the Sales by
+colleague), was refused with a wa.me button: Meta allows no direct link to
+WhatsApp in a template button, so it opens the colleague's namecard short
+link instead.
+

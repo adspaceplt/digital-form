@@ -7644,6 +7644,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   messaged (`no-number`). A client's main contact's WhatsApp number, else
   its phone; a colleague's mobile; a creator's `creators.whatsapp` (the
   Creators List sheet).
+- A new template is named `{what it is about}_{what happened}`, the
+  subject spelled whole (`quotation_`, never `quote_`;
+  `prospect_contact_made`); the names standing on 2026-11-11 stay, since
+  Meta cannot rename one and a new one starts its analytics afresh (the
+  user, 2026-11-11: "lets not change name … in the future please try to
+  streamline"). A template button never links to wa.me (Meta refuses it):
+  a colleague is reached through their namecard's short link.
 - `wa-send` answers `report` and `feedback` with bad-request (2026-10-19). A refusal is one
   line in the team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's
