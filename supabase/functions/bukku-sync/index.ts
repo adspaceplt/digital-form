@@ -639,6 +639,14 @@ export function billOf(x: any) {
     amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
     currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
 }
+/* The latest date among the payments, credits and refunds Bukku applied
+   to a bill (its `linked_items` that are not bills), else null. */
+export function paidOn(bill: any): string | null {
+  const ds = ((bill && bill.linked_items) || [])
+    .filter((l: any) => l && !/bill/.test(String(l.type || '')) && /^\d{4}-\d{2}-\d{2}$/.test(String(l.date || '')))
+    .map((l: any) => String(l.date)).sort();
+  return ds.length ? ds[ds.length - 1] : null;
+}
 async function creatorBills(creator: string, contact: number): Promise<any> {
   const out: any[] = [];
   for (let page = 1; page <= 20; page++) {
@@ -652,6 +660,20 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
     const total = Number(r && r.paging && r.paging.total) || 0;
     if (!rows.length || page * per >= total || rows.length < per) break;
+  }
+  /* A paid bill's day is its payments' (2026-11-12, the user: "it should
+     follow Bukku's bill payment voucher"): a bill read alone lists what was
+     applied to it, each with its date; the latest is the day it was paid.
+     Read once a bill, ten a run, so a night never reads a creator's whole
+     history again. */
+  const kept = await svcDb().from('creator_bills').select('bill_id').eq('creator_id', creator).not('paid_on', 'is', null);
+  const known = new Set<number>(((kept.data || []) as any[]).map((k) => Number(k.bill_id)));
+  let asked = 0;
+  for (const b of out) {
+    if (asked >= 10 || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
+    asked++;
+    try { b.paid_on = paidOn(await bukku('GET', `/purchases/bills/${b.id}`).then((r: any) => (r && r.transaction) || null)); }
+    catch (_e) { /* left for the next read */ }
   }
   const t = await svcDb().rpc('creator_bills_take', { p_creator: creator, p_contact: contact, p_rows: out });
   if (t.error) { console.error('bukku-sync: bills not kept', creator, t.error.message); return { error: 'not-filed' }; }

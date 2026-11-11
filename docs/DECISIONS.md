@@ -9710,3 +9710,16 @@ reader and on hover, so no state is carried by colour alone.
   "A login already exists", "Login created" and "already has a login" join
   `tests/words.js` RETIRED. The creator page's e-Invoice paragraph and its
   中文 passed.
+
+- 2026-11-12 · A creator's payment reads Bukku's day and no amount (the
+  user: "could you not show the price … anyone who holds the link would be
+  able to see"; "the paid date is not even accurate, it should follow
+  Bukku's bill payment voucher not today's date"). A paid bill took the
+  day the portal first read it, and the creator's link sent each bill's
+  number and amount. `bukku-sync` now reads a paid bill alone once
+  (`linked_items`, Bukku's purchase API) and keeps its latest payment's
+  date as `creator_bills.paid_on`; `creator_pay_form` answers a state and
+  that day only. The row is one line: the campaign and Job reference,
+  then Paid {day}, Pending payment or Not due. The same day the user
+  removed the Jotform pages AP02, AP03, AP Dale, 3P form, e-Invoice info,
+  interview quiz and sales programme, keeping AP01 and ACCV.
