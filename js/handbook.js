@@ -193,7 +193,7 @@
     var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
     if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Versions</button>';
-    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Who acknowledged</button>';
+    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Acknowledgements</button>';
     if (admin) {
       items += '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>';
       if (!d.archived_at) items += '<button class="kmenu-item" data-g="4" data-a="req" type="button" role="menuitem">' + (d.required ? 'Mark optional' : 'Mark required') + '</button>';
@@ -376,7 +376,7 @@
     }).catch(function (e) { say($('hbListMsg'), said(e)); });
   }
   function openAcks(d) {
-    $('hbHistTitle').textContent = 'Who acknowledged · ' + d.title;
+    $('hbHistTitle').textContent = 'Acknowledgements · ' + d.title;
     var box = $('hbHistList');
     box.innerHTML = '<div class="msg" id="hbHistMsg"></div>';
     window.ADspaceSheet.show($('hbHistSheet'), {});
@@ -391,7 +391,7 @@
           '<span class="chip-state ' + tone + '">' + esc(state) + '</span></div>';
       }).join('');
     }).catch(function (e) {
-      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Who acknowledged', said(e), function () { openAcks(d); });
+      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Acknowledgements', said(e), function () { openAcks(d); });
     });
   }
 
