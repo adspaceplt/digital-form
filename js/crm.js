@@ -2137,7 +2137,7 @@
           (cut ? '<span class="team-act tl-act"><button class="tl-pen kmenu-btn" type="button" data-stage-menu="' + s.i + '" aria-label="More actions for ' + esc(s.word) + '" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" hidden>' +
               '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-stage-edit="' + s.i + '">Edit date</button>' +
-              '<button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Remove</button></div></span>'
+              '<button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Delete</button></div></span>'
             : pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
@@ -2299,9 +2299,21 @@
      and the first are never removed. Undo where it happened puts the
      history back as it was. */
   function removeStage(c, i, menuBtn) {
+    var list0 = logOf(c);
+    if (!(i > 0 && i < list0.length - 1)) return;
+    var g0 = list0[i], w0 = stageWord(g0.stage)[1];
+    ADspaceConfirm.ask({
+      title: 'Delete this stage?', go: 'Delete', tone: 'danger',
+      body: w0 + ' from ' + niceDate(g0.at) + ' leaves the Timeline' + (g0.reason ? ', with its reason' : '') +
+        '. The Activity record keeps what it held.'
+    }, function () { cutStage(c, i, menuBtn); });
+  }
+  function cutStage(c, i, menuBtn) {
     var was = logOf(c), list = logOf(c);
     if (!(i > 0 && i < list.length - 1)) return;
     var gone = list[i], word = stageWord(gone.stage)[1];
+    var said = gone.reason ? ' (' + ((window.ADspaceSales && ADspaceSales.reasonWord) ? ADspaceSales.reasonWord(gone.reason) : gone.reason) +
+      (gone.note ? ': ' + gone.note : '') + ')' : '';
     list.splice(i, 1);
     var prev = list[i - 1], next = list[i];
     if (prev && next && prev.stage === next.stage) {
@@ -2316,15 +2328,15 @@
       extra = { stage_reason: tail.reason || null, stage_note: tail.note || null };
     }
     var host = $('crmTimeline');
-    var bad = saveDates(c, list, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' removed', extra, function () {
+    var bad = saveDates(c, list, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + said + ' deleted', extra, function () {
       if (!host) return;
-      window.ADspaceAdmin.undoHere(word + ' from ' + niceDate(gone.at) + ' removed.', function () {
+      window.ADspaceAdmin.undoHere(word + ' from ' + niceDate(gone.at) + ' deleted.', function () {
         var back = null;
         var last = was[was.length - 1];
         if (last.stage === c.stage && (last.reason || null) !== (c.stage_reason || null)) {
           back = { stage_reason: last.reason || null, stage_note: last.note || null };
         }
-        var bad2 = saveDates(c, was, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' removal undone', back);
+        var bad2 = saveDates(c, was, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + ' restored', back);
         if (bad2) msg('crmSinceMsg', bad2, 'err');
       }, host);
     });

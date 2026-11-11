@@ -81,6 +81,7 @@
     'not-client': 'Feedback is asked of a client, never a lead.',
     'not-lead': 'A representative is introduced to a lead only. This client is no longer a lead.',
     'no-sales-by': 'Set Sales by on the lead first.',
+    'no-contact': 'This prospect is marked Do not contact. Choose Allow contact on their quotation first.',
     'no-card': 'The Sales by colleague\'s namecard is off. Turn it on in Team first.',
     void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
