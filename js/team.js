@@ -2007,7 +2007,7 @@
     if (!m.email) { msg('teamMsg', m.name + ' has no sign-in email. ' + (amAdmin() ? 'Add one on their Overview first.' : 'Ask an admin to add one.'), 'err'); return; }
     window.ADspaceConfirm.ask({
       title: 'Send invitation?',
-      body: 'An email goes to ' + m.email + ' with a sign-in link. '
+      body: 'An email with a sign-in link will be sent to ' + m.email + '. '
           + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () {

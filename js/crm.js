@@ -4291,7 +4291,7 @@
   });
   var META_SAID = {
     'not-connected': 'Meta is not connected.',
-    'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
+    'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'denied': 'You do not have permission to change this client\'s Brand. Please ask an admin.'
   };
@@ -4939,8 +4939,8 @@
     // Mail leaves the building and cannot be recalled, and this sits one
     // place away from Edit in the same menu.
     window.ADspaceConfirm.ask({
-      title: 'Send an invitation',
-      body: 'An email goes to ' + ct.email + ' with a sign-in link. '
+      title: 'Send invitation?',
+      body: 'An email with a sign-in link will be sent to ' + ct.email + '. '
           + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () { send(); });
