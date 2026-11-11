@@ -38,20 +38,20 @@ const FROM = () => Deno.env.get('MAIL_INVITE_FROM') || 'ADspace Digital Portal <
    (docs/SIGN-IN-EMAILS.md), for an address that already has a login, which
    Supabase will not invite (2026-11-11: two invitations the user sent went
    nowhere). Its button is a one-time sign-in link. */
-function invitation(kind: string, name: string, link: string) {
+function invitation(kind: string, greeting: string, link: string) {
   const client = kind === 'client';
   const button = '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
     '<td style="background:#0071e3;border-radius:10px;"><a href="' + esc(link) + '" style="display:inline-block;min-width:52px;' +
     'padding:12px 32px;text-align:center;font-family:' + FONT + ';font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">' +
     (client ? 'Open Client Portal' : 'Sign in') + '</a></td></tr></table>';
-  const dear = 'Dear ' + (name || 'Sir or Madam') + ',';
+  const dear = 'Dear ' + greeting + ',';
   const body = client
-    ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services, documents, reports and meetings with ADspace in one place.',
+    ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services, documents, reports and meetings in one place.',
        'Please use the button below to open your Client Portal.', '{invoices}',
-       'Thereafter, you may sign in at any time with a code sent to this email address. Should you have any questions, please contact your ADspace account manager.',
+       'After this first visit, you may sign in at any time with a code sent to this email address. Should you have any questions, please contact your ADspace account manager.',
        'Yours sincerely,\nADspace']
     : [dear, 'ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.', '{invoices}',
-       'Thereafter, you may sign in at any time with a code sent to this email address.', 'Yours sincerely,\nADspace'];
+       'After this first visit, you may sign in at any time with a code sent to this email address.', 'Yours sincerely,\nADspace'];
   const subject = client ? 'Welcome to your ADspace Client Portal' : 'Your access to the ADspace Digital Portal';
   return {
     subject,
@@ -61,6 +61,22 @@ function invitation(kind: string, name: string, link: string) {
       foot: 'This link may be used once and expires shortly. If you were not expecting this invitation, please disregard this email.'
     })
   };
+}
+
+const SALUTATIONS = ["Dato' Sri", "Datin Sri", 'Tan Sri', 'Puan Sri', 'Mr', 'Ms', 'Mrs', 'Mdm', 'Dr', 'Prof',
+  "Dato'", 'Datin', 'Datuk', 'Tun', 'Tuan', 'Puan', 'Encik', 'Cik'];
+function greetingOf(salutation: string | null | undefined, name: string): string {
+  let n = String(name || '').trim();
+  const sal = String(salutation || '').trim();
+  if (sal) {
+    /* A name that opens on a salutation gives way to the one set. */
+    for (const s of SALUTATIONS) {
+      const re = new RegExp('^' + s.replace(/[.'*+?^${}()|[\]\\]/g, '\\$&') + '\\.?\\s+', 'i');
+      if (re.test(n)) { n = n.replace(re, ''); break; }
+    }
+    n = n ? sal + ' ' + n : '';
+  }
+  return n || 'Sir or Madam';
 }
 
 Deno.serve(async (req) => {
@@ -104,6 +120,10 @@ Deno.serve(async (req) => {
   // closed, so "do not send" creates the account silently rather than
   // creating nothing at all.
   const notify = body.notify !== false;
+  /* How the invitation greets them: a client contact with their salutation
+     and whole name, said once, as a client letter does (contact_greeting);
+     a colleague by their whole name; nobody named, Sir or Madam. */
+  let greeting = greetingOf('', name);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
@@ -122,8 +142,9 @@ Deno.serve(async (req) => {
     if (!isAdmin && may !== true) return json({ error: 'not_admin' }, 403, origin);
     // Only an address the console has marked for portal access is invited.
     const { data: contact } = await asCaller.from('client_contacts')
-      .select('id').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
+      .select('id, name, salutation').ilike('email', exactEmail(email)).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
+    greeting = greetingOf(contact.salutation, contact.name || name);
   }
 
   // A team login is made only for an address an active colleague holds, so
@@ -151,7 +172,7 @@ Deno.serve(async (req) => {
     ? await admin.auth.admin.inviteUserByEmail(email, {
         /* The one Invite user template words a client's welcome and a
            colleague's access each its own way (docs/SIGN-IN-EMAILS.md). */
-        data: { name, kind },
+        data: { name, kind, greeting },
         redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
       })
     : await admin.auth.admin.createUser({
@@ -173,7 +194,7 @@ Deno.serve(async (req) => {
         console.error('invite-member: no link or key', linkErr?.message ?? '', !!apiKey);
         return json({ error: 'invite_failed', detail: 'The invitation could not be sent.' }, 500, origin);
       }
-      const mail = invitation(kind, name, href);
+      const mail = invitation(kind, greeting, href);
       const sent = await resend({ from: FROM(), to: [email], subject: mail.subject, html: mail.html },
         'invite:' + kind + ':' + email + ':' + Math.floor(Date.now() / 60000), apiKey);
       if (sent.status === 'failed') {
