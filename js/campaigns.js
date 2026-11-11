@@ -717,7 +717,7 @@
      read on Overview; Set active clears it. The way back asks nothing. */
   function setCreatorActive(c, on, reason) {
     if (!on && reason === undefined) {
-      window.ADspaceConfirm.ask({ title: 'Set inactive?', body: c.name + ' is no longer offered for campaigns.',
+      window.ADspaceConfirm.ask({ title: 'Set inactive?', body: c.name + ' will no longer be offered for campaigns.',
         go: 'Set inactive', field: { name: 'reason', label: 'Reason', value: '', maxlength: 200, required: false, placeholder: 'Optional' }
       }, function (v) { setCreatorActive(c, false, String((v && typeof v === 'object' ? v.reason : v) || '').trim()); });
       return;
@@ -904,7 +904,7 @@
     '[SG] Maybank', '[SG] Bank of China'];
   var PAY_HOW = [['MYR|bank', 'Bank transfer (MYR)'], ['MYR|duitnow', 'DuitNow (MYR)'], ['MYR|tng', 'Touch \u2019n Go eWallet (MYR)'],
     ['SGD|bank', 'Bank transfer (SGD)'], ['SGD|paynow', 'PayNow (SGD)']];
-  var PAY_FIELD = { bill_kind: 'Choose how the creator is billed.', id_no: 'Enter a valid ID number.', legal_name: 'Enter the legal name.',
+  var PAY_FIELD = { bill_kind: 'Choose how the creator is billed.', id_no: 'Enter a valid NRIC, Passport or Business Registration No.', legal_name: 'Enter the legal name.',
     tin: 'Enter a valid TIN.', address: 'Enter the billing address.', currency: 'Choose a payment method.', method: 'Choose a payment method.',
     bank: 'Choose the bank for this currency.', account: 'Enter a valid account number.', payee: 'Enter the account holder.',
     email: 'Enter a valid email address.', whatsapp: 'Enter a valid WhatsApp number.' };
@@ -976,7 +976,7 @@
           fact('Legal name', cur.legal_name) +
           fact('TIN', cur.tin) +
           (cur.address ? fact('Billing address', cur.address) :
-            '<div><dt>Billing address</dt><dd>Not set. The creator is asked for it on their creator page.</dd></div>') +
+            '<div><dt>Billing address</dt><dd>Not set. The creator will be asked for it on their creator page.</dd></div>') +
           fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : cur.added_by ? 'Added by ' + cur.added_by : '') +
           fact('Currency', cur.currency) +
           fact('Method', cur.method_word) +
