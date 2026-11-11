@@ -9610,3 +9610,15 @@ client portal always has, and the function makes a login for an active
 colleague (not removed or erased) as well as for a live portal contact. It
 still answers every address alike in the same least time, so the page says
 nothing about who is on the team. The invitation stays a deliberate email.
+
+### 2026-11-11 · A client's invitation reads as a welcome
+Clients and colleagues are invited by the one Supabase Invite user template,
+which read as a colleague's notice ("ADspace has given you access …"). The
+user approved a warmer client version. `invite-member` (v42) now sends `kind`
+(client or team) in the invitation's data, and the template words each its
+own way through `{{ if eq .Data.kind "client" }}`, the subject included. A
+second reader's six points were taken: Client Portal capitalised as the
+product's name, the line naming what the button does (Open Client Portal),
+a preview line that does not repeat the body, ADspace named rather than
+"us", and "your ADspace account manager" as the client pages say it. The
+template takes effect once pasted in the Supabase dashboard.
