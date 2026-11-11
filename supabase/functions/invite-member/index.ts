@@ -59,7 +59,9 @@ function invitation(kind: string, greeting: string, link: string) {
       heading: subject, body: body.join('\n\n'), block: button,
       preheader: client ? 'Your invitation to the ADspace Client Portal.' : 'You have been given access to the ADspace Digital Portal.',
       foot: 'This link may be used once and expires shortly. If you were not expecting this invitation, please disregard this email.'
-    })
+    /* The foot's second sentence on a line of its own, as the template
+       sets it (the user, 2026-11-11). */
+    }).replace('expires shortly. If you were', 'expires shortly.<br>If you were')
   };
 }
 
