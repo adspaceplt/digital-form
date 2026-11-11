@@ -8144,11 +8144,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `js/config.js` and `css/` first.
 
 ### Folder and file rules
-- Never edit the user's root files: `ap01.html`, `ap02.html`, `ap03.html`,
-  `ap-dale.html`, `accv-new.html`, `3pform.html`, `einvoiceinfo.html`,
-  `interview-quiz.html`, `sales-program.html`. `index.html` and `404.html`
-  are the portal's; `supplier.html` was retired for `/supplier/` (the user,
-  2026-10-18: "no longer in use").
+- Never edit the user's root files: `ap01.html` and `accv-new.html`, the
+  Jotform pages left (the user, 2026-11-12, every other removed: AP02,
+  AP03, AP Dale, 3P form, e-Invoice info, interview quiz, sales
+  programme). `index.html` and `404.html` are the portal's;
+  `supplier.html` was retired for `/supplier/` (the user, 2026-10-18: "no
+  longer in use").
 - `drafts/` (holding the old Jotform verify page) is excluded from Pages.
 - Portal pages are folders with an `index.html` and clean paths; never `.html`
   in a URL.

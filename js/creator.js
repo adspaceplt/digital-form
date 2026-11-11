@@ -90,8 +90,7 @@
       tabs: { bookings: 'Bookings', payments: 'Payments', profile: 'Profile' },
       profHead: 'Profile links', contactHead: 'Contact', contactWa: 'WhatsApp', contactEmail: 'Email',
       paysHead: 'Payments', paysNone: 'No payments.',
-      paysWord: { processing: 'Processing', paid: 'Paid', due: 'Not due' },
-      paysPosted: 'Posted {d}', paysPaid: 'Paid {d}', paysBy: 'Payment by {d}', paysNotPosted: 'Not posted',
+      paysWord: { pending: 'Pending payment', paid: 'Paid', due: 'Not due' }, paysPaid: 'Paid {d}',
       paysNote: 'Payments in MYR are made within {myr} working days of the post date, and payments in other currencies within {other} working days.',
       payGo: 'Submit details', payChange: 'Change details',
       payEinvHead: 'e-Invoice',
@@ -201,8 +200,7 @@
       tabs: { bookings: '合作', payments: '付款', profile: '个人资料' },
       profHead: '主页链接', contactHead: '联络资料', contactWa: 'WhatsApp', contactEmail: '电邮',
       paysHead: '付款', paysNone: '暂无付款。',
-      paysWord: { processing: '处理中', paid: '已付款', due: '未到期' },
-      paysPosted: '发布于{d}', paysPaid: '付款于{d}', paysBy: '最迟于{d}付款', paysNotPosted: '未发布',
+      paysWord: { pending: '待付款', paid: '已付款', due: '未到期' }, paysPaid: '已付款 {d}',
       paysNote: '马币款项于发布日期后{myr}个工作日内支付，其他货币款项于{other}个工作日内支付。',
       payGo: '提交资料', payChange: '更改资料',
       payEinvHead: '电子发票（e-Invoice）',
@@ -487,30 +485,23 @@
   }
 
   /* Each booking's payment as Bukku holds it (`creator_pay_form`
-     `payments`): Processing while a balance stands, Paid at none, Not due
-     before the bill. */
+     `payments`), one line: the campaign and its Job reference, then Paid
+     and Bukku's payment day, Pending payment once posted or billed, Not due
+     before. Never an amount: anyone holding the link reads this
+     (the user, 2026-11-12). */
   function paintPays() {
     var T0 = t(), list = (pay && pay.payments) || [];
     $('crPaysTitle').textContent = T0.paysHead;
-    var day = function (d) { return d ? ADspaceClock.date(d, { zh: lang === 'zh' }) : ''; };
-    var money = function (b) {
-      if (!b || b.amount == null) return '<span class="muted">\u2014</span>';
-      var cur = String(b.currency || 'MYR').toUpperCase();
-      var n = Number(b.amount).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return esc((cur === 'SGD' ? 'S$' : cur === 'MYR' ? 'RM' : cur) + '\u00a0' + n);
-    };
+    var day = function (d) { return d ? ADspaceClock.date(d, { zh: lang === 'zh', year: false }) : ''; };
     $('crPaysList').innerHTML = !list.length ? '<p class="crlinks-none">' + esc(T0.paysNone) + '</p>' : list.map(function (x) {
-      var b = x.bill, st = b ? (b.status === 'paid' ? 'paid' : 'processing') : 'due';
-      var tone = st === 'paid' ? 'is-ok' : st === 'processing' ? 'is-warn' : 'is-off';
-      var sub = [x.job];
-      if (st === 'paid' && b.paid_at) sub.push(fill(T0.paysPaid, { d: day(b.paid_at) }));
-      else if (x.posted_on) { sub.push(fill(T0.paysPosted, { d: day(x.posted_on) })); if (st !== 'paid' && x.pay_by) sub.push(fill(T0.paysBy, { d: day(x.pay_by) })); }
-      else if (x.state !== 'posted' && x.state !== 'completed') sub.push(T0.paysNotPosted);
+      var b = x.bill;
+      var st = b && b.status === 'paid' ? 'paid' : (b || x.posted_on || x.state === 'posted' || x.state === 'completed') ? 'pending' : 'due';
+      var tone = st === 'paid' ? 'is-ok' : st === 'pending' ? 'is-warn' : 'is-off';
+      var word = st === 'paid' && b.paid_on ? fill(T0.paysPaid, { d: day(b.paid_on) }) : T0.paysWord[st];
       return '<div class="crpay-row">' +
-        '<span class="crpay-what">' + esc(x.campaign || '') + '</span>' +
-        '<span class="crpay-amt">' + money(b) + '</span>' +
-        '<small class="crpay-sub">' + sub.map(function (w, i) { return '<span class="crpay-part">' + (i ? '<span class="crpay-sep"> · </span>' : '') + esc(w) + '</span>'; }).join('') + '</small>' +
-        '<span class="crpay-st"><span class="chip-state ' + tone + '">' + esc(T0.paysWord[st]) + '</span></span>' +
+        '<span class="crpay-what"><span class="crpay-name">' + esc(x.campaign || '') + '</span>' +
+          (x.job ? '<small class="crpay-job">' + esc(x.job) + '</small>' : '') + '</span>' +
+        '<span class="crpay-st"><span class="chip-state ' + tone + '">' + esc(word) + '</span></span>' +
       '</div>';
     }).join('');
     var dd = (pay && pay.days) || {};
