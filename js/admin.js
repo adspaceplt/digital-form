@@ -202,6 +202,14 @@
        worth trying again says so, in our words. */
     var opts = { shouldCreateUser: false, emailRedirectTo: location.origin + '/admin/' };
     var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, opts) : Promise.resolve(opts);
+    /* An active colleague added and never invited has no login yet: the
+       same function the client portal asks makes it on the way in, for an
+       active colleague's address alone (2026-11-11). Whatever it answers, the
+       code is asked for, so the page still never says who is on the team. */
+    var made = function (o) {
+      return ADspaceAPI.invokeFn('portal-login', { email: email }).then(function () { return o; }, function () { return o; });
+    };
+    go = go.then(made);
     go.then(function (o) { return db.auth.signInWithOtp({ email: email, options: o }); }).then(function (r) {
       b.disabled = false;
       var m = String((r.error && r.error.message) || '');

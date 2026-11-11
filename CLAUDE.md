@@ -7787,6 +7787,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   stop the device's notifications first.
 
 ### Sign-in, security, secrets
+- An active colleague's first sign-in makes their login (2026-11-11, the
+  user: one added with no invitation read Active and was sent no code): the
+  console asks `portal-login` before the code, which makes a login for a
+  live portal contact or an active colleague not removed or erased, and for
+  nobody else, answering alike either way.
 - `/admin/` signs in with the emailed link or the code (`#authCode`, 6 to 10
   digits, `verifyOtp` type `email`), or with a passkey (supabase-js 2.117.2 on
   `/admin/` only).
