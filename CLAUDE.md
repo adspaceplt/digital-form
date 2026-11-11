@@ -1457,6 +1457,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - An embed across two foreign keys names the key
   (`team_members!ops_task_assignees_team_member_id_fkey(name)`). A refused read
   of who owns what fails the list; it never draws an unowned row.
+- A check a later band widens (`wa_templates_purpose_check`) is added `not
+  valid` in every earlier band, so the schema runs again over rows the later
+  band allows (2026-11-11: `representative` made the re-run fail three times).
 - A seed is a first run, not a running list.
   - Catalogue rows (the rate card, `detail`, Marketing and Sales) seed only
     into an empty table.

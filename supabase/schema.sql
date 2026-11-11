@@ -40996,7 +40996,7 @@ grant execute on function public.activity_section(text) to authenticated;
 
 alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
 alter table public.wa_templates add constraint wa_templates_purpose_check
-  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval'));
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval')) not valid;
 insert into public.wa_templates (purpose) values ('approval') on conflict (purpose) do nothing;
 
 -- END OF WHATSAPP APPROVAL PURPOSE --------------------------------------------
@@ -47856,7 +47856,7 @@ grant execute on function public.client_details_used(uuid) to authenticated;
 
 alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
 alter table public.wa_templates add constraint wa_templates_purpose_check
-  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer'));
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer')) not valid;
 insert into public.wa_templates (purpose) values ('quotation') on conflict (purpose) do nothing;
 insert into public.wa_templates (purpose) values ('offer') on conflict (purpose) do nothing;
 
@@ -80919,7 +80919,7 @@ end $$;
 
 alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
 alter table public.wa_templates add constraint wa_templates_purpose_check
-  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready'));
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready')) not valid;
 insert into public.wa_templates (purpose) values ('quote_ready') on conflict (purpose) do nothing;
 
 drop function if exists public.quote_website_request(text, jsonb);
