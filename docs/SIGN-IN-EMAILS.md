@@ -53,7 +53,7 @@ Body (HTML):
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Alternatively, you may sign in on this device using the button below.</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">Sign in</a></td></tr></table>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Yours sincerely,<br>ADspace</p>
-<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">The code and the link may be used once and expire shortly. If you did not request to sign in, please disregard this email; your account remains secure.</p>
+<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">The code and the link may be used once and expire shortly.<br>If you did not request to sign in, please disregard this email; your account remains secure.</p>
 </td></tr>
 <tr><td class="foot" style="padding:24px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#515151;">
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
@@ -97,7 +97,7 @@ Body (HTML):
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">{{ if eq .Data.kind "client" }}Open Client Portal{{ else }}Sign in{{ end }}</a></td></tr></table>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">After this first visit, you may sign in at any time with a code sent to this email address.{{ if eq .Data.kind "client" }} Should you have any questions, please contact your ADspace account manager.{{ end }}</p>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Yours sincerely,<br>ADspace</p>
-<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">This link may be used once and expires shortly. If you were not expecting this invitation, please disregard this email.</p>
+<p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">This link may be used once and expires shortly.<br>If you were not expecting this invitation, please disregard this email.</p>
 </td></tr>
 <tr><td class="foot" style="padding:24px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#515151;">
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
