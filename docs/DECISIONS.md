@@ -9697,6 +9697,4 @@ minute was refused by Resend as a repeat while its new link had already
 killed the first email's; a team invitation's greeting was the name the
 sender typed; and portal-login's equal wait was sized before the colleague
 path made it the slowest. The user approved each ("ok"; 14: "admin can
-overwrite"). `bukkufn` and `invitefn` were also failing on main before this
-(the legal note's new grey, `_shared/mail.ts` not copied); both brought up to
-date.
+overwrite").
