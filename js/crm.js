@@ -2137,7 +2137,7 @@
           (cut ? '<span class="team-act tl-act"><button class="tl-pen kmenu-btn" type="button" data-stage-menu="' + s.i + '" aria-label="More actions for ' + esc(s.word) + '" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" hidden>' +
               '<button class="kmenu-item" type="button" role="menuitem" data-g="2" data-stage-edit="' + s.i + '">Edit date</button>' +
-              '<button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Delete</button></div></span>'
+              '<button class="kmenu-item is-danger" type="button" role="menuitem" data-g="6" data-stage-cut="' + s.i + '">Remove</button></div></span>'
             : pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
@@ -2303,9 +2303,9 @@
     if (!(i > 0 && i < list0.length - 1)) return;
     var g0 = list0[i], w0 = stageWord(g0.stage)[1];
     ADspaceConfirm.ask({
-      title: 'Delete this stage?', go: 'Delete', tone: 'danger',
-      body: w0 + ' from ' + niceDate(g0.at) + ' leaves the Timeline' + (g0.reason ? ', with its reason' : '') +
-        '. The Activity record keeps what it held.'
+      title: 'Remove this stage?', go: 'Remove', tone: 'danger',
+      body: w0 + ' from ' + niceDate(g0.at) + (g0.reason ? ' and its reason are' : ' is') +
+        ' removed from the Timeline. The Activity record keeps the change.'
     }, function () { cutStage(c, i, menuBtn); });
   }
   function cutStage(c, i, menuBtn) {
@@ -2328,9 +2328,9 @@
       extra = { stage_reason: tail.reason || null, stage_note: tail.note || null };
     }
     var host = $('crmTimeline');
-    var bad = saveDates(c, list, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + said + ' deleted', extra, function () {
+    var bad = saveDates(c, list, c.created_at, 'Timeline: ' + word + ' from ' + niceDate(gone.at) + said + ' removed', extra, function () {
       if (!host) return;
-      window.ADspaceAdmin.undoHere(word + ' from ' + niceDate(gone.at) + ' deleted.', function () {
+      window.ADspaceAdmin.undoHere(word + ' from ' + niceDate(gone.at) + ' removed.', function () {
         var back = null;
         var last = was[was.length - 1];
         if (last.stage === c.stage && (last.reason || null) !== (c.stage_reason || null)) {
