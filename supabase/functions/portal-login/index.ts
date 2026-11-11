@@ -1,6 +1,7 @@
 /*
  * portal-login — makes the login for a client contact who has been given
- * portal access, so that granting access is all it takes.
+ * portal access, or for an active colleague, so that granting access (or
+ * adding the colleague on Team) is all it takes.
  *
  * Sign-ups are closed on the project, which is what stops anyone with the
  * page open from making themselves an account. That also means a contact
@@ -74,14 +75,26 @@ async function work(req: Request): Promise<void> {
   /* A failed read is logged: the client is told to check their email
      either way, so the log is the only trace of an outage. */
   if (readError) console.error('portal-login: contact read failed', readError.message);
-  if (!contact) return;
+  let name = contact ? String(contact.name ?? '') : '';
+  /* A colleague the team added and never invited (2026-11-11, the user: the
+     record read Active, yet no code came): the console's sign-in asks here
+     too, so an active colleague's first sign-in makes their login. A
+     colleague removed, erased or stood down is not one. */
+  if (!contact) {
+    const { data: member, error: teamError } = await admin.from('team_members')
+      .select('id, name').ilike('email', exactEmail(email))
+      .eq('active', true).is('removed_at', null).is('erased_at', null).limit(1).maybeSingle();
+    if (teamError) console.error('portal-login: colleague read failed', teamError.message);
+    if (!member) return;
+    name = String(member.name ?? '');
+  }
 
   /* Confirmed on creation, because the team confirmed them: the address came
      off the client record, not off a form somebody filled in. An address that
      already has a login is not an error, it is the ordinary case from the
      second sign-in onwards. */
   const { error } = await admin.auth.admin.createUser({
-    email, email_confirm: true, user_metadata: { name: contact.name ?? '' }
+    email, email_confirm: true, user_metadata: { name }
   });
   if (error && !/already|exists|registered/i.test(error.message)) {
     console.error('portal-login: createUser failed', error.message);

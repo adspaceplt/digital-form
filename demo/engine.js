@@ -14227,6 +14227,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var e = String((opts && opts.body && opts.body.email) || '').toLowerCase();
           var ok = (DB.client_contacts || []).some(function (c) {
             return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e;
+          }) || (DB.team_members || []).some(function (m) {
+            return m.active && !m.removed_at && !m.erased_at && String(m.email || '').toLowerCase() === e;
           });
           if (ok) window.__logins = (window.__logins || []).concat([e]);
           return Promise.resolve({ data: { ok: ok }, error: null });

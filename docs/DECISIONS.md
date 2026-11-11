@@ -9600,3 +9600,13 @@ code does; typing a second whole code over a wrong one signs in too (the
 first build compared lengths and missed it; `portal` and `perfguard` found
 it). The quotation's six signing boxes (`js/quote.js`) are left as they are:
 they are another code, typed after a signature.
+
+### 2026-11-11 · A colleague added without an invitation can sign in
+A colleague added on Team with Send invitation unticked had a record reading
+Active but no login, and the console's sign-in, which never makes an
+account, sent them nothing (the user found it testing; live, Jasmin Ong
+since 14 Oct). The console now asks `portal-login` before the code, as the
+client portal always has, and the function makes a login for an active
+colleague (not removed or erased) as well as for a live portal contact. It
+still answers every address alike in the same least time, so the page says
+nothing about who is on the team. The invitation stays a deliberate email.
