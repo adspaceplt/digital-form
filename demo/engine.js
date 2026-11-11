@@ -15175,7 +15175,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       },
 
       verifyOtp: function (o) {
-        if (!o || String(o.token) !== '123456') {
+        if (!o || String(o.token) !== '12345678') {
           return Promise.resolve({ data: {}, error: { message: 'Token has expired or is invalid' } });
         }
         session = mkSession(o.email, [{ method: 'otp', timestamp: Math.floor(Date.now() / 1000) }]);

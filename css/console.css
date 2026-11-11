@@ -1781,10 +1781,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .due-short { display: none; }
 .lockcard-form > .lockcard-line { margin: -14px 0 6px; text-align: center; }
 .lockcard-form .field-label { margin: 0; }
-.lockcard-code {
-  text-align: center; font-size: 20px; letter-spacing: .3em; padding-left: calc(12px + .3em);
-  font-variant-numeric: tabular-nums; min-height: 48px;
-}
 .lockcard .msg { margin-top: 14px; }
 .lockcard .msg:not(.err):not(.ok):not(.warn) { color: var(--ink-mute); }
 

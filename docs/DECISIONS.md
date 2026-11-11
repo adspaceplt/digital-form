@@ -9585,3 +9585,18 @@ that widened the WhatsApp template purposes added its check validated, so a
 re-run of the schema failed every older one once #1014 seeded
 `representative`. The three older checks are now added `not valid` (the
 newest stays validated); the live database is unchanged.
+
+### 2026-11-11 · The sign-in code in boxes
+The user asked for the emailed code as eight boxes rather than one field
+("can the sign in code do the 8 digits fields"). One script, `js/otp.js`,
+draws them for every code typed from an email: the console's sign-in, the
+client portal's and My records' lock (the same shape, so all three in one
+push). The page's own field stays the value and lies unseen over the boxes,
+so the iPhone's one-time code from Mail, a paste and a screen reader keep
+working as before, and no page's code changed but its length check. The
+length is a setting (`signCodeDigits`, 8, Supabase's OTP length); the stand-in
+takes 12345678. A whole code arriving signs in at once, as the creator page's
+code does; typing a second whole code over a wrong one signs in too (the
+first build compared lengths and missed it; `portal` and `perfguard` found
+it). The quotation's six signing boxes (`js/quote.js`) are left as they are:
+they are another code, typed after a signature.

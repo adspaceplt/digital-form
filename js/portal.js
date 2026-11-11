@@ -61,7 +61,7 @@
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send code',
       sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in code and link have been sent to it. Enter the code, or open the link.'; },
-      code: 'Sign-in code', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
+      code: 'Sign-in code', signIn: 'Sign in', otherEmail: 'Use another email',
       codeNeeded: 'Enter the code from the email.', codeWrong: 'The code is incorrect or has expired. Please request a new code.',
       codeWait: 'Too many attempts. Please wait a few minutes, then request a new code.', codeFail: 'Sign-in was unsuccessful. Please try again.',
       emailNeeded: 'Please enter your email address.',
@@ -107,7 +107,7 @@
       kicker: '客户平台', lang: 'EN', signOut: '退出登录',
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送验证码',
       sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。请输入验证码，或打开链接。'; },
-      code: '邮件中的验证码', codePh: '验证码', signIn: '登录', otherEmail: '使用其他邮箱',
+      code: '邮件中的验证码', signIn: '登录', otherEmail: '使用其他邮箱',
       codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
       codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
       emailNeeded: '请输入电子邮箱。',
@@ -164,7 +164,6 @@
     $('signGo').textContent = t().sendLink;
     $('signEmail').setAttribute('aria-label', t().email);
     $('signCode').setAttribute('aria-label', t().code);
-    $('signCode').placeholder = t().codePh;
     $('codeGo').textContent = t().signIn;
     $('codeBack').textContent = t().otherEmail;
     if (feed) build(); else if (shownState) showState.apply(null, shownState);
@@ -487,7 +486,8 @@
   var sentTo = '';
   function signWithCode() {
     var code = String($('signCode').value || '').replace(/\D/g, '');
-    if (code.length < 6) { msg('stateMsg', t().codeNeeded, 'err'); $('signCode').focus(); return; }
+    if ($('codeGo').disabled) return;
+    if (code.length < ADspaceOtp.digits()) { msg('stateMsg', t().codeNeeded, 'err'); $('signCode').focus(); return; }
     var b = $('codeGo');
     b.disabled = true;
     db.auth.verifyOtp({ email: sentTo, token: code, type: 'email' }).then(function (r) {

@@ -1112,6 +1112,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   local midnight), and the spreadsheet and CSV importers' own date reading
   (the user, 2026-10-12: never touched). `tests/myclock.js` holds Tokyo and
   Los Angeles across a month's end.
+- `js/otp.js` (`ADspaceOtp`) is the code from an email typed as a box a
+  digit (the user, 2026-11-11): the console's sign-in (`#authCode`), the
+  client portal's (`#signCode`) and My records' lock (`#mineCode`), each an
+  `input[data-otp-boxes]` kept as the value and laid unseen over
+  `ADSPACE_CONFIG.signCodeDigits` boxes (8, Supabase's Email OTP length), so
+  a paste, the iPhone's code from Mail and a screen reader meet a plain
+  field; a whole code arriving presses the field's Enter, which signs in.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/icons.js` (`ADspaceIcons.svg(name, cls)`, `platform(key)`,
