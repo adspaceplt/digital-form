@@ -200,7 +200,7 @@
       tabs: { bookings: '合作', payments: '付款', profile: '个人资料' },
       profHead: '主页链接', contactHead: '联络资料', contactWa: 'WhatsApp', contactEmail: '电邮',
       paysHead: '付款', paysNone: '暂无付款。',
-      paysWord: { pending: '待付款', paid: '已付款', due: '未到期' }, paysPaid: '已付款 {d}',
+      paysWord: { pending: '待付款', paid: '已付款', due: '未到期' }, paysPaid: '已于{d}付款',
       paysNote: '马币款项于发布日期后{myr}个工作日内支付，其他货币款项于{other}个工作日内支付。',
       payGo: '提交资料', payChange: '更改资料',
       payEinvHead: '电子发票（e-Invoice）',

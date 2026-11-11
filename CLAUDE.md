@@ -3920,8 +3920,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   balance keeping the state it had, never marked by hand; Payment sent goes
   once, when a bill read Processing is read Paid, or a bill first read paid
   on a booking posted in the portal (`posted_on`), never for one from before
-  the portal; the creator's page reads Paid on the day the portal first read
-  it paid; one fill for every creator email's fields (`creator_mail_fill`). A booking given an AKJ number on the
+  the portal; a paid bill keeps the day of Bukku's payment voucher
+  (`creator_bills.paid_on`, the latest payment `bukku-sync` reads applied to
+  it, ten bills a run), else the day the portal first read it paid; one fill for every creator email's fields (`creator_mail_fill`). A booking given an AKJ number on the
   AP01 form carries it (`campaign_options.earlier_job`, the row's pen at
   `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
   bills matching no booking read under Earlier payments
@@ -4094,8 +4095,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the queue and the open booking, the red count of what waits on the
     creator), Payments (drawn once details are asked or a booking holds a
     payment: the Payment details card, then each booking from Confirmed on
-    with its Job reference, its Bukku bill read as Processing or Paid with
-    its amount, else Not due, and the working days payment takes, all from
+    as one line, the campaign and its Job reference beside Paid {day} (the
+    day of Bukku's payment voucher), Pending payment once posted or billed,
+    else Not due, never an amount, a bill number or a currency (anyone with
+    the link reads it; the user, 2026-11-12), and the working days payment takes, all from
     `creator_pay_form` `payments` and `days`, the creator's own alone;
     `2026-11-10-creator-page-payments.sql`) and Profile (the profile links
     with Edit links, and Contact: the WhatsApp and email held).
