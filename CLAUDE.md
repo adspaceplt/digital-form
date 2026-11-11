@@ -4833,7 +4833,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   person's; Scheduled stays manual), never where a person could not move it:
   a task never through AQC review goes to AQC review, not Client review, a
   task at Ready to start waits on its month (`ops_month_open_for_work`),
-  and entering a review stamps Draft in (audit 2026-11-11), filed on the task and told to its
+  and entering a review stamps Draft in (audit 2026-11-11); a task Content
+  Review moved to Approved goes back with an approval taken back or asked
+  again, and Undo of Add changes puts back the final date they pushed,
+  where nothing moved it since, filed on the task and told to its
   owner, never failing the write. An unlinked task is unchanged. A post's ⋯
   Add changes (`review_record_changes`, a published set, no decision on
   the round) keeps the client's WhatsApp words as the team's changes, Undo

@@ -9698,5 +9698,7 @@ contact; a short email on a creator's link read whole; two earlier job IDs
 could be taken at once; restoring a link taken meanwhile said the database's
 words; one company's invoice marked another brand's month; and a Timeline
 stage was removed unasked, lost its reason for good and was held on the page alone.
-The user approved each fix ("ok"). One migration
+The second read added a task left at Approved when its approval was taken
+back, and Undo of Add changes leaving the pushed due date. The user approved
+each fix ("ok"). One migration
 (`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove, asked first.

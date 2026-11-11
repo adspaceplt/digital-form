@@ -109238,6 +109238,10 @@ grant execute on function public.creator_pay_list(uuid) to authenticated;
 --     goes to AQC review, not Client review; a task not started waits on its
 --     month (`ops_month_open_for_work`, the readiness ticks and the meeting,
 --     as `ops_transition_task` asks); entering a review stamps Draft in.
+--     An approval taken back, or asked again, takes a task Content Review
+--     moved to Approved back with it.
+--   * `review_revert_confirm`: Undo of Add changes puts back the final date
+--     the client's changes pushed, where nothing has moved it since.
 --   * `wa_compose_prepare`: Introduce representative refuses `no-contact`
 --     for a prospect marked Do not contact.
 --   * `creator_mask_email`: a short address shows its first letter alone.
@@ -109401,6 +109405,7 @@ declare
   v_dest public.ops_workflow_stages;
   v_own  uuid;
   v_me   uuid := (public.ops_me()).id;
+  v_back boolean := false;
 begin
   select * into k from public.ops_task_links x
    where x.post_id = p_post and x.archived_at is null limit 1;
@@ -109412,8 +109417,15 @@ begin
      or t.stage_key = v_to then
     return;
   end if;
+  /* Approved is the content loop's own while Content Review moved it there:
+     an approval taken back, or asked again, takes the task back with it
+     (audit 2026-11-11). */
+  v_back := t.stage_key = 'approved' and v_to in ('client_review', 'revision_client')
+    and coalesce((select (e.detail ->> 'content_review')::boolean from public.ops_task_events e
+                    where e.task_id = t.id and e.event_type = 'stage_changed'
+                    order by e.created_at desc limit 1), false);
   if t.stage_key not in ('ready', 'in_production', 'internal_review', 'revision_internal',
-                         'client_review', 'revision_client') then
+                         'client_review', 'revision_client') and not v_back then
     return;
   end if;
   /* A move a person could not make is not made for them: the client sees
@@ -109434,7 +109446,7 @@ begin
   v_from := public.ops_stage(t.workflow_id, t.stage_key);
   v_dest := public.ops_stage(t.workflow_id, v_to);
   if v_from.key is null or v_dest.key is null or coalesce(v_dest.retired, false) then return; end if;
-  if not (v_dest.position > v_from.position
+  if not (v_back or v_dest.position > v_from.position
           or (t.stage_key = 'revision_internal' and v_to = 'internal_review')
           or (t.stage_key = 'revision_client' and v_to = 'client_review')) then
     return;
@@ -109791,6 +109803,70 @@ returns bigint[] language sql stable security definer set search_path = public a
   ) x where x.contact_id is not null
 $$;
 revoke all on function public.month_invoice_contacts(uuid) from public, anon, authenticated;
+
+create or replace function public.review_revert_confirm(p_post uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me       public.team_members;
+  v_post   public.posts%rowtype;
+  v_rv     public.reviews%rowtype;
+  v_title  text;
+  v_client text;
+  v_task   uuid;
+  v_ev     public.ops_task_events;
+begin
+  if not public.allowed('review.sets', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_post from public.posts where id = p_post for update;
+  if v_post.id is null then return jsonb_build_object('error', 'no-post'); end if;
+  select r.* into v_rv from public.reviews r
+   where r.post_id = v_post.id and r.round = v_post.round and r.undone_at is null
+     and (v_post.review_reset_at is null or r.created_at > v_post.review_reset_at)
+   order by r.created_at desc limit 1;
+  if v_rv.id is null or v_rv.source <> 'team' then
+    return jsonb_build_object('error', 'not-confirmed');
+  end if;
+  update public.reviews set undone_at = now(), undone_by = me.id where id = v_rv.id;
+  /* Changes taken back: the final date they pushed goes back too, where
+     nothing has moved it since (audit 2026-11-11). */
+  if v_rv.decision = 'changes' then
+    for v_task, v_ev in
+      select t.id, e from public.ops_task_links l
+        join public.ops_tasks t on t.id = l.task_id
+        cross join lateral (
+          select x.* from public.ops_task_events x
+           where x.task_id = t.id and x.event_type = 'due_changed'
+             and x.to_value ->> 'kind' = 'final'
+           order by x.created_at desc limit 1) e
+       where l.post_id = v_post.id and l.archived_at is null
+         and coalesce((e.detail ->> 'auto')::boolean, false) and e.created_at >= v_rv.created_at
+         and t.current_final_due_at is not distinct from (e.to_value ->> 'value')::timestamptz
+    loop
+      update public.ops_tasks set current_final_due_at = (v_ev.from_value ->> 'value')::timestamptz,
+             version = version + 1, updated_at = now()
+       where id = v_task;
+      perform public.ops_log(v_task, 'due_changed',
+        jsonb_build_object('kind', 'final', 'value', v_ev.to_value ->> 'value'),
+        jsonb_build_object('kind', 'final', 'value', v_ev.from_value ->> 'value'),
+        jsonb_build_object('reason', 'client_request', 'note', 'The client''s changes were taken back.', 'auto', true));
+    end loop;
+  end if;
+
+  select b.title, c.name into v_title, v_client
+    from public.batches b join public.clients c on c.id = b.client_id
+   where b.id = v_post.batch_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(nullif(auth.jwt() ->> 'email', ''), me.name), 'review.unconfirmed', v_client,
+          coalesce(v_title, '') || ' · ' || coalesce(nullif(v_post.platform, ''), 'post') ||
+          case when v_rv.decision = 'approved' then ' · internal confirmation reverted'
+               else ' · changes received on WhatsApp reverted' end);
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.review_revert_confirm(uuid) from public, anon;
 
 create or replace function public.clients_stage_log_guard()
 returns trigger
