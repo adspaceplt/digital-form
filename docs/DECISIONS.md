@@ -9696,6 +9696,21 @@ reader and on hover, so no state is carried by colour alone.
   in place of both lines, upgrade and paused alike; with none it keeps its
   own line. `upgrade` holds the end as the one line with no "shortly".
 
+- 2026-11-12, copy review of #1006, #1007 and #1021 to #1033 (the 110
+  strings no reader had checked). A second reader found six breaks, all in
+  the console: two lines in the present tense for a step still to come (a
+  creator set inactive will no longer be offered; a missing billing address
+  will be asked for), a refusal naming an ID number where the field names
+  NRIC, Passport or Business Registration No., "login" said to colleagues on
+  Enable access, Add member and Send invitation (now "can already sign in",
+  and "Invitation not sent" where one was asked for), a setup fault naming
+  Supabase and a function (now "Invitations are not set up yet. Please
+  contact an admin."), and the sign-in code field named three ways (the
+  client portal's now Sign-in code, My records' lock Code from the email).
+  "A login already exists", "Login created" and "already has a login" join
+  `tests/words.js` RETIRED. The creator page's e-Invoice paragraph and its
+  中文 passed.
+
 - 2026-11-12 · A creator's payment reads Bukku's day and no amount (the
   user: "could you not show the price … anyone who holds the link would be
   able to see"; "the paid date is not even accurate, it should follow
