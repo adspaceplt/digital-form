@@ -623,6 +623,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
 
+- `work`: "a new meeting opens on the next free half hour" and "the time is
+  a select of quarter hours" fail when the suite runs after 10pm MYT (the
+  next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
+  suite needs a fixed time of day.
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont

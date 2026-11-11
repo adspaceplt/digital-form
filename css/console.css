@@ -651,10 +651,19 @@ button.appver {
 }
 .eng-checkcount { font-weight: 500; color: var(--ink-mute); white-space: nowrap; }
 .mcheck {
-  display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 0 12px;
-  align-items: center; min-height: var(--ctl-h); padding: 2px 0;
+  /* The tick, the name, then each act on the name's line at the right edge
+     (Not needed, Open), one column an act (2026-11-11: Open fell under the
+     tick when both were drawn). */
+  display: grid; grid-template-columns: 18px minmax(0, 1fr); grid-auto-flow: column; grid-auto-columns: auto;
+  gap: 0 12px; align-items: center; min-height: var(--ctl-h); padding: 2px 0;
 }
 .mcheck.is-na .mcheck-lab > span { color: var(--ink-mute); }
+/* A narrow pane keeps the name whole on its line, the acts under it at the
+   right edge. */
+.is-tight .mcheck { grid-template-columns: 18px minmax(0, 1fr) auto auto; grid-auto-flow: row; row-gap: 4px; padding-bottom: 6px; }
+.is-tight .mcheck-lab { grid-column: 2 / -1; }
+.is-tight .mcheck-na { grid-column: 3; grid-row: 2; }
+.is-tight .mcheck-open { grid-column: 4; grid-row: 2; }
 /* In a task's next step the month is a block of the step, under its line. */
 .tnext-month { margin-top: 12px; }
 /* The state and the ⋯ centre on the facts' first line, not on their own 44px
