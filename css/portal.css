@@ -1994,6 +1994,8 @@ dd > .linkbtn::before { inset: 3px 0; }
 :root[data-face="client"] .cover-panel p { font-size: 16px; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
 .cover-panel form .input { flex: 1; min-width: 0; }
+/* A code in boxes takes the row; its Sign in stands under it, the row's width. */
+.cover-panel form:has(> .otp) { flex-direction: column; }
 /* The way back under a cover's form: quiet, at its own width, centred with
    the cover's text. */
 .cover-panel .cover-alt { margin-top: 8px; min-width: 0; }
@@ -7472,7 +7474,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .lockcard-form[hidden] { display: none; }
 .lockcard-form .input, .lockcard-form .btn { width: 100%; flex: 0 0 auto; }
 .lockcard-form .input[hidden], .lockcard-form .btn[hidden] { display: none; }
-.lockcard-code::placeholder { letter-spacing: normal; font-size: 15px; }
 .lockcard .msg:empty { display: none; }
 /* A header row keeps every table's header pad, whatever its row's own. */
 .crm-head.perf-row, .crm-head.link-row { padding: 12px 15px 8px; }
@@ -9781,3 +9782,26 @@ body.qs-page { background: var(--card); }
     corner-shape: squircle;
   }
 }
+
+/* ---------- The code from an email, a box a digit (js/otp.js) ----------
+   One field holds the code, unseen over the boxes; the boxes draw it, the
+   next to fill shaped as a field being typed in (2026-11-11). */
+.otp { position: relative; width: 100%; }
+.otp[hidden] { display: none; }
+.otp-cells {
+  display: grid; grid-template-columns: repeat(var(--otp-n, 8), minmax(0, 1fr)); gap: 8px;
+}
+.otp-cell {
+  display: flex; align-items: center; justify-content: center; height: var(--tap);
+  background: var(--field); border: 1px solid transparent; border-radius: var(--radius-sm);
+  font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+.otp-cell.is-on { background: var(--card); border-color: var(--action); box-shadow: 0 0 0 3px var(--focus); }
+.otp.is-invalid .otp-cell { border-color: var(--err); }
+.otp > .otp-input {
+  position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; padding: 0;
+  opacity: 0; color: transparent; caret-color: transparent; background: transparent; border: 0; box-shadow: none;
+  font-size: 16px; cursor: text;
+}
+@media (max-width: 400px) { .otp-cells { gap: 6px; } }

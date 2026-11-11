@@ -1502,9 +1502,9 @@
   }
   function verifyCode() {
     var code = ($('mineCode').value || '').replace(/\D/g, '');
-    /* Supabase sends 6 digits unless the project's Email OTP length says
-       otherwise (6 to 10), so the field takes whatever length arrived. */
-    if (code.length < 6 || code.length > 10) { msg('mineLockMsg', 'Enter the code from the email.', 'err'); $('mineCode').focus(); return; }
+    /* The code is Supabase's Email OTP length (js/config.js signCodeDigits). */
+    if ($('mineVerify').disabled) return;
+    if (code.length !== ADspaceOtp.digits()) { msg('mineLockMsg', 'Enter the code from the email.', 'err'); $('mineCode').focus(); return; }
     var b = $('mineVerify');
     b.disabled = true;
     db.auth.verifyOtp({ email: guard.email, token: code, type: 'email' }).then(function (r) {

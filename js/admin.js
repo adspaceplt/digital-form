@@ -218,7 +218,8 @@
   });
   function authVerify() {
     var code = String($('authCode').value || '').replace(/\D/g, '');
-    if (code.length < 6) { msg('authMsg', 'Enter the code from the email.', 'err'); $('authCode').focus(); return; }
+    if ($('authVerify').disabled) return;
+    if (code.length < ADspaceOtp.digits()) { msg('authMsg', 'Enter the code from the email.', 'err'); $('authCode').focus(); return; }
     var b = $('authVerify');
     b.disabled = true;
     db.auth.verifyOtp({ email: authEmailSent, token: code, type: 'email' }).then(function (r) {
