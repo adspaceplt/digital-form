@@ -425,7 +425,7 @@
   }
   var AB_WORD = { waiting: ['is-warn', 'Waiting'], approved: ['is-ok', 'Approved'], declined: ['is-off', 'Declined'],
                   ended: ['is-off', 'Ended'], expired: ['is-off', 'Ended'] };
-  var AB_SAID = { denied: 'Only an admin can decide overseas access.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request was already decided.',
+  var AB_SAID = { denied: 'Only an admin can decide overseas access. Please ask an admin.', 'not-found': 'This request no longer exists.', 'not-waiting': 'That request was already decided.',
                   'not-approved': 'That access has already ended.', 'too-long': 'Keep the note to 300 characters.' };
   function abroadGroup(m) {
     var rows = abroadOf(m.id);
@@ -484,7 +484,7 @@
           var today = state.abToday || C.today(), max = C.addDays(today, state.abDays || 14);
           window.ADspaceConfirm.ask({
             title: 'Approve overseas access?', go: 'Approve', wait: true,
-            body: who + ' reaches the console from ' + whereWord(x.country) + ' until the end of the day chosen, ' + (state.abDays || 14) + ' days at most.',
+            body: who + ' can use the console from ' + whereWord(x.country) + ' until the end of the day chosen, ' + (state.abDays || 14) + ' days at most.',
             fields: [{ name: 'until', label: 'Until', type: 'date', value: x.until > max ? max : x.until, min: today, max: max, required: true },
               { name: 'note', label: 'Note', placeholder: 'Optional', required: false }],
             check: function (v) { return !v.until || v.until < today || v.until > max ? 'Choose a day from today to ' + C.date(max) + '.' : ''; }
@@ -495,7 +495,7 @@
         } else if (a === 'decline') {
           window.ADspaceConfirm.ask({
             title: 'Decline overseas access?', go: 'Decline', tone: 'warn', wait: true,
-            body: who + ' is told, with the note, and may ask again.',
+            body: who + ' will be told, with the note, and may ask again.',
             fields: [{ name: 'note', label: 'Note', placeholder: 'Optional', required: false }]
           }, function (v) {
             return db.rpc('abroad_decide', { p_id: x.id, p_approve: false, p_until: null, p_note: v.note || null })
@@ -504,7 +504,7 @@
         } else if (a === 'end') {
           window.ADspaceConfirm.ask({
             title: 'End overseas access?', go: 'End access', tone: 'warn', wait: true,
-            body: who + ' stops reaching the console from abroad at once.'
+            body: who + ' loses access to the console from abroad at once.'
           }, function () {
             return db.rpc('abroad_end', { p_id: x.id })
               .then(function (r) { return after(r, 'Ended.'); }).catch(function () { return 'Not saved.'; });
@@ -685,14 +685,14 @@
     return [post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
-  var ADMIN_ONLY = 'Only an admin makes a colleague admin, changes an admin or turns an admin tool on or off.';
+  var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
     if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'This is a system account.';
-    if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin changes your own group. Please ask an admin.' : ADMIN_ONLY;
+    if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin can change your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
   }
@@ -970,7 +970,7 @@
         ' with them: the colleague chosen submitted it or does not review reports.' : '');
       if (!quiet) msg('teamMsg', line, 'ok');
       return line;
-    }).catch(function () { workMsg(m, 'The work could not be handed over.'); return false; });
+    }).catch(function () { workMsg(m, 'The work could not be handed over. Please try again.'); return false; });
   }
   /* A line naming work still to hand over, with the button that opens the
      colleague's Work pane, where Hand over work is (TEAM2-4). */
@@ -1003,8 +1003,8 @@
       window.ADspaceConfirm.ask({
         title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
         /* Short enough to read before the fields on a phone (TEAM-10, 2026-10-14). */
-        body: m.name + ' loses access permanently. This cannot be undone.' + (fields.length ? ' Choose who takes their work.' : '') +
-          ' Past work, HR letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in and health check-ins.',
+        body: m.name + ' loses access permanently.' + (fields.length ? ' Choose who takes their work.' : '') +
+          ' Past work, HR letters and performance records are kept. Erase personal details also removes their mobile, namecard, sign-in email and health check-ins. This cannot be undone.',
         fields: fields.concat([
           { name: 'data', label: 'Their data', choices: [['keep', 'Keep'], ['erase', 'Erase personal details']], seg: true, value: 'keep' },
           { name: 'name', label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }])
@@ -1143,7 +1143,7 @@
     if (del) del.addEventListener('click', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'The ' + r.name + ' group and the access it carries go. This cannot be undone.',
+        body: 'The ' + r.name + ' group and its access will be deleted. This cannot be undone.',
         go: 'Delete',
         tone: 'danger',
         field: { label: 'Type the group name to confirm', placeholder: r.name, match: r.name, need: 'Type the group name to confirm.', mismatch: 'The group name does not match.' }
@@ -1230,12 +1230,12 @@
     suppliers: { none: 'Suppliers is hidden.', view: 'Read suppliers and their letters.',
                  work: 'Add suppliers, send their details form and take it in. Approving needs Supplier bank details.', manage: 'Also delete suppliers and edit their email templates.' },
     reports: { none: 'Reports is hidden.', view: 'Read reports and preview their PDFs.',
-               work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, return, publish, unpublish and delete reports.' },
+               work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, send back, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
     services: { none: 'Services is hidden.', view: 'Read the Rate Card.', manage: 'Add, edit and delete Rate Card lines, and publish the Rate Card.' },
     team: { none: 'Team is hidden.', manage: 'Add colleagues and edit user groups. Invitations need Send invitation.' },
-    activity: { none: 'The activity record is hidden.', view: 'Read the activity record, tab by tab.' }
+    activity: { none: 'The Activity record is hidden.', view: 'Read the Activity record, section by section.' }
   };
 
   /* A group starts from one of four shapes and is adjusted from there; a
@@ -1308,7 +1308,7 @@
     'clients.requests': 'Changes the client asks for in the portal.',
     'clients.calls': 'Calls, visits and meetings logged.',
     'clients.brand': 'Brand profile, content brief, Meta accounts and Brand analysis.',
-    'clients.checklists': 'The onboarding and pre-advertising checklists.',
+    'clients.checklists': 'The Onboarding Checklist and Pre-Advertising Checklist.',
     'clients.leads': 'Leads, Contacted and Proposal sent.',
     'clients.past': 'Past clients.',
     'whatsapp.report': 'A published report sent to the client.',
@@ -1317,7 +1317,7 @@
     'whatsapp.approval': 'A reminder of what waits on the client\'s approval.',
     'whatsapp.documents': 'A quotation or Letter of Offer sent to the client.',
     'review.sets': 'Content sets, posts and their decisions.',
-    'review.settings': 'The review link, access code, handles and logo.',
+    'review.settings': 'The review link and access code.',
     'campaigns.campaigns': 'Campaigns, bookings and drafts.',
     'campaigns.creators': 'The Creators List.',
     'campaigns.finance': 'The invoice number and its PDF.',
@@ -1325,7 +1325,7 @@
     'register.hr': 'HR letters and downloaded performance records.',
     'suppliers.pay': 'A supplier\'s NRIC and bank details.',
     'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
-    'ops.all': 'Every colleague\'s tasks, not only one\'s own.',
+    'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'
   };
@@ -1781,7 +1781,7 @@
   $('grClose').addEventListener('click', shutGroupBox);
   $('grSave').addEventListener('click', function () {
     var name = ($('grName').value || '').trim();
-    if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
+    if (!name) { msg('grMsg', 'Enter a name.', 'err'); return; }
     var flags = {};
     flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
     // Only an exception is stored; Same as section is the absence of a key,
@@ -1917,11 +1917,11 @@
               });
               Promise.all(jobs).then(function (got) {
                 var back = got.filter(function (x) { return x > 0; }).length, refused = got.filter(function (x) { return x < 0; }).length;
-                if (back) log('team.changed', 'Team', 'Access until put back for ' + back + (back === 1 ? ' colleague' : ' colleagues'));
+                if (back) log('team.changed', 'Team', 'Access until restored for ' + back + (back === 1 ? ' colleague' : ' colleagues'));
                 load(function () {
-                  if (refused) msg('teamMsg', refused + (refused === 1 ? ' colleague was' : ' colleagues were') + ' not put back. The database refused the request.', 'err');
+                  if (refused) msg('teamMsg', refused + (refused === 1 ? ' colleague was' : ' colleagues were') + ' not restored. The database refused the request.', 'err');
                 });
-              }).catch(function () { msg('teamMsg', 'Not put back. Please try again.', 'err'); });
+              }).catch(function () { msg('teamMsg', 'Not undone. Please try again.', 'err'); });
             }, $('teamMsg'));
           });
         }).catch(function () { msg('teamMsg', 'Not saved. Please try again.', 'err'); });
@@ -1937,11 +1937,11 @@
     var staff = ($('tmStaff').value || '').trim().toUpperCase();
     var desig = ($('tmDesig').value || '').trim();
     var focusIn = function (id) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal($(id)); $(id).focus(); };
-    if (!name) { msg('tmMsg', 'A name is required.', 'err'); $('tmName').focus(); return; }
+    if (!name) { msg('tmMsg', 'Enter a name.', 'err'); $('tmName').focus(); return; }
     if (!ADspaceWords.emailOk(email)) { msg('tmMsg', 'Enter a valid email address.', 'err'); $('tmEmail').focus(); return; }
-    if (!role) { msg('tmMsg', 'A user group is required.', 'err'); $('tmRole').focus(); return; }
+    if (!role) { msg('tmMsg', 'Choose a user group.', 'err'); $('tmRole').focus(); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
-    if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
+    if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'Enter an Employee ID of 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
     var mobile = ($('tmMobile').value || '').trim();
     var mobDigits = mobile.replace(/\D/g, '').length;
     if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); focusIn('tmMobile'); return; }
@@ -1997,7 +1997,7 @@
               ? name + ' added. Invitation not sent: ' + name + ' can already sign in.'
               : name + ' added. Invitation sent to ' + email + '.',
               'ok');
-          }).catch(function () { msg('teamMsg', name + ' added. The invitation could not be sent.', 'warn'); });
+          }).catch(function () { msg('teamMsg', name + ' added. Invitation could not be sent. Please try again.', 'warn'); });
     }
   });
 
@@ -2006,8 +2006,8 @@
     shutMenus();
     if (!m.email) { msg('teamMsg', m.name + ' has no sign-in email. ' + (amAdmin() ? 'Add one on their Overview first.' : 'Ask an admin to add one.'), 'err'); return; }
     window.ADspaceConfirm.ask({
-      title: 'Send an invitation',
-      body: 'An email goes to ' + m.email + ' with a sign-in link. '
+      title: 'Send invitation?',
+      body: 'An email with a sign-in link will be sent to ' + m.email + '. '
           + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () {
@@ -2015,11 +2015,11 @@
       API.invokeFn('invite-member', { email: m.email, name: m.name })
         .then(function (r) {
           var d = r.data || {};
-          if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
+          if (r.error) { msg('teamMsg', 'Invitation could not be sent: ' + r.why, 'err'); return; }
           log('team.invited', m.name, m.email);
-          msg('teamMsg', d.sent === false ? 'Invitation not sent. ' + m.name + ' can already sign in.'
+          msg('teamMsg', d.sent === false ? 'Invitation not sent: ' + m.name + ' can already sign in.'
                                    : 'Invitation sent to ' + m.email + '.', 'ok');
-        }).catch(function () { msg('teamMsg', 'Could not send. Please try again.', 'err'); });
+        }).catch(function () { msg('teamMsg', 'Invitation could not be sent. Please try again.', 'err'); });
     });
   }
 
@@ -2220,10 +2220,10 @@
       /* The value goes back until the question is answered: Cancel leaves it. */
       back(false);
       window.ADspaceConfirm.ask({
-        title: 'Change the sign-in address',
-        body: m.name + ' signs in with ' + fields.email + ' from now on. The login itself '
-            + 'stays at the old address until they are invited at the new one.',
-        go: 'Change address', tone: 'warn'
+        title: 'Change sign-in email?',
+        body: m.name + ' signs in with ' + fields.email + ' from now on. Until they are invited at the new address, '
+            + 'their account stays on the old one.',
+        go: 'Change email', tone: 'warn'
       }, function () { back = function () {}; write(); });
       return;
     }
@@ -2243,10 +2243,10 @@
   }
   /* What a typed value must be, in the sheet's own words; null when fine. */
   function badValue(k, v) {
-    if (k === 'name' && !v) return 'A name is required.';
+    if (k === 'name' && !v) return 'Enter a name.';
     if (k === 'email' && !ADspaceWords.emailOk(v)) return 'Enter a valid email address.';
-    if (k === 'staff_code' && v && !/^[A-Z0-9]{3,8}$/.test(v)) return 'An Employee ID is 3 to 8 letters or digits.';
-    if (k === 'capacity_minutes_week' && v !== '' && !(parseFloat(v) >= 0 && parseFloat(v) <= 80)) return 'Weekly capacity is 0 to 80 hours.';
+    if (k === 'staff_code' && v && !/^[A-Z0-9]{3,8}$/.test(v)) return 'Enter an Employee ID of 3 to 8 letters or digits.';
+    if (k === 'capacity_minutes_week' && v !== '' && !(parseFloat(v) >= 0 && parseFloat(v) <= 80)) return 'Enter a weekly capacity from 0 to 80 hours.';
     if (k === 'mobile' && v) { var n = v.replace(/\D/g, '').length; if (n < 8 || n > 15) return 'Enter a mobile number of 8 to 15 digits.'; }
     if (k === 'card_slug' && v && !/^[a-z0-9][a-z0-9._-]{2,79}$/.test(v)) return 'Use at least three characters: lowercase letters, digits, dots, dashes or underscores.';
     if (k === 'access_until' && v && v < todayMy()) return 'Choose today or a later date.';
@@ -2344,7 +2344,7 @@
           var to = sel.value, from = was;
           sel.value = was;
           window.ADspaceConfirm.ask({
-            title: 'Change user group', go: 'Change group',
+            title: 'Change user group?', go: 'Change group',
             body: m.name + ' moves from ' + roleName(from) + ' to ' + roleName(to) + ' and takes that group\'s access.'
           }, function () {
             patchMember(m, { role: to }, function (ok) { if (ok) was = to; }, function (fresh) {
@@ -2484,7 +2484,7 @@
         var rest = HELD_KINDS.filter(function (k) { return k[0] !== 'tasks' || tasks === null; })
           .map(function (k) { return [k[1], Number(held[k[0]] || 0)]; }).filter(function (x) { return x[1] > 0; });
         if (rest.length) {
-          html += group('Also held', '<dl class="ovfacts">' + rest.map(function (x) {
+          html += group('Other work', '<dl class="ovfacts">' + rest.map(function (x) {
             return '<div><dt>' + esc(x[0]) + '</dt><dd>' + esc(String(x[1])) + '</dd></div>';
           }).join('') + '</dl>', act);
           act = '';

@@ -26,14 +26,14 @@
     'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
     empty: 'Choose a plan, an advertising budget or a one-off item.', 'nothing-priced': 'Add an item with a listed rate. Items quoted on request cannot form a quotation on their own.', revised: 'This quotation has been revised. Send the revised quotation instead.', 'bad-extra': 'Additional content pieces are whole numbers.',
-    'bad-once': 'One-off items are whole numbers.', 'not-found': 'This quotation is no longer available.',
+    'bad-once': 'Enter whole numbers for one-off items.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
-    lines: 'Not saved. Service lines were made from this quotation. Refresh the page to revise it.',
+    lines: 'Not saved. Service lines were created from this quotation. Refresh the page to revise it.',
     letter: 'Not saved. A Letter of Offer was issued from this quotation. Refresh the page to revise it.',
     'not-sent': 'Send the quotation first.', 'no-contact': 'This prospect is marked Do not contact. Choose Allow contact first.',
     'wa-off': 'The Quotation ready WhatsApp template is off. Turn it on in Settings, Templates.',
@@ -44,10 +44,10 @@
     'not-signed': 'This quotation has not been signed.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
     'in-review': 'This quotation is already with its reviewer. Refresh the page.',
-    'bad-reviewer': 'Choose a reviewer with full access to quotations.', own: 'Choose a reviewer other than yourself.',
+    'bad-reviewer': 'Choose a reviewer with Full Access to quotations.', own: 'Choose a reviewer other than yourself.',
     'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
-    'not-reviewer': 'Only the reviewer chosen, or an admin, approves this quotation.',
-    'note-required': 'Enter what needs correcting.',
+    'not-reviewer': 'Only the chosen reviewer or an admin can approve this quotation.',
+    'note-required': 'Enter the corrections.',
     'billing-access': 'Approving fills in Billing, which you do not have permission to change. Please ask the chosen reviewer or an admin.',
     'bad-day': 'Choose the day it was signed, from the day it was issued to today.',
     'bad-scan': 'Enter the scan as a web address starting https://.',
@@ -537,7 +537,7 @@
         window.ADspaceDocs.save(blob, window.ADspaceQuotePdf.fileName(q), tab);
       }).catch(function (e) {
         if (tab) try { tab.close(); } catch (x) {}
-        ctx.msg('qtMsg', said(e) || 'Not drawn.', 'err');
+        ctx.msg('qtMsg', said(e) || 'The PDF could not be generated.', 'err');
       });
       return;
     }
@@ -565,7 +565,7 @@
          WhatsApp goes. */
       var who = (q.contact && q.contact.name) || q.brand;
       window.ADspaceConfirm.ask({ title: 'Send quotation?',
-        body: q.ref + ' is shown to ' + who + ' on the quotation link and sent on WhatsApp. It is valid for ' +
+        body: q.ref + ' will be shown to ' + who + ' on the quotation link and sent on WhatsApp. It is valid for ' +
           (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
         go: 'Send' }, function () {
         if (btn) btn.disabled = true;
@@ -584,7 +584,7 @@
          team tells the prospect in its own chat. */
       var whom = (q.contact && q.contact.name) || q.brand;
       window.ADspaceConfirm.ask({ title: 'Publish quotation?',
-        body: q.ref + ' is shown to ' + whom + ' on the quotation link. No WhatsApp message is sent. It is valid for ' +
+        body: q.ref + ' will be shown to ' + whom + ' on the quotation link. No WhatsApp message will be sent. It is valid for ' +
           (Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30) + ' days from today.',
         go: 'Publish' }, function () {
         if (btn) btn.disabled = true;
@@ -619,8 +619,8 @@
         }).catch(function (e) { if (btn) btn.disabled = false; ctx.msg('qtMsg', said(e), 'err'); });
       };
       window.ADspaceConfirm.ask(team ? { title: 'Send link on WhatsApp?',
-        body: 'The Quotation ready message, with the link to review and sign ' + q.ref + ', is sent to ' + to + '.', go: 'Send' } : { title: 'Resend on WhatsApp?',
-        body: 'The Quotation ready message, with the link to ' + q.ref + ', is sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
+        body: 'The Quotation ready message, with the link to review and sign ' + q.ref + ', will be sent to ' + to + '.', go: 'Send' } : { title: 'Resend on WhatsApp?',
+        body: 'The Quotation ready message, with the link to ' + q.ref + ', will be sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
     if (a === 'copy') { build(ctx, q.selection, btn); return; }
@@ -657,7 +657,7 @@
   function remove(q, ctx) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: q.ref + ' is deleted. This cannot be undone, and its reference will not be used again.',
+      body: q.ref + ' will be deleted, and its reference will not be used again. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       field: { label: 'Type the reference to confirm', placeholder: q.ref, match: q.ref,
                need: 'Type the reference to confirm.', mismatch: 'The reference does not match.' }
@@ -665,9 +665,9 @@
       return ctx.db.rpc('quotation_delete', { p_id: q.id, p_ref: q.ref }).then(function (r) {
         var d = r.data || {};
         if (r.error) return said(r.error);
-        if (d.error === 'lines') return 'Service lines were made from ' + q.ref + '. Delete ' + (d.count === 1 ? 'that line' : 'those ' + d.count + ' lines') + ' in Service lines first.';
-        if (d.error === 'letter') return 'Letter of Offer ' + d.number + ' quotes ' + q.ref + '. A quotation a letter quotes is kept.';
-        if (d.error === 'revised') return q.ref + ' was revised as ' + d.ref + ' and is kept while that quotation stands.';
+        if (d.error === 'lines') return 'Service lines were created from ' + q.ref + '. Delete ' + (d.count === 1 ? 'that line' : 'those ' + d.count + ' lines') + ' in Service lines first.';
+        if (d.error === 'letter') return 'Letter of Offer ' + d.number + ' quotes ' + q.ref + ', so the quotation cannot be deleted.';
+        if (d.error === 'revised') return q.ref + ' was revised as ' + d.ref + '. Delete ' + d.ref + ' first.';
         if (d.error) return GONE_SAID[d.error] || said(d.error);
         ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' deleted.', 'ok'); });
         return '';
@@ -897,7 +897,7 @@
     var q = RV.q, ctx = RV.ctx;
     window.ADspaceConfirm.ask({
       title: 'Send back?', go: 'Send back', wait: true,
-      body: (q.submitted_by || 'The colleague who submitted it') + ' is told, and may correct the details or ask the client to sign again.',
+      body: (q.submitted_by || 'The colleague who submitted it') + ' will be told, and may correct the details or ask the client to sign again.',
       field: { label: 'Corrections', rows: 3, need: SAID['note-required'] }
     }, function (note) {
       return ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: false, p_note: String(note || '').trim() }).then(function (r) {

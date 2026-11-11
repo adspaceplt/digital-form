@@ -99,7 +99,7 @@
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
     'month-gate': 'Its month in My Work does not ask for this report.',
-    'no-content': 'This content month has no planned content, so it takes no Accounts Report.',
+    'no-content': 'This content month has no posts planned, so it does not include an Accounts Report.',
     'bad-period': 'The period must end on or after the day it starts.',
     'not-draft': 'Only a draft can be submitted.',
     'no-platforms': 'Add an account before submitting.',
@@ -107,29 +107,29 @@
     'no-ads': 'Add the period\'s ads before submitting.',
     'bad-kind': 'This feature is not available yet. Please contact an admin.',
     'note-required': 'Enter the changes.',
-    'not-returnable': 'Only a report in review or confirmed can be returned.',
+    'not-returnable': 'Only a report in review or confirmed can be sent back.',
     'not-in-review': 'Only a report in review can be confirmed.',
-    'self-confirm': 'Somebody else confirms a report you submitted.',
+    'self-confirm': 'A report you submitted must be confirmed by another colleague.',
     'no-reviewer': 'Choose who reviews it.',
-    'self-review': 'Somebody else reviews a report you submitted.',
-    'bad-reviewer': 'Choose a colleague at Reports Full Access.',
-    'not-reviewer': 'Only its reviewer, or an admin, does this.',
-    'same-reviewer': 'They already review it.',
+    'self-review': 'A report you submitted must be reviewed by another colleague.',
+    'bad-reviewer': 'Choose a colleague with Full Access to Reports.',
+    'not-reviewer': 'Only the report\'s reviewer or an admin can do this.',
+    'same-reviewer': 'This colleague is already the reviewer.',
     'month-gate': 'Its month in My Work is not in order: see the checks above.',
-    'late-reason': 'Give the reason it is late.',
+    'late-reason': 'Enter the reason the report is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'meta-audit': 'The figures must match Meta first: see the Report audit.',
     'period-running': 'The period has not ended. Publish once the Report audit reads Meta after its last day.',
-    'not-linked': 'This client links no Meta accounts.',
-    'not-unavailable': 'Meta is answering, so the figures must match it. Run the audit again.',
+    'not-linked': 'This client has no linked Meta accounts.',
+    'not-unavailable': 'Meta is available, so the figures must match it. Run the audit again.',
     'not-published': 'This report is not published.',
     'in-review': 'Send the report back to draft before restoring a version.',
     'on-portal': 'This version is on the client portal. Publish a newer one or unpublish it first.',
     'not-finished': 'This report is not finished.',
-    'reason-required': 'Give a reason.',
+    'reason-required': 'Enter a reason.',
     'confirm-mismatch': 'That does not match the period.',
-    'sm-not-draft': 'This report is no longer a draft, so it cannot be changed. Refresh to see where it stands.',
-    'sm-status-by-function': 'The status changes only through its own step.',
+    'sm-not-draft': 'This report is no longer a draft, so it cannot be changed. Refresh the page to see its current status.',
+    'sm-status-by-function': 'The status can be changed only through its step on the report.',
     'sm-wrong-platform': 'Choose one of this report\'s accounts.'
   };
   function said(e) {
@@ -589,7 +589,7 @@
       var box = host.querySelector('.rp-editbox');
       var bad = got.filter(function (r) { return r.error; })[0];
       if (bad) { UI.failLine(box, 'the report', said(bad.error), function () { openReport(id, true); }); return; }
-      if (!got[0].data) { UI.emptyLine(box, 'No such report.', 'Back to Reports', function () { goReport(''); }); return; }
+      if (!got[0].data) { UI.emptyLine(box, 'This report no longer exists.', 'Back to Reports', function () { goReport(''); }); return; }
       st.open = got[0].data;
       st.platforms = got[1].data || [];
       st.posts = got[2].data || [];
@@ -1034,9 +1034,9 @@
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
     else if (metaHold && may('work')) wait = 'Match the figures to Meta to submit.';
     else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
-    else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
-    else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
-    else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
+    else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting for another manager to confirm.';
+    else if (r.status === 'review' && !may('manage')) wait = 'Waiting for a manager to confirm.';
+    else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting for a manager to publish.';
     var gated = r.status === 'draft' && String(r.period_start || '') >= '2026-10-01';
     box.innerHTML = '<div class="rp-sec">' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
@@ -1600,7 +1600,7 @@
     var note = 'Meta\'s figures changed since it was submitted. ' + lines.join('; ') +
       (rows.length > 8 ? '; and ' + (rows.length - 8) + ' more' : '') + '. Take Meta\'s figures in the Report audit and submit it again.';
     var m = st.host && st.host.querySelector('[data-m="check"]');
-    window.ADspaceConfirm.ask({ title: 'Send back?', body: 'It returns to draft with the rows that changed as its note. Its submitter takes Meta\'s figures and submits it to the reviewer again.', go: 'Send back' },
+    window.ADspaceConfirm.ask({ title: 'Send back?', body: 'It will return to draft with the figures that changed as its note. The submitter will then take Meta\'s figures and submit it to the reviewer again.', go: 'Send back' },
       function () { stepCall('sm_report_return', { p_id: r.id, p_note: note.slice(0, 1800) }, 'Sent back to draft.', btn, m); });
   }
   function whenWord(iso) {
@@ -1792,7 +1792,7 @@
     });
     on('metaskip', function (x) {
       window.ADspaceConfirm.ask({ title: 'Continue without Meta?', body: 'Meta did not answer, so the figures were not read. The reason is saved with the report.', go: 'Continue',
-        field: { label: 'Reason', rows: 2, need: 'A reason is required.' } }, function (why) {
+        field: { label: 'Reason', rows: 2, need: 'Enter a reason.' } }, function (why) {
         x.disabled = true;
         fileMeta(r, 'override', [], why).then(function () { return reloadAudit(r, ''); }).catch(function (e) { x.disabled = false; say(m, said(e), 'err'); });
       });
@@ -1851,7 +1851,7 @@
       next[f.ref] = t; n++;
     });
     var m = host.querySelector('[data-m="cmsg"]');
-    if (!n) { say(m, 'The words have changed since this check. Check again.', 'warn'); return; }
+    if (!n) { say(m, 'The commentary has changed since this check. Run the audit again.', 'warn'); return; }
     var dr = { platforms: [], posts: [] }, plats = {};
     Object.keys(next).forEach(function (ref) {
       var x;
@@ -1922,8 +1922,8 @@
   var CHECK_SAID = {
     'no-text': 'Write the commentary before checking it.',
     'not-open': 'Only a report in draft or in review can be checked.',
-    'ai-failed': 'No check came back. Try again.',
-    'ai-incomplete': 'No check came back. Try again.'
+    'ai-failed': 'The check did not complete. Try again.',
+    'ai-incomplete': 'The check did not complete. Try again.'
   };
 
   /* The month's gate (2026-10-04): a report from October 2026 on is
@@ -2098,7 +2098,7 @@
         if (sub) { sub.disabled = true; sub.removeAttribute('data-meta'); }
         var acts = box.querySelector('.rp-actions'), w = acts && acts.querySelector('.rp-wait');
         if (acts && !w) { w = document.createElement('span'); w.className = 'rp-wait'; acts.appendChild(w); }
-        if (w) { w.textContent = 'Put the month in order to submit.'; w.removeAttribute('data-meta'); }
+        if (w) { w.textContent = 'Complete the month\'s checks above to submit.'; w.removeAttribute('data-meta'); }
       }
     }).catch(function () { /* an older database: no gate */ });
   }
@@ -2251,7 +2251,7 @@
          question (2026-10-04). */
       if (ask.reason || ask.ai) {
         var fs = [who];
-        if (ask.reason) fs.push({ name: 'why', label: ask.reason, rows: 2, need: 'A reason is required.' });
+        if (ask.reason) fs.push({ name: 'why', label: ask.reason, rows: 2, need: 'Enter a reason.' });
         if (ask.ai) fs.push(AIQ.field('commentary'));
         window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go, fields: fs,
           check: ask.ai ? AIQ.refused : null },
@@ -2261,7 +2261,7 @@
       window.ADspaceConfirm.ask({ title: ask.title, body: ask.body, go: ask.go,
         field: { label: who.label, choices: who.choices, value: who.value } },
         function (w) { then(w); });
-    }).catch(function () { if (btn) btn.disabled = false; say(m, said({ message: 'Load failed' }), 'err'); });
+    }).catch(function () { if (btn) btn.disabled = false; say(m, said({ message: 'The reviewers could not be loaded. Try again.' }), 'err'); });
   }
 
   function wireSteps(box) {
@@ -2270,7 +2270,7 @@
     on('submit', function (b) {
       var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
       var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
-      var ask = { title: 'Submit?', body: 'The reviewer is told and checks it before it is published. It is locked while in review.', go: 'Submit' };
+      var ask = { title: 'Submit?', body: 'The reviewer will be notified and will check it before it is published. It cannot be edited while in review.', go: 'Submit' };
       if (past || late) {
         ask.title = past ? 'Submit anyway?' : 'Submit late?';
         ask.body = (past ? gateWords(g).join(' ') + ' ' : '') + (late ? 'It was due ' + dueWord(g.due) + '. ' : '') +
@@ -2287,7 +2287,7 @@
           pickReviewer(r, b, m, ask, function (who, why) {
             var args = { p_id: r.id, p_reviewer: who };
             if (why) args.p_reason = why;
-            stepCall('sm_report_submit', args, who === myId() ? 'Submitted. You review it.' : 'Submitted to ' + nameOf(who) + '.', b, m, ai ? function () {
+            stepCall('sm_report_submit', args, who === myId() ? 'Submitted. You are its reviewer.' : 'Submitted to ' + nameOf(who) + '.', b, m, ai ? function () {
               fileReport('report.saved', 'Commentary written with AI, read and confirmed', r);
             } : null);
           });
@@ -2297,7 +2297,7 @@
       /* An admin confirming for the named reviewer says so first; the
          record files it "in place of" them (2026-10-04). */
       if (r.reviewer_id && r.reviewer_id !== myId() && r.submitted_by !== myId()) {
-        window.ADspaceConfirm.ask({ title: 'Confirm in place of ' + (nameOf(r.reviewer_id) || 'the reviewer') + '?', body: 'The record notes you confirmed it in their place.', go: 'Confirm' }, function () {
+        window.ADspaceConfirm.ask({ title: 'Confirm in place of ' + (nameOf(r.reviewer_id) || 'the reviewer') + '?', body: 'The Record of changes will note that you confirmed it in their place.', go: 'Confirm' }, function () {
           stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
         });
         return;
@@ -2349,7 +2349,7 @@
         /* The version's PDF is kept as it goes out (2026-10-07). */
         reopen('Published to the client portal.', function () {
           keepPublished(d.version_id, r.client_id).catch(function (e) {
-            say(st.host && st.host.querySelector('.rp-head [data-m="head"]'), 'Published to the client portal. PDF not kept: ' + said(e), 'warn');
+            say(st.host && st.host.querySelector('.rp-head [data-m="head"]'), 'Published to the client portal. The PDF was not kept: ' + said(e), 'warn');
           });
         });
       }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
@@ -2385,7 +2385,7 @@
     on('reassign', function (b) {
       b.closest('.kmenu').hidden = true;
       var first = !r.reviewer_id;
-      pickReviewer(r, null, m, { title: first ? 'Assign reviewer?' : 'Change reviewer?', body: 'The reviewer is told.', go: first ? 'Assign' : 'Change', skip: r.reviewer_id },
+      pickReviewer(r, null, m, { title: first ? 'Assign reviewer?' : 'Change reviewer?', body: 'The reviewer will be notified.', go: first ? 'Assign' : 'Change', skip: r.reviewer_id },
         function (who) { stepCall('sm_report_assign', { p_id: r.id, p_reviewer: who }, (first ? 'Assigned to ' : 'Reviewer changed to ') + nameOf(who) + '.', null, m); });
     });
     on('move', function (b) {
@@ -2393,7 +2393,7 @@
       clientsReady.then(function () {
         var pool = hub.clients.filter(function (c) { return c.id !== r.client_id; });
         if (!pool.length) { say(m, 'There is no other active client to transfer to.', 'err'); return; }
-        window.ADspaceConfirm.ask({ title: 'Transfer to another client?', body: 'The accounts, posts, ads and commentary go with the report.', go: 'Transfer',
+        window.ADspaceConfirm.ask({ title: 'Transfer to another client?', body: 'The accounts, posts, ads and commentary will move with the report.', go: 'Transfer',
           field: { label: 'Client', choices: [['', 'Choose a client']].concat(pool.map(function (c) { return [c.id, F.named(c.client_code, c.name)]; })),
             value: '', need: 'Choose a client.' } },
           function (to) {
@@ -2453,7 +2453,7 @@
         var d = res.data || {};
         if (res.error || d.error) {
           var e = (d && d.error) || '';
-          say(m, e === 'bad-date' ? 'Choose a day from the period\'s start up to today.' : e === 'not-published' ? 'Only a published report is sent.' : said(res.error || d), 'err');
+          say(m, e === 'bad-date' ? 'Choose a day from the period\'s start up to today.' : e === 'not-published' ? 'Only a published report can be marked as sent.' : said(res.error || d), 'err');
           return;
         }
         reopen(day ? 'Marked as sent.' : 'Marked as not sent.');
@@ -2492,16 +2492,16 @@
     on('unsent', function (b) { b.closest('.kmenu').hidden = true; sentCall(null); });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
-      window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client can no longer read it. It can be published again.', go: 'Unpublish', tone: 'warn',
-        field: { label: 'Reason', need: 'Give a reason.' } },
+      window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client will no longer be able to read it. It can be published again.', go: 'Unpublish', tone: 'warn',
+        field: { label: 'Reason', need: 'Enter a reason.' } },
         function (why) { stepCall('sm_report_unpublish', { p_id: r.id, p_reason: why }, 'Unpublished.', null, m); });
     });
     on('delete', function (b) {
       b.closest('.kmenu').hidden = true;
       var word = periodWord(r.period_start, r.period_end);
       var seen = (st.openVersions || []).length;
-      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and text go with it.' : 'Its accounts, posts and text go with it.') +
-        (seen ? ' It has been published: ' + (seen === 1 ? 'its version leaves' : 'its ' + seen + ' versions leave') + ' the client portal.' : '') + ' This cannot be undone.', go: 'Delete', tone: 'danger',
+      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and commentary will be deleted with it.' : 'Its accounts, posts and commentary will be deleted with it.') +
+        (seen ? ' It has been published, and ' + (seen === 1 ? 'its version' : 'its ' + seen + ' versions') + ' will be removed from the client portal.' : '') + ' This cannot be undone.', go: 'Delete', tone: 'danger',
         field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period.' } },
         function (typed) {
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
@@ -2639,7 +2639,7 @@
             title: 'Restore version ' + v.version_no + '?',
             body: (r.status === 'published'
               ? 'Version ' + next + ' starts as a draft holding version ' + v.version_no + '\'s figures and commentary.'
-              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s. Changes made to this draft are lost, with no undo.') +
+              : 'The draft\'s figures and commentary are replaced by version ' + v.version_no + '\'s. Changes made to this draft will be lost. This cannot be undone.') +
               (live ? ' The client keeps version ' + live.version_no + ' until a version is published.' : ''),
             /* Over a draft the edits are lost, so the question says so and
                asks in warn (2026-10-27, RPT-13). */
@@ -2899,7 +2899,7 @@
       });
     };
     if (!n) { go(); return; }
-    window.ADspaceConfirm.ask({ title: 'Remove this account?', body: 'Its ' + n + ' post' + (n === 1 ? '' : 's') + ' go with it.', go: 'Remove', tone: 'danger' }, go);
+    window.ADspaceConfirm.ask({ title: 'Remove this account?', body: 'Its ' + n + ' post' + (n === 1 ? '' : 's') + ' will be removed with it.', go: 'Remove', tone: 'danger' }, go);
   }
 
   function undoBar(text, host, undo) { window.ADspaceAdmin.undoHere(text, undo, host); }
@@ -2989,7 +2989,7 @@
     });
     if (!free.length) { alertLine(host, 'No task of this month is left to link. Add the task in My Work.'); return; }
     window.ADspaceConfirm.ask({ title: 'Link task', go: 'Link',
-      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task will take the earliest date of its linked posts as its live date, add up their views and engagements, and move to Performance review.',
+      body: postName(p) + ' · ' + dayWord(p.posted_on) + '. The task will take the earliest date of its linked posts as the date it went live, add up their views and engagements, and move to Performance review.',
       fields: [{ name: 'task', label: 'Task', required: true, choices: [['', 'Choose a task']].concat(free.map(function (t) {
         var on = onWord(t);
         return [t.id, [taskCode(t), t.title || '', on ? 'Linked: ' + on : '', t.delayed ? 'Delayed' : '', t.month ? '' : 'Earlier month'].filter(Boolean).join(' · ')];
@@ -3163,7 +3163,7 @@
       var chosen = st.posts.filter(function (p) { return pick[p.id]; });
       if (!chosen.length) return;
       var n = chosen.length;
-      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' post' + (n === 1 ? '' : 's') + '?', body: 'They leave this report.', go: 'Remove', tone: 'danger' }, function () {
+      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' post' + (n === 1 ? '' : 's') + '?', body: 'They will be removed from this report.', go: 'Remove', tone: 'danger' }, function () {
         db.from('sm_report_posts').delete().in('id', chosen.map(function (p) { return p.id; })).select('id').then(function (res) {
           var gone = (res.data || []).map(function (x) { return x.id; });
           if (res.error || !gone.length) { say(head(), said(res.error || 'Not removed. The database refused the request.'), 'err'); return; }
@@ -3305,8 +3305,8 @@
         if (raw !== '' && !/^\d+$/.test(raw)) badFig = badFig || i;
         row[i.getAttribute('data-fig')] = raw === '' ? null : Number(raw);
       });
-      if (badFig) { say(sm, 'A figure is a whole number.', 'err'); badFig.focus(); return; }
-      if (!row.posted_on) { say(sm, 'A date is required.', 'err'); $('rpPostDate').focus(); return; }
+      if (badFig) { say(sm, 'Enter whole numbers for the figures.', 'err'); badFig.focus(); return; }
+      if (!row.posted_on) { say(sm, 'Enter a date.', 'err'); $('rpPostDate').focus(); return; }
       go.disabled = true;
       var q = p ? db.from('sm_report_posts').update(row).eq('id', p.id).select('*')
                 : db.from('sm_report_posts').insert(Object.assign({ report_id: st.open.id, position: st.posts.length + 1 }, row)).select('*');
@@ -4075,11 +4075,11 @@
     'ai-busy': 'The AI service is busy. Try again in a minute.',
     'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
-    'ai-failed': 'No draft came back. Try again.',
-    'ai-incomplete': 'No draft came back. Try again.',
+    'ai-failed': 'The draft did not complete. Try again.',
+    'ai-incomplete': 'The draft did not complete. Try again.',
     'no-ads': 'Add the period\'s ads before drafting.',
     'no-posts': 'Add the month\'s posts before drafting.',
-    'not-draft': 'Only a draft can be drafted.',
+    'not-draft': 'Write with AI works only on a draft.',
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'not-found': 'This report no longer exists.'
   };
@@ -4299,7 +4299,7 @@
         if (n === null || n < 0) { bad = bad || $(f[1]); return; }
         kt[f[0]] = n;
       });
-      if (bad) { say(m, 'A figure is a number.', 'err'); bad.focus(); return; }
+      if (bad) { say(m, 'Enter numbers for the figures.', 'err'); bad.focus(); return; }
       if (Object.keys(kt).length) out.tiktok = kt;
       if ($('rpPStart').value) out.prev_start = $('rpPStart').value;
       if ($('rpPEnd').value) out.prev_end = $('rpPEnd').value;
@@ -4438,8 +4438,8 @@
      table in neutral words. The reason is the team's alone. */
   function adErr(a) { return !!(a && String(a.ad_error || '').trim()); }
   function markAdError(a) {
-    window.ADspaceConfirm.ask({ title: 'Mark ad error?', body: 'The ad stays on the report and in every total. The PDF leaves it out of the ranking and notes it under its table.', go: 'Mark ad error',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.', placeholder: 'Meta delivery error' } }, function (why) {
+    window.ADspaceConfirm.ask({ title: 'Mark ad error?', body: 'The ad will stay on the report and in every total. The PDF will leave it out of the ranking and note it under its table.', go: 'Mark ad error',
+      field: { label: 'Reason', rows: 2, need: 'Enter a reason.', placeholder: 'Meta delivery error' } }, function (why) {
       setAdError(a, String(why || '').trim().slice(0, 200));
     });
   }
@@ -4581,7 +4581,7 @@
       var chosen = st.ads.filter(function (a) { return pick[a.id]; });
       if (!chosen.length) return;
       var n = chosen.length;
-      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' ad' + (n === 1 ? '' : 's') + '?', body: 'They leave this report.', go: 'Remove', tone: 'danger' }, function () {
+      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' ad' + (n === 1 ? '' : 's') + '?', body: 'They will be removed from this report.', go: 'Remove', tone: 'danger' }, function () {
         db.from('sm_report_ads').delete().in('id', chosen.map(function (a) { return a.id; })).select('id').then(function (res) {
           var gone = (res.data || []).map(function (x) { return x.id; });
           if (res.error || !gone.length) { say(st.host.querySelector('[data-m="head"]'), said(res.error || 'Not removed. The database refused the request.'), 'err'); return; }
@@ -4734,7 +4734,7 @@
     var go = box.querySelector('[data-a="go"]');
     go.onclick = function () {
       var name = $('rpAdName').value.trim();
-      if (!name) { say(sm, 'An ad name is required.', 'err'); $('rpAdName').focus(); return; }
+      if (!name) { say(sm, 'Enter the ad name.', 'err'); $('rpAdName').focus(); return; }
       var bad = null;
       var n = function (id, whole) {
         var raw = $(id).value.trim(); if (!raw) return null;
@@ -4756,7 +4756,7 @@
       if (play && row.avg_play === null) bad = bad || $('rpAdPlay');
       Array.prototype.forEach.call(box.querySelectorAll('[data-age]'), function (i) { var x = n(i.id); if (x !== null) row.age[i.getAttribute('data-age')] = x; });
       Array.prototype.forEach.call(box.querySelectorAll('[data-ret]'), function (i) { var x = n(i.id); if (x !== null) row.retention[i.getAttribute('data-ret')] = x; });
-      if (bad) { say(sm, 'A figure is a number: a whole number for results, reach and impressions.', 'err'); if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(bad); bad.focus(); return; }
+      if (bad) { say(sm, 'Enter numbers for the figures, and whole numbers for results, reach and impressions.', 'err'); if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(bad); bad.focus(); return; }
       var ageT = ageTotal();
       if (ageT !== null && Math.abs(ageT - 100) > 0.5) {
         say(sm, 'The age split must add up to 100%. It comes to ' + numOut('pct', ageT) + '.', 'err');
@@ -5085,12 +5085,12 @@
   var META_SAID = {
     'meta-off': 'Meta checks are off in Business settings.',
     'not-connected': 'Meta is not connected.',
-    'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
+    'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
     'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'no-mapping': 'This account is no longer linked on the client\'s Brand.',
     'denied': 'You do not have permission to import into this report. Please ask an admin.',
-    'not-draft': 'Only a draft takes an import.',
+    'not-draft': 'Only a draft report can take an import.',
     'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   /* The pictures (2026-10-10, the user: "build post thumbnails"): after an
@@ -5258,7 +5258,7 @@
           })).then(function (done) {
             /* Only what came back is filed (audit I8). */
             var back = done.reduce(function (t, x) { return t + x; }, 0);
-            if (back) fileReport('report.saved', 'From Meta: ' + plural(back, 'picture') + ' put back');
+            if (back) fileReport('report.saved', 'From Meta: ' + plural(back, 'picture') + ' restored');
             if (back < n) say(line, 'Not saved. The database refused the request.', 'err');
             paintAds();
           });
@@ -5943,7 +5943,7 @@
     var all = $('rhBulkAll');
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
-    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every report in this tab');
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear selection' : 'Select every report in this tab');
     /* The acts a ticked report can take are drawn only once one is ticked,
        never greyed (DESIGN.md §4, several records at once; ux-audit RPT-1). */
     $('rhBulkPdf').hidden = !n;
@@ -6009,7 +6009,7 @@
     var rows = picked().filter(function (r) { return r.status === 'confirmed'; });
     if (!rows.length) return;
     window.ADspaceConfirm.ask({ title: 'Publish ' + plural(rows.length, 'report') + ' to the client portal?',
-      body: 'Each client can read theirs from now.', go: 'Publish' },
+      body: 'Each client will be able to read and download theirs in their portal.', go: 'Publish' },
       function () {
         var unkept = 0;
         eachOf(rows, function (r) {

@@ -50,13 +50,13 @@
     'stale-wording': 'These terms have changed. Read them again before agreeing.',
     'incomplete': 'Answer all five.',
     'stale-half': 'That half month has ended, so nothing was saved. Your answers are kept: save them for the half month now open.',
-    'bad-score': 'Each answer is 1 to 5.',
+    'bad-score': 'Choose an answer from 1 to 5 for each.',
     'too-long': 'Keep the note to 1,000 characters.',
     'bad-colleague': 'Choose a colleague.',
     'already-asked': 'You have already asked them. Withdraw that request first.',
     'bad-status': 'That cannot be changed from here.',
     'not-found': 'Not found.',
-    'denied': 'Health check-ins are open to an admin alone.',
+    'denied': 'Only an admin can open Health check-ins.',
     'not-team': 'Only a team member can open this.'
   };
   function said(d) {
@@ -290,7 +290,7 @@
   /* Withdrawing asks, and says what it does; agreeing again is the way back. */
   function withdraw(b) {
     window.ADspaceConfirm.ask({
-      title: 'Withdraw your agreement',
+      title: 'Withdraw your agreement?',
       body: 'Check-ins stop, and your answers leave management\'s view. You can agree again at any time.',
       go: 'Withdraw', tone: 'warn'
     }, function () {
@@ -542,7 +542,7 @@
       '</span>' +
       SCALES.map(function (x) { return '<span class="health-col">' + figure(x[0], c && c.scales[x[0]]) + '</span>'; }).join('') +
       '<span class="health-at">' + (s ? '<span class="chip">' + esc(s) + '</span>'
-        : esc(c ? dateWord(c.at) : last ? 'Last ' + dateWord(last.at) : 'Not this half')) + '</span>' +
+        : esc(c ? dateWord(c.at) : last ? 'Last ' + dateWord(last.at) : 'Not this half month')) + '</span>' +
       '<span class="perf-chev" aria-hidden="true">' + CHEV + '</span>';
     b.addEventListener('click', function () { openPerson(p, b); });
     return b;

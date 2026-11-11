@@ -9792,3 +9792,25 @@ emails keep #a1a1a1, the previews read #767676.
   database holds approved. `creator` passed on main; it had been run on a
   tests checkout behind #67.
 
+
+- 2026-11-12, the console read whole, section by section (step 3 of the
+  sweep). Nine readers who did not write the words read every line of the
+  console against §6 and fixed what broke, words only: My Work (80), Clients
+  (49), the shell and its markup, Creator Campaigns (38), Reports, Team,
+  Performance and Health, Settings, Documents and Video Scripts, Messages,
+  Quotations, the Dashboard, Analytics and Checklists, and the shared
+  scripts. Refusals now name what to enter and the next step ("Enter a
+  name." for "A name is required.", the standard permission and setup-fault
+  lines), questions about a step still to come speak in the future tense and
+  every delete question ends "This cannot be undone.", system words left the
+  screen (held, read, record for a row, token, slug, pane, rows, owner for a
+  task), retired words went ("Too many tries", "Put back", "Not drawn",
+  "Check the connection and try again"), and one line said two ways became
+  one (Close link, Send invitation?, Reset link?, Meta's refused access). A
+  document's Delete question no longer says its reference is never reused:
+  a deletion frees it. Malay on /quote/ stays (the user, 2026-11-12: "no need
+  change the Malay"). Held for the user: the ads report's "a day" limits
+  (the database's Activity line writes them so), the term labels' hyphens
+  (portal.js matches them for the Chinese), Count from and Count to as
+  Results from and to, and the SST figure typed into the Billing sheet's
+  label.

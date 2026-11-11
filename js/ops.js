@@ -141,9 +141,9 @@
      `ready-needs-owner-and-due` has made the database's vocabulary the
      reader's problem. */
   var SAID = {
-    'not-team': 'Team record not found. Contact an admin.',
-    'denied': 'You do not have access to do that.',
-    'no-tasks': 'That colleague has no access to My Work, so takes no tasks.',
+    'not-team': 'Your team profile could not be found. Please contact an admin.',
+    'denied': 'You do not have permission to do this. Please ask an admin.',
+    'no-tasks': 'That colleague does not have My Work access, so cannot take tasks.',
     'not-found': 'This task no longer exists.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
     'not-live': 'Results are recorded once the post is live.',
@@ -159,73 +159,73 @@
     'has-post': 'This task is already linked to a post. Remove that link first.',
     'script-taken': 'Another task is already linked to that script.',
     'has-script': 'This task is already linked to a script. Remove that link first.',
-    'record-link': 'A record link is removed and linked again, not edited.',
-    'stale': 'Updated by someone else. Reloaded.',
-    'not-yours': 'Not yours to decide.',
-    'decided': 'Already decided.',
+    'record-link': 'To change a record link, remove it and link it again.',
+    'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
+    'not-yours': 'Only the person asked can decide this.',
+    'decided': 'This request has already been decided.',
     'no-date': 'A date is required.',
     /* The team's own milestone has to land before the commitment it feeds,
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
     'draft-not-before-final': 'Draft due must be before the due date.',
     'dates-required': 'Draft due, Due date and Post date are required.',
-    'bad-transition': 'Move not allowed from this stage.',
+    'bad-transition': 'The task cannot move there from its current stage.',
     'priority-not-yours': 'The priority is changed by whoever created the task, or a manager.',
     'held-resume': 'The task goes back to the stage it left.',
-    'no-such-stage': 'Stage not in this workflow.',
+    'no-such-stage': 'That stage is not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
-    'footage-not-ready': 'Footage not ready for editing.',
+    'footage-not-ready': 'The footage is not ready for editing.',
     'needs-draft': 'Add the draft link, or say how it was sent.',
     'needs-final-link': 'Delivered needs a final link.',
     'needs-delivery-or-reason': 'Add a delivery or a closing reason.',
-    'checklist-incomplete': 'Required checklist items are open.',
+    'checklist-incomplete': 'Tick the required checklist items first.',
     'reason-required': 'A reason is required.',
     'category-required': 'Select what it is waiting on.',
     'title-required': 'A description is required.',
     'client-required': 'A client is required.',
     'client-not-active': 'That record is not a client. Choose a client, or Lead.',
-    'not-a-lead': 'Already a client. Choose Client.',
-    'client-scope': 'This client is outside your access.',
+    'not-a-lead': 'This is already a client. Choose Client.',
+    'client-scope': 'You do not have access to this client. Please ask an admin.',
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
-    'bad-period': 'Invalid content month.',
+    'bad-period': 'Choose a valid content month.',
     'bad-week': 'Choose a week from 1 to 5.',
     'skip-reason-required': 'Skipping a step needs a reason.',
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',
     'planning-incomplete': 'This month\u2019s checklists are not done.',
-    'meeting-required': 'Content meeting not held or marked not applicable.',
+    'meeting-required': 'Set the content meeting, or mark it not applicable, first.',
     'needs-final-or-reason': 'Add a final link or a note.',
-    'no-such-person': 'Not a team member.',
+    'no-such-person': 'That person is not a colleague.',
     'bad-count': 'Add 1 to 60 posts.',
     'not-owner': 'Only the person it is assigned to, or an admin, can move it.',
-    'not-open': 'No longer open to take.',
-    'already-yours': 'Already yours.',
+    'not-open': 'This task is no longer open to take.',
+    'already-yours': 'This task is already assigned to you.',
     'finished': 'This task is finished.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
     'tasks-open': 'Tasks in this month are still open.',
-    'derived-state': 'Set by the month\u2019s checklists, meeting and tasks.',
+    'derived-state': 'This stage follows the month\u2019s checklists, meeting and tasks, and cannot be set by hand.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
     'bad-start-day': 'A month starts on a day from the 1st to the 28th.',
     'bad-reports': 'Choose the Accounts report, the Advertising report, both or neither.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
     'interval-required': 'Enter the number of days.',
-    'bad-state': 'Invalid status.',
-    'no-such-check': 'Check not found.',
-    'meeting-in-past': 'Meeting date must be today or later.',
+    'bad-state': 'Choose a valid status.',
+    'no-such-check': 'This check no longer exists.',
+    'meeting-in-past': 'Choose today or a later date for the meeting.',
     'meeting-before-floor': window.ADspaceWords.line.dateFloor,
-    'bad-minutes': 'A meeting runs 15 minutes to 4 hours.',
+    'bad-minutes': 'Choose a length from 15 minutes to 4 hours.',
     'bad-meeting-link': 'Paste a Google Meet, Zoom or Teams link.',
     'bad-channel': 'Choose where the meeting is held.',
     'checklist-open': 'Tick both checklists, or mark one not needed, first.',
-    'workflow-required': 'No workflow set up. Contact an admin.',
+    'workflow-required': 'No workflow is set up. Please contact an admin.',
     'bad-format': 'A format is listed twice or is not on the Rate Card.',
     'name-taken': 'Another template has this name.',
     'name-required': 'A name is required.',
-    'bad-kind': 'Invalid link type.',
+    'bad-kind': 'Choose a link type.',
     'url-required': 'A link is required.',
-    'ends-before-it-starts': 'End date is before the start.',
+    'ends-before-it-starts': 'Choose an end date after the start date.',
     'not-blocked': 'This task is not blocked.',
     'confirm-required': 'Type the task number as shown.',
     'needs-aqc': 'AQC review comes before client review.',
@@ -235,8 +235,8 @@
     'live-in-future': 'A post cannot go live after today.',
     'live-reason-required': 'Enter the reason the post went live on another date.',
     'not-finished': 'Only a finished task can be rated.',
-    'bad-rating': 'Choose one to five.',
-    'none-selected': 'No tasks selected.',
+    'bad-rating': 'Choose a rating from one to five.',
+    'none-selected': 'Select at least one task.',
     'too-many': 'Select up to 500 tasks at a time.',
     'number-taken': 'That number is already used.',
     'accounts-needs-content': 'An Accounts Report needs posts planned for the month.'
@@ -255,17 +255,17 @@
           : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Other.';
       }
       return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
-        : 'An extra takes a number after ' + String(pl).padStart(2, '0') + ', the month\'s plan.';
+        : 'An extra task takes a number after ' + String(pl).padStart(2, '0') + ', the last planned number.';
     }
-    if (err === 'exists') return (d && d.period ? monthWord(d.period) : 'That month') + ' already has a month. Open it with Edit.';
+    if (err === 'exists') return (d && d.period ? monthWord(d.period) : 'That month') + ' already exists for this client. Open it with Edit.';
     if (err === 'dates-required' && d && d.piece) return 'Post ' + d.piece + ' needs its Draft due, Due date and Post date.';
-    if (err === 'code-taken') return d && d.task_no ? 'That code is taken by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is taken.';
+    if (err === 'code-taken') return d && d.task_no ? 'That code is already used by #WT' + String(d.task_no).padStart(5, '0') + '.' : 'That code is already used.';
     if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
       var need = [];
       /* A queue row carries no assignees; the queue's own read of the owner
          is what it knows. */
-      if (!ownerId(t) && !(state.ownerIds && state.ownerIds[t.id])) need.push('an owner');
+      if (!ownerId(t) && !(state.ownerIds && state.ownerIds[t.id])) need.push('someone assigned');
       if (!t.current_final_due_at) need.push('a due date');
       if (need.length) return 'Ready needs ' + need.join(' and ') + '.';
     }
@@ -372,7 +372,7 @@
     reels_60: 'Reels: up to 60s', reels_120: 'Reels: up to 120s', report: 'Report',
     account_mgmt: 'Account Management', koc: 'KOC', kol: 'KOL', other: 'Other',
     reel: 'Reel', video: 'Video', story: 'Story', copywriting: 'Copywriting',
-    design: 'Design', adhoc: 'Ad-hoc request', graphic: 'Graphic'
+    design: 'Design', adhoc: 'Ad hoc request', graphic: 'Graphic'
   };
   /* What a task is for: engagement work is what a contract pays for, ad hoc
      is asked for outside it, goodwill is given, Other (key special) is anything else the
@@ -1088,7 +1088,7 @@
     var was = state.owners[t.id] || nameOf(ownerId(t));
     ADspaceConfirm.ask({
       title: 'Take ' + (serialOf(t) || 'this task') + '?',
-      body: 'It is assigned to you' + (was ? ' and ' + was + ' is told.' : '.'),
+      body: 'It will be assigned to you' + (was ? ', and ' + was + ' will be told.' : '.'),
       go: 'Take'
     }, function () {
       db.rpc('ops_take_task', { p_task: t.id, p_version: t.version }).then(function (r) {
@@ -1575,7 +1575,7 @@
     var all = $('workBulkAll');
     all.checked = n > 0 && n === shown;
     all.indeterminate = n > 0 && n < shown;
-    all.setAttribute('aria-label', n === shown && n ? 'Clear the selection' : 'Select every task shown');
+    all.setAttribute('aria-label', n === shown && n ? 'Clear selection' : 'Select every task shown');
     $('workBulkOwner').hidden = !n;
     $('workBulkDelete').hidden = !n;
   }
@@ -1591,7 +1591,7 @@
     var n = ids.length;
     ADspaceConfirm.ask({
       title: 'Delete ' + n + (n === 1 ? ' task' : ' tasks'),
-      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, remark, link, checklist item and time entry. This cannot be undone.',
+      body: (n === 1 ? 'It will be deleted' : 'They will be deleted') + ' with every stage move, remark, link, checklist item and time entry. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' },
@@ -1613,7 +1613,7 @@
     if (!ids.length) return;
     ADspaceConfirm.ask({
       title: 'Reassign',
-      body: 'The ' + (ids.length === 1 ? 'task goes' : ids.length + ' tasks go') + ' to one person, with the change on each task\'s record.',
+      body: 'The ' + (ids.length === 1 ? 'task will go' : ids.length + ' tasks will go') + ' to one person, and each task will record the change.',
       go: 'Assign',
       field: { label: 'Assign to', choices: [['', 'Choose a person']].concat(pickable().map(function (m) { return [m.id, person(m)]; })),
                need: 'Choose a person.' }
@@ -1631,7 +1631,7 @@
             var j = 0, fails = 0;
             var back = function () {
               if (j >= moved.length) {
-                if (fails) msg('workMsg', fails + ' of ' + moved.length + ' could not be put back.', 'err');
+                if (fails) msg('workMsg', fails + ' of ' + moved.length + ' could not be undone.', 'err');
                 load();
                 return;
               }
@@ -1672,7 +1672,7 @@
       if (r.error || (d && d.error)) { msg(where, r.error ? r.error.message : said(d.error), 'err'); return; }
       ADspaceConfirm.ask({
         title: 'Task numbering',
-        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task has a number yet.'),
+        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task has a number.'),
         go: 'Save',
         field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }, wait: true,
         /* A number as typed, with or without its #WT (the overnight review,
@@ -3224,7 +3224,7 @@
   var REPORT_WORD = { social: 'Accounts Report', ads: 'Advertising Report' };
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var REPORT_SAID = {
-    'month-gate': 'Its month in My Work does not ask for this report.',
+    'month-gate': 'Its month in My Work does not include this report.',
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'bad-period': 'The month\'s period could not be read.'
   };
@@ -3316,7 +3316,7 @@
               var m = String((res.error && res.error.message) || d.error || '');
               var key = Object.keys(REPORT_SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
               b.disabled = false;
-              msg('dwReportMsg', key ? REPORT_SAID[key] : (m || 'Not started.'), 'err');
+              msg('dwReportMsg', key ? REPORT_SAID[key] : (m || 'The report could not be started.'), 'err');
               return;
             }
             state.drawerDirty = true;
@@ -3330,7 +3330,7 @@
             }).catch(function () { return null; }).then(function () { openReportRoute(d.id); });
           }).catch(function (err) {
             b.disabled = false;
-            msg('dwReportMsg', (err && err.message) || 'Not started.', 'err');
+            msg('dwReportMsg', (err && err.message) || 'The report could not be started.', 'err');
           });
         });
       }).catch(function () {
@@ -3841,7 +3841,7 @@
     var dueOver = isLate(t) && over !== null && over < 0;
     b.late.hidden = !dueOver;
     b.late.textContent = dueOver
-      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past due, short of client review.'
+      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past the due date, before client review.'
       : '';
     b.acts.innerHTML = '';
     /* Somebody who is not the Task Owner reads the step and cannot take it. */
@@ -3880,7 +3880,7 @@
        who has it now is the first choice (Me where that is the reader), and
        a hand-off opens on the person it usually goes to, else asks. */
     var mine = cur && cur === myId();
-    var keep = !perf && cur ? '<option value="__keep">' + esc(mine ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
+    var keep = !perf && cur ? '<option value="__keep">' + esc(mine ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the person assigned')) + '</option>' : '';
     b.to.innerHTML = keep + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
@@ -3984,7 +3984,7 @@
     var cur = state.ownerIds[t.id] || ownerId(t);
     /* One picker, never a switch beside it (the user, 2026-10-11): the one
        who has it now is the first choice, Me where that is the reader. */
-    var keepIt = !perf && cur ? '<option value="__keep">' + esc(cur === myId() ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the owner')) + '</option>' : '';
+    var keepIt = !perf && cur ? '<option value="__keep">' + esc(cur === myId() ? 'Me (' + (ownerName(t) || 'you') + ')' : 'Keep with ' + (ownerName(t) || 'the person assigned')) + '</option>' : '';
     $('stepHandLabel').textContent = perf ? 'Reviewer' : 'Assign to';
     $('stepHandTo').innerHTML = keepIt + '<option value="">Choose a person</option>' + pickable().filter(function (m) {
       return perf || m.id !== cur;
@@ -4069,7 +4069,7 @@
       var why = String($('stepWhy').value || '').trim();
       if (t.publish_at && liveDay !== dateValue(t.publish_at) && !why) { fail(said('live-reason-required')); $('stepWhy').focus(); return; }
       var url = String($('stepLink').value || '').trim();
-      if (url && !/^https?:\/\//i.test(url)) { fail('A link starts with https://'); $('stepLink').focus(); return; }
+      if (url && !/^https?:\/\//i.test(url)) { fail('Enter a link starting with https://.'); $('stepLink').focus(); return; }
       var goLive = function (ver) {
         rpc('ops_mark_live', {
           p_task: t.id, p_live_at: liveDay + 'T00:00:00Z', p_reason: why || null,
@@ -4679,7 +4679,7 @@
     }
     if (g === 'waiting') {
       n.title = 'On hold';
-      n.line = 'On hold. Resume the task when the work can continue.';
+      n.line = 'Resume the task when the work can continue.';
       var res = resumeTo(t);
       if (work && res) n.go = { label: verbFor(res, t), run: function () { move(res); } };
       return n;
@@ -4738,11 +4738,11 @@
         n.line = open ? 'Waiting for ' + monthWord(eng.period) + '\u2019s checklists and content meeting.'
           : mt === 'none' ? 'Schedule the content meeting.'
           : mt === 'set' ? 'The work opens once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
-          : 'Checklists done and the meeting held.';
+          : 'The checklists are done and the meeting is held.';
         return n;
       }
       n.title = 'Start the work';
-      n.line = 'Moves to ' + tstage.label + '.';
+      n.line = 'The task will move to ' + tstage.label + '.';
       if (work) n.go = stepAct(t, target);
       return n;
     }
@@ -4782,7 +4782,7 @@
         return n;
       }
       n.title = 'Changes requested';
-      n.line = asked ? 'Requested: ' + asked : 'Make the changes, then resend for review.';
+      n.line = asked ? 'Requested: ' + asked : 'Make the changes, then send it for review again.';
       if (work && target) n.go = stepAct(t, target);
       return n;
     }
@@ -4817,7 +4817,7 @@
       var dn = daysAway(t.publish_at);
       n.title = 'Scheduled';
       n.line = t.publish_at
-        ? (dn < 0 ? 'Was due out ' + niceDate(t.publish_at) + '. Confirm when it went live.'
+        ? (dn < 0 ? 'Was due to go live on ' + niceDate(t.publish_at) + '. Confirm the date it went live.'
           : dn === 0 ? 'Goes live today.' : 'Goes live ' + niceDate(t.publish_at) + '.')
         : 'No post date set.';
       if (work && hasNext(t, 'live')) n.go = stepAct(t, 'live');
@@ -4839,8 +4839,8 @@
       var req = state.detail.checklist.filter(function (c) { return c.required; });
       var open = req.filter(function (c) { return !c.completed_at; }).length;
       n.title = 'Performance review';
-      n.line = open ? open + ' of ' + req.length + ' checks to go. Keep it live, or take it down if it is not working.'
-        : 'Checks done. Complete it, or take it down.';
+      n.line = open ? open + ' of ' + req.length + ' checks remain. Keep it live, or take it down if it is not working.'
+        : 'All checks are done. Complete it, or take it down.';
       if (work && !open && hasNext(t, 'completed')) n.go = stepAct(t, 'completed');
       return n;
     }
@@ -4873,7 +4873,7 @@
     }
     if (target) {
       n.title = tstage ? tstage.label : sentence(target);
-      n.line = 'Moves the task to the next workflow stage.';
+      n.line = 'The task will move to the next workflow stage.';
       if (work) n.go = stepAct(t, target);
       return n;
     }
@@ -5113,7 +5113,7 @@
     due_requested: 'Extension requested', due_approved: 'Extension approved',
     due_declined: 'Extension declined',
     renamed: 'Description changed', code_changed: 'Code changed', stage_skipped: 'Step skipped',
-    recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
+    recurrence_set: 'Repeat set', recurrence_off: 'Repeat stopped',
     publish_changed: 'Post date changed', commented: 'Remark',
     live_confirmed: 'Went live', rated: 'Rated',
     details_changed: 'Details changed', file_changed: 'Link changed', results_set: 'Results recorded',
@@ -5192,7 +5192,7 @@
       if (to.renamed) return (from.label ? from.label + ' to ' : '') + to.label;
       if (to.removed) return to.label + ' removed';
       if (to.added) return to.label + ' added';
-      return to.label + (to.done ? ' ticked' : ' cleared');
+      return to.label + (to.done ? ' ticked' : ' unticked');
     }
     if (e.event_type === 'details_changed') {
       var bits = [];
@@ -5702,7 +5702,7 @@
   function askComplete(key) {
     ADspaceConfirm.ask({
       title: 'Complete task',
-      body: 'No delivery recorded. State how it was closed.',
+      body: 'No delivery is recorded. Enter how it was closed.',
       go: 'Complete task',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(key, why); });
@@ -5751,7 +5751,7 @@
     if (!to) return;
     ADspaceConfirm.ask({
       title: 'Reopen task',
-      body: 'It goes back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
+      body: 'It will go back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
       go: 'Reopen',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(to, why); });
@@ -5771,7 +5771,7 @@
     m = String(m || '');
     /* A trigger's refusal arrives as the JSON the functions answer with. */
     if (/^\{"error"/.test(m)) { try { var dj = JSON.parse(m); return said(dj.error, null, dj); } catch (e) { /* as said */ } }
-    if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be made (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
+    if (/report-task: /.test(m)) return 'The month was not saved: its report task could not be created (' + said(m.replace(/^.*report-task: /, '').trim()) + ').';
     return /Could not find the function|schema cache|PGRST202/i.test(m)
       ? 'This feature is not available yet. Please contact an admin.' : m;
   }
@@ -5818,7 +5818,7 @@
     var serial = serialOf(t);
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: serial + ' · ' + (t.title || 'Untitled task') + ' goes, with its ' + goes.join(', ') + '. This cannot be undone.',
+      body: serial + ' · ' + (t.title || 'Untitled task') + ' will be deleted, with its ' + goes.join(', ') + '. This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [
         { name: 'serial', label: 'Type the task number to confirm', placeholder: serial, match: serial,
@@ -6180,7 +6180,7 @@
     if (!k) { line.hidden = true; line.textContent = ''; return; }
     var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
     var d = String($('ntDesc').value || '').trim();
-    line.textContent = 'Named ' + code + (d ? ' ' + d : '') + '. The number is given on save.';
+    line.textContent = 'Named ' + code + (d ? ' ' + d : '') + '. The number will be given when it is saved.';
     line.hidden = false;
   }
   // ---- Pieces --------------------------------------------------------------
@@ -6522,7 +6522,7 @@
     var t = state.task;
     if (!t || !may('ops', 'work')) return;
     var r = state.rule;
-    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r).replace(/\.$/, '') + '.' : 'Creates a copy on each date with the same description, format and people.');
+    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r).replace(/\.$/, '') + '.' : 'A copy will be made on each date with the same description, format and people.');
     $('recFreq').value = (r && r.frequency) || 'monthly';
     var day = r && r.day_of_month;
     if (!day && t.publish_at) { var m = /^\d{4}-\d{2}-(\d{2})/.exec(t.publish_at); day = m ? Math.min(28, Number(m[1])) : null; }
@@ -6579,7 +6579,7 @@
      database seeds them. A key is stored; a word is read. */
   /* Two ticks (2026-09-24): the detailed checklists are the team's own
      forms, and the month records that each is done and who ticked it. */
-  var CHECK_WORD = { onboarding: 'Onboarding Checklist', pre_ads: 'Pre-advertising Checklist' };
+  var CHECK_WORD = { onboarding: 'Onboarding Checklist', pre_ads: 'Pre-Advertising Checklist' };
   var CHECK_ORDER = ['onboarding', 'pre_ads'];
   var ENG_STATE = [
     ['planning', 'Planning', 'is-off'], ['ready', 'Ready', 'is-ok'],
@@ -6771,8 +6771,8 @@
     });
   }
   /* Settings, Templates: Meeting message (`team.settings`). */
-  var MEET_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-body': 'The message is 2 to 3,000 characters.',
-    'no-date': 'The message needs {date}.' };
+  var MEET_SAID = { denied: 'You do not have permission to change business settings. Please ask an admin.', 'bad-body': 'Enter a message of 2 to 3,000 characters.',
+    'no-date': 'Include {date} in the message.' };
   function meetMessageLine() {
     return new Promise(function (ok, no) {
       readMeetMsg(function (d) {
@@ -6869,8 +6869,8 @@
       window.ADspaceConfirm.ask({
         title: 'Delete Google Meet',
         body: (e.meeting_event_id
-          ? 'The event is deleted from the shared calendar and its link stops working.'
-          : 'The link is removed from the month.') + ' The meeting keeps its date and time. This cannot be undone.',
+          ? 'The event will be deleted from the shared calendar and its link will stop working.'
+          : 'The link will be removed from the month.') + ' The meeting will keep its date and time. This cannot be undone.',
         go: 'Delete', tone: 'danger', wait: true
       }, function () {
         return new Promise(function (res) {
@@ -6963,7 +6963,7 @@
           '<option value="late">Late</option><option value="done">Completed</option><option value="">All tasks</option>' +
         '</select>' +
         '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">All months</option></select>' +
-        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">All people</option></select>' +
+        '<select class="select select-sm" id="cwWho" aria-label="Filter by person"><option value="">All people</option></select>' +
         '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
           '<span class="cmdbar-acts">' +
           (canWork
@@ -7176,7 +7176,7 @@
               UI.emptyLine(line, 'No matches.', 'Show all',
                 function () { cw.find = ''; cw.status = ''; cw.who = ''; paintClientWork(); });
             } else {
-              UI.emptyLine(line, 'No tasks this month.', may('ops', 'work') ? 'Add a task' : '',
+              UI.emptyLine(line, 'No tasks this month.', may('ops', 'work') ? 'Add task' : '',
                 function () { openNew({ client: c, period: k, engagement: eng }); });
             }
             wrap.appendChild(line);
@@ -7373,7 +7373,7 @@
       if (k === 'cancel') {
         window.ADspaceConfirm.ask({
           title: 'Cancel ' + monthWord(e.period),
-          body: 'The month takes no new tasks. Its tasks stay; a report task nobody has started is cancelled, and comes back if the month is reopened.',
+          body: 'The month will take no new tasks. Its tasks will stay; a report task nobody has started will be cancelled, and will come back if the month is reopened.',
           go: 'Cancel month', tone: 'warn', cancel: 'Keep month'
         }, function () { setStatus(e, 'cancelled', el); });
       }
@@ -7461,12 +7461,12 @@
       : (cw.tasks || []).filter(function (t) { return t.engagement_id === e.id; }).length;
     window.ADspaceConfirm.ask({
       title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
-      body: (n ? (n === 1 ? 'Its task stays and leaves the month.' : 'Its ' + n + ' tasks stay and leave the month.') + ' ' : '') +
-        ((e.reports || []).length ? 'A report task nobody started is cancelled. ' : '') +
-        (!checksOf(e, cw.checks).length ? 'The meeting goes with it.'
+      body: (n ? (n === 1 ? 'Its task will stay and leave the month.' : 'Its ' + n + ' tasks will stay and leave the month.') + ' ' : '') +
+        ((e.reports || []).length ? 'A report task nobody started will be cancelled. ' : '') +
+        (!checksOf(e, cw.checks).length ? 'The meeting will be deleted with it.'
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })
-            ? 'Its checklist ticks move to the next month; the meeting goes with it.'
-            : 'The checklist ticks and the meeting go with it.') +
+            ? 'Its checklist ticks will move to the next month; the meeting will be deleted with it.'
+            : 'The checklist ticks and the meeting will be deleted with it.') +
         ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
@@ -7703,7 +7703,7 @@
     if (k === 'google-token' || (k === 'google-refused' && /accessNotConfigured|SERVICE_DISABLED|insufficient|PERMISSION_DENIED|forbidden/i.test(String(d.reason || '')))) {
       return 'Google Meet is not available at the moment. Paste a link instead, and contact an admin.';
     }
-    if (k === 'meet-pending') return 'The calendar event is booked and Google is still making its Meet link. Press Create Google Meet again in a moment.';
+    if (k === 'meet-pending') return 'The calendar event is booked and Google is still creating its Meet link. Press Create Google Meet again in a moment.';
     if (k === 'unreachable') return 'Google Meet could not be reached. Try again, or paste a link.';
     if (k === 'slot-taken') {
       var span = d.start ? clock(d.start) + (d.end ? ' to ' + clock(d.end) : '') : '';
@@ -7712,7 +7712,7 @@
     }
     if (k === 'google-refused') return 'Google Meet could not book the meeting. Try again, or paste a link.';
     if (k === 'not-saved' && d.deleted === false) return 'The event was deleted from the calendar, but the link is still on the month. Try again.';
-    if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
+    if (k === 'not-saved') return 'The event was created but its link was not saved. Try again.';
     return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
   }
   /* Ask the shared calendar: `create` books the meeting or moves the event
@@ -7827,7 +7827,7 @@
     var t = state.task;
     if (!t) return;
     var to = $('giveTo').value;
-    if (!to) { msg('giveMsg', 'Choose the new owner.', 'err'); $('giveTo').focus(); return; }
+    if (!to) { msg('giveMsg', 'Choose a person.', 'err'); $('giveTo').focus(); return; }
     var btn = $('giveGo');
     btn.disabled = true;
     call('ops_hand_over_task', {
@@ -8081,7 +8081,7 @@
         });
         return;
       }
-      if (!/^https?:\/\//i.test(url)) { msg('dwMsg', 'A link starts with https://', 'err'); $('dwLinkUrl').focus(); return; }
+      if (!/^https?:\/\//i.test(url)) { msg('dwMsg', 'Enter a link starting with https://.', 'err'); $('dwLinkUrl').focus(); return; }
       var label = String($('dwLinkLabel').value || '').trim() || url.replace(/^https?:\/\//i, '').split(/[\/?#]/)[0];
       var editing = linkEditing;
       var fn = editing ? 'ops_update_link' : 'ops_add_link';
@@ -8198,7 +8198,7 @@
         var day = $('dueDate').value;
         sheet('dueSheet', false);
         var word = out && out.asked
-          ? (out.repeat ? 'That extension is already with them.' : 'Extension requested.')
+          ? (out.repeat ? 'That extension has already been requested.' : 'Extension requested.')
           : '';
         if (row) {
           dueRow = null;

@@ -54,9 +54,9 @@
     }
     if (/InvalidStateError/.test(name)) return 'This device already has a passkey for you.';
     if (/captcha/i.test(m + ' ' + code)) return 'The security check did not finish. Please try again.';
-    if (/rate limit|too many/i.test(m)) return 'Too many tries. Please wait a few minutes.';
+    if (/rate limit|too many/i.test(m)) return 'Too many attempts. Please wait a few minutes.';
     if (act === 'in' && /(credential|passkey)/i.test(m + ' ' + code) && /not found|unknown|invalid|no /i.test(m + ' ' + code)) {
-      return 'This passkey is not on file. Sign in with your email, then add it again.';
+      return 'This passkey is not recognised. Sign in with your email, then add it again.';
     }
     return act === 'in' ? 'Not signed in. Please try again.' : 'Not added. Please try again.';
   }
@@ -273,7 +273,7 @@
     window.ADspaceConfirm.ask({
       title: 'Rename passkey',
       go: 'Save',
-      field: { label: 'Name', value: p.friendly_name || '', placeholder: 'MacBook Air', need: 'A name is required.' }
+      field: { label: 'Name', value: p.friendly_name || '', placeholder: 'MacBook Air', need: 'Enter a name.' }
     }, function (v) {
       db.auth.passkey.update({ passkeyId: p.id, friendlyName: v }).then(function (r) {
         if (r && r.error) { say('pkMsg', 'Not saved. ' + (r.error.message || '')); return; }
@@ -287,7 +287,7 @@
      The sheet says both before it goes. */
   function remove(p) {
     window.ADspaceConfirm.ask({
-      title: 'Remove passkey',
+      title: 'Remove passkey?',
       body: (p.friendly_name || 'This passkey') + ' will no longer sign you in. Your email still does, '
           + 'and a passkey can be added again.',
       go: 'Remove',

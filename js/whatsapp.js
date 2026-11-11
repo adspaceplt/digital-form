@@ -88,10 +88,10 @@
     'wa-params-missing': 'Fill in every variable.',
     'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
     'wa-no-link': 'This template\'s link button has no page for this recipient. Choose another template.',
-    'wa-button-address': 'This template\'s link button address holds {{1}} typed as text. Correct it in WhatsApp Manager, then choose it again here.',
+    'wa-button-address': 'This template\'s link button address contains {{1}} typed as text. Correct it in WhatsApp Manager, then choose it again here.',
     'wa-not-set-up': 'WhatsApp is not set up yet. Please contact an admin.',
     'wa-token': 'WhatsApp is not available at the moment. Please contact an admin.',
-    'wa-template': 'Meta does not hold this template as approved.',
+    'wa-template': 'Meta has not approved this template.',
     'wa-params': 'The template takes a different number of variables.',
     'wa-recipient': 'This number is not on WhatsApp.',
     'wa-busy': 'WhatsApp is busy. Try again in a minute.',
@@ -117,8 +117,8 @@
     '131042': 'The WhatsApp Business Account has a payment problem.',
     '131045': 'The business number is not registered.',
     '132000': 'The template takes a different number of variables.',
-    '132001': 'Meta does not hold this template.',
-    '132005': 'The filled in template is too long.',
+    '132001': 'Meta does not have this template.',
+    '132005': 'The template is too long once filled in.',
     '132007': 'The template breaks Meta\'s policy.',
     '132012': 'A variable is in the wrong format.',
     '132015': 'Meta paused this template.',
@@ -127,8 +127,8 @@
     '131048': 'WhatsApp was busy.',
     '130429': 'WhatsApp was busy.',
     '80007': 'WhatsApp was busy.',
-    '190': 'The WhatsApp token was refused.',
-    '401': 'The WhatsApp token was refused.'
+    '190': 'WhatsApp is not available at the moment. Please contact an admin.',
+    '401': 'WhatsApp is not available at the moment. Please contact an admin.'
   };
 
   function db() { return API && API.client; }
@@ -694,7 +694,7 @@
     var live = t.active && t.name;
     var mine = t.name && (m.list || []).filter(function (x) { return x.name === t.name && x.language === t.lang; })[0];
     var held = !t.name || m.error || Boolean(mine);
-    var why = !held ? 'Not among Meta\'s approved templates.' : badButton(mine) ? SAID['wa-button-address'] : '';
+    var why = !held ? 'No longer approved by Meta.' : badButton(mine) ? SAID['wa-button-address'] : '';
     var row = document.createElement('div');
     row.className = 'wat-row' + (live ? '' : ' is-off');
     row.setAttribute('data-p', t.purpose);
@@ -749,7 +749,7 @@
       fit.forEach(function (x) { byKey[tplKey(x)] = x; });
       var now = t.name ? t.name + '|' + t.lang : '';
       window.ADspaceConfirm.ask({
-        title: w[0], body: w[1], go: turnOn ? 'Save and turn on' : 'Save',
+        title: w[0], body: w[1], go: turnOn ? 'Turn on' : 'Save',
         fields: [{ name: 'tpl', label: 'Template', required: true, value: byKey[now] ? now : '',
           choices: [['', 'Choose a template']].concat(fit.map(function (x) { return [tplKey(x), tplWord(x)]; })) }],
         check: function (v) {
@@ -1090,7 +1090,7 @@
     if (got.error) {
       sel.innerHTML = '<option value="">No reports</option>';
       sel.disabled = true;
-      say($('waTplNote'), 'The reports could not be read.', 'err');
+      say($('waTplNote'), 'The reports could not be loaded.', 'err');
       $('waTplNote').hidden = false;
       preview();
       return;
@@ -1195,7 +1195,7 @@
       else if (key.charAt(0) === 'h') header = v;
     });
     var cat = CATEGORY[t.category] || 'template';
-    var costLine = 'Meta charges it as a ' + cat + ' message.';
+    var costLine = 'Meta charges it in the ' + cat + ' category.';
     /* Sent recently (2026-10-14; the user: "so no duplicate would be
        repeated sent"): the same message to the same person about the same
        record within `wa_repeat_hours` (24, a Business setting) asks again

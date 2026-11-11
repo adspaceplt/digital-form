@@ -1157,7 +1157,7 @@
       db.from('client_contacts').insert(ct).select('id').then(function (c) {
         open(Boolean(c.error || !(c.data || []).length));
       }).catch(function () { open(true); });
-    }).catch(function () { msg('crmMsg', 'Not saved. Check the connection and try again.', 'err'); });
+    }).catch(function () { msg('crmMsg', 'Not saved. Please try again.', 'err'); });
     };
     insert(first);
     });
@@ -1840,8 +1840,8 @@
   function isVic(id) { return Boolean(vicOf(id)); }
   function vicTagOf(id, inRow) { var A = window.ADspaceAdmin; return A && A.vicTag ? A.vicTag(id, inRow) : ''; }
   function vicBadgeOf(id) { var A = window.ADspaceAdmin; return A && A.vicBadge ? A.vicBadge(id) : ''; }
-  var VIC_SAID = { denied: 'Not saved. Only an admin marks a client VIC.', 'not-found': 'Not saved. This client is no longer available.',
-    'too-long': 'The note is 300 characters at most.', 'bad-date': 'VIC since is today or earlier.' };
+  var VIC_SAID = { denied: 'You do not have permission to mark VIC clients. Please ask an admin.', 'not-found': 'Not saved. This client is no longer available.',
+    'too-long': 'Keep the note to 300 characters.', 'bad-date': 'Choose a date today or earlier.' };
   function paintVic(c) {
     var on = isVic(c.id), may = mayPart('clients.vic', 'work');
     $('crmVicSet').hidden = on || !may;
@@ -1872,7 +1872,7 @@
       body: c.name + ' will carry the VIC tag across the console. Clients never see it.',
       fields: [{ name: 's', label: 'VIC since', type: 'date', value: day, max: day, required: true },
                { name: 'n', label: 'Note', placeholder: 'Optional', required: false }],
-      check: function (v) { return !v.s ? 'VIC since is required.' : v.s > day ? 'VIC since is today or earlier.' : String(v.n || '').length > 300 ? 'The note is 300 characters at most.' : ''; }
+      check: function (v) { return !v.s ? 'VIC since is required.' : v.s > day ? 'Choose a date today or earlier.' : String(v.n || '').length > 300 ? 'Keep the note to 300 characters.' : ''; }
     }, function (v) {
       setVic(c, true, String(v.n || '').trim() || null, v.s, function () { msg('crmWorkMsg', 'Marked as VIC.', 'ok'); });
     });
@@ -1897,7 +1897,7 @@
         label: 'VIC since',
         saveLabel: 'Save VIC since',
         save: function (day) {
-          if (day > today()) { msg('crmSinceMsg', 'VIC since is today or earlier.', 'err'); railDates(c); return; }
+          if (day > today()) { msg('crmSinceMsg', 'Choose a date today or earlier.', 'err'); railDates(c); return; }
           setVic(c, true, v.note || null, day, function () { msg('crmSinceMsg', 'Saved.', 'ok'); });
         }
       });
@@ -1937,7 +1937,7 @@
       fields: [{ name: 'p', label: 'Platform', choices: RESTRICT, value: 'instagram', half: true },
                { name: 's', label: 'Since', type: 'date', value: day, max: day, required: true, half: true },
                { name: 'n', label: 'Note', placeholder: 'Optional', required: false }],
-      check: function (v) { return !v.s ? 'Since is required.' : v.s > day ? 'Since is today or earlier.' : String(v.n || '').length > 500 ? 'The note is 500 characters at most.' : ''; }
+      check: function (v) { return !v.s ? 'The date is required.' : v.s > day ? 'Choose a date today or earlier.' : String(v.n || '').length > 500 ? 'Keep the note to 500 characters.' : ''; }
     }, function (v) {
       saveRestrict(c, { restricted_platform: v.p, restricted_since: v.s, restricted_note: String(v.n || '').trim() || null }, function () {
         return 'Account restricted: ' + restrictWord(v.p) + ' since ' + niceDate(v.s) + (String(v.n || '').trim() ? ' · ' + String(v.n).trim() : '');
@@ -2045,7 +2045,7 @@
     var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
-    if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts', icon: 'person' };
+    if (!state.contacts.length) return { text: 'No contacts.', go: 'contacts', icon: 'person' };
     if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
@@ -2056,7 +2056,7 @@
         ' before Active.', go: 'billing', icon: 'file' };
     }
     if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents', icon: 'file' };
-    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed line.', go: 'services', icon: 'tag' };
+    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed service line.', go: 'services', icon: 'tag' };
     return null;
   }
 
@@ -2217,7 +2217,7 @@
         if (state.client && state.client.id === c.id) openClient(c);
       }
       msg('crmSinceMsg', 'Not saved. This record was changed by someone else. The latest version is now shown.', 'err');
-    }).catch(function () { msg('crmSinceMsg', 'Not saved. This record was changed by someone else.', 'err'); });
+    }).catch(function () { msg('crmSinceMsg', 'Not saved. Please try again.', 'err'); });
   }
   function saveDates(c, list, created, what, extra, then) {
     var days = list.map(function (x) { return dayOf(x.at); });
@@ -2304,8 +2304,8 @@
     var g0 = list0[i], w0 = stageWord(g0.stage)[1];
     ADspaceConfirm.ask({
       title: 'Remove this stage?', go: 'Remove', tone: 'danger',
-      body: w0 + ' from ' + niceDate(g0.at) + (g0.reason ? ' and its reason are' : ' is') +
-        ' removed from the Timeline. The Activity record keeps the change.'
+      body: w0 + ' from ' + niceDate(g0.at) + (g0.reason ? ' and its reason' : '') +
+        ' will be removed from the Timeline. The Activity record keeps the change.'
     }, function () { cutStage(c, i, menuBtn); });
   }
   function cutStage(c, i, menuBtn) {
@@ -2524,7 +2524,7 @@
         title: 'Delete',
         body: 'Deleting ' + c.name + ' removes the record and everything filed under it' +
           (gone.length ? ': ' + gone.join(', ') + ', and everything in them' : '') +
-          '. This is immediate and cannot be undone.',
+          '. This cannot be undone.',
         go: 'Delete', tone: 'danger', fields: fields, wait: true
       }, function (v) {
         return db.rpc('delete_client', { p_client: c.id, p_code: codeNeeded ? v.code : null }).then(function (r) {
@@ -3071,7 +3071,7 @@
       var nm = String(ent.legal_name || '').trim();
       window.ADspaceConfirm.ask({
         title: 'Delete ' + (nm || 'billing entity') + '?',
-        body: 'The entity and its details are deleted from the portal. Bukku is not changed. This cannot be undone.',
+        body: 'The entity and its details will be deleted from the portal. Bukku will not be changed. This cannot be undone.',
         go: 'Delete', tone: 'danger', wait: true,
         field: nm ? { label: 'Type the Registered Company Name to confirm', placeholder: nm, match: nm,
           need: 'Type the Registered Company Name to confirm.', mismatch: 'The name does not match.' } : null
@@ -3154,7 +3154,7 @@
   var ENT_SAID = {
     'denied': 'You do not have permission to change billing entities. Please ask an admin.', 'not-found': 'This entity no longer bills this client. Refresh the page to see the current list.',
     'taken': 'This entity already bills this client.', 'no-name': 'Enter the Registered Company Name.',
-    'too-long': 'Too long.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
+    'too-long': 'A field is too long. Shorten it and save again.', 'bad-email': 'Enter a valid email address.', 'bad-contact': 'Choose a contact of a client this entity bills.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'main': 'The primary billing entity cannot be removed. Make another entity primary first.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
@@ -3747,7 +3747,7 @@
     }
     if (a === 'reset') {
       box.querySelector('[data-df-menu]').hidden = true;
-      window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The current link stops working. A new one is made.', go: 'Reset link', tone: 'warn' },
+      window.ADspaceConfirm.ask({ title: 'Reset link?', body: 'The current link will stop working, and a new link will be created.', go: 'Reset link', tone: 'warn' },
         function () { dfLink(true); });
       return;
     }
@@ -3756,7 +3756,7 @@
     if (a === 'close') {
       box.querySelector('[data-df-menu]').hidden = true;
       var cid = state.client.id;
-      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent stops opening. A new link can be made later.', go: 'Close link', tone: 'warn', wait: true },
+      window.ADspaceConfirm.ask({ title: 'Close link?', body: 'The link sent will stop working. A new link can be created later.', go: 'Close link', tone: 'warn', wait: true },
         function () {
           return db.rpc('client_details_close', { p_client: cid }).then(function (r) {
             var d = r.data || {};
@@ -3779,7 +3779,7 @@
     if (a === 'again') {
       box.querySelector('[data-df-menu]').hidden = true;
       window.ADspaceConfirm.ask({ title: 'Request again?',
-        body: 'The answers received are set aside, and a new link is created for the client to answer again.', go: 'Request again', tone: 'warn' },
+        body: 'The answers received will be set aside, and a new link will be created for the client to answer again.', go: 'Request again', tone: 'warn' },
         function () { dfLink(false); });
       return;
     }
@@ -3853,7 +3853,7 @@
     db.rpc('client_brands_list', { p_client: c.id }).then(function (q) {
       if (seq !== brandSeq || state.client !== c) return;
       var d = (q && q.data) || {};
-      if ((q && q.error) || d.error) { list.innerHTML = '<p class="msg err">Brands could not be read.</p>'; return; }
+      if ((q && q.error) || d.error) { list.innerHTML = '<p class="msg err">Brands could not be loaded.</p>'; return; }
       var bs = d.brands || [];
       list.innerHTML = (bs.length ? '' : '<p class="wl-none">No brands.</p>');
       bs.forEach(function (b) {
@@ -3893,7 +3893,7 @@
         row.querySelector('[data-a="state"]').addEventListener('click', function () {
           var go = function () { saveBrand(c, b, b.name, !b.active); };
           if (!b.active) { go(); return; }
-          window.ADspaceConfirm.ask({ title: 'Set ' + b.name + ' inactive?', body: 'It is no longer offered for new reports. Its reports are kept.', go: 'Set inactive', tone: 'warn' }, go);
+          window.ADspaceConfirm.ask({ title: 'Set ' + b.name + ' inactive?', body: 'It will no longer be offered for new reports. Its reports are kept.', go: 'Set inactive', tone: 'warn' }, go);
         });
       });
       if (can) {
@@ -3903,7 +3903,7 @@
         add.addEventListener('click', function () { brandAsk(c, null); });
         list.appendChild(add);
       }
-    }).catch(function () { if (seq === brandSeq) list.innerHTML = '<p class="msg err">Brands could not be read.</p>'; });
+    }).catch(function () { if (seq === brandSeq) list.innerHTML = '<p class="msg err">Brands could not be loaded.</p>'; });
   }
   /* META (2026-10-08): the ad accounts, Page and Instagram account a
      client's reports are read from by Import from Meta, picked from what
@@ -3924,7 +3924,7 @@
       var d = (q && q.data) || {};
       if ((q && q.error) || d.error) {
         metaLinks = [];
-        list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'The Meta accounts could not be read.') + '</p>';
+        list.innerHTML = '<p class="msg err">' + ((q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'The Meta accounts could not be loaded.') + '</p>';
         return;
       }
       metaLinks = d.links || [];
@@ -3935,7 +3935,7 @@
         }).join('') + '</dl>';
       };
       list.innerHTML = dl(metaFacts(own));
-    }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be read.</p>'; });
+    }).catch(function () { if (seq === metaSeq) list.innerHTML = '<p class="msg err">The Meta accounts could not be loaded.</p>'; });
   }
   /* BRAND ANALYSIS (2026-10-10; the user: "deep analysis of this clients
      … brand part, target audiences, SWOTs, advantages disadvantages, ads
@@ -4071,7 +4071,7 @@
     baMsg('');
     window.ADspaceConfirm.ask({
       title: 'Delete version ' + v.version + '?',
-      body: 'Version ' + v.version + ' of the brand analysis is deleted. This cannot be undone.',
+      body: 'Version ' + v.version + ' of the brand analysis will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true
     }, function () {
       return db.rpc('brand_analysis_delete', { p_id: v.id }).then(function (q) {
@@ -4109,7 +4109,7 @@
         (baDeletable(v) ? '<button class="kmenu-item" data-g="6" data-a="ba-delete" type="button" role="menuitem" data-need="clients.brand:manage">Delete</button>' : '') +
         '</div></span>' : '');
     if (acts.querySelector('[data-a="menu"]')) wireMenu(acts);
-    if (ba.failed) { body.innerHTML = '<p class="msg err">The brand analysis could not be read.</p>'; return; }
+    if (ba.failed) { body.innerHTML = '<p class="msg err">The brand analysis could not be loaded.</p>'; return; }
     if (!ba.versions) { body.innerHTML = '<p class="ba-none">Loading.</p>'; return; }
     if (!v) { body.innerHTML = '<p class="ba-none">Not run.</p>'; return; }
     var a = v.analysis || {}, p = a.positioning || {}, sw = a.swot || {}, ct = a.content || {}, ad = a.ads || {};
@@ -4211,7 +4211,7 @@
           { name: 'notes', label: 'Notes for the analysis', rows: 4, required: false, placeholder: 'Optional', value: baKeep(key) }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
-          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Monthly ad budget: a figure above 0.' : '';
+          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
         }
       }, function (v) {
         var notes = String(v.notes || '').trim();
@@ -4291,7 +4291,7 @@
   });
   var META_SAID = {
     'not-connected': 'Meta is not connected.',
-    'token-refused': 'Meta refused the portal\'s access. The token needs renewing.',
+    'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'denied': 'You do not have permission to change this client\'s Brand. Please ask an admin.'
   };
@@ -4362,7 +4362,7 @@
             save.disabled = false;
             var r = (q && q.data) || {};
             if ((q && q.error) || r.error) {
-              msg('crmMetaMsg', r.error === 'denied' ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error === 'bad-asset' ? 'Pick at most 20 ad accounts.' :
+              msg('crmMetaMsg', r.error === 'denied' ? 'You do not have permission to change this client\'s Brand. Please ask an admin.' : r.error === 'bad-asset' ? 'Choose 20 ad accounts at most.' :
                 (q && q.error && /function|schema cache/i.test(q.error.message)) ? 'This feature is not available yet. Please contact an admin.' : 'Not saved. The database refused the request.', 'err');
               return;
             }
@@ -4370,7 +4370,7 @@
             shutSheet(id);
             msg('crmBrandNote', 'Saved.', 'ok');
             loadMeta(c);
-          }).catch(function () { save.disabled = false; msg('crmMetaMsg', 'Not saved. Try again.', 'err'); });
+          }).catch(function () { save.disabled = false; msg('crmMetaMsg', 'Not saved. Please try again.', 'err'); });
         };
       }).catch(function () { if (seq === metaSheetSeq) failLine(body, 'Meta accounts', 'Meta did not answer.', load); });
     };
@@ -4935,12 +4935,12 @@
     // Nothing repaints after this one, so the menu it was chosen from has to
     // be put away here or it sits open over the answer.
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-    if (!ct.email) { msg('crmWorkMsg', 'An email is required.', 'err'); return; }
+    if (!ct.email) { msg('crmWorkMsg', 'Add an email address to this contact first.', 'err'); return; }
     // Mail leaves the building and cannot be recalled, and this sits one
     // place away from Edit in the same menu.
     window.ADspaceConfirm.ask({
-      title: 'Send an invitation',
-      body: 'An email goes to ' + ct.email + ' with a sign-in link. '
+      title: 'Send invitation?',
+      body: 'An email with a sign-in link will be sent to ' + ct.email + '. '
           + 'Once sent, it cannot be withdrawn.',
       go: 'Send'
     }, function () { send(); });
@@ -5078,7 +5078,7 @@
             ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Primary contact']]) : (row.role || ''));
         var fromForm = !editingContact && state.dfContact;
         shutContact();
-        if (!swapped && swap) msg('crmWorkMsg', 'Saved. The main contact was not changed: the database refused the request.', 'err');
+        if (!swapped && swap) msg('crmWorkMsg', 'Saved. The primary contact was not changed: the database refused the request.', 'err');
         if (fromForm && !row.is_primary && mayPart('clients.billing', 'work')) dfBillTo(newId, name); else loadContacts();
       };
       if (!swap) { done(false); return; }
@@ -5132,8 +5132,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: ct.name + ' will be deleted from this client. This cannot be undone. '
-          + 'Calls, letters and requests keep the name as it was written at the time.',
+      body: ct.name + ' will be deleted from this client. '
+          + 'Calls, letters and requests keep the name as it was written at the time. This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
       field: { label: 'Type the contact name to confirm', placeholder: ct.name, match: ct.name, need: 'Type the contact name to confirm.', mismatch: 'The contact name does not match.' }
@@ -5872,8 +5872,8 @@
          beside it, because the reason is what the activity record keeps. */
       window.ADspaceConfirm.ask({
         title: 'Confirm without letter',
-        body: 'The state of ' + l.label + ' is set by hand, past the checks the '
-            + 'letter normally makes. The reason goes on the activity record.',
+        body: 'The state of ' + l.label + ' will be set by hand, without the checks a signed '
+            + 'letter makes. The reason is kept in the Activity record.',
         go: 'Set state',
         tone: 'warn',
         fields: [
@@ -5894,7 +5894,7 @@
                moves it. saveService has always called this; the override was
                added without it and left the record showing the old figure. */
             syncValue();
-          }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
+          }).catch(function (e) { msg('crmServiceMsg', (e && e.message) || 'Not saved. Please try again.', 'err'); });
       });
     });
     on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, 'removed'); });
@@ -5902,10 +5902,10 @@
   }
 
   var OVERRIDE_WORD = {
-    'not-allowed': 'Only an admin can set a service state by hand.',
-    'bad-state': 'A service is enquired, to quote or confirmed.',
+    'not-allowed': 'You do not have permission to confirm a service without a letter. Please ask an admin.',
+    'bad-state': 'Choose Enquired, To quote or Confirmed.',
     'reason-required': 'A reason is required.',
-    'not-found': 'That line could not be found.'
+    'not-found': 'This service line no longer exists.'
   };
 
   var editingService = null;
@@ -6332,7 +6332,7 @@
   /* Delete (2026-10-31): asked, gone for good, Full Access's alone. */
   function deleteRequest(q) {
     var what = (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '');
-    window.ADspaceConfirm.ask({ title: 'Delete', body: 'The request ' + what + ' of ' + niceDate(q.created_at) + ' is deleted. This cannot be undone.',
+    window.ADspaceConfirm.ask({ title: 'Delete', body: 'The request ' + what + ' of ' + niceDate(q.created_at) + ' will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true }, function () {
       return db.rpc('client_request_delete', { p_id: q.id }).then(function (r) {
         var d = r.data || {};
@@ -6591,8 +6591,8 @@
       window.ADspaceConfirm.ask({
         title: 'Verify ' + d.number,
         body: 'The ' + mapped.length
-            + (mapped.length === 1 ? ' service on this letter is confirmed'
-                                   : ' services on this letter are confirmed')
+            + (mapped.length === 1 ? ' service on this letter will be confirmed'
+                                   : ' services on this letter will be confirmed')
             + ', and nothing else. A verified letter is voided rather than deleted.',
         go: 'Verify'
       }, function () {
@@ -6656,12 +6656,11 @@
   function openDelete(d, mapped) {
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: 'Deleting ' + d.number + ' removes the letter record, its service mapping and the ' +
+      body: 'Deleting ' + d.number + ' removes the letter, its link to the service lines and the ' +
         'client’s access to it, and puts back the service lines this letter alone confirmed' +
         (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
-        'The file is drawn from the record on Download and is not stored, ' +
-        'so nothing is left to recover: this is immediate and cannot be undone. ' +
-        'The reference is never reused.',
+        'The file is not stored, so it cannot be recovered. ' +
+        'The reference is never reused. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       fields: [
         { name: 'ref', label: 'Type the reference to confirm', placeholder: d.number, match: d.number,
@@ -7030,7 +7029,7 @@
     var terms = String(($('pickTerms') || {}).value || '').split(/\r?\n/)
       .map(function (t) { return t.trim(); }).filter(Boolean);
     if (terms.length > 10 || terms.some(function (t) { return t.length > 400; })) {
-      msg('pickMsg', 'Terms hold ten points at most, each up to 400 characters.', 'err');
+      msg('pickMsg', 'Enter ten points at most, each up to 400 characters.', 'err');
       $('pickTerms').focus();
       return null;
     }
@@ -7320,9 +7319,9 @@
     btn.disabled = true;
     if (m) { m.hidden = true; m.textContent = ''; }
     Promise.resolve(read ? read() : live).then(function (c) {
-      if (!c || !c.snapshot) throw new Error('The version could not be read.');
+      if (!c || !c.snapshot) throw new Error('The version could not be loaded.');
       card = c;
-      if (!window.ADspaceRateCardPdf) throw new Error('The PDF tools are not loaded.');
+      if (!window.ADspaceRateCardPdf) throw new Error('The PDF tools did not load. Refresh the page and try again.');
       return window.ADspaceRateCardPdf.draw(card);
     }).then(function (blob) {
       btn.disabled = false;
@@ -7330,7 +7329,7 @@
     }).catch(function (e) {
       btn.disabled = false;
       if (docs && docs.shut) docs.shut(tab);
-      if (m) { m.hidden = false; m.className = 'msg err'; m.textContent = 'Not drawn. ' + ((e && e.message) || 'Please try again.'); }
+      if (m) { m.hidden = false; m.className = 'msg err'; m.textContent = 'The PDF could not be generated. ' + ((e && e.message) || 'Please try again.'); }
     });
   }
   var PLANE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>';
@@ -7342,7 +7341,7 @@
   }
   var PUB_SAID = { 'bad-version': 'Enter the version as numbers with dots, for example 2.0.7.',
     'version-taken': 'That version is already published.', 'bad-date': 'Valid until cannot be in the past.',
-    'no-change': 'Nothing has changed since the live version.', 'too-long': 'The note is too long.',
+    'no-change': 'Nothing has changed since the live version.', 'too-long': 'Shorten the note.',
     denied: 'You do not have permission to publish the Rate Card. Please ask an admin.' };
   /* What a line's change moved, from and to, in the record's own words
      ("Rate: RM 2,830.00 → RM 2,900.00"; 2026-10-22, SVC2-M1). */
@@ -7583,14 +7582,14 @@
   }
   function rcwSave() {
     var b = rcw.b, v = rcwValue(), btn = $('rcwSave');
-    if (!v) { msg('rcwMsg', 'Words are required.', 'err'); var f = $('rcwRows').querySelector('textarea'); if (f) f.focus(); return; }
+    if (!v) { msg('rcwMsg', 'The wording is required.', 'err'); var f = $('rcwRows').querySelector('textarea'); if (f) f.focus(); return; }
     if (v === String(b.value || '').trim()) { backToWords(); return; }
     btn.disabled = true;
     db.rpc('rate_card_text_save', { p_key: b.key, p_value: v }).then(function (r) {
       btn.disabled = false;
       var no = r.error ? (/function|schema cache/i.test(r.error.message) ? 'This feature is not available yet. Please contact an admin.' : r.error.message)
         : r.data && r.data.error ? (r.data.error === 'denied' ? 'You do not have permission to change the Rate Card wording. Please ask an admin.'
-          : r.data.error === 'too-long' ? 'The words are too long.' : 'Not saved.') : '';
+          : r.data.error === 'too-long' ? 'Shorten the wording.' : 'Not saved.') : '';
       if (no) { msg('rcwMsg', no, 'err'); return; }
       b.value = v;
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
@@ -7756,10 +7755,10 @@
     var sp = { role: role };
     if (role === 'plan') {
       sp.plan = String(val('svcPlan') || '').trim().toUpperCase();
-      if (!/^[A-Z]$/.test(sp.plan)) return { err: 'The plan is one letter.', at: 'svcPlan' };
+      if (!/^[A-Z]$/.test(sp.plan)) return { err: 'Enter the plan as one letter.', at: 'svcPlan' };
       sp.ads = $('svcAds').value === 'yes';
       sp.platforms = n('svcPlatforms');
-      if (!(sp.platforms >= 1 && sp.platforms <= 99 && sp.platforms % 1 === 0)) return { err: 'Platforms is required.', at: 'svcPlatforms' };
+      if (!(sp.platforms >= 1 && sp.platforms <= 99 && sp.platforms % 1 === 0)) return { err: 'The number of platforms is required.', at: 'svcPlatforms' };
       sp.contents = n('svcContents');
       if (!(sp.contents >= 1 && sp.contents <= 99 && sp.contents % 1 === 0)) return { err: 'Enter the content pieces per month.', at: 'svcContents' };
       sp.mix = mixOf(val('svcMix'));
@@ -8077,8 +8076,8 @@
     }
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: s.name + ' leaves the Rate Card and cannot be quoted again. This '
-          + 'cannot be undone. Letters already issued keep the line as it was written.',
+      body: s.name + ' leaves the Rate Card and cannot be quoted again. '
+          + 'Letters already issued keep the line as it was written. This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
       field: { label: 'Type the service name to confirm', placeholder: s.name, match: s.name, need: 'Type the service name to confirm.', mismatch: 'The service name does not match.' }

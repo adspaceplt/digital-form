@@ -39,7 +39,7 @@
     /* The database's own words where it refused; the connection only where
        nothing came back (the overnight review, 2026-11-10). */
     if (e.message) return /function|schema cache/i.test(e.message) ? window.ADspaceWords.line.notYet
-      : /fetch|network|load failed/i.test(e.message) ? 'Not sent. Check the connection and try again.' : e.message;
+      : /fetch|network|load failed/i.test(e.message) ? 'Not sent. Please try again.' : e.message;
     return SAID[e] || e;
   }
   function $(id) { return document.getElementById(id); }
@@ -114,7 +114,7 @@
         var n = byId[rw.getAttribute('data-id')];
         var w = rw.querySelector('[data-a="withdraw"]');
         if (w) w.addEventListener('click', function () {
-          window.ADspaceConfirm.ask({ title: 'Withdraw this notice?', body: 'It leaves every bell at once. A notification already on a phone stays there.', go: 'Withdraw', tone: 'warn' },
+          window.ADspaceConfirm.ask({ title: 'Withdraw this notice?', body: 'It will be removed from every bell at once. A notification already on a phone stays there.', go: 'Withdraw', tone: 'warn' },
             function () { end(n, false); });
         });
         var rs = rw.querySelector('[data-a="restore"]');
@@ -175,7 +175,7 @@
         '<div class="row" id="ntcPick" hidden><div><span class="field-label" id="ntcPeopleL">Colleagues</span>' +
           '<div class="meta-accs ntc-people" id="ntcPeople" role="group" aria-labelledby="ntcPeopleL"></div></div></div>' +
         '<div class="row"><div><label class="field-label" for="ntcTitle">Title</label>' +
-          '<textarea class="input" id="ntcTitle" data-oneline rows="1" maxlength="' + TITLE_MAX + '" aria-required="true" placeholder="Town hall at 3:00 pm"></textarea></div></div>' +
+          '<textarea class="input" id="ntcTitle" data-oneline rows="1" maxlength="' + TITLE_MAX + '" aria-required="true" placeholder="Town hall at 3:00pm"></textarea></div></div>' +
         '<div class="row"><div><label class="field-label" for="ntcBody">Message</label>' +
           '<textarea class="input" id="ntcBody" rows="4" maxlength="' + BODY_MAX + '" placeholder="Optional"></textarea></div></div>' +
         '<p class="msg" id="ntcNewMsg" role="status"></p>' +
@@ -260,7 +260,7 @@
     newMsg('');
     if (some && !to.length) { newMsg(SAID['no-one'], 'err'); return; }
     if (!title) {
-      newMsg('Enter the title.', 'err');
+      newMsg('Enter a title.', 'err');
       if (F && F.reveal) F.reveal($('ntcTitle'));
       $('ntcTitle').focus();
       return;

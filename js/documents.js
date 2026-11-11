@@ -398,15 +398,15 @@
   var ISSUE_WORD = {
     'bad-entity': 'That billing entity no longer bills this client. Close the sheet and open it again.',
     'entity-incomplete': 'The billing entity needs its Registered Company Name, Business Registration No. and billing address. Complete it on Billing first.',
-    'not-allowed': 'You do not have permission to issue a letter.',
+    'not-allowed': 'You do not have permission to issue a letter. Please ask an admin.',
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
     'needs-billing': 'Add the Registered Company Name, Business Registration No., billing address and a billing contact on Billing before issuing a Letter of Offer.',
     'no-client': 'That client could not be found.',
     'no-lines': 'Choose at least one service.',
-    'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',
+    'bad-lines': 'One of those services cannot go on a letter. Refresh the page and try again.',
     'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
     'already-quoted': 'One of those services is already on a letter that is still live. Void that letter, or use Replace.',
-    'bad-terms': 'Terms hold ten points at most, each up to 400 characters.',
+    'bad-terms': 'Enter up to ten points of terms, each of up to 400 characters.',
     'no-replaces': 'The letter being replaced could not be found.',
     'replaces-verified': 'A verified letter cannot be replaced.',
     'not-found': 'That letter could not be found.',
@@ -416,14 +416,14 @@
     'not-signed': 'Mark the letter signed before verifying it.',
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
     'clash': 'Two letters were issued at once. Try again.',
-    'serial-taken': 'That reference belongs to a document that still stands.',
-    'serial-shape': 'A reference is 3 to 40 characters: letters, numbers and / . _ -',
-    'no-serial': 'No free reference was found for this client this month. Type one.',
+    'serial-taken': 'This reference is already used by another document. Enter another reference.',
+    'serial-shape': 'Enter a reference of 3 to 40 characters: letters, digits and / . _ -',
+    'no-serial': 'No free reference was found for this client this month. Enter one.',
     'reason-required': 'Enter a reason.',
-    'not-verified': 'Only a verified letter is voided. An issued or signed letter is deleted instead.',
+    'not-verified': 'Only a verified letter can be voided. Delete an issued or signed letter instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
     'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
-    'bad-state': 'That is not a state a service can be in.',
+    'bad-state': 'Choose a valid state for the service.',
     'stale': 'The services or their quotation were changed by someone else. The latest version is now shown. Please check them and issue the letter again.',
     'changed-terms': 'A service on this letter changed after it was issued. Reissue the letter.',
     'archived-line': 'A service on this letter was removed after it was issued. Reissue the letter, or restore the service.'
@@ -514,11 +514,11 @@
         say(logoWarn);
       }).catch(function (e) {
         shut(tab);
-        say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the row.');
+        say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the list.');
       });
     } catch (e) {
       shut(tab);
-      say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the row.');
+      say('The file could not be generated: ' + ((e && e.message) || e) + ' Download it from the list.');
     }
   }
 

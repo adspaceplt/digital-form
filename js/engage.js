@@ -68,7 +68,7 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
   /* What each block is called where its read is refused. */
   var BLOCK = { content: 'Content', reports: 'Reports', sets: 'Content Review sets',
-                camps: 'Creator campaigns', scripts: 'Video Scripts' };
+                camps: 'Creator Campaigns', scripts: 'Video Scripts' };
 
   // ---- Reading -----------------------------------------------------------------
   /* One answer a client, kept until the record reads again: a repaint (a save
@@ -77,7 +77,7 @@
   function failed(r) { return r && (r.error || (r.data && r.data.error)); }
   function why(r) {
     var e = failed(r);
-    return String((e && (e.message || e)) || 'The database refused the request.');
+    return String((e && (e.message || e)) || 'The request failed.');
   }
 
   var READ = {

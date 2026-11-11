@@ -72,11 +72,11 @@
 
   /* A refusal in the team's words. */
   var SAID = {
-    denied: 'Only an admin changes the Handbook.',
-    'no-title': 'A title is required.',
+    denied: 'You do not have permission to change the Handbook. Please ask an admin.',
+    'no-title': 'Enter a title.',
     'bad-category': 'Choose a category.',
-    'bad-link': 'A link starts with https://.',
-    'bad-path': 'The file was not stored where the Handbook keeps it.',
+    'bad-link': 'Enter a web address starting with https://.',
+    'bad-path': 'The file was not saved in the Handbook. Please upload it again.',
     'no-file': 'Choose a file.',
     'not-found': 'This file is no longer in the Handbook.',
     'not-opened': 'Open the file before acknowledging it.',
@@ -87,7 +87,7 @@
     if (SAID[m]) return SAID[m];
     if (/function .* does not exist|schema cache|relation .*handbook/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     if (/bucket not found/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
-    if (/payload too large|exceeded the maximum allowed size|413/i.test(m)) return 'A file is 50 MB at most.';
+    if (/payload too large|exceeded the maximum allowed size|413/i.test(m)) return 'Choose a file of up to 50 MB.';
     if (/row-level security|new row violates/i.test(m)) return SAID.denied;
     return m || 'Not saved. Try again.';
   }
@@ -96,9 +96,9 @@
      (2026-10-27, HBK-4). */
   function openSaid(e) {
     var m = String((e && (e.message || e.error)) || e || '');
-    if (/not found|does not exist|404/i.test(m)) return 'Not opened. The file is no longer stored; an admin adds it again as a new version.';
-    if (/row-level security|unauthori[sz]ed|permission|denied|403/i.test(m)) return 'Not opened. This account cannot open the file.';
-    if (/fetch|network|load failed|timed? ?out/i.test(m)) return 'Not opened. The connection was lost; try again.';
+    if (/not found|does not exist|404/i.test(m)) return 'Not opened. The file no longer exists. Please ask an admin to add it again as a new version.';
+    if (/row-level security|unauthori[sz]ed|permission|denied|403/i.test(m)) return 'Not opened. You do not have permission to open this file. Please ask an admin.';
+    if (/fetch|network|load failed|timed? ?out/i.test(m)) return 'Not opened. The connection was lost. Please try again.';
     return 'Not opened. Try again.';
   }
   function rpc(name, args) {
@@ -435,7 +435,7 @@
   /* ---- Storing a file ------------------------------------------------------ */
   function fileOk(f, m) {
     if (!f) { say(m, SAID['no-file']); return false; }
-    if (f.size > MAX_BYTES) { say(m, 'A file is 50 MB at most.'); return false; }
+    if (f.size > MAX_BYTES) { say(m, 'Choose a file of up to 50 MB.'); return false; }
     return true;
   }
   function upload(docId, f) {
@@ -574,7 +574,7 @@
     };
     /* The way back never asks. */
     if (!on) { go(); return; }
-    window.ADspaceConfirm.ask({ title: 'Archive?', body: 'Colleagues no longer see it. An admin can restore it.',
+    window.ADspaceConfirm.ask({ title: 'Archive?', body: 'Colleagues will no longer see it. An admin can restore it.',
                                 go: 'Archive', tone: 'warn' }, go);
   }
   function remove(d) {

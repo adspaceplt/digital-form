@@ -42,26 +42,26 @@
     'not-found': 'This record no longer exists.',
     'not-active': 'Approve the supplier before it is sent to Bukku.',
     'no-details': 'Approve the creator\'s payment details before they are sent to Bukku.',
-    'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
-    'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
-    'bukku-unreachable': 'Bukku did not answer. Try again in a few minutes.',
+    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
+    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
     'bukku-gone': 'That contact is no longer in Bukku. Choose another.',
     'no-field': 'Choose Bukku\'s Client ID and Supplier ID fields on the Settings page (Money, Bukku) first.',
-    linked: 'This record is already linked to a contact in Bukku. Read the sheet again.',
+    linked: 'This record is already linked to a contact in Bukku. Refresh the page.',
     taken: 'That Bukku contact is linked to another record in the portal. Choose another.',
     'not-offered': 'That Bukku contact does not match this record. Choose one of the contacts offered.',
     'not-filed': 'The contact was sent to Bukku, but the portal did not keep the link. Send again to link it.',
-    moved: 'Not restored. It was linked again meanwhile.',
+    moved: 'Not restored, as it has since been linked again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'bad-value': 'Choose a field from the list.',
-    'not-held': 'Bukku and the portal hold different details. Choose Send to Bukku or Use Bukku\'s first.',
+    'not-held': 'Bukku and the portal have different details. Choose Send to Bukku or Use Bukku\'s first.',
     stale: 'Not saved. This record was changed in Bukku. The latest version is now shown.',
     'bad-email': 'Enter a valid email address.',
     'no-name': 'Enter the Registered Company Name.',
     'no-address': 'Enter the billing address.',
     'bad-contact': 'Choose one of the client\'s contacts.',
     'not-linked': 'This record is no longer linked to Bukku. Refresh the page.',
-    failed: 'The request failed. Try again.'
+    failed: 'The request failed. Please try again.'
   };
   function said(d) {
     if (!d) return SAID.failed;
@@ -257,14 +257,14 @@
         var names = (r.differs || []).map(function (x) { return WORD[x.field] || x.field; });
         window.ADspaceConfirm.ask({
           title: 'Use Bukku\'s details?', go: 'Use Bukku\'s', tone: 'warn', wait: true, opener: hb,
-          body: 'The portal\'s ' + names.join(', ') + ' ' + (names.length === 1 ? 'is' : 'are') + ' replaced with what Bukku holds. From then on Bukku holds these details.'
+          body: 'The portal\'s ' + names.join(', ') + ' will be replaced with Bukku\'s details. From then on, these details are kept in Bukku.'
         }, function () {
           return call({ action: 'hold', kind: kind, id: id }).then(function (x) {
             if (x.error) return said(x);
             var took = x.changed || [];
             x.at = Date.now(); x.changed = [];
             READ[kind + ':' + id] = x;
-            group(host, kind, id, Object.assign({}, opts, { said: 'Bukku\'s details taken in.' }));
+            group(host, kind, id, Object.assign({}, opts, { said: 'Bukku\'s details saved.' }));
             if (opts.read) opts.read(Object.assign({}, x, { changed: took }));
             return '';
           });
@@ -313,7 +313,7 @@
         if (A && A.undoHere) A.undoHere('Unlinked from Bukku.', function () {
           rpc('bukku_unlink_undo', { p_kind: kind, p_id: id, p_stamp: r.stamp }).then(function (x) {
             delete READ[kind + ':' + id];
-            group(host, kind, id, Object.assign({}, opts, { said: x.error ? (x.error === 'moved' ? 'Not restored. It was linked again meanwhile.' : said(x)) : 'Linked to Bukku again.' }));
+            group(host, kind, id, Object.assign({}, opts, { said: x.error ? (x.error === 'moved' ? 'Not restored, as it has since been linked again.' : said(x)) : 'Linked to Bukku again.' }));
             if (!x.error && opts.after) opts.after();
           });
         }, host);
@@ -479,7 +479,7 @@
           { name: 'client', label: 'Client ID field', choices: choices, value: c.field_client ? String(c.field_client) : '', required: false },
           { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false },
           { name: 'creator', label: 'Creator ID field', choices: choices, value: c.field_creator ? String(c.field_creator) : '', required: false,
-            note: 'Not set: the Creator ID goes in the Supplier ID field.' }
+            note: 'If not set, the Creator ID goes in the Supplier ID field.' }
         ],
         check: function (v) {
           return v.client && (v.client === v.supplier || v.client === v.creator) ? 'Choose a different field for the Client ID.' : '';

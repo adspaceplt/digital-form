@@ -30,11 +30,11 @@
 
   var SAID = {
     denied: 'You do not have permission to change billing details. Please ask an admin.',
-    'bukku-not-set-up': 'Bukku is not connected. Add its token and subdomain to the portal\'s secrets.',
-    'bukku-token': 'Bukku refused the portal\'s token. Make a new one in Bukku and replace it in the secrets.',
-    'bukku-unreachable': 'Bukku did not respond. Try again in a few minutes.',
-    'bukku-refused': 'Bukku refused the request.',
-    'mail-not-set-up': 'Email is not set up. Add the Resend key to the portal\'s secrets.',
+    'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
+    'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
+    'bukku-unreachable': 'Bukku did not respond. Please try again in a few minutes.',
+    'bukku-refused': 'Bukku refused the request. Please try again, or contact an admin.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff,
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'no-email': 'This client has no email address. Add one to its billing contact.',
     'nothing-overdue': 'These invoices are no longer overdue.',
@@ -42,12 +42,12 @@
     sending: 'A reminder to this client is being sent. Refresh the page in a minute to see its status.',
     'bad-subject': window.ADspaceWords.line.subject,
     'bad-body': window.ADspaceWords.line.message,
-    'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
-    'too-long': 'The legal note and the disclaimer hold 1,000 characters each.',
+    'no-invoices': 'Keep {invoices} in the message, where the table of invoices goes.',
+    'too-long': 'Keep the legal note and the disclaimer to 1,000 characters each.',
     'not-sent': 'Not sent. Resend refused the email.',
-    'not-confirmed': 'Not confirmed. Check the record before sending again.',
+    'not-confirmed': 'Not confirmed. Check the Email tab before sending again.',
     'bad-request': 'The invoices changed after they were read. Read again, then send.',
-    failed: 'The request failed. Try again.'
+    failed: 'The request failed. Please try again.'
   };
   SAID['bad-invoices'] = 'An invoice number could not be read. Read again, then send.';
   SAID['bad-recipient'] = 'That address is no longer listed for this client. Refresh the page, then choose another address.';
@@ -523,7 +523,7 @@
     var t = rv.tpl || {}, ed = rv.edits[g.contact] || {}, n = g.lines.length;
     window.ADspaceConfirm.ask({
       title: 'Edit email', go: 'Done',
-      body: 'For ' + g.name + ' alone. {invoices} is where the table of invoices goes.',
+      body: 'Changes apply to ' + g.name + ' only. {invoices} marks where the table of invoices goes.',
       fields: [{ name: 'subject', label: 'Subject', value: ed.subject || (n === 1 ? t.subject_one : t.subject_many) || '' },
         { name: 'body', label: 'Message', rows: 12, value: ed.body || t.body || '' }],
       check: function (v) {

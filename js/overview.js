@@ -68,8 +68,8 @@
   /* A read that answers `{ error }` from a function after the page's own
      check passed is a refusal, and a refusal is never drawn as nothing. */
   function rows(r) {
-    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The read was refused.');
-    if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'You do not have permission to view this.' : String(r.data.error));
+    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The data could not be loaded.');
+    if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'You do not have permission to view this. Please ask an admin.' : String(r.data.error));
     return r.data;
   }
 
@@ -163,7 +163,7 @@
       var spans = [rangeOf(period), prevOf(period)].concat(want6 ? ms.map(function (m) { return { from: m.start, to: m.end }; }) : []);
       var all = db.rpc('ops_reports', { p_ranges: spans.map(function (r) { return { from: r.from.toISOString(), to: r.to.toISOString() }; }) })
         .then(rows).then(function (l) {
-          if (!Array.isArray(l)) throw new Error('The read was refused.');
+          if (!Array.isArray(l)) throw new Error('The data could not be loaded.');
           l.forEach(function (d) { rows({ data: d }); });
           return l;
         });
@@ -177,7 +177,7 @@
   var R = {
     report: function () { return reports().then(function (x) { return x.now; }); },
     reportPrev: function () { return reports().then(function (x) { return x.prev; }); },
-    months: function () { return memo.rep6 || reports().then(function () { return memo.rep6 || Promise.reject(new Error('The read was refused.')); }); },
+    months: function () { return memo.rep6 || reports().then(function () { return memo.rep6 || Promise.reject(new Error('The data could not be loaded.')); }); },
     /* Every client the group reads, once: the sales figures, leads going
        cold, the pipeline and restricted accounts all draw from it. */
     clients: function () {
@@ -550,7 +550,7 @@
     var live = SOURCES.filter(function (s) { return s.can(); });
     return Promise.all(live.map(function (s) {
       return s.load().then(function (rs) { return { rows: rs }; }).catch(function (e) {
-        return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || 'The read failed.' };
+        return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || 'The data could not be loaded.' };
       });
     })).then(function (all) {
       var out = [], failed = [];
@@ -897,7 +897,7 @@
 
   // ---- Drawing ----------------------------------------------------------------------
   function fail(body, title, e, again) {
-    UI.failLine(body, title || 'This card', (e && e.message) || 'The read failed.', again);
+    UI.failLine(body, title || 'This card', (e && e.message) || 'The data could not be loaded.', again);
   }
   function glance(box) {
     /* The rings alone (2026-10-22, OVW-M1): what needs acting on today is
@@ -956,7 +956,7 @@
         el.querySelector('.ovw-kpi-sub').innerHTML = '';
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'btn btn-quiet btn-sm ovw-kpi-again'; b.textContent = 'Try again';
-        b.setAttribute('aria-label', 'Try again: ' + titleOf(t) + '. ' + ((e && e.message) || 'The read failed.'));
+        b.setAttribute('aria-label', 'Try again: ' + titleOf(t) + '. ' + ((e && e.message) || 'The data could not be loaded.'));
         b.addEventListener('click', function () { el.querySelector('.ovw-kpi-sub').textContent = ''; run(); });
         el.querySelector('.ovw-kpi-sub').appendChild(document.createTextNode('Could not load. '));
         el.querySelector('.ovw-kpi-sub').appendChild(b);

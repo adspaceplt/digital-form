@@ -22,12 +22,12 @@
     denied: 'You do not have permission to change checklists. Please ask an admin.',
     'brand-denied': 'Write with AI reads the Brand analysis, which you do not have access to. Please ask an admin.', 'client-scope': 'This client is outside your access.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
-    'bad-value': 'That answer is not one the checklist takes.', 'bad-item': 'This checklist has changed. Open it again.',
-    'too-long': 'A note is 1,000 characters at most.', own: 'Somebody who did not prepare or fill it in signs it off.',
+    'bad-value': 'Choose one of the answers listed.', 'bad-item': 'This checklist has changed. Open it again.',
+    'too-long': 'Enter a note of up to 1,000 characters.', own: 'Only a colleague who did not prepare or fill in this checklist can sign it off.',
     'not-started': 'Nothing has been recorded on this checklist.',
     'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
     'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.', 'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
-    'ai-busy': 'AI is busy. Try again in a minute.', 'ai-credit': 'The AI account has no credit left.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.', 'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-slow': 'AI took too long. Try again.', 'ai-failed': 'Not written. Try again.', 'ai-incomplete': 'Not written. Try again.',
     'ai-model': 'Write with AI is not available at the moment. Please contact an admin.', 'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
@@ -69,7 +69,7 @@
     host.innerHTML = '<div class="msg" id="ckMsg"></div><div class="crm-table softpanel ck-list">' +
       KINDS.map(function (k) {
         return '<button class="ck-item" type="button" data-kind="' + k[0] + '"><span class="ck-item-name"><b>' + esc(k[1]) +
-          '</b><small class="ck-item-meta">Reading</small></span><span class="ck-item-state"></span>' +
+          '</b><small class="ck-item-meta">Loading…</small></span><span class="ck-item-state"></span>' +
           '<span class="ck-chev" aria-hidden="true">' + TICK + '</span></button>';
       }).join('') + '</div>';
     KINDS.forEach(function (k) {
@@ -224,7 +224,7 @@
     html += '<section class="ovcard ck-sec ck-sign"><h4 class="fsec-h">Sign-off</h4><dl class="ovfacts ck-facts">' +
       '<div><dt>Prepared by</dt><dd>' + (prep ? esc(prep.name + ', ' + day(prep.at)) : '<span class="muted">Not prepared</span>') + '</dd></div>' +
       '<div><dt>Reviewed by</dt><dd>' + (d.reviewed ? esc(d.reviewed.name + ', ' + day(d.reviewed.at)) : '<span class="muted">Not signed off</span>') + '</dd></div></dl>' +
-      (d.status === 'prepared' && prep && (prep.id === me || d.filled_by_me) ? '<p class="ck-sec-note">Somebody other than you signs it off.</p>' : '') +
+      (d.status === 'prepared' && prep && (prep.id === me || d.filled_by_me) ? '<p class="ck-sec-note">Another colleague must sign it off.</p>' : '') +
       (acts ? '<div class="row acts ck-acts">' + acts + '</div>' : '') + '</section>';
     V.host.innerHTML = html;
     wire();
@@ -424,9 +424,9 @@
           }).catch(function (e) { b.disabled = false; ctx.msg('ckMsg', said(e), 'err'); });
         };
         if (step === 'reopen') {
-          window.ADspaceConfirm.ask({ title: 'Reopen this checklist?', body: 'The signed copy is kept, and the month\'s check in My Work is unticked until it is signed off again.', go: 'Reopen', tone: 'warn' }, go);
+          window.ADspaceConfirm.ask({ title: 'Reopen this checklist?', body: 'The signed copy will be kept, and the month\'s check in My Work will be unticked until it is signed off again.', go: 'Reopen', tone: 'warn' }, go);
         } else if (step === 'review') {
-          window.ADspaceConfirm.ask({ title: 'Sign off this checklist?', body: 'It is locked once signed, and the month\'s check in My Work is ticked.', go: 'Sign off' }, go);
+          window.ADspaceConfirm.ask({ title: 'Sign off this checklist?', body: 'It will be locked once signed, and the month\'s check in My Work will be ticked.', go: 'Sign off' }, go);
         } else go();
       });
     });
@@ -466,7 +466,7 @@
       var l = rs[0].data || {}, ready = rs[1].data || {}, al = rs[2].data || {};
       if (rs[0].error || l.error) { ctx.msg('ckMsg', said(rs[0].error || l.error), 'err'); return; }
       if (!l.left) {
-        ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. An admin can turn it on.'
+        ctx.msg('ckMsg', l.limit === 0 ? 'Write with AI on checklists is turned off for you. Please ask an admin to turn it on.'
           : 'No checklist drafts left today. The next is free at 12:00 am.', 'err');
         return;
       }
@@ -476,8 +476,8 @@
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
         body: (needBa
-          ? 'No Brand analysis is confirmed for this client, so one is run first from the website, the profiles and Meta, for you to confirm here; confirming it also fills the Content brief where it is empty. Then the checklist is written. '
-          : 'Reads the confirmed Brand analysis, the Ad benchmarks and the linked Meta accounts, then proposes an answer for each field to review before it is saved. ') +
+          ? 'No Brand analysis is confirmed for this client, so one will be run first from the website, the profiles and Meta, for you to confirm here; confirming it also fills the Content brief where it is empty. Then the checklist will be written. '
+          : 'Write with AI will read the confirmed Brand analysis, the Ad benchmarks and the linked Meta accounts, then propose an answer for each field for you to review before it is saved. ') +
           l.left + (l.left === 1 ? ' checklist draft' : ' checklist drafts') + (needBa ? ' and ' + al.left + (al.left === 1 ? ' analysis' : ' analyses') : '') + ' left today.',
         go: needBa ? 'Run' : 'Write',
         fields: [
@@ -491,7 +491,7 @@
           { name: 'notes', label: 'Notes for the checklist', rows: 3, required: false, placeholder: 'Optional', value: was.notes || '' }],
         check: function (v) {
           var b = String(v.budget == null ? '' : v.budget).trim();
-          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Monthly ad budget: a figure above 0.' : '';
+          return b && !(Number(b) > 0 && Number(b) <= 10000000) ? 'Enter a monthly ad budget above 0.' : '';
         }
       }, function (v) {
         var inputs = { budget: String(v.budget == null ? '' : v.budget).trim(), objective: v.objective || '', destination: v.destination || '',
@@ -571,7 +571,7 @@
       });
     };
     window.ADspaceSheet.show(box, { opener: V.host.querySelector('[data-a="ai"]') });
-    V.ctx.msg('ckMsg', 'Brand analysis version ' + row.version + ' written. Confirm it to write the checklist; until then it waits as a draft on Brand.', 'ok');
+    V.ctx.msg('ckMsg', 'Brand analysis version ' + row.version + ' written. Confirm it to write the checklist; until then, it is kept as a draft on the Brand tab.', 'ok');
   }
   function draft(inputs) {
     var ctx = V.ctx, cl = ctx.client;

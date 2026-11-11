@@ -102,7 +102,7 @@
     var moved = Math.abs(slope * (n - 1)), flat = !slope || moved < 1 || (my && moved / my < thr);
     var ok = good === 'up' ? slope > 0 : slope < 0;
     return { slope: slope, tone: flat ? 'off' : ok ? 'ok' : 'late', word: flat ? 'Steady' : slope > 0 ? 'Rising' : 'Falling',
-      line: flat ? 'Level across the last 6 full months' : (slope > 0 ? '+' : '−') + one(Math.abs(slope)) + ' a month across the last 6 full months' };
+      line: flat ? 'Level across the last 6 full months' : (slope > 0 ? '+' : '−') + one(Math.abs(slope)) + ' per month across the last 6 full months' };
   }
   function directionHtml(list) {
     list = list.filter(function (x) { return x && x.d; });
@@ -189,7 +189,7 @@
   var memo = {};
   function once(k, f) { return memo[k] || (memo[k] = f().catch(function (e) { delete memo[k]; throw e; })); }
   function rows(r) {
-    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The read was refused.');
+    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The data could not be loaded.');
     return r.data;
   }
   function clients() {
@@ -265,7 +265,7 @@
 
   // ---- Pieces of a page ----------------------------------------------------------------------
   function fail(host, what, e, again) {
-    UI.failLine(host, what, (e && e.message) || 'The read failed.', again);
+    UI.failLine(host, what, (e && e.message) || 'The data could not be loaded.', again);
   }
   function tiles(box, list) {
     var wrap = document.createElement('div');
@@ -370,7 +370,7 @@
       box.appendChild(note);
     }
     tiles(box, [
-      { key: 'leads', label: 'New leads a month', fig: one(lead), sub: cmp ? changeWord(lead, leadP, true) : '',
+      { key: 'leads', label: 'New leads per month', fig: one(lead), sub: cmp ? changeWord(lead, leadP, true) : '',
         verdict: cmp ? judge(f.newLeads.length, fp.newLeads.length, 'up', 2) : null,
         spark: keys.map(function (k) { return per(k, 'newLeads'); }) },
       { key: 'win', label: 'Win rate', fig: wr ? pct(wr.rate) : '—',
@@ -413,7 +413,7 @@
   function lostTile(f, fp, ch, keys, per) {
     return { key: 'lost', label: 'Clients lost', fig: plain(f.churned.length),
       verdict: ch && ch.over ? { tone: 'late', word: 'Above alert' } : judge(f.churned.length, fp.churned.length, 'down', 2),
-      sub: (ch ? 'Churn ' + pct(ch.rate) + ' a quarter, alert ' + pct(ch.alert) + ' · ' : '') + plain(fp.churned.length) + ' before',
+      sub: (ch ? 'Churn ' + pct(ch.rate) + ' per quarter, alert ' + pct(ch.alert) + ' · ' : '') + plain(fp.churned.length) + ' before',
       spark: keys.map(function (k) { return per(k, 'churned'); }) };
   }
 
@@ -455,7 +455,7 @@
       aside = 'Forecast to ' + monWord(endK) + ' ' + endK.slice(0, 4);
     } else if (r.open) {
       aside = full >= 12 ? '' : 'Forecast from ' + monthLong(CK.addMonths(countsFrom(h) || CK.today().slice(0, 7), 12));
-      if (full < 12) note = 'A forecast is shown once 12 full months of data are available. ' + monthsWord(full) + (full === 1 ? ' is' : ' are') + ' held.';
+      if (full < 12) note = 'A forecast is shown once 12 full months of data are available. ' + monthsWord(full) + (full === 1 ? ' has' : ' have') + ' been recorded.';
     }
     var el = chart(grid, 'trend', 'Leads and new clients by month', {
       kind: 'line', cats: cats, series: series, band: band, bandWord: band ? 'Likely range' : '', none: 'No figure'
@@ -567,7 +567,7 @@
     if (!se) {
       card(grid, 'season', 'Busiest months for new leads', '',
         waitHtml('Busiest months are shown once 24 full months of leads are available',
-          full, 24, full ? 'Leads are counted from ' + monthLong(countsFrom(h)) + '. The months show in ' + monthLong(CK.addMonths(countsFrom(h), 24)) + '.' : 'No lead is held yet.'));
+          full, 24, full ? 'Leads are counted from ' + monthLong(countsFrom(h)) + '. The months show in ' + monthLong(CK.addMonths(countsFrom(h), 24)) + '.' : 'No leads recorded.'));
       return;
     }
     var sorted = se.by.map(function (x) { return x.avg; }).slice().sort(function (a, b) { return a - b; });
@@ -583,7 +583,7 @@
     }).join('') + '</div><p class="anl-note">Busiest: ' + CK.LONG[ranked[0].m] + ', then ' + CK.LONG[ranked[1].m] + ' and ' + CK.LONG[ranked[2].m] +
       '. Quietest: ' + CK.LONG[quiet[0].m] + ' and ' + CK.LONG[quiet[1].m] + '.</p>';
     var full0 = fullKeys(h);
-    card(grid, 'season', 'Busiest months for new leads', 'Average a month, ' + monthLong(full0[0]) + ' to ' + monthLong(full0[full0.length - 1]), html);
+    card(grid, 'season', 'Busiest months for new leads', 'Average per month, ' + monthLong(full0[0]) + ' to ' + monthLong(full0[full0.length - 1]), html);
   }
 
   // ---- Clients ----------------------------------------------------------------------------------
@@ -659,18 +659,18 @@
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>';
   var HEALTH = { good: ['ok', 'Good'], mixed: ['wait', 'Mixed'], poor: ['late', 'Poor'] };
   var SEVERITY = { high: ['late', 'High risk'], medium: ['wait', 'Medium risk'], low: ['off', 'Low risk'] };
-  var CREDIBLE = { credible: 'Credible', partly: 'Partly credible', not_credible: 'Not credible', not_drawn: 'Not drawn' };
+  var CREDIBLE = { credible: 'Credible', partly: 'Partly credible', not_credible: 'Not credible', not_drawn: 'Not shown' };
   var AI_SAID = {
     denied: 'You do not have access to Analytics. Please ask an admin.', 'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.',
     'ai-key': 'Write with AI is not available at the moment. Please contact an admin.', 'ai-busy': 'The AI service is busy. Try again in a minute.',
     'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.', 'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-slow': 'The analysis took too long. Try again.', 'ai-incomplete': 'The analysis came back incomplete. Try again.',
     'ai-failed': 'The analysis could not be written. Try again.', 'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'bad-analysis': 'The analysis could not be kept. Try again.', 'not-found': 'This version was deleted in the meantime.'
+    'bad-analysis': 'The analysis could not be saved. Try again.', 'not-found': 'This version was deleted in the meantime.'
   };
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
-    if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. An admin can turn it on.'
+    if (k === 'ai-limit') return d && d.limit === 0 ? 'Write with AI on Analytics is turned off for you. Please ask an admin to turn it on.'
       : 'No analyses left today. The next is free at 12:00 am.';
     if (/function|schema cache|Failed to send/i.test(k)) return 'This feature is not available yet. Please contact an admin.';
     return AI_SAID[k] || 'The analysis could not be written. Try again.';
@@ -837,7 +837,7 @@
       if (!d.left) { msg(aiSaid(null, { error: 'ai-limit', limit: d.limit })); return; }
       window.ADspaceConfirm.ask({
         title: 'Write with AI',
-        body: 'Reads the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, never a client\'s name, and writes an analysis for management. ' +
+        body: 'Write with AI will read the Sales and Clients figures for ' + spanWord(rangeOf(period)) + ' against the period before, never a client\'s name, and write an analysis for management. ' +
           d.left + (d.left === 1 ? ' analysis' : ' analyses') + ' left today.',
         go: 'Write',
         fields: [{ name: 'notes', label: 'Notes for the analysis', rows: 3, required: false, placeholder: 'Optional', value: was }]
@@ -871,7 +871,7 @@
     }, function (v) { pick(v.v); });
   }
   function remove(v, msg, load) {
-    window.ADspaceConfirm.ask({ title: 'Delete this analysis?', body: 'Version ' + v.version + ' (' + v.period + ') is removed. This cannot be undone.',
+    window.ADspaceConfirm.ask({ title: 'Delete this analysis?', body: 'Version ' + v.version + ' (' + v.period + ') will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true }, function () {
       return db.rpc('analytics_read_delete', { p_id: v.id }).then(function (r) {
         var d = r.data || {};
