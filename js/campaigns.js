@@ -839,8 +839,8 @@
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
     taken: 'That earlier job ID is already used by another booking. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
     'not-linked': 'Link the creator to Bukku first.',
-    'job-taken': 'That job ID is already on another booking or creator. Check the ID on the AP01 form.',
-    'job-bad': 'Enter the job ID as it was issued, for example KJ3117.' };
+    'job-taken': 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.',
+    'job-bad': 'Enter the earlier job ID as it was issued, for example AKJ0117.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
@@ -992,11 +992,11 @@
     var past = d.past || [];
     if (past.length || work) {
       html += '<div class="cpay-past-h"><h4 class="fsec-h">Earlier jobs</h4>' +
-        (work ? '<button class="btn btn-sm" type="button" data-a="addpast">Add job ID</button>' : '') + '</div>';
+        (work ? '<button class="btn btn-sm" type="button" data-a="addpast">Add earlier job ID</button>' : '') + '</div>';
       html += past.length ? past.map(function (e) {
         var b = e.bill;
         var st = b ? '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>'
-          : '<span class="chip-state is-off">No bill read</span>';
+          : '<span class="chip-state is-warn">Not billed</span>';
         var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
         return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
           '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
@@ -1043,12 +1043,12 @@
   function pastSaid(d) {
     return d.error === 'taken' ? JOB_SAID['job-taken'] : d.error === 'bad-ref' ? JOB_SAID['job-bad'] : JOB_SAID[d.error] || d.error;
   }
-  /* Add job ID: a past job from before the portal, as issued on the AP01 form. */
+  /* Add earlier job ID: a past job from before the portal, as issued on the AP01 form. */
   function addPast(btn) {
     var c = payFor;
     if (!c) return;
-    window.ADspaceConfirm.ask({ title: 'Add job ID', go: 'Add', wait: true, opener: btn,
-      field: { name: 'ref', label: 'Job ID', value: '', maxlength: 40, placeholder: 'KJ3117' } }, function (v) {
+    window.ADspaceConfirm.ask({ title: 'Add earlier job ID', go: 'Add', wait: true, opener: btn,
+      field: { name: 'ref', label: 'Earlier job ID', value: '', maxlength: 40 } }, function (v) {
       return db.rpc('creator_earlier_job_add', { p_creator: c.id, p_ref: String((v && v.ref) || '').trim() }).then(function (r) {
         var d = r.data || {};
         if (r.error) return r.error.message;

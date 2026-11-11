@@ -3921,7 +3921,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-11-11: a past KJ number had nowhere to go without a booking): the
   Payment tab lists a creator's job IDs from before the portal
   (`creator_earlier_jobs`, RLS on, no policy, no grant; one live row a job
-  ID across every creator and booking, `taken`), Add job ID and a row's ⋯
+  ID across every creator and booking, `taken`), Add earlier job ID and a row's ⋯
   Remove with Undo where it happened (`creator_earlier_job_add`,
   `creator_earlier_job_remove`, `campaigns.pay` Work, filed
   `creator.updated`), each with the bill holding it (`creator_bills_list`
