@@ -68,7 +68,7 @@
   function select(id, k, req, opts, none) {
     return '<select class="select" id="' + id + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + '>' +
       (none ? '<option value="">' + esc(none) + '</option>' : '') +
-      opts.map(function (o) { return '<option value="' + esc(o) + '"' + (typed[k] === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') +
+      opts.map(function (o) { return '<option value="' + esc(o) + '"' + (typed[k] === o ? ' selected' : '') + '>' + esc(o === 'Touch N Go Digital' ? 'Touch \u2019n Go Digital' : o) + '</option>'; }).join('') +
       '</select>';
   }
   function seg(id, k, opts, label) {
@@ -85,19 +85,19 @@
       '<form class="qs-form" id="sfForm" novalidate>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Billing details</h2>' +
         field('sfKind', 'Supplier type', seg('sfKind', 'kind', [['company', 'Company'], ['individual', 'Individual']], 'Supplier type')) +
-        field('sfName', ind ? 'Personal name' : 'Company name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
+        field('sfName', ind ? 'Full Name as per NRIC' : 'Registered Company Name', '<textarea class="input" id="sfName" data-k="name" data-oneline aria-required="true" rows="1" maxlength="160" autocomplete="organization" placeholder="' + (ind ? 'John Doe' : 'COMPANY NAME SDN BHD') + '">' + esc(typed.name || '') + '</textarea>') +
         field('sfBrn', 'Business Registration No.', input('sfBrn', 'brn', !ind, 'data-shape="############" inputmode="numeric" placeholder="' + (ind ? 'Optional' : '12 digits') + '"')) +
         (ind ? field('sfNric', 'NRIC', input('sfNric', 'nric', !keepNric, 'data-shape="######-##-####" inputmode="numeric" placeholder="' + (keepNric ? 'Leave blank to keep the NRIC on file' : 'XXXXXX-XX-XXXX') + '"')) : '') +
-        field('sfTin', 'TIN', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
+        field('sfTin', 'Tax Identification Number (TIN)', input('sfTin', 'tin', true, 'maxlength="20" autocapitalize="characters" placeholder="Letters and digits"')) +
         field('sfSst', 'SST Registration No.', input('sfSst', 'sst_no', false, 'maxlength="17" autocapitalize="characters" placeholder="Optional"')) +
-        field('sfPhone', 'Office / mobile', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
+        field('sfPhone', 'Office or mobile number', input('sfPhone', 'phone', true, 'type="tel" inputmode="tel" autocomplete="tel" placeholder="07-123 4567"')) +
         field('sfAddr', 'Billing address', '<textarea class="textarea" id="sfAddr" data-k="address" aria-required="true" rows="3" maxlength="400" autocomplete="street-address">' + esc(typed.address || '') + '</textarea>') +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Person in charge</h2>' +
         field('sfContact', 'Legal name', input('sfContact', 'contact_name', true, 'maxlength="80" autocomplete="name" placeholder="John Doe"')) +
         field('sfRole', 'Designation', input('sfRole', 'designation', true, 'maxlength="80" autocomplete="organization-title"')) +
         field('sfEmail', 'Email', input('sfEmail', 'email', true, 'type="email" maxlength="160" autocomplete="email" placeholder="email@adspace.me"')) +
-        field('sfMobile', 'Mobile / WhatsApp', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
+        field('sfMobile', 'Mobile number (WhatsApp)', input('sfMobile', 'mobile', true, 'type="tel" inputmode="tel" placeholder="012-345 6789"')) +
       '</section>' +
       '<section class="qs-sec"><h2 class="qs-sec-h">Payment details</h2>' +
         (keepBank ? '<p class="qs-note">Leave the account number blank to keep the current bank details. A new bank account must be approved by ADspace before any payment is made to it.</p>' : '') +
@@ -160,8 +160,8 @@
     contact_name: 'Enter the legal name.', designation: 'Enter the designation.', email: 'Enter a valid email address.',
     finance_email: 'Enter a valid email address.', payment_term: 'Choose a payment term.', payee_name: 'Enter the payee name.',
     bank_name: 'Choose a bank.', bank_account: 'Enter the account number, digits only.',
-    swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'The bank address may contain up to 300 characters.',
-    kind: 'Choose how you are registered.', currency: 'Choose a currency.'
+    swift: 'Enter the SWIFT code, 8 or 11 letters or digits.', bank_address: 'Enter a bank address of up to 300 characters.',
+    kind: 'Choose a supplier type.', currency: 'Choose a currency.'
   };
   function check() {
     var first = null, mail = { test: ADspaceWords.emailOk }, ind = typed.kind === 'individual';

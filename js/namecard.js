@@ -114,7 +114,7 @@
       '<section class="nc-face nc-front" aria-label="Card front">' +
         '<div class="nc-lock"><div class="nc-lock-in"><span class="nc-word">' + word() + '</span>' +
           '<span class="nc-tag">advertising | marketing | branding</span></div></div>' +
-        '<div class="nc-qr" aria-label="QR code to this card">' +
+        '<div class="nc-qr" aria-label="QR code for this card">' +
           '<span class="nc-word nc-word-sm">' + word() + '</span>' +
           '<div class="nc-qrbox" data-nc="qrbox"></div>' +
           '<b class="nc-qrname">' + esc(card.name) + '</b>' +

@@ -19,10 +19,10 @@
     en: {
       lang: '中文', title: 'Company Details', for: '{b}',
       company: 'Company', legal: 'Registered Company Name', brn: 'Business Registration No.',
-      brnPh: '12 digits', old: 'Old Registration No.', tin: 'TIN',
+      brnPh: '12 digits', old: 'Old Registration No.', tin: 'Tax Identification Number (TIN)',
       sst: 'SST Registration No.', address: 'Billing address', finance: 'Finance email',
       contact: 'Billing contact', sal: 'Salutation', name: 'Name', phone: 'Mobile number', email: 'Email',
-      optional: 'Optional', consent: 'I confirm these details are correct, and consent to ADspace keeping them for business purposes.',
+      optional: 'Optional', consent: 'I confirm that these details are correct and consent to ADspace keeping them for business purposes.',
       submit: 'Submit', ends: 'This form is open until {d}.',
       req: { legal_name: 'Enter the Registered Company Name.', company_no: 'Enter the Business Registration Number.',
         billing_address: 'Enter the billing address.', contact_name: 'Enter the billing contact\'s name.',
@@ -30,7 +30,7 @@
       badBrn: 'Enter the Business Registration Number as shown on the company\'s registration.',
       badEmail: 'Enter a valid email address.', badPhone: 'Enter a mobile number of 8 to 15 digits.',
       badAddr: 'Enter the full billing address.', badCode: 'Enter {a} to {b} letters or digits, as registered.', tick: 'Tick the box to continue.',
-      doneT: 'Details received', doneP: 'Thank you. Your ADspace account manager will review them.',
+      doneT: 'Details received', doneP: 'Thank you. Your ADspace account manager will review your details.',
       expT: 'Link expired', submittedT: 'Details received', submittedP: 'This form has already been submitted.'
     },
     zh: {
@@ -39,8 +39,8 @@
       brnPh: '12位数字', old: '旧注册号码', tin: '税务识别号（TIN）',
       sst: 'SST 注册号码', address: '账单地址', finance: '财务邮箱',
       contact: '账单联系人', sal: '称谓', name: '姓名', phone: '手机号码', email: '邮箱',
-      optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料用于业务用途。',
-      submit: '提交', ends: '此表格开放至 {d}。',
+      optional: '选填', consent: '我确认以上资料无误，并同意 ADspace 保存这些资料作业务用途。',
+      submit: '提交', ends: '此表格开放至{d}。',
       req: { legal_name: '请填写公司注册名称。', company_no: '请填写公司注册号码。', billing_address: '请填写账单地址。',
         contact_name: '请填写账单联系人姓名。', contact_phone: '请填写手机号码。', contact_email: '请填写邮箱地址。' },
       badBrn: '请按公司注册文件填写注册号码。',
