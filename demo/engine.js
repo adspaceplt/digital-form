@@ -567,7 +567,8 @@
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
-    creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
+    creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
+    creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
     department_set_active: 'p_key p_on',
@@ -3264,8 +3265,17 @@ function cardSlugFree(name, self, email) {
         posted_on: o.posted_on || null, pay_by: o.pay_by || null, bill: b ? billOf(b) : null };
     });
     var reads = bills.map(function (b) { return b.read_at; }).sort();
-    return { ok: true, pay: pay, linked: Boolean(link), read_at: reads.length ? reads[reads.length - 1] : null, jobs: jobs,
-      earlier: bills.filter(function (b) { return !b.option_id; }).map(function (b) { return Object.assign(billOf(b), { ref: b.ref }); }) };
+
+    var holds = function (e, b) { var k = refKey(e.ref); return k.length >= 4 && (refKey(b.ref).indexOf(k) > -1 || refKey(b.number).indexOf(k) > -1); };
+    var pastRows = (DB.creator_earlier_jobs || []).filter(function (e) { return e.creator_id === creator && !e.removed_at; })
+      .sort(function (a, c) { return a.ref < c.ref ? 1 : -1; });
+    var loose = bills.filter(function (b) { return !b.option_id; });
+    var past = pastRows.map(function (e) {
+      var b = loose.filter(function (x) { return holds(e, x); }).sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];
+      return { id: e.id, ref: e.ref, bill: b ? billOf(b) : null };
+    });
+    return { ok: true, pay: pay, linked: Boolean(link), read_at: reads.length ? reads[reads.length - 1] : null, jobs: jobs, past: past,
+      earlier: loose.filter(function (b) { return !pastRows.some(function (e) { return holds(e, b); }); }).map(function (b) { return Object.assign(billOf(b), { ref: b.ref }); }) };
   }
 
   function autoMail() { var v = appSet('auto_email_on', appToday()); return v == null || Number(v) === 1; }
@@ -9588,6 +9598,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(csOut)), error: null });
     }
+    if (name === 'creator_earlier_job_add' || name === 'creator_earlier_job_remove') {
+      var ejA = args || {}, ejOut, ejNow = new Date().toISOString(), ejMe = opsMe();
+      DB.creator_earlier_jobs = DB.creator_earlier_jobs || [];
+      var ejTaken = function (v) { return (DB.campaign_options || []).some(function (o) { return o.earlier_job === v; }) ||
+        DB.creator_earlier_jobs.some(function (e) { return e.ref === v && !e.removed_at; }); };
+      if (!ejMe || !opsGranted('campaigns.pay', 'work')) ejOut = { error: 'denied' };
+      else if (name === 'creator_earlier_job_add') {
+        var ejC = (DB.creators || []).filter(function (c) { return c.id === ejA.p_creator; })[0];
+        var ejV = String(ejA.p_ref || '').replace(/\s+/g, '').toUpperCase();
+        if (!ejC) ejOut = { error: 'not-found' };
+        else if (!/^[A-Z0-9][A-Z0-9\/._-]{1,39}$/.test(ejV)) ejOut = { error: 'bad-ref' };
+        else if (ejTaken(ejV)) ejOut = { error: 'taken' };
+        else {
+          var ejR = DB.creator_earlier_jobs.filter(function (e) { return e.creator_id === ejC.id && e.ref === ejV; })[0];
+          if (ejR) { ejR.removed_at = null; ejR.removed_by = null; }
+          else { ejR = { id: nid('ej'), creator_id: ejC.id, ref: ejV, added_at: ejNow, added_by: ejMe.name, removed_at: null, removed_by: null }; DB.creator_earlier_jobs.push(ejR); }
+          logAct('creator.updated', ejC.name, (ejC.creator_code ? ejC.creator_code + ' · ' : '') + 'Earlier job added: ' + ejV);
+          ejOut = { ok: true, id: ejR.id, ref: ejV };
+        }
+      } else {
+        var ejJ = DB.creator_earlier_jobs.filter(function (e) { return e.id === ejA.p_id; })[0];
+        var ejK = ejJ && (DB.creators || []).filter(function (c) { return c.id === ejJ.creator_id; })[0] || {};
+        if (!ejJ) ejOut = { error: 'not-found' };
+        else if (ejA.p_restore) {
+          if (!ejJ.removed_at) ejOut = { ok: true };
+          else if (ejTaken(ejJ.ref)) ejOut = { error: 'taken' };
+          else { ejJ.removed_at = null; ejJ.removed_by = null; logAct('creator.updated', ejK.name, (ejK.creator_code ? ejK.creator_code + ' · ' : '') + 'Earlier job restored: ' + ejJ.ref); ejOut = { ok: true }; }
+        } else {
+          if (!ejJ.removed_at) { ejJ.removed_at = ejNow; ejJ.removed_by = ejMe.name; logAct('creator.updated', ejK.name, (ejK.creator_code ? ejK.creator_code + ' · ' : '') + 'Earlier job removed: ' + ejJ.ref); }
+          ejOut = { ok: true };
+        }
+      }
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(ejOut)), error: null });
+    }
     if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
       var cbA = args || {}, cbOut;
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
@@ -9600,7 +9645,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!opsGranted('campaigns.pay', 'work')) cbOut = { error: 'denied' };
         else if (!cbO) cbOut = { error: 'not-found' };
         else if (cbV && !/^[A-Z0-9][A-Z0-9\/._-]{1,39}$/.test(cbV)) cbOut = { error: 'bad-ref' };
-        else if (cbV && DB.campaign_options.some(function (o) { return o.earlier_job === cbV && o.id !== cbO.id; })) cbOut = { error: 'taken' };
+        else if (cbV && (DB.campaign_options.some(function (o) { return o.earlier_job === cbV && o.id !== cbO.id; }) ||
+                         (DB.creator_earlier_jobs || []).some(function (e) { return e.ref === cbV && !e.removed_at; }))) cbOut = { error: 'taken' };
         else {
           if ((cbO.earlier_job || null) !== cbV) {
             var cbC = DB.creators.filter(function (c) { return c.id === cbO.creator_id; })[0] || {};

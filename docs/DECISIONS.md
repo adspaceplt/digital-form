@@ -9506,3 +9506,14 @@ on; a lead with no Sales by, or a client, is refused. The purpose is
 named Representative to lead: the copy review found "prospect" a second
 word for a lead in the console.
 
+### 2026-11-11 — A creator's past jobs kept on their Payment tab
+The user could not add a KJ number from the AP01 form to a creator: the
+earlier job ID lived on a booking alone, and a job from before the portal
+has none, so the Payment tab showed nothing to add it to. Earlier jobs now
+holds them per creator, each read against the Bukku bills the same way a
+booking's bill is found, a job ID held once across creators and bookings.
+The AP01 matching of the same day found five of the first twenty creators
+in the form (ADC0001, 0010, 0011, 0012, 0013) and the duplicates inside
+the form itself (Ang Yee Tian under two ID numbers; the user chose the
+passport ending 307H).
+

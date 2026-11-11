@@ -838,7 +838,9 @@
   var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
     taken: 'That earlier job ID is already used by another booking. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
-    'not-linked': 'Link the creator to Bukku first.' };
+    'not-linked': 'Link the creator to Bukku first.',
+    'job-taken': 'That job ID is already on another booking or creator. Check the ID on the AP01 form.',
+    'job-bad': 'Enter the job ID as it was issued, for example KJ3117.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
@@ -985,6 +987,25 @@
         '</div>';
     };
     var html = jobs.length ? jobs.map(rowOf).join('') : '<p class="emptyline">No bookings.</p>';
+    /* A creator's past job IDs from before the portal, each with the bill
+       that paid it (2026-11-11). */
+    var past = d.past || [];
+    if (past.length || work) {
+      html += '<div class="cpay-past-h"><h4 class="fsec-h">Earlier jobs</h4>' +
+        (work ? '<button class="btn btn-sm" type="button" data-a="addpast">Add job ID</button>' : '') + '</div>';
+      html += past.length ? past.map(function (e) {
+        var b = e.bill;
+        var st = b ? '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>'
+          : '<span class="chip-state is-off">No bill read</span>';
+        var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
+        return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
+          '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
+          '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
+          (work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="pastmenu" aria-label="More actions for ' + esc(e.ref) + '" aria-expanded="false">' + DOTS + '</button>' +
+            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button></div></span>' : '') +
+          '</div>';
+      }).join('') : '<p class="emptyline">No earlier jobs.</p>';
+    }
     if ((d.earlier || []).length) {
       html += '<h4 class="fsec-h cpay-earlier-h">Earlier payments</h4>' + d.earlier.map(function (b) {
         return '<div class="cpay-job"><div class="cpay-job-l"><span class="cpay-job-ref">' + esc(b.number || '') + '</span>' +
@@ -998,6 +1019,60 @@
     host.innerHTML = html;
     host.querySelectorAll('[data-a="earlier"]').forEach(function (b) {
       b.addEventListener('click', function () { earlierJob(b.closest('.cpay-job').getAttribute('data-opt'), b); });
+    });
+    var add = host.querySelector('[data-a="addpast"]');
+    if (add) add.addEventListener('click', function () { addPast(add); });
+    host.querySelectorAll('[data-a="pastmenu"]').forEach(function (button) {
+      var m = button.parentNode.querySelector('.kmenu');
+      button.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = m.hidden;
+        shutMenus();
+        m.hidden = !open;
+        button.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(button, m);
+      });
+      m.querySelector('[data-a="pastremove"]').addEventListener('click', function () {
+        m.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        var row = button.closest('[data-past]');
+        removePast(row.getAttribute('data-past'), row.getAttribute('data-ref'));
+      });
+    });
+  }
+  function pastSaid(d) {
+    return d.error === 'taken' ? JOB_SAID['job-taken'] : d.error === 'bad-ref' ? JOB_SAID['job-bad'] : JOB_SAID[d.error] || d.error;
+  }
+  /* Add job ID: a past job from before the portal, as issued on the AP01 form. */
+  function addPast(btn) {
+    var c = payFor;
+    if (!c) return;
+    window.ADspaceConfirm.ask({ title: 'Add job ID', go: 'Add', wait: true, opener: btn,
+      field: { name: 'ref', label: 'Job ID', value: '', maxlength: 40, placeholder: 'KJ3117' } }, function (v) {
+      return db.rpc('creator_earlier_job_add', { p_creator: c.id, p_ref: String((v && v.ref) || '').trim() }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return r.error.message;
+        if (d.error) return pastSaid(d);
+        readJobs();
+        return '';
+      });
+    });
+  }
+  /* Remove keeps the row; Undo where it happened brings it back. */
+  function removePast(id, ref) {
+    var c = payFor;
+    db.rpc('creator_earlier_job_remove', { p_id: id, p_restore: false }).then(function (r) {
+      var d = r.data || {}, m = $('cpayMsg');
+      if (r.error || d.error) { if (m) { m.textContent = 'Not removed. ' + (r.error ? r.error.message : pastSaid(d)); m.className = 'msg err'; } return; }
+      readJobs();
+      var A = window.ADspaceAdmin;
+      if (A && A.undoHere && m) A.undoHere(ref + ' removed.', function () {
+        db.rpc('creator_earlier_job_remove', { p_id: id, p_restore: true }).then(function (u) {
+          var ud = u.data || {};
+          if (u.error || ud.error) { m.textContent = 'Not restored. ' + (u.error ? u.error.message : pastSaid(ud)); m.className = 'msg err'; return; }
+          if (payFor === c) readJobs();
+        });
+      }, m);
     });
   }
   function earlierJob(opt, btn) {

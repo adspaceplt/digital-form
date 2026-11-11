@@ -825,7 +825,9 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    over its campaign, the bill's state over its number and amount, the pen
    for an earlier job ID at the right edge. */
 .cpay-job { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: start; padding: 10px 0; border-top: 1px solid var(--line-soft); }
-.cpay-job:first-child, .cpay-earlier-h + .cpay-job { border-top: 0; }
+.cpay-job:first-child, .cpay-earlier-h + .cpay-job, .cpay-past-h + .cpay-job { border-top: 0; }
+.cpay-past-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.cpay-past-h .fsec-h { margin: 0; }
 .cpay-job-l, .cpay-job-r { display: grid; gap: 2px; min-width: 0; }
 .cpay-job-r { justify-items: end; text-align: right; }
 .cpay-job-ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
