@@ -9470,3 +9470,13 @@ address, sometimes the billing contact, but the creator id i need"):
 each change to a contact Bukku holds is ticked, and an unticked one goes
 as Bukku holds it.
 
+### 2026-11-11 · AP01 creators matched to their Bukku contacts
+The creators imported from the AP01 form were paid through Bukku as
+supplier contacts long before the portal held them. Linking each by hand
+on its Payment tab would take a press a creator, so `bukku-sync` gained a
+read-only `match-creators` action behind the wake secret: each creator with
+approved payment details and no link is matched by its ID number against
+Bukku's registration no., else by its legal name where one contact alone
+holds it. The list is read first; the links are then written as Link only
+writes them, so nothing in Bukku changes.
+
