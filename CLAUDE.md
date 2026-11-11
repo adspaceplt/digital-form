@@ -3145,7 +3145,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Bukku holds, each change is a tick (`#bkRows input[name=bkSend]`, all
   ticked, the type never), an unticked one sent as Bukku holds it
   (`skip`, `keepAsHeld`; the user, 2026-11-10: "choose which one to
-  send"); a state goes under Bukku's own name (Penang as Pulau Pinang,
+  send") and never copied back to the portal: while one still differs the
+  link is not held and reads Differs from Bukku (`takeAfterSend`, audit
+  2026-11-11); a state goes under Bukku's own name (Penang as Pulau Pinang,
   `STATE_AS`: Bukku refused Penang), and Bukku's refusal names its fields'
   reasons, never only "The given data was invalid.". Link only (`#bkLink`,
   beside Link and send for a contact Bukku holds; kept apart from Link and
@@ -4001,7 +4003,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the name over Creator ID · platforms, Active or Inactive, one ⋯ of Reset
     link, Set inactive or Set active with Undo where it happened, Delete),
     the view strip and a pane: Overview (Details: Creator ID, then Name,
-    Client rate, WhatsApp and Notes each changed where it is read, its pen,
+    Client rate, WhatsApp and Notes each changed where it is read, its pen
+    (Notes in a box of lines, keeping their breaks),
     filed `creator.updated` from and to; Profiles: each link a `.plink`
     opening the profile, Edit links opening the creator sheet on its links
     alone (`#addCreatorBox.is-links`), Link history a fold with Restore;
@@ -4864,8 +4867,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `not-started`, `cancelled`; `ops_month_invoice_take` and
   `ops_month_invoices_due` the service role's; `ops_month_invoices`, RLS
   on, no policy, no grant): an invoice of the client's Bukku contacts
-  dated within the content month's calendar month (`month_invoice_window`)
-  is its invoice; the month's card reads Invoice (number, amount, Paid or
+  (a company billing other brands too left out, its invoice perhaps
+  another brand's) dated within the content month's calendar month
+  (`month_invoice_window`) is its invoice, one Bukku lists with no balance
+  read Unpaid, never Paid (audit 2026-11-11); the month's card reads Invoice (number, amount, Paid or
   Unpaid; Not invoiced and when checked; Check Bukku) at Clients: Billing
   View (`ops_month_invoices_of`), and the Dashboard lists Months not
   invoiced at Billing Full Access once a read after the 1st found none
@@ -7142,13 +7147,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `handbook_reads` (RLS on, no policy, no grant); a new version asks again.
   `handbook_due()` is read beside `me()`, and while it holds anything the
   console holds the colleague on the Handbook's onboarding (`body.hb-gate`:
-  the rail's sections, its foot's marks, search and the tab bar away;
+  the rail's sections, its foot's marks, search, its keys, the bell and the
+  tab bar away; a read of it that fails holds the gate with Unable to load
+  and Try again, never opening the portal; audit 2026-11-11;
   `#hbGate`, the Handbook's bar and list hidden): Welcome to ADspace, {first
   name}, n of N acknowledged over a track, a step a file (Open, then
   Acknowledge), then Every file is acknowledged with Continue onto the
   first section held. The ⋯'s Who acknowledged lists each colleague against
   the current version (`handbook_acks`). The gate is the page's; the
-  database refuses no read to a colleague with a file due.
+  database refuses no read to a colleague with a file due, and Opened is
+  the page's word that it asked for the file's link.
 - A file lives in the private Supabase Storage bucket `handbook` (50 MB a
   file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
   opened only through a signed link of 60 seconds made at the press
@@ -7830,8 +7838,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   nowhere): Supabase invites only an address with no login, so for one that
   has a login `invite-member` sends the same invitation itself through
   `_shared/mail.ts` (from the sign-in emails' sender, a one-time sign-in
-  link from `generateLink`), and a page says Invitation sent only on
-  `sent`, never on `already`.
+  link from `generateLink`, a key of its own each send), and a page says
+  Invitation sent only on `sent`, never on `already`. A colleague is
+  greeted by the name on their record, an admin alone wording it otherwise
+  (audit 2026-11-11).
 - An active colleague's first sign-in makes their login (2026-11-11, the
   user: one added with no invitation read Active and was sent no code): the
   console asks `portal-login` before the code, which makes a login for a
@@ -7942,7 +7952,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
     `portal_access`, and answers `{ok: true}` to every address, each in the
-    same least time (`FLOOR_MS`, 900 ms; a fault logged, never a 500), so
+    same least time (`FLOOR_MS`, 1,500 ms, a slower run at the next whole
+    step; a fault logged, never a 500), so
     the wait never says who is a client (2026-10-25, `tests/portalloginfn.js`).
   - `signInWithOtp` with `shouldCreateUser: false`.
   - The email's code signs in on the page as well as its link (`#signCode`,

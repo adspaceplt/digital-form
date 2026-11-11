@@ -1985,13 +1985,20 @@
      Handbook's required files before the portal opens): the files due are
      read beside me(), and while any is due the console holds the colleague
      on the Handbook, its rail and tab bar put away (`body.hb-gate`). */
-  var hbDue = null;
+  var hbDue = null, hbFailed = false;
+  /* A read that fails keeps the gate up with Try again, never opens the
+     portal (audit 2026-11-11); a database without the function has no gate. */
   function loadDue() {
     return db.rpc('handbook_due').then(function (r) {
+      var gone = r.error && (r.error.code === 'PGRST202' || r.error.code === '42883');
+      hbFailed = Boolean(r.error && !gone);
       hbDue = !r.error && r.data && r.data.due ? r.data.due : [];
-    }, function () { hbDue = []; });
+    }, function () { hbFailed = true; hbDue = []; });
   }
-  function hbGated() { return Boolean(me && hbDue && hbDue.length); }
+  function hbGated() {
+    var admin = me && (me.is_admin || me.role === 'admin' || me.system);
+    return Boolean(me && !admin && (hbFailed || (hbDue && hbDue.length)));
+  }
   function wearGate() { document.body.classList.toggle('hb-gate', hbGated()); }
 
   var enterLater = '';
@@ -6057,6 +6064,13 @@
     /* HANDBOOK ACKNOWLEDGED: the required files still due, and the gate
        lifted once each is acknowledged, onto the first section held. */
     handbookDue: function () { return hbDue || []; },
+    handbookFailed: function () { return hbFailed && hbGated(); },
+    handbookRetry: function (done) {
+      loadDue().then(function () {
+        if (!hbGated()) { wearGate(); paintTabbar(); visitSection(firstAllowed()); }
+        if (done) done();
+      });
+    },
     handbookCleared: function () {
       hbDue = [];
       wearGate();

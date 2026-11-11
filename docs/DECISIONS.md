@@ -9747,3 +9747,23 @@ with `v_ev` a row variable. Postgres refuses a row variable in a target list
 of several ("is not a scalar variable") at run time, so the schema's two runs
 in `sql` passed. A test block on the live database before the part was applied
 found it; the loop reads two text fields instead. Rule added to CLAUDE.md.
+### 2026-11-12 — Audit fixes of 11 November: Bukku, invitations and sign-in
+The same audit found a send to Bukku with fields left unticked copied those
+fields' Bukku values back over the portal's billing (the hold that follows a
+send took every field that differed); a month's invoice Bukku listed with no
+balance read Paid and left the nightly check for good; the creator match read
+three tables a thousand rows at most; a second Send invitation within a
+minute was refused by Resend as a repeat while its new link had already
+killed the first email's; a team invitation's greeting was the name the
+sender typed; and portal-login's equal wait was sized before the colleague
+path made it the slowest. The user approved each ("ok"; 14: "admin can
+overwrite").
+
+### 2026-11-12 — Creator page edits, the Creators List refresh and the email preview's grey
+The audit of the parts first left unread (2026-11-11) found Notes on a
+creator's page edited in a one-line field that turned line breaks into
+spaces; Add details calling a refresh nobody defined, so the Creators List,
+its filter and the rail kept the old standing; a pen left unchanged showing
+the raw figure; and the console's email previews drawing the fine print in
+#a1a1a1, 2.6:1 on white. The user approved each (2026-11-12, "ok"); the
+emails keep #a1a1a1, the previews read #767676.
