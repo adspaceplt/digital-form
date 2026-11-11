@@ -2047,12 +2047,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every stage date and Client since are edited in place
     (`ADspaceAsk.rename`, type date).
   - A stage between the first and the one running now is removed from its
-    row's ⋯ (Edit date, Remove; the band's Full Access; the user,
+    row's ⋯ (Edit date, Remove, asked first; the band's Full Access, held by
+    trigger `clients_stage_log_guard` at Clients Full Access, `stage-log`; the user,
     2026-11-10: a client made Active for days to finish reports, then
     Paused again, counted as a resume): the stages either side that match
     become one from the earlier day, keeping the later reason, and the
     stage clock and the client's reason follow; Undo where it happened puts
-    the history back; filed `client.edited` (Timeline: Active from … removed; removal undone).
+    the history back; filed `client.edited` with the stage's reason and
+    note (Timeline: Paused from … (Budget: …) removed; … restored).
     - Client since is the first stage's start, opened on its Malaysian day
       (`dayOf`).
     - A stage never begins before the one before it, and no date is in the
@@ -2519,7 +2521,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.settings`, filed). Off, the creator emails (`creator_mail_queue`,
   `creator_mail_job`) are kept as Not sent (`off: Automatic emails are
   off.`) and never sent later, and `wa_enqueue` queues no colleague
-  reminder or creator booking message; whatever a colleague presses goes
+  reminder or creator booking message; the claim holds the same (`wa_claim`,
+  `creator_mail_claim`), so one queued before the switch moved, or put back
+  after an outage, is failed Not sent (audit 2026-11-11); whatever a colleague presses goes
   as before. A new automatic send asks `auto_send_on(kind)`.
 - Nothing reaches a client by itself (the user, 2026-10-31): every
   client-facing send is a colleague's press, and most go into the client's
@@ -3937,7 +3941,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-11-11: a past KJ number had nowhere to go without a booking): the
   Payment tab lists a creator's job IDs from before the portal
   (`creator_earlier_jobs`, RLS on, no policy, no grant; one live row a job
-  ID across every creator and booking, `taken`), Add earlier job ID and a row's ⋯
+  ID across every creator and booking, `taken`, each write under the job
+  ID's lock), Add earlier job ID and a row's ⋯
   Remove with Undo where it happened (`creator_earlier_job_add`,
   `creator_earlier_job_remove`, `campaigns.pay` Work, filed
   `creator.updated`), each with the bill holding it (`creator_bills_list`
@@ -4828,7 +4833,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Client), the next round Client review, approval Approved; forward along
   the line or round the revision loop alone, from Ready to start through
   Revision (Client) only (On hold, Blocked, Approved and after are a
-  person's; Scheduled stays manual), filed on the task and told to its
+  person's; Scheduled stays manual), never where a person could not move it:
+  a task never through AQC review goes to AQC review, not Client review, a
+  task at Ready to start waits on its month (`ops_month_open_for_work`),
+  and entering a review stamps Draft in (audit 2026-11-11); a task Content
+  Review moved to Approved goes back with an approval taken back or asked
+  again, and Undo of Add changes puts back the final date they pushed,
+  where nothing moved it since, filed on the task and told to its
   owner, never failing the write. An unlinked task is unchanged. A post's ⋯
   Add changes (`review_record_changes`, a published set, no decision on
   the round) keeps the client's WhatsApp words as the team's changes, Undo
@@ -7721,7 +7732,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   same template chosen in New message for a contact is sent as it. Its
   variables are the greeting, the brand and the Sales by colleague; its
   link button the colleague's namecard short link (`wa_compose_prepare`
-  `rep`, `code`; `not-lead`, `no-sales-by`, `no-card`), held as Sent
+  `rep`, `code`; `not-lead`, `no-sales-by`, `no-card`, `no-contact` for a
+  prospect marked Do not contact), held as Sent
   recently by its client. The template is Utility: it states a fact about
   the lead's own enquiry, never asks them to call or buy.
 - `wa-send` answers `report` and `feedback` with bad-request (2026-10-19). A refusal is one

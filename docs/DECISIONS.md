@@ -9723,3 +9723,20 @@ reader and on hover, so no state is carried by colour alone.
   then Paid {day}, Pending payment or Not due. The same day the user
   removed the Jotform pages AP02, AP03, AP Dale, 3P form, e-Invoice info,
   interview quiz and sales programme, keeping AP01 and ACCV.
+
+### 2026-11-12 — Audit fixes of 11 November: automatic sends, task moves, creator details
+The audit of #987 to #1031 (2026-11-11) found the automatic-sends switch held
+only at the queue, so a message queued before the switch moved, or put back
+after a WhatsApp outage, still went; a report started by someone other than
+the month's manager moved its task twice (two triggers each filed the move);
+the content loop moved a task straight to Client review past AQC review and
+into work in a month not confirmed; Introduce representative ignored Do not
+contact; a short email on a creator's link read whole; two earlier job IDs
+could be taken at once; restoring a link taken meanwhile said the database's
+words; one company's invoice marked another brand's month; and a Timeline
+stage was removed unasked, lost its reason for good and was held on the page
+alone. The second read added a task left at Approved when its approval was
+taken back, and Undo of Add changes leaving the pushed due date. The user
+approved each fix ("ok"). One migration
+(`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove,
+asked first.
