@@ -28,7 +28,7 @@
 
 alter table public.wa_templates drop constraint if exists wa_templates_purpose_check;
 alter table public.wa_templates add constraint wa_templates_purpose_check
-  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready'));
+  check (purpose in ('report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready')) not valid;
 insert into public.wa_templates (purpose) values ('quote_ready') on conflict (purpose) do nothing;
 
 drop function if exists public.quote_website_request(text, jsonb);

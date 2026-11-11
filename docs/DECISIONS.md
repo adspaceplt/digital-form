@@ -9568,3 +9568,20 @@ Handbook's "Who acknowledged" became the noun "Acknowledgements" (§6 rule
 to any section" (a system word); its purpose line, which only restated the
 cover, now names the route. The menus suite's table had not learned #1019's
 Mark required and Mark optional, so it read them as unknown; both joined it.
+
+### 2026-11-11 · The day's full gate, after #1020
+`all` on ec79e6a (tests 3c02d9b) read six problems. Four were suites not
+taught the day's intended changes: `appver` and `phone` still read the build
+line's seven characters and a bare Refresh app on hover (#1019 shows four and
+names all seven); `team` still read the Handbook among the rail's sections
+(#1019 made it a mark at the foot); `crm` read Content Review's names through
+`.crm-c-name`, which holds the logo's initials since #1007, so it reads
+`.cl-name`. Two were real: #1010's rule giving a logo row's header 48px of
+room reached the month list's header in Video Scripts (no logo there) and
+missed Reports' header while Select was on (the tick first), each 4px off its
+column; the rule now names `#vsList` and the picking header's second cell.
+And `auditfix` read four errors where three were allowed: each SQL Editor part
+that widened the WhatsApp template purposes added its check validated, so a
+re-run of the schema failed every older one once #1014 seeded
+`representative`. The three older checks are now added `not valid` (the
+newest stays validated); the live database is unchanged.

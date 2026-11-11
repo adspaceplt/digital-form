@@ -4049,8 +4049,10 @@ span.ck-chip { display: inline-flex; align-items: center; cursor: default; }
 /* Room for a VIC ring inside the name cell, which clips its overflow. */
 .crm-row:is(.client-row, .cr-client-row) .crm-c-name { padding-block: 4px; margin-block: -4px; padding-left: 4px; margin-left: -4px; }
 /* The head's first cell takes the same 4px, so Client stays over its column. */
-.crm-head:is(.client-row, .cr-client-row, .vs-row, .camp-row) > :first-child,
-.rh-row.crm-head:not(.is-picking) > :first-child { margin-left: -4px; padding-left: 48px; }
+.crm-head:is(.client-row, .cr-client-row, .camp-row) > :first-child,
+#vsList .crm-head.vs-row > :first-child,
+.rh-row.crm-head:not(.is-picking) > :first-child,
+.rh-row.crm-head.is-picking > :nth-child(2) { margin-left: -4px; padding-left: 48px; }
 .crm-head.client-row.is-picking > :first-child { padding-left: 78px; }
 .wfy-what .chip-vic { margin-left: 6px; }
 .cr-client-row .crm-c-name .chip-vic, .camp-c-client .chip-vic, .vs-c-name b .chip-vic,
