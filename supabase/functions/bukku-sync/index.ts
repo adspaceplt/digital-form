@@ -1026,6 +1026,43 @@ async function invoiceAction(action: string, body: Record<string, any>, db: any,
 
 /* Why a Bukku contact is offered for a record, or '' where it is not: the
    same registration no., the same name, or a name inside the other. */
+/* A creator's Bukku contact found through their bills (2026-11-12, the
+   user: KJ3105 on Gaby Low, whose Bukku contact is Low Chee Guan): each
+   contact holding a purchase bill whose reference or number holds one of
+   the creator's earlier job IDs, read as `creator_ref_key` reads them.
+   Bukku's search is asked first; where it finds none, every bill is read,
+   thirty pages at most. */
+const refKey = (v: unknown) => String(v ?? '').replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+export function jobHits(rows: any[], jobs: string[]): Map<number, string> {
+  const out = new Map<number, string>();
+  const keys = jobs.map((j) => [j, refKey(j)] as [string, string]).filter(([, k]) => k.length >= 4);
+  for (const x of rows) {
+    if (!x || !x.contact_id) continue;
+    const b = billOf(x), ref = refKey(b.ref), no = refKey(b.number);
+    for (const [j, k] of keys) if ((ref.includes(k) || no.includes(k)) && !out.has(Number(x.contact_id))) out.set(Number(x.contact_id), j);
+  }
+  return out;
+}
+async function jobContacts(jobs: string[]): Promise<Map<number, string>> {
+  const out = new Map<number, string>();
+  const list = jobs.filter((j) => refKey(j).length >= 4).slice(0, 10);
+  if (!list.length) return out;
+  for (const j of list) {
+    const r = await bukku('GET', `/purchases/bills?search=${encodeURIComponent(j)}&page=1&page_size=100`);
+    for (const [c, w] of jobHits((r && r.transactions) || [], [j])) if (!out.has(c)) out.set(c, w);
+  }
+  if (out.size) return out;
+  for (let page = 1; page <= 30; page++) {
+    const r = await bukku('GET', `/purchases/bills?page=${page}&page_size=100`);
+    const rows = (r && r.transactions) || [];
+    for (const [c, w] of jobHits(rows, list)) if (!out.has(c)) out.set(c, w);
+    const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
+    const total = Number(r && r.paging && r.paging.total) || 0;
+    if (!rows.length || page * per >= total || rows.length < per) break;
+  }
+  return out;
+}
+
 function matchOf(p: Prep, c: any): string {
   const reg = digits(p.reg_no), name = words(p.legal_name), other = words(p.other_name);
   return reg && digits(c.reg_no) === reg ? 'brn'
@@ -1131,7 +1168,18 @@ Deno.serve(async (req) => {
     if (!['client', 'supplier', 'entity', 'creator'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
-    const p = prep.data as Prep;
+    let p = prep.data as Prep;
+    /* A creator is found and linked whatever their payment details
+       (2026-11-12): by name, else through a bill holding an earlier job
+       ID; Send still needs details approved. */
+    let jobs: string[] = [];
+    if (kind === 'creator' && (action === 'find' || action === 'link')) {
+      const lp = await db.rpc('bukku_creator_link_prep', { p_id: id });
+      if (!lp.error && lp.data && lp.data.ok) {
+        jobs = (lp.data.jobs || []).map(String);
+        if (!p || (p as any).error === 'no-details') p = lp.data as Prep;
+      }
+    }
     if (!p || p.error) return json(p || { error: 'bad-request' }, 200, origin);
     if (!p.field_id) return json({ error: 'no-field' }, 200, origin);
 
@@ -1143,6 +1191,15 @@ Deno.serve(async (req) => {
       const all = await allContacts();
       const seen = new Set<number>();
       const found: any[] = [];
+      const byJob = jobs.length ? await jobContacts(jobs) : new Map<number, string>();
+      for (const c of all) {
+        const j = byJob.get(Number(c.id));
+        if (j && !seen.has(c.id)) {
+          seen.add(c.id);
+          found.push({ id: c.id, code: c.contact_code, name: c.legal_name, reg_no: c.reg_no || null, types: c.types || [],
+            archived: !!c.is_archived, why: 'job', job: j });
+        }
+      }
       for (const c of all) {
         const why = matchOf(p, c);
         if (why && !seen.has(c.id)) {
@@ -1151,9 +1208,9 @@ Deno.serve(async (req) => {
             archived: !!c.is_archived, why });
         }
       }
-      const rank: Record<string, number> = { brn: 0, name: 1, similar: 2 };
+      const rank: Record<string, number> = { job: 0, brn: 1, name: 2, similar: 3 };
       found.sort((a, b) => rank[a.why] - rank[b.why]);
-      return json({ ok: true, candidates: found.slice(0, 5), next_code: nextCode(all, p.legal_name) }, 200, origin);
+      return json({ ok: true, candidates: found.slice(0, 5), next_code: nextCode(all, p.legal_name), details: (p as any).details !== false }, 200, origin);
     }
 
     const contact = body.contact == null || body.contact === '' ? null : Number(body.contact);
@@ -1175,9 +1232,23 @@ Deno.serve(async (req) => {
        colleague sees every client (security audit 2026-11-07): the id came
        from the page, and any other read the company's Bukku contacts
        whatever the colleague's own access. */
-    if (cur && !p.contact_id && !matchOf(p, cur)) {
+    if (cur && !p.contact_id && !matchOf(p, cur) && !(jobs.length && (await jobContacts(jobs)).has(Number(cur.id)))) {
       const sc = await db.rpc('invoice_scope');
       if (sc.error || !sc.data || sc.data.all !== true) return json({ error: 'not-offered' }, 200, origin);
+    }
+    /* Link only (2026-10-19): the contact as Bukku holds it, linked and
+       nothing sent. */
+    if (action === 'link') {
+      if (!cur) return json({ error: 'bad-request' }, 400, origin);
+      const l = await db.rpc('bukku_link_only', { p_kind: kind, p_id: id, p_contact: cur.id, p_code: cur.contact_code || String(cur.id) });
+      if (l.error) return json({ error: 'needs-update' }, 200, origin);
+      if (l.data && l.data.error) return json({ error: l.data.error }, 200, origin);
+      /* A creator's bills are read at once, so their payments show. */
+      if (kind === 'creator') {
+        try { await creatorBills(id, Number(cur.id)); }
+        catch (e) { console.error('bukku-sync: bills after link', String((e as Error).message || e)); }
+      }
+      return json({ ok: true, contact: cur.id, code: cur.contact_code || String(cur.id), linked: true }, 200, origin);
     }
     const every = cur ? null : await allContacts();
     /* A new entity made from the portal (2026-10-30): where Bukku already
@@ -1196,15 +1267,6 @@ Deno.serve(async (req) => {
     const terms = p.payment_term ? await termsOf() : [];
     const next = merged(p, cur, code, termFor(terms, p.payment_term));
 
-    /* Link only (2026-10-19): the contact as Bukku holds it, linked and
-       nothing sent. */
-    if (action === 'link') {
-      if (!cur) return json({ error: 'bad-request' }, 400, origin);
-      const l = await db.rpc('bukku_link_only', { p_kind: kind, p_id: id, p_contact: cur.id, p_code: cur.contact_code || code });
-      if (l.error) return json({ error: 'needs-update' }, 200, origin);
-      if (l.data && l.data.error) return json({ error: l.data.error }, 200, origin);
-      return json({ ok: true, contact: cur.id, code: cur.contact_code || code, linked: true }, 200, origin);
-    }
     if (action === 'preview') {
       return json({ ok: true, code, rows: rowsOf(p, cur, next, terms) }, 200, origin);
     }

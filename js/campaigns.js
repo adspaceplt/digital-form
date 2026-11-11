@@ -920,13 +920,14 @@
       }
     }
     /* Bukku and the payments (2026-11-09): the creator a supplier in Bukku,
-       sent from the details approved last; each booking's bill read back. */
-    var approved = rows.some(function (x) { return x.status === 'approved'; });
-    if (approved) html += '<div class="readgroup" id="cpayBukku"></div>';
+       sent from the details approved last; each booking's bill read back.
+       With no details approved the band links them, nothing sent
+       (2026-11-12), so bills for their earlier job IDs are read. */
+    html += '<div class="readgroup" id="cpayBukku"></div>';
     html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
       '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></div><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
-    if (approved && window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
+    if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
     if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
     if (open) {
@@ -972,7 +973,7 @@
     var rowOf = function (j) {
       var b = j.bill, st;
       if (b) st = '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>';
-      else if (POSTED.indexOf(j.state) > -1) st = '<span class="chip-state is-warn">Not billed</span>';
+      else if (POSTED.indexOf(j.state) > -1) st = d.linked ? '<span class="chip-state is-warn">Not billed</span>' : '<span class="chip-state is-off">Not linked</span>';
       else st = '<span class="chip-state is-off">Not due</span>';
       var sub = [esc(j.campaign || '')];
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
@@ -996,7 +997,7 @@
       html += past.length ? past.map(function (e) {
         var b = e.bill;
         var st = b ? '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>'
-          : '<span class="chip-state is-warn">Not billed</span>';
+          : d.linked ? '<span class="chip-state is-warn">Not billed</span>' : '<span class="chip-state is-off">Not linked</span>';
         var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
         return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
           '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
