@@ -406,7 +406,7 @@
         shut: !narrowed && GRP.shut('creators', g[0], g[3], g[2].length === shown.length),
         table: function () {
           var table = GRP.table('svc-row cr-row',
-            ['Creator', 'Platforms', 'Campaigns', { text: 'Client rate', cls: 'svc-rate' }, 'Payment details', '']);
+            ['Creator', 'Platforms', 'Campaigns', { text: 'Client rate', cls: 'svc-rate' }, '']);
           GRP.more(table, g[2], 30, 'creators', rosterRow);
           return table;
         }
@@ -435,9 +435,15 @@
     });
     return out;
   }
+  /* Where a creator's payment details stand, after the name (2026-11-12,
+     the user: the column read Approved for good): approved is a green dot
+     alone, named on hover and to a screen reader; To review and Declined
+     keep their word; none submitted shows nothing. */
   function payChip(c) {
-    var w = PAY_STATE[(state.payStates || {})[c.id]];
-    return w ? '<span class="chip-state ' + w[1] + '">' + esc(w[0]) + '</span>' : '';
+    var st = (state.payStates || {})[c.id], w = PAY_STATE[st];
+    if (!w) return '';
+    if (st === 'approved') return '<span class="cr-paydot" role="img" aria-label="Payment details approved" title="Payment details approved"></span>';
+    return '<span class="chip-state cr-paystate ' + w[1] + '">' + esc(w[0]) + '</span>';
   }
   function rosterRow(c) {
     var row = document.createElement('button');
@@ -453,12 +459,11 @@
       .filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name cr-who"><b>' + esc(c.name) +
-        (off ? ' <span class="tone is-off">Inactive</span>' : '') + '</b>' +
+        (off ? ' <span class="tone is-off">Inactive</span>' : '') + payChip(c) + '</b>' +
         (c.creator_code ? '<small class="svc-sku">' + esc(c.creator_code) + '</small>' : '') + '</span>' +
       '<span class="cr-plats">' + (plats.length ? esc(plats.join(', ')) : '<span class="muted">—</span>') + '</span>' +
       '<span class="cr-record">' + recordCell(c) + '</span>' +
       '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate)) : '<span class="muted">On quote</span>') + '</span>' +
-      '<span class="cr-pay">' + (payChip(c) || '<span class="muted">—</span>') + '</span>' +
       '<span class="cr-line">' + line + '</span>' +
       '<span class="cr-go">' + CR_CHEV + '</span>';
     row.addEventListener('click', function () { openCrRec(c.id, 'overview', row); });
@@ -863,6 +868,51 @@
       paintPayDetails();
     }).catch(function (e) { if ($('cpayBody')) UI.failLine($('cpayBody'), 'The payment details', e.message, readPayDetails); });
   }
+  /* The team adds a creator's payment details (2026-11-12, the user: "so
+     our team member could add it. and straight approval"): the fields the
+     creator's page asks, checked by the same function, approved as saved
+     and read as Added by {name}. A number left blank keeps the one held. */
+  var PAY_BANKS = ['Maybank', 'CIMB', 'Hong Leong Bank', 'RHB', 'BSN', 'UOB', 'OCBC', 'AmBank', 'Bank Islam', 'Public Bank',
+    'Alliance Bank', 'Standard Chartered Bank', 'Touch N Go Digital', '[SG] DBS/POSB', '[SG] OCBC', '[SG] UOB', '[SG] CIMB',
+    '[SG] Maybank', '[SG] Bank of China'];
+  var PAY_HOW = [['MYR|bank', 'Bank transfer (MYR)'], ['MYR|duitnow', 'DuitNow (MYR)'], ['MYR|tng', 'Touch \u2019n Go eWallet (MYR)'],
+    ['SGD|bank', 'Bank transfer (SGD)'], ['SGD|paynow', 'PayNow (SGD)']];
+  var PAY_FIELD = { bill_kind: 'Billing as', id_no: 'the ID number', legal_name: 'the legal name', tin: 'the TIN', address: 'the billing address',
+    currency: 'the payment method', method: 'the payment method', bank: 'the bank', account: 'the account number', payee: 'the account holder',
+    email: 'the email address', whatsapp: 'the WhatsApp number' };
+  function addPayDetails(btn, held) {
+    var c = payFor;
+    if (!c) return;
+    var h = held || {};
+    var blank = held ? 'Leave blank to keep ending ' : '';
+    window.ADspaceConfirm.ask({ title: held ? 'Edit payment details' : 'Add payment details', go: 'Save and approve', wait: true, opener: btn,
+      body: 'Saved as approved and marked as added by you. No email goes to the creator.',
+      fields: [
+        { name: 'bill_kind', label: 'Billing as', choices: [['nric', 'Individual (NRIC)'], ['passport', 'Individual (Passport)'], ['brn', 'Company']], value: h.bill_kind || 'nric' },
+        { name: 'id_no', label: 'NRIC, Passport or Business Registration No.', value: h.id_no || '', required: !held, note: held && !h.id_no ? blank + h.id_end + '.' : '' },
+        { name: 'legal_name', label: 'Legal name', value: h.legal_name || '', required: true },
+        { name: 'tin', label: 'Tax Identification Number (TIN)', value: h.tin || '', required: false, note: 'Optional' },
+        { name: 'address', label: 'Billing address', value: h.address || '', rows: 2, required: !held || !h.address },
+        { name: 'how', label: 'Payment method', choices: PAY_HOW, value: h.currency ? h.currency + '|' + h.method : 'MYR|bank' },
+        { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, b]; })), value: h.bank || '' },
+        { name: 'account', label: 'Account no., DuitNow ID or PayNow ID', value: h.account || '', required: !held, note: held && !h.account ? blank + h.account_end + '.' : '' },
+        { name: 'payee', label: 'Account holder', value: h.payee || '', required: true },
+        { name: 'email', label: 'Email', value: h.email || '', required: true },
+        { name: 'whatsapp', label: 'WhatsApp', value: h.whatsapp || '', required: true }] }, function (v) {
+      var how = String(v.how || 'MYR|bank').split('|');
+      var vals = { bill_kind: v.bill_kind, id_no: v.id_no, legal_name: v.legal_name, tin: v.tin, address: v.address,
+        currency: how[0], method: how[1], bank: how[1] === 'bank' ? v.bank : '', account: v.account, payee: v.payee, email: v.email, whatsapp: v.whatsapp };
+      return db.rpc('creator_pay_add', { p_creator: c.id, p_values: vals }).then(function (r) {
+        var d = r.data || {};
+        if (r.error) return /could not find|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
+        if (d.error === 'bad') return 'Check ' + (PAY_FIELD[d.field] || d.field) + '.';
+        if (d.error) return d.error === 'denied' ? 'You do not have permission to add payment details. Please ask an admin.' : PAY_SAID[d.error] || d.error;
+        readPayDetails();
+        if (window.ADspaceCreators && window.ADspaceCreators.reloadStates) window.ADspaceCreators.reloadStates();
+        return '';
+      });
+    });
+  }
   /* Where the set stands on the finance team's sheet (2026-11-09). */
   function sheetFact(req) {
     var x = ((payRows && payRows.sheet) || []).filter(function (y) { return y.request === req; })[0];
@@ -878,14 +928,17 @@
     var fact = function (k, v) { return v ? '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + '</dd></div>' : ''; };
     var html = '';
     var open = cur && cur.status === 'pending' && d.decide;
-    if (!cur) html = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details</h4></div><p class="emptyline">Not submitted.</p></section>';
+    /* The team adds details a creator sent another way (2026-11-12), approved
+       as they are saved: Add details while none stands, else Edit. */
+    var addBtn = d.decide && !open ? '<button class="btn btn-sm" type="button" id="cpayAdd">' + (cur && cur.status !== 'declined' ? 'Edit' : 'Add details') + '</button>' : '';
+    if (!cur) html = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details</h4>' + addBtn + '</div><p class="emptyline">Not submitted.</p></section>';
     else {
       html += '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Payment details · ' + esc(cur.ref) + '</h4>' +
         (open ? '<span class="crr-acts"><button class="btn btn-sm" type="button" id="cpayDecline">Decline</button>' +
-          '<button class="btn btn-sm btn-primary" type="button" id="cpayApprove">Approve</button></span>' : '') + '</div>' +
+          '<button class="btn btn-sm btn-primary" type="button" id="cpayApprove">Approve</button></span>' : addBtn) + '</div>' +
         '<dl class="ovfacts">' +
           '<div><dt>Status</dt><dd>' + chip(cur.status) + '</dd></div>' +
-          fact('Submitted', day(cur.created_at)) +
+          fact(cur.added_by ? 'Added' : 'Submitted', day(cur.created_at)) +
           (cur.decided_at ? fact(cur.status === 'declined' ? 'Declined' : 'Approved', day(cur.decided_at) + (cur.decided_by ? ' by ' + cur.decided_by : '')) : '') +
           fact('Reason', cur.status === 'declined' ? cur.note : '') +
           fact('Billing as', PAY_KIND[cur.bill_kind]) +
@@ -894,7 +947,7 @@
           fact('TIN', cur.tin) +
           (cur.address ? fact('Billing address', cur.address) :
             '<div><dt>Billing address</dt><dd>Not set. The creator is asked for it on their creator page.</dd></div>') +
-          fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : '') +
+          fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : cur.added_by ? 'Added by ' + cur.added_by : '') +
           fact('Currency', cur.currency) +
           fact('Method', cur.method_word) +
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
@@ -929,6 +982,7 @@
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
+    if ($('cpayAdd')) $('cpayAdd').addEventListener('click', function () { addPayDetails($('cpayAdd'), cur && cur.status !== 'declined' ? cur : null); });
     if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
     if (open) {
       $('cpayApprove').addEventListener('click', approvePay);

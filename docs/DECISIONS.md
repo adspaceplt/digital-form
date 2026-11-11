@@ -9658,3 +9658,31 @@ pasted again by hand.
   five tones; the company's line and the in-card notes stay #515151. Below
   4.5:1 by the user's choice, as small print. The two Supabase templates,
   the console's email previews and `mailfn` moved with it.
+
+### 2026-11-12 · A creator linked to Bukku through their earlier job's bill
+The user added KJ3105 to Gaby Low's Payment tab and it read Not billed;
+the bill (AB2608035, reference AP01/KJ3105) sits under her Bukku contact,
+Low Chee Guan. The reference format was not the cause: matching already
+reads letters and digits anywhere in the reference. Bills are read only
+for a creator linked to Bukku, and Link to Bukku asked for approved
+payment details and matched by name, so a creator known by a handle, with
+no details in the portal yet, could never be linked. Now the band offers
+Link to Bukku whatever the details, the sheet offers the contacts holding a
+bill for any of the creator's earlier job IDs first (nothing sent, never a
+new contact), the link reads the bills at once, the night reads a creator
+an earlier job awaits, and a creator not linked reads Not linked rather
+than Not billed. Found by reading the live rows: one earlier job, no link,
+no bills read.
+
+### 2026-11-12 · Payment details added by the team; the Creators List's green dot
+The user asked that a colleague can add a creator's payment details in the
+console, approved at once and marked as added internally: Add details
+(else Edit) on the Payment pane, the creator page's fields checked by
+`creator_pay_check`, saved approved by the colleague (`entered_by`, read
+Source Added by {name}), no email to the creator since they did not
+submit it, the payments sheet taking it as any approval. The Creators
+List's Payment details column read Approved on almost every row for good
+and took a column; the user chose a green dot after the name for approved
+(it tells approved apart from none submitted), To review and Declined
+keeping their word, the column gone. The dot alone is named for a screen
+reader and on hover, so no state is carried by colour alone.

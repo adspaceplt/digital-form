@@ -571,7 +571,7 @@
     industries_list: '', industry_save: 'p_was p_name p_name_zh', industry_delete: 'p_name',
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
-    creator_pay_decide: 'p_id p_ok p_note', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
+    creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
@@ -9751,7 +9751,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           cpOut = { ok: true, whole: cpW, decide: opsGranted('campaigns.pay', 'work'),
             rows: cpReqs.filter(function (r) { return r.creator_id === cpA.p_creator; }).sort(function (a, b) { return b.seq - a.seq; }).map(function (r) {
               var j = cpJson(r, cpW), m = DB.team_members.filter(function (x) { return x.id === r.decided_by; })[0];
-              j.decided_by = m ? m.name : null; return j; }),
+              var ad = r.entered_by ? DB.team_members.filter(function (x) { return x.id === r.entered_by; })[0] : null;
+              j.decided_by = m ? m.name : null; j.added_by = ad ? ad.name : null; return j; }),
             emails: (DB.creator_emails || []).filter(function (e) { return e.creator_id === cpA.p_creator; }).map(function (e) {
               return { id: e.id, purpose: e.purpose, to_email: e.to_email, status: e.status, created_at: e.created_at }; }).reverse() };
         }
@@ -9762,6 +9763,42 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var was = cpOut[r.creator_id];
           cpOut[r.creator_id] = was === 'pending' || r.status === 'pending' ? 'pending' : was === 'approved' || r.status === 'approved' ? 'approved' : 'declined';
         });
+      } else if (name === 'creator_pay_add') {
+
+        var caC = DB.creators.filter(function (x) { return x.id === cpA.p_creator; })[0];
+        if (!opsGranted('campaigns.pay', 'work')) cpOut = { error: 'denied' };
+        else if (!caC) cpOut = { error: 'not-found' };
+        else {
+          var caIn = Object.assign({}, cpA.p_values || {}, { confirm: 'true' });
+          var caHeld = cpReqs.filter(function (r) { return r.creator_id === caC.id && (r.status === 'approved' || r.status === 'pending'); }).sort(function (a, b) { return b.seq - a.seq; })[0];
+          if (caHeld) {
+            if (!String(caIn.id_no || '').trim() && caIn.bill_kind === caHeld.bill_kind) caIn.id_no = caHeld.id_no;
+            if (!String(caIn.account || '').trim() && caIn.method === caHeld.method && String(caIn.currency || '').toUpperCase() === caHeld.currency
+                && String(caIn.bank || '') === String(caHeld.bank || '')) caIn.account = caHeld.account;
+            if (!String(caIn.address || '').trim() && caHeld.address) caIn.address = caHeld.address;
+          }
+          var caK = cpCheck(caIn);
+          if (caK.field) cpOut = { error: 'bad', field: caK.field };
+          else {
+            cpReqs.forEach(function (r) { if (r.creator_id === caC.id && r.status === 'pending') r.status = 'withdrawn'; });
+            var caSeq = cpReqs.filter(function (r) { return r.creator_id === caC.id; }).reduce(function (m, r) { return Math.max(m, r.seq); }, 0) + 1;
+            var caPat = idFormats().creator.pattern || '{creator}/R{nnn}', caRun = (caPat.match(/\{(n+)\}/) || [])[1];
+            var caRef = caPat.replace('{creator}', caC.creator_code || '');
+            caRef = caRun ? caRef.replace('{' + caRun + '}', (new Array(caRun.length + 1).join('0') + caSeq).slice(-Math.max(caRun.length, String(caSeq).length))) : caRef + caSeq;
+            cpReqs.forEach(function (r) { if (r.creator_id === caC.id && r.status === 'approved') r.status = 'replaced'; });
+            var caNow = new Date().toISOString();
+            var caNew = Object.assign({ id: nid('cp'), creator_id: caC.id, seq: caSeq, ref: caRef, status: 'approved', created_at: caNow, decided_at: caNow,
+              decided_by: opsMe().id, entered_by: opsMe().id, source: 'creator' }, caK.values);
+            cpReqs.push(caNew);
+            logAct('creator.updated', caC.name, (caC.creator_code ? caC.creator_code + ' · ' : '') + 'Payment details added by the team and approved · ' + caRef + ' · ' +
+              cpMethod(caNew.method, caNew.bank) + ' ending ' + caNew.account.slice(-4));
+            if (!DB.creator_sheet_settings || DB.creator_sheet_settings.on_send) {
+              DB.creator_sheet_rows = DB.creator_sheet_rows || [];
+              DB.creator_sheet_rows.push({ id: nid('cs'), request_id: caNew.id, status: 'queued', created_at: caNow });
+            }
+            cpOut = { ok: true, ref: caRef };
+          }
+        }
       } else if (name === 'creator_pay_decide') {
         var cpD = cpReqs.filter(function (r) { return r.id === cpA.p_id; })[0], cpNote = String(cpA.p_note || '').trim();
         if (!opsGranted('campaigns.pay', 'work')) cpOut = { error: 'denied' };
