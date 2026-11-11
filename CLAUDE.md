@@ -7787,6 +7787,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   stop the device's notifications first.
 
 ### Sign-in, security, secrets
+- Send invitation always sends one (2026-11-11, the user: two went
+  nowhere): Supabase invites only an address with no login, so for one that
+  has a login `invite-member` sends the same invitation itself through
+  `_shared/mail.ts` (from the sign-in emails' sender, a one-time sign-in
+  link from `generateLink`), and a page says Invitation sent only on
+  `sent`, never on `already`.
 - An active colleague's first sign-in makes their login (2026-11-11, the
   user: one added with no invitation read Active and was sent no code): the
   console asks `portal-login` before the code, which makes a login for a

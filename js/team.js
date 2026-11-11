@@ -1994,7 +1994,7 @@
               return;
             }
             log('team.invited', name, email);
-            msg('teamMsg', d.already
+            msg('teamMsg', d.sent === false
               ? name + ' added. A login already exists.'
               : name + ' added. Invitation sent to ' + email + '.',
               'ok');
@@ -2018,7 +2018,7 @@
           var d = r.data || {};
           if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
           log('team.invited', m.name, m.email);
-          msg('teamMsg', d.already ? m.name + ' already has a login.'
+          msg('teamMsg', d.sent === false ? m.name + ' already has a login.'
                                    : 'Invitation sent to ' + m.email + '.', 'ok');
         }).catch(function () { msg('teamMsg', 'Could not send. Please try again.', 'err'); });
     });

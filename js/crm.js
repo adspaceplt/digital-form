@@ -4939,8 +4939,11 @@
         if (res.error) { msg('crmWorkMsg', res.why, 'err'); return; }
         stampLogin(ct);
         if (notify) log('contact.portal_invite', state.client.name + ' · ' + ct.name, ct.email);
-        msg('crmWorkMsg', !notify ? 'Login created.'
-          : res.data.already ? 'A login already exists. Sign-in link sent to ' + ct.email + '.'
+        /* An address that already has a login is sent the invitation by
+           the portal itself (invite-member, 2026-11-11), so `sent` says
+           what happened, never `already`. */
+        msg('crmWorkMsg', !notify ? (res.data.already ? 'A login already exists.' : 'Login created.')
+          : res.data.sent === false ? 'A login already exists.'
           : 'Invitation sent to ' + ct.email + '.', 'ok');
       });
     }
@@ -4974,7 +4977,7 @@
         .then(function (res) {
           if (res.error) { msg('crmWorkMsg', 'Access enabled. Invitation not sent: ' + res.why, 'warn'); return; }
           stampLogin(ct);
-          msg('crmWorkMsg', res.data.already ? 'Access enabled. A login already exists.'
+          msg('crmWorkMsg', res.data.sent === false ? 'Access enabled. A login already exists.'
             : 'Access enabled. Invitation sent to ' + ct.email + '.', 'ok');
         });
     });
