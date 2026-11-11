@@ -46,7 +46,7 @@ function invitation(kind: string, greeting: string, link: string) {
     (client ? 'Open Client Portal' : 'Sign in') + '</a></td></tr></table>';
   const dear = 'Dear ' + greeting + ',';
   const body = client
-    ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services, documents, reports and meetings in one place.',
+    ? [dear, 'Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services and resources with ADspace all in one place.',
        'Please use the button below to open your Client Portal.', '{invoices}',
        'After this first visit, you may sign in at any time with a code sent to this email address. Should you have any questions, please contact your ADspace account manager.',
        'Yours sincerely,\nADspace']

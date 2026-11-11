@@ -9643,6 +9643,7 @@ every client letter greets with the salutation (Dear Ms Jane Doe), and a
 contact with no name read "Dear ,": `invite-member` now sends `greeting`
 (salutation and whole name said once, a colleague's whole name, else Sir or
 Madam); the client version's tab title read the colleague's; "meetings with
-ADspace" repeated the name the sentence before gave; "Thereafter" hung off a
+ADspace" is now the user's own sentence ("your services and resources with ADspace
+all in one place", 2026-11-11); "Thereafter" hung off a
 button sentence, now "After this first visit". The dashboard template is
 pasted again by hand.
