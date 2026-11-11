@@ -2420,10 +2420,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     Tuan, Puan, Encik, Cik, or None), shown before the name on the row and
     filed from and to. `contact_greeting(salutation, name)` greets with the
     salutation and the whole name (the salutation said once), else the whole
-    name where it opens on a salutation (never Tan, a surname too; Tan Sri,
-    Puan Sri, Dato' Sri, Datin Sri and Datuk Sri kept whole), else the
-    name's first word
-    (`2026-10-15-whatsapp-greeting-and-counts.sql`). A name after its
+    name, never its first word (a creator and a colleague alike; 2026-11-11,
+    "Kai Sin but Kai only"; `2026-11-11-greeting-by-whole-name.sql`). A name after its
     salutation says one salutation: one the name opens on gives way to the
     one set (`ADspaceWords.person` on every page, `contact_named` in SQL,
     `2026-10-29-salutation-said-once.sql`; 2026-10-29: Mrs Ms Agnes Ang).
