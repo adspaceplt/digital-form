@@ -5796,15 +5796,17 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
 }
 .crpays #crPaysList > .crpay-row:first-child { padding-top: 0; }
+/* A booking's payment, one line (2026-11-12): the campaign (cut at its
+   end) and its Job reference in the mute ink, the state at the right edge. */
 .crpay-row {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px;
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
   padding: 10px 0; border-top: 1px solid var(--line-soft);
 }
 .crpay-row:first-child { border-top: 0; }
-.crpay-what { font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.crpay-amt { font-size: 14px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.crpay-sub { grid-column: 1; font-size: 12.5px; color: var(--ink-mute); }
-.crpay-st { justify-self: end; align-self: start; }
+.crpay-what { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 14px; }
+.crpay-name { min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crpay-job { flex: none; font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+.crpay-st { justify-self: end; white-space: nowrap; }
 .crpays-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .crpays-note[hidden] { display: none; }
 /* The e-Invoice section of the payment details form: one line of fact above the tick. */
@@ -8807,7 +8809,6 @@ body.ncpage { background: var(--nc-ground); }
 body:not(:has(> .topbar)) .maint-cover { z-index: 60; padding-top: 24px; }
 .maint-cover:focus { outline: none; }
 body.is-maint { overflow: hidden; }
-.maint-cover .maint-back { margin-top: 8px; }
 .maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }
 .maint-cover .maint-out { margin-top: 20px; }
 .maint-cover .maint-chat { margin-top: 20px; }

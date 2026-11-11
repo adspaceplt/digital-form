@@ -9687,6 +9687,43 @@ and took a column; the user chose a green dot after the name for approved
 keeping their word, the column gone. The dot alone is named for a screen
 reader and on hover, so no state is carried by colour alone.
 
+### 2026-11-12 · The notice with an end time says it once
+- The user's sweep: a page under Upgrade in progress read "The portal will
+  be available again shortly." over "Expected back by 12 Nov 2026,
+  8:00am.": "shortly" beside a time hours away, the same thing said twice,
+  and "back" a chat word. With an end set the notice now reads one line,
+  The portal will be available again by {when}. (系统将于{when}前恢复使用。),
+  in place of both lines, upgrade and paused alike; with none it keeps its
+  own line. `upgrade` holds the end as the one line with no "shortly".
+
+- 2026-11-12, copy review of #1006, #1007 and #1021 to #1033 (the 110
+  strings no reader had checked). A second reader found six breaks, all in
+  the console: two lines in the present tense for a step still to come (a
+  creator set inactive will no longer be offered; a missing billing address
+  will be asked for), a refusal naming an ID number where the field names
+  NRIC, Passport or Business Registration No., "login" said to colleagues on
+  Enable access, Add member and Send invitation (now "can already sign in",
+  and "Invitation not sent" where one was asked for), a setup fault naming
+  Supabase and a function (now "Invitations are not set up yet. Please
+  contact an admin."), and the sign-in code field named three ways (the
+  client portal's now Sign-in code, My records' lock Code from the email).
+  "A login already exists", "Login created" and "already has a login" join
+  `tests/words.js` RETIRED. The creator page's e-Invoice paragraph and its
+  中文 passed.
+
+- 2026-11-12 · A creator's payment reads Bukku's day and no amount (the
+  user: "could you not show the price … anyone who holds the link would be
+  able to see"; "the paid date is not even accurate, it should follow
+  Bukku's bill payment voucher not today's date"). A paid bill took the
+  day the portal first read it, and the creator's link sent each bill's
+  number and amount. `bukku-sync` now reads a paid bill alone once
+  (`linked_items`, Bukku's purchase API) and keeps its latest payment's
+  date as `creator_bills.paid_on`; `creator_pay_form` answers a state and
+  that day only. The row is one line: the campaign and Job reference,
+  then Paid {day}, Pending payment or Not due. The same day the user
+  removed the Jotform pages AP02, AP03, AP Dale, 3P form, e-Invoice info,
+  interview quiz and sales programme, keeping AP01 and ACCV.
+
 ### 2026-11-12 — Audit fixes of 11 November: automatic sends, task moves, creator details
 The audit of #987 to #1031 (2026-11-11) found the automatic-sends switch held
 only at the queue, so a message queued before the switch moved, or put back
@@ -9697,8 +9734,9 @@ into work in a month not confirmed; Introduce representative ignored Do not
 contact; a short email on a creator's link read whole; two earlier job IDs
 could be taken at once; restoring a link taken meanwhile said the database's
 words; one company's invoice marked another brand's month; and a Timeline
-stage was removed unasked, lost its reason for good and was held on the page alone.
-The second read added a task left at Approved when its approval was taken
-back, and Undo of Add changes leaving the pushed due date. The user approved
-each fix ("ok"). One migration
-(`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove, asked first.
+stage was removed unasked, lost its reason for good and was held on the page
+alone. The second read added a task left at Approved when its approval was
+taken back, and Undo of Add changes leaving the pushed due date. The user
+approved each fix ("ok"). One migration
+(`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove,
+asked first.
