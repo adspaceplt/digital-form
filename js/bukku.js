@@ -21,6 +21,11 @@
  *   ADspaceBukku.configLine()                 — Settings' Bukku value line
  */
 (function () {
+  /* Bukku's own logo on every Bukku band (the user, 2026-11-11), a light
+     copy for the dark theme; the word stays for a screen reader. Never on a
+     page or an email a client reads. */
+  var MARK = '<b class="bk-t"><img class="bk-logo" src="/img/bukku-logo.png?v=20261111" alt="" width="45" height="16">' +
+    '<img class="bk-logo is-dark" src="/img/bukku-logo-dark.png?v=20261111" alt="" width="45" height="16"><span class="sr">Bukku</span></b>';
   var API = window.ADspaceAPI;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
@@ -131,7 +136,7 @@
         if (c && window.ADspaceCopy) window.ADspaceCopy.to(c, c.getAttribute('data-code'));
       });
     }
-    host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b><span class="muted">Loading.</span></div>';
+    host.innerHTML = '<div class="bk-l">' + MARK + '<span class="muted">Loading.</span></div>';
     /* What the record lacks is read up front: a record that cannot be sent
        draws no Send, and says what is missing in one line (2026-10-20,
        BKU-1). */
@@ -140,7 +145,7 @@
       var d = both[0], pre = both[1] || {};
       if (d.error === 'denied') { host.hidden = true; return; }
       host.hidden = false;
-      if (d.error) { host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b></div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
+      if (d.error) { host.innerHTML = '<div class="bk-l">' + MARK + '</div><p class="msg err bk-sub">' + esc(said(d)) + '</p>'; return; }
       /* Billing from Bukku (2026-10-30): a linked client's or entity's
          billing is Bukku's, read in once a visit (Refresh reads again). */
       if (d.contact_id && holds(kind)) { readBand(d, work); return; }
@@ -162,7 +167,7 @@
       var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
-      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + (linked ? codeOf(d.code || String(d.contact_id)) : '') + state + '</div>' +
+      host.innerHTML = '<div class="bk-l">' + MARK + '' + (linked ? codeOf(d.code || String(d.contact_id)) : '') + state + '</div>' +
         (via ? '<p class="bk-sub">Linked through ' + esc(via) + '</p>'
           : linked ? '<p class="bk-sub">Last sent ' + esc(day(d.sent_at)) + (d.sent_by ? ' by ' + esc(d.sent_by) : '') + '</p>' : '') +
         (acts ? '<div class="bk-acts">' + acts + '</div>' : '') +
@@ -188,7 +193,7 @@
         r = READ[key] = { reading: true, promise: pr };
       }
       opts.reread = false;
-      host.innerHTML = '<div class="bk-l"><b class="bk-t">Bukku</b>' + codeOf(d.code || String(d.contact_id)) +
+      host.innerHTML = '<div class="bk-l">' + MARK + '' + codeOf(d.code || String(d.contact_id)) +
         '<span class="muted">Reading Bukku.</span></div>';
       r.promise.then(function (x) {
         if (!host.isConnected) return;
@@ -204,7 +209,7 @@
       var via = d.via ? '<p class="bk-sub">Linked through ' + esc(d.via) + '</p>' : '';
       var menu = work && !d.via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '';
-      var head = '<div class="bk-l"><b class="bk-t">Bukku</b>' + code;
+      var head = '<div class="bk-l">' + MARK + '' + code;
       var when = function (iso) { return iso ? day(iso) + ', ' + (window.ADspaceClock ? window.ADspaceClock.clock(iso) : '') : ''; };
       if (r.error) {
         var copy = d.read_at ? ' Showing the copy read ' + when(d.read_at) + '.' : '';
@@ -486,6 +491,6 @@
   /* Bukku's tax codes (2026-10-22), for the Settings page's Tax codes. */
   function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
 
-  window.ADspaceBukku = { group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes, said: said,
+  window.ADspaceBukku = { mark: MARK, group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes, said: said,
     held: held, state: state, save: save, fresh: fresh, said: said };
 })();

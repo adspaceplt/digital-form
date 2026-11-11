@@ -9517,3 +9517,10 @@ in the form (ADC0001, 0010, 0011, 0012, 0013) and the duplicates inside
 the form itself (Ang Yee Tian under two ID numbers; the user chose the
 passport ending 307H).
 
+### 2026-11-11 — Bukku's logo on its bands
+The user asked for Bukku's logo wherever the console names Bukku. The logo
+is kept in the repo (from bukku.my/brand), drawn 16px high on every Bukku
+band (a client, a billing entity, a supplier, a creator) and the Settings
+row; its navy reads as nothing on the dark theme, so a copy with the navy
+made light stands in there. Client pages and emails keep no Bukku branding.
+
