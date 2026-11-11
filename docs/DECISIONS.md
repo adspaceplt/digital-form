@@ -9698,3 +9698,12 @@ killed the first email's; a team invitation's greeting was the name the
 sender typed; and portal-login's equal wait was sized before the colleague
 path made it the slowest. The user approved each ("ok"; 14: "admin can
 overwrite").
+
+### 2026-11-12 — Creator page edits, the Creators List refresh and the email preview's grey
+The audit of the parts first left unread (2026-11-11) found Notes on a
+creator's page edited in a one-line field that turned line breaks into
+spaces; Add details calling a refresh nobody defined, so the Creators List,
+its filter and the rail kept the old standing; a pen left unchanged showing
+the raw figure; and the console's email previews drawing the fine print in
+#a1a1a1, 2.6:1 on white. The user approved each (2026-11-12, "ok"); the
+emails keep #a1a1a1, the previews read #767676.

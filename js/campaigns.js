@@ -643,10 +643,27 @@
       var k = pen.getAttribute('data-pen'), val = host.querySelector('.mval[data-k="' + k + '"]');
       pen.addEventListener('click', function () {
         var raw = c[k] == null ? '' : String(c[k]);
+        var label = pen.getAttribute('aria-label').replace(/^Edit /, '');
+        /* Notes keep their lines: a box of lines in a question, never the
+           one-line field, which turned a break into a space (audit
+           2026-11-11). */
+        if (k === 'notes') {
+          window.ADspaceConfirm.ask({ title: 'Notes', go: 'Save',
+            field: { label: 'Notes', rows: 4, value: raw, required: false } }, function (v) {
+            var f = { notes: String(v == null ? '' : v).trim() || null };
+            if ((c.notes || null) === f.notes) return;
+            patchCreator(c, f, function (ok) { if (!ok) paneCrOverview(c, host); });
+          });
+          return;
+        }
+        var shown = val.innerHTML;
         val.textContent = raw;
         window.ADspaceAsk.rename(val, pen, {
           value: raw, type: k === 'client_rate' ? 'number' : 'text',
-          label: pen.getAttribute('aria-label').replace(/^Edit /, ''),
+          label: label, saveLabel: 'Save ' + label,
+          /* Left as it was (Escape, or Enter on the same value), the value
+             reads as drawn again, never the raw figure. */
+          onClose: function () { if (val.isConnected && val.textContent === raw) val.innerHTML = shown; },
           allowEmpty: k !== 'name',
           check: function (v) {
             v = String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
@@ -666,6 +683,16 @@
           }
         });
       });
+    });
+  }
+  /* Every creator's payment details standing, read again after a change. */
+  function reloadPayStates() {
+    db.rpc('creator_pay_states').then(function (p) {
+      if (p.error) return;
+      state.payStates = p.data || {};
+      paintRoster();
+      var c = crRec.id && crOf(crRec.id);
+      if (c) paintCrRail(c);
     });
   }
   /* One value of a creator saved alone, filed from and to, put back on a
@@ -909,7 +936,9 @@
         if (d.error === 'bad') return PAY_FIELD[d.field] || 'Check the details entered.';
         if (d.error) return d.error === 'denied' ? 'You do not have permission to add payment details. Please ask an admin.' : PAY_SAID[d.error] || d.error;
         readPayDetails();
-        if (window.ADspaceCreators && window.ADspaceCreators.reloadStates) window.ADspaceCreators.reloadStates();
+        /* The list, its filter and the page's rail read the new standing
+           (audit 2026-11-11: it called a function nobody defined). */
+        reloadPayStates();
         return '';
       });
     });
@@ -1158,13 +1187,7 @@
       }
       readPayDetails();
       payJobs = null;
-      db.rpc('creator_pay_states').then(function (p) {
-        if (p.error) return;
-        state.payStates = p.data || {};
-        paintRoster();
-        var c = crRec.id && crOf(crRec.id);
-        if (c) paintCrRail(c);
-      });
+      reloadPayStates();
       return '';
     });
   }

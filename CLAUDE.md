@@ -3994,7 +3994,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the name over Creator ID · platforms, Active or Inactive, one ⋯ of Reset
     link, Set inactive or Set active with Undo where it happened, Delete),
     the view strip and a pane: Overview (Details: Creator ID, then Name,
-    Client rate, WhatsApp and Notes each changed where it is read, its pen,
+    Client rate, WhatsApp and Notes each changed where it is read, its pen
+    (Notes in a box of lines, keeping their breaks),
     filed `creator.updated` from and to; Profiles: each link a `.plink`
     opening the profile, Edit links opening the creator sheet on its links
     alone (`#addCreatorBox.is-links`), Link history a fold with Restore;

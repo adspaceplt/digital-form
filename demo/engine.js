@@ -5556,6 +5556,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsAllowed('ops', 'work') || !opsAllowed('review', 'view')) return { error: 'denied' };
       t = opsTask(args.p_task);
       if (!t) return { error: 'not-found' };
+      if (!(scopeTaskMine(t) || scopeSeen(t.client_id, 'view'))) return { error: 'denied' };
       if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
       var lp = (DB.posts || []).filter(function (q) { return q.id === args.p_post; })[0];
       if (!lp) return { error: 'record-not-found' };
@@ -5582,6 +5583,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsAllowed('ops', 'work') || !opsAllowed('scripts', 'view')) return { error: 'denied' };
       t = opsTask(args.p_task);
       if (!t) return { error: 'not-found' };
+      if (!(scopeTaskMine(t) || scopeSeen(t.client_id, 'view'))) return { error: 'denied' };
       if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
       var ls = (DB.video_scripts || []).filter(function (x) { return x.id === args.p_script; })[0];
       if (!ls) return { error: 'record-not-found' };
@@ -13511,7 +13513,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!haDoc) return { error: 'not-found' };
           if (name === 'handbook_acks') {
             return { ok: true, version: haDoc.current_version || 0, people: DB.team_members.filter(function (m) {
-              return m.active !== false && !m.removed_at && !haAdm(m);
+              return m.active === true && !m.removed_at && !haAdm(m);
             }).map(function (m) {
               var r = haRead(m.id, haDoc) || {};
               return { name: m.name, opened_at: r.opened_at || null, acked_at: r.acked_at || null };
