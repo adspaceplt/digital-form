@@ -306,7 +306,7 @@
       box.hidden = false;
       box.innerHTML = '<div class="hbo-hero"><span class="hbo-mark">' + BOOK + '</span>' +
         '<h2 class="hbo-title">Unable to load</h2>' +
-        '<p class="hbo-line">The Handbook files to read could not be loaded. Please try again.</p>' +
+        '<p class="hbo-line">The required Handbook files could not be loaded.</p>' +
         '<button class="btn btn-primary" id="hbGateRetry" type="button">Try again</button></div>';
       $('hbGateRetry').addEventListener('click', function (e) {
         var b = e.currentTarget; b.disabled = true;
