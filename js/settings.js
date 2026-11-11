@@ -308,7 +308,7 @@
       biz && { id: 'tax', name: 'Tax and terms', kind: 'edit',
         meta: num('sst_pct') == null ? '' : parts(['SST ' + num('sst_pct') + '%'].concat(num('quote_valid_days') == null ? [] : ['Quotation ' + plural(num('quote_valid_days'), 'day', 'days')])) },
       biz && { id: 'taxcodes', name: 'Tax codes', kind: 'open', meta: line('taxcodes'), open: openTax },
-      biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', kind: 'edit', meta: line('bukku'),
+      biz && W.ADspaceBukku && { id: 'bukku', name: 'Bukku', mark: W.ADspaceBukku.mark, kind: 'edit', meta: line('bukku'),
         open: function (btn) { W.ADspaceBukku.openConfig(btn, rowSay('bukku')); } }]]]);
     add('ai', 'AI', 'ai', [['', [
       may('reports.ai') && { id: 'aiuse', name: 'AI usage and limits', kind: 'open', meta: line('aiuse'),
@@ -393,7 +393,7 @@
         ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Edit ' + esc(r.name) + '">' + PEN + 'Edit</button>'
         : '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Open ' + esc(r.name) + '">Open' + CHEV + '</button>';
     return '<div class="stg-row" data-row="' + r.id + '">' +
-      '<div class="stg-what"><p class="stg-name">' + esc(r.name) + '</p>' +
+      '<div class="stg-what"><p class="stg-name">' + (r.mark || esc(r.name)) + '</p>' +
         (r.meta ? '<p class="stg-meta">' + esc(r.meta) + '</p>' : '') +
         (next ? '<p class="stg-meta stg-next">' + esc(next) + '</p>' : '') +
         (said && said.row === r.id ? '<p class="msg stg-said' + (said.tone ? ' ' + said.tone : '') + '" role="status">' + esc(said.text) + '</p>' : '') + '</div>' +
