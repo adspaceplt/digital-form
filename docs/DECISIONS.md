@@ -9647,3 +9647,14 @@ ADspace" is now the user's own sentence ("your services and resources with ADspa
 all in one place", 2026-11-11); "Thereafter" hung off a
 button sentence, now "After this first visit". The dashboard template is
 pasted again by hand.
+
+### 2026-11-11 · Email fine print very light
+- The user: the confidentiality disclaimer "should be very light text,
+  instead of same font color as text". It had been lighter (#a19d97,
+  2026-10-28) until the brand palette of 2026-11-09 took it to the dark
+  grey #515151 with everything else. The fine print (the confidentiality
+  line, a reminder's legal note and disclaimer, all drawn by `layout()`'s
+  `fine`) now takes the brand's light grey #a1a1a1, one of the namecard's
+  five tones; the company's line and the in-card notes stay #515151. Below
+  4.5:1 by the user's choice, as small print. The two Supabase templates,
+  the console's email previews and `mailfn` moved with it.

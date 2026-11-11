@@ -17,8 +17,8 @@ phone), the words in 16px in full ink, a button at least 116px wide and
 the confidentiality line under the card. Every gap is on the design
 system's spacing scale (4 to 32), the card's words and the lines under it
 share one left edge, and every grey holds 4.5:1 or more but the
-confidentiality line, the footer's lightest grey (`#515151`, as in
-`_shared/mail.ts`). A change to that layout is made in both places.
+confidentiality line, which is fine print in the brand's light grey
+(`#a1a1a1`, as in `_shared/mail.ts`; the user, 2026-11-11). A change to that layout is made in both places.
 
 | Template | Sent when |
 |---|---|
@@ -58,7 +58,7 @@ Body (HTML):
 <tr><td class="foot" style="padding:24px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#515151;">
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
 (60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>
-<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#515151;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
+<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
 </td></tr></table></td></tr></table></body></html>
 ```
 
@@ -102,6 +102,6 @@ Body (HTML):
 <tr><td class="foot" style="padding:24px 32px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:1.6;color:#515151;">
 ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<br>81100 Johor Bahru, Johor, Malaysia<br>
 (60)18 762 5233 · <a href="https://adspacestudios.com" style="color:#515151;text-decoration:none;">adspacestudios.com</a>
-<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#515151;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
+<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">This email and any attachments are confidential and may be privileged. If you are not the intended recipient, please do not disclose, copy or rely on it; notify the sender and delete it from your system.</p>
 </td></tr></table></td></tr></table></body></html>
 ```

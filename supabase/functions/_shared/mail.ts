@@ -10,9 +10,10 @@
  *     server built, never a page's) in place of a paragraph reading
  *     `{invoices}`, then `foot` under a hairline; under the card the
  *     company's line and the fine print (`fine`, else the standing
- *     confidentiality line), in the dark grey. Text is #1a1a1a, never
- *     true black, the rest the palette's #515151, #f5f5f5 and #ffffff (the
- *     user, 2026-11-09); the address breaks before its postcode, and Apple
+ *     confidentiality line) in the palette's light grey #a1a1a1, very light
+ *     as fine print reads (the user, 2026-11-11), the company's line in the
+ *     dark grey. Text is #1a1a1a, never true black, the rest the palette's
+ *     #515151, #f5f5f5 and #ffffff (the user, 2026-11-09); the address breaks before its postcode, and Apple
  *     Mail's number and address detection is kept from recolouring it.
  *   resend(msg, key)
  *     posts one email with an idempotency key; answers sent with Resend's
@@ -39,7 +40,7 @@ export function layout(o: { heading: string; body: string; foot?: string; prehea
   const ps = paras(body).map((p) => (o.block && BLOCK.test(p)) ? o.block :
     '<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">' + p.split('\n').map(esc).join('<br>') + '</p>').join('');
   const fine = (o.fine && o.fine.filter(Boolean).length ? o.fine.filter(Boolean) : [CONFIDENTIAL])
-    .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#515151;">' + esc(t) + '</p>').join('');
+    .map((t) => '<p style="margin:12px 0 0;font-size:11px;line-height:1.5;color:#a1a1a1;">' + esc(t) + '</p>').join('');
   return '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light">' +
     '<meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><title>' + esc(o.heading) + '</title>' +
