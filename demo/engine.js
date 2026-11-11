@@ -3244,12 +3244,12 @@ function cardSlugFree(name, self, email) {
       seen.push(x.id);
       if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
         amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now,
-        paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null });
+        paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null, paid_on: st === 'paid' ? (x.paid_on || null) : null });
       if (!b && st === 'paid' && o0 && o0.posted_on) tell(DB.creator_bills[DB.creator_bills.length - 1]);
       else if (b) {
         var was = b.status;
         Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
-          currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null });
+          currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null, paid_on: st === 'paid' ? (x.paid_on || b.paid_on || null) : null });
         if (st === 'paid' && was === 'processing' && !b.paid_told_at && opt) tell(b);
       }
     });
@@ -5556,6 +5556,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsAllowed('ops', 'work') || !opsAllowed('review', 'view')) return { error: 'denied' };
       t = opsTask(args.p_task);
       if (!t) return { error: 'not-found' };
+      if (!(scopeTaskMine(t) || scopeSeen(t.client_id, 'view'))) return { error: 'denied' };
       if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
       var lp = (DB.posts || []).filter(function (q) { return q.id === args.p_post; })[0];
       if (!lp) return { error: 'record-not-found' };
@@ -5582,6 +5583,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsAllowed('ops', 'work') || !opsAllowed('scripts', 'view')) return { error: 'denied' };
       t = opsTask(args.p_task);
       if (!t) return { error: 'not-found' };
+      if (!(scopeTaskMine(t) || scopeSeen(t.client_id, 'view'))) return { error: 'denied' };
       if (args.p_version != null && args.p_version !== t.version) return { error: 'stale', task: Object.assign({}, t) };
       var ls = (DB.video_scripts || []).filter(function (x) { return x.id === args.p_script; })[0];
       if (!ls) return { error: 'record-not-found' };
@@ -9701,7 +9703,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var b = (DB.creator_bills || []).filter(function (x) { return x.option_id === o.id && !x.gone; })
               .sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];
             return { job: jobRefOf(o), campaign: m.title || m.name || '', state: o.state, posted_on: o.posted_on || null, pay_by: o.pay_by || null,
-              bill: b ? { number: b.number, status: b.status, date: b.bill_date, paid_at: b.paid_seen_at || null, amount: b.amount, currency: b.currency } : null };
+              bill: b ? { status: b.status, paid_on: b.paid_on || (b.paid_seen_at ? String(b.paid_seen_at).slice(0, 10) : null) } : null };
           });
 
           var cpWords = function (v) { v = String(v || '').trim(); return v ? v.split(/\s+/).map(function (w) { return w.charAt(0) + new Array(Math.max(w.length - 1, 1) + 1).join('*'); }).join(' ') : null; };
@@ -13511,7 +13513,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!haDoc) return { error: 'not-found' };
           if (name === 'handbook_acks') {
             return { ok: true, version: haDoc.current_version || 0, people: DB.team_members.filter(function (m) {
-              return m.active !== false && !m.removed_at && !haAdm(m);
+              return m.active === true && !m.removed_at && !haAdm(m);
             }).map(function (m) {
               var r = haRead(m.id, haDoc) || {};
               return { name: m.name, opened_at: r.opened_at || null, acked_at: r.acked_at || null };

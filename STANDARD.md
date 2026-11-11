@@ -627,6 +627,13 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   Job reference and Pending payment", "a booking's payment is one line", "a
   paid bill reads Paid on Bukku's payment day") fail on main before and after
   the client-page copy sweep (2026-11-12); not yet found.
+- `bukkufn`: "Read from Bukku asks the contact's bills and keeps its own
+  ready ones alone" answers `failed` on main since #1035 (Bukku's paid day);
+  the suite or the bills read needs bringing together (2026-11-12).
+- `camp`: "the payment details filter keeps only the creators in that
+  state" reads 2 approved where it expects 1 on main since #1033 (team-added
+  details approved at once); the suite's count needs the new creator
+  (2026-11-12).
 
 - `work`: "a new meeting opens on the next free half hour" and "the time is
   a select of quarter hours" fail when the suite runs after 10pm MYT (the

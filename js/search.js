@@ -659,7 +659,7 @@
     return el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   }
   document.addEventListener('keydown', function (e) {
-    if (e.isComposing || e.defaultPrevented || btn.hidden) return;
+    if (e.isComposing || e.defaultPrevented || btn.hidden || document.body.classList.contains('hb-gate')) return;
     var k = String(e.key || '').toLowerCase();
     var chord = k === 'k' && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey;
     var slash = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !typing(document.activeElement);

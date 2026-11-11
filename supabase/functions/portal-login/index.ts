@@ -39,9 +39,11 @@ import { cors, json } from '../_shared/cors.ts';
    address are letters here, not wildcards (audit P2, 2026-10-10). */
 const exactEmail = (s: string) => String(s).replace(/[\\%_]/g, (c) => '\\' + c);
 
-/* Longer than the slowest ordinary run (a read and a createUser), so a
-   known address and an unknown one answer alike. */
-const FLOOR_MS = 900;
+/* Longer than the slowest ordinary run (two reads and a createUser, a
+   colleague's address), so a known address and an unknown one answer
+   alike; a run slower still answers at the next whole step, so its time
+   says it was slow, never which kind of address it was (audit 2026-11-11). */
+const FLOOR_MS = 1500;
 
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
@@ -50,7 +52,8 @@ Deno.serve(async (req) => {
   const started = Date.now();
   /* A fault is logged, never answered: a 500 would differ from ok. */
   try { await work(req); } catch (e) { console.error('portal-login: failed', String(e)); }
-  const wait = FLOOR_MS - (Date.now() - started);
+  const took = Date.now() - started;
+  const wait = Math.ceil(Math.max(took, 1) / FLOOR_MS) * FLOOR_MS - took;
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
   return json({ ok: true }, 200, origin);
 });

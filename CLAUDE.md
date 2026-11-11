@@ -1445,7 +1445,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   trigger never forces a column back to its old value.
 - Every forward move is walked backwards before it ships.
 - PL/pgSQL: declared names never match a column, and lookups are qualified. A
-  shadowed name fails at run time, not at create time.
+  shadowed name fails at run time, not at create time. A `for a, b in select …`
+  loop's targets are scalars alone: a row variable among them fails at run
+  time, never at create time (2026-11-12, `review_revert_confirm`, caught
+  live before it was applied).
 - A function's today, and a column's default day, is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
   never `current_date` or `now()::date` (`tests/sql.js` reads every
   column's default; 2026-10-22, BE-9) (the database runs on UTC: yesterday
@@ -2047,12 +2050,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Every stage date and Client since are edited in place
     (`ADspaceAsk.rename`, type date).
   - A stage between the first and the one running now is removed from its
-    row's ⋯ (Edit date, Remove; the band's Full Access; the user,
+    row's ⋯ (Edit date, Remove, asked first; the band's Full Access, held by
+    trigger `clients_stage_log_guard` at Clients Full Access, `stage-log`; the user,
     2026-11-10: a client made Active for days to finish reports, then
     Paused again, counted as a resume): the stages either side that match
     become one from the earlier day, keeping the later reason, and the
     stage clock and the client's reason follow; Undo where it happened puts
-    the history back; filed `client.edited` (Timeline: Active from … removed; removal undone).
+    the history back; filed `client.edited` with the stage's reason and
+    note (Timeline: Paused from … (Budget: …) removed; … restored).
     - Client since is the first stage's start, opened on its Malaysian day
       (`dayOf`).
     - A stage never begins before the one before it, and no date is in the
@@ -2519,7 +2524,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team.settings`, filed). Off, the creator emails (`creator_mail_queue`,
   `creator_mail_job`) are kept as Not sent (`off: Automatic emails are
   off.`) and never sent later, and `wa_enqueue` queues no colleague
-  reminder or creator booking message; whatever a colleague presses goes
+  reminder or creator booking message; the claim holds the same (`wa_claim`,
+  `creator_mail_claim`), so one queued before the switch moved, or put back
+  after an outage, is failed Not sent (audit 2026-11-11); whatever a colleague presses goes
   as before. A new automatic send asks `auto_send_on(kind)`.
 - Nothing reaches a client by itself (the user, 2026-10-31): every
   client-facing send is a colleague's press, and most go into the client's
@@ -3138,7 +3145,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Bukku holds, each change is a tick (`#bkRows input[name=bkSend]`, all
   ticked, the type never), an unticked one sent as Bukku holds it
   (`skip`, `keepAsHeld`; the user, 2026-11-10: "choose which one to
-  send"); a state goes under Bukku's own name (Penang as Pulau Pinang,
+  send") and never copied back to the portal: while one still differs the
+  link is not held and reads Differs from Bukku (`takeAfterSend`, audit
+  2026-11-11); a state goes under Bukku's own name (Penang as Pulau Pinang,
   `STATE_AS`: Bukku refused Penang), and Bukku's refusal names its fields'
   reasons, never only "The given data was invalid.". Link only (`#bkLink`,
   beside Link and send for a contact Bukku holds; kept apart from Link and
@@ -3920,8 +3929,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   balance keeping the state it had, never marked by hand; Payment sent goes
   once, when a bill read Processing is read Paid, or a bill first read paid
   on a booking posted in the portal (`posted_on`), never for one from before
-  the portal; the creator's page reads Paid on the day the portal first read
-  it paid; one fill for every creator email's fields (`creator_mail_fill`). A booking given an AKJ number on the
+  the portal; a paid bill keeps the day of Bukku's payment voucher
+  (`creator_bills.paid_on`, the latest payment `bukku-sync` reads applied to
+  it, ten bills a run), else the day the portal first read it paid; one fill for every creator email's fields (`creator_mail_fill`). A booking given an AKJ number on the
   AP01 form carries it (`campaign_options.earlier_job`, the row's pen at
   `campaigns.pay` Work; `creator_earlier_job_set`: `bad-ref`, `taken`);
   bills matching no booking read under Earlier payments
@@ -3936,7 +3946,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   2026-11-11: a past KJ number had nowhere to go without a booking): the
   Payment tab lists a creator's job IDs from before the portal
   (`creator_earlier_jobs`, RLS on, no policy, no grant; one live row a job
-  ID across every creator and booking, `taken`), Add earlier job ID and a row's ⋯
+  ID across every creator and booking, `taken`, each write under the job
+  ID's lock), Add earlier job ID and a row's ⋯
   Remove with Undo where it happened (`creator_earlier_job_add`,
   `creator_earlier_job_remove`, `campaigns.pay` Work, filed
   `creator.updated`), each with the bill holding it (`creator_bills_list`
@@ -3992,7 +4003,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the name over Creator ID · platforms, Active or Inactive, one ⋯ of Reset
     link, Set inactive or Set active with Undo where it happened, Delete),
     the view strip and a pane: Overview (Details: Creator ID, then Name,
-    Client rate, WhatsApp and Notes each changed where it is read, its pen,
+    Client rate, WhatsApp and Notes each changed where it is read, its pen
+    (Notes in a box of lines, keeping their breaks),
     filed `creator.updated` from and to; Profiles: each link a `.plink`
     opening the profile, Edit links opening the creator sheet on its links
     alone (`#addCreatorBox.is-links`), Link history a fold with Restore;
@@ -4094,8 +4106,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (the queue and the open booking, the red count of what waits on the
     creator), Payments (drawn once details are asked or a booking holds a
     payment: the Payment details card, then each booking from Confirmed on
-    with its Job reference, its Bukku bill read as Processing or Paid with
-    its amount, else Not due, and the working days payment takes, all from
+    as one line, the campaign and its Job reference beside Paid {day} (the
+    day of Bukku's payment voucher), Pending payment once posted or billed,
+    else Not due, never an amount, a bill number or a currency (anyone with
+    the link reads it; the user, 2026-11-12), and the working days payment takes, all from
     `creator_pay_form` `payments` and `days`, the creator's own alone;
     `2026-11-10-creator-page-payments.sql`) and Profile (the profile links
     with Edit links, and Contact: the WhatsApp and email held).
@@ -4825,7 +4839,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (Client), the next round Client review, approval Approved; forward along
   the line or round the revision loop alone, from Ready to start through
   Revision (Client) only (On hold, Blocked, Approved and after are a
-  person's; Scheduled stays manual), filed on the task and told to its
+  person's; Scheduled stays manual), never where a person could not move it:
+  a task never through AQC review goes to AQC review, not Client review, a
+  task at Ready to start waits on its month (`ops_month_open_for_work`),
+  and entering a review stamps Draft in (audit 2026-11-11); a task Content
+  Review moved to Approved goes back with an approval taken back or asked
+  again, and Undo of Add changes puts back the final date they pushed,
+  where nothing moved it since, filed on the task and told to its
   owner, never failing the write. An unlinked task is unchanged. A post's ⋯
   Add changes (`review_record_changes`, a published set, no decision on
   the round) keeps the client's WhatsApp words as the team's changes, Undo
@@ -4847,8 +4867,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `not-started`, `cancelled`; `ops_month_invoice_take` and
   `ops_month_invoices_due` the service role's; `ops_month_invoices`, RLS
   on, no policy, no grant): an invoice of the client's Bukku contacts
-  dated within the content month's calendar month (`month_invoice_window`)
-  is its invoice; the month's card reads Invoice (number, amount, Paid or
+  (a company billing other brands too left out, its invoice perhaps
+  another brand's) dated within the content month's calendar month
+  (`month_invoice_window`) is its invoice, one Bukku lists with no balance
+  read Unpaid, never Paid (audit 2026-11-11); the month's card reads Invoice (number, amount, Paid or
   Unpaid; Not invoiced and when checked; Check Bukku) at Clients: Billing
   View (`ops_month_invoices_of`), and the Dashboard lists Months not
   invoiced at Billing Full Access once a read after the 1st found none
@@ -7125,13 +7147,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `handbook_reads` (RLS on, no policy, no grant); a new version asks again.
   `handbook_due()` is read beside `me()`, and while it holds anything the
   console holds the colleague on the Handbook's onboarding (`body.hb-gate`:
-  the rail's sections, its foot's marks, search and the tab bar away;
+  the rail's sections, its foot's marks, search, its keys, the bell and the
+  tab bar away; a read of it that fails holds the gate with Unable to load
+  and Try again, never opening the portal; audit 2026-11-11;
   `#hbGate`, the Handbook's bar and list hidden): Welcome to ADspace, {first
   name}, n of N acknowledged over a track, a step a file (Open, then
   Acknowledge), then Every file is acknowledged with Continue onto the
   first section held. The ⋯'s Who acknowledged lists each colleague against
   the current version (`handbook_acks`). The gate is the page's; the
-  database refuses no read to a colleague with a file due.
+  database refuses no read to a colleague with a file due, and Opened is
+  the page's word that it asked for the file's link.
 - A file lives in the private Supabase Storage bucket `handbook` (50 MB a
   file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
   opened only through a signed link of 60 seconds made at the press
@@ -7718,7 +7743,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   same template chosen in New message for a contact is sent as it. Its
   variables are the greeting, the brand and the Sales by colleague; its
   link button the colleague's namecard short link (`wa_compose_prepare`
-  `rep`, `code`; `not-lead`, `no-sales-by`, `no-card`), held as Sent
+  `rep`, `code`; `not-lead`, `no-sales-by`, `no-card`, `no-contact` for a
+  prospect marked Do not contact), held as Sent
   recently by its client. The template is Utility: it states a fact about
   the lead's own enquiry, never asks them to call or buy.
 - `wa-send` answers `report` and `feedback` with bad-request (2026-10-19). A refusal is one
@@ -7812,8 +7838,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   nowhere): Supabase invites only an address with no login, so for one that
   has a login `invite-member` sends the same invitation itself through
   `_shared/mail.ts` (from the sign-in emails' sender, a one-time sign-in
-  link from `generateLink`), and a page says Invitation sent only on
-  `sent`, never on `already`.
+  link from `generateLink`, a key of its own each send), and a page says
+  Invitation sent only on `sent`, never on `already`. A colleague is
+  greeted by the name on their record, an admin alone wording it otherwise
+  (audit 2026-11-11).
 - An active colleague's first sign-in makes their login (2026-11-11, the
   user: one added with no invitation read Active and was sent no code): the
   console asks `portal-login` before the code, which makes a login for a
@@ -7924,7 +7952,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
     `portal_access`, and answers `{ok: true}` to every address, each in the
-    same least time (`FLOOR_MS`, 900 ms; a fault logged, never a 500), so
+    same least time (`FLOOR_MS`, 1,500 ms, a slower run at the next whole
+    step; a fault logged, never a 500), so
     the wait never says who is a client (2026-10-25, `tests/portalloginfn.js`).
   - `signInWithOtp` with `shouldCreateUser: false`.
   - The email's code signs in on the page as well as its link (`#signCode`,
@@ -8144,11 +8173,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `js/config.js` and `css/` first.
 
 ### Folder and file rules
-- Never edit the user's root files: `ap01.html`, `ap02.html`, `ap03.html`,
-  `ap-dale.html`, `accv-new.html`, `3pform.html`, `einvoiceinfo.html`,
-  `interview-quiz.html`, `sales-program.html`. `index.html` and `404.html`
-  are the portal's; `supplier.html` was retired for `/supplier/` (the user,
-  2026-10-18: "no longer in use").
+- Never edit the user's root files: `ap01.html` and `accv-new.html`, the
+  Jotform pages left (the user, 2026-11-12, every other removed: AP02,
+  AP03, AP Dale, 3P form, e-Invoice info, interview quiz, sales
+  programme). `index.html` and `404.html` are the portal's;
+  `supplier.html` was retired for `/supplier/` (the user, 2026-10-18: "no
+  longer in use").
 - `drafts/` (holding the old Jotform verify page) is excluded from Pages.
 - Portal pages are folders with an `index.html` and clean paths; never `.html`
   in a URL.

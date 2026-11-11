@@ -402,6 +402,18 @@ export function keepAsHeld(next: Record<string, any>, cur: any, skip: unknown): 
   return out;
 }
 
+/* A send with fields left unticked: those fields stay the portal's own and
+   are never copied back from Bukku. Where one still differs, the link is
+   not held: it reads Differs from Bukku and the person chooses (audit
+   2026-11-11). Answers the fields to take, or null to take nothing. */
+const KEPT_BILL: Record<string, string[]> = { legal_name: ['legal_name'], reg_no: ['company_no'],
+  old_reg_no: ['company_no_old'], tax_id_no: ['tin'], sst_reg_no: ['sst_no'], email: ['finance_email'],
+  person: ['person'], address: ['billing_address'] };
+export function takeAfterSend(changed: string[], skip: unknown): string[] | null {
+  const kept = new Set((Array.isArray(skip) ? skip : []).flatMap((k) => KEPT_BILL[String(k)] || []));
+  return changed.some((f) => kept.has(f)) ? null : changed;
+}
+
 
 // ---- Billing from Bukku (2026-10-30) ---------------------------------------
 /* Once linked, Bukku holds a client's or an entity's billing (the user,
@@ -618,10 +630,24 @@ async function matchCreators(req: Request, origin: string | null): Promise<Respo
   const svc = svcDb();
   const ok = await svc.rpc('wake_secret_ok', { p_given: req.headers.get('x-adspace-wake') || '' });
   if (ok.error || ok.data !== true) return json({ error: 'unauthorised' }, 401, origin);
+  /* Every row, a thousand at a time: PostgREST answers a thousand at most,
+     and a list cut short would offer a contact already linked (audit
+     2026-11-11). */
+  const every = async (make: () => any, keys: string[]) => {
+    const out: any[] = [];
+    for (let at = 0; ; at += 1000) {
+      let q = make();
+      for (const k of keys) q = q.order(k, { ascending: true });
+      const r = await q.range(at, at + 999);
+      if (r.error) return { data: null, error: r.error };
+      out.push(...(r.data || []));
+      if ((r.data || []).length < 1000) return { data: out, error: null };
+    }
+  };
   const [reqs, crs, lks] = await Promise.all([
-    svc.from('creator_pay_requests').select('creator_id, id_no, legal_name, decided_at').eq('status', 'approved'),
-    svc.from('creators').select('id, creator_code'),
-    svc.from('bukku_links').select('kind, record_id, contact_id')
+    every(() => svc.from('creator_pay_requests').select('creator_id, id_no, legal_name, decided_at').eq('status', 'approved'), ['id']),
+    every(() => svc.from('creators').select('id, creator_code'), ['id']),
+    every(() => svc.from('bukku_links').select('kind, record_id, contact_id'), ['kind', 'record_id'])
   ]);
   if (reqs.error || crs.error || lks.error) return json({ error: 'needs-update' }, 200, origin);
   const rows = creatorMatches(reqs.data || [], crs.data || [], lks.data || [], await allContacts());
@@ -639,6 +665,14 @@ export function billOf(x: any) {
     amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
     currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
 }
+/* The latest date among the payments, credits and refunds Bukku applied
+   to a bill (its `linked_items` that are not bills), else null. */
+export function paidOn(bill: any): string | null {
+  const ds = ((bill && bill.linked_items) || [])
+    .filter((l: any) => l && !/bill/.test(String(l.type || '')) && /^\d{4}-\d{2}-\d{2}$/.test(String(l.date || '')))
+    .map((l: any) => String(l.date)).sort();
+  return ds.length ? ds[ds.length - 1] : null;
+}
 async function creatorBills(creator: string, contact: number): Promise<any> {
   const out: any[] = [];
   for (let page = 1; page <= 20; page++) {
@@ -652,6 +686,20 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
     const total = Number(r && r.paging && r.paging.total) || 0;
     if (!rows.length || page * per >= total || rows.length < per) break;
+  }
+  /* A paid bill's day is its payments' (2026-11-12, the user: "it should
+     follow Bukku's bill payment voucher"): a bill read alone lists what was
+     applied to it, each with its date; the latest is the day it was paid.
+     Read once a bill, ten a run, so a night never reads a creator's whole
+     history again. */
+  const kept = await svcDb().from('creator_bills').select('bill_id').eq('creator_id', creator).not('paid_on', 'is', null);
+  const known = new Set<number>(((kept.data || []) as any[]).map((k) => Number(k.bill_id)));
+  let asked = 0;
+  for (const b of out) {
+    if (asked >= 10 || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
+    asked++;
+    try { b.paid_on = paidOn(await bukku('GET', `/purchases/bills/${b.id}`).then((r: any) => (r && r.transaction) || null)); }
+    catch (_e) { /* left for the next read */ }
   }
   const t = await svcDb().rpc('creator_bills_take', { p_creator: creator, p_contact: contact, p_rows: out });
   if (t.error) { console.error('bukku-sync: bills not kept', creator, t.error.message); return { error: 'not-filed' }; }
@@ -840,7 +888,7 @@ export async function monthInvoices(contacts: number[], from: string, to: string
         const link = String(x.short_link || '');
         out.push({ id: Number(x.id), number: String(x.number || '').slice(0, 60), date: d, amount: cents(x.amount),
           currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
-          paid: cents(x.balance) <= 0, link: LINK.test(link) ? link : null });
+          paid: x.balance == null || x.balance === '' ? null : cents(x.balance) <= 0, link: LINK.test(link) ? link : null });
       }
       const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
       const total = Number(r && r.paging && r.paging.total) || 0;
@@ -1286,7 +1334,8 @@ Deno.serve(async (req) => {
         const md = (m.data || {}) as any;
         if (!m.error && md.linked) {
           const after = valuesOf(saved), pr = md.portal || {};
-          await take(md.me, kind, id, after, await hashOf(after), differs(pr, after, pr.country === 'SG' ? 'SG' : 'MY'), 'hold');
+          const ch = takeAfterSend(differs(pr, after, pr.country === 'SG' ? 'SG' : 'MY'), body.skip);
+          if (ch) await take(md.me, kind, id, after, await hashOf(after), ch, 'hold');
         }
       }
       return json({ ok: true, contact: saved.id, code: saved.contact_code || code, created: !cur }, 200, origin);

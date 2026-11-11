@@ -9726,3 +9726,59 @@ reader and on hover, so no state is carried by colour alone.
   labels follow 中文. Held: Malay to Bahasa Melayu on /quote/, whose three
   language cards cannot hold the longer word at 390 until their layout
   stacks; Script (read here) stays, an approved section name.
+- 2026-11-12 · A creator's payment reads Bukku's day and no amount (the
+  user: "could you not show the price … anyone who holds the link would be
+  able to see"; "the paid date is not even accurate, it should follow
+  Bukku's bill payment voucher not today's date"). A paid bill took the
+  day the portal first read it, and the creator's link sent each bill's
+  number and amount. `bukku-sync` now reads a paid bill alone once
+  (`linked_items`, Bukku's purchase API) and keeps its latest payment's
+  date as `creator_bills.paid_on`; `creator_pay_form` answers a state and
+  that day only. The row is one line: the campaign and Job reference,
+  then Paid {day}, Pending payment or Not due. The same day the user
+  removed the Jotform pages AP02, AP03, AP Dale, 3P form, e-Invoice info,
+  interview quiz and sales programme, keeping AP01 and ACCV.
+
+### 2026-11-12 — Audit fixes of 11 November: automatic sends, task moves, creator details
+The audit of #987 to #1031 (2026-11-11) found the automatic-sends switch held
+only at the queue, so a message queued before the switch moved, or put back
+after a WhatsApp outage, still went; a report started by someone other than
+the month's manager moved its task twice (two triggers each filed the move);
+the content loop moved a task straight to Client review past AQC review and
+into work in a month not confirmed; Introduce representative ignored Do not
+contact; a short email on a creator's link read whole; two earlier job IDs
+could be taken at once; restoring a link taken meanwhile said the database's
+words; one company's invoice marked another brand's month; and a Timeline
+stage was removed unasked, lost its reason for good and was held on the page
+alone. The second read added a task left at Approved when its approval was
+taken back, and Undo of Add changes leaving the pushed due date. The user
+approved each fix ("ok"). One migration
+(`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove,
+asked first.
+
+### 2026-11-12 — A loop over a row variable fails only when it runs
+`review_revert_confirm` (#1037) looped `for v_task, v_ev in select t.id, e …`
+with `v_ev` a row variable. Postgres refuses a row variable in a target list
+of several ("is not a scalar variable") at run time, so the schema's two runs
+in `sql` passed. A test block on the live database before the part was applied
+found it; the loop reads two text fields instead. Rule added to CLAUDE.md.
+### 2026-11-12 — Audit fixes of 11 November: Bukku, invitations and sign-in
+The same audit found a send to Bukku with fields left unticked copied those
+fields' Bukku values back over the portal's billing (the hold that follows a
+send took every field that differed); a month's invoice Bukku listed with no
+balance read Paid and left the nightly check for good; the creator match read
+three tables a thousand rows at most; a second Send invitation within a
+minute was refused by Resend as a repeat while its new link had already
+killed the first email's; a team invitation's greeting was the name the
+sender typed; and portal-login's equal wait was sized before the colleague
+path made it the slowest. The user approved each ("ok"; 14: "admin can
+overwrite").
+
+### 2026-11-12 — Creator page edits, the Creators List refresh and the email preview's grey
+The audit of the parts first left unread (2026-11-11) found Notes on a
+creator's page edited in a one-line field that turned line breaks into
+spaces; Add details calling a refresh nobody defined, so the Creators List,
+its filter and the rail kept the old standing; a pen left unchanged showing
+the raw figure; and the console's email previews drawing the fine print in
+#a1a1a1, 2.6:1 on white. The user approved each (2026-11-12, "ok"); the
+emails keep #a1a1a1, the previews read #767676.
