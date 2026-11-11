@@ -9557,3 +9557,14 @@ welcome, progress, a numbered step a file, and a done state with Continue.
 The rail's build line shows the commit's last four characters to make room.
 With the Handbook off the rail, More is drawn whenever the foot holds a
 mark, so a phone always reaches it.
+
+### 2026-11-11 · Copy review of #1009 to #1019
+A second reader read the new words of #1009 to #1019 (120 lines) against
+DESIGN.md §6. Five fixed, all console: the earlier job ID's clash said one
+way on both paths (one wording had read "already used by another booking");
+"This lead has no Sales by" became "Set Sales by on the lead first."; the
+Handbook's "Who acknowledged" became the noun "Acknowledgements" (§6 rule
+11); the no-access cover's "no section access" became "does not have access
+to any section" (a system word); its purpose line, which only restated the
+cover, now names the route. The menus suite's table had not learned #1019's
+Mark required and Mark optional, so it read them as unknown; both joined it.

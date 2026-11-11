@@ -1727,7 +1727,7 @@
     services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
-    noaccess:  'Sections are given by an admin.',
+    noaccess:  'The sections your account can open.',
     mine:      'Your own reviews, initiatives, reflections, HR letters and health check-ins.',
     settings:  'Portal switches, business figures, AI limits and templates, managed by authorised colleagues.'
   };

@@ -837,7 +837,7 @@
   var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'] };
   var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
-    taken: 'That earlier job ID is already used by another booking. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
+    taken: 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
     'not-linked': 'Link the creator to Bukku first.',
     'job-taken': 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.',
     'job-bad': 'Enter the earlier job ID as it was issued, for example AKJ0117.' };

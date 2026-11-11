@@ -195,7 +195,7 @@
   };
 
   var WORDS = [
-    /^(Open|Open .+|Versions|Who acknowledged|Download|Preview|Preview PDF|Copy link|Link|Link history|Payment details|Compare groups)$/,
+    /^(Open|Open .+|Versions|Acknowledgements|Download|Preview|Preview PDF|Copy link|Link|Link history|Payment details|Compare groups)$/,
     /^(Edit|Edit date|Rename|Duplicate|New version|Take|Take lead|Offer to team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change month|Access code|Pair with video|Select|Select .+|Arrange posts|Make primary|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat|Reissue|Replace|Add tasks|Import from .+|Pictures from Meta|Move to .+|Review profile|Bulk import|Link task)$/,
     /^(Send on WhatsApp|Resend on WhatsApp|Send link on WhatsApp|Request feedback|Introduce representative|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email|Send by email)$/,
     /^(Mark .+|Do not contact|Allow contact|Remove VIC|Verify signed letter|Confirm internally|Add changes|Confirm for client|Revert confirmation|Clear ad error)$/,
