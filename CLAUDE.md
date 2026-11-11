@@ -4920,7 +4920,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`), ticked by the client's checklist
-    signed off (Clients, Checklists) and marked Not needed by hand.
+    signed off (Clients, Checklists) and marked Not needed by hand; a row
+    is the tick and the name with Not needed and Open (tonal, its chevron)
+    at its right edge, under the name on a narrow pane (2026-11-11).
   - Posts planned is asked, never assumed: empty is refused, a whole number
     from 0 to 200 is taken (0 an advertising-only month's true answer), and
     the column holds the same (`ops_engagements_planned_range`). Reports is

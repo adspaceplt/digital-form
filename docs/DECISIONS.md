@@ -9532,3 +9532,12 @@ cuts a Chinese name in two. `contact_greeting` now answers the whole name
 where no salutation is set (a salutation still said once), and the
 composer's recipients, a creator's booking message and a colleague's
 reminder greet through it. Found by the user in the composer.
+
+### 2026-11-11 · A month's checklist rows hold their acts on one line
+The user sent the month card's Checklists: Open fell to a second line under
+the tick, out of line with the card's right-edge buttons (Check Bukku, Set
+meeting). The row was a three-column grid holding four items whenever Not
+needed and Open were both drawn. Each act now takes a column of its own at
+the row's right edge, Open a tonal button with its chevron like the card's
+other row acts; on a narrow pane the acts go under the name so the name
+stays on one line. `tests/work.js` measures both widths.
