@@ -3917,6 +3917,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   booking; View payment, `?tab=payments`; on their code, `PORTAL_URL`),
   the others in none, and the page keeps the pane and booking a link names
   as it drops the code (the user, 2026-11-10: "A").
+  Earlier jobs (`2026-11-11-creator-earlier-jobs.sql`; the user,
+  2026-11-11: a past KJ number had nowhere to go without a booking): the
+  Payment tab lists a creator's job IDs from before the portal
+  (`creator_earlier_jobs`, RLS on, no policy, no grant; one live row a job
+  ID across every creator and booking, `taken`), Add earlier job ID and a row's ⋯
+  Remove with Undo where it happened (`creator_earlier_job_add`,
+  `creator_earlier_job_remove`, `campaigns.pay` Work, filed
+  `creator.updated`), each with the bill holding it (`creator_bills_list`
+  `past`), Earlier payments keeping the bills nothing holds.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
