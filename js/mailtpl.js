@@ -27,7 +27,7 @@
     'bad-name': 'Enter a template name of 2 to 80 characters.',
     taken: 'A template of this name already exists. Choose another name.',
     'bad-email': 'Enter a valid email address for the finance team.',
-    'no-invoices': 'The message must keep {invoices}, where the table of invoices goes.',
+    'no-invoices': 'Keep {invoices} in the message, where the table of invoices goes.',
     'too-long': 'Keep the legal note and the disclaimer to 1,000 characters each.',
     'not-found': 'This template no longer exists.'
   };

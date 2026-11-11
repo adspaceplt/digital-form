@@ -36,18 +36,18 @@
   var STATE = { pending: ['Pending', 'is-warn'], active: ['Active', 'is-ok'], inactive: ['Inactive', 'is-off'] };
   var SAID = {
     'denied': 'You do not have permission to do this.', 'not-found': 'This supplier no longer exists.',
-    'bad-code': 'A Supplier ID is 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
-    'bad-name': 'Enter the name, 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
-    'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter the TIN, 5 to 20 letters or digits.',
+    'bad-code': 'Enter a Supplier ID of 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
+    'bad-name': 'Enter a name of 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
+    'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter a TIN of 5 to 20 letters or digits.',
     'bad-sst_no': 'Enter the SST Registration No. as AXX-XXXX-XXXXXXXX.', 'bad-phone': 'Enter a Malaysian or Singaporean number, for example 07-123 4567.',
     'bad-mobile': 'Enter a Malaysian or Singaporean mobile number, for example 012-345 6789.', 'bad-address': 'Enter the full billing address.',
     'bad-contact_name': 'Enter the legal name.', 'bad-designation': 'Enter the designation.', 'bad-email': 'Enter a valid email address.', 'bad-finance_email': 'Enter a valid email address.',
     'bad-payment_term': 'Choose a payment term.', 'bad-currency': 'Choose a currency.',
     'bad-payee_name': 'Enter the payee name.', 'bad-bank_name': 'Choose a bank.', 'bad-bank_account': 'Enter the account number, digits only.',
-    'bad-swift': 'Enter the SWIFT code, 8 or 11 letters or digits.', 'bad-bank_address': 'The bank address is up to 300 characters.',
+    'bad-swift': 'Enter a SWIFT code of 8 or 11 letters or digits.', 'bad-bank_address': 'Enter a bank address of up to 300 characters.',
     'incomplete': 'Approve once the details, the payment term and the bank account are saved.',
     'no-email': 'Save the supplier\'s email first.', 'not-active': 'Approve the supplier first.',
-    'bad-document': 'That letter is void or no longer this supplier\'s.', 'bad-purpose': 'Choose a template.',
+    'bad-document': 'This letter is void or no longer belongs to this supplier. Choose another letter.', 'bad-purpose': 'Choose a template.',
     'bad-subject': window.ADspaceWords.line.subject, 'bad-body': window.ADspaceWords.line.message,
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
     'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Try again.',
@@ -61,7 +61,7 @@
     var k = (r && r.data && r.data.error) || m;
     if (k === 'unknown-field' && r.data) return window.ADspaceWords.line.unknownField(r.data.field, r.data.fields);
     if (k === 'code-taken' && r.data.name) return 'This Supplier ID is already used by ' + r.data.name + '.';
-    return SAID[k] || k || 'The request failed.';
+    return SAID[k] || k || 'The request failed. Please try again.';
   }
   function rpc(fn, args) {
     return db.rpc(fn, args).then(function (r) { return r; }).catch(function (e) { return { error: e }; });
@@ -297,7 +297,7 @@
         if (it[2] && !state.pay) return;
         rows.push('<div><dt>' + esc(it[1]) + '</dt><dd' + (k === 'address' || k === 'bank_address' ? ' class="is-pre"' : '') + '>' + esc(v) + '</dd></div>');
       });
-      if (gi === 2 && !state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Given</dd></div>');
+      if (gi === 2 && !state.pay && f.bank_changed) rows.push('<div><dt>Bank details</dt><dd>Provided</dd></div>');
       if (rows.length) out += '<h5 class="sup-ans-h">' + esc(g[0]) + '</h5><dl class="ovfacts">' + rows.join('') + '</dl>';
     });
     return out;
@@ -312,7 +312,7 @@
         /* The received day is the head's; the state says what waits. */
         '<dl class="ovfacts"><div><dt>State</dt><dd>' + (update || s.name ? 'Received ' + esc(day(f.submitted_at)) + ', waiting to be taken in' : 'Waiting to be taken in') + '</dd></div>' +
         (update ? changesOf(f) + '</dl>' : '</dl>' + answersOf(f)) +
-        (held && work ? '<p class="msg warn">The bank details changed. A colleague with Supplier bank details takes this in.</p>' : '');
+        (held && work ? '<p class="msg warn">The bank details changed. A colleague with access to supplier bank details must use these changes.</p>' : '');
     }
     /* An open link reads the same whether it asks for the details first or
        for a change to them (2026-10-20, the user: the update link's ⋯ alone
@@ -626,7 +626,7 @@
   function offerMail(s) {
     if (!s.email || !may('suppliers', 'work')) return;
     window.ADspaceConfirm.ask({ title: 'Send the approval email?', go: 'Send email', cancel: 'Not now',
-      body: (s.contact_name || nameOf(s)) + ' is told by email that the registration is approved.' }, function () { openMail('approved', null, true); });
+      body: (s.contact_name || nameOf(s)) + ' will be told by email that the registration is approved.' }, function () { openMail('approved', null, true); });
   }
 
   /* Send email (#supMailSheet): the template's words filled from the record

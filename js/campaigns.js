@@ -762,7 +762,7 @@
     UI.skeleton(host, 3);
     db.from('activity_log').select('*').eq('subject', c.name).order('created_at', { ascending: false }).limit(50).then(function (r) {
       if ($('crRecPane') !== host) return;
-      if (r.error) { UI.failLine(host, 'The activity record', r.error.message, function () { paneCrActivity(c, host); }); return; }
+      if (r.error) { UI.failLine(host, 'The Activity record', r.error.message, function () { paneCrActivity(c, host); }); return; }
       var rows = r.data || [];
       if (!rows.length) { host.innerHTML = '<div class="panel crr-card"><p class="emptyline">No entries.</p></div>'; return; }
       var A = window.ADspaceAdmin;
@@ -772,7 +772,7 @@
         if (e.key == null) e.key = 'creator';
         return e;
       }));
-    }).catch(function (e) { UI.failLine(host, 'The activity record', e.message, function () { paneCrActivity(c, host); }); });
+    }).catch(function (e) { UI.failLine(host, 'The Activity record', e.message, function () { paneCrActivity(c, host); }); });
   }
   /* What waits on the team, and the record: a block with nothing leaves. */
   function paintCrRail(c) {
@@ -1452,7 +1452,7 @@
        space in the middle are not part of anybody's name, and keeping them
        is what lets the same creator be keyed in twice. */
     var name = ($('crName').value || '').replace(/\s+/g, ' ').trim();
-    if (!name) { msg('creatorMsg', 'A name is required.', 'err'); return; }
+    if (!name) { msg('creatorMsg', 'Enter a name.', 'err'); return; }
     var held = nameHolder(name, state.editing);
     if (held) {
       msg('creatorMsg', held.name + ' is already in the Creators List.', 'err');
@@ -1490,7 +1490,7 @@
           var why = res.error ? res.error.message
             : d.error === 'taken' ? 'This profile belongs to another creator: ' + (d.url || '')
             : d.error === 'unrecognised' ? 'Not a profile link: ' + (d.url || '')
-            : d.error === 'denied' ? 'Not saved. Links need Creators List: Work.'
+            : d.error === 'denied' ? 'Not saved. You do not have permission to change profile links. Please ask an admin.'
             : 'Not saved. The database refused the request.';
           msg('creatorMsg', why, 'err');
           return;
@@ -1525,8 +1525,8 @@
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: c.name + ' leaves the Creators List. Campaigns they have already run '
-          + 'are kept. This cannot be undone. To stop booking them and keep the '
-          + 'record, set them inactive instead.',
+          + 'are kept. To stop booking them and keep their details, set them '
+          + 'inactive instead. This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
       field: {
@@ -1546,7 +1546,7 @@
           window.ADspaceConfirm.ask({
             title: 'Not deleted',
             body: /foreign key|violates/i.test(r.error.message)
-              ? c.name + ' has been offered in a campaign, so the record cannot go. '
+              ? c.name + ' has been offered in a campaign and cannot be deleted. '
                 + 'Set them inactive instead.'
               : r.error.message,
             go: 'Close',
@@ -1937,10 +1937,10 @@
       el.addEventListener('input', function clear() { el.removeAttribute('aria-invalid'); el.removeEventListener('input', clear); });
       el.focus();
     }
-    if (!clientId) { refuse('campClient', 'A client is required.'); return; }
-    if (badTitle(title)) { refuse('campTitle', 'A campaign name is required.'); return; }
+    if (!clientId) { refuse('campClient', 'Choose a client.'); return; }
+    if (badTitle(title)) { refuse('campTitle', 'Enter a campaign name.'); return; }
     var slots = Number($('campSlots').value || 0);
-    if (!slots || slots < 1) { refuse('campSlots', 'At least one creator is required.'); return; }
+    if (!slots || slots < 1) { refuse('campSlots', 'Enter 1 or more creators.'); return; }
 
     // A slot with a creator booked into it cannot be taken away by editing a
     // number. Free the booking first, then lower the count.
@@ -2022,7 +2022,7 @@
           if (onFail) onFail(r.error && r.error.message);
           else window.ADspaceConfirm.ask({
             title: 'Not found',
-            body: 'That campaign is no longer in the list.',
+            body: 'This campaign no longer exists.',
             go: 'Close', cancel: false
           });
           return;
@@ -2353,8 +2353,8 @@
        2026-10-11: "since its alr completed resume campaign reopens what?"). */
     if (s === 'completed') return null;
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
-      ask: { title: 'Resume the campaign', go: 'Resume',
-        body: 'Selection closes and the bookings go back into production.' } };
+      ask: { title: 'Resume campaign?', go: 'Resume',
+        body: 'The selection will close and the bookings will go back into production.' } };
   }
 
   var PHONE = window.matchMedia('(max-width: 640px)');
@@ -2391,8 +2391,8 @@
     shutMenus();
     var c = state.campaign;
     window.ADspaceConfirm.ask({
-      title: 'Reset the selection link',
-      body: 'The current link for ' + campName(c) + ' stops working immediately. The new one has to be sent to the client.',
+      title: 'Reset link?',
+      body: 'The current link for ' + campName(c) + ' stops working immediately. Send the new link to the client.',
       go: 'Reset link',
       tone: 'warn'
     }, function () {
@@ -2419,7 +2419,7 @@
        (audit, 2026-10-03). */
     window.ADspaceConfirm.ask({
       title: 'Delete',
-      body: 'Every offer, selection and booking on ' + campName(c) + ' goes with it. '
+      body: 'Every offer, selection and booking on ' + campName(c) + ' is deleted with it. '
           + 'This cannot be undone.',
       go: 'Delete',
       tone: 'danger',
@@ -2607,8 +2607,8 @@
     var files = (state.files && state.files[o.id]) || [];
     if (files.length || o.draft_url) return '';
     return hint('draft-route',
-      'Send ' + ((o.creators || {}).name || 'the creator') + ' their portal link and they upload here ' +
-      'themselves. Upload for them below if they cannot, or paste a link.');
+      'Send ' + ((o.creators || {}).name || 'the creator') + ' their creator page link so they can upload here. ' +
+      'If they cannot, upload for them below or paste a link.');
   }
 
   /* An instruction is for the first few times somebody meets a screen, and
@@ -2963,7 +2963,7 @@
             })) : '';
             log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + (said ? ' · ' + said : ''));
             paintOptions();
-          }).catch(function () { putBack('Not saved. Check the connection and try again.'); });
+          }).catch(function () { putBack('Not saved. Please try again.'); });
         });
       });
       t.appendChild(el);
@@ -3092,7 +3092,7 @@
     db.from('activity_log').select('*').eq('subject', c.title)
       .order('created_at', { ascending: false }).limit(50)
       .then(function (r) {
-        if (r.error) { UI.failLine(box, 'The activity record', r.error.message, loadCampLog); return; }
+        if (r.error) { UI.failLine(box, 'The Activity record', r.error.message, loadCampLog); return; }
         var rows = r.data || [];
         /* One line an entry; the campaign is named by the record itself. */
         var A = window.ADspaceAdmin;
@@ -3402,7 +3402,7 @@
         '<span class="ovamt">' + esc(money(o.rate)) + '</span></div>';
     }).join('');
     var more = live.length > 8
-      ? '<p class="ovmore">' + (live.length - 8) + ' more on the Creators pane.</p>' : '';
+      ? '<p class="ovmore">' + (live.length - 8) + ' more in Creators.</p>' : '';
     return ovSec('Bookings', 'creators', 'Creators',
       '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
       '<span>Posting on</span><span>Step</span><span class="ovamt">Client rate</span></div>' +
@@ -3427,7 +3427,7 @@
         '<span class="ovamt"><span class="ovcap">Post date</span>' + (o.planned_publish
           ? esc(niceDate(o.planned_publish)) : '<span class="muted">Not set</span>') + '</span></div>';
     }).join('');
-    var more = rows.length > 6 ? '<p class="ovmore">' + (rows.length - 6) + ' more on the Schedule pane.</p>' : '';
+    var more = rows.length > 6 ? '<p class="ovmore">' + (rows.length - 6) + ' more in Schedule.</p>' : '';
     return ovSec('Schedule', 'schedule', 'Schedule',
       '<div class="ovtable"><div class="ovhead ovrow-date"><span>Creator</span>' +
       '<span class="ovamt">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
@@ -3556,7 +3556,7 @@
      before the clock have no log of their earlier moves. */
   function hoursWord(ms) {
     var h = ms / 3600000;
-    if (h < 1) return 'Under 1 h';
+    if (h < 1) return 'Under 1 hour';
     if (h < 48) return Math.round(h) + ' h';
     var d = Math.floor(h / 24), r = Math.round(h - d * 24);
     if (r === 24) { d += 1; r = 0; }
@@ -4127,14 +4127,14 @@
   $('ncSave').addEventListener('click', function () {
     var name = ($('ncName').value || '').trim();
     var rate = Number($('ncRate').value || 0);
-    if (!name) { msg('ncMsg', 'A name is required.', 'err'); return; }
+    if (!name) { msg('ncMsg', 'Enter a name.', 'err'); return; }
     if (!rate || rate <= 0) { msg('ncMsg', 'Set the rate for this campaign.', 'err'); return; }
     var raw = Array.prototype.slice.call(document.querySelectorAll('#ncProfRows .prof-url'))
       .map(function (i) { return i.value.trim(); }).filter(Boolean);
     var bad = raw.filter(function (u) { return !readProfile(u); });
     if (bad.length) { msg('ncMsg', 'Unrecognised profile links: ' + bad.join(', '), 'err'); return; }
     var plats = readBoxes($('ncPlatforms'));
-    if (!plats.length) { msg('ncMsg', 'Select at least one platform.', 'err'); return; }
+    if (!plats.length) { msg('ncMsg', 'Tick at least one platform.', 'err'); return; }
 
     // Kept in the creators list with this as her usual rate, since it is the only
     // number known for her yet. The offer carries it independently.
@@ -4461,8 +4461,8 @@
              WhatsApp for a message from three weeks ago. */
           (!dead && cr.access_code
             ? '<button class="iconbtn kcard-link" data-a="copylink" type="button" ' +
-              'aria-label="Copy portal link for ' + esc(cr.name || '') + '" ' +
-              'title="Copy portal link">' + LINK_ICON + '</button>' : '') +
+              'aria-label="Copy creator page link for ' + esc(cr.name || '') + '" ' +
+              'title="Copy creator page link">' + LINK_ICON + '</button>' : '') +
           (dead || !menuHas ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
             'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
         '</span>' +
@@ -4646,7 +4646,7 @@
       ? big[0].name + ' is larger than ' + mb + ' MB.'
       : big.length > 1 ? big.length + ' files are larger than ' + mb + ' MB.' : '';
     if (!queue.length) { if (tooBig) cardSay(o, tooBig, 'err'); return; }
-    if (!state.campaign || !state.campaign.client_id) { cardSay(o, 'The campaign has no client to file this under.', 'err'); return; }
+    if (!state.campaign || !state.campaign.client_id) { cardSay(o, 'This campaign has no client. Edit the campaign to choose one.', 'err'); return; }
 
     function show(i, n, file, p, saving) {
       if (!box) return;
@@ -4816,8 +4816,8 @@
     /* Hide and Restore after the client's approval (audit S6): soft, so they
        ask nothing, and the way back is drawn where it happened. */
     var FILE_SAID = {
-      denied: 'Your access does not allow this.',
-      'client-scope': 'This client is outside your clients.',
+      denied: 'You do not have permission to change this file. Please ask an admin.',
+      'client-scope': 'This client is not one of your clients.',
       'not-approved': 'A file is hidden once the client has approved it.',
       'not-found': 'The file is no longer on this booking.',
       'not-hidden': 'Hide the file first.'
@@ -4826,7 +4826,7 @@
       var code = r && r.data && r.data.error;
       if (r && r.error) {
         return /does not exist|PGRST202|schema cache/i.test(r.error.message || '')
-          ? 'This feature is not available yet. Please contact an admin.' : verb + ' Check the connection and try again.';
+          ? 'This feature is not available yet. Please contact an admin.' : verb + ' Please try again.';
       }
       return code ? verb + ' ' + (FILE_SAID[code] || 'The database refused the request.') : '';
     }
@@ -4847,7 +4847,7 @@
           }, host);
         }
         return true;
-      }).catch(function () { cardSay(o, 'Not saved. Check the connection and try again.', 'err'); });
+      }).catch(function () { cardSay(o, 'Not saved. Please try again.', 'err'); });
     }
     Array.prototype.forEach.call(card.querySelectorAll('[data-a="hidefile"]'), function (button) {
       button.addEventListener('click', function () {
@@ -4897,7 +4897,7 @@
             if (bad) return bad;
             loadOptions();
             return '';
-          }).catch(function () { return 'Not deleted. Check the connection and try again.'; });
+          }).catch(function () { return 'Not deleted. Please try again.'; });
         });
       });
     });
@@ -4924,7 +4924,7 @@
                 .then(function (u) {
                   if (u.error || !(u.data || []).length) cardSay(o, 'Not restored. The database refused the request.', 'err');
                   loadOptions();
-                }).catch(function () { cardSay(o, 'Not restored. Check the connection and try again.', 'err'); });
+                }).catch(function () { cardSay(o, 'Not restored. Please try again.', 'err'); });
             }, block);
           });
       }
@@ -5081,11 +5081,11 @@
        route it came by. */
     var files = (state.files && state.files[p.id]) || [];
     if ((to === 'submitted' || to === 'reviewing') && !p.draft_url && !files.length) {
-      return 'Draft link or files required.';
+      return 'Add a draft link or files first.';
     }
-    if (to === 'scheduled' && !p.planned_publish) return 'Post date required. Set it on the Schedule.';
+    if (to === 'scheduled' && !p.planned_publish) return 'Set the post date on the Schedule first.';
     if (to === 'posted') {
-      if (!p.planned_publish) return 'Post date required. Set it on the Schedule.';
+      if (!p.planned_publish) return 'Set the post date on the Schedule first.';
       if (p.planned_publish > today()) return 'Post date is ' + niceDate(p.planned_publish) + '.';
     }
     return '';
@@ -5131,9 +5131,9 @@
     window.ADspaceConfirm.ask({
       title: 'Revert to ' + wordFor(to),
       body: undo
-        ? name + ' goes back to ' + wordFor(to) + '. The request stays on the record, taken back.'
+        ? name + ' goes back to ' + wordFor(to) + '. The request is kept in the history as taken back.'
         : unapprove
-        ? name + ' goes back to ' + wordFor(to) + '. The approval stays on the record, taken back.'
+        ? name + ' goes back to ' + wordFor(to) + '. The approval is kept in the history as taken back.'
         : name + ' goes back a step. Dates, notes and files are kept.',
       go: 'Revert',
       tone: 'warn'
@@ -5234,7 +5234,7 @@
     var name = (o.creators || {}).name || 'this creator';
     window.ADspaceConfirm.ask({
       title: 'Reinstate',
-      body: name + ' goes back to Confirmed and the recorded reason is cleared.',
+      body: name + ' goes back to Confirmed and the reason recorded is removed.',
       go: 'Reinstate'
     }, function () {
       db.from('campaign_options')
@@ -5265,7 +5265,7 @@
     if (btn._ask) { btn._ask.open(); return; }
     btn._ask = window.ADspaceAsk.note(btn.closest('.kactions') || btn, {
       label: 'Changes', send: 'Send to creator',
-      placeholder: 'The creator reads this.',
+      placeholder: 'The creator will see this.',
       save: function (why) { sendBackNow(o, card, why); }
     });
     btn._ask.open();
@@ -5424,7 +5424,7 @@
         : qc.outstanding
           ? (qc.already
               ? 'You checked this on ' + shortWhen(rows[0].checked_at) +
-                ' and asked for a second reviewer. Somebody else has to complete the check.'
+                ' and asked for a second reviewer. Another colleague must complete the check.'
               : 'Checked by ' + asker + ' on ' + shortWhen(rows[0].checked_at) +
                 '. Yours is the second review.')
           /* Both pairs of eyes have been on it. Naming both is what says the
@@ -5682,8 +5682,8 @@
           /* A post link that is not a web address is refused, never saved as
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
-          if (badFig) { badFig.focus(); return no('Enter a whole number of nought or more.'); }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Count to comes after Count from.');
+          if (badFig) { badFig.focus(); return no('Enter a whole number of 0 or more.'); }
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Count to must be after Count from.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
@@ -5742,7 +5742,7 @@
       tone: 'warn',
       field: {
         label: kind === 'withdrawn' ? 'Reason' : 'Reason',
-        placeholder: 'Describe what happened. It is recorded in the activity history.',
+        placeholder: 'Describe what happened. It is kept in the Activity record.',
         rows: 3,
         need: 'Enter a reason.'
       }
@@ -5927,7 +5927,7 @@
     var no = invoiceNo();
     var file = $('invFile').files && $('invFile').files[0];
     if (file && !/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
-      msg('invMsg', 'The invoice has to be a PDF.', 'err'); return;
+      msg('invMsg', 'The invoice must be a PDF.', 'err'); return;
     }
     if (file && !putToS3) { msg('invMsg', 'Uploads are not available on this page.', 'err'); return; }
 
@@ -6035,7 +6035,7 @@
     empty: function () { return 'No creators selected.'; },
     'over-slots': function (d) { return 'Not confirmed. ' + d.booked + ' of ' + d.slots + ' creators are already booked; confirm ' + Math.max(0, d.slots - d.booked) + ' at most.'; },
     denied: function () { return 'Not confirmed. You do not have permission to confirm creators. Please ask an admin.'; },
-    'client-scope': function () { return 'Not confirmed. This client is outside your reach.'; },
+    'client-scope': function () { return 'Not confirmed. This client is not one of your clients.'; },
     'not-found': function () { return 'This campaign is no longer available.'; }
   };
 
@@ -6055,7 +6055,7 @@
   function applyBulk(overwrite) {
     var vals = bulkValues();
     var keys = Object.keys(vals).filter(function (k) { return vals[k] !== null; });
-    if (!keys.length) { msg('bulkMsg', 'A date or a note is required.', 'err'); return; }
+    if (!keys.length) { msg('bulkMsg', 'Enter a date or a note.', 'err'); return; }
 
     var targets = state.options.filter(isLive);
     if (!targets.length) { msg('bulkMsg', 'Nothing in production.', 'err'); return; }
@@ -6079,14 +6079,14 @@
     function done() {
       /* A row the database refused is counted, never applied (audit, 2026-10-03). */
       if (refused) {
-        msg('bulkMsg', refused + ' not saved. The database refused the request.', 'err');
+        msg('bulkMsg', refused + (refused === 1 ? ' booking' : ' bookings') + ' not saved. The database refused the request.', 'err');
         if (touched) log('campaign.bulk', state.campaign.title, touched + ' rows');
         loadOptions();
         return;
       }
       msg('bulkMsg', touched
         ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
-        : 'All rows already have these values. Use Overwrite to replace them.',
+        : 'All bookings already have these values. Use Overwrite to replace them.',
         touched ? 'ok' : 'warn');
       log('campaign.bulk', state.campaign.title, touched + ' rows');
       loadOptions();
@@ -6097,7 +6097,7 @@
   $('bulkApplyAll').addEventListener('click', function () {
     window.ADspaceConfirm.ask({
       title: 'Overwrite every creator',
-      body: 'Dates somebody set by hand on a booking are replaced with these. '
+      body: 'Dates set by hand on a booking will be replaced with these. '
           + 'Apply to blanks leaves those alone.',
       go: 'Overwrite',
       tone: 'warn'
