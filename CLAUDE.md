@@ -7651,6 +7651,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   user, 2026-11-11: "lets not change name … in the future please try to
   streamline"). A template button never links to wa.me (Meta refuses it):
   a colleague is reached through their namecard's short link.
+- Introduce representative (`representative`, `2026-11-11-representative-on-whatsapp.sql`,
+  its SQL Editor part; the user, 2026-11-11): a lead's ⋯ (Lead, Contacted,
+  Proposal sent, its Sales by set, Messages at Work and Clients: Leads at
+  View, the purpose's template on) opens the composer on its contacts; the
+  same template chosen in New message for a contact is sent as it. Its
+  variables are the greeting, the brand and the Sales by colleague; its
+  link button the colleague's namecard short link (`wa_compose_prepare`
+  `rep`, `code`; `not-lead`, `no-sales-by`, `no-card`), held as Sent
+  recently by its client. The template is Utility: it states a fact about
+  the lead's own enquiry, never asks them to call or buy.
 - `wa-send` answers `report` and `feedback` with bad-request (2026-10-19). A refusal is one
   line in the team's words (`SAID` in js/whatsapp.js), never Meta's.
 - Queued by trigger, never failing the write: a reminder in a colleague's

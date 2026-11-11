@@ -9491,3 +9491,18 @@ colleague), was refused with a wa.me button: Meta allows no direct link to
 WhatsApp in a template button, so it opens the colleague's namecard short
 link instead.
 
+### 2026-11-11 — A lead told who took their enquiry, on WhatsApp
+The user asked for a template telling a prospect that the business
+development team had contacted them, one variable for the Sales by
+colleague, a button, sent by hand from the lead and from Messages. The
+first wording (`prospect_contact_made`: "to discuss your requirements
+further … arrange a call") was approved by Meta as Utility and moved to
+Marketing within the hour; the user: "cannot be in marketing its gonna be
+expensive". It was redrafted as a fact about the lead's own enquiry
+(`enquiry_representative_assigned`: the enquiry assigned to a
+representative, their name, reply here), with no ask to call or buy. The
+button opens the colleague's namecard (Meta refuses wa.me), which must be
+on; a lead with no Sales by, or a client, is refused. The purpose is
+named Representative to lead: the copy review found "prospect" a second
+word for a lead in the console.
+
