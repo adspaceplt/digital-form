@@ -3212,7 +3212,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   Saved to Bukku, Took Bukku's details); every held link is read again at
   00:30 MYT (pg_cron `bukku-read-nightly`, the wake secret, 100 seconds a
   run, the oldest read first). An entity is the same inside its fold.
-  Suppliers keep Send to Bukku as before.
+  Suppliers keep Send to Bukku as before. Creators brought in from the
+  AP01 form are matched to their Bukku contacts by `bukku-sync`
+  `match-creators` (the wake secret alone, read only: ID number, else one
+  contact of the legal name, a contact another record links said as
+  taken; `creatorMatches`); the links are then made as Link only makes
+  them (2026-11-11, the user: "yes link").
   Secrets `BUKKU_TOKEN`, `BUKKU_SUBDOMAIN` (Supabase only).
 - Overdue invoices (`js/invoices.js`, `2026-10-28-overdue-invoice-reminders.sql`;
   the user, 2026-10-28: "pull those overdues data from bukku and inside

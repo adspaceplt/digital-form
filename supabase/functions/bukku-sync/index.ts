@@ -34,6 +34,10 @@
  *                                             read back into the portal;
  *                                             refused `stale` where Bukku
  *                                             moved since it was read.
+ *   POST { action: 'match-creators' }         with the wake secret: each creator
+ *                                             with approved payment details and
+ *                                             no link, matched to a Bukku contact
+ *                                             by ID number, else name; read only.
  *   POST { action: 'nightly' }                every held link read again
  *                                             (pg_cron at 00:30 MYT, with
  *                                             the wake secret).
@@ -573,6 +577,57 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
   return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months }, 200, origin);
 }
 
+// ---- Creators to their Bukku contacts (2026-11-11) --------------------------
+/* The creators brought in from the AP01 form were paid through Bukku before
+   the portal: each holding approved payment details and no Bukku link of
+   its own is matched to the contact whose registration no. is its ID
+   number, else the one contact whose name is its legal name; a contact
+   another record links is said, never offered. Read only: the links are
+   made from the list by hand. */
+export function creatorMatches(reqs: any[], creators: any[], links: any[], contacts: any[]) {
+  const linked = new Set(links.filter((l) => l.kind === 'creator').map((l) => String(l.record_id)));
+  const taken = new Map<number, string>(links.map((l) => [Number(l.contact_id), String(l.kind)]));
+  const latest = new Map<string, any>();
+  for (const r of reqs) {
+    const k = String(r.creator_id), had = latest.get(k);
+    if (!had || String(r.decided_at || '') > String(had.decided_at || '')) latest.set(k, r);
+  }
+  const live = contacts.filter((c) => c && c.id && !c.is_archived);
+  const out: any[] = [];
+  for (const cr of creators) {
+    const r = latest.get(String(cr.id));
+    if (!r || linked.has(String(cr.id))) continue;
+    const id = digits(r.id_no), name = words(r.legal_name);
+    let hits = id.length >= 6 ? live.filter((c) => digits(c.reg_no) === id) : [];
+    let why = 'id';
+    if (!hits.length && name) { hits = live.filter((c) => words(c.legal_name) === name || words(c.other_name) === name); why = 'name'; }
+    if (hits.length > 1) {
+      const sup = hits.filter((c) => (c.types || []).includes('supplier'));
+      if (sup.length === 1) hits = sup;
+    }
+    const one = hits.length === 1 ? hits[0] : null;
+    out.push({ creator: cr.id, code: cr.creator_code, name: r.legal_name, why: one ? why : hits.length ? 'several' : 'none',
+      contact: one ? Number(one.id) : null, contact_code: one ? one.contact_code || null : null,
+      contact_name: one ? one.legal_name || null : null, supplier: one ? (one.types || []).includes('supplier') : null,
+      taken: one && taken.has(Number(one.id)) ? taken.get(Number(one.id)) : null,
+      several: hits.length > 1 ? hits.slice(0, 5).map((c) => c.contact_code || String(c.id)) : undefined });
+  }
+  return out.sort((a, b) => String(a.code).localeCompare(String(b.code)));
+}
+async function matchCreators(req: Request, origin: string | null): Promise<Response> {
+  const svc = svcDb();
+  const ok = await svc.rpc('wake_secret_ok', { p_given: req.headers.get('x-adspace-wake') || '' });
+  if (ok.error || ok.data !== true) return json({ error: 'unauthorised' }, 401, origin);
+  const [reqs, crs, lks] = await Promise.all([
+    svc.from('creator_pay_requests').select('creator_id, id_no, legal_name, decided_at').eq('status', 'approved'),
+    svc.from('creators').select('id, creator_code'),
+    svc.from('bukku_links').select('kind, record_id, contact_id')
+  ]);
+  if (reqs.error || crs.error || lks.error) return json({ error: 'needs-update' }, 200, origin);
+  const rows = creatorMatches(reqs.data || [], crs.data || [], lks.data || [], await allContacts());
+  return json({ ok: true, rows }, 200, origin);
+}
+
 // ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
 /* Every purchase bill of the creator's Bukku contact, a hundred a page, its
    reference read where Bukku keeps it (the bill's reference no., else its
@@ -987,6 +1042,11 @@ Deno.serve(async (req) => {
   let body: Record<string, any> = {};
   try { body = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const action = String(body.action || '');
+  if (action === 'match-creators') {
+    try { return await matchCreators(req, origin); }
+    catch (e) { console.error('bukku-sync: match-creators', String((e as Error).message || e));
+      return json({ error: e instanceof BukkuError ? e.code : 'failed' }, 200, origin); }
+  }
   if (action === 'nightly') {
     try { return await nightly(req, origin); }
     catch (e) { console.error('bukku-sync: nightly failed', String((e as Error).message || e)); return json({ error: 'failed' }, 200, origin); }
