@@ -623,6 +623,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
 
+- `creator`: three Payments pane checks ("Payments lists the booking with its
+  Job reference and Pending payment", "a booking's payment is one line", "a
+  paid bill reads Paid on Bukku's payment day") fail on main before and after
+  the client-page copy sweep (2026-11-12); not yet found.
+
 - `work`: "a new meeting opens on the next free half hour" and "the time is
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
