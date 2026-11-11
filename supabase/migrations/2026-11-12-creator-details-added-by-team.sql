@@ -31,7 +31,7 @@
 
 -- CREATOR DETAILS ADDED BY THE TEAM ------------------------------------------
 
-alter table public.creator_pay_requests add column if not exists entered_by uuid references public.team_members(id) on delete set null;
+alter table public.creator_pay_requests add column if not exists entered_by uuid references public.team_members(id);
 
 create or replace function public.creator_pay_add(p_creator uuid, p_values jsonb)
 returns jsonb
