@@ -300,6 +300,20 @@
   function paintGate() {
     var box = $('hbGate');
     if (!box) return;
+    if (bridge.handbookFailed && bridge.handbookFailed()) {
+      var sec0 = $('sectionHandbook');
+      if (sec0) sec0.classList.add('is-onboard');
+      box.hidden = false;
+      box.innerHTML = '<div class="hbo-hero"><span class="hbo-mark">' + BOOK + '</span>' +
+        '<h2 class="hbo-title">Unable to load</h2>' +
+        '<p class="hbo-line">The Handbook files to read could not be loaded. Please try again.</p>' +
+        '<button class="btn btn-primary" id="hbGateRetry" type="button">Try again</button></div>';
+      $('hbGateRetry').addEventListener('click', function (e) {
+        var b = e.currentTarget; b.disabled = true;
+        bridge.handbookRetry(function () { b.disabled = false; paintGate(); });
+      });
+      return;
+    }
     var due = dueList();
     if (due.length && !gateIds) gateIds = due.map(function (x) { return x.id; });
     var sec = $('sectionHandbook');

@@ -4677,7 +4677,7 @@ span.inv-amt { font-weight: 600; }
    console holds the colleague on the Handbook: the rail's sections, its
    foot's marks, search and the tab bar step away. */
 body.hb-gate .navgroup, body.hb-gate #railEdit, body.hb-gate #settingsOpen,
-body.hb-gate #activityOpen, body.hb-gate #handbookOpen, body.hb-gate #searchOpen,
+body.hb-gate #activityOpen, body.hb-gate #handbookOpen, body.hb-gate #searchOpen, body.hb-gate #notifWrap,
 body.hb-gate #tabBar { display: none; }
 /* The onboarding: one centred column, a welcome over the progress and a
    step a file; the Handbook's own bar and list wait until it is done. */

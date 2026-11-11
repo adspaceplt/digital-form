@@ -7129,13 +7129,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `handbook_reads` (RLS on, no policy, no grant); a new version asks again.
   `handbook_due()` is read beside `me()`, and while it holds anything the
   console holds the colleague on the Handbook's onboarding (`body.hb-gate`:
-  the rail's sections, its foot's marks, search and the tab bar away;
+  the rail's sections, its foot's marks, search, its keys, the bell and the
+  tab bar away; a read of it that fails holds the gate with Unable to load
+  and Try again, never opening the portal; audit 2026-11-11;
   `#hbGate`, the Handbook's bar and list hidden): Welcome to ADspace, {first
   name}, n of N acknowledged over a track, a step a file (Open, then
   Acknowledge), then Every file is acknowledged with Continue onto the
   first section held. The ⋯'s Who acknowledged lists each colleague against
   the current version (`handbook_acks`). The gate is the page's; the
-  database refuses no read to a colleague with a file due.
+  database refuses no read to a colleague with a file due, and Opened is
+  the page's word that it asked for the file's link.
 - A file lives in the private Supabase Storage bucket `handbook` (50 MB a
   file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
   opened only through a signed link of 60 seconds made at the press
