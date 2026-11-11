@@ -9524,3 +9524,11 @@ band (a client, a billing entity, a supplier, a creator) and the Settings
 row; its navy reads as nothing on the dark theme, so a copy with the navy
 made light stands in there. Client pages and emails keep no Bukku branding.
 
+
+### 2026-11-11 · WhatsApp greets by the whole name
+The user sent Kai Sin's greeting as "Kai": a contact with no salutation, a
+creator and a colleague were greeted by the first word of their name, which
+cuts a Chinese name in two. `contact_greeting` now answers the whole name
+where no salutation is set (a salutation still said once), and the
+composer's recipients, a creator's booking message and a colleague's
+reminder greet through it. Found by the user in the composer.
