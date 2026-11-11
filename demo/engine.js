@@ -11869,7 +11869,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return false;
       };
       var waWord = { report: 'Report to client', feedback: 'Feedback request', reminder: 'Team reminders', creator: 'Creator updates', approval: 'Approval reminder',
-        quotation: 'Quotation to client', offer: 'Letter of Offer to client', quote_ready: 'Quotation ready', representative: 'Representative to prospect' };
+        quotation: 'Quotation to client', offer: 'Letter of Offer to client', quote_ready: 'Quotation ready', representative: 'Representative to lead' };
       var waNow = new Date().toISOString();
       if (name === 'wa_templates_read') return Promise.resolve({ data: JSON.parse(JSON.stringify({ templates: DB.wa_templates })), error: null });
 

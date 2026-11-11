@@ -108107,7 +108107,7 @@ alter table public.creator_pay_requests alter column address drop not null;
 --   * `wa_send_begin`, `wa_sent_recently`: filed and held as Sent recently
 --     by its client, as a feedback request is.
 --   * `wa_send_done`, `wa_template_set`: the purpose's words
---     (Representative introduction; Representative to prospect, and
+--     (Representative introduction; Representative to lead, and
 --     Quotation ready, which read Creator updates).
 --
 -- ORDER: the SQL Editor part, the pages, then this file (connector). Until
@@ -108421,7 +108421,7 @@ begin
   v_word := case p_purpose when 'report' then 'Report to client' when 'feedback' then 'Feedback request'
                            when 'reminder' then 'Team reminders' when 'approval' then 'Approval reminder'
                            when 'quotation' then 'Quotation to client' when 'offer' then 'Letter of Offer to client'
-                           when 'quote_ready' then 'Quotation ready' when 'representative' then 'Representative to prospect'
+                           when 'quote_ready' then 'Quotation ready' when 'representative' then 'Representative to lead'
                            else 'Creator updates' end;
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'wa.template', 'WhatsApp',
