@@ -38,6 +38,7 @@
     approval: ['Approval reminder', 'Sent from Waiting for you when a set or a draft has waited on the client. Variables: the greeting (salutation and name), the client, what waits. Its link button (https://digital.adspace.me/{{1}}) opens the page to approve it.'],
     quotation: ['Quotation to client', 'Sent from a quotation\'s ⋯ on the client\'s Services, its PDF as the header document. Variables: the greeting (salutation and name), the client, the quotation\'s reference.'],
     offer: ['Letter of Offer to client', 'Sent from a Letter of Offer\'s ⋯ on the client\'s Documents, its PDF as the header document. Variables: the greeting (salutation and name), the client, the letter\'s reference.'],
+    representative: ['Representative to prospect', 'Sent from a lead\'s ⋯ (Introduce representative), or chosen in New message, to a lead whose Sales by is set. Variables: the greeting (salutation and name), the brand, the Sales by colleague\'s name. Its link button (https://hi.adspace.me/{{1}}) opens their namecard.'],
     quote_ready: ['Quotation ready', 'Sent by the portal when a colleague sends a website quotation (Send quotation), to the prospect\'s WhatsApp. Variables: the greeting (salutation and name), the brand, the quotation\'s reference. Its link button (https://digital.adspace.me/quote/?q={{1}}) opens the quotation.']
   };
   /* A purpose whose message carries a record's PDF as its Document header. */
@@ -50,7 +51,8 @@
      2026-10-10: not a list of the purposes allowed). */
   var NO_BUTTON = { reminder: 'Team reminders are sent by the portal itself, which cannot fill a link button.' };
   var KIND = { report: 'Report', feedback: 'Feedback request', creator: 'Booking', approval: 'Approval reminder', reminder: 'Reminder',
-    quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', message: 'Message' };
+    quotation: 'Quotation', offer: 'Letter of Offer', quote_ready: 'Quotation ready', representative: 'Representative introduction',
+    message: 'Message' };
   var CATEGORY = { utility: 'Utility', marketing: 'Marketing', authentication: 'Authentication', service: 'Service' };
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
                 ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['unknown', 'Not confirmed', 'is-warn'],
@@ -77,6 +79,9 @@
     'not-booked': 'Only a booked creator can be sent their booking.',
     'not-found': 'This record no longer exists.',
     'not-client': 'Feedback is asked of a client, never a lead.',
+    'not-lead': 'A representative is introduced to a lead alone.',
+    'no-sales-by': 'This lead has no Sales by. Set it on the lead first.',
+    'no-card': 'The Sales by colleague\'s namecard is off. Turn it on in Team first.',
     void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
     'wa-params-missing': 'Fill in every variable.',
@@ -182,6 +187,8 @@
     if (purpose === 'message') return may('clients.contacts', 'view') || may('campaigns.creators', 'view');
     /* An approval reminder reads the set or the booking it names. */
     if (purpose === 'approval') return may(PART.approval, 'work') && (may('review.sets', 'view') || may('campaigns.campaigns', 'view'));
+    /* A representative is named to a lead: the lead read. */
+    if (purpose === 'representative') return may('clients.leads', 'view');
     return Boolean(PART[purpose]) && may(PART[purpose], 'work') && may(RECORD[purpose], 'view');
   }
 
@@ -259,7 +266,7 @@
     sel.innerHTML = opts.join('');
     sel.value = st.month;
     sel.setAttribute('data-default', st.month);
-    $('waPurpose').innerHTML = '<option value="">All types</option>' + ['report', 'feedback', 'creator', 'approval', 'reminder', 'message'].map(function (k) {
+    $('waPurpose').innerHTML = '<option value="">All types</option>' + ['report', 'feedback', 'creator', 'approval', 'representative', 'reminder', 'message'].map(function (k) {
       return '<option value="' + k + '">' + esc(KIND[k]) + '</option>';
     }).join('');
     $('waStatus').innerHTML = '<option value="">All statuses</option>' + STATUS.map(function (s) {
@@ -777,7 +784,7 @@
     o = o || {};
     var sheet = $('waCompose');
     if (!sheet) return;
-    cx = { o: o, recips: [], byVal: {}, tpls: [], byKey: {}, reports: {}, sending: false };
+    cx = { o: o, recips: [], byVal: {}, tpls: [], byKey: {}, reports: {}, reps: {}, repTpl: '', sending: false };
     say($('waComposeMsg'), '');
     $('waComposeTitle').textContent = o.purpose && o.purpose !== 'message' ? 'Send on WhatsApp' : 'New message';
     $('waTo').innerHTML = '<option value="">Loading…</option>';
@@ -805,7 +812,9 @@
   }
 
   /* A purpose sent to one client's contacts, its main contact first. */
-  function forClient(o) { return o.purpose === 'report' || o.purpose === 'feedback' || o.purpose === 'approval' || Boolean(o.doc); }
+  function forClient(o) {
+    return o.purpose === 'report' || o.purpose === 'feedback' || o.purpose === 'approval' || o.purpose === 'representative' || Boolean(o.doc);
+  }
   function fillTo(d) {
     var o = cx.o, sel = $('waTo');
     if (d.error) {
@@ -870,6 +879,9 @@
     cx.tpls = (m.list || []).filter(function (t) { return t.supported; });
     cx.tpls.forEach(function (t) { cx.byKey[tplKey(t)] = t; });
     var set = (k.list || []).filter(function (t) { return t.purpose === o.purpose && t.active && t.name; })[0];
+    /* The representative's template, so New message knows it when chosen. */
+    var repSet = (k.list || []).filter(function (t) { return t.purpose === 'representative' && t.active && t.name; })[0];
+    cx.repTpl = repSet ? repSet.name + '|' + repSet.lang : '';
     var pre = set && cx.byKey[set.name + '|' + set.lang] ? set.name + '|' + set.lang : '';
     sel.innerHTML = (pre ? '' : '<option value="">Choose a template</option>') + cx.tpls.map(function (t) {
       return '<option value="' + esc(tplKey(t)) + '">' + esc(tplWord(t)) + '</option>';
@@ -934,6 +946,29 @@
     else if (note.getAttribute('data-btn')) { say(note, ''); note.hidden = true; note.removeAttribute('data-btn'); }
     if (!cx.sending) $('waSend').disabled = badButton(t) || Boolean(r && !r.number);
     if (!t) { box.innerHTML = ''; $('waFillSec').hidden = true; $('waReportRow').hidden = true; return; }
+    /* The representative is the database's: the lead's Sales by, read once
+       a contact, or why it cannot be named. */
+    if (!introducing(r) && $('waToNote').getAttribute('data-rep')) {
+      $('waToNote').removeAttribute('data-rep');
+      say($('waToNote'), ''); $('waToNote').hidden = true;
+      if (!cx.sending) $('waSend').disabled = badButton(t) || Boolean(r && !r.number);
+    }
+    if (introducing(r)) {
+      var rp = cx.reps[r.id];
+      if (!rp) {
+        var mine = cx;
+        cx.reps[r.id] = { loading: true };
+        rpc('wa_compose_prepare', { p_to_kind: 'contact', p_to: r.id, p_purpose: 'representative', p_ref: null })
+          .then(function (d) { return { rep: d.rep || '', code: d.code || '' }; })
+          .catch(function (e) { return { error: e && e.code || 'wa-failed' }; })
+          .then(function (got) { if (cx !== mine) return; cx.reps[r.id] = got; pickTemplate(true); });
+      } else if (rp.error) {
+        say($('waToNote'), said(rp.error), 'warn');
+        $('waToNote').hidden = false;
+        $('waToNote').setAttribute('data-rep', '1');
+        if (!cx.sending) $('waSend').disabled = true;
+      }
+    }
     var isDoc = t.header === 'DOCUMENT';
     $('waReportRow').hidden = !isDoc || !r || r.kind !== 'contact';
     /* A quotation or a letter the composer was opened on is the one
@@ -967,6 +1002,13 @@
     if (isDoc && r && r.kind === 'contact' && !given) loadReports(r.client_id);
     else preview();
   }
+  /* A representative to a lead: opened for it, or its template chosen in
+     New message for a client contact. */
+  function introducing(r) {
+    return Boolean(cx && r && r.kind === 'contact' && (cx.o.purpose === 'representative' ||
+      (cx.o.purpose === 'message' && cx.repTpl && template() && tplKey(template()) === cx.repTpl)));
+  }
+  function repOf(r) { var x = cx && r && cx.reps[r.id]; return x && !x.error && !x.loading ? x : null; }
   /* The approval reminder's own client: what waits and its link fill in. */
   function approving(r) { return Boolean(cx && cx.o.purpose === 'approval' && r && r.kind === 'contact' && r.client_id === cx.o.clientId); }
   /* A numbered variable is named for what `prefill` puts in it, so the
@@ -980,6 +1022,7 @@
     if (v === '3' && doc) return cx.o.doc ? 'Reference' : 'Report';
     if (v === '3' && approving(r)) return 'Pending item';
     if (v === '4' && approving(r)) return 'Link';
+    if (v === '3' && introducing(r)) return 'Representative';
     return 'Variable ' + v;
   }
   function human(v) { var s = String(v).replace(/_/g, ' ').trim(); return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -1000,17 +1043,19 @@
         var link = String(o.link || '');
         return base && link.indexOf(base) === 0 ? link.slice(base.length) : '';
       }
+      if (introducing(r)) return (repOf(r) || {}).code || '';
       return r.kind === 'creator' ? (r.code || '') : '';
     }
     if (kind === 'h') return '';
     if (/^\d+$/.test(v)) {
       if (v === '1') return r.greeting || r.name || '';
       if (v === '2') return r.kind === 'creator' ? (o.campaign || '') : (rep ? rep.client : r.client) || '';
-      if (v === '3') return rep ? rep.title : approving(r) ? (o.what || '') : '';
+      if (v === '3') return rep ? rep.title : approving(r) ? (o.what || '') : introducing(r) ? ((repOf(r) || {}).rep || '') : '';
       if (v === '4') return approving(r) ? (o.link || '') : '';
       return '';
     }
     if (approving(r) && /link|url|approve/.test(low)) return o.link || '';
+    if (introducing(r) && /rep|sales|person|staff|colleague/.test(low)) return (repOf(r) || {}).rep || '';
     if (approving(r) && /what|item|waiting|set|draft|content/.test(low)) return o.what || '';
     if (/campaign|job|booking/.test(low)) return r.kind === 'creator' ? (o.campaign || '') : '';
     if (/report|period|month|ref|quot|letter|offer|document/.test(low)) return rep ? rep.title : '';
@@ -1138,7 +1183,8 @@
       empty.focus();
       return;
     }
-    var purpose = docOf || ((o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message');
+    if (introducing(r) && !repOf(r)) { say(m, said((cx.reps[r.id] || {}).error || 'wa-failed'), 'err'); return; }
+    var purpose = introducing(r) ? 'representative' : docOf || ((o.purpose === 'feedback' || approving(r) || (o.purpose === 'creator' && r.kind === 'creator' && r.id === o.creatorId)) ? o.purpose : 'message');
     if (!maySend(purpose)) { say(m, SAID.denied, 'err'); return; }
     var ref = DOC[purpose] ? rep.id : purpose === 'creator' ? o.optionId : purpose === 'approval' ? o.ref : null;
     var values = {}, header = '';

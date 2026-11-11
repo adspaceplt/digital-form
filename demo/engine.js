@@ -11828,7 +11828,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (window.__refuseRpc && window.__refuseRpc[name]) return waNo(window.__refuseRpc[name]);
       var waMe = opsMe();
       if (!waMe) return waNo('denied');
-      if (!DB.wa_templates) DB.wa_templates = ['report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready'].map(function (pp) {
+      if (!DB.wa_templates) DB.wa_templates = ['report', 'feedback', 'reminder', 'creator', 'approval', 'quotation', 'offer', 'quote_ready', 'representative'].map(function (pp) {
         return Object.assign({ purpose: pp, name: '', lang: 'en', params: 0, category: '', active: false, set_by: null, set_at: null },
           (window.__waTemplates || {})[pp] || {});
       });
@@ -11864,11 +11864,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           (opsAllowed('review.sets', 'view') || opsAllowed('campaigns.campaigns', 'view'));
         if (purpose === 'quotation') return kind === 'contact' && opsAllowed('whatsapp.documents', 'work') && opsAllowed('clients.quotes', 'view');
         if (purpose === 'offer') return kind === 'contact' && opsAllowed('whatsapp.documents', 'work') && opsAllowed('clients.documents', 'view');
+        if (purpose === 'representative') return kind === 'contact' && opsAllowed('clients.leads', 'view');
         if (purpose === 'message') return kind === 'contact' ? opsAllowed('clients.contacts', 'view') : kind === 'creator' ? opsAllowed('campaigns.creators', 'view') : false;
         return false;
       };
       var waWord = { report: 'Report to client', feedback: 'Feedback request', reminder: 'Team reminders', creator: 'Creator updates', approval: 'Approval reminder',
-        quotation: 'Quotation to client', offer: 'Letter of Offer to client' };
+        quotation: 'Quotation to client', offer: 'Letter of Offer to client', quote_ready: 'Quotation ready', representative: 'Representative to prospect' };
       var waNow = new Date().toISOString();
       if (name === 'wa_templates_read') return Promise.resolve({ data: JSON.parse(JSON.stringify({ templates: DB.wa_templates })), error: null });
 
@@ -11919,8 +11920,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'wa_compose_prepare') {
         var wpKind = args.p_to_kind, wpPur = args.p_purpose;
         var wpOut = (function () {
-          if (['message', 'report', 'feedback', 'creator', 'approval', 'quotation', 'offer'].indexOf(wpPur) < 0 || ['contact', 'creator'].indexOf(wpKind) < 0 ||
-              (['report', 'feedback', 'approval', 'quotation', 'offer'].indexOf(wpPur) > -1 && wpKind !== 'contact') || (wpPur === 'creator' && wpKind !== 'creator')) return { error: 'bad-request' };
+          if (['message', 'report', 'feedback', 'creator', 'approval', 'quotation', 'offer', 'representative'].indexOf(wpPur) < 0 || ['contact', 'creator'].indexOf(wpKind) < 0 ||
+              (['report', 'feedback', 'approval', 'quotation', 'offer', 'representative'].indexOf(wpPur) > -1 && wpKind !== 'contact') || (wpPur === 'creator' && wpKind !== 'creator')) return { error: 'bad-request' };
           if (!waMay(wpPur, wpKind)) return { error: 'denied' };
           if (wpKind === 'contact') {
             var k = (DB.client_contacts || []).filter(function (x) { return x.id === args.p_to && !x.archived_at; })[0];
@@ -11928,6 +11929,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var c = (DB.clients || []).filter(function (x) { return x.id === k.client_id; })[0];
             if (!c || !scopeSeen(c.id, 'view')) return { error: 'not-found' };
             if (wpPur === 'feedback' && ['lead', 'contacted', 'proposal'].indexOf(c.stage || 'lead') > -1) return { error: 'not-client' };
+
+            var rpT = null;
+            if (wpPur === 'representative') {
+              if (['lead', 'contacted', 'proposal'].indexOf(c.stage || 'lead') < 0) return { error: 'not-lead' };
+              rpT = (DB.team_members || []).filter(function (x) { return x.id === c.sales_by && x.active && !x.removed_at; })[0];
+              if (!rpT) return { error: 'no-sales-by' };
+              if (!rpT.card_on || !String(rpT.card_slug || '').trim()) return { error: 'no-card', rep: rpT.name };
+            }
             var r = null;
             if (wpPur === 'report') {
               r = (DB.sm_reports || []).filter(function (x) { return x.id === args.p_ref; })[0];
@@ -11967,8 +11976,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
             }
             var n = waNum(k.whatsapp && !/^@/.test(k.whatsapp) ? k.whatsapp : k.phone, c.market);
             if (!n) return { error: /^@/.test(k.whatsapp || '') ? 'username' : 'no-number' };
-            return { ok: true, number: n, name: k.name, greeting: waGreet(k), client_id: c.id,
+            var wpRet = { ok: true, number: n, name: k.name, greeting: waGreet(k), client_id: c.id,
                      client: r && r.brand_name ? r.brand_name : c.name, subject: c.name, ref_kind: apKind, link: apLink };
+            if (rpT) { wpRet.rep = rpT.name; wpRet.code = rpT.card_slug; }
+            return wpRet;
           }
           var cr = (DB.creators || []).filter(function (x) { return x.id === args.p_to; })[0];
           if (!cr) return { error: 'not-found' };
@@ -12009,7 +12020,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var rh = Number(appSet('wa_repeat_hours', appToday()));
           if (isNaN(rh)) rh = 24;
           if (rh <= 0) return { data: { ok: true, recent: false, hours: 0 }, error: null };
-          var rref = args.p_purpose === 'feedback' ? rpd.client_id : args.p_purpose === 'message' ? null : (args.p_ref || null);
+          var rref = args.p_purpose === 'feedback' || args.p_purpose === 'representative' ? rpd.client_id : args.p_purpose === 'message' ? null : (args.p_ref || null);
           var since = Date.now() - rh * 36e5;
 
           var rtpl = String(args.p_template || '').trim();
@@ -12017,7 +12028,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return x.to_kind === args.p_to_kind && x.to_id === args.p_to &&
               ['queued', 'sending', 'sent', 'unknown'].indexOf(x.state) > -1 && Date.parse(x.created_at) > since &&
               ((x.purpose === args.p_purpose && (x.ref_id || null) === rref && (args.p_purpose !== 'message' || (x.template || '') === rtpl)) ||
-               ((args.p_purpose === 'feedback' || args.p_purpose === 'message') && rtpl !== '' && x.template === rtpl));
+               (['feedback', 'representative', 'message'].indexOf(args.p_purpose) > -1 && rtpl !== '' && x.template === rtpl));
           }).sort(function (a, b) { return a.created_at < b.created_at ? 1 : -1; })[0];
           if (!rw) return { data: { ok: true, recent: false, hours: rh }, error: null };
           return { data: { ok: true, recent: true, hours: rh, at: rw.created_at, by: rw.created_by === 'system' ? null : rw.created_by,
@@ -12034,11 +12045,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           wd.wa_id = args.p_wa_id || null; wd.error = args.p_error || null; wd.sent_at = args.p_ok ? waNow : null;
           if (!args.p_ok) { persist(); return Promise.resolve({ data: { ok: true }, error: null }); }
           return window.__rpc('wa_compose_prepare', { p_to_kind: wd.to_kind, p_to: wd.to_id, p_purpose: wd.purpose,
-            p_ref: ['feedback', 'message'].indexOf(wd.purpose) > -1 ? null : wd.ref_id }).then(function (dp) {
+            p_ref: ['feedback', 'representative', 'message'].indexOf(wd.purpose) > -1 ? null : wd.ref_id }).then(function (dp) {
             var dpd = (dp && dp.data) || {};
             DB.activity_log.push({ id: nid('a'), actor: waMe.name, action: 'wa.sent', subject: dpd.subject || wd.to_name,
               detail: wd.purpose === 'creator' ? wd.to_name + ' · Booking sent on WhatsApp'
-                : ({ report: 'Report', feedback: 'Feedback request', approval: 'Approval reminder', quotation: 'Quotation', offer: 'Letter of Offer' }[wd.purpose] || 'Message') +
+                : ({ report: 'Report', feedback: 'Feedback request', approval: 'Approval reminder', quotation: 'Quotation', offer: 'Letter of Offer',
+                     representative: 'Representative introduction' }[wd.purpose] || 'Message') +
                   ' sent on WhatsApp to ' + (wd.to_name || 'the contact'), created_at: waNow });
             persist();
             return { data: { ok: true }, error: null };
@@ -12048,7 +12060,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bpd = (bp && bp.data) || {}, bPur = args.p_purpose, bTpl = String(args.p_template || '').trim();
           if (bpd.error) return { data: { error: bpd.error }, error: null };
           if (!bTpl) return { data: { error: 'bad-request' }, error: null };
-          var bRef = bPur === 'feedback' ? bpd.client_id : bPur === 'message' ? null : (args.p_ref || null);
+          var bRef = bPur === 'feedback' || bPur === 'representative' ? bpd.client_id : bPur === 'message' ? null : (args.p_ref || null);
           var same = function (x) { return x.to_kind === args.p_to_kind && x.to_id === args.p_to && x.purpose === bPur &&
             (x.ref_id || null) === (bRef || null) && (bPur !== 'message' || x.template === bTpl); };
           if ((DB.wa_outbox || []).some(function (x) { return same(x) && x.state === 'sending' && Date.parse(x.claimed_at || 0) > Date.now() - 3e5; })) {
@@ -12061,8 +12073,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var bid = nid('wa');
               DB.wa_outbox.push({ id: bid, purpose: bPur, to_number: bpd.number, to_name: bpd.name, template: bTpl,
                 lang: args.p_lang || 'en', params: Array.isArray(args.p_params) ? args.p_params : [],
-                ref_kind: bPur === 'report' ? 'report' : bPur === 'creator' ? 'option' : bPur === 'feedback' ? 'client' : ['approval', 'quotation', 'offer'].indexOf(bPur) > -1 ? bpd.ref_kind : null,
-                ref_id: ['report', 'creator', 'approval', 'quotation', 'offer'].indexOf(bPur) > -1 ? args.p_ref : bPur === 'feedback' ? bpd.client_id : null,
+                ref_kind: bPur === 'report' ? 'report' : bPur === 'creator' ? 'option' : bPur === 'feedback' || bPur === 'representative' ? 'client' : ['approval', 'quotation', 'offer'].indexOf(bPur) > -1 ? bpd.ref_kind : null,
+                ref_id: ['report', 'creator', 'approval', 'quotation', 'offer'].indexOf(bPur) > -1 ? args.p_ref : bPur === 'feedback' || bPur === 'representative' ? bpd.client_id : null,
                 client_id: bpd.client_id, state: 'sending', wa_id: null, error: null, created_by: waMe.name, created_at: new Date().toISOString(),
                 claimed_at: new Date().toISOString(), sent_at: null, tries: 1, to_kind: args.p_to_kind, to_id: args.p_to,
                 category: String(args.p_category || '').toLowerCase() || null });
@@ -14662,7 +14674,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 footer: 'ADspace', buttons: [], button_var: null, supported: true },
               { name: 'offer_letter_send', language: 'en', category: 'utility', status: 'APPROVED', format: 'POSITIONAL',
                 header: 'DOCUMENT', header_text: '', header_var: '', body: 'Dear {{1}},\n\nPlease find attached the Letter of Offer for {{2}}, reference {{3}}.', body_vars: ['1', '2', '3'],
-                footer: 'ADspace', buttons: [], button_var: null, supported: true }
+                footer: 'ADspace', buttons: [], button_var: null, supported: true },
+              { name: 'enquiry_representative_assigned', language: 'en', category: 'utility', status: 'APPROVED', format: 'POSITIONAL',
+                header: '', header_text: '', header_var: '', body: 'Dear {{1}},\n\nThis is an update on your enquiry for {{2}}.\n\nRepresentative:\n{{3}}', body_vars: ['1', '2', '3'],
+                footer: 'Enquiry Update - ADspace Digital', buttons: [{ type: 'URL', text: 'View representative', url: 'https://hi.adspace.me/{{1}}' }],
+                button_var: { index: 0, url: 'https://hi.adspace.me/{{1}}', name: '1' }, supported: true }
             ]));
           };
           if (!window.__wa) {

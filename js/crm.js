@@ -1278,6 +1278,19 @@
         $('crmClientMenuWrap').hidden = false;
       });
     }
+    /* Introduce representative (2026-11-11): a lead whose Sales by is set is
+       told on WhatsApp who of the business development team took their
+       enquiry, where that template is on; wa_compose_prepare refuses it
+       for a client (`not-lead`) or with no Sales by. */
+    $('crmIntroduce').hidden = true;
+    if (bandKey(c.stage) === 'clients.leads' && c.sales_by && window.ADspaceWhatsApp && window.ADspaceWhatsApp.may('representative')) {
+      var inFor = c.id;
+      window.ADspaceWhatsApp.on('representative').then(function (yes) {
+        if (!state.client || state.client.id !== inFor || !yes) return;
+        $('crmIntroduce').hidden = false;
+        $('crmClientMenuWrap').hidden = false;
+      });
+    }
     paintRestrict(c);
     paintVic(c);
     /* There is no Account status block: the stage select in the head says
@@ -2541,6 +2554,11 @@
         var a = it.getAttribute('data-a');
         if (a === 'delclient') { openClientDelete(); return; }
         if (a === 'feedback') { askFeedback(state.client); return; }
+        if (a === 'introduce') {
+          window.ADspaceWhatsApp.compose({ purpose: 'representative', clientId: state.client.id, opener: btn,
+            onSent: function (d, line) { msg('crmWorkMsg', line, 'ok'); } });
+          return;
+        }
         if (a === 'restrict') { askRestrict(state.client); return; }
         if (a === 'vic') { askVic(state.client); return; }
         if (a === 'vicoff') { vicOff(state.client); return; }
