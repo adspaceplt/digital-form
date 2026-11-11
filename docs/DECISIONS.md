@@ -9686,3 +9686,12 @@ and took a column; the user chose a green dot after the name for approved
 (it tells approved apart from none submitted), To review and Declined
 keeping their word, the column gone. The dot alone is named for a screen
 reader and on hover, so no state is carried by colour alone.
+
+### 2026-11-12 · The notice with an end time says it once
+- The user's sweep: a page under Upgrade in progress read "The portal will
+  be available again shortly." over "Expected back by 12 Nov 2026,
+  8:00am.": "shortly" beside a time hours away, the same thing said twice,
+  and "back" a chat word. With an end set the notice now reads one line,
+  The portal will be available again by {when}. (系统将于{when}前恢复使用。),
+  in place of both lines, upgrade and paused alike; with none it keeps its
+  own line. `upgrade` holds the end as the one line with no "shortly".
