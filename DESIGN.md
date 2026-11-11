@@ -931,7 +931,8 @@ screenshotted, and the push names any line it could not settle.
     WhatsApp and Email tabs). A colleague may arrange their own
     order within each chunk (Arrange sections), which the tab bar follows;
     everything else keeps this one.
-  - **Internal**: Documents, Suppliers, Short Links, Services, Team, Handbook.
+  - **Internal**: Documents, Suppliers, Short Links, Services, Team.
+  - The Handbook is a mark at the rail's foot before Settings' (2026-11-11).
   - The Activity record is a mark at the rail's foot, at the right edge of
     the build's line, Arrange sections' and Settings' marks before it (`.sidebar-foot`, each a
     `.railrow`, not a section).

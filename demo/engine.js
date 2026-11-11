@@ -41,7 +41,7 @@
     document_deletions: 'id serial family kind actor reason deleted_at',
     documents: 'id type_id family kind serial client_id member_id issued_at title salutation closing recipient body languages signatory signed source file_url note issued_by idem_key created_at voided_at voided_by void_reason replaces shared_at shared_by supplier_id',
     drive_assets: 'id client_id drive_id url mime_type width height bytes created_at poster_url',
-    handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at',
+    handbook_docs: 'id title category summary link_url current_version archived_at created_at created_by updated_at required',
     handbook_versions: 'id doc_id version_no file_path file_name file_size mime note created_at created_by',
     link_qrs: 'code slug label active revoked_at created_by created_at',
     links: 'slug target_url title active created_by created_at updated_at',
@@ -199,6 +199,11 @@
     get_portal: 'p_client',
     get_review_feed: 'p_passcode p_token',
     handbook_add_version: 'p_note p_size p_doc p_mime p_name p_path',
+    handbook_required_set: 'p_id p_on',
+    handbook_opened: 'p_doc',
+    handbook_ack: 'p_doc',
+    handbook_due: '',
+    handbook_acks: 'p_doc',
     handbook_archive: 'p_id p_on',
     handbook_delete: 'p_title p_id',
     handbook_save: 'p_summary p_title p_id p_link p_category',
@@ -11897,9 +11902,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var waGreet = function (k) {
         var n = String(k.name || '').trim().replace(/\s+/g, ' '), sl = String(k.salutation || '').trim();
         if (sl) return (sl + ' ' + n.replace(/^(dato'? sri|datin sri|datuk sri|tan sri|puan sri|mrs|mr|ms|miss|mdm|madam|dr|prof|dato'?|datin|datuk|tun|tuan|puan|encik|cik)\.?\s+/i, '')).trim();
-        if (/^(tan sri|puan sri|dato'? sri|datin sri|datuk sri) /i.test(n)) return n;
-        if (/^(mr|ms|mrs|mdm|dr|prof|dato'?|datin|datuk|puan|tun|tuan|encik|cik|madam|miss)\.?$/i.test(n.split(' ')[0]) && n.indexOf(' ') > 0) return n;
-        return n.split(' ')[0];
+        return n;
       };
       var waMay = function (purpose, kind) {
         if (!opsAllowed('whatsapp', 'work')) return false;
@@ -11959,7 +11962,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                    username: /^@/.test(k.whatsapp || '') };
         }).sort(function (a, b) { return a.client.localeCompare(b.client) || (b.is_primary - a.is_primary) || String(a.name).localeCompare(String(b.name)); });
         var wrCreators = !opsAllowed('campaigns.creators', 'view') ? [] : (DB.creators || []).filter(function (k) { return k.active !== false; }).map(function (k) {
-          return { id: k.id, name: k.name, greeting: String(k.name || '').trim().split(' ')[0], number: waNum(k.whatsapp, 'MY'), username: false, code: k.access_code || null };
+          return { id: k.id, name: k.name, greeting: String(k.name || '').trim().replace(/\s+/g, ' '), number: waNum(k.whatsapp, 'MY'), username: false, code: k.access_code || null };
         }).sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
         return Promise.resolve({ data: JSON.parse(JSON.stringify({ contacts: wrContacts, creators: wrCreators })), error: null });
       }
@@ -12039,7 +12042,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           } else if (cr.active === false) return { error: 'not-found' };
           var n2 = waNum(cr.whatsapp, 'MY');
           if (!n2) return { error: 'no-creator-number' };
-          return { ok: true, number: n2, name: cr.name, greeting: String(cr.name || '').trim().split(' ')[0], client_id: cp ? cp.client_id || null : null,
+          return { ok: true, number: n2, name: cr.name, greeting: String(cr.name || '').trim().replace(/\s+/g, ' '), client_id: cp ? cp.client_id || null : null,
                    campaign: cp ? (String(cp.title || '').trim() || 'Your campaign') : null, code: cr.access_code || null,
                    subject: cp && String(cp.title || '').trim() ? cp.title : cr.name };
         })();
@@ -13432,6 +13435,61 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (window.__scriptFollow) window.__scriptFollow(vs0.id);
         return vsOk({ version: vs0.version, round: vs0.round, changed: true, code: vs0.code });
       }
+    }
+
+    if (['handbook_required_set', 'handbook_opened', 'handbook_ack', 'handbook_due', 'handbook_acks'].indexOf(name) > -1) {
+      var haOut = (function () {
+        var me2 = opsMe();
+        if (!me2) return { error: 'denied' };
+        DB.handbook_reads = DB.handbook_reads || [];
+        var haAdm = function (x) { return x.is_admin || x.role === 'admin' || x.system; };
+        var haArgs = args || {};
+        var haDoc = (DB.handbook_docs || []).filter(function (x) { return x.id === (haArgs.p_id || haArgs.p_doc); })[0];
+        var haRead = function (mid, d) { return DB.handbook_reads.filter(function (r) { return r.member_id === mid && r.doc_id === d.id && r.version_no === (d.current_version || 0); })[0]; };
+        if (name === 'handbook_due') {
+          if (haAdm(me2)) return { ok: true, due: [] };
+          return { ok: true, due: (DB.handbook_docs || []).filter(function (d) {
+            var r = haRead(me2.id, d);
+            return d.required && !d.archived_at && ((d.current_version || 0) > 0 || d.link_url) && !(r && r.acked_at);
+          }).sort(function (a, b) { return a.title < b.title ? -1 : 1; }).map(function (d) {
+            var r = haRead(me2.id, d);
+            return { id: d.id, version: d.current_version || 0, opened: Boolean(r && r.opened_at) };
+          }) };
+        }
+        if (name === 'handbook_required_set' || name === 'handbook_acks') {
+          if (!opsGranted('team.handbook', 'work')) return { error: 'denied' };
+          if (!haDoc) return { error: 'not-found' };
+          if (name === 'handbook_acks') {
+            return { ok: true, version: haDoc.current_version || 0, people: DB.team_members.filter(function (m) {
+              return m.active !== false && !m.removed_at && !haAdm(m);
+            }).map(function (m) {
+              var r = haRead(m.id, haDoc) || {};
+              return { name: m.name, opened_at: r.opened_at || null, acked_at: r.acked_at || null };
+            }).sort(function (a, b) { return (a.acked_at ? 1 : 0) - (b.acked_at ? 1 : 0) || (a.name < b.name ? -1 : 1); }) };
+          }
+          var on2 = Boolean(haArgs.p_on);
+          if (Boolean(haDoc.required) === on2) return { ok: true, changed: false };
+          DB.activity_log.push({ id: nid('a'), actor: me2.name, action: 'handbook.edited', subject: haDoc.title,
+            detail: 'Required reading: ' + (haDoc.required ? 'On' : 'Off') + ' → ' + (on2 ? 'On' : 'Off'), created_at: new Date().toISOString() });
+          haDoc.required = on2;
+          haDoc.updated_at = new Date().toISOString();
+          persist();
+          return { ok: true };
+        }
+        if (!haDoc || haDoc.archived_at) return { error: 'not-found' };
+        var r1 = haRead(me2.id, haDoc);
+        if (name === 'handbook_opened') {
+          if (!r1) { r1 = { member_id: me2.id, doc_id: haDoc.id, version_no: haDoc.current_version || 0, opened_at: null, acked_at: null }; DB.handbook_reads.push(r1); }
+          r1.opened_at = r1.opened_at || new Date().toISOString();
+          persist();
+          return { ok: true, version: haDoc.current_version || 0 };
+        }
+        if (!r1 || !r1.opened_at) return { error: 'not-opened' };
+        r1.acked_at = r1.acked_at || new Date().toISOString();
+        persist();
+        return { ok: true };
+      })();
+      return Promise.resolve({ data: haOut, error: null });
     }
 
     if (/^handbook_/.test(name)) {

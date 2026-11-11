@@ -716,7 +716,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from
-  `/version.json`, which the Pages build writes through Jekyll
+  `/version.json` (the line shows the commit's last four characters, its
+  name and hover all seven; 2026-11-11), which the Pages build writes through Jekyll
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
   (no build) or missing, the line is hidden (`tests/appver.js`). The line is
   Refresh app (the user, 2026-10-12): a button drawn as its words (no box,
@@ -4155,7 +4156,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceOverview.any()`, asked by `sectionAllowed('overview')`): Full
   Access on a section with no card (Short Links, Services, Team) is never
   offered an empty page. `firstAllowed()` lists it first, then the rail's
-  order with My Work first, the Handbook the floor, so `/admin/` with no
+  order with My Work first, No access the floor (`?s=noaccess`: No access,
+  Please contact an admin., Open Handbook; 2026-11-11), so `/admin/` with no
   `?s=` lands there, and every other page names itself (the Clients list
   writes `s=clients`; a client's record reads as Clients from `client=`
   alone). Anyone else is never offered the row and its address falls back.
@@ -7076,12 +7078,30 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Delete is Full Access, the title typed back (else the code).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
-- The company's internal files: Employee Handbook, SOPs, Policies, Templates
+- A mark at the rail's foot before Settings' (`#handbookOpen`, in More on a
+  phone; 2026-11-11), never a section of the rail. The company's internal files: Employee Handbook, SOPs, Policies, Templates
   and forms, Other (`handbook_docs`, `handbook_versions`,
   `2026-10-01-handbook.sql`). Every colleague reads (`is_team()`); `team.handbook`
   alone adds, edits, versions, archives and deletes (`handbook_save`,
   `handbook_add_version`, `handbook_archive`, `handbook_delete`, each
-  `allowed('admin')` and filed `handbook.*`). No acknowledgement step.
+  `allowed('admin')` and filed `handbook.*`).
+- Required reading (`2026-11-11-handbook-acknowledged.sql`; the user,
+  2026-11-11: read and agreed before anything else opens): an admin marks a
+  file required from its ⋯ (Mark required / Mark optional,
+  `handbook_required_set`, filed `handbook.edited` Required reading: Off →
+  On); every active colleague but an admin and the system account opens
+  each required file's current version (`handbook_opened`) and
+  acknowledges it (`handbook_ack`, `not-opened` before), kept in
+  `handbook_reads` (RLS on, no policy, no grant); a new version asks again.
+  `handbook_due()` is read beside `me()`, and while it holds anything the
+  console holds the colleague on the Handbook's onboarding (`body.hb-gate`:
+  the rail's sections, its foot's marks, search and the tab bar away;
+  `#hbGate`, the Handbook's bar and list hidden): Welcome to ADspace, {first
+  name}, n of N acknowledged over a track, a step a file (Open, then
+  Acknowledge), then Every file is acknowledged with Continue onto the
+  first section held. The ⋯'s Who acknowledged lists each colleague against
+  the current version (`handbook_acks`). The gate is the page's; the
+  database refuses no read to a colleague with a file due.
 - A file lives in the private Supabase Storage bucket `handbook` (50 MB a
   file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
   opened only through a signed link of 60 seconds made at the press
