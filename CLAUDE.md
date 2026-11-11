@@ -1445,7 +1445,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   trigger never forces a column back to its old value.
 - Every forward move is walked backwards before it ships.
 - PL/pgSQL: declared names never match a column, and lookups are qualified. A
-  shadowed name fails at run time, not at create time.
+  shadowed name fails at run time, not at create time. A `for a, b in select …`
+  loop's targets are scalars alone: a row variable among them fails at run
+  time, never at create time (2026-11-12, `review_revert_confirm`, caught
+  live before it was applied).
 - A function's today, and a column's default day, is Malaysia's, `(now() at time zone 'Asia/Kuala_Lumpur')::date`,
   never `current_date` or `now()::date` (`tests/sql.js` reads every
   column's default; 2026-10-22, BE-9) (the database runs on UTC: yesterday

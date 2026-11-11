@@ -594,7 +594,8 @@ declare
   v_title  text;
   v_client text;
   v_task   uuid;
-  v_ev     public.ops_task_events;
+  v_was    text;
+  v_now    text;
 begin
   if not public.allowed('review.sets', 'work') then
     return jsonb_build_object('error', 'denied');
@@ -614,8 +615,8 @@ begin
   /* Changes taken back: the final date they pushed goes back too, where
      nothing has moved it since (audit 2026-11-11). */
   if v_rv.decision = 'changes' then
-    for v_task, v_ev in
-      select t.id, e from public.ops_task_links l
+    for v_task, v_was, v_now in
+      select t.id, e.from_value ->> 'value', e.to_value ->> 'value' from public.ops_task_links l
         join public.ops_tasks t on t.id = l.task_id
         cross join lateral (
           select x.* from public.ops_task_events x
@@ -626,12 +627,12 @@ begin
          and coalesce((e.detail ->> 'auto')::boolean, false) and e.created_at >= v_rv.created_at
          and t.current_final_due_at is not distinct from (e.to_value ->> 'value')::timestamptz
     loop
-      update public.ops_tasks set current_final_due_at = (v_ev.from_value ->> 'value')::timestamptz,
+      update public.ops_tasks set current_final_due_at = v_was::timestamptz,
              version = version + 1, updated_at = now()
        where id = v_task;
       perform public.ops_log(v_task, 'due_changed',
-        jsonb_build_object('kind', 'final', 'value', v_ev.to_value ->> 'value'),
-        jsonb_build_object('kind', 'final', 'value', v_ev.from_value ->> 'value'),
+        jsonb_build_object('kind', 'final', 'value', v_now),
+        jsonb_build_object('kind', 'final', 'value', v_was),
         jsonb_build_object('reason', 'client_request', 'note', 'The client''s changes were taken back.', 'auto', true));
     end loop;
   end if;

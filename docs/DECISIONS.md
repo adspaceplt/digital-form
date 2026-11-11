@@ -9740,3 +9740,10 @@ taken back, and Undo of Add changes leaving the pushed due date. The user
 approved each fix ("ok"). One migration
 (`2026-11-12-audit-fixes-of-11-november.sql`) and the Timeline's Remove,
 asked first.
+
+### 2026-11-12 — A loop over a row variable fails only when it runs
+`review_revert_confirm` (#1037) looped `for v_task, v_ev in select t.id, e …`
+with `v_ev` a row variable. Postgres refuses a row variable in a target list
+of several ("is not a scalar variable") at run time, so the schema's two runs
+in `sql` passed. A test block on the live database before the part was applied
+found it; the loop reads two text fields instead. Rule added to CLAUDE.md.
