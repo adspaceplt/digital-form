@@ -1987,15 +1987,14 @@
             if (r.error) {
               var why = (d.error === 'not_admin') ? 'You do not have permission to send invitations. Please ask an admin.'
                 : /not deployed/.test(r.why)
-                  ? 'The invite-member function is not deployed. Add the login under Supabase ' +
-                    'Authentication, or deploy the function and use Send invitation.'
+                  ? 'Invitations are not set up yet. Please contact an admin.'
                   : 'Invitation could not be sent: ' + r.why;
               msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
             }
             log('team.invited', name, email);
             msg('teamMsg', d.sent === false
-              ? name + ' added. A login already exists.'
+              ? name + ' added. Invitation not sent: ' + name + ' can already sign in.'
               : name + ' added. Invitation sent to ' + email + '.',
               'ok');
           }).catch(function () { msg('teamMsg', name + ' added. The invitation could not be sent.', 'warn'); });
@@ -2018,7 +2017,7 @@
           var d = r.data || {};
           if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
           log('team.invited', m.name, m.email);
-          msg('teamMsg', d.sent === false ? m.name + ' already has a login.'
+          msg('teamMsg', d.sent === false ? 'Invitation not sent. ' + m.name + ' can already sign in.'
                                    : 'Invitation sent to ' + m.email + '.', 'ok');
         }).catch(function () { msg('teamMsg', 'Could not send. Please try again.', 'err'); });
     });
