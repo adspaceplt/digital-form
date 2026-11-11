@@ -148,7 +148,10 @@
       /* Billing from Bukku (2026-10-30): a linked client's or entity's
          billing is Bukku's, read in once a visit (Refresh reads again). */
       if (d.contact_id && holds(kind)) { readBand(d, work); return; }
-      var gap = work && pre.error && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
+      /* A creator with no approved payment details is linked, nothing
+         sent (2026-11-12): their bills are then read from Bukku. */
+      var linkOnly = kind === 'creator' && pre.error === 'no-details';
+      var gap = work && pre.error && !linkOnly && ['denied', 'failed', 'needs-update'].indexOf(pre.error) < 0 ? said(pre) : '';
       var linked = Boolean(d.contact_id);
       /* A brand and its main entity are one company, one Bukku contact
          (2026-10-29): one holding no link of its own reads the other's,
@@ -162,8 +165,8 @@
       /* A client or billing entity not yet linked is linked to the contact
          Bukku holds (2026-10-30, the user: "use link bukku instead of send
          to bukku"); Bukku then holds its billing. A supplier still sends. */
-      var linkFirst = !linked && holds(kind);
-      var acts = (work && !gap ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
+      var linkFirst = !linked && (holds(kind) || linkOnly);
+      var acts = (work && !gap && !(linked && linkOnly) ? '<button class="btn btn-sm" type="button" data-bk="send">' + (linkFirst ? 'Link to Bukku' : 'Send to Bukku') + '</button>' : '') +
         (work && linked && !via ? '<span class="team-act"><button class="kmenu-btn" type="button" data-bk="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" hidden><button class="kmenu-item" type="button" role="menuitem" data-g="5" data-bk="unlink">Unlink</button></div></span>' : '');
       host.innerHTML = '<div class="bk-l">' + MARK + '' + (linked ? codeOf(d.code || String(d.contact_id)) : '') + state + '</div>' +
@@ -174,7 +177,7 @@
         (opts.note ? '<p class="muted bk-note">' + esc(opts.note) + '</p>' : '') +
         (opts.said ? '<p class="msg ok bk-said" role="status">' + esc(opts.said) + '</p>' : '');
       opts.said = '';
-      wire(d);
+      wire(d, linkOnly);
     });
     function readBand(d, work) {
       var key = kind + ':' + id, r = READ[key];
@@ -243,7 +246,7 @@
       opts.said = '';
       wire(d);
     }
-    function wire(d) {
+    function wire(d, linkOnly) {
       var rf = host.querySelector('[data-bk="refresh"]');
       if (rf) rf.addEventListener('click', function () { group(host, kind, id, Object.assign({}, opts, { reread: true })); });
       var ac = host.querySelector('[data-bk="addct"]');
@@ -270,7 +273,7 @@
       var b = host.querySelector('[data-bk="send"]');
       /* The outcome is said in the band it changed (2026-10-20, BKU-3). */
       if (b) b.addEventListener('click', function () {
-        send(kind, id, b, function (r) {
+        send(kind, id, b, linkOnly, function (r) {
           delete READ[kind + ':' + id];
           group(host, kind, id, Object.assign({}, opts, { said: r && r.action === 'link' ? 'Linked to Bukku.' : 'Sent to Bukku.' }));
           if (opts.after) opts.after();
@@ -354,11 +357,11 @@
   }
   function shut() { if (sheet) sheet.hidden = true; if (window.ADspaceSheet && window.ADspaceSheet.isOpen(sheet)) window.ADspaceSheet.close(); cur = null; }
   function say(text, tone) { var m = $('bkMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (text && tone ? ' ' + tone : ''); } }
-  var WHY = { brn: 'Same Business Registration No.', name: 'Same name', similar: 'Similar name' };
+  var WHY = { brn: 'Same Business Registration No.', name: 'Same name', similar: 'Similar name', job: 'Bill for' };
 
-  function send(kind, id, btn, done) {
+  function send(kind, id, btn, only, done) {
     build();
-    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, mode: holds(kind) ? 'link' : 'send' };
+    cur = { kind: kind, id: id, done: done, contact: '', linked: null, seq: 0, only: !!only, mode: holds(kind) || only ? 'link' : 'send' };
     $('bkTitle').textContent = cur.mode === 'link' ? 'Link to Bukku' : 'Send to Bukku';
     $('bkPick').innerHTML = '<p class="muted">Reading Bukku.</p>';
     $('bkRows').innerHTML = '';
@@ -378,11 +381,13 @@
         me.contact = list.length ? String(list[0].id) : '';
         $('bkPick').innerHTML = list.map(function (c, n) {
           return '<label class="tickline bk-cand"><input type="radio" name="bkPick" value="' + esc(c.id) + '"' + (n === 0 ? ' checked' : '') + '> ' +
-            '<span><b>' + esc(c.code) + ' · ' + esc(c.name) + '</b><span class="muted"> · ' + esc(WHY[c.why] || '') +
+            '<span><b>' + esc(c.code) + ' · ' + esc(c.name) + '</b><span class="muted"> · ' + esc((WHY[c.why] || '') + (c.why === 'job' ? ' ' + c.job : '')) +
             (c.archived ? ' · Archived' : '') + '</span></span></label>';
-        }).join('') +
+        }).join('') + (me.only ? '' :
           '<label class="tickline bk-cand"><input type="radio" name="bkPick" value=""' + (list.length ? '' : ' checked') + '> ' +
-          '<span><b>New contact</b><span class="muted"> · ' + esc(d.next_code || '') + '</span></span></label>';
+          '<span><b>New contact</b><span class="muted"> · ' + esc(d.next_code || '') + '</span></span></label>');
+        /* Linked only, a creator is never made in Bukku from here. */
+        if (me.only && !list.length) say('No Bukku contact matches this creator\'s name or a bill for their earlier job IDs. Add an earlier job ID, or approve their payment details.', 'warn');
       }
       preview();
     });
@@ -394,6 +399,9 @@
        sent, and the record then reads Bukku (what differs waits on a side
        chosen on the band); New contact is made in Bukku from the portal. */
     var linking = me.mode === 'link' && !!me.contact;
+    /* A creator with no details: nothing to compare, the contact linked as it is. */
+    $('bkRowsH').parentNode.hidden = !!me.only;
+    if (me.only) { $('bkGo').textContent = 'Link'; $('bkLink').hidden = true; $('bkRows').innerHTML = ''; $('bkGo').disabled = !me.contact; return; }
     $('bkGo').textContent = linking ? 'Link' : me.mode === 'link' ? 'Create in Bukku' : me.linked || !me.contact ? 'Send' : 'Link and send';
     $('bkLink').hidden = me.mode === 'link' || !!me.linked || !me.contact; $('bkLink').disabled = true;
     $('bkRowsH').textContent = linking ? 'Differences' : 'Changes';
@@ -490,6 +498,6 @@
   /* Bukku's tax codes (2026-10-22), for the Settings page's Tax codes. */
   function taxes() { return call({ action: 'taxes' }).then(function (d) { return d.error ? { error: said(d) } : d; }); }
 
-  window.ADspaceBukku = { mark: MARK, group: group, send: send, openConfig: openConfig, configLine: configLine, taxes: taxes, said: said,
+  window.ADspaceBukku = { mark: MARK, group: group, send: function (k, i, b, done) { return send(k, i, b, false, done); }, openConfig: openConfig, configLine: configLine, taxes: taxes, said: said,
     held: held, state: state, save: save, fresh: fresh, said: said };
 })();

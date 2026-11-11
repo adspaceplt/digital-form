@@ -3872,7 +3872,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   The console: the Creators List names a creator whose details wait
   (To review), their page's Payment pane holding them (`creator_pay_list`,
   Creators List View; the numbers whole only at the granted part
-  `campaigns.pay` View), Approve and Decline in its head (a reason the
+  `campaigns.pay` View), Add details, else Edit, in its head at its Work
+  (`creator_pay_add`, `2026-11-12-creator-details-added-by-team.sql`; the
+  user, 2026-11-12: "straight approval (but mark as internally added?)"):
+  the creator's fields checked as their own, a number left blank keeping
+  the one held, saved approved at once (`entered_by`, read Source Added by
+  {name}), no email to the creator, the sheet taking it as any approval;
+  Approve and Decline in its head (a reason the
   creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
   `no-note`; filed `creator.updated`); the newest approval is paid to, the
   one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens
@@ -3934,7 +3940,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   Remove with Undo where it happened (`creator_earlier_job_add`,
   `creator_earlier_job_remove`, `campaigns.pay` Work, filed
   `creator.updated`), each with the bill holding it (`creator_bills_list`
-  `past`), Earlier payments keeping the bills nothing holds.
+  `past`), Earlier payments keeping the bills nothing holds. A creator
+  with no details approved is linked to Bukku all the same, nothing sent
+  (`2026-11-12-creator-linked-by-earlier-job.sql`; the user, 2026-11-12:
+  KJ3105 on Gaby Low, her Bukku contact Low Chee Guan): the Payment pane's
+  band reads Link to Bukku, its sheet offering the contacts of every
+  purchase bill whose reference or number holds one of the creator's
+  earlier job IDs (Bill for KJ3105) before those of the same name, never a
+  new contact (`bukku_creator_link_prep`, `bukku-sync` find and link); a
+  link reads the creator's bills at once, the night reads a creator an
+  earlier job awaits (`creator_bills_due`), and an earlier job or booking
+  of a creator not linked reads Not linked, never Not billed.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
@@ -3960,11 +3976,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A row is one button opening the creator's page (2026-11-10, the user:
     "only an open button then inside contains all their information (like
     clients / suppliers)"): Creator (name over Creator ID) · Platforms (words,
-    never links) · Campaigns · Client rate · Payment details (To review,
-    Approved or Declined; a mute em dash while not submitted) · the chevron;
-    no ⋯ and no profile link on the row. On a phone two lines: the name with
-    the payment details' standing, then Creator ID · platforms · campaigns
-    (one line, cut at its end) with the rate. A Payment details filter
+    never links) · Campaigns · Client rate · the chevron; the payment
+    details after the name (the user, 2026-11-12: the column read Approved
+    for good): approved a green dot alone (`.cr-paydot`, named Payment
+    details approved on hover and to a screen reader), To review and
+    Declined as their dot and word, nothing while not submitted; no ⋯ and
+    no profile link on the row. On a phone two lines: the name with that
+    mark, then Creator ID · platforms · campaigns (one line, cut at its
+    end) with the rate. A Payment details filter
     (`#rosterPay`: Not submitted, To review, Approved, Declined). The
     figure is the client's price with markup, never the creator's payout, so
     it is never headed Fee.

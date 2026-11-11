@@ -764,7 +764,11 @@ button.appver {
 /* The record column carries a campaign's name now, not a bare count, so it is
    measured against one: 200px holds `Promote Newly La… +2 · Sept 2026` at
    12.5px, and the name is the half that gives way. */
-.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) 150px 96px var(--state-w) 16px; }
+.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) 150px 96px 16px; }
+/* Payment details after the name (2026-11-12): a green dot when approved,
+   else the state's word; none submitted, nothing. */
+.cr-paydot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot-ok); margin-left: 8px; vertical-align: 1px; }
+.svc-name b .cr-paystate { margin-left: 8px; font-weight: 500; vertical-align: 1px; }
 .cr-record-when { flex: 0 0 auto; white-space: pre; }
 /* A row is one button opening the creator's page (2026-11-10): name over
    Creator ID, platforms, campaigns, rate, payment details, chevron. On a
@@ -778,11 +782,9 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cr-line { display: none; }
 .cr-go { display: flex; color: var(--ink-mute); }
 .cr-go svg { width: 15px; height: 15px; }
-.is-narrow .cr-row { grid-template-columns: minmax(0, 1fr) 120px; grid-template-areas: "name pay" "line rate"; row-gap: 4px; align-items: start; }
+.is-narrow .cr-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "line rate"; column-gap: 12px; row-gap: 4px; align-items: start; }
 .is-narrow .cr-row > .cr-who { grid-area: name; }
 .is-narrow .cr-row > .cr-who > .svc-sku, .is-narrow .cr-row > .cr-plats, .is-narrow .cr-row > .cr-record, .is-narrow .cr-row > .cr-go { display: none; }
-.is-narrow .cr-row > .cr-pay { grid-area: pay; justify-self: end; }
-.is-narrow .cr-row > .cr-pay:has(> .muted) { visibility: hidden; }
 .is-narrow .cr-row > .cr-line { display: block; grid-area: line; min-width: 0; font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .is-narrow .cr-row > .svc-rate { grid-area: rate; text-align: right; align-self: start; white-space: nowrap; font-size: 13px; }
 .cr-line .nb { white-space: nowrap; }
