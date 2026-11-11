@@ -4247,13 +4247,6 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .bk-band .bk-t { font-size: 13px; font-weight: 600; }
 .bk-t { display: inline-flex; align-items: center; }
 .bk-logo { display: block; width: auto; height: 16px; }
-.bk-logo.is-dark { display: none; }
-:root[data-theme="dark"] .bk-logo:not(.is-dark) { display: none; }
-:root[data-theme="dark"] .bk-logo.is-dark { display: block; }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .bk-logo:not(.is-dark) { display: none; }
-  :root:not([data-theme="light"]) .bk-logo.is-dark { display: block; }
-}
 .bk-band .bk-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; font-weight: 400; }
 .bk-band > .bk-sub { grid-column: 1; margin: 0; font-size: 12.5px; color: var(--ink-mute); }
 .bk-band > .bk-acts { grid-column: 2; grid-row: 1 / span 2; display: flex; align-items: center; gap: 6px; }

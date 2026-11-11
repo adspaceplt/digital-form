@@ -24,8 +24,7 @@
   /* Bukku's own logo on every Bukku band (the user, 2026-11-11), a light
      copy for the dark theme; the word stays for a screen reader. Never on a
      page or an email a client reads. */
-  var MARK = '<b class="bk-t"><img class="bk-logo" src="/img/bukku-logo.png?v=20261111b" alt="" width="45" height="16">' +
-    '<img class="bk-logo is-dark" src="/img/bukku-logo-dark.png?v=20261111b" alt="" width="45" height="16"><span class="sr">Bukku</span></b>';
+  var MARK = '<b class="bk-t"><img class="bk-logo" src="/img/bukku-logo.png?v=20261111c" alt="" width="45" height="16"><span class="sr">Bukku</span></b>';
   var API = window.ADspaceAPI;
   var X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
 
