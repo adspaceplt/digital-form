@@ -114,7 +114,9 @@ Deno.serve(async (req) => {
   //    an error either way: the account exists, they can sign in.
   const { data, error } = notify
     ? await admin.auth.admin.inviteUserByEmail(email, {
-        data: { name },
+        /* The one Invite user template words a client's welcome and a
+           colleague's access each its own way (docs/SIGN-IN-EMAILS.md). */
+        data: { name, kind },
         redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
       })
     : await admin.auth.admin.createUser({

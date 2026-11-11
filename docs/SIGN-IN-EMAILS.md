@@ -67,8 +67,13 @@ ADSPACE PLT (202304002162)<br>61-02 Jalan Mutiara Emas 2A, Taman Mount Austin,<b
 Subject:
 
 ```
-Your access to the ADspace Digital Portal
+{{ if eq .Data.kind "client" }}Welcome to your ADspace Client Portal{{ else }}Your access to the ADspace Digital Portal{{ end }}
 ```
+
+One template serves both: `invite-member` sends `kind` (`client` for a
+client contact, `team` for a colleague) in the invitation's data, and the
+template words each its own way (the user, 2026-11-11: a client's welcome
+reads warmer than a colleague's notice).
 
 Body (HTML):
 
@@ -78,16 +83,17 @@ Body (HTML):
 <meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><title>Your access to the ADspace Digital Portal</title>
 <style>a[x-apple-data-detectors]{color:inherit !important;text-decoration:none !important;font:inherit !important;}@media (max-width:600px){.card{padding:24px !important;}.foot{padding:24px 24px 0 !important;}h1{font-size:21px !important;}}</style></head>
 <body style="margin:0;padding:0;background:#f5f5f5;-webkit-text-size-adjust:100%;">
-<div style="display:none;max-height:0;overflow:hidden;opacity:0;">You have been given access to the ADspace Digital Portal.</div>
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ if eq .Data.kind "client" }}Your invitation to the ADspace Client Portal.{{ else }}You have been given access to the ADspace Digital Portal.{{ end }}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f5f5f5;"><tr><td align="center" style="padding:32px 16px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
 <tr><td class="card" style="background:#ffffff;border-radius:14px;padding:32px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
 <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace" width="91" height="26" style="display:block;width:91px;height:26px;border:0;outline:none;">
-<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">Your access to the ADspace Digital Portal</h1>
+<h1 style="margin:24px 0 16px;font-size:24px;line-height:1.3;font-weight:600;letter-spacing:-0.02em;color:#1a1a1a;">{{ if eq .Data.kind "client" }}Welcome to your ADspace Client Portal{{ else }}Your access to the ADspace Digital Portal{{ end }}</h1>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Dear {{ .Data.name }},</p>
-<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">Sign in</a></td></tr></table>
-<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Thereafter, you may sign in at any time with a code sent to this email address.</p>
+{{ if eq .Data.kind "client" }}<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Thank you for choosing ADspace. Your Client Portal is now ready. It brings together your services, documents, reports and meetings with ADspace in one place.</p>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Please use the button below to open your Client Portal.</p>{{ else }}<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">ADspace has given you access to the ADspace Digital Portal. Please use the button below to sign in.</p>{{ end }}
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr><td style="background:#0071e3;border-radius:10px;"><a href="{{ .ConfirmationURL }}" style="display:inline-block;min-width:52px;padding:12px 32px;text-align:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:500;color:#ffffff;text-decoration:none;">{{ if eq .Data.kind "client" }}Open Client Portal{{ else }}Sign in{{ end }}</a></td></tr></table>
+<p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Thereafter, you may sign in at any time with a code sent to this email address.{{ if eq .Data.kind "client" }} Should you have any questions, please contact your ADspace account manager.{{ end }}</p>
 <p style="margin:0 0 16px;font-size:16px;line-height:1.55;color:#1a1a1a;">Yours sincerely,<br>ADspace</p>
 <p style="margin:8px 0 0;padding-top:16px;border-top:1px solid #ececec;font-size:13px;line-height:1.55;color:#515151;">This link may be used once and expires shortly. If you were not expecting this invitation, please disregard this email.</p>
 </td></tr>
