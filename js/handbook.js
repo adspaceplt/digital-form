@@ -3,7 +3,10 @@
  * The Employee Handbook, SOPs, policies, templates and forms, a card per
  * category (`js/group.js`). Every colleague reads them; only an admin adds a
  * file, edits its details, uploads a new version, archives or deletes it (the
- * user, 2026-10-01: "Admins only"; no read-and-accept step).
+ * user, 2026-10-01: "Admins only"). A file an admin marks required is
+ * opened and acknowledged by every colleague but an admin before the
+ * console opens (2026-11-11; the user: "only able to see the handbook and
+ * agrees … then they would have the next step"); a new version asks again.
  *
  * The files are private. They sit in the Supabase Storage bucket `handbook`,
  * which is never public and never behind the CDN, and they are opened only
@@ -76,6 +79,7 @@
     'bad-path': 'The file was not stored where the Handbook keeps it.',
     'no-file': 'Choose a file.',
     'not-found': 'This file is no longer in the Handbook.',
+    'not-opened': 'Open the file before acknowledging it.',
     mismatch: 'The title does not match.'
   };
   function said(e) {
@@ -111,7 +115,7 @@
     var box = $('hbList');
     if (!st.loaded && window.ADspaceState) window.ADspaceState.skeleton(box, 4);
     return Promise.all([
-      db.from('handbook_docs').select('id, title, category, summary, link_url, current_version, archived_at, created_at, updated_at').order('title'),
+      db.from('handbook_docs').select('id, title, category, summary, link_url, current_version, archived_at, created_at, updated_at, required').order('title'),
       db.from('handbook_versions').select('id, doc_id, version_no, file_path, file_name, file_size, mime, note, created_at, created_by').order('version_no', { ascending: false })
     ]).then(function (res) {
       if (res[0].error) throw res[0].error;
@@ -137,6 +141,7 @@
 
   /* ---- Drawing ------------------------------------------------------------ */
   function paint() {
+    paintGate();
     var box = $('hbList');
     var admin = isAdmin();
     $('hbAdd').hidden = !admin;
@@ -188,8 +193,10 @@
     var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
     if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Versions</button>';
+    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Who acknowledged</button>';
     if (admin) {
       items += '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>';
+      if (!d.archived_at) items += '<button class="kmenu-item" data-g="4" data-a="req" type="button" role="menuitem">' + (d.required ? 'Mark optional' : 'Mark required') + '</button>';
       if (!d.link_url) items += '<button class="kmenu-item" data-g="2" data-a="newver" type="button" role="menuitem">New version</button>';
       items += d.archived_at
         ? '<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>'
@@ -199,7 +206,7 @@
     var canOpen = Boolean(d.link_url || v);
     row.innerHTML =
       '<span class="hb-name"><b>' + esc(d.title) + '</b>' +
-        ((d.summary || meta) ? '<small>' + esc(d.summary ? d.summary : meta) + '</small>' : '') + '</span>' +
+        ((d.summary || meta || d.required) ? '<small>' + esc([d.required && !d.archived_at ? 'Required reading' : '', d.summary ? d.summary : meta].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
       '<span class="hb-ver">' + (d.link_url ? 'Link' : v ? 'v' + v.version_no : '<span class="mute">—</span>') + '</span>' +
       '<span class="hb-when">' + esc(day(d.updated_at)) + '</span>' +
       '<span class="hb-act">' +
@@ -210,6 +217,8 @@
     var on = function (a, fn) { var b = row.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', fn); };
     on('open', function (e) { openDoc(d, e.currentTarget); });
     on('vers', function () { shutMenus(); openVersions(d); });
+    on('acks', function () { shutMenus(); openAcks(d); });
+    on('req', function () { shutMenus(); setRequired(d, !d.required); });
     on('edit', function () { shutMenus(); openSheet(d, row.querySelector('[data-a="menu"]')); });
     on('newver', function () { shutMenus(); openVersion(d, row.querySelector('[data-a="menu"]')); });
     on('archive', function () { shutMenus(); archive(d, true); });
@@ -240,12 +249,22 @@
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutMenus);
 
   /* ---- Opening: a signed link of a minute, made at the press -------------- */
-  function openDoc(d, btn) {
-    if (d.link_url) { window.open(d.link_url, '_blank', 'noopener'); return; }
+  function openDoc(d, btn, m) {
+    m = m || $('hbListMsg');
+    if (d.link_url) { window.open(d.link_url, '_blank', 'noopener'); opened(d); return; }
     var v = (st.vers[d.id] || [])[0];
-    if (v) openFile(v, btn, $('hbListMsg'));
+    if (v) openFile(v, btn, m, function () { opened(d); });
   }
-  function openFile(v, btn, m) {
+  /* A required file opened is kept as opened for its version, which lets
+     its acknowledgement through. */
+  function opened(d) {
+    if (!d.required) return;
+    rpc('handbook_opened', { p_doc: d.id }).then(function () {
+      var due = dueList().filter(function (x) { return x.id === d.id; })[0];
+      if (due) { due.opened = true; paintGate(); }
+    }).catch(function () {});
+  }
+  function openFile(v, btn, m, done) {
     /* The tab is opened now, while the press still counts as the person's,
        or a browser blocks a window opened after the link comes back. */
     var w = window.open('', '_blank');
@@ -257,10 +276,122 @@
       if (r.error || !url) throw r.error || new Error('The file could not be opened.');
       if (w) { try { w.opener = null; } catch (e) { /* cross-origin */ } w.location.href = url; }
       else location.href = url;
+      if (done) done();
     }).catch(function (e) {
       if (btn) btn.disabled = false;
       if (w) w.close();
       say(m, openSaid(e), 'err');
+    });
+  }
+
+  /* ---- Before you start: the required files a colleague acknowledges ------ */
+  function dueList() { return bridge.handbookDue ? bridge.handbookDue() : []; }
+  /* The onboarding (2026-11-11; the user: "more modern and elegant"): while
+     a file is due the Handbook is a page of its own, one centred column: a
+     welcome, how far along, then a step a file, each opened, then
+     acknowledged; the list returns once Continue lifts the gate. */
+  var gateIds = null;
+  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+  var BOOK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg>';
+  function firstName() {
+    var m = bridge.me ? bridge.me() : null;
+    return m && m.name ? String(m.name).trim().split(/\s+/)[0] : '';
+  }
+  function paintGate() {
+    var box = $('hbGate');
+    if (!box) return;
+    var due = dueList();
+    if (due.length && !gateIds) gateIds = due.map(function (x) { return x.id; });
+    var sec = $('sectionHandbook');
+    if (!gateIds || !st.loaded) {
+      box.hidden = true; box.innerHTML = '';
+      if (sec) sec.classList.remove('is-onboard');
+      return;
+    }
+    if (sec) sec.classList.add('is-onboard');
+    var byId = {}, open = {};
+    st.docs.forEach(function (d) { byId[d.id] = d; });
+    due.forEach(function (x) { open[x.id] = x; });
+    var total = gateIds.length, done = gateIds.filter(function (id) { return !open[id]; }).length;
+    var steps = gateIds.map(function (id, i) {
+      var d = byId[id];
+      if (!d) return '';
+      var x = open[id], v = (st.vers[d.id] || [])[0];
+      var meta = [d.link_url ? 'Link' : v ? 'Version ' + v.version_no : '', d.summary || ''].filter(Boolean).join(' · ');
+      var state = !x ? 'is-done' : x.opened ? 'is-opened' : '';
+      return '<li class="hb-gaterow ' + state + '" data-doc="' + esc(d.id) + '">' +
+        '<span class="hbo-num" aria-hidden="true">' + (!x ? TICK : (i + 1)) + '</span>' +
+        '<span class="hb-name"><b>' + esc(d.title) + '</b>' + (meta ? '<small>' + esc(meta) + '</small>' : '') + '</span>' +
+        '<span class="hb-gatestate">' + (!x ? '<span class="chip-state is-ok">Acknowledged</span>'
+          : x.opened ? '<span class="chip-state is-warn">Opened</span>' : '<span class="chip-state is-off">Not opened</span>') + '</span>' +
+        '<span class="hb-gateacts">' +
+          '<button class="btn btn-sm btn-icon" data-a="open" type="button" aria-label="Open ' + esc(d.title) + '">Open ' + OUT + '</button>' +
+          (x && x.opened ? '<button class="btn btn-sm btn-primary" data-a="ack" type="button">Acknowledge</button>' : '') +
+        '</span></li>';
+    }).join('');
+    var name = firstName();
+    box.hidden = false;
+    box.innerHTML = due.length
+      ? '<div class="hbo-hero"><span class="hbo-mark">' + BOOK + '</span>' +
+          '<h2 class="hbo-title">' + esc(name ? 'Welcome to ADspace, ' + name : 'Welcome to ADspace') + '</h2>' +
+          '<p class="hbo-line">Before you start, please read the files below and acknowledge each one. The portal will open once each file is acknowledged.</p></div>' +
+        '<div class="hbo-progress"><span class="hbo-count">' + done + ' of ' + total + ' acknowledged</span>' +
+          '<span class="hbo-track" aria-hidden="true"><span style="width:' + Math.round(done / total * 100) + '%"></span></span></div>' +
+        '<ol class="hb-gatelist">' + steps + '</ol><div class="msg" id="hbGateMsg"></div>'
+      : '<div class="hbo-hero is-done"><span class="hbo-mark is-done">' + TICK + '</span>' +
+          '<h2 class="hbo-title">Every file is acknowledged</h2>' +
+          '<p class="hbo-line">Thank you.</p>' +
+          '<button class="btn btn-primary" id="hbGateGo" type="button">Continue</button></div>';
+    Array.prototype.forEach.call(box.querySelectorAll('.hb-gaterow'), function (row) {
+      var d = byId[row.getAttribute('data-doc')];
+      row.querySelector('[data-a="open"]').addEventListener('click', function (e) { openDoc(d, e.currentTarget, $('hbGateMsg')); });
+      var ack = row.querySelector('[data-a="ack"]');
+      if (ack) ack.addEventListener('click', function () { acknowledge(d, ack); });
+    });
+    var go = $('hbGateGo');
+    if (go) go.addEventListener('click', function () {
+      gateIds = null;
+      paintGate();
+      if (bridge.handbookCleared) bridge.handbookCleared();
+    });
+  }
+  function acknowledge(d, btn) {
+    btn.disabled = true;
+    say($('hbGateMsg'), '');
+    rpc('handbook_ack', { p_doc: d.id }).then(function () {
+      var due = dueList();
+      for (var i = due.length - 1; i >= 0; i--) if (due[i].id === d.id) due.splice(i, 1);
+      paintGate();
+    }).catch(function (e) {
+      btn.disabled = false;
+      say($('hbGateMsg'), said(e));
+    });
+  }
+
+  /* ---- Required reading: an admin's mark, and who has acknowledged ------ */
+  function setRequired(d, on) {
+    rpc('handbook_required_set', { p_id: d.id, p_on: on }).then(function () {
+      say($('hbListMsg'), on ? 'Marked required.' : 'Marked optional.', 'ok');
+      return load();
+    }).catch(function (e) { say($('hbListMsg'), said(e)); });
+  }
+  function openAcks(d) {
+    $('hbHistTitle').textContent = 'Who acknowledged · ' + d.title;
+    var box = $('hbHistList');
+    box.innerHTML = '<div class="msg" id="hbHistMsg"></div>';
+    window.ADspaceSheet.show($('hbHistSheet'), {});
+    if (window.ADspaceState) window.ADspaceState.skeleton(box, 3);
+    rpc('handbook_acks', { p_doc: d.id }).then(function (r) {
+      var people = r.people || [];
+      var done = people.filter(function (p) { return p.acked_at; }).length;
+      box.innerHTML = '<p class="hb-ackcount">' + done + ' of ' + people.length + ' acknowledged</p>' + people.map(function (p) {
+        var state = p.acked_at ? 'Acknowledged ' + day(p.acked_at) : p.opened_at ? 'Opened ' + day(p.opened_at) : 'Not opened';
+        var tone = p.acked_at ? 'is-ok' : p.opened_at ? 'is-warn' : 'is-off';
+        return '<div class="hb-verrow"><span class="hb-name"><b>' + esc(p.name) + '</b></span>' +
+          '<span class="chip-state ' + tone + '">' + esc(state) + '</span></div>';
+      }).join('');
+    }).catch(function (e) {
+      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Who acknowledged', said(e), function () { openAcks(d); });
     });
   }
 

@@ -9541,3 +9541,19 @@ needed and Open were both drawn. Each act now takes a column of its own at
 the row's right edge, Open a tonal button with its chevron like the card's
 other row acts; on a narrow pane the acts go under the name so the name
 stays on one line. `tests/work.js` measures both widths.
+
+### 2026-11-11 · The Handbook is read and acknowledged before the portal opens
+The user asked that a new colleague see the Handbook alone until its
+important files are read and agreed, then step into the sections given,
+the Handbook leaving the rail for a mark like Settings', and a colleague
+with no section meeting a page that says to contact an admin. Chosen:
+required files only (an admin's mark), acknowledged again on a new version,
+everyone but admins, the mark at the rail's foot. This reverses "no
+acknowledgement step" (2026-10-01). Opening is kept per version and an
+acknowledgement needs it; the gate is the page's, the database refusing no
+read. The first draft was a card above the list; the user asked for a
+more modern and elegant onboarding, so it became a page of its own: a
+welcome, progress, a numbered step a file, and a done state with Continue.
+The rail's build line shows the commit's last four characters to make room.
+With the Handbook off the rail, More is drawn whenever the foot holds a
+mark, so a phone always reaches it.
