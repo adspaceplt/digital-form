@@ -4815,31 +4815,21 @@ body.hb-gate #tabBar { display: none; }
   --glass-card: #1f1f1f;
   --glass-bar: #1f1f1f;
 }
-/* The frost is a layer under the card's words (`::before`), cut to the
-   card's corner by `clip-path`: Safari drew a backdrop blur on the card
-   itself as a square, past its rounded corner (the user, 2026-11-12: "u
-   see this corner"). The lift stays on the card, outside the cut. */
+/* Each card its own surface, drawn on the card itself. It never makes the
+   card a layer of its own (no backdrop filter, no z-index): a ⋯ menu inside
+   a card must stand over the cards after it (the gate, 2026-11-12: the
+   glass's backdrop filter trapped every row menu under the next card, so
+   no menu item could be pressed). */
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
-  --card: transparent;
-  position: relative; z-index: 0;
-  background: none;
+  background-color: var(--glass-card);
   box-shadow: var(--glass-lift);
   border-color: transparent;
 }
-.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)::before {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  border-radius: inherit; clip-path: inset(0 round var(--glass-r, var(--radius-lg)));
-  background-color: var(--glass-card); background-image: var(--glass-card-sheen);
-  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-rim);
-}
-/* A card inside a card is one surface, never frost on frost. */
+/* A card inside a card is one surface. */
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)
   :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
-  box-shadow: none;
+  background: none; box-shadow: none;
 }
-.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)
-  :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)::before { content: none; }
 /* The head: clearer glass, its rule a highlight rather than a line. */
 /* The page scrolls under the head, so it keeps the head's own frosting
    (`--chrome`, 72%): words under words never read through it. */
@@ -4968,6 +4958,10 @@ svg.sec {
 .console-crumb { font-size: 14px; color: var(--ink-mute); white-space: nowrap; }
 .console-crumb::after { content: '/'; margin-left: 8px; color: var(--line-ctl); }
 @media (min-width: 861px) {
+  /* What the page scrolls to stands clear of the floating head, never
+     under it (the gate, 2026-11-12: the head took a press meant for a row
+     brought into view). */
+  :root:not(.has-tabbar) { scroll-padding-top: calc(var(--head-h) + 24px); }
   :root:not(.has-tabbar) .console-head {
     margin: 12px 12px 0; border-radius: 18px; top: 12px; padding: 0 16px 0 20px;
     background-color: var(--glass-bar); background-image: none;

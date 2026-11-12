@@ -9789,7 +9789,7 @@ body.qs-page { background: var(--card); }
   .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-side,
   .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn,
   .iconbtn, .kmenu-btn, .plink, .stg-go, .navitem, .railrow, .backlink, .railnext, .railmiss, .linkbtn,
-  .empty, .sidebar, .tab-n, .chip, .tone, .rp-step, .rp-steps,
+  .empty, .sidebar, .tab-n, .chip, .tone, .rp-step, .rp-steps, svg.sec, .console-head,
   .cmdbar-views.has-thumb::before, .rectabs.has-thumb::before, .tabrow.has-thumb::before, .rp-steps.has-thumb::before {
     corner-shape: squircle;
   }
