@@ -4788,17 +4788,12 @@ body.hb-gate #tabBar { display: none; }
 .raildates dd.crtot { display: grid; justify-items: end; gap: 2px; }
 
 /* ---------- The revamp (the user, 2026-11-12, v2 "full glass") ----------
-   The console stands on a soft wash of the section colours, and every
-   surface on it is glass: the rail and the head clearest, the cards
-   frosted enough that their words hold 4.5:1 over any part of the wash.
+   Every surface on the console's plain ground is glass (the wash of section
+   colours behind it was taken off, the user, 2026-11-12: "Go with D"): the rail and the head clearest, the cards
+   frosted enough that their words hold 4.5:1 on the plain ground.
    Inside a card `--card` is clear, so a row painted with it shows the
    card's own frost rather than a white patch. Client pages are untouched. */
 :root {
-  --wash:
-    radial-gradient(42vw 38vw at 4% 12%, #dfe7fa 0%, transparent 72%),
-    radial-gradient(38vw 34vw at 12% 92%, #ddefe5 0%, transparent 72%),
-    radial-gradient(50vw 26vw at 70% 0%, #e9e3f8 0%, transparent 72%),
-    radial-gradient(48vw 34vw at 48% 100%, #e4f1ea 0%, transparent 70%);
   --glass-card: rgba(255, 255, 255, .58);
   --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, 0) 60%);
   --glass-bar: rgba(255, 255, 255, .34);
@@ -4810,11 +4805,6 @@ body.hb-gate #tabBar { display: none; }
   --glass-edge: rgba(255, 255, 255, .5);
 }
 :root[data-theme="dark"] {
-  --wash:
-    radial-gradient(42vw 38vw at 4% 12%, #1c2436 0%, transparent 72%),
-    radial-gradient(38vw 34vw at 12% 92%, #162720 0%, transparent 72%),
-    radial-gradient(50vw 26vw at 70% 0%, #221d33 0%, transparent 72%),
-    radial-gradient(48vw 34vw at 48% 100%, #18261f 0%, transparent 70%);
   --glass-card: rgba(36, 36, 36, .72);
   --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 60%);
   --glass-bar: rgba(30, 30, 30, .55);
@@ -4824,7 +4814,6 @@ body.hb-gate #tabBar { display: none; }
   --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
   --glass-edge: rgba(255, 255, 255, .06);
 }
-.console { background: var(--wash), var(--page); background-attachment: fixed; }
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
   --card: transparent;
   background-color: var(--glass-card); background-image: var(--glass-card-sheen);
@@ -4842,7 +4831,7 @@ body.hb-gate #tabBar { display: none; }
    (`--chrome`, 72%): words under words never read through it. */
 .console-head { background-color: var(--chrome); background-image: var(--glass-bar-sheen); border-bottom-color: transparent;
   box-shadow: inset 0 -1px 0 var(--glass-edge); }
-/* The rail at a desk: a pane of glass floating on the wash. */
+/* The rail at a desk: a pane of glass floating on the page. */
 @media (min-width: 861px) {
   :root:not(.has-tabbar) .sidebar {
     margin: 12px 0 12px 12px; height: calc(100vh - 24px); top: 12px; border-right: 0; border-radius: 22px;
