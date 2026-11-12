@@ -4251,20 +4251,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   month left out; each measured on the period before it the same days long,
   Last quarter on the quarter before, This year on last year), with the
   span and the time read beside it; both pages read the one period.
-  - Summary, in this order (2026-10-22, OVW-M1; the user's "Fix all"
-    reopening the order approved on 2026-10-12): the glance (`#ovwGlance`,
-    the rings alone: the on-time ring, `ADspaceChart`
-    `meter` from `ops_report.on_time` for the period: met over the tasks
-    that reached client review plus `late_open`, the open work late by the
-    late rule, counted in the period its deadline fell in and in one that
-    runs to now (`2026-10-19-on-time-counts-late-open-work.sql`), empty and
-    reading a dash where nothing was due; beside it the Posted on time
-    ring from `ops_report.posted`: of the content whose post date (MYT)
-    fell in the period and has passed, or which went live, how much went
-    live by its post date, as the review's On-time posting reads it
-    (`2026-10-19-posted-on-time.sql`; the user, 2026-10-19: on-time
-    delivery stays the team's own measure)); then Needs attention
-    (`#ovwAttention`): one list of every source (late
+  - Summary, in this order (the revamp, 2026-11-12, "go as recommended",
+    replacing the order of 2026-10-22): four figures lead (`#ovwLead`:
+    Delivered, On time, New leads, Oldest late; On time is met over the
+    tasks that reached client review plus `late_open`, the open work late
+    by the late rule (`2026-10-19-on-time-counts-late-open-work.sql`),
+    reading a dash where nothing was due; the on-time and posted rings are
+    gone, posting read in the trend), then Work by stage (`#ovwStages`,
+    `ops_report.running` in four bands), then Needs attention
+    (`#ovwAttention`) beside On time by month (`.ovw-pair`): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
@@ -4274,20 +4269,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     holding rows (`#ovwSrcs`, the view strip at the card's width: All, then
     each source's short word and count, red where it holds late work; a
     tab narrows the list to it; one source draws no strip and the head
-    counts it), What · Section (a grey tag naming the
-    rail's section, never a record's kind; 2026-10-20, OVW-3) · Who ·
+    counts it), What · Section (the section's mark and name, never a
+    record's kind; 2026-10-20, OVW-3) · Who ·
     Since, late first by the days late, then what waits, the longest first,
     then what has not started; five rows, then Show N more, a tonal toggle
     with its chevron that reads Show fewer once open and folds the list
     back to five (the user, 2026-10-12: "5 show only"); a row writes the
-    record's address and opens it as search does; then Sales (New leads,
-    Won, Churned, Committed monthly value)
-    and Operations (Open tasks, Oldest late, Delivered, Reports published for last
+    record's address and opens it as search does; then Sales (Won,
+    Churned, Committed monthly value)
+    and Operations (Open tasks, Reports published for last
     month) as tiles (`.ovw-kpi`: the label, the figure, its change on the
     period before (`on Sept`, `on last quarter`) and its trend
     (`ADspaceChart.spark`) where it has a history; every tile keeps the
-    trend's room and the two groups share their rows, so the eight stand
-    one height); then the two trends, On time by month (delivered and posted,
+    trend's room, so a row of tiles stands one height); then Active clients
+    by month. The trends: On time by month (delivered and posted,
     two lines) and Active
     clients by month (each figure over its column, this month lighter).
   - Detail, under its labels: Sales (Leads to clients, one-line bars, each

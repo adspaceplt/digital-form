@@ -1375,6 +1375,14 @@
      to answer: My Work's Waiting for you), as My Work last read it. */
   var tabWaiting = 0;
   function paintTabDot() {
+    /* The rail's My Work row counts it too (the revamp, 2026-11-12). */
+    var row = document.querySelector('.navitem[data-section="work"]');
+    if (row) {
+      var n = row.querySelector('.nav-n');
+      if (tabWaiting && !n) { n = document.createElement('b'); n.className = 'nav-n'; row.appendChild(n); }
+      if (n && !tabWaiting) n.remove();
+      else if (n) { n.textContent = String(tabWaiting); n.setAttribute('aria-label', tabWaiting + ' waiting for you'); }
+    }
     var bar = $('tabBar');
     var t = bar && bar.querySelector('.tabbar-tab[data-tab="work"]');
     if (!t) return;
@@ -1752,7 +1760,7 @@
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
       { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
-      { at: '#ovwGlance', text: 'The share of work delivered to the client on time, and of posts that went live on their post date.' },
+      { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
       { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, with late items first. A tab above shows one kind. Press a row to open it.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },
@@ -2028,6 +2036,14 @@
     $('sectionNoAccess').hidden  = name !== 'noaccess';
     $('sectionSettings').hidden  = name !== 'settings';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
+    /* The breadcrumb: the rail's group the section sits in (Work, Internal),
+       none for the Dashboard, Analytics or a mark at the rail's foot. */
+    var crumbOf = document.querySelector('.navitem[data-section="' + name + '"]');
+    var crumbWord = crumbOf && crumbOf.closest('.navgroup') && crumbOf.closest('.navgroup').querySelector('.sidebar-label');
+    if ($('sectionCrumb')) {
+      $('sectionCrumb').textContent = crumbWord ? crumbWord.textContent : '';
+      $('sectionCrumb').hidden = !crumbWord;
+    }
     if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);

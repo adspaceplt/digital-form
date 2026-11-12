@@ -9957,6 +9957,24 @@ as PR #1050 moves them on the PDF.
   Quotation page, and the Rate Card version the quotation was priced on
   (`q.version`, kept with it) with E&OE. The invoicing and payment
   clauses are gone (the user: "234 remove"). Read by a second reader.
+
+### 2026-11-12 · The revamp's layout, not only its look
+
+The user: "Did u actually revamp it, still looks like old portal except
+being glassy. The layout changes like what you proposed in the mockups?"
+The first releases had restyled the old structure. Built now, as
+recommended and approved: at a desk the head is its own glass pane with a
+breadcrumb (the rail's group, Work / Clients); cards take the large corner;
+the rail's My Work row counts what waits on the reader (the only rail count
+built, being the only one already read; a count for every section would be
+a request each on every load); the Dashboard leads with four figures
+(Delivered, On time, New leads, Oldest late), then Work by stage, then
+Needs attention beside the On time by month trend, then the remaining
+tiles and Active clients by month. The on-time and posted rings of
+2026-10-22 are gone: On time is a figure, posting is read in the trend.
+Not built from the mockup: people beside each stage (the report holds no
+assignees by stage) and a tooltip pill on the trend (the chart already
+gives a figure on hover or a tap).
 - 2026-11-12, Build quote asks Valid for (the user: "Build valid for"):
   14, 30, 45, 60 or 90 days beside Payment terms, opening on the Business
   setting; `quote_extras` keeps it as `valid_days` (`bad-valid`), and

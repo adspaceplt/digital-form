@@ -648,6 +648,23 @@
         return { fig: String(n), sub: people.length === 1 ? 'With 1 person' : 'Across ' + people.length + ' people' };
       });
     } },
+    /* On time (the revamp, 2026-11-12, in place of the rings): the share of
+       the work due in the period delivered by its date, work still late
+       counted against it, as the rings read it. */
+    { key: 'ontime', title: 'On time', sec: 'work', can: canFigures, load: function () {
+      return Promise.all([R.report(), R.reportPrev()]).then(function (r) {
+        var rate = function (d) {
+          var f = d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0);
+          return n ? Math.round(Number(f.met || 0) / n * 100) : null;
+        };
+        var now = rate(r[0]), before = rate(r[1]);
+        if (now == null) return { fig: '\u2014', sub: 'None due' };
+        var d = before == null ? null : now - before;
+        return { fig: now + '%',
+                 sub: d == null ? '' : !d ? 'Same as ' + prevWord(period) : (d > 0 ? '+' : '\u2212') + Math.abs(d) + (Math.abs(d) === 1 ? ' point on ' : ' points on ') + prevWord(period),
+                 trend: d == null ? null : trendOf(now, before, 'up', 2) };
+      });
+    } },
     /* The count is the Late tasks signal's; the tile states how late the
        oldest is, so nothing on the page is said twice (2026-10-22, OVW-5). */
     { key: 'late', title: 'Oldest late', sec: 'work', can: canFigures, load: function () {
@@ -656,7 +673,7 @@
         return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '', sub: '' };
       });
     } },
-    { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, sec: 'work', can: canFigures, load: function () {
+    { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, short: function () { return 'Delivered'; }, sec: 'work', can: canFigures, load: function () {
       return Promise.all([R.report(), R.reportPrev(), R.months()]).then(function (r) {
         var n = completed(r[0]);
         return { fig: String(n), sub: delta(n, completed(r[1])), trend: trendOf(n, completed(r[1]), 'up', 2), spark: r[2].map(function (x) { return completed(x.d); }) };
@@ -912,40 +929,6 @@
   function fail(body, title, e, again) {
     UI.failLine(body, title || 'This card', (e && e.message) || 'The data could not be loaded.', again);
   }
-  function glance(box) {
-    /* The rings alone (2026-10-22, OVW-M1): what needs acting on today is
-       the list under them, its sources counted in its own strip. */
-    var meter = canFigures();
-    if (!meter) return;
-    var card = document.createElement('section');
-    card.className = 'chartcard ovw-glance is-plain';
-    card.id = 'ovwGlance';
-    card.innerHTML = '<div class="ovw-meters"><div class="ovw-meter" id="ovwMeter"></div><div class="ovw-meter" id="ovwPosted"></div></div>';
-    box.appendChild(card);
-    if (meter) {
-      var mbox = card.querySelector('#ovwMeter'), pbox = card.querySelector('#ovwPosted');
-      var runM = function () {
-        UI.skeleton(mbox, 2);
-        UI.skeleton(pbox, 2);
-        R.report().then(function (d) {
-          /* Work still late counts as late beside what reached client review
-             (the user, 2026-10-19: late tasks beside 100% on time). */
-          var f = d.on_time || {}, n = Number(f.reached || 0) + Number(f.late_open || 0), met = Number(f.met || 0);
-          /* Posted on time: content live by its post date (2026-10-19). */
-          var p = d.posted || {}, pn = Number(p.due || 0), pm = Number(p.met || 0);
-          mbox.innerHTML = '';
-          pbox.innerHTML = '';
-          /* The rings stand whatever the period holds (the user, 2026-10-12):
-             with nothing due they are empty and read a dash. */
-          CH.draw(mbox, { kind: 'meter', name: 'On-time delivery', word: 'On-time delivery', valueHead: 'Tasks',
-            rows: [{ label: 'On time', value: met, tone: 'ok' }, { label: 'Late', value: n - met }] });
-          CH.draw(pbox, { kind: 'meter', name: 'Posted on time', word: 'Posted on time', valueHead: 'Posts',
-            rows: [{ label: 'On time', value: pm, tone: 'ok' }, { label: 'Late', value: pn - pm }] });
-        }).catch(function (e) { fail(mbox, 'On-time delivery', e, runM); pbox.innerHTML = ''; });
-      };
-      runM();
-    }
-  }
   function tile(grid, t) {
     var el = document.createElement('article');
     el.className = 'chartcard ovw-kpi';
@@ -1030,9 +1013,24 @@
     };
     run();
   }
+  /* The four figures that lead the page (the revamp, 2026-11-12): one row,
+     before everything else. The rest stay in their groups further down. */
+  var LEAD = ['delivered', 'ontime', 'leads', 'late'];
+  function lead(box) {
+    var all = SALES.concat(OPS), list = LEAD.map(function (k) {
+      return all.filter(function (t) { return t.key === k; })[0];
+    }).filter(function (t) { return t && t.can(); });
+    if (!list.length) return;
+    var grid = document.createElement('div');
+    grid.className = 'ovw-kpis ovw-lead';
+    grid.id = 'ovwLead';
+    box.appendChild(grid);
+    list.forEach(function (t) { tile(grid, t); });
+  }
   function tiles(box) {
+    var rest = function (t) { return LEAD.indexOf(t.key) < 0 && t.can(); };
     var groups = [['Sales', SALES, 'ovwSales'], ['Operations', OPS, 'ovwOps']].map(function (g) {
-      return { head: g[0], list: g[1].filter(function (t) { return t.can(); }), id: g[2] };
+      return { head: g[0], list: g[1].filter(rest), id: g[2] };
     }).filter(function (g) { return g.list.length; });
     if (!groups.length) return;
     var wrap = document.createElement('div');
@@ -1381,11 +1379,20 @@
     if (page === 'detail' && hasDetail()) {
       detail(box);
     } else {
-      glance(box);
-      list(box);
+      lead(box);
       stages(box);
+      /* Needs attention beside the on-time trend, the golden proportion
+         (the revamp, 2026-11-12); one over the other in a narrow pane. */
+      var pair = document.createElement('div');
+      pair.className = 'ovw-pair';
+      box.appendChild(pair);
+      list(pair);
+      var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];
+      if (ontime) chart(pair, ontime);
+      if (!pair.children.length) pair.remove();
+      else if (pair.children.length === 1) pair.classList.add('is-one');
       tiles(box);
-      charts(box, PAGE1);
+      charts(box, PAGE1.map(function (row) { return row.filter(function (c) { return c.key !== 'ontime'; }); }));
     }
     foot(box);
     if (keep) window.scrollTo(0, y);
