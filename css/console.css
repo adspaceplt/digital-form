@@ -4969,7 +4969,6 @@ svg.sec {
 .console-body:not(.is-narrow) .ovw-pair:not(.is-one) :is(.ovw-att-head, .ovw-att-row) { grid-template-columns: minmax(0, 1fr) 118px 96px 104px; gap: 2px 12px; }
 .ovw-att-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-<<<<<<< HEAD
 /* The clients behind the Sales counts (Detail, 2026-11-12): a tile with
    clients behind it opens them; each table names its clients, each a
    press to its record. */
@@ -4990,11 +4989,10 @@ svg.sec {
 .ovw-tbl tfoot th, .ovw-tbl tfoot td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0; }
 .is-tight .ovw-moved .ovw-who, .is-tight .ovw-valueby .ovw-share { display: none; }
 .ovw-moved th, .ovw-moved td, .ovw-valueby th, .ovw-valueby td { vertical-align: baseline; }
-=======
+
 /* A record's name in a list row reads at medium weight, as the revamp's
    references set their titles (the user, 2026-11-12: "minimalist, modern,
    elegant"); bold stays for headings and a total. */
 .console :is(.crm-c-name, .task-top > b, .crow-name b, .svc-name b, .group-name b, .rp-name b,
   .ovw-att-what b, .wfy-what b, .ovw-stage-what b, .init-name b, .ovname, .ac-name, .rl-what,
   .caprow-name, .bookreg-fold-name, .crr-bk-name b, .qt-gonename b, .ck-item-name b) { font-weight: 500; }
->>>>>>> origin/main
