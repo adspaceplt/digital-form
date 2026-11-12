@@ -325,7 +325,7 @@
       }
       /* Files and further filming (2026-11-12, the user): never part of a
          fee unless a line of the quotation names them. */
-      notes2.push('Additional footage, working files and raw footage are charged separately unless listed above.');
+      notes2.push('Additional footage, working files and raw files are billed separately unless stated in this quotation.');
       if ((t.on_request || []).length) {
         notes2.push('The following are quoted on request: ' + t.on_request.map(function (x) {
           return x === 'budget' ? 'an advertising budget above the highest tier on our Rate Card' : x;

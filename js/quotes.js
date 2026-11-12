@@ -33,10 +33,10 @@
     'bad-date': window.ADspaceWords.line.docDate,
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 60.',
     'bad-pay': 'Choose the payment terms.',
-    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and the months from 1 to 60.',
+    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 60.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
-    'bad-entity': 'Choose the billing entity again: it no longer bills this client.',
-    'bad-terms': 'Enter ten terms at most, each up to 400 characters.',
+    'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
+    'bad-terms': window.ADspaceWords.line.terms,
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
@@ -1368,8 +1368,8 @@
     var rows = cusRead();
     if (rows.some(function (r) { return !r.label; })) return 'Enter each custom line\'s name.';
     if (rows.some(function (r) { return !(r.qty >= 1); })) return 'Enter each custom line\'s quantity.';
-    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 60); })) return 'Enter the months, from 1 to 60.';
-    if ($('qbTerms').value.split(/\r?\n/).filter(function (x) { return x.trim(); }).length > 10) return 'Enter ten terms at most.';
+    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 60); })) return 'Enter each custom line\'s months, from 1 to 60.';
+    if ($('qbTerms').value.split(/\r?\n/).filter(function (x) { return x.trim(); }).length > 10) return window.ADspaceWords.line.terms;
     return '';
   }
   function advOn(on) {

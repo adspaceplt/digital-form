@@ -320,6 +320,8 @@
     /* A document's own date (2026-11-12): backdated where chosen, never
        before ADSPACE PLT's registration or after today. */
     docDate: 'Choose a date from 14 Aug 2023 to today.',
+    /* A document's own terms (2026-11-12): a quotation's and a letter's. */
+    terms: 'Enter up to ten terms, each of up to 400 characters.',
     /* A template naming a field its sender does not fill (2026-11-10):
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */
     unknownField: function (field, fields) {
