@@ -9901,3 +9901,12 @@ and Safari's blur left the words beneath legible. Anything holding words
 over other words is solid `--raised` again, and the head, which the page
 scrolls under, keeps its 72% frosting; the rail and the cards, with only the
 wash behind them, stay glass.
+
+### 2026-11-12 · The background wash taken off
+
+The user noticed the glass cards carried a blue cast. It was the wash of
+section colours painted behind the console for the glass to show. Four
+options were drawn side by side on the canvas (neutral greys, fainter
+colours, one colour, none); the user chose none ("Go with D"). The console
+stands on its plain `--page` again; the rail and cards stay glass, now
+reading as frosted white.
