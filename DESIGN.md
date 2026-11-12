@@ -17,18 +17,14 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   Analytics or a mark at the rail's foot); cards take the large corner
   (`--radius-lg`); the rail's My Work row counts what waits on the reader
   (`.nav-n`, from Waiting for you). Phones keep their solid head.
-- The console's revamp (the user, 2026-11-12, v2 "full glass", after the
-  After reference and iOS's glass): every surface on the console's plain
-  `--page` is glass (a wash of the section colours behind it was tried and
-  taken off the same day, the user choosing the plain ground): the rail (a floating pane at a desk) and
-  the head frosted as before (`--chrome`, since the page scrolls under it),
-  the cards frosted (`--glass-card`, `--glass-card-sheen`, `--glass-rim`,
-  `--glass-lift`; their words 4.5:1); dark is more
-  opaque again. Nothing that holds words over other words is clear glass:
-  a menu, a popover, the finder, a sheet and a question stay solid
-  `--raised` (2026-11-12: the record's ⋯ read the page through it). A card inside a card is one
-  surface, never frost on frost, and inside a card `--card` is clear. Client
-  pages keep their white.
+- The console's surfaces are solid (the user, 2026-11-12: the revamp's
+  full glass was taken back off the same day, its layout kept): the cards,
+  the floating rail and the floating head each the card's own ground
+  (white; dark the card's grey) with the panels' one light shadow, on the
+  plain `--page`. The `--glass-*` tokens stay as the one place the
+  surfaces are set (`--glass-blur` none draws no frost). What holds words
+  over other words (a menu, a popover, the finder, a sheet, a question) is
+  solid `--raised`. Client pages keep their white.
 - Marks stay light (the user, 2026-11-12: the VIC ring read "bold and thick"): a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never

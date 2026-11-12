@@ -4792,32 +4792,28 @@ body.hb-gate #tabBar { display: none; }
 .raildates > div:has(> .crtot) { align-items: flex-start; }
 .raildates dd.crtot { display: grid; justify-items: end; gap: 2px; }
 
-/* ---------- The revamp (the user, 2026-11-12, v2 "full glass") ----------
-   Every surface on the console's plain ground is glass (the wash of section
-   colours behind it was taken off, the user, 2026-11-12: "Go with D"): the rail and the head clearest, the cards
-   frosted enough that their words hold 4.5:1 on the plain ground.
-   Inside a card `--card` is clear, so a row painted with it shows the
-   card's own frost rather than a white patch. Client pages are untouched. */
+/* ---------- The surfaces (the user, 2026-11-12) ----------
+   The revamp's glass was taken back off the same day (the user: "feeling
+   regrets to move to glass morphisms … just the design but the new layout
+   is good right maintain it"): the cards, the floating rail and the
+   floating head are solid again, on the plain ground, each its own white
+   (dark: the card's own grey) with the panels' one light shadow. The layout
+   stays. The names below are kept so the glass can be put back by its
+   tokens alone; `--glass-blur` none draws no frost. */
 :root {
-  --glass-card: rgba(255, 255, 255, .58);
-  --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, 0) 60%);
-  --glass-bar: rgba(255, 255, 255, .34);
-  --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .02));
-  --glass-raised: rgba(255, 255, 255, .86);
-  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .6);
-  --glass-lift: 0 1px 2px rgba(19, 24, 26, .05), 0 10px 30px rgba(19, 24, 26, .08);
-  --glass-blur: saturate(180%) blur(18px);
-  --glass-edge: rgba(255, 255, 255, .5);
+  --glass-card: #ffffff;
+  --glass-card-sheen: none;
+  --glass-bar: #ffffff;
+  --glass-bar-sheen: none;
+  --glass-raised: var(--line-soft);
+  --glass-rim: 0 0 0 0 transparent;
+  --glass-lift: var(--shadow);
+  --glass-blur: none;
+  --glass-edge: var(--line-soft);
 }
 :root[data-theme="dark"] {
-  --glass-card: rgba(36, 36, 36, .72);
-  --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 60%);
-  --glass-bar: rgba(30, 30, 30, .55);
-  --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
-  --glass-raised: rgba(40, 40, 40, .86);
-  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
-  --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
-  --glass-edge: rgba(255, 255, 255, .06);
+  --glass-card: #1f1f1f;
+  --glass-bar: #1f1f1f;
 }
 /* The frost is a layer under the card's words (`::before`), cut to the
    card's corner by `clip-path`: Safari drew a backdrop blur on the card
@@ -4859,13 +4855,11 @@ body.hb-gate #tabBar { display: none; }
   }
   @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: calc(100dvh - 24px); } }
   :root:not(.has-tabbar) .navitem.is-on { background: var(--glass-raised); box-shadow: var(--glass-rim); }
-  /* On the glass rail `--sunk` is the rail's own shade, so a hover drew
-     nothing (the user, 2026-11-12: "the hover is not obvious enough"): it
-     takes the tonal shade the buttons use, one step short of the chosen
-     row's raised white. */
+  /* A hover the eye finds on the rail (the user, 2026-11-12: "the hover is
+     not obvious enough"), one step short of the chosen row's fill. */
   @media (hover: hover) {
     :root:not(.has-tabbar) .sidebar .navitem:not(.is-on):hover,
-    :root:not(.has-tabbar) .sidebar .railfoot:not(.is-on):hover { background: var(--tonal); }
+    :root:not(.has-tabbar) .sidebar .railfoot:not(.is-on):hover { background: color-mix(in srgb, var(--line-soft) 55%, transparent); }
   }
 }
 /* What floats over the page (a menu, a popover, the finder, a sheet, a
@@ -4976,6 +4970,7 @@ svg.sec {
 @media (min-width: 861px) {
   :root:not(.has-tabbar) .console-head {
     margin: 12px 12px 0; border-radius: 18px; top: 12px; padding: 0 16px 0 20px;
+    background-color: var(--glass-bar); background-image: none;
     box-shadow: var(--glass-rim), var(--glass-lift);
     -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
   }
