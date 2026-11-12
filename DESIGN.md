@@ -11,20 +11,20 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 - Never "AI SaaS": no rainbow gradients, no decorative shadows, no walls of
   tinted pills, no explanatory blurbs, no highlighter colours. A status is a
   dot and its word in ink (App Store Connect), never a coloured box.
-- At a desk the console's head is its own pane of glass floating over the
-  page (12px in, the large corner), its section led by the rail's group as a
-  breadcrumb (`#sectionCrumb`: Work / Clients; none for the Dashboard,
-  Analytics or a mark at the rail's foot); cards take the large corner
-  (`--radius-lg`); the rail's My Work row counts what waits on the reader
-  (`.nav-n`, from Waiting for you). Phones keep their solid head.
-- The console's surfaces are solid (the user, 2026-11-12: the revamp's
-  full glass was taken back off the same day, its layout kept): the cards,
-  the floating rail and the floating head each the card's own ground
-  (white; dark the card's grey) with the panels' one light shadow, on the
-  plain `--page`. The `--glass-*` tokens stay as the one place the
-  surfaces are set (`--glass-blur` none draws no frost). What holds words
-  over other words (a menu, a popover, the finder, a sheet, a question) is
-  solid `--raised`. Client pages keep their white.
+- At a desk the console is v3 (the user, 2026-11-12: "tbh i really like
+  v3", "ok yes all"): one white sheet (`.console-main`, 12px in, 18px
+  corner, a `--card-edge` hairline) on the grey `--frame`, the rail flat on
+  the frame (its chosen row white with the same hairline). The sheet's head
+  names the section at 22/500 over one line (`.console-sub`): the rail's
+  group, then what the section holds as figures and words
+  (`ADspaceAdmin.counts`: 14 open · 2 late · 6 due this week; a late part
+  in red words), drawn by the section itself. A card on the sheet is white
+  with an inset `--card-edge` hairline, never a shadow; a card inside a
+  card is one surface; cards take the large corner (`--radius-lg`). The
+  rail's My Work row counts what waits on the reader (`.nav-n`). Phones
+  keep their solid head and one-line title. What holds words over other
+  words (a menu, a popover, the finder, a sheet, a question) is solid
+  `--raised`. Client pages keep their white.
 - Marks stay light (the user, 2026-11-12: the VIC ring read "bold and thick"): a ring or outline beside words is a hairline (1 to 2px), a list row's name reads at 500 and a figure at 500; 600 is for headings.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never

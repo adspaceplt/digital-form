@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261112p">
-<link rel="stylesheet" href="/css/console.css?v=20261112ztabcdefgh">
+<link rel="stylesheet" href="/css/console.css?v=20261112ztabcdefghi">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -390,13 +390,16 @@
            `?` used to sit in the command bar with the list's own controls,
            which is not what it is about. Asked for by the user on
            2026-09-22. -->
-      <!-- The rail's group the section sits in, before its name (the
-           revamp, 2026-11-12): Work / Clients. -->
-      <span class="console-crumb" id="sectionCrumb" hidden></span>
-      <button class="console-title" id="sectionTitle" type="button" aria-expanded="false" aria-label="Clients, about this section">
-        <span class="console-title-word">Clients</span>
-        <svg class="console-title-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg>
-      </button>
+      <!-- The page's head (v3, the user, 2026-11-12: "build v3"): the
+           section's name large over one line of where it sits and what
+           it holds (Work · 14 open · 2 late), from `ADspaceAdmin.counts`. -->
+      <div class="console-headline">
+        <button class="console-title" id="sectionTitle" type="button" aria-expanded="false" aria-label="Clients, about this section">
+          <span class="console-title-word">Clients</span>
+          <svg class="console-title-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg>
+        </button>
+        <p class="console-sub"><span class="console-crumb" id="sectionCrumb" hidden></span><span class="console-counts" id="sectionCounts" aria-live="polite"></span></p>
+      </div>
       <!-- What the section is for, on the control that names it. It was a
            line under the command bar, so it could not be opened from inside a
            record, where the bar is not on the screen; it comes from the title
@@ -6364,7 +6367,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261112za"></script>
+<script src="/js/admin.js?v=20261112zb"></script>
 <script src="/js/documents.js?v=20261112zt"></script>
 <script src="/js/letters.js?v=20261112zt"></script>
 <script src="/js/smreport.js?v=20261112zt"></script>
@@ -6377,7 +6380,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/quotes.js?v=20261112zv"></script>
 <script src="/js/quotepdf.js?v=20261112zt"></script>
 <script src="/js/checklists.js?v=20261112zt"></script>
-<script src="/js/crm.js?v=20261112t"></script>
+<script src="/js/crm.js?v=20261112u"></script>
 <script src="/js/sales.js?v=20261112zr"></script>
 <script src="/js/team.js?v=20261112h"></script>
 <script src="/js/namecard.js?v=20261112g"></script>
@@ -6388,7 +6391,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261112zt"></script>
 <script src="/js/ratecardpdf.js?v=20261112zt"></script>
 <script src="/js/campaigns.js?v=20261112i"></script>
-<script src="/js/ops.js?v=20261112t"></script>
+<script src="/js/ops.js?v=20261112u"></script>
 <script src="/js/perf.js?v=20261112zt"></script>
 <script src="/js/health.js?v=20261112h"></script>
 <script src="/js/search.js?v=20261112d"></script>

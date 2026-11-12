@@ -10039,3 +10039,16 @@ The user: "can this side panel be more compacted now it requires more". The sect
 
 ### 2026-11-12 · The rail's rhythm
 The user, on the 34px rows: "looks to compacted. any ratios or spacings … it looks weird now". They had been cut to fit, on no rule. A row is now 40px holding a 24px tile (the row about φ times the tile, 8px of air above and below it), 12px from the tile to the word, 16px between the groups and under the brand, all on the 4px grid; every section still stands in the rail at 900px.
+
+### 2026-11-12 · v3, phase 1: the console as one white sheet
+The user chose the v3 boards (Dash3, Board3) over the in-system My Work
+mockups ("tbh i really like v3", then "ok yes all" to the four phases and to
+relaxing two rules: initials circles for colleagues, tinted priority and
+format tags). Phase 1 is the frame every section shares: a grey frame, the
+rail flat on it, the page one white sheet, the head two lines (the section's
+name at 22/500 over its group and its counts). Cards on the white sheet are
+drawn by an inset hairline: an outer one was clipped by the fold bodies'
+overflow (seen on My Work's group cards). Counts drawn for My Work (open,
+late, due this week, blocked, of the whose-work view) and Clients (active,
+leads, overdue follow-ups, paused); the rest follow with their phases.
+

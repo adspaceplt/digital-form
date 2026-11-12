@@ -590,6 +590,18 @@
       : rows.length === state.clients.length
         ? state.clients.length + (state.clients.length === 1 ? ' client' : ' clients')
         : rows.length + ' of ' + state.clients.length;
+    /* The line under the section's name (v3, 2026-11-12): active clients,
+       leads in hand, leads past their follow-up time, paused. */
+    if (window.ADspaceAdmin && window.ADspaceAdmin.counts) {
+      var n = { active: 0, lead: 0, stale: 0, paused: 0 };
+      state.clients.forEach(function (c) {
+        if (c.stage === 'active') n.active++;
+        else if (c.stage === 'paused') n.paused++;
+        else if (c.stage === 'lead' || c.stage === 'contacted' || c.stage === 'proposal') { n.lead++; if (isStale(c)) n.stale++; }
+      });
+      window.ADspaceAdmin.counts('clients', [[n.active, 'active'], n.lead ? [n.lead, n.lead === 1 ? 'lead' : 'leads'] : null,
+        n.stale ? [n.stale, 'overdue follow-up' + (n.stale === 1 ? '' : 's'), 'late'] : null, n.paused ? [n.paused, 'paused'] : null]);
+    }
     var box = $('crmList');
     box.innerHTML = '';
     if (!rows.length) {

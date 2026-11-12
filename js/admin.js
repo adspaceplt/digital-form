@@ -2011,6 +2011,19 @@
 
   var enterLater = '';
 
+  /* The line under the section's name (v3, 2026-11-12): what the section
+     holds, each part a figure and its words (14 open, 2 late), a late part
+     in red words. Drawn only for the section on screen; a section draws it
+     again whenever its own figures move. */
+  var countsFor = null;
+  function counts(name, parts) {
+    if (name !== section || !$('sectionCounts')) return;
+    countsFor = name;
+    $('sectionCounts').innerHTML = (parts || []).filter(function (p) { return p && p[0] != null; }).map(function (p) {
+      return '<span class="console-count' + (p[2] === 'late' ? ' is-late' : '') + '"><b>' + esc(String(p[0])) + '</b> ' + esc(p[1]) + '</span>';
+    }).join('');
+  }
+
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'clients';
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
@@ -2044,6 +2057,9 @@
       $('sectionCrumb').textContent = crumbWord ? crumbWord.textContent : '';
       $('sectionCrumb').hidden = !crumbWord;
     }
+    /* A section's counts are its own: another section's never stand under
+       this one's name while it reads. */
+    if ($('sectionCounts') && countsFor !== name) { $('sectionCounts').innerHTML = ''; countsFor = null; }
     if ($('sectionAboutName')) $('sectionAboutName').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
@@ -5981,6 +5997,7 @@
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
     undoHere: undoHere,
+    counts: counts,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
     linkLock: linkLock,
