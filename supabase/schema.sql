@@ -6108,7 +6108,7 @@ language sql immutable parallel safe as $$
                     'creator.code', 'creator.links', 'creator.links_restored',
                     'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
                     'creator.updated') then 'campaigns'
-    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+    when action in ('assistant.call', 'client.action_done', 'client.action_reopened', 'client.added',
                     'client.billing', 'client.brand', 'client.deleted', 'client.edited',
                     'client.quotation', 'client.review_on', 'client.service', 'client.service_changed',
                     'client.service_deleted', 'client.service_removed', 'client.service_restored', 'client.stage', 'client.touch',
@@ -6121,13 +6121,13 @@ language sql immutable parallel safe as $$
                     'request.reinstated', 'request.replied', 'request.withdrawn',
                     'service.override') then 'clients'
     when action in ('wa.sent', 'wa.template', 'email.sent') then 'whatsapp'
-    when action in ('report.ai_drafted', 'report.ai_failed', 'report.audited', 'report.confirmed',
+    when action in ('assistant.report', 'report.ai_drafted', 'report.ai_failed', 'report.audited', 'report.confirmed',
                     'report.created', 'report.deleted', 'report.published',
                     'report.reassigned', 'report.returned', 'report.revised', 'report.saved',
                     'report.submitted', 'report.unpublished', 'report.version_deleted') then 'reports'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
-    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('assistant.task', 'ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
     when action in ('document.deleted', 'document.issued', 'document.reissued',
                     'document.restored', 'document.signed', 'document.superseded',
                     'document.unsigned', 'document.verified', 'document.voided',
