@@ -1083,15 +1083,7 @@
       });
       $('qbTranslate').checked = Boolean(sel.translate);
       budgets(sel.budget == null ? 0 : sel.budget);
-      var set = (c.snapshot || {}).settings || {};
-      /* The five terms a quotation is offered on (2026-10-14), each with its
-         adjustment as the rate card version holds it (18 months takes 12's
-         on a version published before it had its own). */
-      $('qbTerm').innerHTML = window.ADspaceMoney.QUOTE_TERMS.map(function (m) {
-        var key = window.ADspaceMoney.termKey(m);
-        var pct = Number((set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : 0) || 0);
-        return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
-      }).join('');
+      termOptions();
       $('qbTerm').value = String(sel.term || 6);
       var once = {};
       (sel.once || []).forEach(function (o) { once[o.slug] = o.qty; });
@@ -1253,6 +1245,22 @@
     });
   }
   /* The date as the sheet stands; today where it holds no day. */
+  /* The five terms a quotation is offered on (2026-10-14), each with the
+     adjustment in force on the quotation's date, as quote_card prices it
+     (2026-11-12: the labels read the published version's 15% after Tax
+     and terms set 0%). The version's figure stands in only where the
+     settings did not load; 18 months takes 12's where it has none. */
+  function termOptions() {
+    var set = ((B.card || {}).snapshot || {}).settings || {}, at = qbDay(), was = $('qbTerm').value;
+    $('qbTerm').innerHTML = MON.QUOTE_TERMS.map(function (m) {
+      var key = MON.termKey(m);
+      var own = MON.setting(key, at);
+      if (own == null && key === 'term_18_23') own = MON.setting('term_12_23', at);
+      var pct = Number((own != null ? own : set[key] != null ? set[key] : key === 'term_18_23' ? set.term_12_23 : 0) || 0);
+      return '<option value="' + m + '">' + m + ' months' + (pct ? ' · ' + (pct < 0 ? '−' : '+') + Math.abs(pct) + '%' : '') + '</option>';
+    }).join('');
+    if (was) $('qbTerm').value = was;
+  }
   function qbDay() {
     var v = $('qbDate') ? $('qbDate').value : '';
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
@@ -1445,6 +1453,7 @@
       $(id).addEventListener('change', on);
       $(id).addEventListener('input', on);
     });
+    $('qbDate').addEventListener('change', termOptions);
     ['qbPlats', 'qbLangs', 'qbOnce'].forEach(function (id) { $(id).addEventListener('change', on); $(id).addEventListener('input', on); });
     /* A figure typed: Create waits for the figures it will keep; Enter or
        leaving the field prices it again. Empty, or the card's own figure,
