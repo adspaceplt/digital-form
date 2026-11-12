@@ -593,6 +593,7 @@
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
     quotation_edit: 'p_id p_sel',
+    quotation_lines_start: 'p_id p_start',
     quotation_send: 'p_id',
     quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
@@ -10831,7 +10832,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!e || typeof e !== 'object' || editBad) return;
           if (('qty' in e && (!/^[0-9]{1,4}$/.test(String(e.qty)) || Number(e.qty) < 1)) ||
               ('rate' in e && !/^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(String(e.rate))) ||
-              ('months' in e && (l.basis !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+              ('basis' in e && (['month', 'once'].indexOf(e.basis) < 0 || l.basis !== 'once')) ||
+              ('months' in e && ((e.basis === 'month' ? 'month' : l.basis) !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+
+          var swHit = false;
+          if (e.basis === 'month' && l.basis === 'once') { l.basis = 'month'; l.was_once = true; l.months = term; swHit = true; }
 
           if (e.tax) {
             var tc = (DB.tax_codes || []).filter(function (t) { return t.code === e.tax && t.active; })[0];
@@ -10842,7 +10847,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if ('qty' in e && Number(e.qty) !== Number(l.qty)) { l.qty = Number(e.qty); hit = true; }
           if ('rate' in e && Number(e.rate) !== Number(l.rate)) { l.list_rate = Number(l.rate); l.rate = Number(e.rate); hit = true; }
           if ('months' in e && Number(e.months) !== l.months) { l.months = Number(e.months); hit = true; }
-          if (hit) adjusted++;
+          if (hit || swHit) adjusted++;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         if (taxBad) return { error: 'bad-tax', line: taxBad };
@@ -11183,7 +11188,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else qsNotify(who, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id, sq.client_id);
         return qtOk({ ok: true, at: at });
       }
-      if (/^quotation_(link|reviewers|submit|review|paper|resign)$/.test(name)) {
+      if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
         if (!qtMe || !opsAllowed('clients.quotes', qsLevel)) return qtOk({ error: 'denied' });
         var sq2 = DB.quotations.filter(function (q) { return q.id === args.p_id && !q.removed_at; })[0];
@@ -11265,6 +11270,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
+        }
+        if (name === 'quotation_lines_start') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(args.p_start || '')) || args.p_start < '2023-08-14') return qtOk({ error: 'bad-date' });
+          if (!sq2.reviewed_at) return qtOk({ error: 'not-reviewed' });
+          var nls = 0;
+          DB.client_services.forEach(function (l) { if (l.quotation_id === sq2.id && l.client_id === sq2.client_id && !l.archived_at && !l.start_on) { l.start_on = args.p_start; nls++; } });
+          if (nls) qtLog(sq2.brand, sq2.ref + ' · services start ' + args.p_start + ' · ' + nls + (nls === 1 ? ' line' : ' lines'));
+          return qtOk({ ok: true, lines: nls });
         }
         if (name === 'quotation_review') {
           if (!sq2.submitted_at || sq2.returned_at) return qtOk({ error: 'not-submitted' });

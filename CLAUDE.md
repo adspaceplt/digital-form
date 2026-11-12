@@ -6792,7 +6792,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines (a client's confirmed lines, each `renews` its line, confirmed for the
   new term on approval and never added twice); Bill to (a billing entity,
   held as printed, `quote_client_extras`, the cover's To); and the quotation's
-  own terms, ten at most.
+  own terms, ten at most. A Rate Card one-off item may be quoted Monthly (its
+  Frequency beside its tax; `quote_adjust` edit `basis`, `was_once`, the term's
+  percentage from `term_pct_if` where nothing else ran by the month). The
+  client's SST reads as Bukku's code at its rate (`ADspaceMoney.sstCode`, an
+  SV code first), never that code offered twice, on Build quote and a service
+  line alike. Approve asks Services start (`quotation_lines_start`: the
+  quotation's confirmed lines with no start take it), and New month marks
+  the months no dated confirmed monthly line covers Not in services, saying
+  under the field what covers the month chosen; it refuses none (older
+  clients hold no lines yet).
 - A quotation is edited in place until the portal sends it out
   (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
   "Quotation is a serious one so it must be accurate", Download never

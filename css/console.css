@@ -3850,6 +3850,9 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-cusrow > .select, .qb-cusrow > .input { min-width: 0; width: 100%; }
 .qb-cusnote { font-size: 12.5px; color: var(--ink-mute); }
 .qb-fixed { display: block; text-align: right; font-variant-numeric: tabular-nums; }
+/* New month: a month no confirmed service line covers (2026-11-12). */
+#engPeriod option.is-off { color: var(--ink-mute); }
+.qb-taxc .qb-basis { display: block; min-width: 0; width: auto; max-width: 100%; margin-top: 6px; }
 .qb-renew { display: grid; gap: 4px; padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
 .qb-renew-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 @media (max-width: 640px) {
@@ -3884,7 +3887,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .qb-row.crm-head { display: none; }
   .qb-row > .qb-amt { align-self: start; }
   .qb-row > .qb-taxc, .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }
-  .qb-taxc .qb-tax { width: 100%; margin-top: 0; }
+  .qb-taxc .qb-tax, .qb-taxc .qb-basis { width: 100%; margin-top: 0; }
   .qb-row .qb-val { padding-inline: 8px; }
   .qb-lab { display: block; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
   .qb-val { margin-block: 0; }

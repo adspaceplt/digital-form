@@ -871,6 +871,12 @@
     requestAnimationFrame(function () { fitSig(host); });
   }
   var BILLING_SAID = { filled: 'Billing filled from the signed quotation.', held: 'Billing not changed, as Bukku keeps this client\'s billing details.', kept: 'Billing not changed.' };
+  /* The first day of next month in Malaysia: a new service's usual start. */
+  function nextFirst() {
+    var t = window.ADspaceClock.today(), y = Number(t.slice(0, 4)), m = Number(t.slice(5, 7));
+    m += 1; if (m > 12) { m = 1; y += 1; }
+    return y + '-' + (m < 10 ? '0' : '') + m + '-01';
+  }
   function approve() {
     if (!RV) return;
     var q = RV.q, ctx = RV.ctx, me = meNow(), go = $('qsgApprove');
@@ -885,7 +891,12 @@
       title: place ? 'Approve in place of ' + q.reviewer_name + '?' : 'Approve ' + q.ref + '?',
       body: (place ? q.reviewer_name + ' was asked to review it; the approval is filed under your name in their place. ' : '') +
         'Its lines will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
-      go: 'Approve' }, function () {
+      /* Services start (2026-11-12, the user): the lines' first day, so the
+         months they cover are read when a content month is made. */
+      fields: [{ name: 'start', label: 'Services start', type: 'date', required: false, value: nextFirst(),
+        note: 'Lines with their own start keep it.' }],
+      go: 'Approve' }, function (v) {
+      var start = v && /^\d{4}-\d{2}-\d{2}$/.test(String(v.start || '')) ? v.start : '';
       go.disabled = true;
       ctx.db.rpc('quotation_review', { p_id: q.id, p_ok: true, p_note: null }).then(function (r) {
         var d = r.data || {};
@@ -895,7 +906,13 @@
         RV = null;
         var line = q.ref + ' approved. ' + (d.lines || 0) + ' service line' + (d.lines === 1 ? '' : 's') + ' confirmed. ' + (BILLING_SAID[d.billing] || '') +
           (c.stage && c.stage !== 'active' ? ' Move the client to Active from the record’s stage.' : '');
-        (ctx.refresh || ctx.reload)(function () { ctx.msg('qtMsg', line.trim(), 'ok'); });
+        var done = function () { (ctx.refresh || ctx.reload)(function () { ctx.msg('qtMsg', line.trim(), 'ok'); }); };
+        if (!start) { done(); return; }
+        ctx.db.rpc('quotation_lines_start', { p_id: q.id, p_start: start }).then(function (r2) {
+          var e2 = r2.error || (r2.data && r2.data.error);
+          if (e2) line += ' The services start was not saved: ' + said(e2);
+          done();
+        }).catch(function () { line += ' The services start was not saved.'; done(); });
       }).catch(function (e) { go.disabled = false; sheetMsg('qsgReviewMsg', said(e), 'err'); });
     });
   }
@@ -1590,10 +1607,17 @@
            Months (2026-10-31). */
         var codes = (B && B.codes || []).filter(function (c) { return c.active; });
         var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
-        var tax = codes.length && l.kind !== 'custom' ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
-          '<option value="">' + esc(MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : 'No SST') + '</option>' +
+        /* The client's SST reads as Bukku's code at its rate, never a
+           second option beside that code (2026-11-12). */
+        var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
+        if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
+        var tax = codes.length + (own ? 1 : 0) && l.kind !== 'custom' ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+          '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : 'No SST') + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
+        var freq = l.kind !== 'custom' && (l.basis === 'once' || l.was_once)
+          ? '<select class="select select-sm qb-basis" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Frequency, ' + l.label) + '">' +
+            '<option value="once"' + (l.basis === 'once' ? ' selected' : '') + '>One-off</option><option value="month"' + (l.basis === 'month' ? ' selected' : '') + '>Monthly</option></select>' : '';
         var box = function (what, v, cls, mode, label) {
           /* A custom line is changed in Advanced, where it is typed. */
           if (l.kind === 'custom') return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
@@ -1610,7 +1634,10 @@
           '<label class="tickline qb-inplan"><input type="checkbox" data-key="' + esc(l.key || '') + '"' + (l.in_plan ? ' checked' : '') + '> Include in plan</label>' : '';
         return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           (incl.length ? '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
+          /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
+             user): its frequency beside its tax, the months then in its
+             Months cell. */
+          (tax || freq ? '<span class="qb-taxc">' + (tax ? '<span class="qb-lab">Tax</span>' + tax : '') + freq + '</span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
           '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' ? 'Months' : '&nbsp;') + '</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
@@ -1757,6 +1784,14 @@
         var k2 = ip.getAttribute('data-key'), e2 = B.edits[k2] || {};
         if (ip.checked) delete e2.incl; else e2.incl = false;
         if (Object.keys(e2).length) B.edits[k2] = e2; else delete B.edits[k2];
+        preview();
+        return;
+      }
+      var bs = e.target.closest('.qb-basis');
+      if (bs && B) {
+        var k3 = bs.getAttribute('data-key'), e3 = B.edits[k3] || {};
+        if (bs.value === 'month') e3.basis = 'month'; else { delete e3.basis; delete e3.months; }
+        if (Object.keys(e3).length) B.edits[k3] = e3; else delete B.edits[k3];
         preview();
         return;
       }

@@ -7493,6 +7493,51 @@
     }).catch(function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
   }
 
+  /* The months a client's confirmed service lines cover (2026-11-12, the
+     user: content months follow the services, without refusing a month
+     they do not cover, since older clients have no lines yet): New month
+     marks the rest Not in services and says under the field what covers
+     the month chosen. Nothing is marked for a client with no dated line. */
+  var engCovered = null, engFor = null;
+  if ($('engPeriod')) $('engPeriod').addEventListener('change', function () { engCoverSay(); });
+  function engCover(client) {
+    engCovered = null;
+    engFor = client ? client.id : null;
+    var note = $('engCover');
+    if (note) { note.hidden = true; note.textContent = ''; }
+    if (!client || !db || !may('clients.services', 'view')) return;
+    var id = client.id;
+    db.from('client_services').select('label, tenure, start_on, term_adjust, state, archived_at')
+      .eq('client_id', id).eq('state', 'confirmed').is('archived_at', null)
+      .then(function (r) {
+        if (r.error || engEditing || $('engPeriod').disabled || engFor !== id) return;
+        var map = {};
+        (r.data || []).forEach(function (l) {
+          var n = Math.max(1, Number(l.tenure || 1));
+          if (!l.start_on || !(l.term_adjust === true || n > 1)) return;
+          var y = Number(String(l.start_on).slice(0, 4)), m = Number(String(l.start_on).slice(5, 7));
+          for (var i = 0; i < n; i++) {
+            var mm = m + i, yy = y + Math.floor((mm - 1) / 12);
+            mm = ((mm - 1) % 12) + 1;
+            var k = yy + '-' + (mm < 10 ? '0' : '') + mm;
+            (map[k] = map[k] || []).push(l.label);
+          }
+        });
+        if (!Object.keys(map).length) return;
+        engCovered = map;
+        Array.prototype.forEach.call($('engPeriod').options, function (o) {
+          if (!map[o.value]) { o.textContent = monthWord(o.value) + ' · Not in services'; o.className = 'is-off'; }
+        });
+        engCoverSay();
+      }).catch(function () {});
+  }
+  function engCoverSay() {
+    var note = $('engCover'), k = $('engPeriod').value;
+    if (!note || !engCovered) return;
+    var on = engCovered[k];
+    note.textContent = on ? 'Services: ' + on.join(', ') + '.' : 'No confirmed service line covers this month.';
+    note.hidden = false;
+  }
   /* The engagement's own facts: made for a month that has none, edited for
      one that has. */
   var engEditing = null;
@@ -7503,6 +7548,7 @@
     fillMonths($('engPeriod'), e ? e.period : null,
       e ? null : (cw.engs || []).filter(function (x) { return x.client_id === client.id; }).map(function (x) { return x.period; }));
     $('engPeriod').disabled = Boolean(e);
+    engCover(e ? null : client);
     var me = bridge.me && bridge.me();
     $('engManager').innerHTML = pickable().map(function (m) {
       /* A new month, or one nobody manages yet, starts on whoever opens it:
