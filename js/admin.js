@@ -880,7 +880,9 @@
     var h = 0;
     for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
     var ini = window.ADspaceState ? window.ADspaceState.initials(name) : name.slice(0, 2).toUpperCase();
-    return '<span class="tav tav-' + AV_TINT[h % AV_TINT.length] + '" aria-hidden="true">' + esc(ini) + '</span>';
+    /* The initials are drawn by the stylesheet (`data-ini`), so a cell's
+       words stay the colleague's name alone where a page reads them. */
+    return '<span class="tav tav-' + AV_TINT[h % AV_TINT.length] + '" data-ini="' + esc(ini) + '" aria-hidden="true"></span>';
   }
   function clientMark(c, id) {
     c = c || {};
