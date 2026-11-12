@@ -1440,6 +1440,22 @@
      asks again whether this colleague is the one asked. */
   function mayDecide() { return may('ops', 'work'); }
 
+  /* The line under My Work's name (v3, 2026-11-12): the open work of the
+     whose-work view, what is late, what is due within seven days and what
+     is blocked, whatever the list's own filter shows. */
+  function paintCounts() {
+    var A = window.ADspaceAdmin;
+    if (!A || !A.counts || !state.tasks) return;
+    var open = state.tasks.filter(function (t) { return inScope(t) && !isFinished(t); });
+    var late = 0, week = 0, blocked = 0;
+    open.forEach(function (t) {
+      if (isLate(t)) late++;
+      else { var d = dueOf(t), n = d ? daysAway(d) : null; if (n !== null && n >= 0 && n <= 7) week++; }
+      if (t.stage_key === 'blocked') blocked++;
+    });
+    A.counts('work', [[open.length, 'open'], late ? [late, 'late', 'late'] : null,
+      week ? [week, 'due this week'] : null, blocked ? [blocked, 'blocked'] : null]);
+  }
   function paint() {
     var box = viewBox();
     paintWaiting();
@@ -1465,6 +1481,7 @@
         : !shown.length ? ''
         : shown.length + (shown.length === 1 ? ' task' : ' tasks');
     }
+    paintCounts();
     if (!all.length && !state.find) {
       /* An empty list says what it is holding back: finished work outside
          the view, one press away (the user, 2026-10-04). */
