@@ -10004,3 +10004,6 @@ and lines the page already holds.
 
 ### 2026-11-12 · The rail's hover shows on glass
 The user: "the hover is not obvious enough". The rail's hover was `--sunk` (#f9f9f9), the glass rail's own shade, so it drew nothing. On the floating desk rail a section and a foot mark now take `--tonal` on hover, the buttons' shade, one step short of the chosen row's raised white; the phone and the narrow drawer keep theirs.
+
+### 2026-11-12 · Client rows on the Dashboard's tables breathe
+The user: "take a look at spacings" (Committed monthly value by client). A client named over its Client ID is a two-line button, but it gave back a one-line control's room (`(1lh - ctl-h)/2` each side), so the ID stood on the rule under it. The two-line button now keeps its height inside the row, and the rows of Clients who moved and Committed monthly value by client pad 8px above and below.
