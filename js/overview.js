@@ -1015,7 +1015,7 @@
           BANDS.forEach(function (b) { if (b.keys.indexOf(g) >= 0 || b.keys.indexOf(r.stage_key) >= 0) { by[b.word] = (by[b.word] || 0) + n; total += n; } });
         });
         var shown = BANDS.filter(function (b) { return !b.hide || by[b.word]; });
-        if (!total) { body.innerHTML = ''; UI.emptyLine(body, 'No open work.'); return; }
+        if (!total) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return; }
         var C = 2 * Math.PI * 18;
         body.innerHTML = '<div class="ovw-stage-row">' + shown.map(function (b) {
           var n = by[b.word] || 0, len = n / total * C;
