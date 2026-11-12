@@ -31,6 +31,8 @@
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     'bad-date': window.ADspaceWords.line.docDate,
+    'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 60.',
+    'bad-pay': 'Choose the payment terms.',
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
@@ -1061,6 +1063,7 @@
        backdated): today until changed; its reference takes the date's
        month, and it is priced and valid from it. */
     $('qbDate').value = window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
+    adsLoad(sel);
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
@@ -1261,6 +1264,79 @@
     }).join('');
     if (was) $('qbTerm').value = was;
   }
+  /* The advertising budget (2026-11-12, the user): a tick, then a row a
+     platform, each Monthly or One-off with its budget and, for Monthly,
+     its months; prefilled from the budget chosen above and the term, every
+     figure editable. Kept with the quotation, never a service line. */
+  var X_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  function adRow(r) {
+    r = r || {};
+    var opt = function (list, v) {
+      return list.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === v ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('');
+    };
+    var once = r.freq === 'once';
+    return '<div class="qb-adrow" data-ad>' +
+      '<select class="select qb-adplat" data-nofind aria-label="Platform">' + opt(MON.AD_PLATFORMS, r.platform || 'meta') + '</select>' +
+      '<select class="select qb-adfreq" data-nofind aria-label="Frequency">' + opt([['monthly', 'Monthly'], ['once', 'One-off']], once ? 'once' : 'monthly') + '</select>' +
+      '<input class="input qb-adbud" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Budget (' + CUR + ')" placeholder="Budget (' + CUR + ')" value="' + esc(r.budget ? rm(r.budget) : '') + '">' +
+      '<input class="input qb-admo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months" placeholder="Months" value="' + esc(once ? '' : String(r.months || '')) + '"' + (once ? ' disabled' : '') + '>' +
+      '<span class="qb-adamt"></span>' +
+      '<button class="iconbtn qb-adx" type="button" aria-label="Remove platform">' + X_ICON + '</button></div>';
+  }
+  function adNum(v) { var n = Number(String(v || '').replace(/[^0-9.]/g, '')); return isFinite(n) ? Math.round(n * 100) / 100 : 0; }
+  function adsRead() {
+    return Array.prototype.map.call(document.querySelectorAll('#qbAdRows [data-ad]'), function (row) {
+      var freq = row.querySelector('.qb-adfreq').value;
+      var o = { platform: row.querySelector('.qb-adplat').value, freq: freq, budget: adNum(row.querySelector('.qb-adbud').value) };
+      if (freq === 'monthly') o.months = Math.max(0, Math.floor(Number(row.querySelector('.qb-admo').value) || 0));
+      return o;
+    });
+  }
+  function adsPaint() {
+    var total = 0;
+    Array.prototype.forEach.call(document.querySelectorAll('#qbAdRows [data-ad]'), function (row) {
+      var once = row.querySelector('.qb-adfreq').value === 'once', mo = row.querySelector('.qb-admo');
+      mo.disabled = once;
+      if (once) mo.value = '';
+      var b = adNum(row.querySelector('.qb-adbud').value), n = once ? 1 : Math.max(0, Math.floor(Number(mo.value) || 0));
+      total += b * n;
+      row.querySelector('.qb-adamt').textContent = b && n ? CUR + ' ' + acct(b * n) : '';
+    });
+    $('qbAdSum').textContent = total ? 'Advertising budget for the term ' + CUR + ' ' + acct(total) : '';
+  }
+  function adsLoad(sel) {
+    var list = Array.isArray(sel.ads) ? sel.ads : [];
+    $('qbAdOn').checked = list.length > 0;
+    $('qbAdBox').hidden = !list.length;
+    $('qbAdRows').innerHTML = list.map(adRow).join('');
+    $('qbPay').value = String(MON.PAY_DAYS.indexOf(Number(sel.pay)) > -1 ? Number(sel.pay) : 7);
+    adsPaint();
+  }
+  /* Ticked, one Meta row from the budget chosen above (else the plan's) and
+     the term. */
+  function adsFirst() {
+    var p = planOf(), b = Number($('qbBudget').value) || (p && Number(p.spec.ad_budget)) || 0;
+    return { platform: 'meta', freq: 'monthly', budget: b, months: Number($('qbTerm').value) || 6 };
+  }
+  /* What blocks Create: a row with no budget, or Monthly with no months. */
+  function adsWrong() {
+    if (!$('qbAdOn').checked) return '';
+    var rows = adsRead();
+    if (!rows.length) return 'Add a platform, or untick Include advertising budget.';
+    if (rows.some(function (r) { return !(r.budget > 0); })) return 'Enter each platform\'s budget.';
+    if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 60); })) return 'Enter the months, from 1 to 60.';
+    return '';
+  }
+  /* What quote_extras keeps with the quotation, worked here for its
+     preview: the same rows, amounts and payment terms. */
+  function extras(sel) {
+    var rows = (sel.ads || []).map(function (r) {
+      var n = r.freq === 'once' ? null : r.months;
+      return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: Math.round(r.budget * (n || 1) * 100) / 100 };
+    });
+    return { layout: 2, pay_days: sel.pay || 7, ads: rows,
+      ads_total: Math.round(rows.reduce(function (a, r) { return a + r.amount; }, 0) * 100) / 100 };
+  }
   function qbDay() {
     var v = $('qbDate') ? $('qbDate').value : '';
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
@@ -1283,6 +1359,8 @@
     });
     stepQtys(false);
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
+    sel.pay = Number($('qbPay').value) || 7;
+    if ($('qbAdOn').checked) sel.ads = adsRead();
     return sel;
   }
   /* The rates beside the extras and the translation come from the same
@@ -1395,7 +1473,7 @@
     var taxed = MON.sstOf(rows, t.sst_pct), sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
     var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
       sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
-      term: t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)') };
+      term: MON.termLine(t.term, t.term_pct) };
     var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
@@ -1454,6 +1532,32 @@
       $(id).addEventListener('input', on);
     });
     $('qbDate').addEventListener('change', termOptions);
+    $('qbPay').addEventListener('change', on);
+    $('qbAdOn').addEventListener('change', function () {
+      if (!B) return;
+      $('qbAdBox').hidden = !this.checked;
+      if (this.checked && !document.querySelector('#qbAdRows [data-ad]')) $('qbAdRows').innerHTML = adRow(adsFirst());
+      adsPaint(); on();
+    });
+    $('qbAdAdd').addEventListener('click', function () {
+      $('qbAdRows').insertAdjacentHTML('beforeend', adRow({ platform: 'tiktok', freq: 'monthly', months: Number($('qbTerm').value) || 6 }));
+      adsPaint();
+      var rows = $('qbAdRows').querySelectorAll('[data-ad]');
+      rows[rows.length - 1].querySelector('.qb-adplat').focus();
+      on();
+    });
+    $('qbAdRows').addEventListener('click', function (e) {
+      var x = e.target.closest('.qb-adx');
+      if (!x) return;
+      x.closest('[data-ad]').remove();
+      if (!document.querySelector('#qbAdRows [data-ad]')) { $('qbAdOn').checked = false; $('qbAdBox').hidden = true; $('qbAdOn').focus(); }
+      else $('qbAdAdd').focus();
+      adsPaint(); on();
+    });
+    $('qbAdRows').addEventListener('input', function () { adsPaint(); on(); });
+    /* A select changes once; a typed figure has already repriced on
+       input, so leaving it (a press on Create) does not reprice again. */
+    $('qbAdRows').addEventListener('change', function (e) { if (e.target.tagName === 'SELECT') { adsPaint(); on(); } });
     ['qbPlats', 'qbLangs', 'qbOnce'].forEach(function (id) { $(id).addEventListener('change', on); $(id).addEventListener('input', on); });
     /* A figure typed: Create waits for the figures it will keep; Enter or
        leaving the field prices it again. Empty, or the card's own figure,
@@ -1530,7 +1634,7 @@
       var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
         made_by: (B.editing && B.editing.made_by) || (me && me.name) || '',
         source: B.editing ? B.editing.source : undefined, contact: B.editing ? B.editing.contact : undefined,
-        version: d.version, lines: d.lines, totals: d.totals, selection: B.sel };
+        version: d.version, lines: d.lines, totals: Object.assign({}, d.totals, extras(B.sel)), selection: B.sel };
       var tab = window.ADspaceDocs.previewTab();
       btn.disabled = true;
       drawPdf(q, ctx, { draft: true }).then(function (blob) {
@@ -1545,6 +1649,13 @@
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
+      var wrong = adsWrong();
+      if (wrong) {
+        $('qbMsg').textContent = wrong; $('qbMsg').className = 'msg err';
+        var miss = Array.prototype.filter.call(document.querySelectorAll('#qbAdRows input:not([disabled])'), function (i) { return !Number(String(i.value).replace(/[^0-9.]/g, '')); })[0];
+        if (miss) miss.focus();
+        return;
+      }
       B.idem = B.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey ? window.ADspaceDocs.idemKey() : (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)));
       go.disabled = true;
       if (B.editing) {

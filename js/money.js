@@ -360,7 +360,36 @@
     return lines.filter(function (l) { return into.indexOf(l) < 0; });
   }
 
+  /* A quotation's term adjustment says what it is (the user, 2026-11-12):
+     "6-month term discount (5%)" with its amount in minus, or "3-month term
+     surcharge (15%)" in plus. One copy for Build quote, the quotation's
+     PDF, /quote/ and the Letter of Offer. */
+  function termLine(n, pct) {
+    var p = Math.round(Math.abs(Number(pct) || 0) * 100) / 100;
+    return (n ? n + '-month ' : '') + 'term ' + (Number(pct) < 0 ? 'discount' : 'surcharge') + ' (' + p + '%)';
+  }
+  /* The advertising budget's platforms (2026-11-12): the client's money
+     paid to the platform on their behalf, never a service line. */
+  var AD_PLATFORMS = [['meta', 'Meta'], ['tiktok', 'TikTok'], ['google', 'Google'], ['xhs', 'rednote'], ['youtube', 'YouTube'], ['linkedin', 'LinkedIn']];
+  function adWord(k) {
+    var hit = AD_PLATFORMS.filter(function (x) { return x[0] === k; })[0];
+    return hit ? hit[1] : String(k || '');
+  }
+  /* Payment terms cover the whole quotation, NET 7 unless chosen; 30 days
+     or more waits on ADspace's approval, NET 7 until then. */
+  var PAY_DAYS = [7, 14, 30, 60, 90];
+  function payLine(days) {
+    var d = Number(days) || 7;
+    return 'Payment is due within ' + d + ' days of the invoice date' +
+      (d >= 30 ? ', subject to ADspace\'s approval; until then, within 7 days of the invoice date.' : '.');
+  }
+
   window.ADspaceMoney = {
+    termLine: termLine,
+    AD_PLATFORMS: AD_PLATFORMS,
+    adWord: adWord,
+    PAY_DAYS: PAY_DAYS,
+    payLine: payLine,
     planFold: planFold,
     quoteRows: quoteRows,
     money: money,

@@ -174,9 +174,11 @@
       y -= 5;
       rule(y);
     };
-    headRow();
     var taxed = window.ADspaceMoney.sstOf(q.lines, t.sst_pct);
-    window.ADspaceMoney.planFold(q.lines).forEach(function (l) {
+    var sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
+    var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
+    var drawLines = function (list, quiet) {
+    list.forEach(function (l) {
       var name = wrap(l.label, wD, TB, reg);
       /* Each inclusion a point of its own, as the service lists it, its
          words hung under its first (the user, 2026-11-04: one run of
@@ -188,7 +190,8 @@
         wrap(d, wD - IND, SM, book).forEach(function (s, k) { sub.push({ s: s, dot: !k }); });
       });
       var under = [];
-      if (l.basis === 'once') under.push('one-off');
+      if (quiet) { if (l.basis === 'month' && l.months && Number(l.months) !== Number(t.term)) under.push(l.months + (Number(l.months) === 1 ? ' month' : ' months')); }
+      else if (l.basis === 'once') under.push('one-off');
       else if (l.basis === 'month') under.push(l.months && Number(l.months) !== Number(t.term) ? l.months + (Number(l.months) === 1 ? ' month' : ' months') : 'per month');
       var tag = taxed.tag(l);
       if (tag) under.push(tag);
@@ -207,6 +210,129 @@
       under.forEach(function (s, k) { right(s, xA, top - 10 - 13 + 2 - k * 11, SM, book, mute); });
       y -= h;
     });
+    };
+    var MONY = window.ADspaceMoney, agreed = [];
+    /* A figure in bold, with its S$ beside it where billed in RM. */
+    var nearOf = function (label, v, many) {
+      var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
+      var word = near.replace(/^ \(|\)$/g, '').replace(/^approx/, 'Approx');
+      if (near) { y -= 13; right(many ? label + ', ' + word.charAt(0).toLowerCase() + word.slice(1) : word, R, y + 3, SM, book, mute); }
+    };
+    if (t.layout === 2) {
+      /* Three sections, each closing on its own total (the user,
+         2026-11-12): the monthly service fee, one-off items and the
+         advertising budget, never added into one figure; the term's total
+         a sentence in TERMS. */
+      var TW2 = 255, tx2 = R - TW2;
+      var sums = function (rows) {
+        room(rows.length * 17 + 12);
+        rows.forEach(function (r) {
+          if (r[2]) { y -= 6; rule(y, tx2, R, true); y -= 5; }
+          y -= 17;
+          text(r[0], tx2, y + 5, TB, r[2] ? reg : book, r[2] ? ink : mute);
+          right(r[1], R, y + 5, TB, r[2] ? reg : book);
+        });
+      };
+      var section = function (title) { room(70); y -= 6; text(title, M, y, 10.5, reg); y -= 6; };
+      var folded = MONY.planFold(q.lines);
+      var monthly = folded.filter(function (l) { return l.basis !== 'once'; });
+      var onceL = folded.filter(function (l) { return l.basis === 'once'; });
+      var bolds = 0;
+      if (t.month) bolds++;
+      if (t.once) bolds++;
+      var mWord = own ? 'First month' + incl : sstOn ? 'Monthly incl. SST' : 'Monthly total';
+      if (t.month && monthly.length) {
+        section('Monthly Service Fee');
+        headRow(); drawLines(monthly, true);
+        y -= 6; rule(y); y -= 8;
+        var mr = [[sstOn ? 'Subtotal excl. SST' : 'Subtotal', amt(t.month.subtotal, q)]];
+        if (Number(t.term_pct)) mr.push([MONY.termLine(t.term, t.term_pct).replace(/^./, function (c) { return c.toUpperCase(); }), amt(t.month.term, q)]);
+        mr.push([taxed.word, amt(t.month.sst, q)], [mWord, amt(t.month.incl, q), 1]);
+        sums(mr);
+        nearOf(mWord, Number(t.month.incl), bolds > 1);
+        agreed.push([mWord, amt(t.month.incl, q)], ['Minimum term', t.term + ' months']);
+        y -= 20;
+      }
+      if (t.once && onceL.length) {
+        section('One-off Items');
+        headRow(); drawLines(onceL, true);
+        y -= 6; rule(y); y -= 8;
+        var oWord = sstOn ? 'One-off incl. SST' : 'One-off total';
+        sums([[sstOn ? 'One-off excl. SST' : 'Subtotal', amt(t.once.subtotal, q)], [taxed.word, amt(t.once.sst, q)], [oWord, amt(t.once.incl, q), 1]]);
+        nearOf(oWord, Number(t.once.incl), bolds > 1);
+        agreed.push([oWord, amt(t.once.incl, q)]);
+        y -= 20;
+      }
+      var ads = Array.isArray(t.ads) ? t.ads : [];
+      if (ads.length) {
+        section('Advertising Budget');
+        var xs = { f: M + 120, b: R - 196, m: R - 120 };
+        var adHead = function () {
+          y -= 9;
+          text('Platform', M, y, 8.5, book, mute); text('Frequency', xs.f, y, 8.5, book, mute);
+          right('Budget', xs.b, y, 8.5, book, mute); right('Months', xs.m, y, 8.5, book, mute); right('Amount', R, y, 8.5, book, mute);
+          y -= 5; rule(y);
+        };
+        adHead();
+        ads.forEach(function (r) {
+          if (room(24)) adHead();
+          y -= 18;
+          text(MONY.adWord(r.platform), M, y + 4, TB, reg);
+          text(r.freq === 'once' ? 'One-off' : 'Monthly', xs.f, y + 4, TB);
+          right(amt(r.budget, q), xs.b, y + 4, TB);
+          right(r.freq === 'once' ? '—' : String(r.months), xs.m, y + 4, TB, book, r.freq === 'once' ? mute : ink);
+          right(amt(r.amount, q), R, y + 4, TB);
+        });
+        y -= 6; rule(y); y -= 8;
+        sums([['Advertising budget for the term', amt(t.ads_total, q), 1]]);
+        agreed.push(['Advertising budget for the term', amt(t.ads_total, q)]);
+        y -= 20;
+      }
+      agreed.push(['Payment terms', 'Within ' + (Number(t.pay_days) || 7) + ' days of the invoice date' + (Number(t.pay_days) >= 30 ? ', subject to ADspace\'s approval' : '')]);
+
+      // TERMS.
+      var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
+      var notes2 = ['This quotation is valid for ' + both(days2) + ' days from its date of issue, until ' + longDay(q.valid_until) + '.',
+        MONY.payLine(t.pay_days)];
+      var bill = [];
+      if (t.month) bill.push('The monthly service fee is invoiced each month.');
+      if (t.once) bill.push('One-off items are invoiced once, in the month in which they are delivered.');
+      if (bill.length) notes2.push(bill.join(' '));
+      if (ads.length) {
+        notes2.push('The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable in advance, ' +
+          'before the service commences. It includes any SST and withholding tax the advertising platforms apply. ' +
+          'ADspace does not charge SST on the advertising budget.');
+      } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
+        notes2.push('The advertising budget is not included in the service fee and is billed separately.');
+      }
+      if ((t.on_request || []).length) {
+        notes2.push('The following are quoted on request: ' + t.on_request.map(function (x) {
+          return x === 'budget' ? 'an advertising budget above the highest tier on our Rate Card' : x;
+        }).join(', ') + '.');
+      }
+      if (t.month) {
+        var fee = Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100;
+        notes2.push((own ? 'Over the months stated for each line' : 'Over the minimum term of ' + both(t.term) + ' months') +
+          ', the service fee totals ' + amt(fee, q) + (sstOn ? ' inclusive of SST' : '') + '.');
+      }
+      notes2.push('This quotation becomes binding once accepted and signed on its acceptance page. Together with the ADspace ' +
+        'Service Terms at go.adspace.me/svc-terms, it forms the contract between the parties.');
+      notes2.push('Rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');
+      room(30);
+      y -= 8;
+      text('TERMS', M, y, SM, book, mute);
+      y -= 6;
+      notes2.forEach(function (n, i) {
+        var ls = wrap(n, FULL - 14, 8.5, book);
+        room(ls.length * 12 + 2);
+        y -= 12;
+        text((i + 1) + '.', M, y + 3, 8.5);
+        ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
+        y -= (ls.length - 1) * 12;
+      });
+    } else {
+    headRow();
+    drawLines(window.ADspaceMoney.planFold(q.lines), false);
     y -= 6;
     rule(y);
     y -= 8;
@@ -215,11 +341,9 @@
        Letter of Offer names them: where a monthly line runs months of its
        own the month's figures are the first month's, the one-off items in
        it (the user, 2026-10-18). */
-    var own = (q.lines || []).some(function (l) { return l.basis === 'month' && l.months && Number(l.months) !== Number(t.term); });
-    var sstOn = taxed.on, incl = sstOn ? ' incl. SST' : '';
     var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
       sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
-      term: t.term + '-month ' + (t.term_pct < 0 ? 'commitment (' + Math.abs(t.term_pct) + '%)' : 'term (' + t.term_pct + '%)') };
+      term: window.ADspaceMoney.termLine(t.term, t.term_pct) };
     var tot = window.ADspaceMoney.quoteRows(t, q.lines, sstOn).map(function (x) { return [WORD[x[0]], amt(x[1], q), x[2]]; });
     var TW = 255, tx = R - TW;
     room(tot.length * 17 + 12);
@@ -234,7 +358,7 @@
     /* Every bold total is agreed, the monthly fee and the one-off total
        alike (2026-11-07: a plan with an outstation fee signed on the one-off
        figure alone), each with its S$ beside it where billed in RM. */
-    var MONY = window.ADspaceMoney, bold = tot.filter(function (r) { return r[2]; });
+    var bold = tot.filter(function (r) { return r[2]; });
     bold.forEach(function (b) {
       var v = Number(String(b[1]).replace(/[^0-9.\-]/g, ''));
       var near = opts.client && t.currency !== 'SGD' && MONY && MONY.approx ? MONY.approx(v, opts.client, dayOf(q.issued_at)) : '';
@@ -277,6 +401,12 @@
       ls.forEach(function (s, k) { text(s, M + 14, y + 3 - k * 12, 8.5); });
       y -= (ls.length - 1) * 12;
     });
+    agreed = bold.map(function (b) { return [b[0], b[1]]; });
+    if (t.month) {
+      agreed.push(['Minimum term', t.term + ' months']);
+      agreed.push(['Total for the term' + incl, amt(t.commitment, q)]);
+    }
+    }
 
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
@@ -284,11 +414,6 @@
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', including the ' +
       'services, fees and terms set out in this document and the ADspace Service Terms at go.adspace.me/svc-terms.', 11, 14.5);
     y -= 12;
-    var agreed = bold.map(function (b) { return [b[0], b[1]]; });
-    if (t.month) {
-      agreed.push(['Minimum term', t.term + ' months']);
-      agreed.push(['Total for the term' + incl, amt(t.commitment, q)]);
-    }
     rule(y);
     y -= 4;
     agreed.forEach(function (r) { y -= 16; text(r[0], M, y + 4, TB); right(r[1], R, y + 4, TB); });
