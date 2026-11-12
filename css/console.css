@@ -4981,7 +4981,7 @@ svg.sec {
 .console-headline { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 0 1 auto; }
 .console-sub { display: none; margin: 0; font-size: 12.5px; line-height: 18px; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.console-sub > span + span:not(:empty)::before, .console-count + .console-count::before { content: '\00b7'; margin: 0 6px; color: var(--ink-mute); }
+.console-crumb:not([hidden]):not(:empty) + .console-counts:not(:empty)::before, .console-count + .console-count::before { content: '\00b7'; margin: 0 6px; color: var(--ink-mute); }
 .console-sub .console-crumb { font-size: inherit; color: var(--ink-mute); }
 .console-sub .console-crumb::after { content: none; }
 .console-count b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -5125,3 +5125,43 @@ svg.sec {
 /* On a narrow pane the row keeps its two columns: the logo gives way. */
 .is-narrow .task-mark { display: none; }
 .is-narrow .task-open:has(> .task-mark) { flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; }
+
+/* v3, phase 3 (2026-11-12): the Dashboard. This month by client: a card a
+   client's content month, three across (two, then one, as the pane
+   narrows): who over the month, the work done as a bar, what is open and
+   late, then its next steps. */
+.ovw-months { display: grid; gap: 12px; }
+.ovw-months-head { display: flex; align-items: center; gap: 12px; }
+.ovw-months-head .ovgo { margin-left: auto; }
+.ovw-months-head .ovw-group-h { margin: 0; }
+.ovw-month-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.is-narrow .ovw-month-grid { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .ovw-month-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ovw-month { display: grid; gap: 10px; margin: 0; }
+.ovw-month-who { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ovw-month-who .ovgo-chev { margin-left: auto; width: 14px; height: 14px; color: var(--ink-mute); flex: 0 0 auto; }
+.ovw-month-name { display: grid; min-width: 0; }
+.ovw-month-name b { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-month-name small { font-size: 12px; color: var(--ink-mute); }
+.ovw-month-bar { display: flex; align-items: center; gap: 10px; }
+.ovw-month-bar .tcheckbar-segs { flex: 1; width: auto; display: flex; gap: 2px; height: 4px; }
+.ovw-month-bar .tcheckbar-segs i { flex: 1; border-radius: 2px; background: var(--line); }
+.ovw-month-bar .tcheckbar-segs i.is-on { background: var(--dot-wait); }
+.ovw-month-bar .tcheckbar-segs.is-done i { background: var(--dot-ok); }
+.ovw-month-pct { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ovw-month-line { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.ovw-month-line .is-late { color: var(--err); }
+.ovw-month-next { display: grid; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.ovw-month-h { font-size: 12px; font-weight: 600; color: var(--ink-mute); padding-bottom: 4px; }
+.ovw-step { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: var(--ctl-h-sm); padding: 0; border: 0; background: none;
+  font: inherit; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer; border-top: 1px solid var(--line-soft); }
+.ovw-step:first-of-type { border-top: 0; }
+.ovw-step-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-ctl); flex: 0 0 auto; }
+.ovw-step-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-step-due { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+.ovw-step-due.is-late { color: var(--err); }
+@media (hover: hover) { .ovw-step:hover .ovw-step-what, .ovw-month-who:hover b { color: var(--action-ink); } }
+/* A figure tile ends on a shaded strip holding its change (v3's footer). */
+.ovw-kpi:has(.ovw-kpi-arrow) { padding-bottom: 0; }
+.ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { order: 9; margin: 4px -20px 0; padding: 8px 20px; background: var(--sunk);
+  border-top: 1px solid var(--line-soft); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }

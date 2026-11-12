@@ -10060,3 +10060,12 @@ taken from the name, so a colleague reads the same colour everywhere. The
 list row's logo gives way on a narrow pane, where it pushed the title off
 its line.
 
+### 2026-11-12 · v3, phase 3: the Dashboard
+Dash3's "This month by client" is built: a card a client's content month
+with its work done, open and late counts, and its next three tasks. Read once
+a visit (the months, their counts, the open tasks Needs attention already
+reads). The figure tiles end on a shaded strip holding their change, and
+the head's line reads the open tasks and those late. Dash3's Team cards are
+left out: Detail's Open work by person already answers who holds what.
+The stand-in now joins a month to its client as PostgREST does.
+

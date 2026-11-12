@@ -930,7 +930,7 @@
       }
 
       if ((table === 'client_contacts' || table === 'batches' || table === 'documents' || table === 'client_documents' ||
-           table === 'client_requests' || table === 'sm_reports' || table === 'video_scripts' || table === 'client_touches') &&
+           table === 'client_requests' || table === 'sm_reports' || table === 'video_scripts' || table === 'client_touches' || table === 'ops_engagements') &&
           /(^|[\s,])clients\s*\(/.test(sel)) {
         var sc = DB.clients.filter(function (c) { return c.id === r.client_id; })[0];
         o.clients = sc ? pick(sc, sel.match(/clients\s*\(([^)]*)\)/)[1]) : null;
