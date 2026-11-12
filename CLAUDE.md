@@ -2636,6 +2636,20 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
   never stored: a row holds the snapshot and the file is redrawn on Download.
+- Every document issued in the portal has a Date, today until changed
+  (`2026-11-12-documents-on-their-own-date.sql`; the user, 2026-11-12:
+  backdated "as per client's request", "the reference number must match"):
+  a quotation (Build quote's `#qbDate`, `p_sel.date`, a team's alone, never
+  kept in the selection), a Letter of Offer (`#pickDate`, `p_deal.date`) and
+  a client, HR or supplier letter (`#docDate`, `p_issued_at`), 14 Aug 2023
+  to today (`doc_day_ok`, `bad-date`, `ADspaceWords.line.docDate`). Its
+  reference takes the date's period (AQL, ADP/QT, ADHR and AD/SCA its
+  month, ACL its day), and it is priced on it: the SST, terms and S$ rate in
+  force, the quotation still standing (`quote_card(date)`,
+  `quote_tax_snap(…, date)`, `ADspaceDocs.quoteOf(…, at)`), its validity
+  from it (the Letter of Offer's validity line moving with the Date while
+  untouched). A quotation edited onto another month takes that month's
+  reference, the one it held kept in `quotation_refs_kept`.
 - Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
   tab, zh)` under its own file name (Safari names a `blob:` address
   Unknown.pdf, and names a file after the last part of its address). The

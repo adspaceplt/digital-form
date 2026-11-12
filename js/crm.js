@@ -6827,9 +6827,14 @@
           '<button class="btn btn-sm" id="pickCodeNext" type="button" hidden></button></div>' +
         '<p class="msg warn" id="pickRefNote">This client has no Client ID. Set one to number the letter.</p>' +
       '</div>' : '') +
-      '<div class="lpickref">' +
-        '<label class="field-label" for="pickRef">Reference</label>' +
-        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false" placeholder="Numbered automatically">' +
+      /* The letter's own date (2026-11-12, the user: a letter may be
+         backdated): today until changed; its reference takes the date's
+         month, and the price and the validity line are read on it. */
+      '<div class="row fgrid">' +
+        '<div><label class="field-label" for="pickDate">Date</label>' +
+        '<input class="input input-sm" id="pickDate" type="date" aria-required="true" value="' + esc(window.ADspaceClock.today()) + '" max="' + esc(window.ADspaceClock.today()) + '"></div>' +
+        '<div><label class="field-label" for="pickRef">Reference</label>' +
+        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false" placeholder="Numbered automatically"></div>' +
       '</div>' +
       /* Terms of this letter's own, one point a line, printed under TERMS
          after the term and the validity (the user, 2026-10-23). */
@@ -6870,6 +6875,15 @@
     }
     Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]'), function (i) {
       i.addEventListener('change', pickSum);
+    });
+    /* A date moved carries the validity line with it while that line is
+       still the one the sheet wrote; a line typed over is left alone. */
+    var pd = $('pickDate'), pdWas = pd ? pd.value : '';
+    if (pd) pd.addEventListener('change', function () {
+      var t = $('pickTerms'), was = DOCS.validLine ? DOCS.validLine(pdWas) : '', now = DOCS.validLine ? DOCS.validLine(pickDay()) : '';
+      if (t && was && t.value.split(/\r?\n/)[0] === was) t.value = [now].concat(t.value.split(/\r?\n/).slice(1)).join('\n');
+      pdWas = pickDay();
+      pickSum();
     });
     pickSum();
     /* Lines from one quotation the reader cannot list (no Quotations part)
@@ -6920,6 +6934,7 @@
   function pickAgain(ids, said) {
     var rep = picking && picking.replaces;
     var ref = $('pickRef') ? $('pickRef').value : '';
+    var day = $('pickDate') ? $('pickDate').value : '';
     var terms = $('pickTerms') ? $('pickTerms').value : '';
     var bill = $('pickBillTo') && !$('pickBillBox').hidden ? $('pickBillTo').value : '';
     var id = state.client && state.client.id;
@@ -6928,6 +6943,7 @@
         if (!state.client || state.client.id !== id || $('pickSheet').hidden) return;
         openPick(ids, rep);
         if ($('pickRef')) $('pickRef').value = ref;
+        if ($('pickDate') && day) $('pickDate').value = day;
         if ($('pickTerms')) $('pickTerms').value = terms;
         if (bill) pickBillTo(bill);
         msg('pickMsg', said, 'warn');
@@ -6947,12 +6963,17 @@
       function (i) { return i.checked && !i.disabled; }).map(function (i) { return i.value; });
   }
 
+  /* The letter's date as the sheet stands, today where empty. */
+  function pickDay() {
+    var v = $('pickDate') ? $('pickDate').value : '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
+  }
   function pickSum() {
     var ids = pickedIds();
     var c = state.client;
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
-    var price = rows.length ? DOCS.quoteOf(c, rows, (state.quotes || []).concat(state.letterQuotes || []), renewal) : null;
+    var price = rows.length ? DOCS.quoteOf(c, rows, (state.quotes || []).concat(state.letterQuotes || []), renewal, pickDay()) : null;
     /* Lines all from one quotation read as the quotation reads, its own
        figure and term, never the letter's whole total (2026-10-22, QT-1). */
     var qid = rows.length && rows[0].quotation_id;
@@ -7033,6 +7054,12 @@
       $('pickTerms').focus();
       return null;
     }
+    var day = $('pickDate') ? $('pickDate').value : '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || day > window.ADspaceClock.today() || day < '2023-08-14') {
+      msg('pickMsg', window.ADspaceWords.line.docDate, 'err');
+      if ($('pickDate')) $('pickDate').focus();
+      return null;
+    }
     var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
     /* A billing entity other than the main is named; the main is the
        client's own billing, sent as before. */
@@ -7046,7 +7073,7 @@
     return { rows: rows, renewal: rows.some(function (l) { return l.state === 'confirmed'; }), deal: {
       owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
       stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '', terms: terms,
-      entity: billEnt && !billEnt.main ? billEnt.id : null
+      entity: billEnt && !billEnt.main ? billEnt.id : null, date: day
     } };
   }
   $('pickBody').addEventListener('click', function (e) {

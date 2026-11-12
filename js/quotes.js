@@ -30,6 +30,7 @@
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
+    'bad-date': window.ADspaceWords.line.docDate,
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
@@ -1056,6 +1057,10 @@
     $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
     $('qbFor').textContent = (ctx.client.client_code ? ctx.client.client_code + ' · ' : '') + ctx.client.name;
     $('qbLines').innerHTML = ''; $('qbSum').textContent = '';
+    /* The quotation's own date (2026-11-12, the user: a quotation may be
+       backdated): today until changed; its reference takes the date's
+       month, and it is priced and valid from it. */
+    $('qbDate').value = window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
@@ -1247,8 +1252,13 @@
       if (!Object.keys(e).length) delete B.edits[k];
     });
   }
+  /* The date as the sheet stands; today where it holds no day. */
+  function qbDay() {
+    var v = $('qbDate') ? $('qbDate').value : '';
+    return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
+  }
   function selection() {
-    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6,
+    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6, date: qbDay(),
       platforms: [], langs: [], translate: $('qbTranslate').checked, budget: Number($('qbBudget').value) || 0, once: [] };
     if (sel.plan) sel.mix = Number($('qbMix').value) || 0;
     Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) { if (i.checked) sel.platforms.push(i.value); });
@@ -1431,7 +1441,7 @@
       i.value = String(Math.min(Number(i.max) || 99, Math.max(0, (Number(i.value) || 0) + Number(b.getAttribute('data-step')))));
       on();
     });
-    ['qbMix', 'qbBudget', 'qbTerm', 'qbTranslate', 'qbGraphic', 'qbReel'].forEach(function (id) {
+    ['qbMix', 'qbBudget', 'qbTerm', 'qbTranslate', 'qbGraphic', 'qbReel', 'qbDate'].forEach(function (id) {
       $(id).addEventListener('change', on);
       $(id).addEventListener('input', on);
     });
@@ -1505,8 +1515,8 @@
     $('qbPreview').addEventListener('click', function () {
       if (!B || !B.priced || !window.ADspaceQuotePdf) return;
       var d = B.priced, ctx = B.ctx, btn = this;
-      var today = window.ADspaceClock.today();
-      var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days') : 30) || 30;
+      var today = qbDay();
+      var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days', today) : 30) || 30;
       var me = window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null;
       var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
         made_by: (B.editing && B.editing.made_by) || (me && me.name) || '',

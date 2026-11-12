@@ -43,6 +43,7 @@
     'no-client-code': 'Add a Client ID to this client before issuing a letter.',
     'serial-shape':   'Enter a reference of 3 to 40 characters: letters, digits, slashes, dots or dashes.',
     'serial-taken':   'This reference is already used by another document. Enter another reference.',
+    'bad-date':       window.ADspaceWords.line.docDate,
     'bad-family':     'Choose the kind of document.',
     'kind-required':  'Choose a document type.',
     'reason-required':'Enter a reason.',

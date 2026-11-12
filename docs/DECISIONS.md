@@ -9824,3 +9824,16 @@ emails keep #a1a1a1, the previews read #767676.
   alone (as the amounts on the Payment pane). Currencies stay apart. The
   difference between the two was offered and not asked for, so it is not
   shown.
+
+- **2026-11-12 · Documents on their own date.** The user issues documents
+  backdated at a client's request, and the reference must belong to the
+  date's period, not the day it is issued. A quotation and a Letter of Offer
+  were dated today with no choice, and an HR letter took this month's
+  reference whatever its Date. Every issue sheet now has a Date, today until
+  changed, 14 Aug 2023 to today (a document dated ahead is refused); the
+  reference follows it, and the price reads the SST, terms and S$ rate in
+  force on it, as a letter's own day already governed its SST on screen.
+  The live Rate Card version still prices a backdated quotation: the date
+  moves the figures a day sets, not which card was offered. A website
+  quotation is dated when asked.
+

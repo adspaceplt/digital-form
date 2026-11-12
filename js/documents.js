@@ -260,7 +260,10 @@
   var TAXR = {};
   function taxRates(list) { TAXR = {}; (list || []).forEach(function (t) { TAXR[t.code] = Number(t.rate); }); return TAXR; }
   var taxAsked = false;
-  function quoteOf(client, lines, quotes, renewal) {
+  /* `at` is the letter's own date (2026-11-12): the SST in force and the
+     quotation still standing are read on it, as issue_letter reads them. */
+  function quoteOf(client, lines, quotes, renewal, at) {
+    var day = at || window.ADspaceClock.today();
     if (!taxAsked && MON.taxCodes) { taxAsked = true; MON.taxCodes().then(taxRates); }
     lines = lines.map(function (l) {
       return l.tax_code && (l.tax_pct == null || l.tax_pct === '') && TAXR[l.tax_code] != null
@@ -272,7 +275,7 @@
     var q = lines.length ? lines[0].quotation_id : null;
     var hit = !renewal && q && lines.every(function (l) { return l.quotation_id === q; }) &&
       (quotes || []).filter(function (x) {
-        return x.id === q && !x.removed_at && String(x.valid_until || '').slice(0, 10) >= window.ADspaceClock.today();
+        return x.id === q && !x.removed_at && String(x.valid_until || '').slice(0, 10) >= day;
       })[0];
     if (hit && hit.totals) {
       lines = lines.map(function (l) {
@@ -280,7 +283,7 @@
                                       quote_term: Math.max(1, Number(hit.totals.term || 1)) });
       });
     }
-    return priceOf(lines, MON.curOf(client), client.sst_applies !== false);
+    return priceOf(lines, MON.curOf(client), client.sst_applies !== false, day);
   }
 
   /* The quotation the lines came from, as the letter prices it: read from
@@ -322,7 +325,7 @@
     if (list && list.length) taxRates(list);
     return quoteTerms(use, opts.quotes);
     }).then(function (quotes) {
-    var price = quoteOf(client, use, quotes, opts.renewal);
+    var price = quoteOf(client, use, quotes, opts.renewal, deal.date || null);
     db.rpc('issue_letter', Object.assign({ p_idem: opts.idem || idemKey() }, letterArgs(client, use, deal, opts, price, serial))).then(function (r) {
       /* The migration has to be in place before the site is. Until it is, the
          function is missing and nothing is written at all — a half issued
@@ -348,7 +351,7 @@
       p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
       p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
                 stage: deal.stage || '', enquiry: deal.enquiry || '', terms: deal.terms || [], terms_own: true,
-                entity: deal.entity || null },
+                entity: deal.entity || null, date: deal.date || null },
       p_replaces: opts.replaces || null,
       p_renewal: Boolean(opts.renewal),
       p_serial: serial || null
@@ -371,7 +374,7 @@
       if (list && list.length) taxRates(list);
       return quoteTerms(use, opts.quotes);
     }).then(function (quotes) {
-      var price = quoteOf(client, use, quotes, opts.renewal);
+      var price = quoteOf(client, use, quotes, opts.renewal, deal.date || null);
       return db.rpc('issue_letter_preview', letterArgs(client, use, deal, opts, price, String(opts.serial || '').trim() || 'PREVIEW'));
     }).then(function (r) {
       if (r.error) { fail(missingWord(r.error.message)); return; }
@@ -417,6 +420,7 @@
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
     'clash': 'Two letters were issued at once. Try again.',
     'serial-taken': 'This reference is already used by another document. Enter another reference.',
+    'bad-date': window.ADspaceWords.line.docDate,
     'serial-shape': 'Enter a reference of 3 to 40 characters: letters, digits and / . _ -',
     'no-serial': 'No free reference was found for this client this month. Enter one.',
     'reason-required': 'Enter a reason.',
@@ -1590,8 +1594,8 @@
 
   /* The validity a new letter's terms open on: today in Malaysia plus the
      days set in Tax and terms (`quote_valid_days`), never a figure here. */
-  function validLine() {
-    var today = ADspaceClock.today();
+  function validLine(at) {
+    var today = at || ADspaceClock.today();
     var days = Number(MON.setting('quote_valid_days', today)) || 0;
     return days > 0 ? 'This offer is valid until ' + longDate(plusDays(today, days)) + '.' : '';
   }
