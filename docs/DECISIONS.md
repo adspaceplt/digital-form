@@ -9875,3 +9875,8 @@ texture, coloured initials, a glow behind the chart. Dark glass is more
 opaque so its words hold 4.5:1. The Better, Worse or Steady rule moved from
 Analytics to `ADspaceSales.judge`, so the tiles and Analytics read one rule.
 Mockups: the canvas "Portal revamp mockups".
+
+- 2026-11-12, the quotation PDF's TERMS no longer say ADspace does not
+  charge SST on the advertising budget (the user: "No need say this in
+  quotation pdf"); the line that the budget is paid to the platforms in
+  advance and includes their own SST and withholding tax stays.

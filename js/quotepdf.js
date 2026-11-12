@@ -318,8 +318,7 @@
       if (bill.length) notes2.push(bill.join(' '));
       if (ads.length) {
         notes2.push('The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable in advance, ' +
-          'before the service commences. It includes any SST and withholding tax the advertising platforms apply. ' +
-          'ADspace does not charge SST on the advertising budget.');
+          'before the service commences. It includes any SST and withholding tax the advertising platforms apply.');
       } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
         notes2.push('The advertising budget is not included in the service fee and is billed separately.');
       }
