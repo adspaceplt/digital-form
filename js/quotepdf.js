@@ -525,7 +525,7 @@
        signature box and each value, as a letter's execution block. */
     var boxes = [];
     if (!signer && !opts.draft) {
-      boxes.push(['acceptance_authorised_signatory', M, y - sh + 18, cw, sh - 18, true]);
+      boxes.push(['acceptance_authorised_signatory', M, y - sh + 18, cw, sh - 18, 'sig']);
       ['acceptance_name', 'acceptance_designation', 'acceptance_date'].forEach(function (k, i) {
         boxes.push([k, M + cw + lw, y - (i + 1) * rh, FULL - cw - lw, rh, false]);
       });

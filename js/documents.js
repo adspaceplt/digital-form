@@ -1249,7 +1249,7 @@
       grid(xSig, tTop, xSig, tBot); grid(xLab, tTop, xLab, tBot);
       grid(xSig, tTop - ROWH, R, tTop - ROWH); grid(xSig, tTop - 2 * ROWH, R, tTop - 2 * ROWH);
       text('Authorised signatory and company stamp', M + 8, tBot + 7, 8, font, mute);
-      fieldBoxes.push(['acceptance_authorised_signatory', M, tBot + 18, SIGW, TABH - 18, true]);
+      fieldBoxes.push(['acceptance_authorised_signatory', M, tBot + 18, SIGW, TABH - 18, 'sig']);
       [['Name', 'acceptance_name'],
        ['Designation', 'acceptance_designation'],
        ['Date', 'acceptance_date']].forEach(function (f, i) {
@@ -1278,21 +1278,34 @@
   }
 
   /* Fields a recipient fills in a PDF reader (the letter's execution block,
-     a quotation's acceptance): boxes [name, x, y, w, h, multiline] on one
-     page, transparent and borderless over the drawn grid, in Helvetica (a
-     subset face cannot draw a character the document never used). */
+     a quotation's acceptance): boxes [name, x, y, w, h, kind] on one page.
+     kind 'sig' is a real signature field (/FT /Sig, the user, 2026-11-12):
+     Acrobat and Reader offer Click to sign there, to draw, type or place a
+     signature, or sign with a certificate; pdf-lib has no maker for one, so
+     its widget is written by hand. Every other box is a text field,
+     transparent and borderless over the drawn grid, in Helvetica (a subset
+     face cannot draw a character the document never used). */
   function formFields(pdf, PDF, page, boxes) {
     if (!boxes || !boxes.length) return Promise.resolve();
     return pdf.embedFont(PDF.StandardFonts.Helvetica).then(function (formFont) {
       var form = pdf.getForm();
       boxes.forEach(function (f) {
+        if (f[5] === 'sig') {
+          var ctx = pdf.context;
+          var ref = ctx.register(ctx.obj({
+            Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: PDF.PDFHexString.fromText(f[0]),
+            Rect: [f[1], f[2], f[1] + f[3], f[2] + f[4]], F: 4, P: page.ref
+          }));
+          page.node.addAnnot(ref);
+          form.acroForm.addField(ref);
+          return;
+        }
         var fld = form.createTextField(f[0]);
-        if (f[5]) fld.enableMultiline();
         /* addToPage writes the field's /DA, so the size is set after it;
            pdf-lib fills white and borders black unless both keys are passed. */
         fld.addToPage(page, { x: f[1], y: f[2], width: f[3], height: f[4], font: formFont,
           borderWidth: 0, borderColor: undefined, backgroundColor: undefined });
-        fld.setFontSize(f[5] ? 14 : 11);
+        fld.setFontSize(11);
       });
       form.updateFieldAppearances(formFont);
     });
