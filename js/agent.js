@@ -47,10 +47,10 @@
     'ai-model': 'The Assistant is not available at the moment. Please contact an admin.',
     'ai-busy': 'The Assistant is busy. Try again in a minute.',
     'ai-slow': 'The answer took too long. Try a shorter question.',
-    'ai-refused': 'The Assistant cannot help with that.',
+    'ai-refused': 'The Assistant cannot help with that. Ask about a client, a task or a report.',
     'too-many-steps': 'That question needed too many steps. Ask about one thing at a time.',
-    'expired': 'That question has ended. Ask it again.',
-    denied: 'You do not have access to the Assistant.'
+    'expired': 'This question has expired. Please ask it again.',
+    denied: 'You do not have permission to use the Assistant. Please ask an admin.'
   };
   function saidOf(code) { return SAID[code] || 'The Assistant could not answer. Try again.'; }
   var REASON = { client_request: 'Client request', scope_change: 'Scope change', capacity: 'Internal capacity',
@@ -258,10 +258,11 @@
   }
   function refusal(code) {
     var m = { denied: 'You do not have permission to do this. Please ask an admin.', 'not-owner': 'Only the person it is assigned to, or an admin, can move this task.',
-      stale: 'This task changed since it was read. Ask again.', 'not-found': 'That record no longer exists.', 'no-month': 'A client task needs a confirmed content month.',
-      'priority-not-yours': 'Only the person who set the task can change its priority.', 'no-tasks': 'That colleague does not take tasks.',
-      'bad-date': 'That date cannot be used.', 'client-scope': 'You do not have access to that client.' };
-    return m[code] || ('Not saved: ' + String(code).replace(/-/g, ' ') + '.');
+      stale: 'Not saved. This task was changed by someone else. Ask again to see the latest version.', 'not-found': 'This task no longer exists.',
+      'no-month': 'A client task needs a confirmed content month. Confirm the month in My Work first.',
+      'priority-not-yours': 'Only the person who set the task can change its priority.', 'no-tasks': 'That colleague does not take tasks. Choose another colleague.',
+      'bad-date': 'Choose a date from 14 Aug 2023 to 31 Dec 2099.', 'client-scope': 'You do not have permission to work on that client. Please ask an admin.' };
+    return m[code] || 'Not saved. Please try again.';
   }
   function task(id) {
     return db.from('ops_tasks').select('id, task_no, title, content_desc, version, current_final_due_at, client_id, clients(name)').eq('id', id).maybeSingle()
@@ -277,8 +278,8 @@
     propose_add_task: {
       title: 'Add task',
       card: function (a) {
-        if (!may('ops', 'work')) return Promise.reject(new Error('You do not have access to add tasks.'));
-        if (!validDay(a.due_date)) return Promise.reject(new Error('The due date is not a date.'));
+        if (!may('ops', 'work')) return Promise.reject(new Error('You do not have permission to add tasks. Please ask an admin.'));
+        if (!validDay(a.due_date)) return Promise.reject(new Error('Enter a valid due date.'));
         return team().then(function () {
           if (!a.client_id) return null;
           return db.from('clients').select('id, name').eq('id', a.client_id).maybeSingle().then(function (r) { return r.data; });
@@ -286,7 +287,7 @@
           if (a.client_id && !c) throw new Error('That client could not be found.');
           a._client = c;
           var owner = a.owner_id || (me() || {}).id;
-          return [['Task', a.title], ['For', c ? c.name : 'Internal'], ['Assigned to', nameOf(owner) || 'You'],
+          return [['Task', a.title], ['For', c ? c.name : 'Internal'], ['Assigned to', nameOf(owner) || (me() || {}).name || 'Me'],
                   ['Due date', dayWord(a.due_date)], ['Priority', PRIORITY_WORD[PRIORITY[a.priority] || 3]],
                   a.description ? ['Brief', a.description] : null];
         });
@@ -323,7 +324,7 @@
     propose_due_date: {
       title: 'Change due date',
       card: function (a) {
-        if (!validDay(a.due_date)) return Promise.reject(new Error('The due date is not a date.'));
+        if (!validDay(a.due_date)) return Promise.reject(new Error('Enter a valid due date.'));
         return task(a.task_id).then(function (t) {
           a._task = t;
           return [['Task', taskName(t)], ['Due date', (t.current_final_due_at ? dayWord(t.current_final_due_at) : 'Not set') + ' → ' + dayWord(a.due_date)],
@@ -340,15 +341,15 @@
       }
     },
     propose_log_call: {
-      title: 'Log call or visit',
+      title: 'Log call',
       card: function (a) {
-        if (!may('clients.calls', 'work')) return Promise.reject(new Error('You do not have access to log calls and visits.'));
-        if (!validDay(a.happened_on) || (a.next_on && !validDay(a.next_on))) return Promise.reject(new Error('A date is not a date.'));
-        return db.from('clients').select('id, name, stage, slug').eq('id', a.client_id).maybeSingle().then(function (r) {
+        if (!may('clients.calls', 'work')) return Promise.reject(new Error('You do not have permission to log calls. Please ask an admin.'));
+        if (!validDay(a.happened_on) || (a.next_on && !validDay(a.next_on))) return Promise.reject(new Error('Enter a valid date.'));
+        return db.from('clients').select('id, name, stage, slug, stage_since').eq('id', a.client_id).maybeSingle().then(function (r) {
           if (!r.data) throw new Error('That client could not be found.');
           a._client = r.data;
-          return [['Client', r.data.name], ['Kind', KIND[a.kind] || a.kind], ['On', dayWord(a.happened_on)], a.with ? ['With', a.with] : null,
-                  ['Summary', a.summary], a.next_action ? ['Next action', a.next_action + (a.next_on ? ' · ' + dayWord(a.next_on) : '')] : null];
+          return [['Client', r.data.name], ['Type', KIND[a.kind] || a.kind], ['Date', dayWord(a.happened_on)], a.with ? ['Attendees', a.with] : null,
+                  ['Summary', a.summary], a.next_action ? ['Action', a.next_action + (a.next_on ? ' · ' + dayWord(a.next_on) : '')] : null];
         });
       },
       run: function (a) {
@@ -365,7 +366,9 @@
              Calls and visits pane does. */
           var moved = (c.stage || 'lead') === 'lead'
             ? db.from('clients').update({ stage: 'contacted' }).eq('id', c.id).select('id').then(function (q) {
-                if (!q.error && (q.data || []).length && bridge.log) bridge.log('client.stage', c.name, 'Contacted the same day');
+                if (q.error || !(q.data || []).length || !bridge.log) return;
+                var CRM = window.ADspaceCRM;
+                bridge.log('client.stage', c.name, CRM && CRM.contactedWord ? CRM.contactedWord(c) : 'Contacted');
               })
             : Promise.resolve();
           return moved.then(function () {
@@ -395,8 +398,8 @@
     propose_mark_sent: {
       title: 'Mark as sent',
       card: function (a) {
-        if (!may('reports', 'work')) return Promise.reject(new Error('You do not have access to mark reports as sent.'));
-        if (!validDay(a.sent_on)) return Promise.reject(new Error('The date is not a date.'));
+        if (!may('reports', 'work')) return Promise.reject(new Error('You do not have permission to mark reports as sent. Please ask an admin.'));
+        if (!validDay(a.sent_on)) return Promise.reject(new Error('Enter a valid date.'));
         return db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)').eq('id', a.report_id).maybeSingle()
           .then(function (r) {
             if (!r.data) throw new Error('That report could not be found.');
@@ -488,7 +491,7 @@
     }).catch(function (e) {
       el.querySelector('.ag-acts').remove();
       el.querySelector('.ag-card-body').innerHTML = '';
-      msg.className = 'msg warn ag-msg'; msg.textContent = (e && e.message) || 'This cannot be prepared.';
+      msg.className = 'msg warn ag-msg'; msg.textContent = (e && e.message) || 'This change cannot be made. Ask again.';
       state.notes.push('The proposed change (' + def.title + ') could not be prepared: ' + msg.textContent);
     });
     no.addEventListener('click', function () {
