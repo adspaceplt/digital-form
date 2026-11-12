@@ -572,7 +572,7 @@
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
-    creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
+    creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -593,6 +593,7 @@
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
     quotation_edit: 'p_id p_sel',
+    quotation_lines_start: 'p_id p_start',
     quotation_send: 'p_id',
     quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
@@ -1895,6 +1896,8 @@ function cardSlugFree(name, self, email) {
     if (day !== now.slice(0, 10)) return day > now.slice(0, 10);
     return !time || String(time).slice(0, 5) > now.slice(11, 16);
   }
+
+  function docDayOk(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d)) && d >= '2023-08-14' && d <= kualaDay(); }
   function kualaYM() {
 
     var d = new Date(Date.now() + 8 * 3600 * 1000);
@@ -2003,7 +2006,8 @@ function cardSlugFree(name, self, email) {
   function buildSerial(type, client, member, issuedOn) {
     var base;
     if (type.family === 'hr') {
-      base = 'ADHR/' + String((member && member.staff_code) || 'STAFF') + '/' + type.code + kualaYM();
+      var hday = issuedOn || kualaDay();
+      base = 'ADHR/' + String((member && member.staff_code) || 'STAFF') + '/' + type.code + hday.slice(2, 4) + hday.slice(5, 7);
     } else if (type.family === 'client') {
 
       var day = issuedOn || kualaDay();
@@ -2028,6 +2032,7 @@ function cardSlugFree(name, self, email) {
   function issueDocument(a) {
     var type = docType(a.p_type);
     if (!type || type.active === false) return { error: 'no-type' };
+    if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     if (!regMay(type.family, 'work')) return { error: 'not-allowed' };
     var idem = String(a.p_idem || '').trim();
     if (idem) {
@@ -2081,6 +2086,7 @@ function cardSlugFree(name, self, email) {
     return { ok: true, id: row.id, serial: serial };
   }
   function documentReissue(a) {
+    if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     var d = (DB.documents || []).filter(function (x) { return x.id === a.p_doc; })[0];
     if (!d) return { error: 'no-doc' };
     if (!regMay(d.family, 'work')) return { error: 'not-allowed' };
@@ -2237,6 +2243,10 @@ function cardSlugFree(name, self, email) {
     if (!cl) return { error: 'no-client' };
 
     var typed = String(a.p_serial || '').trim();
+
+    var lday = a.p_deal && a.p_deal.date ? String(a.p_deal.date) : '';
+    if (lday && !docDayOk(lday)) return { error: 'bad-date' };
+    lday = lday || kualaDay();
     if (!typed && !String(cl.client_code || '').trim()) return { error: 'no-client-code' };
 
     var terms = (Array.isArray((a.p_deal || {}).terms) ? a.p_deal.terms : [])
@@ -2307,7 +2317,7 @@ function cardSlugFree(name, self, email) {
 
     var num = typed;
     if (!num) {
-      var ym = kualaYM();
+      var ym = lday.slice(2, 4) + lday.slice(5, 7);
       var seat = DB.client_document_seq.filter(function (q) {
         return q.client_id === a.p_client && q.ym === ym;
       })[0];
@@ -2324,7 +2334,7 @@ function cardSlugFree(name, self, email) {
     var taxOn = cl.sst_applies !== false;
     var doc = {
       id: nid('doc'), client_id: a.p_client, kind: 'offer', number: num,
-      issued_at: new Date().toISOString().slice(0, 10), market: billMarket(cl),
+      issued_at: lday, market: billMarket(cl),
       subtotal: Number(a.p_subtotal || 0), tax: Number(a.p_tax || 0), total: Number(a.p_total || 0),
       bill_to: {
         name: cl.name || '', legal_name: cl.legal_name || '', address: cl.billing_address || '',
@@ -3256,6 +3266,32 @@ function cardSlugFree(name, self, email) {
     DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
     persist();
     return { ok: true, bills: rows.length, told: told };
+  }
+
+  function creatorTotals(creator) {
+    if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
+    if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
+    var pay = opsGranted('campaigns.pay', 'view');
+    var group = function (rows, cur, amt, n) {
+      var by = {};
+      rows.forEach(function (r) { var k = cur(r); by[k] = by[k] || { currency: k, amount: 0 }; by[k].amount = Math.round((by[k].amount + Number(amt(r) || 0)) * 100) / 100; by[k][n] = (by[k][n] || 0) + 1; });
+      return Object.keys(by).sort().map(function (k) { return by[k]; });
+    };
+    var billed = null;
+    if (opsAllowed('campaigns.campaigns', 'view')) {
+      billed = group((DB.campaign_options || []).filter(function (o) {
+        if (o.creator_id !== creator || BOOKED_OUT.indexOf(o.state) > -1) return false;
+        var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
+        var c = m && (DB.clients || []).filter(function (x) { return x.id === m.client_id; })[0];
+        return c && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
+      }), function (o) {
+        var m = DB.campaigns.filter(function (x) { return x.id === o.campaign_id; })[0];
+        return billMarket(DB.clients.filter(function (x) { return x.id === m.client_id; })[0]) === 'SG' ? 'SGD' : 'MYR';
+      }, function (o) { return o.rate; }, 'bookings');
+    }
+    var paid = pay ? group((DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && b.status === 'paid' && !b.gone; }),
+      function (b) { return b.currency || 'MYR'; }, function (b) { return b.amount; }, 'bills') : null;
+    return { ok: true, pay: pay, billed: billed, paid: paid };
   }
   function creatorBillsList(creator) {
     if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
@@ -9640,6 +9676,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(ejOut)), error: null });
     }
+    if (name === 'creator_totals') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(opsMe() ? creatorTotals((args || {}).p_creator) : { error: 'denied' })), error: null });
+    }
     if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
       var cbA = args || {}, cbOut;
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
@@ -10652,6 +10692,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qtCard = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); })[0];
       var qtNow = new Date(), qtToday = new Date(qtNow.getTime() + 8 * 3600e3).toISOString().slice(0, 10);
 
+      if ((name === 'quotation_create' || name === 'quotation_edit' || name === 'quote_preview') && args.p_sel && typeof args.p_sel === 'object') {
+        var qtSelDay = args.p_sel.date;
+        args.p_sel = JSON.parse(JSON.stringify(args.p_sel)); delete args.p_sel.date;
+        if (qtSelDay != null && qtSelDay !== '') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(qtSelDay)) || qtSelDay < '2023-08-14' || qtSelDay > qtToday) return qtOk({ error: 'bad-date' });
+          if (qtSelDay !== qtToday) { qtNow = new Date(Date.parse(qtSelDay + 'T00:00:00Z') + (qtNow.getTime() + 8 * 3600e3) % 864e5 - 8 * 3600e3); qtToday = qtSelDay; }
+        }
+      }
+
       var qtReplyBy = function () {
         var days = Number(appSet('quote_reply_days', qtToday) || 2), due = new Date(qtNow.getTime());
         var hol = (DB.public_holidays || []).map(function (h) { return h.day; });
@@ -10669,6 +10718,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .filter(function (r) { return r.indexOf(head) === 0 && /^[0-9]+$/.test(r.slice(head.length)); })
           .reduce(function (m, r) { return Math.max(m, Number(r.slice(head.length))); }, 0) + 1;
         return head + (n < 10 ? '0' : '') + n;
+      };
+
+      var qtTermPct = function (set, term) {
+        return Number((term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
+          : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
       };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
@@ -10783,7 +10837,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!e || typeof e !== 'object' || editBad) return;
           if (('qty' in e && (!/^[0-9]{1,4}$/.test(String(e.qty)) || Number(e.qty) < 1)) ||
               ('rate' in e && !/^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(String(e.rate))) ||
-              ('months' in e && (l.basis !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+              ('basis' in e && (['month', 'once'].indexOf(e.basis) < 0 || l.basis !== 'once')) ||
+              ('months' in e && ((e.basis === 'month' ? 'month' : l.basis) !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+
+          var swHit = false;
+          if (e.basis === 'month' && l.basis === 'once') { l.basis = 'month'; l.was_once = true; l.months = term; swHit = true; }
 
           if (e.tax) {
             var tc = (DB.tax_codes || []).filter(function (t) { return t.code === e.tax && t.active; })[0];
@@ -10794,7 +10852,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if ('qty' in e && Number(e.qty) !== Number(l.qty)) { l.qty = Number(e.qty); hit = true; }
           if ('rate' in e && Number(e.rate) !== Number(l.rate)) { l.list_rate = Number(l.rate); l.rate = Number(e.rate); hit = true; }
           if ('months' in e && Number(e.months) !== l.months) { l.months = Number(e.months); hit = true; }
-          if (hit) adjusted++;
+          if (hit || swHit) adjusted++;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         if (taxBad) return { error: 'bad-tax', line: taxBad };
@@ -10810,7 +10868,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var sub = 0, once = 0, month = false;
         lines.forEach(function (l) { l.amount = r2(l.qty * l.rate); if (l.basis === 'month') { sub += l.amount; month = true; } else once += l.amount; });
         if (month && term === 1) return { error: 'bad-term' };
-        var pct = !month ? 0 : term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23 : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24;
+        var pct = !month ? 0 : qtTermPct(set, term);
         pct = Number(pct || 0);
         var sst = Number(set.sst_pct || 0), off = r2(sub * pct / 100), excl = r2(sub + off);
 
@@ -10823,6 +10881,74 @@ function opsCodeRange(cid, period, ty, src, seq) {
           once: once > 0 ? { subtotal: r2(once), sst: otx, incl: r2(once + otx) } : null,
           commitment: r2((!month ? 0 : lines.every(function (l) { return l.basis !== 'month' || l.months === term; }) ? (excl + tx) * term :
             lines.reduce(function (n, l) { return n + (l.basis === 'month' ? l.amount * l.months : 0); }, 0) * (1 + pct / 100) * (1 + sst / 100)) + once + otx) } };
+      };
+
+      var qtR2 = function (v) { var a = Math.round(Math.abs(v) * 100 + 1e-7) / 100; return v < 0 ? -a : a; };
+      var qtTotals = function (lines, term, pct, sst) {
+        var g = {}, sub = 0, span = 0, once = 0, month = false, even = true;
+        lines.forEach(function (e) {
+          var m = e.basis === 'month', v = Number(e.qty || 0) * Number(e.rate || 0), mo = Math.max(1, Number(e.months || term || 1));
+          var r = e.sst != null ? Number(e.sst) : sst, b = g[r] || (g[r] = { r: r, sub: 0, span: 0, once: 0 });
+          if (m) { sub += v; span += qtR2(v) * mo; b.sub += v; b.span += qtR2(v) * mo; month = true; if (mo !== term) even = false; }
+          else { once += v; b.once += v; }
+        });
+        var tx = 0, otx = 0, spanIncl = 0;
+        Object.keys(g).forEach(function (k) { var b = g[k];
+          tx += qtR2((b.sub + qtR2(b.sub * pct / 100)) * b.r / 100); otx += qtR2(b.once * b.r / 100);
+          spanIncl += qtR2(b.span * (1 + pct / 100) * (1 + b.r / 100)); });
+        var off = qtR2(sub * pct / 100);
+        return { month: month ? { subtotal: qtR2(sub), term: off, excl: qtR2(sub + off), sst: qtR2(tx), incl: qtR2(sub + off + tx) } : null,
+          once: once > 0 ? { subtotal: qtR2(once), sst: qtR2(otx), incl: qtR2(once + otx) } : null,
+          commitment: qtR2((!month ? 0 : even ? (sub + off + tx) * term : spanIncl) + once + otx) };
+      };
+      var qtDay = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v + 'T00:00:00Z')); };
+      var qtCustom = function (pr, sel) {
+        sel = sel || {};
+
+        if (pr && pr.error === 'empty' && Array.isArray(sel.custom) && sel.custom.length) {
+          var bset = (qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {}, bterm = /^\d{1,2}$/.test(String(sel.term)) ? Number(sel.term) : 6;
+          var bmon = sel.custom.some(function (x) { return x && x.basis === 'month'; });
+          if (bmon && bterm === 1) return { error: 'bad-term' };
+          var bpct = !bmon ? 0 : qtTermPct(bset, bterm);
+          pr = { lines: [], on_request: [], extra_rates: {}, totals: { term: bterm, term_pct: Number(bpct || 0), sst_pct: Number(bset.sst_pct || 0), budget: 0 } };
+        }
+        if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
+        var any = false, lines = pr.lines.map(function (l0) { return Object.assign({}, l0); });
+        if (sel.custom != null) {
+          if (!Array.isArray(sel.custom) || sel.custom.length > 30) return { error: 'bad-custom' };
+          for (var i = 0; i < sel.custom.length; i++) {
+            var r = sel.custom[i] || {}, lab = String(r.label || '').trim();
+            if (!lab || lab.length > 120 || !/^\d{1,4}$/.test(String(r.qty)) || Number(r.qty) < 1 || !/^\d{1,7}(\.\d{1,2})?$/.test(String(r.rate)) ||
+                ['month', 'once'].indexOf(r.basis) < 0 || (r.detail != null && (!Array.isArray(r.detail) || r.detail.length > 12 ||
+                r.detail.some(function (d) { return typeof d !== 'string' || d.length > 300; }))) ||
+                (r.renews && !/^[0-9a-f-]{36}$/.test(String(r.renews)) && !/^cs/.test(String(r.renews)))) return { error: 'bad-custom', line: lab || String(i + 1) };
+            var mo = 1;
+            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
+            if (r.start && !qtDay(r.start)) return { error: 'bad-custom', line: lab };
+            var cl = { kind: 'custom', key: 'custom|' + (i + 1) + '|' + lab, label: lab, detail: r.detail || [], qty: Number(r.qty), rate: Number(r.rate),
+              basis: r.basis, months: mo, amount: qtR2(Number(r.qty) * Number(r.rate)) };
+            if (r.start) cl.start = r.start;
+            if (r.renews) cl.renews = r.renews;
+            lines.push(cl); any = true;
+          }
+        }
+        if (!any) return pr;
+        var t = pr.totals || {}, tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
+        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment }) });
+      };
+      var qtClientExtras = function (cid, lines, sel) {
+        for (var i = 0; i < lines.length; i++) {
+          var l = lines[i];
+          if (l.renews && !DB.client_services.some(function (x) { return x.id === l.renews && x.client_id === cid && !x.archived_at && x.state === 'confirmed'; }))
+            return { error: 'bad-renewal', line: l.label };
+        }
+        if (!sel || !sel.entity) return {};
+        var ce = (DB.client_entities || []).filter(function (x) { return x.client_id === cid && x.entity_id === sel.entity; })[0];
+        var e = ce && (DB.billing_entities || []).filter(function (x) { return x.id === sel.entity; })[0];
+        if (!e) return { error: 'bad-entity' };
+        var b = { entity_id: e.id, legal_name: e.legal_name, company_no: e.company_no, billing_address: e.billing_address };
+        Object.keys(b).forEach(function (k) { if (b[k] == null) delete b[k]; });
+        return { bill_to: b };
       };
 
       var qtTell = function (cid, kind, title, body, key) {
@@ -10929,7 +11055,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wv = new Date(qtToday + 'T00:00:00Z'); wv.setUTCDate(wv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         var wkey = ''; while (wkey.length < 8) wkey += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
         var wrow = { id: nid('qt'), ref: qtNextRef(whead), client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
-          selection: wsel, lines: wp.lines, totals: Object.assign({}, wp.totals, { on_request: wp.on_request }),
+          selection: wsel, lines: wp.lines, totals: Object.assign({ layout: 2, pay_days: 7, ads: [], ads_total: 0 }, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
           contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
           idem: widem, removed_at: null, removed_by: null,
@@ -11061,7 +11187,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else qsNotify(who, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id, sq.client_id);
         return qtOk({ ok: true, at: at });
       }
-      if (/^quotation_(link|reviewers|submit|review|paper|resign)$/.test(name)) {
+      if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
         if (!qtMe || !opsAllowed('clients.quotes', qsLevel)) return qtOk({ error: 'denied' });
         var sq2 = DB.quotations.filter(function (q) { return q.id === args.p_id && !q.removed_at; })[0];
@@ -11144,6 +11270,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
         }
+        if (name === 'quotation_lines_start') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(args.p_start || '')) || args.p_start < '2023-08-14') return qtOk({ error: 'bad-date' });
+          if (!sq2.reviewed_at) return qtOk({ error: 'not-reviewed' });
+          var nls = 0;
+          DB.client_services.forEach(function (l) { if (l.quotation_id === sq2.id && l.client_id === sq2.client_id && !l.archived_at && !l.start_on) { l.start_on = args.p_start; nls++; } });
+          if (nls) qtLog(sq2.brand, sq2.ref + ' · services start ' + args.p_start + ' · ' + nls + (nls === 1 ? ' line' : ' lines'));
+          return qtOk({ ok: true, lines: nls });
+        }
         if (name === 'quotation_review') {
           if (!sq2.submitted_at || sq2.returned_at) return qtOk({ error: 'not-submitted' });
           if (sq2.reviewed_at) return qtOk({ error: 'reviewed' });
@@ -11162,7 +11296,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (qsLater) return qtOk({ error: 'revised' });
           var co = sq2.signed.company, held = (DB.bukku_links || []).some(function (b) { return b.kind === 'client' && b.record_id === sq2.client_id && b.held_at; });
           var billing = 'kept';
-          var empty = sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
+          var empty = !(sq2.totals && sq2.totals.bill_to) && sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
           if (held) billing = 'held';
           else if (empty) {
             if (!opsAllowed('clients.billing', 'work')) return qtOk({ error: 'billing-access' });
@@ -11170,22 +11304,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
             billing = 'filled';
           }
           var have = DB.client_services.filter(function (l) { return l.quotation_id === sq2.id && !l.archived_at; });
+
+          var renewed = 0;
+          sq2.lines.forEach(function (l) {
+            if (!l.renews) return;
+            var sv = DB.client_services.filter(function (x) { return x.id === l.renews && x.client_id === sq2.client_id && !x.archived_at; })[0];
+            if (!sv) return;
+            Object.assign(sv, { qty: l.qty, rate: l.rate, state: 'confirmed', tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1,
+              term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0, start_on: l.start || sv.start_on,
+              quotation_id: sq2.id, note: 'Renewed by quotation ' + sq2.ref, detail: (l.detail || []).join('\n') || sv.detail });
+            renewed++;
+          });
           if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
-          else sq2.lines.forEach(function (l) {
+          else sq2.lines.filter(function (l) { return !l.renews; }).forEach(function (l) {
             have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
               label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
-              tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
+              tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: l.start || null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
               detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
             DB.client_services.push(have[have.length - 1]);
           });
           Object.assign(sq2, { reviewed_at: qtNow.toISOString(), reviewed_by: qtMe.name, reviewed_role: qtMe.designation || null });
           if (sc2) sc2.updated_at = qtNow.toISOString();
           qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
-            ' · ' + have.length + (have.length === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
+            ' · ' + (have.length + renewed) + (have.length + renewed === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
+            (renewed ? renewed + ' renewed · ' : '') +
             { filled: 'Billing filled from the signed quotation', held: 'Billing not changed, as Bukku keeps this client\'s billing details', kept: 'Billing not changed' }[billing]);
           qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
             'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
-          return qtOk({ ok: true, billing: billing, lines: have.length });
+          return qtOk({ ok: true, billing: billing, lines: have.length + renewed });
         }
       }
 
@@ -11304,10 +11450,42 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpc = args.p_sel && args.p_sel.client && DB.clients.filter(function (c) { return c.id === args.p_sel.client; })[0];
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
-        var qp = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qpFx);
+        var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
         if (!qp.error) qp.version = qtCard.version;
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
+
+      var qtExtras = function (sel) {
+        sel = sel || {};
+        var pay = sel.pay == null || sel.pay === '' ? 7 : sel.pay;
+        if (!/^\d{1,3}$/.test(String(pay)) || [7, 14, 30, 60, 90].indexOf(Number(pay)) < 0) return { error: 'bad-pay' };
+        if (sel.valid != null && sel.valid !== '' && (!/^\d{1,3}$/.test(String(sel.valid)) || [14, 30, 45, 60, 90].indexOf(Number(sel.valid)) < 0)) return { error: 'bad-valid' };
+        var rows = [], tot = 0;
+        if (sel.ads != null) {
+          if (!Array.isArray(sel.ads) || sel.ads.length > 6) return { error: 'bad-ads' };
+          for (var i = 0; i < sel.ads.length; i++) {
+            var r = sel.ads[i] || {};
+            if (['meta', 'tiktok', 'google', 'xhs', 'youtube', 'linkedin'].indexOf(r.platform) < 0 || ['monthly', 'once'].indexOf(r.freq) < 0 ||
+                !/^\d{1,9}(\.\d{1,2})?$/.test(String(r.budget)) || !(Number(r.budget) > 0)) return { error: 'bad-ads' };
+            var mo = null;
+            if (r.freq === 'monthly') {
+              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-ads' };
+              mo = Number(r.months);
+            }
+            var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;
+            rows.push({ platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am });
+            tot += am;
+          }
+        }
+        var terms = [];
+        if (sel.terms != null) {
+          if (!Array.isArray(sel.terms) || sel.terms.length > 10 || sel.terms.some(function (x) { return typeof x !== 'string' || x.length > 400; })) return { error: 'bad-terms' };
+          terms = sel.terms.map(function (x) { return x.trim(); }).filter(Boolean);
+        }
+        var ext = { layout: 2, pay_days: Number(pay) };
+        if (sel.valid != null && sel.valid !== '') ext.valid_days = Number(sel.valid);
+        return Object.assign(ext, { ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms });
+      };
       if (name === 'quotation_create') {
 
         var qc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
@@ -11318,8 +11496,13 @@ function opsCodeRange(cid, period, ty, src, seq) {
         args.p_sel = qtNoClient(args.p_sel);
         var qcFx = qtFx(qc.id);
         if (qcFx === 0) return qtOk({ error: 'no-fx' });
-        var qpr = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), qcFx);
+        var qpr = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), args.p_sel), qcFx);
         if (qpr.error) return qtOk(qpr);
+        var qcx = qtExtras(args.p_sel);
+        if (qcx.error) return qtOk(qcx);
+        var qcb = qtClientExtras(qc.id, qpr.lines || [], args.p_sel);
+        if (qcb.error) return qtOk(qcb);
+        Object.assign(qcx, qcb);
         if (!(qpr.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var qz = (String(qc.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var qhead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + qz;
@@ -11328,7 +11511,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qdays = Number(qvSel) || Number(appSet('quote_valid_days', qtToday) || 30);
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
         var qrow = { id: nid('qt'), ref: qtNextRef(qhead), client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
-          selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }),
+          selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         DB.quotations.push(qrow);
@@ -11356,19 +11539,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
         if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
-        var qe = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qeFx);
+        var qe = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qq.source === 'console' ? qeSel : {}), qeFx);
         if (qe.error) return qtOk(qe);
+        var qex = qtExtras(qq.source === 'console' ? qeSel : {});
+        if (qex.error) return qtOk(qex);
+        if (qq.source === 'console') { var qeb = qtClientExtras(qq.client_id, qe.lines || [], qeSel); if (qeb.error) return qtOk(qeb); Object.assign(qex, qeb); }
         if (!(qe.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var fig = function (t) { t = t || {}; return t.month ? t.month.incl : t.once ? t.once.incl : null; };
         var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
         qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
-        qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request });
+        qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
         if (qq.source === 'console') {
           var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
           qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
         }
+
+        var qeOld = qq.ref;
+        if (qq.source === 'console' && qq.ref.indexOf('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-') !== 0) {
+          DB.quotation_refs_kept = DB.quotation_refs_kept || [];
+          if (!DB.quotation_refs_kept.some(function (k) { return k.ref === qeOld; })) DB.quotation_refs_kept.push({ ref: qeOld, deleted_at: new Date().toISOString(), deleted_by: qtMe ? qtMe.name : null });
+          qq.ref = qtNextRef('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
+        }
         var m2 = function (v) { return v == null ? 'not set' : cur + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-        qtLog(qq.brand, qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
+        qtLog(qq.brand, (qeOld !== qq.ref ? qeOld + ' → ' : '') + qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
           (qe.adjusted ? ' · ' + qe.adjusted + (qe.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qq.id, ref: qq.ref });
       }
