@@ -9814,3 +9814,13 @@ emails keep #a1a1a1, the previews read #767676.
   (portal.js matches them for the Chinese), Count from and Count to as
   Results from and to, and the SST figure typed into the Billing sheet's
   label.
+
+- **2026-11-12 · A creator's Totals.** The user asked for the total paid to a
+  creator beside the total billed to clients for them ("both are
+  different"), on the creator page's rail. `creator_totals` answers both in
+  one read: billed from each booking's client rate from Confirmed on, by the
+  client's billing currency, on campaigns the caller reads; paid from the
+  bills Bukku reads paid, earlier jobs included, at Creator payments View
+  alone (as the amounts on the Payment pane). Currencies stay apart. The
+  difference between the two was offered and not asked for, so it is not
+  shown.

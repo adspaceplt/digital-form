@@ -4731,3 +4731,8 @@ body.hb-gate #tabBar { display: none; }
 .hb-ackcount { margin: 0 0 8px; font-size: 13px; color: var(--ink-mute); }
 /* No access: the one card, its way to the Handbook under its line. */
 .noaccess > .btn { flex: 0 0 auto; margin-top: 20px; }
+
+/* A creator's Totals (2026-11-12): a figure a currency, each its own line at
+   the block's right edge, never added across. */
+.raildates > div:has(> .crtot) { align-items: flex-start; }
+.raildates dd.crtot { display: grid; justify-items: end; gap: 2px; }

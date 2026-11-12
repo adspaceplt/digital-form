@@ -572,7 +572,7 @@
     id_formats_list: '', id_format_set: 'p_kind p_prefix p_width p_next p_pattern', campaign_job_ref: 'p_option',
     creator_pay_form: 'p_code', creator_pay_submit: 'p_code p_values', creator_pay_address: 'p_code p_address', creator_pay_list: 'p_creator', creator_pay_states: '',
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
-    creator_bills_list: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
+    creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_earlier_job_set: 'p_option p_ref',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -3256,6 +3256,32 @@ function cardSlugFree(name, self, email) {
     DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
     persist();
     return { ok: true, bills: rows.length, told: told };
+  }
+
+  function creatorTotals(creator) {
+    if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
+    if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
+    var pay = opsGranted('campaigns.pay', 'view');
+    var group = function (rows, cur, amt, n) {
+      var by = {};
+      rows.forEach(function (r) { var k = cur(r); by[k] = by[k] || { currency: k, amount: 0 }; by[k].amount = Math.round((by[k].amount + Number(amt(r) || 0)) * 100) / 100; by[k][n] = (by[k][n] || 0) + 1; });
+      return Object.keys(by).sort().map(function (k) { return by[k]; });
+    };
+    var billed = null;
+    if (opsAllowed('campaigns.campaigns', 'view')) {
+      billed = group((DB.campaign_options || []).filter(function (o) {
+        if (o.creator_id !== creator || BOOKED_OUT.indexOf(o.state) > -1) return false;
+        var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
+        var c = m && (DB.clients || []).filter(function (x) { return x.id === m.client_id; })[0];
+        return c && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
+      }), function (o) {
+        var m = DB.campaigns.filter(function (x) { return x.id === o.campaign_id; })[0];
+        return billMarket(DB.clients.filter(function (x) { return x.id === m.client_id; })[0]) === 'SG' ? 'SGD' : 'MYR';
+      }, function (o) { return o.rate; }, 'bookings');
+    }
+    var paid = pay ? group((DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && b.status === 'paid' && !b.gone; }),
+      function (b) { return b.currency || 'MYR'; }, function (b) { return b.amount; }, 'bills') : null;
+    return { ok: true, pay: pay, billed: billed, paid: paid };
   }
   function creatorBillsList(creator) {
     if (!opsAllowed('campaigns.creators', 'view')) return { error: 'denied' };
@@ -9639,6 +9665,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       persist();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(ejOut)), error: null });
+    }
+    if (name === 'creator_totals') {
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: { error: window.__refuseRpc[name] }, error: null });
+      return Promise.resolve({ data: JSON.parse(JSON.stringify(opsMe() ? creatorTotals((args || {}).p_creator) : { error: 'denied' })), error: null });
     }
     if (/^creator_bills_|^creator_earlier_job_set$/.test(name)) {
       var cbA = args || {}, cbOut;

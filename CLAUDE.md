@@ -4013,8 +4013,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     Bukku band, the payments; its tab counts details to review), Bookings
     (every campaign they were booked on, its step, opening the campaign) and
     Activity (`activity.campaigns` View: the record filed under their name);
-    the rail's Next action (Review payment details) and Record (campaigns,
-    last shoot). New creator is the one sheet left and opens the new
+    the rail's Next action (Review payment details), Record (campaigns,
+    last shoot) and Totals (`creator_totals`, read once a visit and again
+    after Read from Bukku; 2026-11-12): Billed to clients, each booking's
+    client rate from Confirmed on in its client's billing currency, and Paid
+    to creator, the bills Bukku reads paid, at `campaigns.pay` View alone,
+    a line a currency, never added across. New creator is the one sheet left and opens the new
     creator's page.
   - Rate bands: Up to RM 300, RM 301 to 500, RM 501 to 800, Above RM 800, On
     quote. Inactive in its own band.
