@@ -1360,7 +1360,7 @@
     var rows = adsRead();
     if (!rows.length) return 'Add a platform, or untick Include advertising budget.';
     if (rows.some(function (r) { return !(r.budget > 0); })) return 'Enter each platform\'s budget.';
-    if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 36); })) return 'Enter the months, from 1 to 36.';
+    if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 36); })) return 'Enter each platform\'s months, from 1 to 36.';
     return '';
   }
   /* Advanced (2026-11-12, the user: the quotation takes over what only the
