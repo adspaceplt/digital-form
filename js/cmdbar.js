@@ -508,7 +508,7 @@
     chips.className = 'cmdbar-chips';
     chips.hidden = true;
     chips.setAttribute('role', 'group');
-    chips.setAttribute('aria-label', 'Filters set');
+    chips.setAttribute('aria-label', 'Filters applied');
     bar.appendChild(chips);
     rec.chips = chips;
     chips.addEventListener('click', function (e) { chipPress(rec, e); });
