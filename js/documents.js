@@ -408,7 +408,7 @@
     'no-lines': 'Choose at least one service.',
     'bad-lines': 'One of those services cannot go on a letter. Refresh the page and try again.',
     'bad-tax': 'One of those services carries a tax code that is no longer offered. Choose another on the service.',
-    'already-quoted': 'One of those services is already on a letter that is still live. Void that letter, or use Replace.',
+    'already-quoted': 'One of those services is already on a letter that is still live. Void that letter first.',
     'bad-terms': 'Enter up to ten points of terms, each of up to 400 characters.',
     'no-replaces': 'The letter being replaced could not be found.',
     'replaces-verified': 'A verified letter cannot be replaced.',

@@ -2693,6 +2693,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   too), anything else is the connection
   (fetched once more and hashed; `tests/pdflibhash.js`).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
+  - Retired (2026-11-12, the user: the quotation is the one contract): no new
+    letter is issued; the client record draws no Issue Letter of Offer, Issue
+    letter or Replace; a letter issued before keeps Download, Void, Delete,
+    Verify, its sends and /verify/. `issue_letter` stands for the suites
+    (`tests/issueletter.js` issues as the retired sheet did).
   - Billing first (2026-10-26; the user: "billing should be before LoO"):
     trigger `client_documents_billing` refuses a letter while the registered
     name, BRN or billing address is empty or no billing contact stands
@@ -6773,6 +6778,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   contact (`quotation_set`, a website quotation's alone; no reminder
   while marked); a revised one reads Revised · By {ref}. A KOL campaign
   and a custom KOC list are quoted on request.
+- A quotation's sections (2026-11-12, `2026-11-12-quotation-sections.sql`,
+  `2026-11-12-quotations-advanced.sql`): one made from then on (`totals.layout`
+  2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
+  closing on its own total, the term's total a sentence in TERMS, the term
+  row a discount or a surcharge (`ADspaceMoney.termLine`); an older one redraws
+  as kept. Build quote asks Payment terms (NET 7 unless chosen; 30 and longer
+  subject to ADspace's approval, `payLine`) and Include advertising budget (a
+  row a platform, Monthly or One-off; the client's money, kept in the totals,
+  never a service line or revenue; `quote_extras`). Its Advanced switch adds
+  custom lines (`quote_custom`, priced by `quote_totals`, a quotation of them
+  alone through `quote_base`), each with a start printed as its period; Renew
+  lines (a client's confirmed lines, each `renews` its line, confirmed for the
+  new term on approval and never added twice); Bill to (a billing entity,
+  held as printed, `quote_client_extras`, the cover's To); and the quotation's
+  own terms, ten at most.
 - A quotation is edited in place until the portal sends it out
   (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
   "Quotation is a serious one so it must be accurate", Download never

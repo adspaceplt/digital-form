@@ -9837,3 +9837,18 @@ emails keep #a1a1a1, the previews read #767676.
   moves the figures a day sets, not which card was offered. A website
   quotation is dated when asked.
 
+### 2026-11-12 · The quotation takes over from the Letter of Offer
+The user approved a quotation in three sections (monthly fee, one-off items,
+advertising budget) after a run of mockups, then asked that the Letter of
+Offer be retired, its custom lines, renewals and Bill to moving onto the
+quotation's Advanced part. The advertising budget is the client's money paid
+to the platforms on their behalf (withholding tax and the platform's SST
+inside it), a liability, so it is kept in the quotation's totals and never a
+service line, which keeps it out of every revenue figure without touching
+them. Build quote's term options read the published version's 15% after Tax
+and terms set 0% (fixed the same day, #1045). Found while building: leaving
+a typed advertising budget repriced on change and disabled Create under the
+press, so a typed figure reprices on input alone; a selection of custom lines
+alone was refused `empty` by quote_price before they were added
+(`quote_base`). Letters issued before stay as they are.
+

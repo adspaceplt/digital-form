@@ -10873,6 +10873,80 @@ function opsCodeRange(cid, period, ty, src, seq) {
             lines.reduce(function (n, l) { return n + (l.basis === 'month' ? l.amount * l.months : 0); }, 0) * (1 + pct / 100) * (1 + sst / 100)) + once + otx) } };
       };
 
+      var qtR2 = function (v) { var a = Math.round(Math.abs(v) * 100 + 1e-7) / 100; return v < 0 ? -a : a; };
+      var qtTotals = function (lines, term, pct, sst) {
+        var g = {}, sub = 0, span = 0, once = 0, month = false, even = true;
+        lines.forEach(function (e) {
+          var m = e.basis === 'month', v = Number(e.qty || 0) * Number(e.rate || 0), mo = Math.max(1, Number(e.months || term || 1));
+          var r = e.sst != null ? Number(e.sst) : sst, b = g[r] || (g[r] = { r: r, sub: 0, span: 0, once: 0 });
+          if (m) { sub += v; span += qtR2(v) * mo; b.sub += v; b.span += qtR2(v) * mo; month = true; if (mo !== term) even = false; }
+          else { once += v; b.once += v; }
+        });
+        var tx = 0, otx = 0, spanIncl = 0;
+        Object.keys(g).forEach(function (k) { var b = g[k];
+          tx += qtR2((b.sub + qtR2(b.sub * pct / 100)) * b.r / 100); otx += qtR2(b.once * b.r / 100);
+          spanIncl += qtR2(b.span * (1 + pct / 100) * (1 + b.r / 100)); });
+        var off = qtR2(sub * pct / 100);
+        return { month: month ? { subtotal: qtR2(sub), term: off, excl: qtR2(sub + off), sst: qtR2(tx), incl: qtR2(sub + off + tx) } : null,
+          once: once > 0 ? { subtotal: qtR2(once), sst: qtR2(otx), incl: qtR2(once + otx) } : null,
+          commitment: qtR2((!month ? 0 : even ? (sub + off + tx) * term : spanIncl) + once + otx) };
+      };
+      var qtDay = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v + 'T00:00:00Z')); };
+      var qtCustom = function (pr, sel) {
+        sel = sel || {};
+
+        if (pr && pr.error === 'empty' && Array.isArray(sel.custom) && sel.custom.length) {
+          var bset = (qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {}, bterm = /^\d{1,2}$/.test(String(sel.term)) ? Number(sel.term) : 6;
+          var bmon = sel.custom.some(function (x) { return x && x.basis === 'month'; });
+          if (bmon && bterm === 1) return { error: 'bad-term' };
+          var bpct = !bmon ? 0 : bterm <= 3 ? bset.term_1_3 : bterm <= 5 ? bset.term_4_5 : bterm <= 11 ? bset.term_6_11 : bterm <= 17 ? bset.term_12_23 : bterm <= 23 ? (bset.term_18_23 != null ? bset.term_18_23 : bset.term_12_23) : bset.term_24;
+          pr = { lines: [], on_request: [], extra_rates: {}, totals: { term: bterm, term_pct: Number(bpct || 0), sst_pct: Number(bset.sst_pct || 0), budget: 0 } };
+        }
+        if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
+        var any = false, lines = [];
+        if (sel.starts != null && (typeof sel.starts !== 'object' || Array.isArray(sel.starts))) return { error: 'bad-custom' };
+        for (var i0 = 0; i0 < pr.lines.length; i0++) {
+          var l0 = Object.assign({}, pr.lines[i0]), st = sel.starts && sel.starts[l0.key];
+          if (st) { if (!qtDay(st)) return { error: 'bad-custom', line: l0.label }; l0.start = st; any = true; }
+          lines.push(l0);
+        }
+        if (sel.custom != null) {
+          if (!Array.isArray(sel.custom) || sel.custom.length > 30) return { error: 'bad-custom' };
+          for (var i = 0; i < sel.custom.length; i++) {
+            var r = sel.custom[i] || {}, lab = String(r.label || '').trim();
+            if (!lab || lab.length > 120 || !/^\d{1,4}$/.test(String(r.qty)) || Number(r.qty) < 1 || !/^\d{1,7}(\.\d{1,2})?$/.test(String(r.rate)) ||
+                ['month', 'once'].indexOf(r.basis) < 0 || (r.detail != null && (!Array.isArray(r.detail) || r.detail.length > 12 ||
+                r.detail.some(function (d) { return typeof d !== 'string' || d.length > 300; }))) ||
+                (r.renews && !/^[0-9a-f-]{36}$/.test(String(r.renews)) && !/^cs/.test(String(r.renews)))) return { error: 'bad-custom', line: lab || String(i + 1) };
+            var mo = 1;
+            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
+            if (r.start && !qtDay(r.start)) return { error: 'bad-custom', line: lab };
+            var cl = { kind: 'custom', key: 'custom|' + (i + 1) + '|' + lab, label: lab, detail: r.detail || [], qty: Number(r.qty), rate: Number(r.rate),
+              basis: r.basis, months: mo, amount: qtR2(Number(r.qty) * Number(r.rate)) };
+            if (r.start) cl.start = r.start;
+            if (r.renews) cl.renews = r.renews;
+            lines.push(cl); any = true;
+          }
+        }
+        if (!any) return pr;
+        var t = pr.totals || {}, tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
+        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment }) });
+      };
+      var qtClientExtras = function (cid, lines, sel) {
+        for (var i = 0; i < lines.length; i++) {
+          var l = lines[i];
+          if (l.renews && !DB.client_services.some(function (x) { return x.id === l.renews && x.client_id === cid && !x.archived_at && x.state === 'confirmed'; }))
+            return { error: 'bad-renewal', line: l.label };
+        }
+        if (!sel || !sel.entity) return {};
+        var ce = (DB.client_entities || []).filter(function (x) { return x.client_id === cid && x.entity_id === sel.entity; })[0];
+        var e = ce && (DB.billing_entities || []).filter(function (x) { return x.id === sel.entity; })[0];
+        if (!e) return { error: 'bad-entity' };
+        var b = { entity_id: e.id, legal_name: e.legal_name, company_no: e.company_no, billing_address: e.billing_address };
+        Object.keys(b).forEach(function (k) { if (b[k] == null) delete b[k]; });
+        return { bill_to: b };
+      };
+
       var qtTell = function (cid, kind, title, body, key) {
         (DB.team_members || []).filter(function (m) {
           if (!m.active || m.system) return false;
@@ -10977,7 +11051,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var wv = new Date(qtToday + 'T00:00:00Z'); wv.setUTCDate(wv.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
         var wkey = ''; while (wkey.length < 8) wkey += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31));
         var wrow = { id: nid('qt'), ref: qtNextRef(whead), client_id: wcl.id, brand: wcl.name, version: qtCard.version, version_id: qtCard.id,
-          selection: wsel, lines: wp.lines, totals: Object.assign({}, wp.totals, { on_request: wp.on_request }),
+          selection: wsel, lines: wp.lines, totals: Object.assign({ layout: 2, pay_days: 7, ads: [], ads_total: 0 }, wp.totals, { on_request: wp.on_request }),
           status: 'sent', source: 'website', issued_at: qtNow.toISOString(), valid_until: wv.toISOString().slice(0, 10), made_by: null,
           contact: Object.assign(wsal ? { salutation: wsal } : {}, { name: wn, email: we, whatsapp: '+' + ww, lang: wc.lang === 'zh' ? 'zh' : 'en', brand: wb }), access_key: wkey, billing: null, requested_at: null,
           idem: widem, removed_at: null, removed_by: null,
@@ -11210,7 +11284,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (qsLater) return qtOk({ error: 'revised' });
           var co = sq2.signed.company, held = (DB.bukku_links || []).some(function (b) { return b.kind === 'client' && b.record_id === sq2.client_id && b.held_at; });
           var billing = 'kept';
-          var empty = sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
+          var empty = !(sq2.totals && sq2.totals.bill_to) && sc2 && !String(sc2.legal_name || '').trim() && !String(sc2.company_no || '').trim() && !String(sc2.billing_address || '').trim();
           if (held) billing = 'held';
           else if (empty) {
             if (!opsAllowed('clients.billing', 'work')) return qtOk({ error: 'billing-access' });
@@ -11218,22 +11292,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
             billing = 'filled';
           }
           var have = DB.client_services.filter(function (l) { return l.quotation_id === sq2.id && !l.archived_at; });
+
+          var renewed = 0;
+          sq2.lines.forEach(function (l) {
+            if (!l.renews) return;
+            var sv = DB.client_services.filter(function (x) { return x.id === l.renews && x.client_id === sq2.client_id && !x.archived_at; })[0];
+            if (!sv) return;
+            Object.assign(sv, { qty: l.qty, rate: l.rate, state: 'confirmed', tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1,
+              term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0, start_on: l.start || sv.start_on,
+              quotation_id: sq2.id, note: 'Renewed by quotation ' + sq2.ref, detail: (l.detail || []).join('\n') || sv.detail });
+            renewed++;
+          });
           if (have.length) have.forEach(function (l) { l.state = 'confirmed'; });
-          else sq2.lines.forEach(function (l) {
+          else sq2.lines.filter(function (l) { return !l.renews; }).forEach(function (l) {
             have.push({ id: nid('cs'), client_id: sq2.client_id, service_slug: DB.services.some(function (x) { return x.slug === l.slug; }) ? l.slug : null,
               label: l.label, qty: l.qty, rate: l.rate, unit: l.basis === 'month' ? 'Per month' : 'One-off', state: 'confirmed', note: 'Quotation ' + sq2.ref,
-              tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
+              tenure: l.basis === 'month' ? (l.months || sq2.totals.term) : 1, start_on: l.start || null, term_adjust: l.basis === 'month', term_pct: l.basis === 'month' ? sq2.totals.term_pct : 0,
               detail: (l.detail || []).join('\n') || null, quotation_id: sq2.id, created_at: qtNow.toISOString(), archived_at: null, tax_code: l.tax_code || null });
             DB.client_services.push(have[have.length - 1]);
           });
           Object.assign(sq2, { reviewed_at: qtNow.toISOString(), reviewed_by: qtMe.name, reviewed_role: qtMe.designation || null });
           if (sc2) sc2.updated_at = qtNow.toISOString();
           qtLog(sq2.brand, sq2.ref + ' · reviewed and approved by ' + qtMe.name + (sq2.reviewer_id !== qtMe.id ? ' in place of ' + sq2.reviewer_name : '') +
-            ' · ' + have.length + (have.length === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
+            ' · ' + (have.length + renewed) + (have.length + renewed === 1 ? ' service line confirmed · ' : ' service lines confirmed · ') +
+            (renewed ? renewed + ' renewed · ' : '') +
             { filled: 'Billing filled from the signed quotation', held: 'Billing not changed, as Bukku keeps this client\'s billing details', kept: 'Billing not changed' }[billing]);
           qsNotify([sub && sub.id, qsMember(sc2 && sc2.owner) && qsMember(sc2.owner).id].filter(function (x) { return x && x !== qtMe.id; }),
             'quote.reviewed', 'Quotation approved · ' + sq2.brand, sq2.ref + ' · by ' + qtMe.name, sq2.id, sq2.client_id);
-          return qtOk({ ok: true, billing: billing, lines: have.length });
+          return qtOk({ ok: true, billing: billing, lines: have.length + renewed });
         }
       }
 
@@ -11352,10 +11438,39 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpc = args.p_sel && args.p_sel.client && DB.clients.filter(function (c) { return c.id === args.p_sel.client; })[0];
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
-        var qp = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qpFx);
+        var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
         if (!qp.error) qp.version = qtCard.version;
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
+
+      var qtExtras = function (sel) {
+        sel = sel || {};
+        var pay = sel.pay == null || sel.pay === '' ? 7 : sel.pay;
+        if (!/^\d{1,3}$/.test(String(pay)) || [7, 14, 30, 60, 90].indexOf(Number(pay)) < 0) return { error: 'bad-pay' };
+        var rows = [], tot = 0;
+        if (sel.ads != null) {
+          if (!Array.isArray(sel.ads) || sel.ads.length > 6) return { error: 'bad-ads' };
+          for (var i = 0; i < sel.ads.length; i++) {
+            var r = sel.ads[i] || {};
+            if (['meta', 'tiktok', 'google', 'xhs', 'youtube', 'linkedin'].indexOf(r.platform) < 0 || ['monthly', 'once'].indexOf(r.freq) < 0 ||
+                !/^\d{1,9}(\.\d{1,2})?$/.test(String(r.budget)) || !(Number(r.budget) > 0)) return { error: 'bad-ads' };
+            var mo = null;
+            if (r.freq === 'monthly') {
+              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-ads' };
+              mo = Number(r.months);
+            }
+            var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;
+            rows.push({ platform: r.platform, freq: r.freq, budget: Number(r.budget), months: mo, amount: am });
+            tot += am;
+          }
+        }
+        var terms = [];
+        if (sel.terms != null) {
+          if (!Array.isArray(sel.terms) || sel.terms.length > 10 || sel.terms.some(function (x) { return typeof x !== 'string' || x.length > 400; })) return { error: 'bad-terms' };
+          terms = sel.terms.map(function (x) { return x.trim(); }).filter(Boolean);
+        }
+        return { layout: 2, pay_days: Number(pay), ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms };
+      };
       if (name === 'quotation_create') {
 
         var qc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
@@ -11366,15 +11481,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
         args.p_sel = qtNoClient(args.p_sel);
         var qcFx = qtFx(qc.id);
         if (qcFx === 0) return qtOk({ error: 'no-fx' });
-        var qpr = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), qcFx);
+        var qpr = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qc.id), qcFx), args.p_sel, args.p_sel && args.p_sel.edits), args.p_sel), qcFx);
         if (qpr.error) return qtOk(qpr);
+        var qcx = qtExtras(args.p_sel);
+        if (qcx.error) return qtOk(qcx);
+        var qcb = qtClientExtras(qc.id, qpr.lines || [], args.p_sel);
+        if (qcb.error) return qtOk(qcb);
+        Object.assign(qcx, qcb);
         if (!(qpr.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var qz = (String(qc.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var qhead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + qz;
         var qdays = Number(appSet('quote_valid_days', qtToday) || 30);
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
         var qrow = { id: nid('qt'), ref: qtNextRef(qhead), client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
-          selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }),
+          selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
           status: 'sent', source: 'console', issued_at: qtNow.toISOString(), valid_until: qv.toISOString().slice(0, 10), made_by: qtMe.name,
           contact: null, access_key: null, requested_at: null, replaces: null, idem: args.p_idem || null, removed_at: null, removed_by: null };
         DB.quotations.push(qrow);
@@ -11401,13 +11521,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qtCard) return qtOk({ error: 'no-card' });
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
-        var qe = qtFxOut(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qeFx);
+        var qe = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qq.source === 'console' ? qeSel : {}), qeFx);
         if (qe.error) return qtOk(qe);
+        var qex = qtExtras(qq.source === 'console' ? qeSel : {});
+        if (qex.error) return qtOk(qex);
+        if (qq.source === 'console') { var qeb = qtClientExtras(qq.client_id, qe.lines || [], qeSel); if (qeb.error) return qtOk(qeb); Object.assign(qex, qeb); }
         if (!(qe.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var fig = function (t) { t = t || {}; return t.month ? t.month.incl : t.once ? t.once.incl : null; };
         var qeWas = fig(qq.totals), cur = qeFx ? 'S$ ' : 'RM ';
         qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
-        qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request });
+        qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
         if (qq.source === 'console') {
           var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
           qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);

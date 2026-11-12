@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261112b">
-<link rel="stylesheet" href="/css/console.css?v=20261112l">
+<link rel="stylesheet" href="/css/portal.css?v=20261112m">
+<link rel="stylesheet" href="/css/console.css?v=20261112m">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261111a"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261112m"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -1423,7 +1423,6 @@
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
           <button class="btn" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
-          <button class="btn" id="crmCover" data-need="clients.documents:work" type="button">Issue Letter of Offer</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
@@ -1521,6 +1520,30 @@
                   <div id="qbAdRows"></div>
                   <div class="qb-adfoot"><button class="btn btn-sm" id="qbAdAdd" type="button">Add platform</button>
                     <span class="qb-adsum" id="qbAdSum" aria-live="polite"></span></div>
+                </div>
+              </section>
+              <!-- Advanced (2026-11-12): what only the Letter of Offer did, on the
+                   quotation itself: custom lines, renewals, Bill to and its
+                   own terms. -->
+              <section class="fsec qb-advsec">
+                <div class="qb-advhead"><h4 class="fsec-h" id="qbAdvLabel">Advanced</h4>
+                  <button class="switch" id="qbAdv" type="button" role="switch" aria-checked="false" aria-labelledby="qbAdvLabel"><span class="switch-thumb"></span></button></div>
+                <div class="qb-advbox" id="qbAdvBox" hidden>
+                  <div class="qb-advpart">
+                    <div class="qb-advparth"><span class="field-label">Custom lines</span>
+                      <span class="qb-advacts"><button class="btn btn-sm" id="qbRenew" type="button">Renew lines</button>
+                      <button class="btn btn-sm" id="qbCusAdd" type="button">Add line</button></span></div>
+                    <div class="qb-renew" id="qbRenewBox" hidden></div>
+                    <div id="qbCusRows"></div>
+                  </div>
+                  <div class="qb-advpart" id="qbBillBox" hidden>
+                    <label class="field-label" for="qbBillTo">Bill to</label>
+                    <select class="select" id="qbBillTo" data-nofind></select>
+                  </div>
+                  <div class="qb-advpart">
+                    <label class="field-label" for="qbTerms">Terms</label>
+                    <textarea class="textarea" id="qbTerms" rows="3" placeholder="One point per line" data-nodraft></textarea>
+                  </div>
                 </div>
               </section>
               <section class="fsec qb-lines">
@@ -6334,7 +6357,7 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
 <script src="/js/admin.js?v=20261112h"></script>
-<script src="/js/documents.js?v=20261112l"></script>
+<script src="/js/documents.js?v=20261112m"></script>
 <script src="/js/letters.js?v=20261112j"></script>
 <script src="/js/smreport.js?v=20261112h"></script>
 <script src="/js/reports.js?v=20261112h"></script>
@@ -6343,10 +6366,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261112h"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
-<script src="/js/quotes.js?v=20261112l"></script>
-<script src="/js/quotepdf.js?v=20261112l"></script>
+<script src="/js/quotes.js?v=20261112m"></script>
+<script src="/js/quotepdf.js?v=20261112n"></script>
 <script src="/js/checklists.js?v=20261112h"></script>
-<script src="/js/crm.js?v=20261112j"></script>
+<script src="/js/crm.js?v=20261112m"></script>
 <script src="/js/sales.js?v=20261025a"></script>
 <script src="/js/team.js?v=20261112h"></script>
 <script src="/js/namecard.js?v=20261112g"></script>

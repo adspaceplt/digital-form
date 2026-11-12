@@ -5647,14 +5647,12 @@
      live letter holds, Issue letter; else none (a quotation is signed by
      the client, never offered as a letter, 2026-10-31). Issue
      letter is drawn once a To quote or Confirmed line exists. */
+  /* The Letter of Offer is no longer issued (2026-11-12, the user: the
+     quotation is the one contract; letters issued before stay as they
+     are), so the pane's blue is the quotation's. */
   function paintDeal() {
-    var cover = $('crmCover');
-    if (!cover || !state.client) return;
-    var lines = state.services || [], live = liveMap();
-    var letterable = lines.some(function (l) { return l.state === 'quoted' || l.state === 'confirmed'; });
-    var toQuote = lines.filter(function (l) { return l.state === 'quoted'; });
+    if (!state.client) return;
     var quotes = (state.quotes || []).filter(function (q) { return !q.removed_at; });
-    cover.hidden = !letterable;
     var build = $('qtBuild');
     /* An awaiting website quotation's blue is Send quotation once its
        template is on, else Publish (2026-10-31). */
@@ -5669,10 +5667,9 @@
     if (signs.length) blue = signs.length === 1 ? signs[0] : null;
     else if (sends.length === 1) blue = sends[0];
     else if (sends.length) blue = null;
-    else if (state.services && state.quotes && !quotes.length && !toQuote.length) blue = build;
-    else if (toQuote.some(function (l) { return !live[l.id]; })) blue = cover;
+    else if (state.services && state.quotes && !quotes.length) blue = build;
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
-    [build, cover].concat(gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    [build].concat(gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
   }
   function quoteContact() {
     return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
@@ -6515,11 +6512,9 @@
         '<div class="kmenu" data-menu hidden>' +
           ADspaceMenu.items([
             [{ a: 'download', label: 'Download' }],
-            /* Replace (2026-10-31): a letter not yet verified is reissued on
-               its lines as changed, the new one replacing it (issue_letter's
-               p_replaces); the old one reads Replaced. */
-            [!d.voided_at && !d.superseded_by && !d.verified_at && mapped.length &&
-             { a: 'replace', label: 'Replace', need: 'clients.documents:work' }],
+            /* No Replace: the Letter of Offer is no longer issued
+               (2026-11-12); a changed deal is a new quotation. */
+            [],
             /* Send on WhatsApp (2026-10-14): the letter's PDF to a contact,
                drawn once the template is on; never a voided or replaced one. */
             [waOffer && !d.voided_at && !d.superseded_by && { a: 'wa', label: 'Send on WhatsApp', hidden: true },
@@ -6613,7 +6608,6 @@
     /* Both of these ask in a sheet rather than a confirm(): each needs a
        reason typed, and one of them needs the reference typed back. Neither
        is a question a browser dialog can carry. */
-    on('replace', function () { shut(); if (DOCS) openPick(mapped, d.id); });
     on('void', function () { shut(); openVoid(d, mapped.length); });
     on('del', function () { shut(); openDelete(d, mapped.length); });
     return row;
@@ -7030,7 +7024,6 @@
   $('pickClose').addEventListener('click', shutPick);
   $('pickCancel').addEventListener('click', shutPick);
 
-  $('crmCover').addEventListener('click', function () { if (DOCS) openPick(); });
   /* The quotation cover and the letters to a client are issued from the same
      sheet the Register uses, with this client fixed and its main contact
      seeding the Attn line. */
