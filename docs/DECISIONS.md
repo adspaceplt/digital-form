@@ -10001,3 +10001,6 @@ and lines the page already holds.
   quotation's Date by it, else by `quote_valid_days`
   (`2026-11-12-quotation-valid-for.sql`). The PDF's first term prints the
   days and the lapse date. A website quotation keeps the setting.
+
+### 2026-11-12 · The rail's hover shows on glass
+The user: "the hover is not obvious enough". The rail's hover was `--sunk` (#f9f9f9), the glass rail's own shade, so it drew nothing. On the floating desk rail a section and a foot mark now take `--tonal` on hover, the buttons' shade, one step short of the chosen row's raised white; the phone and the narrow drawer keep theirs.

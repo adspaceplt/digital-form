@@ -4841,6 +4841,14 @@ body.hb-gate #tabBar { display: none; }
   }
   @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: calc(100dvh - 24px); } }
   :root:not(.has-tabbar) .navitem.is-on { background: var(--glass-raised); box-shadow: var(--glass-rim); }
+  /* On the glass rail `--sunk` is the rail's own shade, so a hover drew
+     nothing (the user, 2026-11-12: "the hover is not obvious enough"): it
+     takes the tonal shade the buttons use, one step short of the chosen
+     row's raised white. */
+  @media (hover: hover) {
+    :root:not(.has-tabbar) .sidebar .navitem:not(.is-on):hover,
+    :root:not(.has-tabbar) .sidebar .railfoot:not(.is-on):hover { background: var(--tonal); }
+  }
 }
 /* What floats over the page (a menu, a popover, the finder, a sheet, a
    question) stays solid `--raised`: words read over words never hold
