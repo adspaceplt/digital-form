@@ -4290,8 +4290,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
     won as a median, conversion of the leads decided, churn of those active
     at the start, and for Services View the monthly value won and lost; By
-    person in charge, a table of counts, never a ranking; New leads by
-    source; Why clients paused or left), then Operations (Open work by
+    person in charge, a table of counts, never a ranking; Clients who moved,
+    each move's clients (Won, New leads, Lost leads, Churned, Paused,
+    Resumed, Win-backs) with their person in charge and day, five a move
+    then Show N more, and Committed monthly value by client, each active
+    client's month highest first with its share and a total a currency, for
+    Services View, each client opening its record (its Services); the
+    Summary's New leads, Won and Churned tiles and Committed monthly value
+    are a press opening Detail on their card (the user, 2026-11-12: "it
+    has to be somewhere"); New leads by source; Why clients paused or left), then Operations (Open work by
     person, one-line bars, the late share red; Where work waits, each
     stage's median with its slowest 10% the mark and its open work beside
     it; On time by person, the late share red, with the median cycle; Reports

@@ -4968,3 +4968,24 @@ svg.sec {
 /* Beside the trend the list's columns tighten, the name keeping the room. */
 .console-body:not(.is-narrow) .ovw-pair:not(.is-one) :is(.ovw-att-head, .ovw-att-row) { grid-template-columns: minmax(0, 1fr) 118px 96px 104px; gap: 2px 12px; }
 .ovw-att-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The clients behind the Sales counts (Detail, 2026-11-12): a tile with
+   clients behind it opens them; each table names its clients, each a
+   press to its record. */
+.ovw-kpi.is-link { cursor: pointer; }
+@media (hover: hover) { .ovw-kpi.is-link:hover { background: var(--sunk); } }
+.ovw-kpi.is-link:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+.ovw-card { scroll-margin-top: calc(var(--head-h) + 24px); }
+.ovw-cardhead h3:focus { outline: 0; }
+.ovw-tbl .ovw-tbl-group th { padding-top: 16px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ovw-tbl tbody:first-of-type .ovw-tbl-group th { padding-top: 4px; }
+.ovw-tbl .ovw-tbl-more td { padding: 4px 0; }
+.ovw-tbl .linkbtn.ovw-client {
+  display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0;
+  margin: calc((1lh - var(--ctl-h)) / 2) 0 calc((1lh - var(--ctl-h)) / 2) -8px;
+  font-size: inherit; font-weight: 400; color: var(--ink); text-align: start; line-height: 1.35;
+}
+.ovw-tbl .ovw-client small { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
+.ovw-tbl tfoot th, .ovw-tbl tfoot td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0; }
+.is-tight .ovw-moved .ovw-who, .is-tight .ovw-valueby .ovw-share { display: none; }
+.ovw-moved th, .ovw-moved td, .ovw-valueby th, .ovw-valueby td { vertical-align: baseline; }

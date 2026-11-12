@@ -49,7 +49,10 @@
     var f = {
       pipeline: { lead: [], contacted: [], proposal: [] },
       newLeads: [], won: [], lost: [], churned: [], paused: [], resumed: [], winback: [],
-      pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: []
+      pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: [],
+      /* When each client made the move it is counted for (the Dashboard's
+         Clients who moved, 2026-11-12), by kind and client id. */
+      at: { newLeads: {}, won: {}, lost: {}, churned: {}, paused: {}, resumed: {}, winback: {} }
     };
     var person = function (c) {
       var k = c.owner || 'No person in charge';
@@ -63,7 +66,7 @@
       if (c.stage === 'paused') f.pausedNow.push(c);
       if (c.stage === 'active') f.activeNow.push(c);
       if (LEADS[first.to] && within(first.at, r)) {
-        f.newLeads.push(c); person(c).newLeads.push(c);
+        f.newLeads.push(c); person(c).newLeads.push(c); f.at.newLeads[c.id] = first.at;
         var src = c.source || 'Not recorded';
         (f.bySource[src] = f.bySource[src] || []).push(c);
       }
@@ -75,15 +78,15 @@
           /* A client keyed in already Active is won the day it was keyed. */
           var firstWin = !everActive && (was === null || LEADS[was]);
           if (inside && firstWin) {
-            f.won.push(c); person(c).won.push(c);
+            f.won.push(c); person(c).won.push(c); f.at.won[c.id] = m.at;
             f.toWin.push(Math.max(0, Math.round((new Date(m.at) - new Date(first.at)) / 86400000)));
           }
-          if (inside && was === 'paused') f.resumed.push(c);
-          if (inside && was === 'past') f.winback.push(c);
+          if (inside && was === 'paused') { f.resumed.push(c); f.at.resumed[c.id] = m.at; }
+          if (inside && was === 'past') { f.winback.push(c); f.at.winback[c.id] = m.at; }
           everActive = true;
         }
         if (into === 'past' && inside) { if (everActive) churnIn = true; else lostIn = true; }
-        if (into === 'paused' && inside) f.paused.push(c);
+        if (into === 'paused' && inside) { f.paused.push(c); f.at.paused[c.id] = m.at; }
         if ((into === 'paused' || into === 'past') && inside && everActive) {
           var k = m.reason || '';
           var row = f.reasons[k] || (f.reasons[k] = { key: k, paused: [], past: [] });
@@ -94,8 +97,8 @@
          period's last move leaves it in Past: a Past corrected back the same
          month counts nothing (2026-10-20, the Dashboard audit). */
       if (lastIn && lastIn.to === 'past') {
-        if (churnIn) { f.churned.push(c); person(c).churned.push(c); }
-        else if (lostIn) { f.lost.push(c); person(c).lost.push(c); }
+        if (churnIn) { f.churned.push(c); person(c).churned.push(c); f.at.churned[c.id] = lastIn.at; }
+        else if (lostIn) { f.lost.push(c); person(c).lost.push(c); f.at.lost[c.id] = lastIn.at; }
       }
     });
     /* Active clients at each month's end inside the period (the last at
@@ -182,7 +185,7 @@
       });
       return out;
     };
-    return { active: sum(f.activeNow), won: sum(f.won), churned: sum(f.churned) };
+    return { active: sum(f.activeNow), won: sum(f.won), churned: sum(f.churned), byClient: byClient };
   }
 
   /* Better or worse (the Dashboard and Analytics read the one rule): a

@@ -9975,3 +9975,20 @@ tiles and Active clients by month. The on-time and posted rings of
 Not built from the mockup: people beside each stage (the report holds no
 assignees by stage) and a tooltip pill on the trend (the chart already
 gives a figure on hover or a tap).
+
+### 2026-11-12 · The clients behind the Dashboard's Sales counts
+The user: the Summary's Won, Churned and New leads read a number and
+Committed monthly value a total, "but then it's not one client committed
+this entire value … no further breakdowns … maybe in details section, not
+the summary section, but yeah, it has to be somewhere." Detail's Sales
+group gains Clients who moved (every client a move was counted for in the
+period, by move, with its person in charge and the day it moved; five a
+move, then Show N more) and Committed monthly value by client (each active
+client's month of confirmed monthly lines, highest first, its share, a
+total a currency; Services View alone, as the tile). `ADspaceSales.figures`
+keeps the day of each counted move (`at`) and the value per client
+(`money.byClient`), the same rules the counts read, so a list never
+disagrees with its tile. Each client opens its record (its Services from
+the value). The four tiles are a press opening Detail on their card, the
+card's title taking focus. No new read: both cards draw from the clients
+and lines the page already holds.
