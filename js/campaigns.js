@@ -497,6 +497,7 @@
     campStrip();
   }
   function openCrRec(id, pane, opener) {
+    if (crRec.id !== id) delete crTotals[id];
     crRec.id = id;
     crRec.pane = pane && crPaneOk(pane) ? pane : 'overview';
     crRec.opener = opener || null;
@@ -774,6 +775,34 @@
       }));
     }).catch(function (e) { UI.failLine(host, 'The Activity record', e.message, function () { paneCrActivity(c, host); }); });
   }
+  /* Totals (the user, 2026-11-12): what clients were billed for this
+     creator (each booking's client rate from Confirmed on) and what was paid
+     to them (bills Bukku reads paid), two different figures, each a line a
+     currency, never added across. Read once a visit to the creator's page
+     (`creator_totals`); paid only at Creator payments View. A refused read
+     leaves the block out. */
+  var crTotals = {};
+  function totalsBlock(c) {
+    var t = crTotals[c.id];
+    if (t === undefined) {
+      crTotals[c.id] = null;
+      db.rpc('creator_totals', { p_creator: c.id }).then(function (r) {
+        crTotals[c.id] = (r.error || !r.data || r.data.error) ? false : r.data;
+        if (crRec.id === c.id && crTotals[c.id]) paintCrRail(c);
+      }).catch(function () { crTotals[c.id] = false; });
+      return '';
+    }
+    if (!t) return '';
+    function lines(list, label) {
+      if (!list) return '';
+      var dd = list.length ? list.map(function (x) {
+        return '<span class="crtot-amt">' + esc(MON.money2(Number(x.amount) || 0, x.currency === 'SGD' ? 'SG' : 'MY')) + '</span>';
+      }).join('') : '<span class="muted">' + esc(MON.money2(0, 'MY')) + '</span>';
+      return '<div><dt>' + label + '</dt><dd class="crtot">' + dd + '</dd></div>';
+    }
+    var body = lines(t.billed, 'Billed to clients') + lines(t.paid, 'Paid to creator');
+    return body ? '<section class="railblock" id="crTotals"><h3 class="railtitle">Totals</h3><dl class="raildates">' + body + '</dl></section>' : '';
+  }
   /* What waits on the team, and the record: a block with nothing leaves. */
   function paintCrRail(c) {
     var rail = $('crRecRail');
@@ -789,6 +818,7 @@
         '<div><dt>Campaigns</dt><dd>' + rec.on.length + '</dd></div>' +
         (rec.last ? '<div><dt>Last shoot</dt><dd>' + esc(monthOf(rec.last)) + '</dd></div>' : '') + '</dl></section>';
     }
+    html += totalsBlock(c);
     rail.innerHTML = html;
     rail.hidden = !html;
     var go = rail.querySelector('[data-a="pay"]');
@@ -1037,6 +1067,7 @@
         return;
       }
       payJobs = Object.assign({ creator: c.id }, d);
+      if (fresh) { delete crTotals[c.id]; paintCrRail(c); }
       paintJobs();
     }).catch(function (e) { if (btn) btn.disabled = false; UI.failLine(host, 'The payments', e.message, function () { readJobs(fresh); }); });
   }
