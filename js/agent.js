@@ -88,6 +88,15 @@
   }
 
   /* ---- The reads: what the screens read, as the colleague -------------------- */
+  /* A contact's email or number never goes to Claude, even typed into a
+     call's notes: masked here as the function masks a question. A number is
+     nine digits or more, or a Singapore number's 4 and 4; a date is not one. */
+  function mask(v) {
+    if (v == null) return v;
+    return String(v).replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+      .replace(/\+?\d(?:[\s-]?\d){8,14}/g, '[number]')
+      .replace(/\b[3689]\d{3}[\s-]?\d{4}\b/g, '[number]');
+  }
   function clean(q) { return String(q || '').replace(/["\\%*,()]/g, ' ').replace(/\s+/g, ' ').trim(); }
   function noAccess() { return { error: 'no-access' }; }
   function rows(r) { if (r.error) throw r.error; return r.data || []; }
@@ -160,8 +169,8 @@
         if (may('clients.calls')) jobs.push(db.from('client_touches').select('kind, happened_at, contact_name, summary, next_action, next_at, by_whom, done_at')
           .eq('client_id', c.id).is('archived_at', null).order('happened_at', { ascending: false }).limit(5).then(function (t) {
             out.calls_and_visits = (t.data || []).map(function (x) {
-              return { kind: KIND[x.kind] || x.kind, on: dayWord(x.happened_at), with: x.contact_name || null, summary: x.summary,
-                       next_action: x.next_action && !x.done_at ? x.next_action + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom || null };
+              return { kind: KIND[x.kind] || x.kind, on: dayWord(x.happened_at), with: mask(x.contact_name) || null, summary: mask(x.summary),
+                       next_action: x.next_action && !x.done_at ? mask(x.next_action) + (x.next_at ? ' by ' + dayWord(x.next_at) : '') : null, by: x.by_whom || null };
             });
           }));
         if (may('reports')) jobs.push(db.from('sm_reports').select('id, kind, period_start, period_end, status, sent_on, brand_name')
@@ -228,7 +237,11 @@
       var q = db.from('sm_reports').select('id, client_id, kind, period_start, period_end, status, sent_on, brand_name, clients(name)');
       if (a.client_id) q = q.eq('client_id', a.client_id);
       if (a.status && a.status !== 'any') q = q.eq('status', a.status);
-      if (a.period && /^\d{4}-\d{2}$/.test(a.period)) q = q.gte('period_end', a.period + '-01').lte('period_end', a.period + '-31');
+      if (a.period && /^\d{4}-\d{2}$/.test(a.period)) {
+        var next = CLOCK && CLOCK.addMonths ? CLOCK.addMonths(a.period + '-01', 1) : '';
+        q = q.gte('period_end', a.period + '-01');
+        if (next) q = q.lt('period_end', next + '-01');
+      }
       return q.order('period_start', { ascending: false }).limit(30).then(rows).then(function (list) { return { reports: list.map(reportRow) }; });
     },
     find_colleagues: function (a) {
@@ -285,6 +298,7 @@
           return db.from('clients').select('id, name').eq('id', a.client_id).maybeSingle().then(function (r) { return r.data; });
         }).then(function (c) {
           if (a.client_id && !c) throw new Error('That client could not be found.');
+          if (a.owner_id && !nameOf(a.owner_id)) throw new Error('That colleague could not be found. Ask again with their name.');
           a._client = c;
           var owner = a.owner_id || (me() || {}).id;
           return [['Task', a.title], ['For', c ? c.name : 'Internal'], ['Assigned to', nameOf(owner) || (me() || {}).name || 'Me'],
@@ -308,6 +322,7 @@
         return Promise.all([team(), task(a.task_id), db.from('ops_task_assignees').select('team_member_id').eq('task_id', a.task_id)
           .eq('responsibility', 'owner').is('ended_at', null).maybeSingle()]).then(function (g) {
           a._task = g[1]; a._was = g[2].data ? g[2].data.team_member_id : null;
+          if (!nameOf(a.owner_id)) throw new Error('That colleague could not be found. Ask again with their name.');
           return [['Task', taskName(g[1])], ['Assigned to', (nameOf(a._was) || 'Unassigned') + ' → ' + (nameOf(a.owner_id) || 'Unknown')]];
         });
       },
@@ -552,11 +567,23 @@
     var content = [];
     if (state.notes.length) { content.push({ type: 'text', text: '[' + state.notes.join(' ') + ']' }); state.notes = []; }
     content.push({ type: 'text', text: text + (state.messages.length ? '' : context()) });
+    trim();
     state.mark = state.messages.length;
     state.messages.push({ role: 'user', content: content });
     state.press = '';
     if (chips) chips.hidden = true;
     step(0);
+  }
+  /* The conversation sent is kept to its last turns (the function takes 80
+     messages at most), cut where a question of the colleague's begins, so a
+     tool's answer never arrives without its call. */
+  function trim() {
+    if (state.messages.length <= 40) return;
+    var i = state.messages.length - 40;
+    while (i < state.messages.length && !(state.messages[i].role === 'user' &&
+           state.messages[i].content.some(function (b) { return b.type === 'text'; }) &&
+           !state.messages[i].content.some(function (b) { return b.type === 'tool_result'; }))) i++;
+    state.messages = state.messages.slice(i);
   }
   function step(n) {
     busy(true);

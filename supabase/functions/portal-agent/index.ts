@@ -45,9 +45,12 @@ function held(work: Promise<unknown>, origin: string | null) {
   return new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json', ...cors(origin) } });
 }
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
+/* An email or a number typed into a question: a number is nine digits or
+   more, or a Singapore number's 4 and 4; a date (8 digits) is left alone. */
 const scrub = (s: string) => s
   .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
-  .replace(/(\+?\d[\d\s-]{8,}\d)/g, '[number]');
+  .replace(/\+?\d(?:[\s-]?\d){8,14}/g, '[number]')
+  .replace(/\b[3689]\d{3}[\s-]?\d{4}\b/g, '[number]');
 
 /* ---- What Claude is told ------------------------------------------------- */
 const SYSTEM = `You are the Assistant inside the ADspace Digital Portal, the internal console of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. A colleague asks you, in words, about their work and asks you to do small pieces of it. You answer from the portal's own records and prepare changes for the colleague to confirm.
@@ -186,6 +189,8 @@ Deno.serve(async (req) => {
     try {
       res = await client.beta.messages.create({
         model, max_tokens: 6000, system: SYSTEM, tools: TOOLS, tool_choice: { type: 'auto' },
+        // Each step resends the whole conversation: cached, so a step pays for what is new.
+        cache_control: { type: 'ephemeral' },
         output_config: { effort: 'medium' },
         betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
         messages
