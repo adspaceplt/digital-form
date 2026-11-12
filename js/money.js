@@ -104,6 +104,14 @@
     return t.code + ' · ' + (Math.round(Number(t.rate) * 100) / 100) + '%' + (t.name && t.name !== t.code ? ' · ' + t.name : '');
   }
 
+  /* The client's SST as Bukku names it (2026-11-12, the user: "follow
+     bukku's"): the active tax code at the same rate, an SV code first, so
+     a line's default reads SV8 · 8% and that code is not offered twice. */
+  function sstCode(list, pct) {
+    var hit = (list || []).filter(function (t) { return t.active !== false && Number(t.rate) === Number(pct); });
+    hit.sort(function (a, b) { return (/^SV/i.test(b.code) ? 1 : 0) - (/^SV/i.test(a.code) ? 1 : 0) || String(a.code).localeCompare(String(b.code)); });
+    return hit[0] || null;
+  }
   // Malaysian service tax. One rate, because we are one entity.
   var TAX = { label: 'SST ' + FIRST.sst_pct + '%', rate: FIRST.sst_pct / 100 };
 
@@ -386,6 +394,7 @@
 
   window.ADspaceMoney = {
     termLine: termLine,
+    sstCode: sstCode,
     AD_PLATFORMS: AD_PLATFORMS,
     adWord: adWord,
     PAY_DAYS: PAY_DAYS,

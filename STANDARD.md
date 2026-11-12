@@ -624,6 +624,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   (2026-11-08); its wait for the preview needs finding.
 
 
+- `analytics`: "every Sales tile that compares says Better, Worse, Steady or
+  Above alert" fails on main (2026-11-12, before the revamp touched it).
+- `tabbar`: "a refused save is said in the sheet, which stays with the order"
+  (Arrange sections) fails on main (2026-11-12).
+
 - `work`: "a new meeting opens on the next free half hour" and "the time is
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the

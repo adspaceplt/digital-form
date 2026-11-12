@@ -9853,10 +9853,79 @@ alone was refused `empty` by quote_price before they were added
 (`quote_base`). Letters issued before stay as they are.
 
 
+### 2026-11-12 · The console revamp: section marks, glass and the Dashboard
+
+The user sent a before and after of another product ("the after looks more
+elegant and premium … without too bland and boring solo colors") and asked
+for a revamp. The first proposal kept every rule and took only colour; the
+user said details of the reference were missed and that a revamp may change
+the rules where it improves the portal. Chosen: palette B (each section's
+glyph on a soft tint of its own colour; four palettes were drawn in light
+and dark), glass after iOS's (the user asked for it lighter, then chose
+full glass over glass on the floating layers alone), and the reference's
+Dashboard details. Taken: section marks everywhere the rail's glyph is
+copied (one class on the rail's SVGs, so the tab bar, search, Waiting for
+you, Engagements and the bell follow untouched), a wash of the section
+colours behind the console, glass on the rail, the head, every card and
+what floats, larger figures with their section's mark and a verdict, the
+Work by stage strip of segmented rings, the mark in Needs attention. Left
+out, each a judgement against the portal: an icon-only rail (thirteen
+sections need their words), uppercase labels, outlined cards, the halftone
+texture, coloured initials, a glow behind the chart. Dark glass is more
+opaque so its words hold 4.5:1. The Better, Worse or Steady rule moved from
+Analytics to `ADspaceSales.judge`, so the tiles and Analytics read one rule.
+Mockups: the canvas "Portal revamp mockups".
+
 - 2026-11-12, the quotation PDF's TERMS no longer say ADspace does not
   charge SST on the advertising budget (the user: "No need say this in
   quotation pdf"); the line that the budget is paid to the platforms in
   advance and includes their own SST and withholding tax stays.
+
+### 2026-11-12 · The glass drew dark on a light console
+
+Reported by the user from an iPhone in dark mode with the console on Light:
+grey cards with dark words, dark blobs over the head and the tab bar's
+tiles dark. The revamp's dark glass, wash and section tints were also set
+under `prefers-color-scheme: dark`, which follows the device; the portal
+applies dark only through `data-theme="dark"`, which its head script sets
+for Auto. The query blocks were taken out, and DESIGN.md §3 now says a dark
+value hangs off the attribute alone. Missed because the screenshots were
+taken with the device and the console in the same theme.
+
+### 2026-11-12 · Menus read the page through them
+
+The user, from an iPhone: a client record's ⋯ showed the page's words
+through its items ("a serious readability issue"). The revamp had made
+menus, popovers, the finder, sheets and questions 78% white over a blur,
+and Safari's blur left the words beneath legible. Anything holding words
+over other words is solid `--raised` again, and the head, which the page
+scrolls under, keeps its 72% frosting; the rail and the cards, with only the
+wash behind them, stay glass.
+
+### 2026-11-12 · The background wash taken off
+
+The user noticed the glass cards carried a blue cast. It was the wash of
+section colours painted behind the console for the glass to show. Four
+options were drawn side by side on the canvas (neutral greys, fainter
+colours, one colour, none); the user chose none ("Go with D"). The console
+stands on its plain `--page` again; the rail and cards stay glass, now
+reading as frosted white.
+
+### 2026-11-12 · Build quote and /quote/ reviewed: nine fixes
+The review of Build quote and the prospect's quotation page found the
+signing page agreeing only the last bold total (a quotation with a monthly
+and a one-off total agreed the one-off alone), /quote/ leaving out the
+advertising budget, the payment terms and the quotation's own terms that its
+PDF prints, and a Bill to quotation's signing prefilled with the brand's
+company. The month limits differed (an edited line 36, a custom line and an
+advertising row 60), the term's percentage table stood in quote_price and
+quote_base twice, quote_custom read a `starts` no page sends, and a renewal's
+start added months by hand (31 Jan plus a month read 3 Mar). Fixed together:
+36 everywhere, `quote_term_pct`, `starts` gone, `ADspaceClock.periodEnd` the
+one period end, Build quote's tier select named Advertising budget managed
+per month beside the advertising budget rows, and a test for Approve's Start
+date. Payment terms on /quote/ stand with the notes, not the agreed figures,
+as PR #1050 moves them on the PDF.
 
 - 2026-11-12, the quotation PDF says each term once (the user: "Too many
   duplicates … Payment terms / Within 7 days of the invoice date … straight

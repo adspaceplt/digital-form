@@ -593,6 +593,7 @@
     quote_website_create: 'p_sel p_contact p_idem',
     quotation_replace: 'p_new p_old',
     quotation_edit: 'p_id p_sel',
+    quotation_lines_start: 'p_id p_start',
     quotation_send: 'p_id',
     quotation_publish: 'p_id',
     quotation_resend: 'p_id p_again',
@@ -10718,6 +10719,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .reduce(function (m, r) { return Math.max(m, Number(r.slice(head.length))); }, 0) + 1;
         return head + (n < 10 ? '0' : '') + n;
       };
+
+      var qtTermPct = function (set, term) {
+        return Number((term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
+          : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
+      };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
 
@@ -10831,7 +10837,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!e || typeof e !== 'object' || editBad) return;
           if (('qty' in e && (!/^[0-9]{1,4}$/.test(String(e.qty)) || Number(e.qty) < 1)) ||
               ('rate' in e && !/^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(String(e.rate))) ||
-              ('months' in e && (l.basis !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+              ('basis' in e && (['month', 'once'].indexOf(e.basis) < 0 || l.basis !== 'once')) ||
+              ('months' in e && ((e.basis === 'month' ? 'month' : l.basis) !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+
+          var swHit = false;
+          if (e.basis === 'month' && l.basis === 'once') { l.basis = 'month'; l.was_once = true; l.months = term; swHit = true; }
 
           if (e.tax) {
             var tc = (DB.tax_codes || []).filter(function (t) { return t.code === e.tax && t.active; })[0];
@@ -10842,7 +10852,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if ('qty' in e && Number(e.qty) !== Number(l.qty)) { l.qty = Number(e.qty); hit = true; }
           if ('rate' in e && Number(e.rate) !== Number(l.rate)) { l.list_rate = Number(l.rate); l.rate = Number(e.rate); hit = true; }
           if ('months' in e && Number(e.months) !== l.months) { l.months = Number(e.months); hit = true; }
-          if (hit) adjusted++;
+          if (hit || swHit) adjusted++;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
         if (taxBad) return { error: 'bad-tax', line: taxBad };
@@ -10858,7 +10868,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var sub = 0, once = 0, month = false;
         lines.forEach(function (l) { l.amount = r2(l.qty * l.rate); if (l.basis === 'month') { sub += l.amount; month = true; } else once += l.amount; });
         if (month && term === 1) return { error: 'bad-term' };
-        var pct = !month ? 0 : term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23 : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24;
+        var pct = !month ? 0 : qtTermPct(set, term);
         pct = Number(pct || 0);
         var sst = Number(set.sst_pct || 0), off = r2(sub * pct / 100), excl = r2(sub + off);
 
@@ -10899,17 +10909,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bset = (qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {}, bterm = /^\d{1,2}$/.test(String(sel.term)) ? Number(sel.term) : 6;
           var bmon = sel.custom.some(function (x) { return x && x.basis === 'month'; });
           if (bmon && bterm === 1) return { error: 'bad-term' };
-          var bpct = !bmon ? 0 : bterm <= 3 ? bset.term_1_3 : bterm <= 5 ? bset.term_4_5 : bterm <= 11 ? bset.term_6_11 : bterm <= 17 ? bset.term_12_23 : bterm <= 23 ? (bset.term_18_23 != null ? bset.term_18_23 : bset.term_12_23) : bset.term_24;
+          var bpct = !bmon ? 0 : qtTermPct(bset, bterm);
           pr = { lines: [], on_request: [], extra_rates: {}, totals: { term: bterm, term_pct: Number(bpct || 0), sst_pct: Number(bset.sst_pct || 0), budget: 0 } };
         }
         if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
-        var any = false, lines = [];
-        if (sel.starts != null && (typeof sel.starts !== 'object' || Array.isArray(sel.starts))) return { error: 'bad-custom' };
-        for (var i0 = 0; i0 < pr.lines.length; i0++) {
-          var l0 = Object.assign({}, pr.lines[i0]), st = sel.starts && sel.starts[l0.key];
-          if (st) { if (!qtDay(st)) return { error: 'bad-custom', line: l0.label }; l0.start = st; any = true; }
-          lines.push(l0);
-        }
+        var any = false, lines = pr.lines.map(function (l0) { return Object.assign({}, l0); });
         if (sel.custom != null) {
           if (!Array.isArray(sel.custom) || sel.custom.length > 30) return { error: 'bad-custom' };
           for (var i = 0; i < sel.custom.length; i++) {
@@ -10919,7 +10923,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 r.detail.some(function (d) { return typeof d !== 'string' || d.length > 300; }))) ||
                 (r.renews && !/^[0-9a-f-]{36}$/.test(String(r.renews)) && !/^cs/.test(String(r.renews)))) return { error: 'bad-custom', line: lab || String(i + 1) };
             var mo = 1;
-            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
+            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
             if (r.start && !qtDay(r.start)) return { error: 'bad-custom', line: lab };
             var cl = { kind: 'custom', key: 'custom|' + (i + 1) + '|' + lab, label: lab, detail: r.detail || [], qty: Number(r.qty), rate: Number(r.rate),
               basis: r.basis, months: mo, amount: qtR2(Number(r.qty) * Number(r.rate)) };
@@ -11183,7 +11187,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else qsNotify(who, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id, sq.client_id);
         return qtOk({ ok: true, at: at });
       }
-      if (/^quotation_(link|reviewers|submit|review|paper|resign)$/.test(name)) {
+      if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
         if (!qtMe || !opsAllowed('clients.quotes', qsLevel)) return qtOk({ error: 'denied' });
         var sq2 = DB.quotations.filter(function (q) { return q.id === args.p_id && !q.removed_at; })[0];
@@ -11265,6 +11269,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           qtLog(sq2.brand, sq2.ref + ' · checked and submitted to ' + rv.name + (moved.length ? ' · ' + moved.map(function (x) { return ({ legal_name: 'Registered Company Name', company_no: 'Business Registration No.', company_no_old: 'Old Registration No.', tin: 'TIN', sst_no: 'SST Registration No.', billing_address: 'Company billing address', finance_email: 'Finance department email' }[x.field] || x.field) + ': ' + (x.from || 'not set') + ' → ' + (x.to || 'not set'); }).join('; ') : ''));
           qsNotify([rv.id], 'quote.review', 'Quotation to review · ' + sq2.brand, sq2.ref + ' · from ' + qtMe.name, sq2.id, sq2.client_id);
           return qtOk({ ok: true });
+        }
+        if (name === 'quotation_lines_start') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(args.p_start || '')) || args.p_start < '2023-08-14') return qtOk({ error: 'bad-date' });
+          if (!sq2.reviewed_at) return qtOk({ error: 'not-reviewed' });
+          var nls = 0;
+          DB.client_services.forEach(function (l) { if (l.quotation_id === sq2.id && l.client_id === sq2.client_id && !l.archived_at && !l.start_on) { l.start_on = args.p_start; nls++; } });
+          if (nls) qtLog(sq2.brand, sq2.ref + ' · services start ' + args.p_start + ' · ' + nls + (nls === 1 ? ' line' : ' lines'));
+          return qtOk({ ok: true, lines: nls });
         }
         if (name === 'quotation_review') {
           if (!sq2.submitted_at || sq2.returned_at) return qtOk({ error: 'not-submitted' });
@@ -11456,7 +11468,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 !/^\d{1,9}(\.\d{1,2})?$/.test(String(r.budget)) || !(Number(r.budget) > 0)) return { error: 'bad-ads' };
             var mo = null;
             if (r.freq === 'monthly') {
-              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-ads' };
+              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-ads' };
               mo = Number(r.months);
             }
             var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;

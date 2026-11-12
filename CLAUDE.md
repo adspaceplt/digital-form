@@ -1919,7 +1919,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - No Sales view (removed 2026-10-12, the user: "Priority is the dashboard";
   what it held that the Dashboard did not moved there); an old
   `view=sales` address opens the list. `js/sales.js` is the figures alone
-  (`ADspaceSales.figures`, `reasonWord`), read by the Dashboard from each
+  (`ADspaceSales.figures`, `reasonWord`, and `judge`, the one Better, Worse
+  or Steady the Dashboard's tiles and Analytics both read; 2026-11-12), read by the Dashboard from each
   client's `stage_log`, `stage_reason`, `source` and `owner`: Won is a
   lead's first move to Active (or a client keyed in Active), Lost a lead to
   Past never Active, Churned Active to Past (Lost and Churned once a client
@@ -6792,7 +6793,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines (a client's confirmed lines, each `renews` its line, confirmed for the
   new term on approval and never added twice); Bill to (a billing entity,
   held as printed, `quote_client_extras`, the cover's To); and the quotation's
-  own terms, ten at most.
+  own terms, ten at most. A Rate Card one-off item may be quoted Monthly (a
+  number in its Months bills it monthly, empty or 0 keeps it one-off, as a
+  custom line's and an advertising row's Months read alike, no Frequency
+  selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, the term's
+  percentage from `term_pct_if` where nothing else ran by the month). Every
+  Months runs 1 to 36; a term's percentage is `quote_term_pct`'s alone; a
+  renewal starts the day after its line's period ends and every period's
+  last day is `ADspaceClock.periodEnd`. On /quote/ a sectioned quotation
+  keeps the monthly and one-off totals apart, lists the advertising budget a
+  row a platform with its total, says its payment terms and own terms under
+  it, and the signing page agrees every bold total; a Bill to quotation's
+  signing opens on that company. The
+  client's SST reads as Bukku's code at its rate (`ADspaceMoney.sstCode`, an
+  SV code first), never that code offered twice, on Build quote and a service
+  line alike. Approve asks Start date (`quotation_lines_start`: the
+  quotation's confirmed lines with no start take it), and New month marks
+  the months no dated confirmed monthly line covers No service line, saying
+  under the field what covers the month chosen; it refuses none (older
+  clients hold no lines yet).
 - A quotation is edited in place until the portal sends it out
   (`2026-11-06-quotation-edit-until-sent.sql`; the user, 2026-11-06:
   "Quotation is a serious one so it must be accurate", Download never

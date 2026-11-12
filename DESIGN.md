@@ -11,6 +11,18 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 - Never "AI SaaS": no rainbow gradients, no decorative shadows, no walls of
   tinted pills, no explanatory blurbs, no highlighter colours. A status is a
   dot and its word in ink (App Store Connect), never a coloured box.
+- The console's revamp (the user, 2026-11-12, v2 "full glass", after the
+  After reference and iOS's glass): every surface on the console's plain
+  `--page` is glass (a wash of the section colours behind it was tried and
+  taken off the same day, the user choosing the plain ground): the rail (a floating pane at a desk) and
+  the head frosted as before (`--chrome`, since the page scrolls under it),
+  the cards frosted (`--glass-card`, `--glass-card-sheen`, `--glass-rim`,
+  `--glass-lift`; their words 4.5:1); dark is more
+  opaque again. Nothing that holds words over other words is clear glass:
+  a menu, a popover, the finder, a sheet and a question stay solid
+  `--raised` (2026-11-12: the record's ⋯ read the page through it). A card inside a card is one
+  surface, never frost on frost, and inside a card `--card` is clear. Client
+  pages keep their white.
 - Tuned for a long working session: few visible lines, light boundaries,
   generous space, full text contrast. Calm comes from the boundaries, never
   from dimming text.
@@ -47,6 +59,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--pub` / `--pub-bg` | `#2a5793` / `#e6effb` | `#a7c6ed` / `#1d2735` | The post date on the My Work calendar, nowhere else: a pastel blue of Pantone 2717 C (the user, 2026-10-15, in place of purple), greyer than the action blue |
 | `--health` / `--health-bg` | `#ce0f69` / `#fcebf3` | `#f57eb6` / `#2e1a24` | Health's own pink (Pantone 214 C): its heart glyph and the answer chosen in a check-in, nothing else; never red, which refuses |
 | `--vic` / `--vic-ink` / `--vic-bg` | `#b08a32` / `#7a5a0e` / `#f7f0dc` | `#c9a24c` / `#e3c272` / `#2b2517` | A Very Important Client's antique gold (the user, 2026-10-15, gold A): the VIC tag (`--vic-ink` on `--vic-bg`, 6.4:1 light, 9.6:1 dark), its crown and the ring round the client's logo, nothing else; browner than Medium's yellow, cooler than the amber dot |
+| `--sec-{home,work,clients,review,scripts,campaigns,reports,messages,int}` / `-bg` | `#2f62d6` / `#e8effc` (My Work) … | `#8ab0f5` / `#1d2a44` … | A section's mark (palette B, the user, 2026-11-12): its glyph in its colour on a soft tint of it, the Work sections a hue each, the Dashboard and Analytics graphite, Internal graphite; drawn wherever the rail's glyph is copied (`svg.sec`, the rail, the tab bar, search's groups, Waiting for you, Engagements, the bell, Arrange sections, a figure tile, Needs attention). Never a status, a button or a word |
 | `--dot-soon` / `--soon-bg` | `#ffcc00` / `#fdf6d8` | `#ffd60a` / `#2b2614` | Medium priority's yellow (Apple's system yellow): its strip and its deadline tag's ground, nothing else (2026-10-11) |
 | `--focus` | `rgba(0,113,227,.22)` | `rgba(138,180,248,.34)` | Legacy focus halo |
 | `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger (the console's head; a client page's bar keeps its glass over a white root) and as `theme-color` |
@@ -177,6 +190,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Tab strip to pane | 12, owned by the strip |
 
 ## 3. Themes
+- A dark value hangs off `:root[data-theme="dark"]` alone, never a
+  `prefers-color-scheme` query: the head script sets the attribute for Auto,
+  so a query also fires on a device in dark whose colleague chose Light
+  (2026-11-12: the revamp's glass drew dark cards on a light console).
 - Client pages (`/client/`, `/creators/`, `/creator/`, `/review/`, `/verify/`,
   `/quote/`, `/details/`, the covers) are **light only** and never carry `data-theme`.
 - The console follows the device until somebody chooses.
@@ -234,9 +251,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Loading, empty, failed | `ADspaceState` skeleton (a light sweeping across `--line-soft` rows; past its wait one 12.5px mute line, Still loading…) / `emptyLine` (a line inside its panel in the mute ink at 400, with the way out where nothing on screen offers it; a record pane's act is its heading's) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
 | A trend and what to expect (Analytics) | The Dashboard's tiles and `.chartcard`s under one bar (`.anl-bar`: the view strip at the left, the period and its span at the right); the lead row `.anl-lead` (1.618 : 1, one column when narrow) holds the trend, its forecast a dashed line over a `--sunk` band (`.cl-band`, keyed Likely range) with one mute `.anl-note`, beside What changed (`.anl-ins-row`: an ink arrow, the finding over its figures, the change at the right edge); the busiest months a strip of twelve (`.anl-mon`, five steps from `--sunk` to `--fill`); a card still counting its months is `.anl-wait` (the line, then `n of N months` over a 4px track in `--fill`); a group seeing its own clients reads `.anl-own` (Your clients only., 13px mute) first under the bar; every comparison says Better, Worse, Steady or Above alert as `.anl-verdict` (the status's dot and its word in ink), a finding's arrow in `--ok` or `--err`, each trend's direction (`.anl-dir`) under its title; the AI analysis (`.anl-ai`) heads the page: Health as a verdict, the headline 15/600, the summary in the soft ink, the rest in one fold (`.anl-ai-more`), the version line 12px mute |
-| A section's figures at a glance (the Dashboard) | `.ovw-kpi` tiles in `.ovw-kpis`, two by two under a group's label with a hairline (`.ovw-group-h`): the label 12/600 mute, the figure 24/600 (21 for money; late in red), its change in the soft ink (never green), its trend (`ADspaceChart.spark`) or a progress track at the tile's foot, so tiles side by side draw theirs on one line; every tile keeps the trend's room so a row stands one height, and groups side by side share their rows (subgrid) |
+| A section's figures at a glance (the Dashboard) | `.ovw-kpi` tiles in `.ovw-kpis`, two by two under a group's label with a hairline (`.ovw-group-h`): the label 12/600 mute, the section's mark at the top right (`.ovw-kpi-mark`), the figure 32/600 (24 for money; late in red), its change led by an arrow in a tinted disc and followed by its verdict (`.ovw-kpi-line`: green and Better, red and Worse, by `ADspaceSales.judge`; Steady and no change in the soft ink, Steady never repeating Same as …), its trend (`ADspaceChart.spark`) or a progress track at the tile's foot, so tiles side by side draw theirs on one line; every tile keeps the trend's room so a row stands one height, and groups side by side share their rows (subgrid) |
 | The period at a glance (the Dashboard) | `#ovwGlance`: the two `meter` rings alone (one share each, its figure in the middle, the arc `--ok-solid`), first on the page |
-| Everything waiting across sections (the Dashboard) | `#ovwAttention`, straight under the rings: its head a view strip of the sources holding rows (`#ovwSrcs`, the card's width, All then each source's short word and `.tab-n` count, red where late; a tab narrows the list), then What (name over meta) · Section (a grey `.chip`) · Who · Since (late in red words, else the dot and its word), five rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
+| Everything waiting across sections (the Dashboard) | `#ovwAttention`, straight under the rings: its head a view strip of the sources holding rows (`#ovwSrcs`, the card's width, All then each source's short word and `.tab-n` count, red where late; a tab narrows the list), then What (name over meta) · Section (its mark and its name in the soft ink) · Who · Since (late in red words, else the dot and its word), five rows then Show N more; on a narrow pane what over who at the left and since at the right, the heads hidden |
+| Open work by stage (the Dashboard) | `#ovwStages`, under Needs attention: one card split by hairlines into Not started, In progress, In review, Approved or live (and Blocked while any is), each its count inside a segmented ring (`.ovw-ring`: a dashed `--line` track, its share in the stage's status dot colour) over `n of N open`; two across on a narrow pane; My Work › at the head's right |
 | What waits on the reader's decision | `ADspaceGroup.section` card of `.wfy-row`s: the section's glyph tile (a VIC client's ringed in gold with the crown on its corner, `.is-vic`, `.wfy-crown`, never the tag in the title), the record's name over what it is (`Accounts Report · Sept 2026`, its parts kept whole), the decision where it is taken in the row (tonal Decline and Approve), and at the right edge (`.wfy-end`, top aligned, line for line) where it stands as a status (Pending review, Extension requested, Submitted, Requested, Changes requested, Awaiting approval) over its age (red when late), two lines a side, never who handed it over; on a narrow pane the acts take a second line as equal halves |
 | A client's work by month (the record's Engagements) | `ADspaceGroup.section` card a content month of `.cmonth-row`s: the section's glyph on a tonal tile, the name (a fact as a grey chip after it) over its facts wrapping between parts, the state in a `--state-w` track, the chevron last (a finished report's `.btn-sm` Download in its place, `.has-file`); on a narrow pane two columns, the state at the right of the first line, the Download under it |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
