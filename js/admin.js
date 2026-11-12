@@ -870,6 +870,18 @@
      user: every list led by a client shows its logo): the logo on a white
      disc, else its initials, a VIC's ring with the crown on it. A logo that
      will not load gives way to the initials (the one listener below). */
+  /* A colleague as an initials disc in a tint of their own (v3,
+     2026-11-12): the tint is taken from the name, so a colleague reads the
+     same colour on every list. */
+  var AV_TINT = ['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'messages'];
+  function avatar(name) {
+    name = String(name || '');
+    if (!name) return '';
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
+    var ini = window.ADspaceState ? window.ADspaceState.initials(name) : name.slice(0, 2).toUpperCase();
+    return '<span class="tav tav-' + AV_TINT[h % AV_TINT.length] + '" aria-hidden="true">' + esc(ini) + '</span>';
+  }
   function clientMark(c, id) {
     c = c || {};
     var ini = window.ADspaceState ? window.ADspaceState.initials(c.name || '') : '';
@@ -2453,7 +2465,7 @@
     var ids = list.map(function (c) { return c.id; });
     var got = [];
     function page(from) {
-      db.from('batches').select('id, client_id, published').in('client_id', ids)
+      db.from('batches').select('id, client_id, published, title, period, created_at').in('client_id', ids)
         .order('id').range(from, from + 999).then(function (b) {
         if (state.reviewClients !== list) return;
         if (b.error) { state.reviewSets = 'error'; paintSets(); return; }
@@ -2463,6 +2475,10 @@
         got.forEach(function (x) {
           var k = m[x.client_id] || (m[x.client_id] = { n: 0, live: 0 });
           k.n++; if (x.published) k.live++;
+          /* The client's latest set: the newest content month, then the
+             newest made (v3, 2026-11-12). */
+          var key = String(x.period || '') + '|' + String(x.created_at || '');
+          if (!k.latest || key > k.latestKey) { k.latest = x; k.latestKey = key; }
         });
         state.reviewSets = m;
         paintSets();
@@ -2471,11 +2487,13 @@
            fails says nothing rather than claiming none. */
         var batchClient = {};
         got.forEach(function (x) { batchClient[x.id] = x.client_id; });
-        readChangesFor(got.map(function (x) { return x.id; })).then(function (by) {
+        setCounts(got.map(function (x) { return x.id; })).then(function (by) {
           if (state.reviewClients !== list || state.reviewSets !== m) return;
           Object.keys(by).forEach(function (bid) {
             var k = m[batchClient[bid]];
-            if (k) k.changes = (k.changes || 0) + by[bid];
+            if (!k) return;
+            if (by[bid].n_changes) k.changes = (k.changes || 0) + by[bid].n_changes;
+            if (k.latest && k.latest.id === bid) k.latestCounts = by[bid];
           });
           paintSets();
         }).catch(function () {});
@@ -2521,11 +2539,48 @@
     if (!k) return '<span class="muted">No sets</span>';
     return '<span>' + esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published') + '</span>' + changesChip(k.changes);
   }
+  /* A client's latest set on its card (v3, 2026-11-12): its name and
+     month, and where its posts stand as one bar, approved green, changes
+     requested red, waiting on the client amber, the rest grey, with its
+     words beside it. */
+  function latestHtml(id) {
+    var s = state.reviewSets, k = s && s !== 'error' ? s[id] : null;
+    if (!k || !k.latest) return '';
+    var x = k.latest, c = k.latestCounts;
+    var month = x.period ? window.ADspaceClock.month(x.period + '-01') : 'Ad hoc';
+    var html = '<span class="cr-latest-name"><b>' + esc(x.title || 'Untitled set') + '</b><small>' + esc(month) + '</small></span>';
+    if (!x.published) return html + '<span class="cr-latest-state"><span class="chip-state is-off">Draft</span></span>';
+    if (!c) return html;
+    var n = Number(c.n_posts) || 0, ok = Number(c.n_approved) || 0, ch = Number(c.n_changes) || 0, wait = Number(c.n_undecided) || 0;
+    var segs = '', cap = Math.min(n, 24), scale = n ? cap / n : 0;
+    var a = Math.round(ok * scale), r = Math.round(ch * scale), w = Math.round(wait * scale);
+    for (var i = 0; i < cap; i++) segs += '<i class="' + (i < a ? 'is-ok' : i < a + r ? 'is-late' : i < a + r + w ? 'is-wait' : '') + '"></i>';
+    var word = ch ? ['is-danger', 'Changes requested'] : wait ? ['is-warn', 'Waiting on client'] : n && ok === n ? ['is-ok', 'Approved'] : ['is-off', 'Published'];
+    return html + (n ? '<span class="cr-latest-bar" aria-hidden="true">' + segs + '</span>' : '') +
+      '<span class="cr-latest-state"><span class="chip-state ' + word[0] + '">' + word[1] + '</span>' +
+      '<small>' + esc(n + (n === 1 ? ' post' : ' posts') + ' · ' + ok + ' approved') + '</small></span>';
+  }
   function paintSets() {
     var box = $('clientCards');
+    /* The line under Content Review's name: the clients listed, those
+       whose latest set has changes requested, and those waiting on the
+       client (v3, 2026-11-12). */
+    var s = state.reviewSets;
+    if (s && s !== 'error' && state.reviewClients) {
+      var ch = 0, wait = 0;
+      state.reviewClients.forEach(function (c) {
+        var k = s[c.id], x = k && k.latestCounts;
+        if (!x) return;
+        if (Number(x.n_changes)) ch++; else if (Number(x.n_undecided)) wait++;
+      });
+      var n = state.reviewClients.length;
+      counts('review', [[n, n === 1 ? 'client' : 'clients'], ch ? [ch, 'with changes requested', 'late'] : null, wait ? [wait, 'waiting on clients'] : null]);
+    }
     Array.prototype.forEach.call(box.querySelectorAll('.cr-client-row[data-id]'), function (row) {
       var sub = row.querySelector('[data-role="sub"]');
       if (sub) sub.innerHTML = setsLine(row.getAttribute('data-id'));
+      var lt = row.querySelector('[data-role="latest"]');
+      if (lt) lt.innerHTML = latestHtml(row.getAttribute('data-id'));
     });
   }
 
@@ -2553,8 +2608,12 @@
        every console route takes: a heading with the count over a card with
        its own header row. A card per client answered "which clients are
        there" and nothing else; a tile cannot be read down a column. */
+    /* A card a client (v3, the user, 2026-11-12, "build both"): its
+       latest set and where that set's posts stand read at a glance, the
+       sets line and the access code under it. */
     var GRP = window.ADspaceGroup;
-    var table = GRP.table('cr-client-row', ['Client', 'Content sets', 'Access', ''], 'crm-register');
+    var table = document.createElement('div');
+    table.className = 'cr-cards';
     var sec = GRP.section({
       route: 'review', key: 'clients', name: 'Clients', count: rows.length,
       shut: false, table: function () { return table; }
@@ -2563,24 +2622,23 @@
     rows.forEach(function (c) {
       var row = document.createElement('button');
       row.type = 'button';
-      row.className = 'crm-row cr-client-row';
+      row.className = 'cr-client-row cr-card';
       row.setAttribute('data-id', c.id);
       /* The client's logo before the name, as the Clients list draws it
          (the user, 2026-11-10): every row here is a client, and a logo is
          found faster than a name is read. A VIC's ring carries the crown. */
       var vic = !!vicOf(c.id);
       row.innerHTML =
-        '<span class="crm-c crm-c-name">' +
-          clientMark(c, c.id) +
+        '<span class="cr-card-head">' + clientMark(c, c.id) +
           '<span class="cl-who"><span class="cl-name">' + esc(c.name) +
-            (vic ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span></span>' +
-        '</span>' +
-        '<span class="crm-c crm-c-sets" data-role="sub">' + setsLine(c.id) + '</span>' +
-        /* An access code is the exception, so the row says nothing where there
-           is none rather than printing "Open" on almost every line. */
-        '<span class="crm-c crm-c-code' + (c.passcode ? '' : ' is-none') + '">' + (c.passcode
-          ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
-        '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
+            (vic ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span>' +
+            (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') + '</span>' +
+          /* An access code is the exception, so the card says nothing where
+             there is none. */
+          (c.passcode ? '<span class="tone">Access code</span>' : '') +
+          '<span class="cr-card-go" aria-hidden="true">' + GO_CHEV + '</span></span>' +
+        '<span class="cr-latest" data-role="latest">' + latestHtml(c.id) + '</span>' +
+        '<span class="cr-card-sets" data-role="sub">' + setsLine(c.id) + '</span>';
       row.addEventListener('click', function () { openClient(c); });
       table.appendChild(row);
     });
@@ -6023,6 +6081,7 @@
     vicCrown: CROWN,
     vicBadge: vicBadge,
     clientMark: clientMark,
+    avatar: avatar,
     vicFirst: vicFirst,
     vicByName: vicByName,
     vicReload: loadVic,

@@ -2078,15 +2078,7 @@
   /* v3's marks (the user, 2026-11-12, "ok yes all"): a colleague as an
      initials disc in a tint of their own, a task's checklist as a bar a
      check, its remarks as a count. */
-  var AV_TINT = ['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'messages'];
-  function avatar(name) {
-    name = String(name || '');
-    if (!name) return '';
-    var h = 0;
-    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
-    var ini = window.ADspaceState ? window.ADspaceState.initials(name) : name.slice(0, 2).toUpperCase();
-    return '<span class="tav tav-' + AV_TINT[h % AV_TINT.length] + '" aria-hidden="true">' + esc(ini) + '</span>';
-  }
+  function avatar(name) { var A = window.ADspaceAdmin; return A && A.avatar ? A.avatar(name) : ''; }
   function extrasOf(t) { return (state.extras && state.extras[t.id]) || null; }
   function checkBar(t) {
     var x = extrasOf(t);

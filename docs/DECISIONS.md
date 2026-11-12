@@ -10069,3 +10069,14 @@ the head's line reads the open tasks and those late. Dash3's Team cards are
 left out: Detail's Open work by person already answers who holds what.
 The stand-in now joins a month to its client as PostgREST does.
 
+### 2026-11-12 · v3, phase 4: Clients and Content Review
+The user approved both mockups ("build both"). Clients gains four tiles
+read from the clients already loaded, a red late tag from this month's
+content months, and the colleague's disc (now one helper,
+`ADspaceAdmin.avatar`, which My Work also uses). Content Review's register
+becomes a card a client showing its latest set as a bar of its posts. The
+mockup's overdue invoice tile and committed monthly value were left out:
+the first is a Bukku call on every visit, the second the Dashboard's.
+Changes requested do not reorder the cards when the counts arrive, which
+would move a card under the pointer; the red chip and the counts line say it.
+
