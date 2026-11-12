@@ -10024,3 +10024,6 @@ The user asked whether the quotation's text used #1a1a1a, #515151 and #a1a1a1. I
 
 ### 2026-11-12 · A real signature field
 The user asked whether the signature box could be drawn in rather than typed, and chose a real PDF signature field. `formFields` writes a /Sig widget by hand (pdf-lib has no maker for one): Acrobat and Reader offer Click to sign there (draw, type, an image, or a certificate). Apple Preview and most browsers ignore the field; their own signature tools still place a signature anywhere on the page. The letters' signing cell takes the same field. Online signing on the quotation link stays the route that keeps the time, email, address and fingerprint.
+
+### 2026-11-12 · Every PDF's properties
+The user asked what each document writes in its properties, then: author ADSPACE PLT, creator and producer ADspace Digital Portal, the title the name the file is saved under. Letters and the Letter of Offer had kept pdf-lib's own creator and producer, a report and the Rate Card named ADspace as author, a performance record carried nothing. One helper, `ADspaceDocs.meta`, now writes all of them. A reference keeps its slashes in the title (a file name swaps them for dashes; wa-send and supplier-mail look for the reference in the title).

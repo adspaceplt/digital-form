@@ -1770,6 +1770,7 @@
     try {
       PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
+        D.meta(pdf, recs.length === 1 && recs[0].serial ? recs[0].serial : name, 'Performance Review');
         return Promise.all([D.embedFonts(pdf, PDF), D.embedLogo(pdf)]);
       }).then(function (a) {
         var p = D.pen(PDF, a[0], a[1]);
