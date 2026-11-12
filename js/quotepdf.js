@@ -346,9 +346,9 @@
          professional since this has the legal power when signed"): one
          obligation a clause, each said once. The payment term is the one
          the team chose in Build quote, stated as decided. */
-      /* Grouped by subject, numbered through (2026-11-12); what the facts
-         block under the title states (the date it lapses, the payment
-         term, the minimum term) is referred to here, never said again. */
+      /* What the facts block under the title states (the date it lapses,
+         the payment term, the minimum term) is referred to here, never
+         said again (2026-11-12). */
       var groups = [];
       var grp = function (h, list) { list = list.filter(Boolean); if (list.length) groups.push({ h: h, list: list }); };
       var fee = t.month ? Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100 : 0;
@@ -376,25 +376,21 @@
       grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
         'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.',
         'All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.']);
-      /* The terms on a page of their own (2026-11-12): the fees page
-         ends at its last total, and a long quotation never strands a
-         clause group on a page of its own. */
-      newPage(); y -= 6;
-      h2('Terms and Conditions');
-      var cl = 0, TS = 9.5, TL = 13.5;
-      groups.forEach(function (g) {
-        room(44); y -= 20;
-        text(g.h, M, y, TS + 0.5, reg);
-        y -= 4;
-        g.list.forEach(function (n) {
-          cl++;
-          var ls = wrap(n, FULL - 18, TS, book);
-          room(ls.length * TL + 2);
-          y -= TL;
-          text(cl + '.', M, y, TS, book, mute);
-          ls.forEach(function (s2, k) { text(s2, M + 18, y - k * TL, TS); });
-          y -= (ls.length - 1) * TL;
-        });
+      /* TERMS under the rates, one numbered list (the user, 2026-11-12:
+         "dont categorize my terms make it under the rates as usual"). */
+      var all = [];
+      groups.forEach(function (g) { all = all.concat(g.list); });
+      room(30);
+      y -= 8;
+      text('TERMS', M, y, SM, book, mute);
+      y -= 6;
+      all.forEach(function (n, i) {
+        var ls = wrap(n, FULL - 14, 8.5, book);
+        room(ls.length * 12 + 2);
+        y -= 12;
+        text((i + 1) + '.', M, y + 3, 8.5);
+        ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
+        y -= (ls.length - 1) * 12;
       });
     } else {
     headRow();
