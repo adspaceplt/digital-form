@@ -4787,34 +4787,149 @@ body.hb-gate #tabBar { display: none; }
 .raildates > div:has(> .crtot) { align-items: flex-start; }
 .raildates dd.crtot { display: grid; justify-items: end; gap: 2px; }
 
-/* Section marks (the user, 2026-11-12, the revamp's step 1): a section's
-   glyph in white on a tile of its own colour, the Work sections each a hue
+/* ---------- The revamp (the user, 2026-11-12, v2 "full glass") ----------
+   The console stands on a soft wash of the section colours, and every
+   surface on it is glass: the rail and the head clearest, the cards
+   frosted enough that their words hold 4.5:1 over any part of the wash.
+   Inside a card `--card` is clear, so a row painted with it shows the
+   card's own frost rather than a white patch. Client pages are untouched. */
+:root {
+  --wash:
+    radial-gradient(42vw 38vw at 4% 12%, #dfe7fa 0%, transparent 72%),
+    radial-gradient(38vw 34vw at 12% 92%, #ddefe5 0%, transparent 72%),
+    radial-gradient(50vw 26vw at 70% 0%, #e9e3f8 0%, transparent 72%),
+    radial-gradient(48vw 34vw at 48% 100%, #e4f1ea 0%, transparent 70%);
+  --glass-card: rgba(255, 255, 255, .58);
+  --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, 0) 60%);
+  --glass-bar: rgba(255, 255, 255, .34);
+  --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .02));
+  --glass-raised: rgba(255, 255, 255, .78);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .6);
+  --glass-lift: 0 1px 2px rgba(19, 24, 26, .05), 0 10px 30px rgba(19, 24, 26, .08);
+  --glass-blur: saturate(180%) blur(18px);
+  --glass-edge: rgba(255, 255, 255, .5);
+}
+:root[data-theme="dark"] {
+  --wash:
+    radial-gradient(42vw 38vw at 4% 12%, #1c2436 0%, transparent 72%),
+    radial-gradient(38vw 34vw at 12% 92%, #162720 0%, transparent 72%),
+    radial-gradient(50vw 26vw at 70% 0%, #221d33 0%, transparent 72%),
+    radial-gradient(48vw 34vw at 48% 100%, #18261f 0%, transparent 70%);
+  --glass-card: rgba(36, 36, 36, .72);
+  --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 60%);
+  --glass-bar: rgba(30, 30, 30, .55);
+  --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
+  --glass-raised: rgba(40, 40, 40, .86);
+  --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
+  --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
+  --glass-edge: rgba(255, 255, 255, .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --wash:
+      radial-gradient(42vw 38vw at 4% 12%, #1c2436 0%, transparent 72%),
+      radial-gradient(38vw 34vw at 12% 92%, #162720 0%, transparent 72%),
+      radial-gradient(50vw 26vw at 70% 0%, #221d33 0%, transparent 72%),
+      radial-gradient(48vw 34vw at 48% 100%, #18261f 0%, transparent 70%);
+    --glass-card: rgba(36, 36, 36, .72);
+    --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 60%);
+    --glass-bar: rgba(30, 30, 30, .55);
+    --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
+    --glass-raised: rgba(40, 40, 40, .86);
+    --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
+    --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
+    --glass-edge: rgba(255, 255, 255, .06);
+  }
+}
+.console { background: var(--wash), var(--page); background-attachment: fixed; }
+.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
+  --card: transparent;
+  background-color: var(--glass-card); background-image: var(--glass-card-sheen);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-rim), var(--glass-lift);
+  border-color: transparent;
+}
+/* A card inside a card is one surface, never frost on frost. */
+.console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)
+  :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
+  background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
+}
+/* The head: clearer glass, its rule a highlight rather than a line. */
+.console-head { background-color: var(--glass-bar); background-image: var(--glass-bar-sheen); border-bottom-color: transparent;
+  box-shadow: inset 0 -1px 0 var(--glass-edge); }
+/* The rail at a desk: a pane of glass floating on the wash. */
+@media (min-width: 861px) {
+  :root:not(.has-tabbar) .sidebar {
+    margin: 12px 0 12px 12px; height: calc(100vh - 24px); top: 12px; border-right: 0; border-radius: 22px;
+    background-color: var(--glass-bar); background-image: var(--glass-bar-sheen);
+    -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-rim), var(--glass-lift);
+  }
+  @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: calc(100dvh - 24px); } }
+  :root:not(.has-tabbar) .navitem.is-on { background: var(--glass-raised); box-shadow: var(--glass-rim); }
+}
+/* What floats over the page: a menu, a popover, a sheet's card. */
+:is(.kmenu, .popcard, .picker, .sheet-card, .askcard) {
+  background-color: var(--glass-raised);
+  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
+}
+
+/* Section marks (the user, 2026-11-12, palette B): a section's glyph in
+   its colour on a soft tint of that colour, the Work sections each a hue
    and Internal graphite. The colour is the section's alone: it is never a
    status, a button or a word. Every place that copies the rail's glyph (the
    tab bar, search's groups, Waiting for you, Engagements, the bell,
    Arrange sections) carries its class, so takes the tile with it. */
 :root {
-  --sec-home: #3b3935; --sec-work: #2f62d6; --sec-clients: #0c7f72; --sec-review: #7444d0;
-  --sec-scripts: #c4521b; --sec-campaigns: #b8336f; --sec-reports: #1d7a47; --sec-messages: #0b74b3;
-  --sec-int: #5f5b55; --on-sec: #ffffff;
+  --sec-home: #3b3935; --sec-home-bg: #efeeec;
+  --sec-work: #2f62d6; --sec-work-bg: #e8effc;
+  --sec-clients: #0c7f72; --sec-clients-bg: #e2f3f0;
+  --sec-review: #7444d0; --sec-review-bg: #efe9fb;
+  --sec-scripts: #b44a17; --sec-scripts-bg: #fcebe2;
+  --sec-campaigns: #b8336f; --sec-campaigns-bg: #fbe8f0;
+  --sec-reports: #1d7a47; --sec-reports-bg: #e4f3ea;
+  --sec-messages: #0b6ea9; --sec-messages-bg: #e1f0f9;
+  --sec-int: #5f5b55; --sec-int-bg: #efeeec;
 }
-:root[data-theme="dark"] { --sec-home: #57534d; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sec-home: #57534d; } }
-svg.sec-home { --sec: var(--sec-home); }
-svg.sec-work { --sec: var(--sec-work); }
-svg.sec-clients { --sec: var(--sec-clients); }
-svg.sec-review { --sec: var(--sec-review); }
-svg.sec-scripts { --sec: var(--sec-scripts); }
-svg.sec-campaigns { --sec: var(--sec-campaigns); }
-svg.sec-reports { --sec: var(--sec-reports); }
-svg.sec-messages { --sec: var(--sec-messages); }
-svg.sec-int { --sec: var(--sec-int); }
+:root[data-theme="dark"] {
+  --sec-home: #d6d1cb; --sec-home-bg: #2e2c2a;
+  --sec-work: #8ab0f5; --sec-work-bg: #1d2a44;
+  --sec-clients: #5fcdbc; --sec-clients-bg: #14302c;
+  --sec-review: #b9a0f0; --sec-review-bg: #2a2142;
+  --sec-scripts: #f0a77e; --sec-scripts-bg: #3a2418;
+  --sec-campaigns: #f09ac0; --sec-campaigns-bg: #3a1d2a;
+  --sec-reports: #7fd0a2; --sec-reports-bg: #173023;
+  --sec-messages: #7cc4ef; --sec-messages-bg: #132c3c;
+  --sec-int: #c2bdb6; --sec-int-bg: #2e2c2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --sec-home: #d6d1cb; --sec-home-bg: #2e2c2a;
+    --sec-work: #8ab0f5; --sec-work-bg: #1d2a44;
+    --sec-clients: #5fcdbc; --sec-clients-bg: #14302c;
+    --sec-review: #b9a0f0; --sec-review-bg: #2a2142;
+    --sec-scripts: #f0a77e; --sec-scripts-bg: #3a2418;
+    --sec-campaigns: #f09ac0; --sec-campaigns-bg: #3a1d2a;
+    --sec-reports: #7fd0a2; --sec-reports-bg: #173023;
+    --sec-messages: #7cc4ef; --sec-messages-bg: #132c3c;
+    --sec-int: #c2bdb6; --sec-int-bg: #2e2c2a;
+  }
+}
+svg.sec-home { --sec: var(--sec-home); --sec-bg: var(--sec-home-bg); }
+svg.sec-work { --sec: var(--sec-work); --sec-bg: var(--sec-work-bg); }
+svg.sec-clients { --sec: var(--sec-clients); --sec-bg: var(--sec-clients-bg); }
+svg.sec-review { --sec: var(--sec-review); --sec-bg: var(--sec-review-bg); }
+svg.sec-scripts { --sec: var(--sec-scripts); --sec-bg: var(--sec-scripts-bg); }
+svg.sec-campaigns { --sec: var(--sec-campaigns); --sec-bg: var(--sec-campaigns-bg); }
+svg.sec-reports { --sec: var(--sec-reports); --sec-bg: var(--sec-reports-bg); }
+svg.sec-messages { --sec: var(--sec-messages); --sec-bg: var(--sec-messages-bg); }
+svg.sec-int { --sec: var(--sec-int); --sec-bg: var(--sec-int-bg); }
 svg.sec {
-  background: var(--sec); color: var(--on-sec); stroke-width: 2;
+  background: var(--sec-bg); color: var(--sec); stroke-width: 2;
   border-radius: var(--radius-ctl-sm); box-sizing: content-box; flex: 0 0 auto;
 }
 /* The rail: a 26px tile, its glyph 15. */
-.navitem svg.sec, .navitem.is-on svg.sec { width: 15px; height: 15px; padding: 5.5px; color: var(--on-sec); stroke-width: 2; }
+.navitem svg.sec, .navitem.is-on svg.sec { width: 15px; height: 15px; padding: 5.5px; color: var(--sec); stroke-width: 2; }
 /* A 32px tile where a row leads with its section (Waiting for you,
    Engagements, the bell): the tile is the glyph's own ground. */
 :is(.wfy-tile, .cmonth-tile, .notif-tile):has(> svg.sec) { background: none; }
@@ -4824,3 +4939,45 @@ svg.sec {
 /* The phone's tab bar: a 26px tile over the word, the chosen tab's fill
    behind it as before. */
 .tabbar-tab svg.sec { width: 16px; height: 16px; padding: 5px; margin-bottom: 1px; }
+
+/* The Dashboard's figure tiles (the revamp, 2026-11-12): the section's mark
+   at the top right, the figure larger, and its change led by an arrow in a
+   tint, coloured only where it is judged Better or Worse. */
+.ovw-kpi { position: relative; }
+.ovw-kpi.has-mark .ovw-kpi-label { padding-right: 34px; }
+.ovw-kpi-mark { position: absolute; top: 14px; right: 14px; display: flex; }
+.ovw-kpi-mark svg.sec { width: 15px; height: 15px; padding: 5.5px; }
+.ovw-kpi .ovw-kpi-fig { font-size: 32px; line-height: 40px; letter-spacing: -.03em; }
+.ovw-kpi .ovw-kpi-fig.is-money { font-size: 24px; }
+.ovw-kpi-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.ovw-kpi-arrow { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-style: normal;
+  font-size: 12px; font-weight: 600; background: var(--tonal); color: var(--ink-soft); flex: 0 0 auto; }
+.ovw-kpi-line.is-ok .ovw-kpi-arrow { background: var(--ok-bg); color: var(--ok); }
+.ovw-kpi-line.is-late .ovw-kpi-arrow { background: var(--err-bg); color: var(--err); }
+.ovw-kpi-verdict { font-size: 12.5px; color: var(--ink-soft); }
+.ovw-kpi-verdict::before { content: '\00b7'; margin-right: 6px; color: var(--ink-mute); }
+.ovw-kpi-line.is-ok .ovw-kpi-verdict { color: var(--ok); font-weight: 600; }
+.ovw-kpi-line.is-late .ovw-kpi-verdict { color: var(--err); font-weight: 600; }
+/* Work by stage: one card split by hairlines, a stage a cell, its count in
+   a segmented ring with its share in the stage's status colour. */
+.ovw-stage-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.ovw-stage { display: flex; align-items: center; gap: 12px; padding: 4px 16px; min-width: 0; }
+.ovw-stage + .ovw-stage { border-left: 1px solid var(--line-soft); }
+.ovw-stage:first-child { padding-left: 0; }
+.ovw-ring { width: 44px; height: 44px; flex: 0 0 auto; }
+.ovw-ring-track { fill: none; stroke: var(--line); stroke-width: 3.5; stroke-dasharray: 5.2 2.3; }
+.ovw-ring-arc { fill: none; stroke: var(--dot-off); stroke-width: 3.5; stroke-linecap: round; }
+.ovw-ring-arc.is-warn { stroke: var(--dot-wait); }
+.ovw-ring-arc.is-ok { stroke: var(--dot-ok); }
+.ovw-ring-arc.is-late { stroke: var(--dot-late); }
+.ovw-ring text { font-size: 13px; font-weight: 600; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.ovw-stage-what { display: grid; min-width: 0; }
+.ovw-stage-what b { font-weight: 600; font-size: 13.5px; }
+.ovw-stage-what small { font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .ovw-stage-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 12px; }
+.is-narrow .ovw-stage { padding: 0; }
+.is-narrow .ovw-stage + .ovw-stage { border-left: 0; }
+.ovw-att-sec { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.ovw-att-mark { display: flex; flex: 0 0 auto; }
+.ovw-att-mark svg.sec { width: 13px; height: 13px; padding: 4.5px; border-radius: 7px; }
+.ovw-att-secword { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
