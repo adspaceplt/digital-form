@@ -188,6 +188,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Tab strip to pane | 12, owned by the strip |
 
 ## 3. Themes
+- A dark value hangs off `:root[data-theme="dark"]` alone, never a
+  `prefers-color-scheme` query: the head script sets the attribute for Auto,
+  so a query also fires on a device in dark whose colleague chose Light
+  (2026-11-12: the revamp's glass drew dark cards on a light console).
 - Client pages (`/client/`, `/creators/`, `/creator/`, `/review/`, `/verify/`,
   `/quote/`, `/details/`, the covers) are **light only** and never carry `data-theme`.
 - The console follows the device until somebody chooses.
