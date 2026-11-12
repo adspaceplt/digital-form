@@ -344,7 +344,7 @@
       (Array.isArray(t.terms) ? t.terms : []).forEach(function (x) { if (String(x).trim()) notes2.push(String(x).trim()); });
       notes2.push('This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
         'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.');
-      notes2.push('All rates are based on the ADspace Rate Card v.' + q.version + '. Errors and omissions excepted.');
+      notes2.push('All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');
       room(30);
       y -= 8;
       text('TERMS', M, y, SM, book, mute);
