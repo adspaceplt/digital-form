@@ -6972,6 +6972,15 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font-size: 11px; font-weight: 600; line-height: 16px; text-align: center;
 }
 .cmdbar-badge[hidden] { display: none; }
+/* The filters set, a row of their own under the bar (`js/cmdbar.js`): each
+   a small tonal button reading Label: Value with its ×, one press putting
+   that filter back. */
+.cmdbar-chips { order: 99; flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.cmdbar-chips[hidden] { display: none; }
+.cmdbar-chip { min-width: 0; gap: 6px; padding-inline: 10px 8px; font-weight: 400; color: var(--ink-soft); }
+.cmdbar-chip b { font-weight: 500; color: var(--ink); }
+.cmdbar-chip span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cmdbar-chip svg { width: 13px; height: 13px; flex: 0 0 auto; }
 .cmdsheet-field .select { width: 100%; }
 /* AT A DESK THE FILTERS ARE BEHIND ONE BUTTON TOO (2026-10-01). The bar
    keeps its views (`data-nofilter`: whose work, the workflow, a month); the
