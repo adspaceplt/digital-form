@@ -9957,3 +9957,10 @@ as PR #1050 moves them on the PDF.
   Quotation page, and the Rate Card version the quotation was priced on
   (`q.version`, kept with it) with E&OE. The invoicing and payment
   clauses are gone (the user: "234 remove"). Read by a second reader.
+- 2026-11-12, Build quote asks Valid for (the user: "Build valid for"):
+  14, 30, 45, 60 or 90 days beside Payment terms, opening on the Business
+  setting; `quote_extras` keeps it as `valid_days` (`bad-valid`), and
+  `quotation_make` and `quotation_edit` count `valid_until` from the
+  quotation's Date by it, else by `quote_valid_days`
+  (`2026-11-12-quotation-valid-for.sql`). The PDF's first term prints the
+  days and the lapse date. A website quotation keeps the setting.

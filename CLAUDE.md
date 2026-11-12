@@ -6524,7 +6524,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `quotations` (RLS: read at Clients: Services View under client scope;
   writes through functions alone) keeps each as sent: reference
   `ADP/QT{YYMM}-{Z}{NN}` (`quote_ref`), the version, the selection, lines
-  and totals, valid `quote_valid_days` (30, Tax and terms) from issue;
+  and totals, valid for the days Build quote chose (`valid_days`: 14, 30, 45, 60 or 90, `bad-valid`), else `quote_valid_days` (30, Tax and terms), from its Date;
   never edited. The Services pane lists them above the lines
   (`#crmQuotes`; the Overview opens on them while any stand): the state
   worked out on read (Valid until, Expired, Ready to proceed, Revised, Letter of Offer requested, Not
