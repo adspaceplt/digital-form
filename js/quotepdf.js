@@ -184,7 +184,7 @@
     };
     if (t.layout === 2) {
       y -= 6; text('Quotation', M, y, H1, reg); y -= 22;
-      var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))], ['Valid until', longDay(q.valid_until)],
+      var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))],
         ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
       if (t.month) facts.push(['Minimum term', t.term + (Number(t.term) === 1 ? ' month' : ' months')]);
       var colW = FULL / 3;
@@ -346,13 +346,15 @@
          professional since this has the legal power when signed"): one
          obligation a clause, each said once. The payment term is the one
          the team chose in Build quote, stated as decided. */
-      /* What the facts block under the title states (the date it lapses,
-         the payment term, the minimum term) is referred to here, never
-         said again (2026-11-12). */
+      /* What the facts block under the title states (the payment term,
+         the minimum term) is referred to here, never said again; the
+         validity is the first term's alone (2026-11-12). */
       var groups = [];
       var grp = function (h, list) { list = list.filter(Boolean); if (list.length) groups.push({ h: h, list: list }); };
       var fee = t.month ? Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100 : 0;
-      grp('Validity', ['This Quotation shall lapse if it is not accepted on or before the date stated as Valid until.']);
+      var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
+      grp('Validity', ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
+        longDay(q.valid_until) + ' unless accepted before that date.']);
       grp('Fees and payment', [
         t.month ? 'The Monthly Service Fee shall be invoiced monthly' + (own ? '.' : ' for the minimum term.') : '',
         t.once ? 'One-off Items shall be invoiced in the month in which they are delivered.' : '',
