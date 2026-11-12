@@ -112,6 +112,7 @@
        and a guide stays until it is finished or skipped. */
     card.className = 'guidecard';
     card.id = 'guideCard';
+    card.setAttribute('data-clear-bar', '');
     card.hidden = true;
     card.setAttribute('role', 'dialog');
     card.setAttribute('aria-labelledby', 'guideTitle');

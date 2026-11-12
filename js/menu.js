@@ -144,6 +144,14 @@
       card.classList.toggle('is-up', up);
       // Room for the caret between the control and the card.
       card.style.top = (parseFloat(card.style.top) + (up ? -6 : 6)) + 'px';
+      /* A card that must not cover the command bar (the guide) hangs below
+         the whole bar where its control is in one: the bar's filter pills
+         run on a row of their own under the control (2026-11-12). */
+      var bar = !up && card.hasAttribute('data-clear-bar') && btn.closest && btn.closest('.cmdbar');
+      if (bar) {
+        var bb = bar.getBoundingClientRect().bottom + 6, ct = card.getBoundingClientRect().top;
+        if (ct < bb) card.style.top = (parseFloat(card.style.top) + bb - ct) + 'px';
+      }
       var x = r.left + r.width / 2 - c.left;
       card.style.setProperty('--caret', Math.max(18, Math.min(c.width - 18, x)) + 'px');
     },
