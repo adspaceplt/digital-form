@@ -101,7 +101,7 @@
       goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ADspace on WhatsApp.',
       goneAsked: 'Request received. ADspace will contact you shortly.',
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
-      monthSub: 'Monthly subtotal', commit: '{n}-month commitment ({p}%)', termAdj: '{n}-month term ({p}%)', monthExcl: 'Monthly excl. SST',
+      monthSub: 'Monthly subtotal', commit: '{n}-month term discount ({p}%)', termAdj: '{n}-month term surcharge ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',

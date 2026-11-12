@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261112b">
-<link rel="stylesheet" href="/css/console.css?v=20261112g">
+<link rel="stylesheet" href="/css/console.css?v=20261112l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -160,7 +160,7 @@
 <script src="/js/mailtpl.js?v=20261112h"></script>
 <script src="/js/docmail.js?v=20261112h"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261110q"></script>
+<script src="/js/money.js?v=20261112l"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261024d"></script>
 </head>
@@ -1510,10 +1510,28 @@
                 <summary>One-off items <span class="fmore-sum"></span></summary>
                 <div class="qb-once" id="qbOnce"></div>
               </details>
+              <!-- The advertising budget (2026-11-12): the client's money paid to
+                   the platforms on their behalf, its own section of the
+                   quotation, never a service line or revenue. -->
+              <section class="fsec qb-adsec">
+                <h4 class="fsec-h">Advertising budget</h4>
+                <label class="tickline"><input type="checkbox" id="qbAdOn"> <span>Include advertising budget</span></label>
+                <div class="qb-adbox" id="qbAdBox" hidden>
+                  <div class="qb-adrow qb-adhead" aria-hidden="true"><span>Platform</span><span>Frequency</span><span>Budget</span><span>Months</span><span class="qb-adamt">Amount</span><span></span></div>
+                  <div id="qbAdRows"></div>
+                  <div class="qb-adfoot"><button class="btn btn-sm" id="qbAdAdd" type="button">Add platform</button>
+                    <span class="qb-adsum" id="qbAdSum" aria-live="polite"></span></div>
+                </div>
+              </section>
               <section class="fsec qb-lines">
                 <h4 class="fsec-h">Quotation</h4>
                 <div class="row fgrid"><div><label class="field-label" for="qbDate">Date</label>
-                  <input class="input" id="qbDate" type="date" aria-required="true"></div></div>
+                  <input class="input" id="qbDate" type="date" aria-required="true"></div>
+                  <div><label class="field-label" for="qbPay">Payment terms</label>
+                  <select class="select" id="qbPay" data-nofind>
+                    <option value="7">NET 7</option><option value="14">NET 14</option>
+                    <option value="30">NET 30 · subject to approval</option><option value="60">NET 60 · subject to approval</option>
+                    <option value="90">NET 90 · subject to approval</option></select></div></div>
                 <div id="qbLines" aria-live="polite"></div>
                 <!-- The quotation as its PDF before it is made (2026-10-31): no
                      commit, so under the lines, never in the foot. -->
@@ -6316,7 +6334,7 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
 <script src="/js/admin.js?v=20261112h"></script>
-<script src="/js/documents.js?v=20261112j"></script>
+<script src="/js/documents.js?v=20261112l"></script>
 <script src="/js/letters.js?v=20261112j"></script>
 <script src="/js/smreport.js?v=20261112h"></script>
 <script src="/js/reports.js?v=20261112h"></script>
@@ -6325,8 +6343,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261112h"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
-<script src="/js/quotes.js?v=20261112k"></script>
-<script src="/js/quotepdf.js?v=20261112g"></script>
+<script src="/js/quotes.js?v=20261112l"></script>
+<script src="/js/quotepdf.js?v=20261112l"></script>
 <script src="/js/checklists.js?v=20261112h"></script>
 <script src="/js/crm.js?v=20261112j"></script>
 <script src="/js/sales.js?v=20261025a"></script>

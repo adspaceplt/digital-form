@@ -1086,9 +1086,8 @@
       };
       var termRow = function () {
         if (!qadj) return;
-        var pc = Math.round(Math.abs(qd.pct) * 100) / 100, tn = price.term || price.plan;
-        trow((tn ? tn + '-month ' : '') + (qd.pct < 0 ? 'commitment (' + pc + '%)' : 'term (+' + pc + '%)')
-          .replace(/^./, function (c) { return tn ? c : c.toUpperCase(); }), signed(qd.adj));
+        var tn = price.term || price.plan;
+        trow(MON.termLine(tn, qd.pct).replace(/^./, function (c) { return c.toUpperCase(); }), signed(qd.adj));
       };
       if (oneOff) {
         trow('Monthly subtotal', MON.money2(qd ? qd.base : price.each, doc.market));

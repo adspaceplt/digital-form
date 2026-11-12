@@ -3821,6 +3821,27 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 @media (pointer: coarse) { .qb-val { margin-block: -9px; } }
 .qb-lab { display: none; }
 .qb-once { font-size: 12.5px; color: var(--ink-mute); }
+/* The advertising budget's rows (2026-11-12): platform, frequency, budget,
+   months, the row's amount and its remove mark; two lines on a phone. */
+.qb-adbox { display: grid; gap: 8px; margin-top: 12px; }
+.qb-adrow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 72px minmax(0, 1fr) var(--ctl-h); gap: 8px; align-items: center; }
+.qb-adhead { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+#qbAdRows { display: grid; gap: 8px; }
+.qb-adrow > .select, .qb-adrow > .input { min-width: 0; width: 100%; }
+.qb-adamt { text-align: right; font-variant-numeric: tabular-nums; }
+.qb-adfoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.qb-adsum { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .qb-adhead { display: none; }
+  .qb-adrow:not(.qb-adhead) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h);
+    grid-template-areas: "plat freq x" "budget months months" "amt amt amt"; }
+  .qb-adrow > .qb-adplat { grid-area: plat; }
+  .qb-adrow > .qb-adfreq { grid-area: freq; }
+  .qb-adrow > .qb-adbud { grid-area: budget; }
+  .qb-adrow > .qb-admo { grid-area: months; }
+  .qb-adrow > .qb-adamt { grid-area: amt; text-align: left; }
+  .qb-adrow > .qb-adx { grid-area: x; }
+}
 /* Include in plan under a line at RM 0 (2026-11-06). */
 .qb-name > .qb-inplan { display: flex; margin: 6px 0 0; font-size: 12.5px; font-weight: 400; color: var(--ink-soft); }
 @media (max-width: 560px) {
