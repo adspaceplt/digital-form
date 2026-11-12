@@ -5165,3 +5165,52 @@ svg.sec {
 .ovw-kpi:has(.ovw-kpi-arrow) { padding-bottom: 0; }
 .ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { order: 9; margin: 4px -20px 0; padding: 8px 20px; background: var(--sunk);
   border-top: 1px solid var(--line-soft); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+
+/* v3, phase 4 (the user, 2026-11-12, "build both"): Clients. Four figures
+   over the list, two across on a narrow pane; a client's late work this
+   month as a red tag after its name; Person in charge and Sales by each led
+   by the colleague's disc. */
+.crm-tiles { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.is-narrow .crm-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.crm-tile { margin: 0; }
+.crm-tile .ovw-kpi-fig { font-size: 28px; line-height: 36px; }
+.crm-tile .ovw-kpi-sub { font-size: 12.5px; color: var(--ink-mute); }
+.crm-tile-foot { margin: 8px -20px 0; padding: 8px 20px; background: var(--sunk); border-top: 1px solid var(--line-soft);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
+.crm-tile:has(.crm-tile-foot) { padding-bottom: 0; }
+.crm-tile-foot.is-late { color: var(--err); }
+.crm-late-tag { margin-left: 8px; vertical-align: 1px; }
+.crm-c-own .tav, .crm-c-sales .tav { margin-right: 8px; vertical-align: middle; }
+.is-narrow .crm-c-own .tav, .is-narrow .crm-c-sales .tav { display: none; }
+/* Content Review (v3, phase 4): a card a client, three across (two under
+   1100, one narrow): its logo and name over its Client ID, the access code
+   where one is set, then its latest set's name and month, its posts as one
+   bar, where the set stands, and the sets line. */
+.cr-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 1100px) { .cr-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.is-narrow .cr-cards { grid-template-columns: minmax(0, 1fr); }
+.cr-card { display: grid; gap: 12px; align-content: start; min-width: 0; padding: 16px 18px; text-align: left;
+  font: inherit; color: inherit; background: var(--card); border: 0; border-radius: var(--radius-lg);
+  box-shadow: inset 0 0 0 1px var(--card-edge, var(--line-soft)); cursor: pointer; }
+@media (hover: hover) { .cr-card:hover { background: var(--sunk); } }
+.cr-card:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+.cr-card-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cr-card-head .cl-who { flex: 1; min-width: 0; }
+.cr-card-head .cl-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-card-go { display: flex; color: var(--ink-mute); }
+.cr-card-go svg { width: 14px; height: 14px; }
+.cr-latest { display: grid; gap: 8px; min-width: 0; }
+.cr-latest:empty { display: none; }
+.cr-latest-name { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 13px; }
+.cr-latest-name b { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-latest-name small { margin-left: auto; font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+.cr-latest-bar { display: flex; gap: 2px; height: 4px; }
+.cr-latest-bar i { flex: 1; border-radius: 2px; background: var(--line); }
+.cr-latest-bar i.is-ok { background: var(--dot-ok); }
+.cr-latest-bar i.is-late { background: var(--dot-late); }
+.cr-latest-bar i.is-wait { background: var(--dot-wait); }
+.cr-latest-state { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; font-size: 12.5px; }
+.cr-latest-state small { font-size: 12px; color: var(--ink-mute); margin-left: auto; }
+.cr-card-sets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft);
+  border-top: 1px solid var(--line-soft); padding-top: 10px; }
+.cr-group-cards .crm-group-body { padding: 0; }

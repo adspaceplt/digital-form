@@ -494,6 +494,7 @@
       state.clients = r.data || [];
       paintList();
       loadLastSeen();
+      loadLate();
       if (then) then();
     });
   }
@@ -538,6 +539,65 @@
       state.lastSeen = seen;
       if (!$('crmListView').hidden) paintList();
     });
+  }
+
+  /* Late work on a client's row (v3, 2026-11-12): this month's content
+     months and their late tasks, by My Work's own late rule
+     (`ops_engagement_counts`), read once a visit where My Work is readable.
+     A refused read draws no tag. */
+  function loadLate() {
+    state.late = {};
+    if (!(bridge.may && bridge.may('ops', 'view'))) return;
+    var key = window.ADspaceClock.today().slice(0, 7);
+    db.from('ops_engagements').select('id, client_id, status').eq('period', key).then(function (r) {
+      var eng = (r.data || []).filter(function (e) { return e.status !== 'cancelled'; });
+      if (r.error || !eng.length) return null;
+      return db.rpc('ops_engagement_counts', { p_engagements: eng.map(function (e) { return e.id; }) }).then(function (q) {
+        if (q.error) return;
+        var of = {};
+        eng.forEach(function (e) { of[e.id] = e.client_id; });
+        (q.data || []).forEach(function (x) { var n = Number(x.late) || 0; if (n && of[x.engagement_id]) state.late[of[x.engagement_id]] = (state.late[of[x.engagement_id]] || 0) + n; });
+        if (!$('crmListView').hidden) paintList();
+      });
+    }).catch(function () {});
+  }
+
+  /* Four figures over the list (v3, 2026-11-12), each from the clients
+     already read: leads in hand and those past their follow-up time, new
+     leads this month, active clients and the paused, and late work this
+     month across the clients holding it. */
+  function paintTiles() {
+    var box = $('crmTiles');
+    if (!box) return;
+    if (!state.clients.length) { box.hidden = true; return; }
+    var key = window.ADspaceClock.today().slice(0, 7);
+    var n = { lead: 0, proposal: 0, stale: 0, fresh: 0, active: 0, paused: 0 };
+    state.clients.forEach(function (c) {
+      var st = c.stage || 'lead';
+      if (st === 'lead' || st === 'contacted' || st === 'proposal') { n.lead++; if (st === 'proposal') n.proposal++; if (isStale(c)) n.stale++; }
+      if (st === 'active') n.active++;
+      if (st === 'paused') n.paused++;
+      if (c.created_at && window.ADspaceClock.day(c.created_at).slice(0, 7) === key) n.fresh++;
+    });
+    var late = 0, lateOn = 0;
+    Object.keys(state.late || {}).forEach(function (id) { late += state.late[id]; lateOn++; });
+    var plural = function (k, one, many) { return k + ' ' + (k === 1 ? one : many); };
+    var tile = function (label, fig, sub, foot, tone) {
+      return '<article class="chartcard ovw-kpi crm-tile"><span class="ovw-kpi-label">' + esc(label) + '</span>' +
+        '<b class="ovw-kpi-fig' + (tone ? ' is-' + tone : '') + '">' + esc(String(fig)) + '</b>' +
+        '<span class="ovw-kpi-sub">' + esc(sub) + '</span>' +
+        (foot ? '<span class="crm-tile-foot' + (foot[1] ? ' is-late' : '') + '">' + esc(foot[0]) + '</span>' : '') + '</article>';
+    };
+    var tiles = [];
+    if (bandMay('lead', 'view')) tiles.push(tile('Leads in hand', n.lead, plural(n.proposal, 'proposal sent', 'proposals sent'),
+      n.stale ? [plural(n.stale, 'past its follow-up time', 'past their follow-up time'), true] : null));
+    if (bandMay('lead', 'view')) tiles.push(tile('New leads this month', n.fresh, 'Added since the 1st'));
+    tiles.push(tile('Active clients', n.active, n.paused ? n.paused + ' paused' : 'None paused'));
+    if (bridge.may && bridge.may('ops', 'view')) tiles.push(tile('Late work this month', late, late ? 'Across ' + plural(lateOn, 'client', 'clients') : 'None late', null, late ? 'late' : ''));
+    box.className = 'ovw-kpis crm-tiles';
+    box.style.setProperty('--n', tiles.length);
+    box.innerHTML = tiles.join('');
+    box.hidden = false;
   }
 
   function visible() {
@@ -602,6 +662,7 @@
       window.ADspaceAdmin.counts('clients', [[n.active, 'active'], n.lead ? [n.lead, n.lead === 1 ? 'lead' : 'leads'] : null,
         n.stale ? [n.stale, 'overdue follow-up' + (n.stale === 1 ? '' : 's'), 'late'] : null, n.paused ? [n.paused, 'paused'] : null]);
     }
+    paintTiles();
     var box = $('crmList');
     box.innerHTML = '';
     if (!rows.length) {
@@ -682,6 +743,7 @@
   /* A column per fact, because that is what every CRM anyone here has used
      looks like, and because the eye scans a column far faster than it scans
      a chip stranded at the other end of a wide row. */
+  function avatarOf(name) { var A = window.ADspaceAdmin; return A && A.avatar ? A.avatar(name) : ''; }
   function listRow(c) {
     var w = stageWord(c.stage || 'lead');
     /* Picking (Select clients, 2026-10-07), the row is its tick's label: a
@@ -712,7 +774,8 @@
           '</span>' + vicBadgeOf(c.id) +
         '</span>' +
         '<span class="cl-who"><span class="cl-name">' + esc(c.name || '') +
-          (isVic(c.id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') + '</span>' +
+          (isVic(c.id) ? '<span class="sr">, VIC, Very Important Client</span>' : '') +
+          (state.late && state.late[c.id] ? '<span class="tone is-danger crm-late-tag">' + state.late[c.id] + ' late</span>' : '') + '</span>' +
           (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
         '</span>' +
       '</span>' +
@@ -722,10 +785,10 @@
         (ageWord(c) ? '<small class="crm-age' + (isStale(c) ? ' is-late' : '') + '">' +
           esc(ageWord(c) + (isStale(c) ? ' · Overdue' : '')) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
-      '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+      '<span class="crm-c crm-c-own">' + (c.owner ? avatarOf(c.owner) + esc(c.owner) : 'Unassigned') + '</span>' +
       /* Who sold it beside who runs it (the user, 2026-11-07: "at one glance
          i would be able to know all"); a mute em dash where nobody is named. */
-      '<span class="crm-c crm-c-sales">' + (c.sales_by ? esc(salesByName(c.sales_by))
+      '<span class="crm-c crm-c-sales">' + (c.sales_by ? avatarOf(salesByName(c.sales_by)) + esc(salesByName(c.sales_by))
         : '<span class="muted">—</span>') + '</span>' +
       /* The last thing that happened, and under it what it was, the way the
          stage cell beside it carries its clock. Where nothing is recorded the
