@@ -360,19 +360,20 @@
           ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
       ]);
       grp('Advertising budget', [ads.length
-        ? 'The Advertising Budget is paid to the advertising platforms on the Client\'s behalf and shall be payable before the ' +
-          'services commence. It is inclusive of any SST and withholding tax imposed by the advertising platforms.'
+        ? 'The Advertising Budget shall be paid to the advertising platforms on the Client\'s behalf before the ' +
+          'services commence. It includes any SST and withholding tax applicable to the advertising platforms\' charges.'
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
-          ? 'Any advertising budget is excluded from the fees in this Quotation and shall be invoiced separately.' : '']);
+          ? 'Any Advertising Budget is not included in the fees in this Quotation and shall be invoiced separately.' : '']);
       /* Files and further filming (2026-11-12, the user): never part of a
          fee unless a line of the quotation names them. */
-      grp('Exclusions', ['Additional footage, working files and raw files are excluded unless expressly stated in this Quotation, ' +
-        'and shall be charged separately.',
-        (t.on_request || []).length ? 'The following shall be quoted separately upon request: ' + t.on_request.map(function (x) {
-          return x === 'budget' ? 'an advertising budget above the highest tier of the ADspace Rate Card' : x;
-        }).join(', ') + '.' : '']);
+      grp('Exclusions', ['Additional footage, working files and raw files are not included unless expressly stated in this Quotation ' +
+        'and shall be charged separately upon request.',
+        (t.on_request || []).length ? (function () {
+          var w = t.on_request.map(function (x) { return x === 'budget' ? 'An Advertising Budget above the highest tier of the ADspace Rate Card' : x; });
+          return w.join(', ') + ' shall be quoted separately upon request.';
+        })() : '']);
       grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
-      grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
+      grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the Acceptance of Quotation page. ' +
         'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.',
         'All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.']);
       /* TERMS under the rates, one numbered list (the user, 2026-11-12:

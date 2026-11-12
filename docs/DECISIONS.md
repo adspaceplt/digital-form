@@ -9877,3 +9877,14 @@ alone was refused `empty` by quote_price before they were added
   of 30 days or more is approved inside the team before the quotation is
   made (Build quote's Needs approval). Quotations drawn on the older
   layout keep their words.
+- 2026-11-12, the quotation PDF (layout 2) revamped in three levels at
+  three pages (the user: "Im trying to keep at two - three pages"): the
+  page title, a details block (Quotation no., Date, Prepared for, Payment
+  term NET n, Minimum term) in place of the lead sentence, the numbered
+  fee sections, and TERMS under the rates as one numbered list, never
+  grouped (the user: "Dont categorize my terms"). TERMS: validity in days
+  and its lapse date, the total Monthly Service Fee, the Advertising
+  Budget, exclusions, the contract clause naming the Acceptance of
+  Quotation page, and the Rate Card version the quotation was priced on
+  (`q.version`, kept with it) with E&OE. The invoicing and payment
+  clauses are gone (the user: "234 remove"). Read by a second reader.
