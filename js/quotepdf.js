@@ -356,9 +356,6 @@
       grp('Validity', ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
         longDay(q.valid_until) + ' unless accepted before that date.']);
       grp('Fees and payment', [
-        t.month ? 'The Monthly Service Fee shall be invoiced monthly' + (own ? '.' : ' for the minimum term.') : '',
-        t.once ? 'One-off Items shall be invoiced in the month in which they are delivered.' : '',
-        'Each invoice shall be paid within the payment term stated above.',
         t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each line' : 'over the minimum term') +
           ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
       ]);
