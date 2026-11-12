@@ -102,7 +102,50 @@
       });
     }
   }
-  function refresh() { bars.forEach(function (r) { paintBadge(r); mark(r); }); }
+  /* ---- What is set, said in the bar ----------------------------------------
+     Every filter off its default is a chip on its own row under the bar
+     (Stage: Lead, with its ×), so a list narrowed by a filter set earlier
+     says so where it is read, and one press puts that filter back (the
+     user, 2026-11-12: a list read behind a forgotten filter). Clear filters
+     stays the card's and the empty list's alone, never said twice. A view (Group by, Whose work) is never a
+     chip: it is a way of reading the list, not a narrowing of it. */
+  var CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+  function paintChips(rec) {
+    if (!rec.chips) return;
+    var off = liveSelects(rec).filter(isOff);
+    var key = off.map(function (s) { return (s.id || s.name) + '=' + s.value; }).join('&');
+    if (key === rec.chipsKey) return;
+    rec.chipsKey = key;
+    rec.chips.hidden = !off.length;
+    rec.chips.innerHTML = off.map(function (s, i) {
+      var opt = s.options[s.selectedIndex], word = opt ? opt.text.trim() : s.value;
+      var label = labelOf(s);
+      return '<button type="button" class="btn btn-sm cmdbar-chip" data-i="' + i + '" aria-label="' + esc('Clear ' + label + ': ' + word) + '">' +
+        '<span>' + esc(label) + ': <b>' + esc(word) + '</b></span>' + CLOSE + '</button>';
+    }).join('');
+    rec.chipSels = off;
+  }
+  function chipPress(rec, e) {
+    var b = e.target.closest('.cmdbar-chip');
+    if (!b) return;
+    var list = [rec.chipSels[+b.getAttribute('data-i')]];
+    list.forEach(function (sel) {
+      if (!sel) return;
+      var d = defaultOf(sel);
+      if (sel.value === d) return;
+      sel.value = d;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    refresh();
+    var next = rec.chips.querySelector('.cmdbar-chip');
+    (next || rec.btn).focus();
+  }
+  function esc(v) {
+    var W = window.ADspaceWords;
+    if (W && W.esc) return W.esc(v);
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; });
+  }
+  function refresh() { bars.forEach(function (r) { paintBadge(r); paintChips(r); mark(r); }); }
 
   /* ---- The sheet ---------------------------------------------------------- */
   function build() {
@@ -461,8 +504,17 @@
     btn.addEventListener('click', function () { if (open && open.rec === rec) shut(); else show(rec); });
     wireSearch(rec);
     wireActions(bar);
+    var chips = document.createElement('div');
+    chips.className = 'cmdbar-chips';
+    chips.hidden = true;
+    chips.setAttribute('role', 'group');
+    chips.setAttribute('aria-label', 'Filters applied');
+    bar.appendChild(chips);
+    rec.chips = chips;
+    chips.addEventListener('click', function (e) { chipPress(rec, e); });
     bars.push(rec);
     paintBadge(rec);
+    paintChips(rec);
   }
   function wireAll() {
     Array.prototype.forEach.call(document.querySelectorAll('.cmdbar'), wire);
@@ -472,6 +524,11 @@
     if (t && t.tagName === 'SELECT') refresh();
   }, true);
   document.addEventListener('click', function () { setTimeout(refresh, 0); }, true);
+  /* A page that sets a filter from its address or its own Clear sends no
+     event: the chips are read again on a key, on Back and once it settles. */
+  document.addEventListener('keyup', function () { setTimeout(refresh, 0); }, true);
+  window.addEventListener('popstate', function () { setTimeout(refresh, 0); });
+  window.addEventListener('load', function () { setTimeout(refresh, 1200); });
   /* Crossing the phone line with the sheet or the card open puts everything
      back: each width has its own holder, and its own view selects. */
   function crossed(m) {
