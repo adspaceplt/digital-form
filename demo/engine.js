@@ -11459,6 +11459,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         sel = sel || {};
         var pay = sel.pay == null || sel.pay === '' ? 7 : sel.pay;
         if (!/^\d{1,3}$/.test(String(pay)) || [7, 14, 30, 60, 90].indexOf(Number(pay)) < 0) return { error: 'bad-pay' };
+        if (sel.valid != null && sel.valid !== '' && (!/^\d{1,3}$/.test(String(sel.valid)) || [14, 30, 45, 60, 90].indexOf(Number(sel.valid)) < 0)) return { error: 'bad-valid' };
         var rows = [], tot = 0;
         if (sel.ads != null) {
           if (!Array.isArray(sel.ads) || sel.ads.length > 6) return { error: 'bad-ads' };
@@ -11481,7 +11482,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!Array.isArray(sel.terms) || sel.terms.length > 10 || sel.terms.some(function (x) { return typeof x !== 'string' || x.length > 400; })) return { error: 'bad-terms' };
           terms = sel.terms.map(function (x) { return x.trim(); }).filter(Boolean);
         }
-        return { layout: 2, pay_days: Number(pay), ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms };
+        var ext = { layout: 2, pay_days: Number(pay) };
+        if (sel.valid != null && sel.valid !== '') ext.valid_days = Number(sel.valid);
+        return Object.assign(ext, { ads: rows, ads_total: Math.round(tot * 100) / 100, terms: terms });
       };
       if (name === 'quotation_create') {
 
@@ -11503,7 +11506,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!(qpr.lines || []).length) return qtOk({ error: 'nothing-priced' });
         var qz = (String(qc.name).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase();
         var qhead = 'ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + qz;
-        var qdays = Number(appSet('quote_valid_days', qtToday) || 30);
+        var qvSel = args.p_sel && args.p_sel.valid;
+        if (qvSel != null && qvSel !== '' && [14, 30, 45, 60, 90].indexOf(Number(qvSel)) < 0) return qtOk({ error: 'bad-valid' });
+        var qdays = Number(qvSel) || Number(appSet('quote_valid_days', qtToday) || 30);
         var qv = new Date(qtToday + 'T00:00:00Z'); qv.setUTCDate(qv.getUTCDate() + qdays);
         var qrow = { id: nid('qt'), ref: qtNextRef(qhead), client_id: qc.id, brand: qc.name, version: qtCard.version, version_id: qtCard.id,
           selection: JSON.parse(JSON.stringify(args.p_sel)), lines: qpr.lines, totals: Object.assign({}, qpr.totals, { on_request: qpr.on_request }, qcx),
@@ -11533,6 +11538,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qtCard) return qtOk({ error: 'no-card' });
         var qeSel = qtNoClient(args.p_sel), qeFx = qtFx(qq.client_id);
         if (qeFx === 0) return qtOk({ error: 'no-fx' });
+        if (qeSel.valid != null && qeSel.valid !== '' && [14, 30, 45, 60, 90].indexOf(Number(qeSel.valid)) < 0) return qtOk({ error: 'bad-valid' });
         var qe = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qq.client_id), qeFx), qeSel, qeSel.edits), qq.source === 'console' ? qeSel : {}), qeFx);
         if (qe.error) return qtOk(qe);
         var qex = qtExtras(qq.source === 'console' ? qeSel : {});
@@ -11544,7 +11550,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         qq.version = qtCard.version; qq.version_id = qtCard.id; qq.selection = JSON.parse(JSON.stringify(qeSel));
         qq.lines = qe.lines; qq.totals = Object.assign({}, qe.totals, { on_request: qe.on_request }, qex);
         if (qq.source === 'console') {
-          var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
+          var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + (Number(qeSel.valid) || Number(appSet('quote_valid_days', qtToday) || 30)));
           qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
         }
 
