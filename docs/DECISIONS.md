@@ -9867,3 +9867,13 @@ alone was refused `empty` by quote_price before they were added
   document; 30 days or more reads subject to ADspace's approval, without
   "until then, within 7 days"; the budget is payable before the service
   commences (no "in advance" beside it). The acceptance keeps the figures.
+- 2026-11-12, the quotation PDF's TERMS read as a contract (the user: "the
+  tone for those terms should be like legal professional since this has
+  the legal power when signed"): a clause an obligation, "shall", the
+  sections named as they head the quotation (Monthly Service Fee, One-off
+  Items, Advertising Budget). The payment term is stated as the team
+  decided it ("All invoices shall be paid within thirty (30) days of the
+  invoice date (NET 30).") with no "subject to ADspace's approval": a term
+  of 30 days or more is approved inside the team before the quotation is
+  made (Build quote's Needs approval). Quotations drawn on the older
+  layout keep their words.

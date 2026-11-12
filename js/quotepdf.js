@@ -311,35 +311,40 @@
 
       // TERMS.
       var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
-      var notes2 = ['This quotation is valid for ' + both(days2) + ' days from its date of issue, until ' + longDay(q.valid_until) + '.',
-        MONY.payLine(t.pay_days)];
+      /* TERMS in the register of a contract (the user, 2026-11-12: "legal
+         professional since this has the legal power when signed"): one
+         obligation a clause, each said once. The payment term is the one
+         the team chose in Build quote, stated as decided. */
+      var notes2 = ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
+        longDay(q.valid_until) + ' unless accepted before that date.', MONY.payLine(t.pay_days)];
       var bill = [];
-      if (t.month) bill.push('The monthly service fee is invoiced each month.');
-      if (t.once) bill.push('One-off items are invoiced once, in the month in which they are delivered.');
+      if (t.month) bill.push('The Monthly Service Fee shall be invoiced monthly.');
+      if (t.once) bill.push('One-off Items shall be invoiced in the month in which they are delivered.');
       if (bill.length) notes2.push(bill.join(' '));
       if (ads.length) {
-        notes2.push('The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable ' +
-          'before the service commences. It includes any SST and withholding tax the advertising platforms apply.');
+        notes2.push('The Advertising Budget is paid to the advertising platforms on the Client\'s behalf and shall be payable ' +
+          'before the services commence. It is inclusive of any SST and withholding tax imposed by the advertising platforms.');
       } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
-        notes2.push('The advertising budget is not included in the service fee and is billed separately.');
+        notes2.push('Any advertising budget is excluded from the fees in this Quotation and shall be invoiced separately.');
       }
       /* Files and further filming (2026-11-12, the user): never part of a
          fee unless a line of the quotation names them. */
-      notes2.push('Additional footage, working files and raw files are billed separately unless stated in this quotation.');
+      notes2.push('Additional footage, working files and raw files are excluded unless expressly stated in this Quotation, ' +
+        'and shall be charged separately.');
       if ((t.on_request || []).length) {
-        notes2.push('The following are quoted on request: ' + t.on_request.map(function (x) {
-          return x === 'budget' ? 'an advertising budget above the highest tier on our Rate Card' : x;
+        notes2.push('The following shall be quoted separately upon request: ' + t.on_request.map(function (x) {
+          return x === 'budget' ? 'an advertising budget above the highest tier of the ADspace Rate Card' : x;
         }).join(', ') + '.');
       }
       if (t.month) {
         var fee = Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100;
-        notes2.push((own ? 'Over the months stated for each line' : 'Over the minimum term of ' + both(t.term) + ' months') +
-          ', the service fee totals ' + amt(fee, q) + (sstOn ? ' inclusive of SST' : '') + '.');
+        notes2.push('The total Monthly Service Fee payable ' + (own ? 'over the period stated for each line' : 'over the minimum term of ' +
+          both(t.term) + ' months') + ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.');
       }
       (Array.isArray(t.terms) ? t.terms : []).forEach(function (x) { if (String(x).trim()) notes2.push(String(x).trim()); });
-      notes2.push('This quotation becomes binding once accepted and signed on its acceptance page. Together with the ADspace ' +
-        'Service Terms at go.adspace.me/svc-terms, it forms the contract between the parties.');
-      notes2.push('Rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');
+      notes2.push('This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
+        'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.');
+      notes2.push('All rates are based on the ADspace Rate Card v.' + q.version + '. Errors and omissions excepted.');
       room(30);
       y -= 8;
       text('TERMS', M, y, SM, book, mute);
@@ -433,8 +438,8 @@
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
     heading('Acceptance of quotation');
-    para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', on the ' +
-      'terms set out in this document.', 11, 14.5);
+    para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
+      'to be bound by the terms set out in this document.', 11, 14.5);
     y -= 12;
     rule(y);
     y -= 4;
