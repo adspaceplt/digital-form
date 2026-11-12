@@ -9880,3 +9880,14 @@ Mockups: the canvas "Portal revamp mockups".
   charge SST on the advertising budget (the user: "No need say this in
   quotation pdf"); the line that the budget is paid to the platforms in
   advance and includes their own SST and withholding tax stays.
+
+### 2026-11-12 · The glass drew dark on a light console
+
+Reported by the user from an iPhone in dark mode with the console on Light:
+grey cards with dark words, dark blobs over the head and the tab bar's
+tiles dark. The revamp's dark glass, wash and section tints were also set
+under `prefers-color-scheme: dark`, which follows the device; the portal
+applies dark only through `data-theme="dark"`, which its head script sets
+for Auto. The query blocks were taken out, and DESIGN.md §3 now says a dark
+value hangs off the attribute alone. Missed because the screenshots were
+taken with the device and the console in the same theme.
