@@ -5665,7 +5665,7 @@
       : document.querySelector('.navitem[data-section="' + (GLYPH_OF[key] || key) + '"] svg');
     if (!el) return '';
     var g = el.cloneNode(true);
-    g.removeAttribute('width'); g.removeAttribute('height'); g.removeAttribute('class');
+    g.removeAttribute('width'); g.removeAttribute('height');
     g.setAttribute('aria-hidden', 'true');
     return g.outerHTML;
   }

@@ -1919,7 +1919,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - No Sales view (removed 2026-10-12, the user: "Priority is the dashboard";
   what it held that the Dashboard did not moved there); an old
   `view=sales` address opens the list. `js/sales.js` is the figures alone
-  (`ADspaceSales.figures`, `reasonWord`), read by the Dashboard from each
+  (`ADspaceSales.figures`, `reasonWord`, and `judge`, the one Better, Worse
+  or Steady the Dashboard's tiles and Analytics both read; 2026-11-12), read by the Dashboard from each
   client's `stage_log`, `stage_reason`, `source` and `owner`: Won is a
   lead's first move to Active (or a client keyed in Active), Lost a lead to
   Past never Active, Churned Active to Past (Lost and Churned once a client
