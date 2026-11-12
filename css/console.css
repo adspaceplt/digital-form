@@ -4786,3 +4786,41 @@ body.hb-gate #tabBar { display: none; }
    the block's right edge, never added across. */
 .raildates > div:has(> .crtot) { align-items: flex-start; }
 .raildates dd.crtot { display: grid; justify-items: end; gap: 2px; }
+
+/* Section marks (the user, 2026-11-12, the revamp's step 1): a section's
+   glyph in white on a tile of its own colour, the Work sections each a hue
+   and Internal graphite. The colour is the section's alone: it is never a
+   status, a button or a word. Every place that copies the rail's glyph (the
+   tab bar, search's groups, Waiting for you, Engagements, the bell,
+   Arrange sections) carries its class, so takes the tile with it. */
+:root {
+  --sec-home: #3b3935; --sec-work: #2f62d6; --sec-clients: #0c7f72; --sec-review: #7444d0;
+  --sec-scripts: #c4521b; --sec-campaigns: #b8336f; --sec-reports: #1d7a47; --sec-messages: #0b74b3;
+  --sec-int: #5f5b55; --on-sec: #ffffff;
+}
+:root[data-theme="dark"] { --sec-home: #57534d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --sec-home: #57534d; } }
+svg.sec-home { --sec: var(--sec-home); }
+svg.sec-work { --sec: var(--sec-work); }
+svg.sec-clients { --sec: var(--sec-clients); }
+svg.sec-review { --sec: var(--sec-review); }
+svg.sec-scripts { --sec: var(--sec-scripts); }
+svg.sec-campaigns { --sec: var(--sec-campaigns); }
+svg.sec-reports { --sec: var(--sec-reports); }
+svg.sec-messages { --sec: var(--sec-messages); }
+svg.sec-int { --sec: var(--sec-int); }
+svg.sec {
+  background: var(--sec); color: var(--on-sec); stroke-width: 2;
+  border-radius: var(--radius-ctl-sm); box-sizing: content-box; flex: 0 0 auto;
+}
+/* The rail: a 26px tile, its glyph 15. */
+.navitem svg.sec, .navitem.is-on svg.sec { width: 15px; height: 15px; padding: 5.5px; color: var(--on-sec); stroke-width: 2; }
+/* A 32px tile where a row leads with its section (Waiting for you,
+   Engagements, the bell): the tile is the glyph's own ground. */
+:is(.wfy-tile, .cmonth-tile, .notif-tile):has(> svg.sec) { background: none; }
+:is(.wfy-tile, .cmonth-tile, .notif-tile) > svg.sec { width: 16px; height: 16px; padding: 8px; }
+/* Search's group label and Arrange sections: a 20px tile. */
+.sgroup-h svg.sec, .ro-glyph svg.sec { width: 14px; height: 14px; padding: 3px; border-radius: 6px; }
+/* The phone's tab bar: a 26px tile over the word, the chosen tab's fill
+   behind it as before. */
+.tabbar-tab svg.sec { width: 16px; height: 16px; padding: 5px; margin-bottom: 1px; }
