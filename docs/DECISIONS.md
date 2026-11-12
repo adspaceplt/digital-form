@@ -10036,3 +10036,6 @@ The user: Settings' group list "doesnt look right, seems like being circulared".
 
 ### 2026-11-12 · The rail held tight
 The user: "can this side panel be more compacted now it requires more". The section tiles (26px) in the rail's 9px padding made each row 46px, so Team and Services fell below a laptop's fold. A row is now the control's height (34px: 6px padding, a 22px tile with a 14px glyph), the brand 14px over the first section, so every section stands in the rail at once.
+
+### 2026-11-12 · The rail's rhythm
+The user, on the 34px rows: "looks to compacted. any ratios or spacings … it looks weird now". They had been cut to fit, on no rule. A row is now 40px holding a 24px tile (the row about φ times the tile, 8px of air above and below it), 12px from the tile to the word, 16px between the groups and under the brand, all on the 4px grid; every section still stands in the rail at 900px.
