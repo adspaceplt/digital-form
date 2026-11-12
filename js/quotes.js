@@ -33,6 +33,7 @@
     'bad-date': window.ADspaceWords.line.docDate,
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
     'bad-pay': 'Choose the payment terms.',
+    'bad-valid': 'Choose how many days the quotation is valid for.',
     'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
@@ -1332,6 +1333,7 @@
     $('qbAdBox').hidden = !list.length;
     $('qbAdRows').innerHTML = list.map(adRow).join('');
     $('qbPay').value = String(MON.PAY_DAYS.indexOf(Number(sel.pay)) > -1 ? Number(sel.pay) : 7);
+    $('qbValid').value = String(VALID_DAYS.indexOf(Number(sel.valid)) > -1 ? Number(sel.valid) : validDefault());
     adsPaint();
   }
   /* Ticked, one Meta row from the budget chosen above (else the plan's) and
@@ -1481,12 +1483,19 @@
   }
   /* What quote_extras keeps with the quotation, worked here for its
      preview: the same rows, amounts and payment terms. */
+  /* Valid for (2026-11-12): the days a quotation stands, chosen in Build
+     quote; it opens on the Business setting where that is one of them. */
+  var VALID_DAYS = [14, 30, 45, 60, 90];
+  function validDefault(at) {
+    var d = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days', at) : 30) || 30;
+    return VALID_DAYS.indexOf(d) > -1 ? d : 30;
+  }
   function extras(sel) {
     var rows = (sel.ads || []).map(function (r) {
       var n = r.freq === 'once' ? null : r.months;
       return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: Math.round(r.budget * (n || 1) * 100) / 100 };
     });
-    var out = { layout: 2, pay_days: sel.pay || 7, ads: rows, terms: sel.terms || [],
+    var out = { layout: 2, pay_days: sel.pay || 7, valid_days: sel.valid || validDefault(), ads: rows, terms: sel.terms || [],
       ads_total: Math.round(rows.reduce(function (a, r) { return a + r.amount; }, 0) * 100) / 100 };
     var ent = sel.entity && (B.entities || []).filter(function (x) { return x.id === sel.entity; })[0];
     if (ent) out.bill_to = { entity_id: ent.id, legal_name: ent.legal_name, company_no: ent.company_no, billing_address: ent.billing_address };
@@ -1515,6 +1524,7 @@
     stepQtys(false);
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     sel.pay = Number($('qbPay').value) || 7;
+    sel.valid = Number($('qbValid').value) || validDefault();
     if ($('qbAdOn').checked) sel.ads = adsRead();
     if ($('qbAdv').getAttribute('aria-checked') === 'true') {
       var cus = cusRead();
@@ -1709,6 +1719,7 @@
     });
     $('qbDate').addEventListener('change', termOptions);
     $('qbPay').addEventListener('change', on);
+    $('qbValid').addEventListener('change', on);
     $('qbAdOn').addEventListener('change', function () {
       if (!B) return;
       $('qbAdBox').hidden = !this.checked;
@@ -1845,7 +1856,7 @@
       if (!B || !B.priced || !window.ADspaceQuotePdf) return;
       var d = B.priced, ctx = B.ctx, btn = this;
       var today = qbDay();
-      var days = Number(window.ADspaceMoney && window.ADspaceMoney.setting ? window.ADspaceMoney.setting('quote_valid_days', today) : 30) || 30;
+      var days = Number($('qbValid').value) || validDefault(today);
       var me = window.ADspaceAdmin && window.ADspaceAdmin.me ? window.ADspaceAdmin.me() : null;
       var q = { ref: 'PREVIEW', brand: ctx.client.name, issued_at: today, valid_until: window.ADspaceClock.addDays(today, days),
         made_by: (B.editing && B.editing.made_by) || (me && me.name) || '',
