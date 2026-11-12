@@ -10033,3 +10033,6 @@ The full gate on ad56233b failed 13. The common cause: the glass put `backdrop-f
 
 ### 2026-11-12 · Settings' groups lead with one tile
 The user: Settings' group list "doesnt look right, seems like being circulared". The section marks there were the bare 15px glyph with its tint behind it, read as a clipped circle, beside groups with no tile at all (Portal, Money, AI, Performance, Templates). Every group now leads with the rail's 26px tile: a section's glyph on its own tint, any other group's on the internal grey (`--sec-int`).
+
+### 2026-11-12 · The rail held tight
+The user: "can this side panel be more compacted now it requires more". The section tiles (26px) in the rail's 9px padding made each row 46px, so Team and Services fell below a laptop's fold. A row is now the control's height (34px: 6px padding, a 22px tile with a 14px glyph), the brand 14px over the first section, so every section stands in the rail at once.

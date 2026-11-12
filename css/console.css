@@ -4905,7 +4905,12 @@ svg.sec {
   border-radius: var(--radius-ctl-sm); box-sizing: content-box; flex: 0 0 auto;
 }
 /* The rail: a 26px tile, its glyph 15. */
-.navitem svg.sec, .navitem.is-on svg.sec { width: 15px; height: 15px; padding: 5.5px; color: var(--sec); stroke-width: 2; }
+.navitem svg.sec, .navitem.is-on svg.sec { width: 14px; height: 14px; padding: 4px; border-radius: 6px; color: var(--sec); stroke-width: 2; }
+/* The rail held tight (the user, 2026-11-12: "can this side panel be more
+   compacted"): a row the control's height, its tile 22px, the brand closer
+   to the first section. */
+.sidebar .navitem { padding-block: 6px; gap: 10px; }
+.sidebar-brand { padding-bottom: 14px; }
 /* A 32px tile where a row leads with its section (Waiting for you,
    Engagements, the bell): the tile is the glyph's own ground. */
 :is(.wfy-tile, .cmonth-tile, .notif-tile):has(> svg.sec) { background: none; }
