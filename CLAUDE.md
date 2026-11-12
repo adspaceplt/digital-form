@@ -6627,7 +6627,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   Acceptance of quotation on a page of its own (the figures agreed, every
   bold total among them, the monthly and the one-off alike, Issued
   for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
-  client's block to sign and stamp, Name, Designation, Date). Prepared by
+  client's block to sign and stamp, Name, Designation, Date; unsigned and
+  not a preview, each a fillable field, the signature box too, through
+  `ADspaceDocs.formFields`, the letter's own). Prepared by
   is the quotation's `made_by` (a website quotation's person in charge)
   with their position; Reviewed by the colleague who approved it, once
   reviewed; a signed copy draws the client's signature in its box and how

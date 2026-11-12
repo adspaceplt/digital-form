@@ -159,6 +159,9 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
 - Print (the letterhead):
+  - inks as an email's (the user, 2026-11-12): text `#1a1a1a`, secondary
+    `#515151`, the foot (reference, PRIVATE & CONFIDENTIAL, page count)
+    `#a1a1a1` (`pen()` in `js/documents.js`: `ink`, `mute`, `faint`);
   - wordmark in Optima 14pt (`fontMark`);
   - body in Slate Book 11/14.5pt, 14pt between paragraphs (`font`);
   - heavier lines in Slate Regular (`fontBold`), headings in Slate Medium
