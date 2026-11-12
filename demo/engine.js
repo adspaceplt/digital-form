@@ -1895,6 +1895,8 @@ function cardSlugFree(name, self, email) {
     if (day !== now.slice(0, 10)) return day > now.slice(0, 10);
     return !time || String(time).slice(0, 5) > now.slice(11, 16);
   }
+
+  function docDayOk(d) { return /^\d{4}-\d{2}-\d{2}$/.test(String(d)) && d >= '2023-08-14' && d <= kualaDay(); }
   function kualaYM() {
 
     var d = new Date(Date.now() + 8 * 3600 * 1000);
@@ -2003,7 +2005,8 @@ function cardSlugFree(name, self, email) {
   function buildSerial(type, client, member, issuedOn) {
     var base;
     if (type.family === 'hr') {
-      base = 'ADHR/' + String((member && member.staff_code) || 'STAFF') + '/' + type.code + kualaYM();
+      var hday = issuedOn || kualaDay();
+      base = 'ADHR/' + String((member && member.staff_code) || 'STAFF') + '/' + type.code + hday.slice(2, 4) + hday.slice(5, 7);
     } else if (type.family === 'client') {
 
       var day = issuedOn || kualaDay();
@@ -2028,6 +2031,7 @@ function cardSlugFree(name, self, email) {
   function issueDocument(a) {
     var type = docType(a.p_type);
     if (!type || type.active === false) return { error: 'no-type' };
+    if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     if (!regMay(type.family, 'work')) return { error: 'not-allowed' };
     var idem = String(a.p_idem || '').trim();
     if (idem) {
@@ -2081,6 +2085,7 @@ function cardSlugFree(name, self, email) {
     return { ok: true, id: row.id, serial: serial };
   }
   function documentReissue(a) {
+    if (a.p_issued_at && !docDayOk(String(a.p_issued_at).slice(0, 10))) return { error: 'bad-date' };
     var d = (DB.documents || []).filter(function (x) { return x.id === a.p_doc; })[0];
     if (!d) return { error: 'no-doc' };
     if (!regMay(d.family, 'work')) return { error: 'not-allowed' };
@@ -2237,6 +2242,10 @@ function cardSlugFree(name, self, email) {
     if (!cl) return { error: 'no-client' };
 
     var typed = String(a.p_serial || '').trim();
+
+    var lday = a.p_deal && a.p_deal.date ? String(a.p_deal.date) : '';
+    if (lday && !docDayOk(lday)) return { error: 'bad-date' };
+    lday = lday || kualaDay();
     if (!typed && !String(cl.client_code || '').trim()) return { error: 'no-client-code' };
 
     var terms = (Array.isArray((a.p_deal || {}).terms) ? a.p_deal.terms : [])
@@ -2307,7 +2316,7 @@ function cardSlugFree(name, self, email) {
 
     var num = typed;
     if (!num) {
-      var ym = kualaYM();
+      var ym = lday.slice(2, 4) + lday.slice(5, 7);
       var seat = DB.client_document_seq.filter(function (q) {
         return q.client_id === a.p_client && q.ym === ym;
       })[0];
@@ -2324,7 +2333,7 @@ function cardSlugFree(name, self, email) {
     var taxOn = cl.sst_applies !== false;
     var doc = {
       id: nid('doc'), client_id: a.p_client, kind: 'offer', number: num,
-      issued_at: new Date().toISOString().slice(0, 10), market: billMarket(cl),
+      issued_at: lday, market: billMarket(cl),
       subtotal: Number(a.p_subtotal || 0), tax: Number(a.p_tax || 0), total: Number(a.p_total || 0),
       bill_to: {
         name: cl.name || '', legal_name: cl.legal_name || '', address: cl.billing_address || '',
@@ -10682,6 +10691,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qtCard = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); })[0];
       var qtNow = new Date(), qtToday = new Date(qtNow.getTime() + 8 * 3600e3).toISOString().slice(0, 10);
 
+      if ((name === 'quotation_create' || name === 'quotation_edit' || name === 'quote_preview') && args.p_sel && typeof args.p_sel === 'object') {
+        var qtSelDay = args.p_sel.date;
+        args.p_sel = JSON.parse(JSON.stringify(args.p_sel)); delete args.p_sel.date;
+        if (qtSelDay != null && qtSelDay !== '') {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(qtSelDay)) || qtSelDay < '2023-08-14' || qtSelDay > qtToday) return qtOk({ error: 'bad-date' });
+          if (qtSelDay !== qtToday) { qtNow = new Date(Date.parse(qtSelDay + 'T00:00:00Z') + (qtNow.getTime() + 8 * 3600e3) % 864e5 - 8 * 3600e3); qtToday = qtSelDay; }
+        }
+      }
+
       var qtReplyBy = function () {
         var days = Number(appSet('quote_reply_days', qtToday) || 2), due = new Date(qtNow.getTime());
         var hol = (DB.public_holidays || []).map(function (h) { return h.day; });
@@ -11394,8 +11412,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var qev = new Date(qtToday + 'T00:00:00Z'); qev.setUTCDate(qev.getUTCDate() + Number(appSet('quote_valid_days', qtToday) || 30));
           qq.issued_at = qtNow.toISOString(); qq.valid_until = qev.toISOString().slice(0, 10);
         }
+
+        var qeOld = qq.ref;
+        if (qq.source === 'console' && qq.ref.indexOf('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-') !== 0) {
+          DB.quotation_refs_kept = DB.quotation_refs_kept || [];
+          if (!DB.quotation_refs_kept.some(function (k) { return k.ref === qeOld; })) DB.quotation_refs_kept.push({ ref: qeOld, deleted_at: new Date().toISOString(), deleted_by: qtMe ? qtMe.name : null });
+          qq.ref = qtNextRef('ADP/QT' + qtToday.slice(2, 4) + qtToday.slice(5, 7) + '-' + (String(qq.brand).replace(/[^A-Za-z]/g, '').charAt(0) || 'X').toUpperCase());
+        }
         var m2 = function (v) { return v == null ? 'not set' : cur + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
-        qtLog(qq.brand, qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
+        qtLog(qq.brand, (qeOld !== qq.ref ? qeOld + ' → ' : '') + qq.ref + ' edited · ' + m2(qeWas) + ' → ' + m2(fig(qq.totals)) + ' · rate card v.' + qq.version +
           (qe.adjusted ? ' · ' + qe.adjusted + (qe.adjusted === 1 ? ' line changed' : ' lines changed') : ''));
         return qtOk({ ok: true, id: qq.id, ref: qq.ref });
       }

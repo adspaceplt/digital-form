@@ -1021,7 +1021,7 @@
       if (issuing.supplier) $('docSupplier').value = issuing.supplier.id;
       if (issuing.member) $('docMember').value = issuing.member.id;
       $('docSerial').value = '';
-      $('docDate').value = today();
+      $('docDate').value = today(); $('docDate').max = today();
       $('docTitle').textContent = issuing.client ? 'Issue document for ' + issuing.client.name
         : issuing.supplier ? 'Issue document for ' + issuing.supplier.name
         : issuing.member ? 'Issue document for ' + issuing.member.name : 'Issue document';
@@ -1056,7 +1056,7 @@
     $('docLangRow').hidden = !quote; $('docSignRow').hidden = false;
     $('docSigned').checked = Boolean(d.signed); $('docSigned').disabled = true;
     $('docSerial').value = d.serial || '';
-    $('docDate').value = String(d.issued_at || today()).slice(0, 10);
+    $('docDate').value = String(d.issued_at || today()).slice(0, 10); $('docDate').max = today();
     $('docTitle').textContent = 'Reissue ' + d.serial;
     $('docTitleIn').value = d.title || '';
     $('docTo').value = rc.name || ''; $('docAddr').value = rc.address || '';

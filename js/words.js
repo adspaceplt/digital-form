@@ -317,6 +317,9 @@
     addrGone: 'Address deleted',
     addrGoneWhen: 'Deleted after 12 months',
     bodyGone: 'The message was deleted after 12 months.',
+    /* A document's own date (2026-11-12): backdated where chosen, never
+       before ADSPACE PLT's registration or after today. */
+    docDate: 'Choose a date from 14 Aug 2023 to today.',
     /* A template naming a field its sender does not fill (2026-11-10):
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */
     unknownField: function (field, fields) {
