@@ -3824,7 +3824,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* The advertising budget's rows (2026-11-12): platform, frequency, budget,
    months, the row's amount and its remove mark; two lines on a phone. */
 .qb-adbox { display: grid; gap: 8px; margin-top: 12px; }
-.qb-adrow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 72px minmax(0, 1fr) var(--ctl-h); gap: 8px; align-items: center; }
+.qb-adrow { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 96px minmax(0, 1fr) var(--ctl-h); gap: 8px; align-items: center; }
 .qb-adhead { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 #qbAdRows { display: grid; gap: 8px; }
 /* Build quote's Advanced part (2026-11-12): custom lines a card each, the
@@ -3838,23 +3838,24 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-advacts { display: flex; gap: 8px; }
 #qbCusRows { display: grid; gap: 8px; }
 .qb-cus { display: grid; gap: 8px; padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
-.qb-cusrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 116px 64px 156px var(--ctl-h); gap: 8px; align-items: center;
-  grid-template-areas: "name name name name name x" "qty rate freq months start ."; }
+.qb-cusrow { display: grid; grid-template-columns: 64px minmax(0, 1fr) 96px 156px var(--ctl-h); gap: 8px; align-items: center;
+  grid-template-areas: "name name name name x" "qty rate months start ."; }
 .qb-cusrow > .qb-cusname { grid-area: name; }
 .qb-cusrow > .qb-cusqty { grid-area: qty; }
 .qb-cusrow > .qb-cusrate { grid-area: rate; }
-.qb-cusrow > .qb-cusfreq { grid-area: freq; }
 .qb-cusrow > .qb-cusmo { grid-area: months; }
 .qb-cusrow > .qb-cusstart { grid-area: start; }
 .qb-cusrow > .qb-cusx { grid-area: x; }
 .qb-cusrow > .select, .qb-cusrow > .input { min-width: 0; width: 100%; }
 .qb-cusnote { font-size: 12.5px; color: var(--ink-mute); }
 .qb-fixed { display: block; text-align: right; font-variant-numeric: tabular-nums; }
+/* New month: a month no confirmed service line covers (2026-11-12). */
+#engPeriod option.is-off { color: var(--ink-mute); }
 .qb-renew { display: grid; gap: 4px; padding: 12px; border-radius: var(--radius-sm); background: var(--sunk); }
 .qb-renew-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 @media (max-width: 640px) {
   .qb-cusrow { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h);
-    grid-template-areas: "name name x" "qty rate rate" "freq months months" "start start start"; }
+    grid-template-areas: "name name x" "qty rate rate" "months start start"; }
 }
 .qb-adrow > .select, .qb-adrow > .input { min-width: 0; width: 100%; }
 .qb-adamt { text-align: right; font-variant-numeric: tabular-nums; }
@@ -3863,9 +3864,8 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 @media (max-width: 640px) {
   .qb-adhead { display: none; }
   .qb-adrow:not(.qb-adhead) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) var(--ctl-h);
-    grid-template-areas: "plat freq x" "budget months months" "amt amt amt"; }
+    grid-template-areas: "plat plat x" "budget months months" "amt amt amt"; }
   .qb-adrow > .qb-adplat { grid-area: plat; }
-  .qb-adrow > .qb-adfreq { grid-area: freq; }
   .qb-adrow > .qb-adbud { grid-area: budget; }
   .qb-adrow > .qb-admo { grid-area: months; }
   .qb-adrow > .qb-adamt { grid-area: amt; text-align: left; }

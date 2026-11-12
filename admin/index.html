@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261112m">
-<link rel="stylesheet" href="/css/console.css?v=20261112p">
+<link rel="stylesheet" href="/css/console.css?v=20261112y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261112m"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261112s"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -160,7 +160,7 @@
 <script src="/js/mailtpl.js?v=20261112h"></script>
 <script src="/js/docmail.js?v=20261112h"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261112l"></script>
+<script src="/js/money.js?v=20261112q"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261024d"></script>
 </head>
@@ -1516,7 +1516,7 @@
                 <h4 class="fsec-h">Advertising budget</h4>
                 <label class="tickline"><input type="checkbox" id="qbAdOn"> <span>Include advertising budget</span></label>
                 <div class="qb-adbox" id="qbAdBox" hidden>
-                  <div class="qb-adrow qb-adhead" aria-hidden="true"><span>Platform</span><span>Frequency</span><span>Budget</span><span>Months</span><span class="qb-adamt">Amount</span><span></span></div>
+                  <div class="qb-adrow qb-adhead" aria-hidden="true"><span>Platform</span><span>Budget</span><span>Months</span><span class="qb-adamt">Amount</span><span></span></div>
                   <div id="qbAdRows"></div>
                   <div class="qb-adfoot"><button class="btn btn-sm" id="qbAdAdd" type="button">Add platform</button>
                     <span class="qb-adsum" id="qbAdSum" aria-live="polite"></span></div>
@@ -3102,7 +3102,8 @@
             <div class="row fgrid-3">
               <div class="field">
                 <label class="field-label" for="engPeriod">Month</label>
-                <select class="select" id="engPeriod"></select>
+                <select class="select" id="engPeriod" aria-describedby="engCover"></select>
+                <p class="asknote eng-cover" id="engCover" hidden></p>
               </div>
               <div class="field">
                 <label class="field-label" for="engManager">Manager</label>
@@ -6366,10 +6367,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261112h"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
-<script src="/js/quotes.js?v=20261112p"></script>
-<script src="/js/quotepdf.js?v=20261112p"></script>
+<script src="/js/quotes.js?v=20261112v"></script>
+<script src="/js/quotepdf.js?v=20261112u"></script>
 <script src="/js/checklists.js?v=20261112h"></script>
-<script src="/js/crm.js?v=20261112m"></script>
+<script src="/js/crm.js?v=20261112t"></script>
 <script src="/js/sales.js?v=20261112n"></script>
 <script src="/js/team.js?v=20261112h"></script>
 <script src="/js/namecard.js?v=20261112g"></script>
@@ -6380,7 +6381,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261105e"></script>
 <script src="/js/ratecardpdf.js?v=20261112h"></script>
 <script src="/js/campaigns.js?v=20261112i"></script>
-<script src="/js/ops.js?v=20261112h"></script>
+<script src="/js/ops.js?v=20261112t"></script>
 <script src="/js/perf.js?v=20261112h"></script>
 <script src="/js/health.js?v=20261112h"></script>
 <script src="/js/search.js?v=20261112d"></script>
