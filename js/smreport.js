@@ -1002,11 +1002,7 @@
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
           ZH = false;
-          pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
-          pdf.setAuthor(CFG.agencyName || 'ADspace');
-          pdf.setSubject(rep.kind === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report');
-          pdf.setCreator('ADspace Digital Portal');
-          pdf.setProducer('ADspace Digital Portal');
+          window.ADspaceDocs.meta(pdf, fileName({ report: rep }), rep.kind === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report');
           return pdf.save({ useObjectStreams: true }).then(function (bytes) {
             return { bytes: bytes, pages: pages, warnings: warnings };
           });

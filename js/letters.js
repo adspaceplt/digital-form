@@ -243,8 +243,7 @@
       if (doc.draft) drawn.pages.forEach(function (pg) { DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
       /* The reference in the file's title: an email of the letter is
          checked against it (supplier-mail, as wa-send checks a quotation). */
-      pdf.setTitle(String(doc.kind || 'Letter') + ' ' + String(doc.serial || ''));
-      pdf.setAuthor('ADSPACE PLT');
+      DOCS.meta(pdf, String(doc.serial || ''), String(doc.kind || 'Letter'));
       return pdf.save();
     });
   }
@@ -424,8 +423,7 @@
         if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
       });
       /* The reference in the file's title, which supplier-mail checks. */
-      pdf.setTitle(String(doc.kind || 'Supplier Service Agreement') + ' ' + String(doc.serial || ''));
-      pdf.setAuthor('ADSPACE PLT');
+      DOCS.meta(pdf, String(doc.serial || ''), String(doc.kind || 'Supplier Service Agreement'));
       return pdf.save();
     });
   }

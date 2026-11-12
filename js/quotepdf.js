@@ -75,14 +75,12 @@
         pdf = doc;
         return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf)]);
       }).then(function (got) {
-        layout(pdf, PDF, got[0], got[1], q, opts);
+        var form = layout(pdf, PDF, got[0], got[1], q, opts);
+        return docs.formFields(pdf, PDF, form.page, form.boxes);
+      }).then(function () {
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
-        pdf.setTitle('Quotation ' + q.ref);
-        pdf.setAuthor('ADSPACE PLT');
-        pdf.setSubject('Quotation');
-        pdf.setCreator('ADspace Digital Portal');
-        pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, 'ADspace Quotation ' + q.ref, 'Quotation');
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
     });
@@ -358,10 +356,8 @@
           'services commence. It includes any SST and withholding tax applicable to the advertising platforms\' charges.'
         : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
           ? 'Any Advertising Budget is not included in the fees in this Quotation and shall be invoiced separately.' : '']);
-      /* Files and further filming (2026-11-12, the user): never part of a
-         fee unless a line of the quotation names them. */
-      grp('Exclusions', ['Additional footage, working files and raw files are not included unless expressly stated in this Quotation ' +
-        'and shall be charged separately upon request.',
+      /* Files and further filming (2026-11-12, the user's own sentence). */
+      grp('Exclusions', ['Additional footage, working files and raw files are not included and shall be charged separately upon request.',
         (t.on_request || []).length ? (function () {
           var w = t.on_request.map(function (x) { return x === 'budget' ? 'An Advertising Budget above the highest tier of the ADspace Rate Card' : x; });
           return w.join(', ') + ' shall be quoted separately upon request.';
@@ -521,6 +517,16 @@
     } else if (sig && sig.type === 'typed' && sig.text) {
       text(sig.text, M + 10, y - sh / 2 - 2, 18, reg);
     }
+    /* Unsigned, the block is a form a reader fills (2026-11-12): the
+       signature box and each value, as a letter's execution block. */
+    var boxes = [];
+    if (!signer && !opts.draft) {
+      boxes.push(['acceptance_authorised_signatory', M, y - sh + 18, cw, sh - 18, 'sig']);
+      ['acceptance_name', 'acceptance_designation', 'acceptance_date'].forEach(function (k, i) {
+        boxes.push([k, M + cw + lw, y - (i + 1) * rh, FULL - cw - lw, rh, false]);
+      });
+    }
+    var formPage = pn.page;
     y -= sh;
     // How it was signed, under the box.
     var rec = signer && signer.record;
@@ -540,6 +546,7 @@
     // The foot on every page; a preview is a draft over every page.
     docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL');
     if (opts.draft) pages.forEach(function (pg) { docs.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
+    return { page: formPage, boxes: boxes };
   }
 
   window.ADspaceQuotePdf = { draw: draw, fileName: fileName, COVER: COVER };

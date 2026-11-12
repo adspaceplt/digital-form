@@ -893,7 +893,7 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        pdf.setTitle('Analytics Analysis v' + v.version); pdf.setAuthor('ADSPACE PLT'); pdf.setCreator('ADspace Digital Portal'); pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, 'ADspace Analytics Analysis v' + v.version, 'Analytics Analysis');
         return docs.embedFonts(pdf, PDF, { cjk: false });
       }).then(function (fonts) {
         var W = 595.28, H = 841.89, M = 48, FULL = W - 2 * M, FLOOR = 64;

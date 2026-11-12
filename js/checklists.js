@@ -708,7 +708,7 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        pdf.setTitle(d.title); pdf.setAuthor('ADSPACE PLT'); pdf.setCreator('ADspace Digital Portal'); pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, cl.name + ' ' + d.title, d.title);
         return docs.embedFonts(pdf, PDF, { cjk: cjk });
       }).then(function (fonts) {
         layout(pdf, PDF, fonts, d, cl);

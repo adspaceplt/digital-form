@@ -580,8 +580,11 @@
   var W = 595.28, H = 841.89, M = 54, R = W - M;
   function pen(PDF, fonts, logo) {
     var font = fonts.font;
-    var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44), line = PDF.rgb(0.87, 0.89, 0.89);
-    var p = { page: null, W: W, H: H, M: M, R: R, ink: ink, mute: mute, line: line, fonts: fonts, logo: logo };
+    /* The paper's three inks (the user, 2026-11-12): text #1a1a1a, never
+       true black; secondary #515151; the fine print (the foot) #a1a1a1. */
+    var ink = PDF.rgb(0.102, 0.102, 0.102), mute = PDF.rgb(0.318, 0.318, 0.318), faint = PDF.rgb(0.631, 0.631, 0.631);
+    var line = PDF.rgb(0.87, 0.89, 0.89);
+    var p = { page: null, W: W, H: H, M: M, R: R, ink: ink, mute: mute, faint: faint, line: line, fonts: fonts, logo: logo };
     p.safe = function (s) {
       s = String(s == null ? '' : s);
       return fonts.custom ? s : s.replace(/[^\x20-\x7E -ÿ]/g, '-');
@@ -630,7 +633,7 @@
        the top of the page and nowhere else: the foot carried a second one,
        which ADspace has dropped (the user, 2026-09-25). */
     p.footMark = function (i, n, size) {
-      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, size || 7.5, font, mute);
+      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, size || 7.5, font, faint);
     };
     return p;
   }
@@ -785,11 +788,11 @@
     pages.forEach(function (pg, i) {
       pn.page = pg;
       pn.footMark(i, n, FZ);
-      pn.text(serial, M, 30, FZ, font, pn.mute);
+      pn.text(serial, M, 30, FZ, font, pn.faint);
       var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
       var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
       x = Math.min(x, pageStart - GAP - sentW);
-      pn.text(footWord, x, 30, FZ, font, pn.mute);
+      pn.text(footWord, x, 30, FZ, font, pn.faint);
     });
   }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -871,7 +874,7 @@
       pdf = p;
       /* The file names its reference: wa-send sends a letter only where it
          does (2026-10-15). */
-      pdf.setTitle(k.title + ' ' + String(doc.number || '')); pdf.setAuthor('ADSPACE PLT');
+      meta(pdf, String(doc.number || ''), k.title);
       return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
@@ -1246,7 +1249,7 @@
       grid(xSig, tTop, xSig, tBot); grid(xLab, tTop, xLab, tBot);
       grid(xSig, tTop - ROWH, R, tTop - ROWH); grid(xSig, tTop - 2 * ROWH, R, tTop - 2 * ROWH);
       text('Authorised signatory and company stamp', M + 8, tBot + 7, 8, font, mute);
-      fieldBoxes.push(['acceptance_authorised_signatory', M, tBot + 18, SIGW, TABH - 18, true]);
+      fieldBoxes.push(['acceptance_authorised_signatory', M, tBot + 18, SIGW, TABH - 18, 'sig']);
       [['Name', 'acceptance_name'],
        ['Designation', 'acceptance_designation'],
        ['Date', 'acceptance_date']].forEach(function (f, i) {
@@ -1268,33 +1271,54 @@
          appearance stream the reader cannot build. The fields are real widgets
          on the page and in the AcroForm tree, so they do not depend on
          NeedAppearances to be usable. */
-      return pdf.embedFont(PDF.StandardFonts.Helvetica).then(function (formFont) {
-        var form = pdf.getForm();
-        fieldBoxes.forEach(function (f) {
-          var fld = form.createTextField(f[0]);
-          if (f[5]) fld.enableMultiline();
-          /* addToPage is what writes the field's /DA, so the size is set after
-             it and not before: pdf-lib throws on a field that has no default
-             appearance yet, and the throw escaped into a download that never
-             came. */
-          /* Transparent, and with no border of its own: the rule and the
-             label under it are what a printed copy shows, and a field drawn
-             over them hides them. pdf-lib fills a field white and borders it
-             black unless the key is present, so both are passed explicitly as
-             undefined rather than left out. The white default is what painted
-             over "Authorised signatory and company stamp". */
-          fld.addToPage(signPage, {
-            x: f[1], y: f[2], width: f[3], height: f[4],
-            font: formFont,
-            borderWidth: 0,
-            borderColor: undefined,
-            backgroundColor: undefined
-          });
-          fld.setFontSize(11);
-        });
-        form.updateFieldAppearances(formFont);
+      return formFields(pdf, PDF, signPage, fieldBoxes).then(function () {
         return pdf.save();
       });
+    });
+  }
+
+  /* Fields a recipient fills in a PDF reader (the letter's execution block,
+     a quotation's acceptance): boxes [name, x, y, w, h, kind] on one page.
+     kind 'sig' is a real signature field (/FT /Sig, the user, 2026-11-12):
+     Acrobat and Reader offer Click to sign there, to draw, type or place a
+     signature, or sign with a certificate; pdf-lib has no maker for one, so
+     its widget is written by hand. Every other box is a text field,
+     transparent and borderless over the drawn grid, in Helvetica (a subset
+     face cannot draw a character the document never used). */
+  /* Every PDF's properties (the user, 2026-11-12): its title the name it is
+     saved under, the reference keeping its slashes (a file name cannot hold
+     one; wa-send and supplier-mail look for the reference in the title),
+     ADSPACE PLT as author, ADspace Digital Portal as creator and producer. */
+  function meta(pdf, title, subject) {
+    pdf.setTitle(String(title || '').replace(/\.pdf$/i, ''));
+    pdf.setAuthor('ADSPACE PLT');
+    if (subject) pdf.setSubject(subject);
+    pdf.setCreator('ADspace Digital Portal');
+    pdf.setProducer('ADspace Digital Portal');
+  }
+  function formFields(pdf, PDF, page, boxes) {
+    if (!boxes || !boxes.length) return Promise.resolve();
+    return pdf.embedFont(PDF.StandardFonts.Helvetica).then(function (formFont) {
+      var form = pdf.getForm();
+      boxes.forEach(function (f) {
+        if (f[5] === 'sig') {
+          var ctx = pdf.context;
+          var ref = ctx.register(ctx.obj({
+            Type: 'Annot', Subtype: 'Widget', FT: 'Sig', T: PDF.PDFHexString.fromText(f[0]),
+            Rect: [f[1], f[2], f[1] + f[3], f[2] + f[4]], F: 4, P: page.ref
+          }));
+          page.node.addAnnot(ref);
+          form.acroForm.addField(ref);
+          return;
+        }
+        var fld = form.createTextField(f[0]);
+        /* addToPage writes the field's /DA, so the size is set after it;
+           pdf-lib fills white and borders black unless both keys are passed. */
+        fld.addToPage(page, { x: f[1], y: f[2], width: f[3], height: f[4], font: formFont,
+          borderWidth: 0, borderColor: undefined, backgroundColor: undefined });
+        fld.setFontSize(11);
+      });
+      form.updateFieldAppearances(formFont);
     });
   }
 
@@ -1601,7 +1625,7 @@
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
     pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
-    letterPages: letterPages, letterFoot: letterFoot, letterLangs: letterLangs,
+    letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };
 })();

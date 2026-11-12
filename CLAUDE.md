@@ -2655,6 +2655,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   from it (the Letter of Offer's validity line moving with the Date while
   untouched). A quotation edited onto another month takes that month's
   reference, the one it held kept in `quotation_refs_kept`.
+- Every PDF's properties are `ADspaceDocs.meta(pdf, title, subject)`: the
+  title the name it is saved under (a reference keeping its slashes), author
+  ADSPACE PLT, creator and producer ADspace Digital Portal (2026-11-12).
 - Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
   tab, zh)` under its own file name (Safari names a `blob:` address
   Unknown.pdf, and names a file after the last part of its address). The
@@ -2812,7 +2815,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The execution block is one table in the grey hairline (the user,
     2026-10-23: smaller, tabular): the signing and stamp cell at the left
     spanning Name, Designation and Date, a label cell beside each value.
-  - Four transparent AcroForm fields in Helvetica.
+  - The signing cell a PDF signature field, the other three transparent
+    text fields in Helvetica (`ADspaceDocs.formFields`).
   - The reference and initials on every page but the signed one; the monogram
     only top right on page one.
 - `issuer_name_ok`: the signatory is a real team name. It is never blank, never
@@ -6631,7 +6635,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Acceptance of quotation on a page of its own (the figures agreed, every
   bold total among them, the monthly and the one-off alike, Issued
   for and on behalf of ADSPACE PLT: Prepared by and Reviewed by, then the
-  client's block to sign and stamp, Name, Designation, Date). Prepared by
+  client's block to sign and stamp, Name, Designation, Date; unsigned and
+  not a preview, the box a PDF signature field (draw, type or sign with a
+  certificate in Acrobat) and each value a text field, through
+  `ADspaceDocs.formFields`, the letter's own). Prepared by
   is the quotation's `made_by` (a website quotation's person in charge)
   with their position; Reviewed by the colleague who approved it, once
   reviewed; a signed copy draws the client's signature in its box and how
