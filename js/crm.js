@@ -8295,6 +8295,9 @@
     }).join('');
 
   window.ADspaceCRM = {
+    /* How a lead's first call is filed, as this pane words it: "Contacted the
+       same day" or "Contacted after 3 days" (the Assistant files it alike). */
+    contactedWord: function (c) { return 'Contacted ' + (daysSince(c && c.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(c) || 'no time')); },
     /* Settings' Industries changed the list: the next form reads it again. */
     industriesReload: function () { industries.rows = null; industries.asked = null; },
     sourceWord: sourceWord,

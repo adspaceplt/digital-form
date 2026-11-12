@@ -5488,8 +5488,8 @@
      this calendar month cost. Read again on every open. */
   var AI_USES = [['drafts', 'Report drafts', 'draft'], ['checks', 'Commentary checks', 'check'], ['caption', 'Captions', 'caption'],
     ['script', 'Scripts', 'script'], ['picture', 'Scene pictures', 'picture'], ['analysis', 'Brand analyses', 'analysis'], ['checklist', 'Checklists', 'checklist'],
-    ['analytics', 'Analytics analyses', 'analytics']];
-  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
+    ['analytics', 'Analytics analyses', 'analytics'], ['agent', 'Assistant', 'agent']];
+  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, per_report: 1 };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);

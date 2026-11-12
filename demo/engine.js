@@ -3,7 +3,7 @@
 
   var LIVE_COLS = {
     activity_log: 'id actor action subject detail created_at ref',
-    ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches',
+    ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
     client_brands: 'id client_id name active logo created_at updated_at',
     meta_links: 'id client_id brand_id ad_accounts page instagram updated_at updated_by',
@@ -128,6 +128,10 @@
     ai_script_claim: 'p_script',
     ai_picture_claim: 'p_script p_count',
     ai_picture_left: '',
+    ai_agent_claim: '',
+    ai_agent_left: '',
+    ai_agent_turn: 'p_press',
+    ai_agent_tokens: 'p_press p_in p_out p_model',
     video_script_picture: 'p_script p_scene p_kind p_url p_press p_thumb',
     video_script_frame: 'p_script p_scene p_frame p_press',
     wa_templates_read: '',
@@ -6895,8 +6899,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return row && row.daily != null ? row.daily : dflt;
   }
 
-  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, per_report: 1 };
-  var AI_USES = ['drafts', 'checks', 'caption', 'script', 'analysis', 'checklist', 'analytics'];
+  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, per_report: 1 };
+  var AI_USES = ['drafts', 'checks', 'caption', 'script', 'picture', 'analysis', 'checklist', 'analytics', 'agent'];
   function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
   function aiPurpose(x) { return x.purpose || 'draft'; }
   function aiCheckRoom(m, rep) {
@@ -7866,6 +7870,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return aiCaptionRoom(me);
     }
 
+    if (name === 'ai_agent_left' || name === 'ai_agent_claim') {
+      if (!me) return { error: 'denied' };
+      var agSince = aiDay(), agLim = aiCap(me.id, 'agent');
+      var agUsed = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === me.id && x.purpose === 'agent' && x.outcome !== 'failed' &&
+        new Date(x.created_at).getTime() >= agSince; }).length;
+      var agLeft = Math.max(0, agLim - agUsed);
+      if (name === 'ai_agent_left') return { left: agLeft, limit: agLim, scope: agLim === 0 ? 'stopped' : 'agent', next: agLeft > 0 || agLim === 0 ? null : new Date(agSince + 864e5).toISOString() };
+      if (agLim === 0) return { error: 'ai-limit', scope: 'stopped', limit: 0 };
+      if (!agLeft) return { error: 'ai-limit', scope: 'agent', limit: agLim, next: new Date(agSince + 864e5).toISOString() };
+      var agRow = { id: nid('aid'), report_id: null, team_member_id: me.id, purpose: 'agent', outcome: 'pending', agent_steps: 1, created_at: new Date().toISOString() };
+      (DB.ai_drafts = DB.ai_drafts || []).push(agRow);
+      return { id: agRow.id, left: agLim - agUsed - 1, limit: agLim };
+    }
+    if (name === 'ai_agent_turn' || name === 'ai_agent_tokens') {
+      if (!me) return { error: 'denied' };
+      var agD = (DB.ai_drafts || []).filter(function (x) { return x.id === a.p_press && x.team_member_id === me.id && x.purpose === 'agent'; })[0];
+      if (name === 'ai_agent_tokens') {
+        if (agD) { agD.input_tokens = (agD.input_tokens || 0) + (Number(a.p_in) || 0); agD.output_tokens = (agD.output_tokens || 0) + (Number(a.p_out) || 0); agD.model = a.p_model || null; }
+        return null;
+      }
+      if (!agD) return { error: 'not-found' };
+      if (new Date(agD.created_at).getTime() < Date.now() - 30 * 60e3) return { error: 'expired' };
+      if ((agD.agent_steps || 0) >= 12) return { error: 'too-many-steps' };
+      agD.agent_steps = (agD.agent_steps || 0) + 1;
+      return { ok: true, step: agD.agent_steps };
+    }
     if (name === 'ai_picture_left' || name === 'ai_picture_claim') {
       if (!me || !opsAllowed('scripts', 'work')) return { error: 'denied' };
       var picSince = aiDay(), picLim = aiCap(me.id, 'picture');
@@ -8001,12 +8031,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       (DB.team_roles || []).forEach(function (g) { roleName[g.slug] = g.name; });
       var rank = { none: 0, view: 1, work: 2, manage: 3 };
       var ppl = (DB.team_members || []).filter(function (t) {
-        return t.active !== false && (t.is_admin || t.role === 'admin' || (rank[(t.access || {}).reports] || 0) >= 2 ||
-          (rank[(t.access || {}).review] || 0) >= 2 || (rank[(t.access || {}).scripts] || 0) >= 2 ||
-          (rank[(t.access || {})['clients.brand'] || (t.access || {}).clients] || 0) >= 1 ||
-          (rank[(t.access || {})['clients.checklists'] || (t.access || {}).clients] || 0) >= 2 ||
-          ((t.access || {})['team.analytics'] && (t.access || {})['team.analytics'] !== 'none') ||
-          uAll.some(function (x) { return x.team_member_id === t.id && inT(x, uMonth); }));
+
+        return t.active !== false;
       }).map(function (t) {
         var ok = uAll.filter(function (x) { return x.team_member_id === t.id && x.outcome !== 'failed'; });
         var P = { drafts: 'draft', checks: 'check' }, used = {}, cap = {}, own = {};
@@ -8032,7 +8058,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var sc2 = String(a.p_scope || '').trim(), nm2, def2;
       var unit2 = ' a day';
       var W2 = { drafts: 'Report drafts', checks: 'Commentary checks', caption: 'Captions', script: 'Scripts',
-        analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses' };
+        picture: 'Scene pictures', analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses', agent: 'Assistant' };
       var per2 = sc2 === 'per_report';
       if (per2) { if (dl != null && dl > 1) return { error: 'bad-limit' }; nm2 = 'One draft and one check a report a day'; }
       else if (W2[sc2]) { nm2 = W2[sc2]; def2 = AI_CAP_STD[sc2]; }
@@ -9232,7 +9258,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: baOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -14586,6 +14612,23 @@ function opsCodeRange(cid, period, ty, src, seq) {
           });
         }
 
+        if (name === 'portal-agent') {
+          var ab = (opts && opts.body) || {};
+          (window.__agentAsked = window.__agentAsked || []).push(JSON.parse(JSON.stringify(ab)));
+          if (!Array.isArray(window.__agentReplies)) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, error: null });
+          var agStart = ab.press ? rpc('ai_agent_turn', { p_press: ab.press }) : rpc('ai_agent_claim', {});
+          return agStart.then(function (r) {
+            var g = r.data || {};
+            if (g.error) return { data: g, error: null };
+            var press = ab.press || g.id;
+            var next = window.__agentReplies.shift() || { content: [{ type: 'text', text: 'Done.' }], stop: 'end_turn' };
+            if (typeof next === 'function') next = next(ab);
+            if (next.error) return { data: { error: next.error }, error: null };
+            return rpc('ai_agent_tokens', { p_press: press, p_in: 900, p_out: 120, p_model: 'claude-opus-5-5' }).then(function () {
+              return { data: { press: press, left: ab.press ? null : g.left, stop: next.stop || 'end_turn', content: next.content || [] }, error: null };
+            });
+          });
+        }
         if (name === 'caption-draft') {
           var cb0 = (opts && opts.body) || {};
           window.__captionAsked = JSON.parse(JSON.stringify(cb0));

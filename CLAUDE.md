@@ -283,6 +283,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections, the EMAIL LOG and NEW EMAIL sections | whatsapp, wafn, waapprove, maillogsql, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
+| `agent.js`, `supabase/functions/portal-agent/`, the PORTAL ASSISTANT sections | agent, search, caption, sql, smsql, demo, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
@@ -1817,6 +1818,40 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A standing fact about a route is a `.routenote` under the register:
   - the verify page as a link;
   - the redirect hosts `hi.adspace.me` and `go.adspace.me` as links.
+
+### The Assistant (`js/agent.js`, `portal-agent`, `2026-11-13-portal-assistant.sql`)
+- Ask in the console's head (`#agentOpen`, Ctrl + J; the user, 2026-11-13:
+  "ok approve, all colleagues, build all phases") opens `#agentSheet`: beside
+  the page at a desk, a card above the tab bar on a phone. Every active
+  colleague is offered it; the conversation stays until Clear or a reload.
+- The page holds the conversation and posts it whole to `portal-agent`, which
+  asks Claude (`AGENT_MODEL`, unset `claude-opus-5-5`; server-side fallback
+  on) with a fixed list of tools and runs none of them: every tool runs on the
+  page as the colleague. A read (`find_clients`, `client_summary`,
+  `list_tasks`, `waiting_on_me`, `list_reports`, `find_colleagues`) makes the
+  screens' own reads under their policies, asks `may()` first (no-access),
+  and never sends a contact's email or number; an email or number typed into
+  a question is masked by the function. A client's name and its work go to
+  Claude (approved by the user for the assistant, 2026-11-13).
+- A change is a `propose_*` tool, drawn as a card of what will be written,
+  from and to (`.ag-confirm`); nothing is written until Confirm, through the
+  function the screen uses (`ops_create_task`, `ops_assign_task`,
+  `ops_request_due_change`, `ops_add_comment`, a Calls and visits row with
+  the lead moved to Contacted, `sm_report_sent`); Undo where the screen
+  offers one (Reassign, the call, Mark as sent); filed `assistant.task`,
+  `assistant.call` or `assistant.report` (… confirmed through the Assistant)
+  beside the section's own line; what was confirmed, cancelled or undone is
+  told to Claude with the next question. `open_page` draws a button to the
+  record on its own screen. The assistant never deletes, sends to a client,
+  creator or supplier, or touches money, billing, access or performance:
+  none is among its tools. Captions, scripts, checklists and commentary stay
+  their own screens' Write with AI.
+- A question is an AI use of its own (`ai_drafts.purpose` `agent`, 30 a
+  person a day, AI usage's Assistant column): counted before Claude is asked
+  (`ai_agent_claim`), each later step naming it (`ai_agent_turn`, the
+  caller's own, under 30 minutes, twelve steps at most), its tokens added
+  (`ai_agent_tokens`). The stand-in answers `portal-agent` from
+  `window.__agentReplies` (`tests/agent.js`).
 
 ### Console search (`js/search.js`)
 - One control in the console head (`#searchOpen`, before the bell and the
@@ -8220,7 +8255,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the
