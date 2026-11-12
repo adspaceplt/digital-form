@@ -381,9 +381,7 @@
      (the user, 2026-11-12). */
   var PAY_DAYS = [7, 14, 30, 60, 90];
   function payLine(days) {
-    var d = Number(days) || 7;
-    var w = { 7: 'seven', 14: 'fourteen', 30: 'thirty', 60: 'sixty', 90: 'ninety' }[d];
-    return 'All invoices shall be paid within ' + (w ? w + ' (' + d + ')' : d) + ' days of the invoice date (NET ' + d + ').';
+    return 'Payment term: NET ' + (Number(days) || 7);
   }
 
   window.ADspaceMoney = {

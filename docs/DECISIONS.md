@@ -9872,8 +9872,8 @@ alone was refused `empty` by quote_price before they were added
   the legal power when signed"): a clause an obligation, "shall", the
   sections named as they head the quotation (Monthly Service Fee, One-off
   Items, Advertising Budget). The payment term is stated as the team
-  decided it ("All invoices shall be paid within thirty (30) days of the
-  invoice date (NET 30).") with no "subject to ADspace's approval": a term
+  decided it ("Payment term: NET 30"; the user: a quotation is not an
+  invoice) with no "subject to ADspace's approval": a term
   of 30 days or more is approved inside the team before the quotation is
   made (Build quote's Needs approval). Quotations drawn on the older
   layout keep their words.
