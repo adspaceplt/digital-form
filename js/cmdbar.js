@@ -110,32 +110,104 @@
      stays the card's and the empty list's alone, never said twice. A view (Group by, Whose work) is never a
      chip: it is a way of reading the list, not a narrowing of it. */
   var CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17"/></svg>';
+  /* v3 (the user, 2026-11-12, "proceed next"): at a desk every filter is
+     a pill on that row whatever its value (Stage: All stages ▾), a press
+     opening its choices as a menu under it; one set off its default reads
+     its value in ink. On a phone the row keeps only the filters set, a
+     press putting that one back, as the Filters sheet holds the rest. */
+  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>';
+  function pillable(sel) { return !sel.hidden && !sel.hasAttribute('data-nofilter') && !sel.hasAttribute('data-view') && sel.options.length > 1; }
   function paintChips(rec) {
     if (!rec.chips) return;
-    var off = liveSelects(rec).filter(isOff);
-    var key = off.map(function (s) { return (s.id || s.name) + '=' + s.value; }).join('&');
+    var desk = !mq.matches;
+    var list = desk ? liveSelects(rec).filter(pillable) : liveSelects(rec).filter(isOff);
+    var key = (desk ? 'd|' : 'p|') + list.map(function (s) { return (s.id || s.name) + '=' + s.value; }).join('&');
     if (key === rec.chipsKey) return;
     rec.chipsKey = key;
-    rec.chips.hidden = !off.length;
-    rec.chips.innerHTML = off.map(function (s, i) {
+    rec.chips.hidden = !list.length;
+    rec.chips.classList.toggle('is-pills', desk);
+    rec.chips.setAttribute('aria-label', desk ? 'Filters' : 'Filters applied');
+    rec.chips.innerHTML = list.map(function (s, i) {
       var opt = s.options[s.selectedIndex], word = opt ? opt.text.trim() : s.value;
-      var label = labelOf(s);
+      var label = labelOf(s), set = isOff(s);
+      if (desk) {
+        return '<button type="button" class="btn btn-sm cmdbar-chip cmdbar-pill' + (set ? ' is-set' : '') + '" data-i="' + i + '" aria-haspopup="menu" aria-expanded="false" aria-label="' + esc(label + ': ' + word) + '">' +
+          '<span>' + esc(label) + ': <b>' + esc(word) + '</b></span>' + CHEV + '</button>';
+      }
       return '<button type="button" class="btn btn-sm cmdbar-chip" data-i="' + i + '" aria-label="' + esc('Clear ' + label + ': ' + word) + '">' +
         '<span>' + esc(label) + ': <b>' + esc(word) + '</b></span>' + CLOSE + '</button>';
     }).join('');
-    rec.chipSels = off;
+    rec.chipSels = list;
   }
+  var pillMenu = null;
+  function shutPill(back) {
+    if (!pillMenu) return;
+    var m = pillMenu; pillMenu = null;
+    m.menu.remove();
+    m.btn.setAttribute('aria-expanded', 'false');
+    if (back) m.btn.focus();
+  }
+  function openPill(rec, b, sel) {
+    var was = pillMenu && pillMenu.btn === b;
+    shutPill();
+    if (was) return;
+    var menu = document.createElement('div');
+    menu.className = 'kmenu cmdpill-menu';
+    menu.setAttribute('role', 'menu');
+    menu.setAttribute('aria-label', labelOf(sel));
+    Array.prototype.forEach.call(sel.options, function (o, k) {
+      if (o.disabled || o.hidden) return;
+      var it = document.createElement('button');
+      it.type = 'button';
+      it.className = 'kmenu-item cmdpill-item';
+      it.setAttribute('role', 'menuitemradio');
+      it.setAttribute('aria-checked', String(k === sel.selectedIndex));
+      it.textContent = o.text.trim();
+      it.addEventListener('click', function (e) {
+        e.stopPropagation();
+        shutPill(true);
+        if (sel.value === o.value) return;
+        sel.value = o.value;
+        sel.dispatchEvent(new Event('input', { bubbles: true }));
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        refresh();
+        var again = rec.chips.querySelector('[data-i="' + rec.chipSels.indexOf(sel) + '"]');
+        if (again) again.focus();
+      });
+      menu.appendChild(it);
+    });
+    document.body.appendChild(menu);
+    pillMenu = { menu: menu, btn: b };
+    b.setAttribute('aria-expanded', 'true');
+    if (window.ADspaceMenu && window.ADspaceMenu.place) window.ADspaceMenu.place(b, menu, 'left');
+    var on = menu.querySelector('[aria-checked="true"]') || menu.firstChild;
+    if (on) on.focus();
+  }
+  document.addEventListener('click', function (e) {
+    if (pillMenu && !pillMenu.menu.contains(e.target) && !pillMenu.btn.contains(e.target)) shutPill();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!pillMenu) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); shutPill(true); return; }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      var items = Array.prototype.slice.call(pillMenu.menu.querySelectorAll('.kmenu-item'));
+      var i = items.indexOf(document.activeElement);
+      if (i < 0) return;
+      e.preventDefault();
+      items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+    }
+  }, true);
   function chipPress(rec, e) {
     var b = e.target.closest('.cmdbar-chip');
     if (!b) return;
-    var list = [rec.chipSels[+b.getAttribute('data-i')]];
-    list.forEach(function (sel) {
-      if (!sel) return;
-      var d = defaultOf(sel);
-      if (sel.value === d) return;
+    var sel = rec.chipSels[+b.getAttribute('data-i')];
+    if (!sel) return;
+    if (b.classList.contains('cmdbar-pill')) { e.stopPropagation(); openPill(rec, b, sel); return; }
+    var d = defaultOf(sel);
+    if (sel.value !== d) {
       sel.value = d;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
-    });
+    }
     refresh();
     var next = rec.chips.querySelector('.cmdbar-chip');
     (next || rec.btn).focus();
@@ -203,7 +275,7 @@
       if (open && open.pop && !open.rec.btn.contains(e.target)) shut(true);
     });
     if (window.ADspaceMenu && window.ADspaceMenu.onScroll) {
-      window.ADspaceMenu.onScroll(function () { if (open && open.pop) shut(true); });
+      window.ADspaceMenu.onScroll(function () { if (open && open.pop) shut(true); shutPill(); });
     }
   }
   /* Moves a node into `to`, leaving a slot where it stood so it can go back

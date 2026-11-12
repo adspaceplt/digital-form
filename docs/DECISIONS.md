@@ -10080,3 +10080,10 @@ the first is a Bukku call on every visit, the second the Dashboard's.
 Changes requested do not reorder the cards when the counts arrive, which
 would move a card under the pointer; the red chip and the counts line say it.
 
+### 2026-11-12 · v3: filter pills
+"Proceed next" after phase 4. At a desk every filter now shows as a pill
+with its value under the bar, a press opening its choices; the Filters
+mark and its card stay for the views (Group by, Sort) and as the one place
+Clear lives. On a phone the row keeps only the filters set, as before:
+pills for every filter would take a phone's first screen.
+

@@ -5214,3 +5214,12 @@ svg.sec {
 .cr-card-sets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft);
   border-top: 1px solid var(--line-soft); padding-top: 10px; }
 .cr-group-cards .crm-group-body { padding: 0; }
+/* v3's filter pills at a desk: every filter its label and value; one left
+   at its default reads its value in the soft ink, one set reads it in ink
+   on the deeper tonal step. Its choices open as a menu under it. */
+.cmdbar-chips.is-pills .cmdbar-pill b { font-weight: 400; color: var(--ink-soft); }
+.cmdbar-chips.is-pills .cmdbar-pill.is-set { background: var(--tonal-press); }
+.cmdbar-chips.is-pills .cmdbar-pill.is-set b { font-weight: 500; color: var(--ink); }
+.cmdbar-chips.is-pills .cmdbar-pill svg { color: var(--ink-mute); }
+.kmenu.cmdpill-menu { min-width: 200px; width: auto; max-height: min(360px, 60vh); overflow-y: auto; }
+.cmdpill-item[aria-checked="true"] { background: var(--line-soft); }
