@@ -661,7 +661,7 @@
         var now = rate(r[0]), before = rate(r[1]);
         if (now == null) return { fig: '\u2014', sub: 'None due' };
         var d = before == null ? null : now - before;
-        return { fig: now + '%',
+        return { fig: now + '%', bar: now / 100,
                  sub: d == null ? '' : !d ? 'Same as ' + prevWord(period) : (d > 0 ? '+' : '\u2212') + Math.abs(d) + (Math.abs(d) === 1 ? ' point on ' : ' points on ') + prevWord(period),
                  trend: d == null ? null : trendOf(now, before, 'up', 2) };
       });
@@ -670,8 +670,12 @@
        oldest is, so nothing on the page is said twice (2026-10-22, OVW-5). */
     { key: 'late', title: 'Oldest late', sec: 'work', can: canFigures, load: function () {
       return R.report().then(function (d) {
-        var l = d.late || [], top = l.reduce(function (a, t) { return Math.max(a, Number(t.days_over) || 0); }, 0);
-        return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '', sub: '' };
+        var l = d.late || [], oldest = l.reduce(function (a, t) { return a && (Number(a.days_over) || 0) >= (Number(t.days_over) || 0) ? a : t; }, null);
+        var top = oldest ? Number(oldest.days_over) || 0 : 0;
+        /* Which task it is, and whose, so the tile names what to open (the
+           user, 2026-11-13: the tile read as half empty on a phone). */
+        return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '',
+                 sub: oldest ? [oldest.title, oldest.client].filter(Boolean).join(' · ') : 'No work is late' };
       });
     } },
     { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, short: function () { return 'Delivered'; }, sec: 'work', can: canFigures, load: function () {
@@ -1097,7 +1101,7 @@
             '<circle class="ovw-ring-track" cx="22" cy="22" r="18"></circle>' +
             (len ? '<circle class="ovw-ring-arc is-' + b.tone + '" cx="22" cy="22" r="18" transform="rotate(-90 22 22)" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '"></circle>' : '') +
             '<text x="22" y="26.5" text-anchor="middle">' + n + '</text></svg>' +
-            '<span class="ovw-stage-what"><b>' + esc(b.word) + '</b><small>' + n + ' of ' + total + ' open</small></span></div>';
+            '<span class="ovw-stage-what"><b>' + esc(b.word) + '</b><small>' + Math.round(n / total * 100) + '% of open</small></span></div>';
         }).join('') + '</div>';
       }).catch(function (e) { fail(body, 'Work by stage', e, run); });
     };

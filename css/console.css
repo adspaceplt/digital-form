@@ -4938,7 +4938,12 @@ svg.sec {
 .ovw-kpi-line.is-ok .ovw-kpi-arrow { background: var(--ok-bg); color: var(--ok); }
 .ovw-kpi-line.is-late .ovw-kpi-arrow { background: var(--err-bg); color: var(--err); }
 .ovw-kpi-verdict { font-size: 12.5px; color: var(--ink-soft); }
-.ovw-kpi-verdict::before { content: '\00b7'; margin-right: 6px; color: var(--ink-mute); }
+/* Its dot leads the word, so a verdict wrapped to the next line never
+   starts on a stray separator (2026-11-13). */
+.ovw-kpi-verdict { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ovw-kpi-verdict::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--dot-off); }
+.ovw-kpi-line.is-ok .ovw-kpi-verdict::before { background: var(--dot-ok); }
+.ovw-kpi-line.is-late .ovw-kpi-verdict::before { background: var(--dot-late); }
 .ovw-kpi-line.is-ok .ovw-kpi-verdict { color: var(--ok); font-weight: 600; }
 .ovw-kpi-line.is-late .ovw-kpi-verdict { color: var(--err); font-weight: 600; }
 /* Work by stage: one card split by hairlines, a stage a cell, its count in
@@ -5170,9 +5175,16 @@ svg.sec {
 .ovw-step-due.is-late { color: var(--err); }
 @media (hover: hover) { .ovw-step:hover .ovw-step-what, .ovw-month-who:hover b { color: var(--action-ink); } }
 /* A figure tile ends on a shaded strip holding its change (v3's footer). */
-.ovw-kpi:has(.ovw-kpi-arrow) { padding-bottom: 0; }
-.ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { order: 9; margin: 4px -20px 0; padding: 8px 20px; background: var(--sunk);
-  border-top: 1px solid var(--line-soft); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+/* The strip runs the tile's own width: the tile and its strip share one
+   inline padding, so a narrow pane's smaller padding never leaves the strip
+   wider than its card (the user, 2026-11-13, a phone's Dashboard). */
+.chartcard.ovw-kpi { --kpi-x: 16px; padding-left: var(--kpi-x); padding-right: var(--kpi-x); }
+.ovw-kpi:has(.ovw-kpi-arrow) { padding-bottom: 0; overflow: hidden; }
+.ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { order: 9; margin: 4px calc(-1 * var(--kpi-x, 16px)) 0; padding: 8px var(--kpi-x, 16px); background: var(--sunk);
+  border-top: 1px solid var(--line-soft); }
+/* On a phone the tile keeps its edge, so its shaded strip reads as the
+   card's foot, never as the grey page beneath it. */
+:root.has-tabbar .ovw-kpi, :root.has-tabbar .crm-tile { outline: 1px solid var(--card-edge); outline-offset: -1px; }
 
 /* v3, phase 4 (the user, 2026-11-12, "build both"): Clients. Four figures
    over the list, two across on a narrow pane; a client's late work this

@@ -10109,3 +10109,15 @@ took the round corner beside squircles (`corners`): all three joined the
 list. `work` counted the pills as outline buttons in My Work's bar, and
 `search` clicked "empty space" that now holds a client row; both suites
 were set right. `crm`'s logo preview is the logged intermittent failure.
+
+### 2026-11-13 — The phone Dashboard's tiles
+The user sent the phone Dashboard ("What the shit is this design layout and
+details"). Each figure tile's shaded footer ran 6px past its card on both
+sides: the footer assumed the desk's 20px padding while a narrow pane gives
+the tile 14px, and with no card edge on a phone the grey footer melted into
+the grey page. The tile and its footer now share one padding (`--kpi-x`,
+16px), the tile clips its own corners, and on a phone a tile keeps its edge.
+The verdict's separating dot wrapped onto a line of its own: Better, Worse
+and Steady are now led by their status dot. On time draws its share as a
+bar, Oldest late names its task and client (the tile read half empty), and
+Work by stage says each stage's share of open work, never its number twice.
