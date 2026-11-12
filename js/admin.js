@@ -1760,7 +1760,7 @@
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
       { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
-      { at: '#ovwLead', text: 'The figures to read first, each with its change on the period before.' },
+      { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
       { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, with late items first. A tab above shows one kind. Press a row to open it.' }] },
     work: { name: 'My Work', steps: [
       { at: '#workViews', text: 'The same tasks as a list, a board, a calendar or by month.' },

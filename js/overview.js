@@ -661,7 +661,7 @@
         if (now == null) return { fig: '\u2014', sub: 'None due' };
         var d = before == null ? null : now - before;
         return { fig: now + '%',
-                 sub: d == null ? '' : !d ? 'Same as ' + prevWord(period) : (d > 0 ? '+' : '\u2212') + Math.abs(d) + ' pts on ' + prevWord(period),
+                 sub: d == null ? '' : !d ? 'Same as ' + prevWord(period) : (d > 0 ? '+' : '\u2212') + Math.abs(d) + (Math.abs(d) === 1 ? ' point on ' : ' points on ') + prevWord(period),
                  trend: d == null ? null : trendOf(now, before, 'up', 2) };
       });
     } },
