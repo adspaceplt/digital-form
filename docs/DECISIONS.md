@@ -9994,3 +9994,6 @@ disagrees with its tile. Each client opens its record (its Services from
 the value). The four tiles are a press opening Detail on their card, the
 card's title taking focus. No new read: both cards draw from the clients
 and lines the page already holds.
+
+### 2026-11-12 · The rail's hover shows on glass
+The user: "the hover is not obvious enough". The rail's hover was `--sunk` (#f9f9f9), the glass rail's own shade, so it drew nothing. On the floating desk rail a section and a foot mark now take `--tonal` on hover, the buttons' shade, one step short of the chosen row's raised white; the phone and the narrow drawer keep theirs.
