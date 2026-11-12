@@ -893,8 +893,8 @@
         'Its lines will become confirmed service lines' + (empty ? ', and Billing will be filled from the signed quotation.' : '. Billing will not change.'),
       /* Services start (2026-11-12, the user): the lines' first day, so the
          months they cover are read when a content month is made. */
-      fields: [{ name: 'start', label: 'Services start', type: 'date', required: false, value: nextFirst(),
-        note: 'Lines with their own start keep it.' }],
+      fields: [{ name: 'start', label: 'Start date', type: 'date', required: false, value: nextFirst(),
+        note: 'Service lines with their own start date keep it.' }],
       go: 'Approve' }, function (v) {
       var start = v && /^\d{4}-\d{2}-\d{2}$/.test(String(v.start || '')) ? v.start : '';
       go.disabled = true;
@@ -910,9 +910,9 @@
         if (!start) { done(); return; }
         ctx.db.rpc('quotation_lines_start', { p_id: q.id, p_start: start }).then(function (r2) {
           var e2 = r2.error || (r2.data && r2.data.error);
-          if (e2) line += ' The services start was not saved: ' + said(e2);
+          if (e2) line += ' The start date was not saved: ' + said(e2) + ' Set it on each service line.';
           done();
-        }).catch(function () { line += ' The services start was not saved.'; done(); });
+        }).catch(function () { line += ' The start date was not saved. Set it on each service line.'; done(); });
       }).catch(function (e) { go.disabled = false; sheetMsg('qsgReviewMsg', said(e), 'err'); });
     });
   }
@@ -1612,7 +1612,7 @@
         var own = MON.sstApplies(t.sst_pct) ? MON.sstCode(codes, t.sst_pct) : null;
         if (own) codes = codes.filter(function (c) { return c.code !== own.code || c.code === cur; });
         var tax = codes.length + (own ? 1 : 0) && l.kind !== 'custom' ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
-          '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : 'No SST') + '</option>' +
+          '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
         var freq = l.kind !== 'custom' && (l.basis === 'once' || l.was_once)

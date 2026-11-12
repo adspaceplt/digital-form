@@ -6797,9 +6797,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   percentage from `term_pct_if` where nothing else ran by the month). The
   client's SST reads as Bukku's code at its rate (`ADspaceMoney.sstCode`, an
   SV code first), never that code offered twice, on Build quote and a service
-  line alike. Approve asks Services start (`quotation_lines_start`: the
+  line alike. Approve asks Start date (`quotation_lines_start`: the
   quotation's confirmed lines with no start take it), and New month marks
-  the months no dated confirmed monthly line covers Not in services, saying
+  the months no dated confirmed monthly line covers No service line, saying
   under the field what covers the month chosen; it refuses none (older
   clients hold no lines yet).
 - A quotation is edited in place until the portal sends it out

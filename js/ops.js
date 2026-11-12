@@ -7526,7 +7526,7 @@
         if (!Object.keys(map).length) return;
         engCovered = map;
         Array.prototype.forEach.call($('engPeriod').options, function (o) {
-          if (!map[o.value]) { o.textContent = monthWord(o.value) + ' · Not in services'; o.className = 'is-off'; }
+          if (!map[o.value]) { o.textContent = monthWord(o.value) + ' · No service line'; o.className = 'is-off'; }
         });
         engCoverSay();
       }).catch(function () {});

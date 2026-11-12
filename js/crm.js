@@ -6073,7 +6073,7 @@
       var own = c.sst_applies === false ? null : MON.sstCode(list, MON.setting('sst_pct'));
       var shown = list.filter(function (t) { return (t.active || t.code === mine) && (!own || t.code !== own.code || t.code === mine); });
       if (mine && !shown.some(function (t) { return t.code === mine; })) shown.push({ code: mine, rate: '', name: '' });
-      sel.innerHTML = '<option value="">' + esc(c.sst_applies === false ? 'Client default · No SST' : 'Client default · ' + (own ? own.code + ' · ' + MON.setting('sst_pct') + '%' : MON.taxLabel())) + '</option>' +
+      sel.innerHTML = '<option value="">' + esc(c.sst_applies === false ? 'Client default · ' + MON.SST_NONE : 'Client default · ' + (own ? own.code + ' · ' + MON.setting('sst_pct') + '%' : MON.taxLabel())) + '</option>' +
         shown.map(function (t) {
           return '<option value="' + esc(t.code) + '">' + esc(t.rate === '' ? t.code : MON.taxCodeWord(t)) + (t.active === false ? ' (no longer offered)' : '') + '</option>';
         }).join('');
