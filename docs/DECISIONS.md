@@ -10007,3 +10007,6 @@ The user: "the hover is not obvious enough". The rail's hover was `--sunk` (#f9f
 
 ### 2026-11-12 · Client rows on the Dashboard's tables breathe
 The user: "take a look at spacings" (Committed monthly value by client). A client named over its Client ID is a two-line button, but it gave back a one-line control's room (`(1lh - ctl-h)/2` each side), so the ID stood on the rule under it. The two-line button now keeps its height inside the row, and the rows of Clients who moved and Committed monthly value by client pad 8px above and below.
+
+### 2026-11-12 · Dashboard table cards take their own height
+The user: "let each card take its own height". Cards side by side shared four rows (2026-10-12, so Figures started on one line), which stretched a short table, or an empty card, to its neighbour's height. A card holding a table (`.ovw-body`) now leaves the shared rows and stands at its own height at the top of its row; two chart cards side by side still share them, so their Figures stay on one line.
