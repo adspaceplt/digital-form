@@ -10094,3 +10094,18 @@ each row's white ground covered it at the sides and foot. The edge is now an
 outline offset one pixel inward, painted above what the card holds; a
 card's focus ring is restated after it.
 
+
+### 2026-11-12 — The day's gate after the v3 revamp
+The full gate on 664feaf found seven problems, six from today's layout.
+The filter pills drew their chevron in the mute ink beside soft words
+(uxaudit `glyphink`, 168 screens): the glyph now takes the pill's ink. The
+pills row made the command bar two rows, so a guide hung under New lead
+covered it: `ADspaceMenu.pop` lays a card marked `data-clear-bar` below the
+whole bar where its control sits in one (`guides` now measures the gap from
+the bar's foot). The white sheet narrowed the Performance quarter under its
+960px narrow line, so the table drew its phone layout at 1280: the line is
+880. The sheet, Content Review's client cards and Settings' group tiles
+took the round corner beside squircles (`corners`): all three joined the
+list. `work` counted the pills as outline buttons in My Work's bar, and
+`search` clicked "empty space" that now holds a client row; both suites
+were set right. `crm`'s logo preview is the logged intermittent failure.
