@@ -9891,3 +9891,13 @@ applies dark only through `data-theme="dark"`, which its head script sets
 for Auto. The query blocks were taken out, and DESIGN.md §3 now says a dark
 value hangs off the attribute alone. Missed because the screenshots were
 taken with the device and the console in the same theme.
+
+### 2026-11-12 · Menus read the page through them
+
+The user, from an iPhone: a client record's ⋯ showed the page's words
+through its items ("a serious readability issue"). The revamp had made
+menus, popovers, the finder, sheets and questions 78% white over a blur,
+and Safari's blur left the words beneath legible. Anything holding words
+over other words is solid `--raised` again, and the head, which the page
+scrolls under, keeps its 72% frosting; the rail and the cards, with only the
+wash behind them, stay glass.

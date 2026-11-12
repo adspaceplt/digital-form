@@ -4803,7 +4803,7 @@ body.hb-gate #tabBar { display: none; }
   --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, 0) 60%);
   --glass-bar: rgba(255, 255, 255, .34);
   --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .3), rgba(255, 255, 255, .02));
-  --glass-raised: rgba(255, 255, 255, .78);
+  --glass-raised: rgba(255, 255, 255, .86);
   --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .6);
   --glass-lift: 0 1px 2px rgba(19, 24, 26, .05), 0 10px 30px rgba(19, 24, 26, .08);
   --glass-blur: saturate(180%) blur(18px);
@@ -4838,7 +4838,9 @@ body.hb-gate #tabBar { display: none; }
   background: none; -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none;
 }
 /* The head: clearer glass, its rule a highlight rather than a line. */
-.console-head { background-color: var(--glass-bar); background-image: var(--glass-bar-sheen); border-bottom-color: transparent;
+/* The page scrolls under the head, so it keeps the head's own frosting
+   (`--chrome`, 72%): words under words never read through it. */
+.console-head { background-color: var(--chrome); background-image: var(--glass-bar-sheen); border-bottom-color: transparent;
   box-shadow: inset 0 -1px 0 var(--glass-edge); }
 /* The rail at a desk: a pane of glass floating on the wash. */
 @media (min-width: 861px) {
@@ -4851,11 +4853,9 @@ body.hb-gate #tabBar { display: none; }
   @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: calc(100dvh - 24px); } }
   :root:not(.has-tabbar) .navitem.is-on { background: var(--glass-raised); box-shadow: var(--glass-rim); }
 }
-/* What floats over the page: a menu, a popover, a sheet's card. */
-:is(.kmenu, .popcard, .picker, .sheet-card, .askcard) {
-  background-color: var(--glass-raised);
-  -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-}
+/* What floats over the page (a menu, a popover, the finder, a sheet, a
+   question) stays solid `--raised`: words read over words never hold
+   (2026-11-12: the record's ⋯ showed the page's words through it). */
 
 /* Section marks (the user, 2026-11-12, palette B): a section's glyph in
    its colour on a soft tint of that colour, the Work sections each a hue
