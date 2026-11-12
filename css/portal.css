@@ -595,7 +595,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
    (`--field-edge`, --line-ctl, 3:1 on --sunk in both themes; the user,
    2026-10-31, option A). Every grey card that holds a field is named here,
    one list. */
-:where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .is-narrow .ck-tr:not(.ck-th)) {
+:where(.qs-side, .kstep, .postgroup, .zone-draft, .saved.is-editing, .paircard, .sca-row, .rcw-pt.is-cols, .rp-aidraft, .qb-cus, .is-narrow .ck-tr:not(.ck-th)) {
   --field: var(--card); --select-ground: var(--card); --field-edge: var(--line-ctl);
 }
 /* A field the browser filled keeps our ground. Safari paints an autofilled

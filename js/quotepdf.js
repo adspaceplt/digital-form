@@ -53,6 +53,14 @@
     var v = Number(n || 0), s = window.ADspaceMoney.money2(Math.abs(v), 'MY').replace(/^RM /, cur(q));
     return v < 0 ? '(' + s + ')' : s;
   }
+  /* The day before the same day n months on (a period's last day). */
+  function endOf(day, n) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(day || ''));
+    if (!m) return '';
+    var last = new Date(Date.UTC(+m[1], +m[2] - 1 + n + 1, 0)).getUTCDate();
+    var d = +m[3] > last ? new Date(Date.UTC(+m[1], +m[2] - 1 + n, last)) : new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1));
+    return d.toISOString().slice(0, 10);
+  }
   function fileName(q) { return 'ADspace Quotation ' + String(q.ref || '').replace(/\//g, '-') + '.pdf'; }
 
   /* opts: attention (the contact named), attentionRole, to { name, address }
@@ -89,6 +97,10 @@
   function layout(pdf, PDF, fonts, logo, q, opts) {
     var docs = D();
     var to = opts.to || {}, cover = opts.cover || COVER, prep = opts.preparedBy || {};
+    /* Bill to (2026-11-12): the billing entity the quotation names, as it
+       printed it, in place of the client's own. */
+    var bt = (q.totals || {}).bill_to;
+    if (bt && bt.legal_name) to = { name: bt.legal_name, address: bt.billing_address || '' };
     var person = String(opts.attention || '').trim();
 
     // Page 1: the Quotation Cover, the letter engine's own page.
@@ -184,6 +196,12 @@
          words hung under its first (the user, 2026-11-04: one run of
          points read as one lump). */
       var IND = 9, sub = [];
+      /* A line's period where it has a start (2026-11-12). */
+      if (quiet && l.start) {
+        var pr = l.basis === 'month' && Number(l.months) > 1
+          ? longDay(l.start) + ' to ' + longDay(endOf(l.start, Number(l.months))) : 'From ' + longDay(l.start);
+        wrap(pr, wD, SM, book).forEach(function (s0) { sub.push({ s: s0, dot: false }); });
+      }
       (l.detail || []).forEach(function (d) {
         d = String(d == null ? '' : d).replace(/^\s*[-•·]\s*/, '').trim();
         if (!d) return;
@@ -305,6 +323,9 @@
       } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
         notes2.push('The advertising budget is not included in the service fee and is billed separately.');
       }
+      /* Files and further filming (2026-11-12, the user): never part of a
+         fee unless a line of the quotation names them. */
+      notes2.push('Additional footage, working files and raw files are billed separately unless stated in this quotation.');
       if ((t.on_request || []).length) {
         notes2.push('The following are quoted on request: ' + t.on_request.map(function (x) {
           return x === 'budget' ? 'an advertising budget above the highest tier on our Rate Card' : x;
@@ -315,6 +336,7 @@
         notes2.push((own ? 'Over the months stated for each line' : 'Over the minimum term of ' + both(t.term) + ' months') +
           ', the service fee totals ' + amt(fee, q) + (sstOn ? ' inclusive of SST' : '') + '.');
       }
+      (Array.isArray(t.terms) ? t.terms : []).forEach(function (x) { if (String(x).trim()) notes2.push(String(x).trim()); });
       notes2.push('This quotation becomes binding once accepted and signed on its acceptance page. Together with the ADspace ' +
         'Service Terms at go.adspace.me/svc-terms, it forms the contract between the parties.');
       notes2.push('Rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');

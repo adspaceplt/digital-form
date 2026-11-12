@@ -33,6 +33,10 @@
     'bad-date': window.ADspaceWords.line.docDate,
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 60.',
     'bad-pay': 'Choose the payment terms.',
+    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 60.',
+    'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
+    'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
+    'bad-terms': window.ADspaceWords.line.terms,
     expired: 'This quotation has expired. Duplicate it to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
@@ -1064,6 +1068,7 @@
        month, and it is priced and valid from it. */
     $('qbDate').value = window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
     adsLoad(sel);
+    advLoad(sel);
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
     CUR = FX == null ? 'RM' : 'S$';
     if (FX === 0) { ctx.msg('qtMsg', SAID['no-fx'], 'err'); B = null; return; }
@@ -1327,6 +1332,123 @@
     if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 60); })) return 'Enter the months, from 1 to 60.';
     return '';
   }
+  /* Advanced (2026-11-12, the user: the quotation takes over what only the
+     Letter of Offer did): custom lines, renewals of the client's confirmed
+     lines, Bill to and the quotation's own terms. */
+  function cusRow(r) {
+    r = r || {};
+    var once = r.basis === 'once';
+    return '<div class="qb-cus" data-cus' + (r.renews ? ' data-renews="' + esc(r.renews) + '"' : '') + '>' +
+      '<div class="qb-cusrow">' +
+      '<input class="input qb-cusname" type="text" data-noenter data-nodraft aria-label="Line" placeholder="Line" maxlength="120" value="' + esc(r.label || '') + '">' +
+      '<input class="input qb-cusqty" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Quantity" placeholder="Qty" value="' + esc(String(r.qty || 1)) + '">' +
+      '<input class="input qb-cusrate" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Rate (' + CUR + ')" placeholder="Rate (' + CUR + ')" value="' + esc(r.rate != null && r.rate !== '' ? rm(r.rate) : '') + '">' +
+      '<select class="select qb-cusfreq" data-nofind aria-label="Frequency"><option value="month"' + (once ? '' : ' selected') + '>Monthly</option><option value="once"' + (once ? ' selected' : '') + '>One-off</option></select>' +
+      '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months" placeholder="Months" value="' + esc(once ? '' : String(r.months || '')) + '"' + (once ? ' disabled' : '') + '>' +
+      '<input class="input qb-cusstart" type="date" aria-label="Start date" value="' + esc(r.start || '') + '">' +
+      '<button class="iconbtn qb-cusx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>' +
+      '<textarea class="textarea qb-cusdesc" rows="2" data-nodraft aria-label="Description" placeholder="Description, one point per line">' + esc((r.detail || []).join('\n')) + '</textarea>' +
+      (r.renews ? '<span class="qb-cusnote">Renews the confirmed line</span>' : '') + '</div>';
+  }
+  function cusRead() {
+    return Array.prototype.map.call(document.querySelectorAll('#qbCusRows [data-cus]'), function (box) {
+      var basis = box.querySelector('.qb-cusfreq').value;
+      var o = { label: box.querySelector('.qb-cusname').value.trim(), qty: Math.max(0, Math.floor(Number(box.querySelector('.qb-cusqty').value) || 0)),
+        rate: adNum(box.querySelector('.qb-cusrate').value), basis: basis,
+        detail: box.querySelector('.qb-cusdesc').value.split(/\r?\n/).map(function (x) { return x.replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean) };
+      if (basis === 'month') o.months = Math.max(0, Math.floor(Number(box.querySelector('.qb-cusmo').value) || 0));
+      var st = box.querySelector('.qb-cusstart').value;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(st)) o.start = st;
+      if (box.getAttribute('data-renews')) o.renews = box.getAttribute('data-renews');
+      return o;
+    });
+  }
+  function cusWrong() {
+    if ($('qbAdv').getAttribute('aria-checked') !== 'true') return '';
+    var rows = cusRead();
+    if (rows.some(function (r) { return !r.label; })) return 'Enter each custom line\'s name.';
+    if (rows.some(function (r) { return !(r.qty >= 1); })) return 'Enter each custom line\'s quantity.';
+    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 60); })) return 'Enter each custom line\'s months, from 1 to 60.';
+    if ($('qbTerms').value.split(/\r?\n/).filter(function (x) { return x.trim(); }).length > 10) return window.ADspaceWords.line.terms;
+    return '';
+  }
+  function advOn(on) {
+    $('qbAdv').setAttribute('aria-checked', on ? 'true' : 'false');
+    $('qbAdvBox').hidden = !on;
+    if (on) billTo();
+  }
+  function advLoad(sel) {
+    var on = Boolean((sel.custom || []).length || sel.entity || (sel.terms || []).length);
+    $('qbCusRows').innerHTML = (sel.custom || []).map(cusRow).join('');
+    $('qbTerms').value = (sel.terms || []).join('\n');
+    $('qbRenewBox').hidden = true; $('qbRenewBox').innerHTML = '';
+    B.entity = sel.entity || '';
+    advOn(on);
+  }
+  /* Bill to: the client's billing entities, the primary first, drawn
+     where there are two or more. */
+  function billTo() {
+    var c = B && B.ctx.client;
+    if (!c) return;
+    var paint = function (L) {
+      if (!B) return;
+      $('qbBillBox').hidden = L.length < 2;
+      if (L.length < 2) return;
+      L = L.slice().sort(function (a, b) { return (b.main ? 1 : 0) - (a.main ? 1 : 0); });
+      $('qbBillTo').innerHTML = L.map(function (x) {
+        return '<option value="' + esc(x.main ? '' : x.id) + '">' + esc((x.legal_name || 'Billing entity') + (x.main ? ' · Primary' : '')) + '</option>';
+      }).join('');
+      $('qbBillTo').value = B.entity && L.some(function (x) { return x.id === B.entity && !x.main; }) ? B.entity : '';
+    };
+    if (B.entities) { paint(B.entities); return; }
+    B.ctx.db.rpc('client_entities_list', { p_client: c.id }).then(function (r) {
+      var d = r.data || {};
+      if (!B) return;
+      B.entities = !r.error && !d.error ? (d.entities || []) : [];
+      paint(B.entities);
+    }).catch(function () { if (B) paint([]); });
+  }
+  /* Renew lines: the client's confirmed lines, ticked into custom lines
+     that confirm the same line for its new term on approval. */
+  function addMonths(day, n) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(day || ''));
+    if (!m || !n) return '';
+    var d = new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3]));
+    return d.toISOString().slice(0, 10);
+  }
+  function renewOpen() {
+    var box = $('qbRenewBox'), c = B && B.ctx.client;
+    if (!c) return;
+    box.hidden = false;
+    box.innerHTML = '<p class="qb-cusnote">Loading…</p>';
+    B.ctx.db.from('client_services').select('id, label, qty, rate, tenure, start_on, detail, term_adjust, state, archived_at')
+      .eq('client_id', c.id).eq('state', 'confirmed').is('archived_at', null).order('created_at')
+      .then(function (r) {
+        if (!B) return;
+        if (r.error) { box.innerHTML = '<p class="msg err">' + esc(said(r.error)) + '</p>'; return; }
+        var taken = Array.prototype.map.call(document.querySelectorAll('#qbCusRows [data-renews]'), function (x) { return x.getAttribute('data-renews'); });
+        var L = (r.data || []).filter(function (l) { return taken.indexOf(l.id) < 0; });
+        B.renewable = L;
+        if (!L.length) { box.innerHTML = '<p class="qb-cusnote">No confirmed lines to renew.</p><div class="qb-renew-foot"><button class="btn btn-quiet btn-sm" type="button" data-a="shut">Close</button></div>'; return; }
+        box.innerHTML = L.map(function (l) {
+          return '<label class="tickline"><input type="checkbox" value="' + esc(l.id) + '"> <span>' + esc(l.label) + ' <small class="qb-cusnote">' +
+            esc(Number(l.qty) + ' × ' + CUR + ' ' + rm(l.rate) + (Number(l.tenure) > 1 ? ' · ' + l.tenure + ' months' : '')) + '</small></span></label>';
+        }).join('') + '<div class="qb-renew-foot"><button class="btn btn-quiet btn-sm" type="button" data-a="shut">Cancel</button>' +
+          '<button class="btn btn-primary btn-sm" type="button" data-a="renew">Add</button></div>';
+      }).catch(function (e) { if (B) box.innerHTML = '<p class="msg err">' + esc(said(e)) + '</p>'; });
+  }
+  function renewTake() {
+    var ids = Array.prototype.map.call(document.querySelectorAll('#qbRenewBox input:checked'), function (i) { return i.value; });
+    var term = Number($('qbTerm').value) || 6;
+    (B.renewable || []).filter(function (l) { return ids.indexOf(l.id) > -1; }).forEach(function (l) {
+      var month = l.term_adjust === true || Number(l.tenure) > 1;
+      $('qbCusRows').insertAdjacentHTML('beforeend', cusRow({ label: l.label, qty: l.qty, rate: l.rate, basis: month ? 'month' : 'once',
+        months: month ? term : null, start: addMonths(l.start_on, Number(l.tenure) || 0), renews: l.id,
+        detail: String(l.detail || '').split(/\r?\n/).filter(function (x) { return x.trim(); }) }));
+    });
+    $('qbRenewBox').hidden = true; $('qbRenewBox').innerHTML = '';
+    $('qbRenew').focus();
+  }
   /* What quote_extras keeps with the quotation, worked here for its
      preview: the same rows, amounts and payment terms. */
   function extras(sel) {
@@ -1334,8 +1456,11 @@
       var n = r.freq === 'once' ? null : r.months;
       return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: Math.round(r.budget * (n || 1) * 100) / 100 };
     });
-    return { layout: 2, pay_days: sel.pay || 7, ads: rows,
+    var out = { layout: 2, pay_days: sel.pay || 7, ads: rows, terms: sel.terms || [],
       ads_total: Math.round(rows.reduce(function (a, r) { return a + r.amount; }, 0) * 100) / 100 };
+    var ent = sel.entity && (B.entities || []).filter(function (x) { return x.id === sel.entity; })[0];
+    if (ent) out.bill_to = { entity_id: ent.id, legal_name: ent.legal_name, company_no: ent.company_no, billing_address: ent.billing_address };
+    return out;
   }
   function qbDay() {
     var v = $('qbDate') ? $('qbDate').value : '';
@@ -1361,6 +1486,13 @@
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     sel.pay = Number($('qbPay').value) || 7;
     if ($('qbAdOn').checked) sel.ads = adsRead();
+    if ($('qbAdv').getAttribute('aria-checked') === 'true') {
+      var cus = cusRead();
+      if (cus.length) sel.custom = cus;
+      if (!$('qbBillBox').hidden && $('qbBillTo').value) sel.entity = $('qbBillTo').value;
+      var terms = $('qbTerms').value.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+      if (terms.length) sel.terms = terms;
+    }
     return sel;
   }
   /* The rates beside the extras and the translation come from the same
@@ -1443,11 +1575,13 @@
            Months (2026-10-31). */
         var codes = (B && B.codes || []).filter(function (c) { return c.active; });
         var cur = (B && B.edits[l.key] && B.edits[l.key].tax) || l.tax_code || '';
-        var tax = codes.length ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
+        var tax = codes.length && l.kind !== 'custom' ? '<select class="select select-sm qb-tax" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Tax, ' + l.label) + '">' +
           '<option value="">' + esc(MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : 'No SST') + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
         var box = function (what, v, cls, mode, label) {
+          /* A custom line is changed in Advanced, where it is typed. */
+          if (l.kind === 'custom') return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
           return '<input class="input input-sm qb-val ' + cls + '" type="text" inputmode="' + mode + '" data-noenter data-nodraft data-key="' +
             esc(l.key || '') + '" data-what="' + what + '" value="' + esc(v) + '" aria-label="' + esc(label + ', ' + l.label) + '">';
         };
@@ -1555,6 +1689,39 @@
       adsPaint(); on();
     });
     $('qbAdRows').addEventListener('input', function () { adsPaint(); on(); });
+    $('qbAdv').addEventListener('click', function () { if (!B) return; advOn(this.getAttribute('aria-checked') !== 'true'); on(); });
+    $('qbCusAdd').addEventListener('click', function () {
+      $('qbCusRows').insertAdjacentHTML('beforeend', cusRow({ basis: 'month', months: Number($('qbTerm').value) || 6 }));
+      var rows = $('qbCusRows').querySelectorAll('[data-cus]');
+      rows[rows.length - 1].querySelector('.qb-cusname').focus();
+      on();
+    });
+    $('qbRenew').addEventListener('click', function () { if (B) renewOpen(); });
+    $('qbRenewBox').addEventListener('click', function (e) {
+      var a = e.target.closest('[data-a]');
+      if (!a) return;
+      if (a.getAttribute('data-a') === 'renew') { renewTake(); on(); }
+      else { $('qbRenewBox').hidden = true; $('qbRenewBox').innerHTML = ''; $('qbRenew').focus(); }
+    });
+    $('qbCusRows').addEventListener('click', function (e) {
+      var x = e.target.closest('.qb-cusx');
+      if (!x) return;
+      x.closest('[data-cus]').remove();
+      $('qbCusAdd').focus();
+      on();
+    });
+    $('qbCusRows').addEventListener('input', function () { on(); });
+    $('qbCusRows').addEventListener('change', function (e) {
+      if (e.target.tagName !== 'SELECT' && e.target.type !== 'date') return;
+      if (e.target.classList.contains('qb-cusfreq')) {
+        var mo = e.target.closest('[data-cus]').querySelector('.qb-cusmo'), once = e.target.value === 'once';
+        mo.disabled = once;
+        mo.value = once ? '' : (mo.value || String(Number($('qbTerm').value) || 6));
+      }
+      on();
+    });
+    $('qbBillTo').addEventListener('change', function () { if (B) B.entity = this.value; on(); });
+    $('qbTerms').addEventListener('input', function () { on(); });
     /* A select changes once; a typed figure has already repriced on
        input, so leaving it (a press on Create) does not reprice again. */
     $('qbAdRows').addEventListener('change', function (e) { if (e.target.tagName === 'SELECT') { adsPaint(); on(); } });
@@ -1649,10 +1816,11 @@
     $('qbSave').addEventListener('click', function () {
       if (!B || !B.priced) return;
       var go = this;
-      var wrong = adsWrong();
+      var wrong = adsWrong() || cusWrong();
       if (wrong) {
         $('qbMsg').textContent = wrong; $('qbMsg').className = 'msg err';
-        var miss = Array.prototype.filter.call(document.querySelectorAll('#qbAdRows input:not([disabled])'), function (i) { return !Number(String(i.value).replace(/[^0-9.]/g, '')); })[0];
+        var miss = Array.prototype.filter.call(document.querySelectorAll('#qbAdRows input:not([disabled])'), function (i) { return !Number(String(i.value).replace(/[^0-9.]/g, '')); })[0] ||
+          Array.prototype.filter.call(document.querySelectorAll('#qbCusRows .qb-cusname, #qbCusRows .qb-cusqty, #qbCusRows .qb-cusmo:not([disabled])'), function (i) { return !String(i.value).trim() || (!i.classList.contains('qb-cusname') && !Number(i.value)); })[0];
         if (miss) miss.focus();
         return;
       }
