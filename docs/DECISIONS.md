@@ -9852,3 +9852,8 @@ press, so a typed figure reprices on input alone; a selection of custom lines
 alone was refused `empty` by quote_price before they were added
 (`quote_base`). Letters issued before stay as they are.
 
+
+- 2026-11-12, the quotation PDF's TERMS no longer say ADspace does not
+  charge SST on the advertising budget (the user: "No need say this in
+  quotation pdf"); the line that the budget is paid to the platforms in
+  advance and includes their own SST and withholding tax stays.
