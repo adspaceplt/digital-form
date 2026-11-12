@@ -10087,3 +10087,10 @@ mark and its card stay for the views (Group by, Sort) and as the one place
 Clear lives. On a phone the row keeps only the filters set, as before:
 pills for every filter would take a phone's first screen.
 
+### 2026-11-12 · v3: a card's edge is an outline
+The user sent Clients with its tables' edges missing ("border missing"):
+the edge was an inset shadow, which is painted under a card's children, and
+each row's white ground covered it at the sides and foot. The edge is now an
+outline offset one pixel inward, painted above what the card holds; a
+card's focus ring is restated after it.
+
