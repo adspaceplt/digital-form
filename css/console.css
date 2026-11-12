@@ -2555,7 +2555,12 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 /* An empty card's line stands in the middle of the rows a chart would take
    (2026-10-20, OVW-2). */
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-empty { grid-row: 2 / -1; align-self: center; justify-self: center; text-align: center; padding: 24px 0; }
-.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .ovw-body { grid-row: 2 / -1; }
+/* A card that holds a table, not a chart, takes its own height (the user,
+   2026-11-12: "let each card take its own height"): it leaves the shared
+   rows, so a short table never stands in an empty card beside a tall one. */
+.console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard:has(> .ovw-body) {
+  display: block; grid-row: span 4; align-self: start;
+}
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-key { grid-row: 3; align-self: start; }
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > .chart-data { grid-row: 4; margin-top: 12px; align-self: start; }
 .console-body:not(.is-narrow) .ovw-grid:has(> .chartcard + .chartcard) > .chartcard > :has(+ .chart-data) { margin-bottom: 0; }
