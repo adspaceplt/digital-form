@@ -288,7 +288,7 @@
         agreed.push(['Advertising budget for the term', amt(t.ads_total, q)]);
         y -= 20;
       }
-      agreed.push(['Payment terms', (Number(t.pay_days) || 7) + ' days from invoice date' + (Number(t.pay_days) >= 30 ? ', subject to approval' : '')]);
+      agreed.push(['Payment terms', 'Within ' + (Number(t.pay_days) || 7) + ' days of the invoice date' + (Number(t.pay_days) >= 30 ? ', subject to ADspace\'s approval' : '')]);
 
       // TERMS.
       var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
@@ -300,8 +300,8 @@
       if (bill.length) notes2.push(bill.join(' '));
       if (ads.length) {
         notes2.push('The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable in advance, ' +
-          'before the service commences. It is inclusive of any Service Tax and withholding tax applicable to the advertising ' +
-          'platforms. ADspace does not charge SST on the advertising budget.');
+          'before the service commences. It includes any SST and withholding tax the advertising platforms apply. ' +
+          'ADspace does not charge SST on the advertising budget.');
       } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
         notes2.push('The advertising budget is not included in the service fee and is billed separately.');
       }

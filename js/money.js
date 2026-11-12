@@ -381,7 +381,7 @@
   function payLine(days) {
     var d = Number(days) || 7;
     return 'Payment is due within ' + d + ' days of the invoice date' +
-      (d >= 30 ? ', subject to ADspace\'s approval. Until approval is confirmed, payment is due within 7 days of the invoice date.' : '.');
+      (d >= 30 ? ', subject to ADspace\'s approval; until then, within 7 days of the invoice date.' : '.');
   }
 
   window.ADspaceMoney = {
