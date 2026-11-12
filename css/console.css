@@ -4824,23 +4824,6 @@ body.hb-gate #tabBar { display: none; }
   --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
   --glass-edge: rgba(255, 255, 255, .06);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --wash:
-      radial-gradient(42vw 38vw at 4% 12%, #1c2436 0%, transparent 72%),
-      radial-gradient(38vw 34vw at 12% 92%, #162720 0%, transparent 72%),
-      radial-gradient(50vw 26vw at 70% 0%, #221d33 0%, transparent 72%),
-      radial-gradient(48vw 34vw at 48% 100%, #18261f 0%, transparent 70%);
-    --glass-card: rgba(36, 36, 36, .72);
-    --glass-card-sheen: linear-gradient(160deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, 0) 60%);
-    --glass-bar: rgba(30, 30, 30, .55);
-    --glass-bar-sheen: linear-gradient(160deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, 0));
-    --glass-raised: rgba(40, 40, 40, .86);
-    --glass-rim: inset 0 1px 0 rgba(255, 255, 255, .07), inset 0 0 0 1px rgba(255, 255, 255, .04);
-    --glass-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
-    --glass-edge: rgba(255, 255, 255, .06);
-  }
-}
 .console { background: var(--wash), var(--page); background-attachment: fixed; }
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
   --card: transparent;
@@ -4901,19 +4884,6 @@ body.hb-gate #tabBar { display: none; }
   --sec-reports: #7fd0a2; --sec-reports-bg: #173023;
   --sec-messages: #7cc4ef; --sec-messages-bg: #132c3c;
   --sec-int: #c2bdb6; --sec-int-bg: #2e2c2a;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --sec-home: #d6d1cb; --sec-home-bg: #2e2c2a;
-    --sec-work: #8ab0f5; --sec-work-bg: #1d2a44;
-    --sec-clients: #5fcdbc; --sec-clients-bg: #14302c;
-    --sec-review: #b9a0f0; --sec-review-bg: #2a2142;
-    --sec-scripts: #f0a77e; --sec-scripts-bg: #3a2418;
-    --sec-campaigns: #f09ac0; --sec-campaigns-bg: #3a1d2a;
-    --sec-reports: #7fd0a2; --sec-reports-bg: #173023;
-    --sec-messages: #7cc4ef; --sec-messages-bg: #132c3c;
-    --sec-int: #c2bdb6; --sec-int-bg: #2e2c2a;
-  }
 }
 svg.sec-home { --sec: var(--sec-home); --sec-bg: var(--sec-home-bg); }
 svg.sec-work { --sec: var(--sec-work); --sec-bg: var(--sec-work-bg); }
