@@ -4930,8 +4930,8 @@ svg.sec {
 .ovw-kpi.has-mark .ovw-kpi-label { padding-right: 34px; }
 .ovw-kpi-mark { position: absolute; top: 14px; right: 14px; display: flex; }
 .ovw-kpi-mark svg.sec { width: 15px; height: 15px; padding: 5.5px; }
-.ovw-kpi .ovw-kpi-fig { font-size: 32px; line-height: 40px; letter-spacing: -.03em; font-weight: 500; }
-.ovw-kpi .ovw-kpi-fig.is-money { font-size: 24px; }
+.ovw-kpi .ovw-kpi-fig { font-size: 24px; line-height: 30px; letter-spacing: -.02em; font-weight: 500; }
+.ovw-kpi .ovw-kpi-fig.is-money { font-size: 20px; }
 .ovw-kpi-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
 .ovw-kpi-arrow { width: 20px; height: 20px; border-radius: 50%; display: inline-grid; place-items: center; font-style: normal;
   font-size: 12px; font-weight: 600; background: var(--tonal); color: var(--ink-soft); flex: 0 0 auto; }
@@ -5193,7 +5193,7 @@ svg.sec {
 .crm-tiles { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
 .is-narrow .crm-tiles { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .crm-tile { margin: 0; }
-.crm-tile .ovw-kpi-fig { font-size: 28px; line-height: 36px; }
+.crm-tile .ovw-kpi-fig { font-size: 24px; line-height: 30px; }
 .crm-tile .ovw-kpi-sub { font-size: 12.5px; color: var(--ink-mute); }
 .crm-tile-foot { margin: 8px -20px 0; padding: 8px 20px; background: var(--sunk); border-top: 1px solid var(--line-soft);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg); font-size: 12.5px; color: var(--ink-soft); }
