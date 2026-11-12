@@ -10719,6 +10719,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           .reduce(function (m, r) { return Math.max(m, Number(r.slice(head.length))); }, 0) + 1;
         return head + (n < 10 ? '0' : '') + n;
       };
+
+      var qtTermPct = function (set, term) {
+        return Number((term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
+          : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
+      };
       var qtPrice = function (snap, sel, rates) {
         var svc = (snap.services || []).filter(function (x) { return x.active !== false; });
 
@@ -10863,7 +10868,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var sub = 0, once = 0, month = false;
         lines.forEach(function (l) { l.amount = r2(l.qty * l.rate); if (l.basis === 'month') { sub += l.amount; month = true; } else once += l.amount; });
         if (month && term === 1) return { error: 'bad-term' };
-        var pct = !month ? 0 : term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23 : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24;
+        var pct = !month ? 0 : qtTermPct(set, term);
         pct = Number(pct || 0);
         var sst = Number(set.sst_pct || 0), off = r2(sub * pct / 100), excl = r2(sub + off);
 
@@ -10904,17 +10909,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var bset = (qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {}, bterm = /^\d{1,2}$/.test(String(sel.term)) ? Number(sel.term) : 6;
           var bmon = sel.custom.some(function (x) { return x && x.basis === 'month'; });
           if (bmon && bterm === 1) return { error: 'bad-term' };
-          var bpct = !bmon ? 0 : bterm <= 3 ? bset.term_1_3 : bterm <= 5 ? bset.term_4_5 : bterm <= 11 ? bset.term_6_11 : bterm <= 17 ? bset.term_12_23 : bterm <= 23 ? (bset.term_18_23 != null ? bset.term_18_23 : bset.term_12_23) : bset.term_24;
+          var bpct = !bmon ? 0 : qtTermPct(bset, bterm);
           pr = { lines: [], on_request: [], extra_rates: {}, totals: { term: bterm, term_pct: Number(bpct || 0), sst_pct: Number(bset.sst_pct || 0), budget: 0 } };
         }
         if (!pr || pr.error || !Array.isArray(pr.lines)) return pr;
-        var any = false, lines = [];
-        if (sel.starts != null && (typeof sel.starts !== 'object' || Array.isArray(sel.starts))) return { error: 'bad-custom' };
-        for (var i0 = 0; i0 < pr.lines.length; i0++) {
-          var l0 = Object.assign({}, pr.lines[i0]), st = sel.starts && sel.starts[l0.key];
-          if (st) { if (!qtDay(st)) return { error: 'bad-custom', line: l0.label }; l0.start = st; any = true; }
-          lines.push(l0);
-        }
+        var any = false, lines = pr.lines.map(function (l0) { return Object.assign({}, l0); });
         if (sel.custom != null) {
           if (!Array.isArray(sel.custom) || sel.custom.length > 30) return { error: 'bad-custom' };
           for (var i = 0; i < sel.custom.length; i++) {
@@ -10924,7 +10923,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 r.detail.some(function (d) { return typeof d !== 'string' || d.length > 300; }))) ||
                 (r.renews && !/^[0-9a-f-]{36}$/.test(String(r.renews)) && !/^cs/.test(String(r.renews)))) return { error: 'bad-custom', line: lab || String(i + 1) };
             var mo = 1;
-            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
+            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
             if (r.start && !qtDay(r.start)) return { error: 'bad-custom', line: lab };
             var cl = { kind: 'custom', key: 'custom|' + (i + 1) + '|' + lab, label: lab, detail: r.detail || [], qty: Number(r.qty), rate: Number(r.rate),
               basis: r.basis, months: mo, amount: qtR2(Number(r.qty) * Number(r.rate)) };
@@ -11469,7 +11468,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 !/^\d{1,9}(\.\d{1,2})?$/.test(String(r.budget)) || !(Number(r.budget) > 0)) return { error: 'bad-ads' };
             var mo = null;
             if (r.freq === 'monthly') {
-              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 60) return { error: 'bad-ads' };
+              if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-ads' };
               mo = Number(r.months);
             }
             var am = Math.round(Number(r.budget) * (mo || 1) * 100) / 100;

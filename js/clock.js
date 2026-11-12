@@ -16,6 +16,9 @@
  *   ADspaceClock.at(day, hhmm)  the moment of a Malaysian day and time
  *   ADspaceClock.time(v)        'HH:MM', the Malaysian time of a moment
  *   ADspaceClock.addDays(day, n), addMonths(month or day, n) -> 'YYYY-MM'
+ *   ADspaceClock.periodEnd(day, n) the last day of n months from day: the
+ *                               day before the same day n months on, else
+ *                               that month's last day (a start on the 31st)
  *   ADspaceClock.between(a, b)  whole days from day a to day b
  *   ADspaceClock.date(v, o)     12 Sept 2026; o.long (12 September 2026),
  *                               o.year false (12 Sept), o.weekday (Sat, 12
@@ -84,6 +87,17 @@
   function time(v) { var p = parts(v); return p ? pad(p.h) + ':' + pad(p.mi) : ''; }
   function addDays(d, n) { var k = split(d); return k ? dayOf(k.y, k.mo, k.d + (Number(n) || 0)) : ''; }
   function addMonths(d, n) { var k = split(d); return k ? dayOf(k.y, k.mo + (Number(n) || 0), 1).slice(0, 7) : ''; }
+  /* The day before the same day n months on; where that month is too short
+     for the day, its last day, never a day rolled into the month after (the
+     audit of 2026-10-26, finding 8). One copy for a letter's, a quotation's
+     and a renewal's period (2026-11-12). */
+  function periodEnd(d, n) {
+    var k = split(d);
+    if (!k || !String(d).match(/^\d{4}-\d{2}-\d{2}/)) return '';
+    n = Number(n) || 0;
+    var last = new Date(Date.UTC(k.y, k.mo + n + 1, 0)).getUTCDate();
+    return k.d > last ? dayOf(k.y, k.mo + n, last) : dayOf(k.y, k.mo + n, k.d - 1);
+  }
   function between(a, b) {
     var x = split(a), y = split(b);
     if (!x || !y) return null;
@@ -120,7 +134,7 @@
 
   window.ADspaceClock = {
     OFFSET: OFF, moment: moment, parts: parts, day: day, today: today, start: start,
-    at: at, time: time, addDays: addDays, addMonths: addMonths, between: between, weekday: weekday,
+    at: at, time: time, addDays: addDays, addMonths: addMonths, periodEnd: periodEnd, between: between, weekday: weekday,
     date: date, clock: clock, month: month, MON: MON, LONG: LONG
   };
 })();

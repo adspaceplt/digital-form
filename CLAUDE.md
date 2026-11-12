@@ -6797,7 +6797,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   number in its Months bills it monthly, empty or 0 keeps it one-off, as a
   custom line's and an advertising row's Months read alike, no Frequency
   selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, the term's
-  percentage from `term_pct_if` where nothing else ran by the month). The
+  percentage from `term_pct_if` where nothing else ran by the month). Every
+  Months runs 1 to 36; a term's percentage is `quote_term_pct`'s alone; a
+  renewal starts the day after its line's period ends and every period's
+  last day is `ADspaceClock.periodEnd`. On /quote/ a sectioned quotation
+  keeps the monthly and one-off totals apart, lists the advertising budget a
+  row a platform with its total, says its payment terms and own terms under
+  it, and the signing page agrees every bold total; a Bill to quotation's
+  signing opens on that company. The
   client's SST reads as Bukku's code at its rate (`ADspaceMoney.sstCode`, an
   SV code first), never that code offered twice, on Build quote and a service
   line alike. Approve asks Start date (`quotation_lines_start`: the
