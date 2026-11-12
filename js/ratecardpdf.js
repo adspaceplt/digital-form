@@ -40,11 +40,7 @@
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
-        pdf.setTitle('ADspace Rate Card & Packages ' + tagOf(card));
-        pdf.setAuthor('ADspace');
-        pdf.setSubject('Rate Card & Packages');
-        pdf.setCreator('ADspace Digital Portal');
-        pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, 'ADspace Rate Card ' + tagOf(card), 'Rate Card & Packages');
         return docs.embedFonts(pdf, PDF);
       }).then(function (fonts) {
         layout(pdf, PDF, fonts, card);

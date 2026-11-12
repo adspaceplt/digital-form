@@ -2655,6 +2655,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   from it (the Letter of Offer's validity line moving with the Date while
   untouched). A quotation edited onto another month takes that month's
   reference, the one it held kept in `quotation_refs_kept`.
+- Every PDF's properties are `ADspaceDocs.meta(pdf, title, subject)`: the
+  title the name it is saved under (a reference keeping its slashes), author
+  ADSPACE PLT, creator and producer ADspace Digital Portal (2026-11-12).
 - Every PDF the portal hands over goes through `ADspaceDocs.save(blob, name,
   tab, zh)` under its own file name (Safari names a `blob:` address
   Unknown.pdf, and names a file after the last part of its address). The

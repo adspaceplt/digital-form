@@ -80,11 +80,7 @@
       }).then(function () {
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
-        pdf.setTitle('Quotation ' + q.ref);
-        pdf.setAuthor('ADSPACE PLT');
-        pdf.setSubject('Quotation');
-        pdf.setCreator('ADspace Digital Portal');
-        pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, 'ADspace Quotation ' + q.ref, 'Quotation');
         return pdf.save();
       }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
     });

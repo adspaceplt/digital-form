@@ -31,7 +31,7 @@
   var FLOOR = M + S(1) + S(4);        // nothing draws below this
   var CJK = /[⺀-鿿豈-﫿＀-￯]/;
 
-  function draw(videos) {
+  function draw(videos, title) {
     var docs = D();
     if (!docs) return Promise.reject(new Error('The PDF tools are not loaded.'));
     var needCjk = JSON.stringify(videos).search(CJK) > -1;
@@ -40,11 +40,7 @@
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
         var v0 = videos[0] || {};
-        pdf.setTitle([((v0.clients || {}).name || ''), 'Video Script', v0.month_word || ''].filter(Boolean).join(' '));
-        pdf.setAuthor('ADspace');
-        pdf.setSubject('Video Script');
-        pdf.setCreator('ADspace Digital Portal');
-        pdf.setProducer('ADspace Digital Portal');
+        docs.meta(pdf, title || [((v0.clients || {}).name || ''), 'Video Script', v0.month_word || ''].filter(Boolean).join(' '), 'Video Script');
         return docs.embedFonts(pdf, PDF, { cjk: needCjk });
       }).then(function (fonts) {
         if (needCjk && !fonts.cjk) throw new Error('The Chinese typeface could not be loaded.');

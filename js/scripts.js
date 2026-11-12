@@ -1914,12 +1914,12 @@
       btn.disabled = true;
       say(m, 'Drawing the PDF…', 'ok');
       var ids = whole ? st.series.map(function (x) { return x.id; }) : [st.open.id];
+      var c = (st.open.clients || {}).name || 'Client';
+      var name = c + ' Video Script ' + (whole && st.series.length > 1 ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(whole ? st.series[0] : st.open)) + '.pdf';
       gather(ids).then(function (videos) {
-        return window.ADspaceScriptPdf.draw(videos);
+        return window.ADspaceScriptPdf.draw(videos, name.replace(/[\\/:*?"<>|]+/g, ' '));
       }).then(function (blob) {
         btn.disabled = false;
-        var c = (st.open.clients || {}).name || 'Client';
-        var name = c + ' Video Script ' + (whole && st.series.length > 1 ? codeOf(st.series[0]) + '-' + codeOf(st.series[st.series.length - 1]) : codeOf(whole ? st.series[0] : st.open)) + '.pdf';
         say(m, save || (tab && !tab.closed) ? '' : 'Downloaded.', 'ok');
         window.ADspaceDocs.save(blob, name.replace(/[\\/:*?"<>|]+/g, ' '), tab);
       }).catch(function (e) {

@@ -874,7 +874,7 @@
       pdf = p;
       /* The file names its reference: wa-send sends a letter only where it
          does (2026-10-15). */
-      pdf.setTitle(k.title + ' ' + String(doc.number || '')); pdf.setAuthor('ADSPACE PLT');
+      meta(pdf, String(doc.number || ''), k.title);
       return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
@@ -1285,6 +1285,17 @@
      its widget is written by hand. Every other box is a text field,
      transparent and borderless over the drawn grid, in Helvetica (a subset
      face cannot draw a character the document never used). */
+  /* Every PDF's properties (the user, 2026-11-12): its title the name it is
+     saved under, the reference keeping its slashes (a file name cannot hold
+     one; wa-send and supplier-mail look for the reference in the title),
+     ADSPACE PLT as author, ADspace Digital Portal as creator and producer. */
+  function meta(pdf, title, subject) {
+    pdf.setTitle(String(title || '').replace(/\.pdf$/i, ''));
+    pdf.setAuthor('ADSPACE PLT');
+    if (subject) pdf.setSubject(subject);
+    pdf.setCreator('ADspace Digital Portal');
+    pdf.setProducer('ADspace Digital Portal');
+  }
   function formFields(pdf, PDF, page, boxes) {
     if (!boxes || !boxes.length) return Promise.resolve();
     return pdf.embedFont(PDF.StandardFonts.Helvetica).then(function (formFont) {
@@ -1614,7 +1625,7 @@
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, quoteTerms: quoteTerms, idemKey: idemKey,
     // What js/letters.js draws with, so there is one letterhead.
     pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate, watermark: watermark,
-    letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, letterLangs: letterLangs,
+    letterPages: letterPages, letterFoot: letterFoot, formFields: formFields, meta: meta, letterLangs: letterLangs,
     logoWarn: function () { return logoWarn; }
   };
 })();
