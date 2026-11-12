@@ -1167,6 +1167,7 @@
       return '<option value="' + o[0] + '"' + (String(o[0]) === val ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
     }).join('');
     $('qbBudget').value = val;
+    adsFollow();
   }
   /* What a plan's contents are, as the card prints them: "2 graphics, 4 reels"; two
      options read "or". */
@@ -1280,7 +1281,7 @@
       return list.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (x[0] === v ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join('');
     };
     var once = r.freq === 'once';
-    return '<div class="qb-adrow" data-ad>' +
+    return '<div class="qb-adrow" data-ad' + (r.auto ? ' data-auto' : '') + '>' +
       '<select class="select qb-adplat" data-nofind aria-label="Platform">' + opt(MON.AD_PLATFORMS, r.platform || 'meta') + '</select>' +
       '<select class="select qb-adfreq" data-nofind aria-label="Frequency">' + opt([['monthly', 'Monthly'], ['once', 'One-off']], once ? 'once' : 'monthly') + '</select>' +
       '<input class="input qb-adbud" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Budget (' + CUR + ')" placeholder="Budget (' + CUR + ')" value="' + esc(r.budget ? rm(r.budget) : '') + '">' +
@@ -1319,9 +1320,23 @@
   }
   /* Ticked, one Meta row from the budget chosen above (else the plan's) and
      the term. */
+  function adsBudget() {
+    var p = planOf(), v = Number($('qbBudget').value);
+    return v > 0 ? v : v === 0 && p ? Number(p.spec.ad_budget) || 0 : 0;
+  }
   function adsFirst() {
-    var p = planOf(), b = Number($('qbBudget').value) || (p && Number(p.spec.ad_budget)) || 0;
-    return { platform: 'meta', freq: 'monthly', budget: b, months: Number($('qbTerm').value) || 6 };
+    return { platform: 'meta', freq: 'monthly', budget: adsBudget(), months: Number($('qbTerm').value) || 6, auto: true };
+  }
+  /* The row Include advertising budget opened follows the budget and the
+     term chosen above until a figure in it is typed (2026-11-12, the user:
+     "up to 2k … calculate 2k instead of 4k"). */
+  function adsFollow() {
+    var row = document.querySelector('#qbAdRows [data-ad][data-auto]');
+    if (!row) return;
+    var b = adsBudget();
+    row.querySelector('.qb-adbud').value = b ? rm(b) : '';
+    if (row.querySelector('.qb-adfreq').value === 'monthly') row.querySelector('.qb-admo').value = String(Number($('qbTerm').value) || 6);
+    adsPaint();
   }
   /* What blocks Create: a row with no budget, or Monthly with no months. */
   function adsWrong() {
@@ -1688,7 +1703,8 @@
       else $('qbAdAdd').focus();
       adsPaint(); on();
     });
-    $('qbAdRows').addEventListener('input', function () { adsPaint(); on(); });
+    $('qbAdRows').addEventListener('input', function (e) { var r = e.target.closest('[data-ad]'); if (r) r.removeAttribute('data-auto'); adsPaint(); on(); });
+    ['qbBudget', 'qbTerm'].forEach(function (id) { $(id).addEventListener('change', adsFollow); });
     $('qbAdv').addEventListener('click', function () { if (!B) return; advOn(this.getAttribute('aria-checked') !== 'true'); on(); });
     $('qbCusAdd').addEventListener('click', function () {
       $('qbCusRows').insertAdjacentHTML('beforeend', cusRow({ basis: 'month', months: Number($('qbTerm').value) || 6 }));
