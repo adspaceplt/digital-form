@@ -1300,28 +1300,27 @@
     var once = r.freq === 'once';
     return '<div class="qb-adrow" data-ad' + (r.auto ? ' data-auto' : '') + '>' +
       '<select class="select qb-adplat" data-nofind aria-label="Platform">' + opt(MON.AD_PLATFORMS, r.platform || 'meta') + '</select>' +
-      '<select class="select qb-adfreq" data-nofind aria-label="Frequency">' + opt([['monthly', 'Monthly'], ['once', 'One-off']], once ? 'once' : 'monthly') + '</select>' +
       '<input class="input qb-adbud" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Budget (' + CUR + ')" placeholder="Budget (' + CUR + ')" value="' + esc(r.budget ? rm(r.budget) : '') + '">' +
-      '<input class="input qb-admo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months" placeholder="Months" value="' + esc(once ? '' : String(r.months || '')) + '"' + (once ? ' disabled' : '') + '>' +
+      /* Months empty or 0 is One-off (2026-11-12, the user: no extra
+         selection for a simple action). */
+      '<input class="input qb-admo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-off" placeholder="One-off" value="' + esc(once ? '' : String(r.months || '')) + '">' +
       '<span class="qb-adamt"></span>' +
       '<button class="iconbtn qb-adx" type="button" aria-label="Remove platform">' + X_ICON + '</button></div>';
   }
   function adNum(v) { var n = Number(String(v || '').replace(/[^0-9.]/g, '')); return isFinite(n) ? Math.round(n * 100) / 100 : 0; }
   function adsRead() {
     return Array.prototype.map.call(document.querySelectorAll('#qbAdRows [data-ad]'), function (row) {
-      var freq = row.querySelector('.qb-adfreq').value;
-      var o = { platform: row.querySelector('.qb-adplat').value, freq: freq, budget: adNum(row.querySelector('.qb-adbud').value) };
-      if (freq === 'monthly') o.months = Math.max(0, Math.floor(Number(row.querySelector('.qb-admo').value) || 0));
+      var mo = Math.max(0, Math.floor(Number(row.querySelector('.qb-admo').value) || 0));
+      var o = { platform: row.querySelector('.qb-adplat').value, freq: mo ? 'monthly' : 'once', budget: adNum(row.querySelector('.qb-adbud').value) };
+      if (mo) o.months = mo;
       return o;
     });
   }
   function adsPaint() {
     var total = 0;
     Array.prototype.forEach.call(document.querySelectorAll('#qbAdRows [data-ad]'), function (row) {
-      var once = row.querySelector('.qb-adfreq').value === 'once', mo = row.querySelector('.qb-admo');
-      mo.disabled = once;
-      if (once) mo.value = '';
-      var b = adNum(row.querySelector('.qb-adbud').value), n = once ? 1 : Math.max(0, Math.floor(Number(mo.value) || 0));
+      var mo = row.querySelector('.qb-admo');
+      var b = adNum(row.querySelector('.qb-adbud').value), n = Math.max(1, Math.floor(Number(mo.value) || 0));
       total += b * n;
       row.querySelector('.qb-adamt').textContent = b && n ? CUR + ' ' + acct(b * n) : '';
     });
@@ -1352,7 +1351,7 @@
     if (!row) return;
     var b = adsBudget();
     row.querySelector('.qb-adbud').value = b ? rm(b) : '';
-    if (row.querySelector('.qb-adfreq').value === 'monthly') row.querySelector('.qb-admo').value = String(Number($('qbTerm').value) || 6);
+    if (Number(row.querySelector('.qb-admo').value) > 0) row.querySelector('.qb-admo').value = String(Number($('qbTerm').value) || 6);
     adsPaint();
   }
   /* What blocks Create: a row with no budget, or Monthly with no months. */
@@ -1375,8 +1374,7 @@
       '<input class="input qb-cusname" type="text" data-noenter data-nodraft aria-label="Line" placeholder="Line" maxlength="120" value="' + esc(r.label || '') + '">' +
       '<input class="input qb-cusqty" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Quantity" placeholder="Qty" value="' + esc(String(r.qty || 1)) + '">' +
       '<input class="input qb-cusrate" type="text" inputmode="decimal" data-noenter data-nodraft aria-label="Rate (' + CUR + ')" placeholder="Rate (' + CUR + ')" value="' + esc(r.rate != null && r.rate !== '' ? rm(r.rate) : '') + '">' +
-      '<select class="select qb-cusfreq" data-nofind aria-label="Frequency"><option value="month"' + (once ? '' : ' selected') + '>Monthly</option><option value="once"' + (once ? ' selected' : '') + '>One-off</option></select>' +
-      '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months" placeholder="Months" value="' + esc(once ? '' : String(r.months || '')) + '"' + (once ? ' disabled' : '') + '>' +
+      '<input class="input qb-cusmo" type="text" inputmode="numeric" data-noenter data-nodraft aria-label="Months, empty for one-off" placeholder="One-off" value="' + esc(once ? '' : String(r.months || '')) + '">' +
       '<input class="input qb-cusstart" type="date" aria-label="Start date" value="' + esc(r.start || '') + '">' +
       '<button class="iconbtn qb-cusx" type="button" aria-label="Remove line">' + X_ICON + '</button></div>' +
       '<textarea class="textarea qb-cusdesc" rows="2" data-nodraft aria-label="Description" placeholder="Description, one point per line">' + esc((r.detail || []).join('\n')) + '</textarea>' +
@@ -1384,11 +1382,11 @@
   }
   function cusRead() {
     return Array.prototype.map.call(document.querySelectorAll('#qbCusRows [data-cus]'), function (box) {
-      var basis = box.querySelector('.qb-cusfreq').value;
+      var mo = Math.max(0, Math.floor(Number(box.querySelector('.qb-cusmo').value) || 0)), basis = mo ? 'month' : 'once';
       var o = { label: box.querySelector('.qb-cusname').value.trim(), qty: Math.max(0, Math.floor(Number(box.querySelector('.qb-cusqty').value) || 0)),
         rate: adNum(box.querySelector('.qb-cusrate').value), basis: basis,
         detail: box.querySelector('.qb-cusdesc').value.split(/\r?\n/).map(function (x) { return x.replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean) };
-      if (basis === 'month') o.months = Math.max(0, Math.floor(Number(box.querySelector('.qb-cusmo').value) || 0));
+      if (mo) o.months = mo;
       var st = box.querySelector('.qb-cusstart').value;
       if (/^\d{4}-\d{2}-\d{2}$/.test(st)) o.start = st;
       if (box.getAttribute('data-renews')) o.renews = box.getAttribute('data-renews');
@@ -1615,9 +1613,9 @@
           '<option value="">' + esc(own ? own.code + ' · ' + t.sst_pct + '%' : MON.sstApplies(t.sst_pct) ? 'SST ' + t.sst_pct + '%' : MON.SST_NONE) + '</option>' +
           codes.map(function (c) { return '<option value="' + esc(c.code) + '"' + (c.code === cur ? ' selected' : '') + '>' + esc(MON.taxCodeWord(c)) + '</option>'; }).join('') +
           '</select>' : '';
-        var freq = l.kind !== 'custom' && (l.basis === 'once' || l.was_once)
-          ? '<select class="select select-sm qb-basis" data-nofind data-key="' + esc(l.key || '') + '" aria-label="' + esc('Frequency, ' + l.label) + '">' +
-            '<option value="once"' + (l.basis === 'once' ? ' selected' : '') + '>One-off</option><option value="month"' + (l.basis === 'month' ? ' selected' : '') + '>Monthly</option></select>' : '';
+        /* A Rate Card one-off item takes Months too (2026-11-12, the user):
+           a number bills it monthly, empty or 0 keeps it one-off. */
+        var flex = l.kind !== 'custom' && (l.basis === 'once' || l.was_once);
         var box = function (what, v, cls, mode, label) {
           /* A custom line is changed in Advanced, where it is typed. */
           if (l.kind === 'custom') return '<span class="qb-fixed">' + esc(what === 'rate' ? v : String(v)) + '</span>';
@@ -1637,11 +1635,13 @@
           /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
              Months cell. */
-          (tax || freq ? '<span class="qb-taxc">' + (tax ? '<span class="qb-lab">Tax</span>' + tax : '') + freq + '</span>' : '') +
+          (tax ? '<span class="qb-taxc"><span class="qb-lab">Tax</span>' + tax + '</span>' : '') +
           '<span class="svc-rate qb-qty"><span class="qb-lab">Qty</span>' + box('qty', l.qty, 'qb-qtyval', 'numeric', 'Quantity') + '</span>' +
           '<span class="svc-rate qb-rate"><span class="qb-lab">Rate (' + CUR + ')</span>' + box('rate', rm(l.rate), 'qb-rateval', 'decimal', 'Rate (' + CUR + ')') + '</span>' +
-          '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' ? 'Months' : '&nbsp;') + '</span>' + (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval', 'numeric', 'Months') :
-            '<span class="qb-once">One-off</span>') + '</span>' +
+          '<span class="svc-rate qb-mo"><span class="qb-lab">' + (l.basis === 'month' || flex ? 'Months' : '&nbsp;') + '</span>' +
+            (l.basis === 'month' ? box('months', l.months || (d.totals || {}).term, 'qb-moval' + (flex ? ' qb-flex' : ''), 'numeric', 'Months') :
+              flex ? box('months', '', 'qb-moval qb-flex', 'numeric', 'Months, empty for one-off').replace('value=""', 'value="" placeholder="One-off"') :
+              '<span class="qb-once">One-off</span>') + '</span>' +
           '<span class="svc-rate qb-amt">' + esc(l.in_plan ? 'In plan' : rm(l.amount)) + '</span></div>';
       }).join('') + '</div>';
     /* SST said as the Letter of Offer says it (ADspaceMoney.sstApplies);
@@ -1755,12 +1755,7 @@
     });
     $('qbCusRows').addEventListener('input', function () { on(); });
     $('qbCusRows').addEventListener('change', function (e) {
-      if (e.target.tagName !== 'SELECT' && e.target.type !== 'date') return;
-      if (e.target.classList.contains('qb-cusfreq')) {
-        var mo = e.target.closest('[data-cus]').querySelector('.qb-cusmo'), once = e.target.value === 'once';
-        mo.disabled = once;
-        mo.value = once ? '' : (mo.value || String(Number($('qbTerm').value) || 6));
-      }
+      if (e.target.type !== 'date') return;
       on();
     });
     $('qbBillTo').addEventListener('change', function () { if (B) B.entity = this.value; on(); });
@@ -1784,14 +1779,6 @@
         var k2 = ip.getAttribute('data-key'), e2 = B.edits[k2] || {};
         if (ip.checked) delete e2.incl; else e2.incl = false;
         if (Object.keys(e2).length) B.edits[k2] = e2; else delete B.edits[k2];
-        preview();
-        return;
-      }
-      var bs = e.target.closest('.qb-basis');
-      if (bs && B) {
-        var k3 = bs.getAttribute('data-key'), e3 = B.edits[k3] || {};
-        if (bs.value === 'month') e3.basis = 'month'; else { delete e3.basis; delete e3.months; }
-        if (Object.keys(e3).length) B.edits[k3] = e3; else delete B.edits[k3];
         preview();
         return;
       }
@@ -1828,6 +1815,17 @@
         return;
       }
       var e1 = B.edits[k] || {};
+      /* A one-off Rate Card item: a number of months bills it monthly,
+         empty or 0 keeps it one-off (2026-11-12). */
+      if (what === 'months' && i.classList.contains('qb-flex')) {
+        if (raw === '' || /^0+$/.test(raw)) { delete e1.basis; delete e1.months; }
+        else if (ok) { e1.basis = 'month'; e1.months = raw; }
+        else { $('qbMsg').textContent = SAID['bad-edit']; $('qbMsg').className = 'msg err'; i.focus(); return; }
+        if (Object.keys(e1).length) B.edits[k] = e1; else delete B.edits[k];
+        $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
+        preview();
+        return;
+      }
       if (raw === '') delete e1[what];
       else if (ok) e1[what] = raw;
       else {

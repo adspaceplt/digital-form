@@ -6792,8 +6792,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   lines (a client's confirmed lines, each `renews` its line, confirmed for the
   new term on approval and never added twice); Bill to (a billing entity,
   held as printed, `quote_client_extras`, the cover's To); and the quotation's
-  own terms, ten at most. A Rate Card one-off item may be quoted Monthly (its
-  Frequency beside its tax; `quote_adjust` edit `basis`, `was_once`, the term's
+  own terms, ten at most. A Rate Card one-off item may be quoted Monthly (a
+  number in its Months bills it monthly, empty or 0 keeps it one-off, as a
+  custom line's and an advertising row's Months read alike, no Frequency
+  selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, the term's
   percentage from `term_pct_if` where nothing else ran by the month). The
   client's SST reads as Bukku's code at its rate (`ADspaceMoney.sstCode`, an
   SV code first), never that code offered twice, on Build quote and a service
