@@ -238,7 +238,7 @@ begin
   end if;
   if v_q.sent_out_at is not null or v_q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
   -- A quotation a letter or service lines came from keeps its figures
-  -- (2026-11-07), as quotation_delete holds it: Edit makes its revision.
+  -- (2026-11-07), as its removal is refused then: Edit makes its revision.
   select count(*) into v_n from public.client_services s where s.quotation_id = v_q.id;
   if v_n > 0 then return jsonb_build_object('error', 'lines', 'count', v_n); end if;
   select d.number into v_doc from public.client_documents d
@@ -266,7 +266,7 @@ begin
   v_ref := v_q.ref; v_was_ref := v_q.ref;
   if v_q.source = 'console' and v_q.ref !~ ('^ADP/QT' || to_char(v_on, 'YYMM') || '-') then
     v_ref := public.quote_ref(v_q.brand, v_now);
-    insert into public.quotation_refs_kept (ref, deleted_by) values (v_q.ref, me.name) on conflict do nothing;
+    insert into public.quotation_refs_kept (ref) values (v_q.ref) on conflict do nothing;
   end if;
   update public.quotations
      set ref = v_ref, version = v_card->>'version', version_id = (v_card->>'id')::uuid, selection = v_sel,
@@ -667,7 +667,7 @@ begin
       returning next_val - 1 into v_seq;
 
     -- The lowest free slot, not the counter's own value. A letter removed
-    -- releases its reference (serial_taken stopped counting deletions on
+    -- releases its reference (serial_taken stopped counting removed letters on
     -- 2026-09-20), and without this the automatic path still counted upward
     -- past the gap: a client whose first two letters were issued in testing
     -- and removed started at 03 for ever. The counter is at least the number
