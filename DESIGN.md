@@ -12,12 +12,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   tinted pills, no explanatory blurbs, no highlighter colours. A status is a
   dot and its word in ink (App Store Connect), never a coloured box.
 - The console's revamp (the user, 2026-11-12, v2 "full glass", after the
-  After reference and iOS's glass): the console stands on a soft wash of the
-  section colours (`--wash`, the one gradient beside the loading shimmer)
-  and every surface on it is glass: the rail (a floating pane at a desk) and
+  After reference and iOS's glass): every surface on the console's plain
+  `--page` is glass (a wash of the section colours behind it was tried and
+  taken off the same day, the user choosing the plain ground): the rail (a floating pane at a desk) and
   the head frosted as before (`--chrome`, since the page scrolls under it),
   the cards frosted (`--glass-card`, `--glass-card-sheen`, `--glass-rim`,
-  `--glass-lift`; their words 4.5:1 on any part of the wash); dark is more
+  `--glass-lift`; their words 4.5:1); dark is more
   opaque again. Nothing that holds words over other words is clear glass:
   a menu, a popover, the finder, a sheet and a question stay solid
   `--raised` (2026-11-12: the record's ⋯ read the page through it). A card inside a card is one
