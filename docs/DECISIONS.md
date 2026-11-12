@@ -9927,3 +9927,33 @@ per month beside the advertising budget rows, and a test for Approve's Start
 date. Payment terms on /quote/ stand with the notes, not the agreed figures,
 as PR #1050 moves them on the PDF.
 
+- 2026-11-12, the quotation PDF says each term once (the user: "Too many
+  duplicates … Payment terms / Within 7 days of the invoice date … straight
+  below the advertising, which is very confusing"): the payment terms and
+  the validity stand in TERMS alone (no longer on the acceptance page under
+  the advertising budget, nor in the lead sentence); the Service Terms are
+  named in TERMS alone, the acceptance accepting the terms set out in the
+  document; 30 days or more reads subject to ADspace's approval, without
+  "until then, within 7 days"; the budget is payable before the service
+  commences (no "in advance" beside it). The acceptance keeps the figures.
+- 2026-11-12, the quotation PDF's TERMS read as a contract (the user: "the
+  tone for those terms should be like legal professional since this has
+  the legal power when signed"): a clause an obligation, "shall", the
+  sections named as they head the quotation (Monthly Service Fee, One-off
+  Items, Advertising Budget). The payment term is stated as the team
+  decided it ("Payment term: NET 30"; the user: a quotation is not an
+  invoice) with no "subject to ADspace's approval": a term
+  of 30 days or more is approved inside the team before the quotation is
+  made (Build quote's Needs approval). Quotations drawn on the older
+  layout keep their words.
+- 2026-11-12, the quotation PDF (layout 2) revamped in three levels at
+  three pages (the user: "Im trying to keep at two - three pages"): the
+  page title, a details block (Quotation no., Date, Prepared for, Payment
+  term NET n, Minimum term) in place of the lead sentence, the numbered
+  fee sections, and TERMS under the rates as one numbered list, never
+  grouped (the user: "Dont categorize my terms"). TERMS: validity in days
+  and its lapse date, the total Monthly Service Fee, the Advertising
+  Budget, exclusions, the contract clause naming the Acceptance of
+  Quotation page, and the Rate Card version the quotation was priced on
+  (`q.version`, kept with it) with E&OE. The invoicing and payment
+  clauses are gone (the user: "234 remove"). Read by a second reader.

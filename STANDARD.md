@@ -634,6 +634,12 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
   suite needs a fixed time of day.
 
+- `quotes`, `pdfcases`, `quotesite`: fail on main at 9520b92f (2026-11-12),
+  after the quotation sections release: quotes crashes reading a new
+  quotation's row (`classList` of null), pdfcases' quoted letters and
+  quotesite's Plan E totals no longer match their expectations; not
+  caused by #1050 (same failures with and without it).
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
