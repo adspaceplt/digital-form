@@ -10121,3 +10121,19 @@ The verdict's separating dot wrapped onto a line of its own: Better, Worse
 and Steady are now led by their status dot. On time draws its share as a
 bar, Oldest late names its task and client (the tile read half empty), and
 Work by stage says each stage's share of open work, never its number twice.
+
+### 2026-11-13 — The Assistant
+The user asked for a Claude agent inside the portal "so they would just
+need to chat with agent to do work". Mocked up first (desk panel, phone
+card, a change as a confirm card, a refusal in the team's words) and
+approved: "ok approve, all colleagues, build all phases", which also
+approved a client's name and work going to Claude for the assistant. Built
+so the page holds the conversation and runs every tool through the
+colleague's own sign-in, the edge function only asking Claude: the reads are
+the screens' reads under their policies, testable on the stand-in, and a
+change can only be proposed, written on Confirm by the screen's own
+function. Deletes, sends to clients, money, access and performance are not
+among the tools. Captions, scripts, checklists and commentary stay on their
+screens' Write with AI, which hold the house style and the declaration. A
+question is its own AI use, 30 a day, counted once with its steps capped at
+twelve; the purpose and the three Activity tags need the SQL Editor part.

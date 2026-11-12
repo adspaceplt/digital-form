@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261112q">
-<link rel="stylesheet" href="/css/console.css?v=20261113b">
+<link rel="stylesheet" href="/css/console.css?v=20261113c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261112s"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261029m"><\/script><script src="/demo/engine.js?v=20261113a"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -425,6 +425,11 @@
         <p class="vicpop-foot" id="vicPopFoot"></p>
       </div>
       <span class="console-spacer"></span>
+      <!-- ===== The Assistant (js/agent.js): ask in words; every change waits
+           on Confirm. Ctrl + J opens it too. Drawn once the script runs. -->
+      <button class="headlink headask" id="agentOpen" type="button" hidden aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Meta+J Control+J" aria-label="Ask the Assistant">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg><span class="headlink-word">Ask</span>
+      </button>
       <!-- ===== Console search (js/search.js) =====
            One search across the sections this person may read. Cmd / Ctrl + K
            and "/" open it too. Drawn once the team row has answered. -->
@@ -593,6 +598,35 @@
       </div>
     </div>
     <!-- ===== end console search panel ===== -->
+
+    <!-- ===== The Assistant's panel (js/agent.js) =====
+         Beside the page at a desk, a card above the tab bar on a phone, as
+         the task card is. The conversation stays until Clear or a reload. -->
+    <div class="sheet sheet-side agentsheet" id="agentSheet" hidden>
+      <div class="sheet-card agentcard" role="dialog" aria-modal="true" aria-labelledby="agentTitle" tabindex="-1">
+        <div class="ag-head">
+          <svg class="spark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>
+          <h3 id="agentTitle">Assistant</h3>
+          <button class="btn btn-quiet btn-sm" id="agentClear" type="button">Clear</button>
+          <button class="iconbtn" id="agentClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="ag-log" id="agentLog" role="log" aria-live="polite" aria-label="Conversation"><p class="ag-empty">Ask about a client, your tasks or a report. Every change waits on your Confirm.</p></div>
+        <form class="ag-foot" id="agentForm" novalidate>
+          <div class="ag-chips" id="agentChips">
+            <button class="ag-chip" type="button" data-ask="What waits on me?">What waits on me?</button>
+            <button class="ag-chip" type="button" data-ask="Which of my tasks are past their due date?">My tasks past due</button>
+            <button class="ag-chip" type="button" data-ask="What is due this week?">Due this week</button>
+          </div>
+          <div class="ag-ask">
+            <label class="sr" for="agentQ">Ask the Assistant</label>
+            <textarea class="ag-q" id="agentQ" rows="1" data-oneline data-nodraft placeholder="Ask about clients, tasks or reports" enterkeyhint="send"></textarea>
+            <button class="ag-send" id="agentSend" type="submit" aria-label="Send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+          </div>
+          <small class="ag-left" id="agentLeft" hidden></small>
+        </form>
+      </div>
+    </div>
+    <!-- ===== end the Assistant's panel ===== -->
 
     <!-- Upgrade mode is on, or set for later: said to an admin, the one
          person still working, with the way to turn it off beside it. -->
@@ -6368,11 +6402,11 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261112zd"></script>
+<script src="/js/admin.js?v=20261113a"></script>
 <script src="/js/documents.js?v=20261112zt"></script>
 <script src="/js/letters.js?v=20261112zt"></script>
 <script src="/js/smreport.js?v=20261112zt"></script>
-<script src="/js/reports.js?v=20261112h"></script>
+<script src="/js/reports.js?v=20261113a"></script>
 <script src="/js/register.js?v=20261112j"></script>
 <script src="/js/suppliers.js?v=20261112h"></script>
 <script src="/js/bukku.js?v=20261112h"></script>
@@ -6396,6 +6430,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/perf.js?v=20261112zt"></script>
 <script src="/js/health.js?v=20261112h"></script>
 <script src="/js/search.js?v=20261112d"></script>
+<script src="/js/agent.js?v=20261113a"></script>
 <script src="/js/overview.js?v=20261113a"></script>
 <script src="/js/analytics.js?v=20261112zt"></script>
 <script src="/js/settings.js?v=20261112h"></script>

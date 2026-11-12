@@ -2664,6 +2664,11 @@
     'ops.month_deleted':     ['Month deleted', 'is-danger', 'ops'],
     /* An admin setting the next task number. */
     'ops.numbering':         ['Numbering changed', '', 'ops'],
+    /* A change a colleague confirmed through the Assistant (2026-11-13),
+       filed under the section it changed, beside that section's own line. */
+    'assistant.task':        ['Changed through the Assistant', '', 'ops'],
+    'assistant.call':        ['Changed through the Assistant', '', 'clients'],
+    'assistant.report':      ['Changed through the Assistant', '', 'reports'],
     'client.added':          ['Client added', 'is-ok', 'clients'],
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],
