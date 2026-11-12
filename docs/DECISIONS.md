@@ -10010,3 +10010,6 @@ The user: "take a look at spacings" (Committed monthly value by client). A clien
 
 ### 2026-11-12 · Dashboard table cards take their own height
 The user: "let each card take its own height". Cards side by side shared four rows (2026-10-12, so Figures started on one line), which stretched a short table, or an empty card, to its neighbour's height. A card holding a table (`.ovw-body`) now leaves the shared rows and stands at its own height at the top of its row; two chart cards side by side still share them, so their Figures stay on one line.
+
+### 2026-11-12 · The glass card's corner in Safari
+The user sent a card's corner from Safari: a square shade stood behind the rounded corner. Safari drew the card's own backdrop blur as a square, past its border radius (Chromium clips it, so the walk never saw it). The frost (ground, sheen, blur and rim) now sits on the card's `::before`, cut to its corner by `clip-path: inset(0 round var(--glass-r, var(--radius-lg)))`; the lift shadow stays on the card, outside the cut, and the card keeps a stacking context (`z-index: 0`) as the backdrop filter gave it. Every glass card measured 18px, the large corner. Safari cannot run in the sandbox; the user confirms.
