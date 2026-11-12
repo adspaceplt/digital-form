@@ -15,10 +15,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   After reference and iOS's glass): the console stands on a soft wash of the
   section colours (`--wash`, the one gradient beside the loading shimmer)
   and every surface on it is glass: the rail (a floating pane at a desk) and
-  the head clearest (`--glass-bar`), the cards frosted (`--glass-card`,
-  `--glass-card-sheen`, `--glass-rim`, `--glass-lift`; their words 4.5:1 on
-  any part of the wash), what floats over the page the most opaque
-  (`--glass-raised`); dark is more opaque again. A card inside a card is one
+  the head frosted as before (`--chrome`, since the page scrolls under it),
+  the cards frosted (`--glass-card`, `--glass-card-sheen`, `--glass-rim`,
+  `--glass-lift`; their words 4.5:1 on any part of the wash); dark is more
+  opaque again. Nothing that holds words over other words is clear glass:
+  a menu, a popover, the finder, a sheet and a question stay solid
+  `--raised` (2026-11-12: the record's ⋯ read the page through it). A card inside a card is one
   surface, never frost on frost, and inside a card `--card` is clear. Client
   pages keep their white.
 - Tuned for a long working session: few visible lines, light boundaries,
