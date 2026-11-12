@@ -53,14 +53,8 @@
     var v = Number(n || 0), s = window.ADspaceMoney.money2(Math.abs(v), 'MY').replace(/^RM /, cur(q));
     return v < 0 ? '(' + s + ')' : s;
   }
-  /* The day before the same day n months on (a period's last day). */
-  function endOf(day, n) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(day || ''));
-    if (!m) return '';
-    var last = new Date(Date.UTC(+m[1], +m[2] - 1 + n + 1, 0)).getUTCDate();
-    var d = +m[3] > last ? new Date(Date.UTC(+m[1], +m[2] - 1 + n, last)) : new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1));
-    return d.toISOString().slice(0, 10);
-  }
+  /* A period's last day: ADspaceClock's, one copy (2026-11-12). */
+  function endOf(day, n) { return window.ADspaceClock.periodEnd(day, n); }
   function fileName(q) { return 'ADspace Quotation ' + String(q.ref || '').replace(/\//g, '-') + '.pdf'; }
 
   /* opts: attention (the contact named), attentionRole, to { name, address }

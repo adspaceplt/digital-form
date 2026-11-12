@@ -81,6 +81,9 @@
       line: 'Service', qty: 'Qty', rate: 'Rate ({c})', sub: 'Subtotal ({c})', onReq: 'Quoted on request',
       download: 'Download', chat: 'Chat on WhatsApp',
       billSep: 'The advertising budget is billed separately.',
+      adLine: '{p} advertising budget', adsT: 'Advertising budget for the term',
+      adsNote: 'The advertising budget is paid to the advertising platforms on the Client\'s behalf and is payable before the service commences.',
+      payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
       propT: 'Ready to proceed?', propP: 'Please indicate when you would like to begin. Our team will contact you to finalise the details and prepare your onboarding plan.',
@@ -194,6 +197,9 @@
       line: '服务', qty: '数量', rate: '单价（{c}）', sub: '小计（{c}）', onReq: '另行报价',
       download: '下载', chat: 'WhatsApp 咨询',
       billSep: '广告预算另行收费。',
+      adLine: '{p} 广告预算', adsT: '合约期广告预算',
+      adsNote: '广告预算由 ADspace 代客户支付予广告平台，须于服务开始前支付。',
+      payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
       propT: '准备好开始了吗？', propP: '请告诉我们您希望何时开始。我们的团队将与您联系，确认细节并准备您的启动计划。',
@@ -578,6 +584,7 @@
   function taxed(tt) { return window.ADspaceMoney.sstOf(Q && Q.lines, tt.sst_pct); }
   function sstOn(tt) { return taxed(tt).on; }
   function word(tt, key) { return sstOn(tt) ? t()[key] : t()[key + 'None']; }
+  function adsOf(tt) { return tt.layout === 2 && Array.isArray(tt.ads) ? tt.ads : []; }
   function totalsRows(tt) {
     /* The rows are ADspaceMoney.quoteRows', one copy (2026-10-22, QT-4). */
     var w = t(), on = sstOn(tt);
@@ -587,10 +594,14 @@
     var sst = on ? (rt ? f(w.sst, { p: rt[1] }) : 'SST') : w.sstNone;
     var WORD = { monthSub: w.monthSub, onceSub: w.onceSub, firstExcl: w.firstExcl, monthExcl: w.monthExcl, sst: sst,
       first: word(tt, 'first'), monthly: word(tt, 'monthly'), oneOff: word(tt, 'oneOff') };
-    var r = window.ADspaceMoney.quoteRows(tt, Q && Q.lines, on).map(function (x) {
+    /* A quotation in sections (layout 2, 2026-11-12) never adds the one-off
+       items into a first month: each closes on its own total, as its PDF
+       prints it, then the advertising budget for the term. */
+    var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
       var label = x[0] === 'term' ? f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }) : WORD[x[0]];
       return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
     });
+    if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);
     return r;
   }
   /* Where the prospect stands, one word from the database (2026-10-26):
@@ -618,15 +629,26 @@
       return '<div class="qs-row"><span class="qs-what">' + esc(l.label).replace(/\b(RM|S\$) (?=\d)/g, '$1\u00a0') + (Number(l.qty) > 1 ? '<span class="qs-calc">' + esc(l.qty + ' × ' + n2(l.rate)) + '</span>' : '') +
         (d.length ? '<ul class="incl">' + d.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + (l.basis === 'once' ? '<small>' + esc(t().onceTag) + '</small>' : '') + '</span>' +
         '<span class="qs-num qs-q">' + esc(l.qty) + '</span><span class="qs-num qs-r">' + esc(n2(l.rate)) + '</span><span class="qs-num">' + esc(n2(l.amount)) + '</span></div>';
+    }).join('') + adsOf(tt).map(function (r) {
+      var once = r.freq === 'once';
+      return '<div class="qs-row"><span class="qs-what">' + esc(f(t().adLine, { p: window.ADspaceMoney.adWord(r.platform) })) +
+        '<small>' + esc(once ? t().onceTag : f(t().months, { n: r.months })) + '</small></span>' +
+        '<span class="qs-num qs-q">' + esc(once ? 1 : r.months) + '</span><span class="qs-num qs-r">' + esc(n2(r.budget)) + '</span><span class="qs-num">' + esc(n2(r.amount)) + '</span></div>';
     }).join('') + (tt.on_request || []).map(function (x) {
       return '<div class="qs-row"><span class="qs-what">' + esc(x === 'budget' ? budgetOnRequest() : x) + '</span>' +
         '<span class="qs-num qs-mute qs-onreq">' + esc(t().onReq) + '</span></div>';
     }).join('');
     var notes = [], managed = managedBudget(q);
-    if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
+    if (adsOf(tt).length) notes.push(t().adsNote);
+    else if (managed) notes.push(f(t().billManaged, { c: qc(), b: n0(qb(managed)) }));
     else if (Number(tt.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) notes.push(t().billSep);
     /* The validity is the status line's on screen; the PDF states it in its
        remarks (2026-10-20, QTE-1). */
+    if (tt.layout === 2) {
+      var pd = Number(tt.pay_days) || 7;
+      notes.push(f(pd >= 30 ? t().payApprove : t().payNote, { d: pd }));
+      (Array.isArray(tt.terms) ? tt.terms : []).forEach(function (x) { if (String(x || '').trim()) notes.push(String(x).trim()); });
+    }
     notes.push(f(t().basis, { v: q.version }));
     var aside = '<aside class="qs-side" id="qsSide">' + sideHtml(q) + '</aside>';
     return '<div class="qs-quote" data-shown><section class="qs-main">' +
@@ -751,6 +773,11 @@
   var SG_SAL = SALUTATIONS;
   function signStart() {
     var p = (Q && Q.prefill) || {}, co = p.company || {}, ct = p.contact || {};
+    /* A quotation billed to another of the client's companies (Bill to,
+       2026-11-12) opens on that company; its SST no. and TIN are its own,
+       never the brand's. */
+    var bt = Q && Q.totals && Q.totals.bill_to;
+    if (bt && bt.legal_name) co = { legal_name: bt.legal_name, company_no: bt.company_no || '', billing_address: bt.billing_address || '' };
     SG = { step: 1, mode: 'draw', path: '', text: '', agree: false, email: '', sentAt: 0,
       co: { legal_name: String(co.legal_name || '').toUpperCase(), company_no: co.company_no || '', company_no_old: co.company_no_old || '', billing_address: co.billing_address || '',
         sst_no: co.sst_no || '', tin: co.tin || '', finance_email: co.finance_email || '' },
@@ -775,16 +802,19 @@
     return '<div class="qs-sfoot"><button class="btn" type="button" data-a="' + back + '">' + esc(t().back) + '</button>' +
       '<button class="btn btn-primary" type="button" data-a="' + go + '">' + esc(label || t().cont) + '</button></div>';
   }
-  /* The figures agreed to: the quotation's own total (Monthly, or First
-     month, incl. SST), then the term and its whole, as its acceptance page
-     prints them. */
+  /* The figures agreed to: every bold total the quotation closes on (the
+     monthly, the one-off and the advertising budget), the minimum term
+     after the monthly, and on a quotation before sections the whole term,
+     as its acceptance page prints them (2026-11-12, review finding 1). */
   function agreedRows(q) {
-    var tt = q.totals || {}, w = t(), rows = totalsRows(tt).filter(function (x) { return x[2]; }), last = rows[rows.length - 1];
-    var out = last ? [[last[0], last[1], 1]] : [];
-    if (tt.month) {
-      out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
-      if (tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment)]);
-    }
+    var tt = q.totals || {}, w = t(), out = [], first = true;
+    totalsRows(tt).forEach(function (x) {
+      if (!x[2]) return;
+      out.push([x[0], x[1], 1]);
+      if (first && tt.month) out.push([w.sg.minTerm, f(w.months, { n: tt.term })]);
+      first = false;
+    });
+    if (tt.month && tt.layout !== 2 && tt.commitment != null) out.push([sstOn(tt) ? w.sg.termTotalIncl : w.sg.termTotal, qc() + ' ' + n2(tt.commitment)]);
     return out;
   }
   function signHtml(q) {

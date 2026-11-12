@@ -9910,3 +9910,20 @@ options were drawn side by side on the canvas (neutral greys, fainter
 colours, one colour, none); the user chose none ("Go with D"). The console
 stands on its plain `--page` again; the rail and cards stay glass, now
 reading as frosted white.
+
+### 2026-11-12 · Build quote and /quote/ reviewed: nine fixes
+The review of Build quote and the prospect's quotation page found the
+signing page agreeing only the last bold total (a quotation with a monthly
+and a one-off total agreed the one-off alone), /quote/ leaving out the
+advertising budget, the payment terms and the quotation's own terms that its
+PDF prints, and a Bill to quotation's signing prefilled with the brand's
+company. The month limits differed (an edited line 36, a custom line and an
+advertising row 60), the term's percentage table stood in quote_price and
+quote_base twice, quote_custom read a `starts` no page sends, and a renewal's
+start added months by hand (31 Jan plus a month read 3 Mar). Fixed together:
+36 everywhere, `quote_term_pct`, `starts` gone, `ADspaceClock.periodEnd` the
+one period end, Build quote's tier select named Advertising budget managed
+per month beside the advertising budget rows, and a test for Approve's Start
+date. Payment terms on /quote/ stand with the notes, not the agreed figures,
+as PR #1050 moves them on the PDF.
+
