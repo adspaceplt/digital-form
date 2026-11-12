@@ -9975,6 +9975,25 @@ tiles and Active clients by month. The on-time and posted rings of
 Not built from the mockup: people beside each stage (the report holds no
 assignees by stage) and a tooltip pill on the trend (the chart already
 gives a figure on hover or a tap).
+
+### 2026-11-12 · Lighter marks
+The user found the VIC ring "really bold and thick, which is no longer minimalist, modern, and elegant", and asked for the rest to be checked. The ring was 2px of the card then 1.5px of gold, with a crown disc over it; it is now a 1px gap and a 1px gold hairline at 72%, the crown 14px. Checked the same way: the VIC tag 600 → 500, the task progress ring stroke 2.6 → 2, the Dashboard's stage rings 3.5 → 2 with their number at 500, the lead figures 600 → 500, and a list row's record name 600 → 500 (Clients, My Work, Services, Team, Reports, Needs attention, Waiting for you), as the revamp's references set them. Headings keep 600.
+### 2026-11-12 · The clients behind the Dashboard's Sales counts
+The user: the Summary's Won, Churned and New leads read a number and
+Committed monthly value a total, "but then it's not one client committed
+this entire value … no further breakdowns … maybe in details section, not
+the summary section, but yeah, it has to be somewhere." Detail's Sales
+group gains Clients who moved (every client a move was counted for in the
+period, by move, with its person in charge and the day it moved; five a
+move, then Show N more) and Committed monthly value by client (each active
+client's month of confirmed monthly lines, highest first, its share, a
+total a currency; Services View alone, as the tile). `ADspaceSales.figures`
+keeps the day of each counted move (`at`) and the value per client
+(`money.byClient`), the same rules the counts read, so a list never
+disagrees with its tile. Each client opens its record (its Services from
+the value). The four tiles are a press opening Detail on their card, the
+card's title taking focus. No new read: both cards draw from the clients
+and lines the page already holds.
 - 2026-11-12, Build quote asks Valid for (the user: "Build valid for"):
   14, 30, 45, 60 or 90 days beside Payment terms, opening on the Business
   setting; `quote_extras` keeps it as `valid_days` (`bad-valid`), and

@@ -194,7 +194,7 @@
     clients: function () {
       return once('clients', function () {
         return API.readPages(function () {
-          return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, bill_sgd, ' +
+          return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, bill_sgd, ' +
             'restricted_platform, restricted_since, restricted_note').order('id');
         }).then(rows).then(function (l) { return l || []; });
       });
@@ -601,7 +601,7 @@
   /* A tile counting one kind of client move: the period, its change on the
      period before and the six months' trend. */
   function kindTile(key, title, kind, good) {
-    return { key: key, title: title, sec: 'clients', can: canLeads, load: function () {
+    return { key: key, title: title, sec: 'clients', can: canLeads, to: 'moved', load: function () {
       return Promise.all([figuresFor('now'), figuresFor('prev'), figuresFor('six')]).then(function (f) {
         return { fig: String(f[0][kind].length), sub: delta(f[0][kind].length, f[1][kind].length),
                  trend: trendOf(f[0][kind].length, f[1][kind].length, good, 2),
@@ -621,7 +621,8 @@
        the lines that part opens; Active clients for everyone else. */
     { key: 'value', sec: 'clients', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
       /* Its narrow word: the whole label is cut at a phone's tile (2026-10-15, audit OVW-1). */
-      short: function () { return canValue() ? 'Committed value' : ''; }, can: canClients, load: function () {
+      short: function () { return canValue() ? 'Committed value' : ''; }, can: canClients,
+      to: function () { return canValue() ? 'valueby' : ''; }, load: function () {
       if (canValue()) {
         return R.lines().then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
           var won = f.money && f.money.won, any = won && Object.keys(won).some(function (k) { return won[k]; });
@@ -741,6 +742,28 @@
       } }
     ]
   ];
+  /* Clients who moved: each kind of move with its words, in the order a
+     sale runs. */
+  var MOVED = [['won', 'Won'], ['newLeads', 'New leads'], ['lost', 'Lost leads'], ['churned', 'Churned'],
+               ['paused', 'Paused'], ['resumed', 'Resumed'], ['winback', 'Win-backs']];
+  var MOVED_SHOWN = 5;
+  /* A client in a card's table: its name over its Client ID, opening its record. */
+  function clientButton(c, tab) {
+    return '<button type="button" class="linkbtn ovw-client" data-go="' + esc(clientUrl(c, tab)) + '">' +
+      '<span>' + esc(c.name || 'Untitled client') + '</span>' + (c.client_code ? '<small>' + esc(c.client_code) + '</small>' : '') + '</button>';
+  }
+  function wireClients(body) {
+    body.addEventListener('click', function (e) {
+      var b = e.target.closest('.ovw-client');
+      if (b) { go(b.getAttribute('data-go'), 'clients'); return; }
+      var m = e.target.closest('.ovw-more');
+      if (!m) return;
+      var open = m.getAttribute('aria-expanded') !== 'true', tb = m.closest('tbody');
+      Array.prototype.forEach.call(tb.querySelectorAll('tr.is-more'), function (r) { r.hidden = !open; });
+      m.setAttribute('aria-expanded', String(open));
+      m.textContent = open ? 'Show fewer' : 'Show ' + m.getAttribute('data-n') + ' more';
+    });
+  }
   var PAGE2 = [
     ['Sales', [
       [
@@ -812,6 +835,59 @@
               return '<tr><th scope="row">' + esc(q.name) + '</th><td class="is-end">' + q.newLeads.length + '</td><td class="is-end">' + q.won.length +
                 '</td><td class="is-end">' + q.lost.length + '</td><td class="is-end">' + q.churned.length + '</td></tr>';
             }).join('') + '</tbody></table></div>' };
+        });
+      } }
+      ],
+      [
+      /* Who is behind each count (the user, 2026-11-12: the tiles said how
+         many were won or churned, never who): every client a move counted
+         in the period, by move, each opening its record. */
+      { key: 'moved', title: 'Clients who moved', can: canLeads,
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return figuresFor('now').then(function (f) {
+          var kinds = MOVED.filter(function (k) { return f[k[0]].length; });
+          if (!kinds.length) return { empty: 'Nothing moved ' + periodName(period) + '.' };
+          return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl ovw-moved"><thead><tr><th scope="col">Client</th>' +
+            '<th scope="col" class="ovw-who">Person in charge</th><th scope="col" class="is-end">Date</th></tr></thead>' +
+            kinds.map(function (k) {
+              var list = f[k[0]].slice().sort(function (a, b) {
+                return String(f.at[k[0]][b.id] || '').localeCompare(String(f.at[k[0]][a.id] || ''));
+              });
+              return '<tbody data-kind="' + k[0] + '"><tr class="ovw-tbl-group"><th scope="rowgroup" colspan="3">' + esc(k[1]) +
+                ' <span class="tab-n">' + list.length + '</span></th></tr>' +
+                list.map(function (c, i) {
+                  return '<tr' + (i >= MOVED_SHOWN ? ' class="is-more" hidden' : '') + '><th scope="row">' + clientButton(c, '') + '</th>' +
+                    '<td class="ovw-who">' + esc(c.owner || '\u2014') + '</td><td class="is-end">' + esc(shortDate(f.at[k[0]][c.id])) + '</td></tr>';
+                }).join('') +
+                (list.length > MOVED_SHOWN ? '<tr class="ovw-tbl-more"><td colspan="3"><button type="button" class="btn btn-quiet btn-sm ovw-more" aria-expanded="false" data-n="' +
+                  (list.length - MOVED_SHOWN) + '">Show ' + (list.length - MOVED_SHOWN) + ' more</button></td></tr>' : '') +
+                '</tbody>';
+            }).join('') + '</table></div>', wire: wireClients };
+        });
+      } },
+      /* What makes up Committed monthly value (the same day): each active
+         client's month of confirmed monthly lines, highest first, a total a
+         currency, each opening the client's Services. */
+      { key: 'valueby', title: 'Committed monthly value by client', can: function () { return canClients() && canValue(); },
+        all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
+        return R.lines().then(function (lines) { return figuresFor('now', lines); }).then(function (f) {
+          var by = (f.money && f.money.byClient) || {}, M = window.ADspaceMoney;
+          var cur = function (c) { return M ? M.curOf(c) : String(c.market || 'MY').toUpperCase(); };
+          var list = f.activeNow.filter(function (c) { return by[c.id] > 0; }).sort(function (a, b) {
+            return cur(a).localeCompare(cur(b)) || by[b.id] - by[a.id] || String(a.name).localeCompare(String(b.name));
+          });
+          if (!list.length) return { empty: 'No committed monthly value.' };
+          var total = {};
+          list.forEach(function (c) { total[cur(c)] = (total[cur(c)] || 0) + by[c.id]; });
+          return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl ovw-valueby"><thead><tr><th scope="col">Client</th>' +
+            '<th scope="col" class="is-end">Per month</th><th scope="col" class="is-end ovw-share">Share</th></tr></thead><tbody>' +
+            list.map(function (c) {
+              var k = cur(c);
+              return '<tr><th scope="row">' + clientButton(c, 'services') + '</th><td class="is-end">' + esc(M ? M.money2(by[c.id], k) : by[c.id].toFixed(2)) +
+                '</td><td class="is-end ovw-share">' + Math.round(by[c.id] / total[k] * 100) + '%</td></tr>';
+            }).join('') + '</tbody><tfoot>' + Object.keys(total).sort().map(function (k) {
+              return '<tr><th scope="row">Total</th><td class="is-end">' + esc(M ? M.money2(total[k], k) : total[k].toFixed(2)) + '</td><td class="is-end ovw-share">100%</td></tr>';
+            }).join('') + '</tfoot></table></div>', wire: wireClients };
         });
       } }
       ],
@@ -940,8 +1016,21 @@
     if (mark) { el.classList.add('has-mark'); el.insertAdjacentHTML('afterbegin', '<span class="ovw-kpi-mark" aria-hidden="true">' + mark + '</span>'); }
     label(el, t);
     grid.appendChild(el);
+    /* A count with clients behind it opens them on Detail (2026-11-12). */
+    var to = typeof t.to === 'function' ? t.to() : t.to;
+    var open = function (e) {
+      if (!el.classList.contains('is-link') || e.target.closest('button')) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      openCard(to);
+    };
+    if (to) { el.addEventListener('click', open); el.addEventListener('keydown', open); }
     var run = function () {
       t.load().then(function (o) {
+        if (to) {
+          el.classList.add('is-link'); el.setAttribute('role', 'button'); el.tabIndex = 0;
+          el.setAttribute('aria-label', titleOf(t) + ': ' + o.fig + '. Show the clients');
+        }
         var fig = el.querySelector('.ovw-kpi-fig');
         fig.textContent = o.fig;
         fig.className = 'ovw-kpi-fig' + (o.tone ? ' is-' + o.tone : '') + (o.money ? ' is-money' : '');
@@ -958,6 +1047,7 @@
           ? '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(o.bar * 100) + '%"></i></span>'
           : (o.spark ? CH.spark(o.spark, o.tone) : '');
       }).catch(function (e) {
+        el.classList.remove('is-link'); el.removeAttribute('role'); el.removeAttribute('tabindex'); el.removeAttribute('aria-label');
         el.querySelector('.ovw-kpi-fig').textContent = '—';
         el.querySelector('.ovw-kpi-sub').innerHTML = '';
         var b = document.createElement('button');
@@ -1087,7 +1177,7 @@
         if (out.empty) { UI.emptyLine(body, out.empty); return; }
         /* A card of figures or a table rather than a chart (Sales moves, By
            person in charge) keeps its card and takes the markup. */
-        if (out.html) { body.innerHTML = out.html; return; }
+        if (out.html) { body.innerHTML = out.html; if (out.wire) out.wire(body); return; }
         out.title = title;
         var holder = document.createElement('div');
         CH.draw(holder, out);
@@ -1174,6 +1264,17 @@
       timer = setTimeout(function () { if (ghostGone) ghostGone(); }, 900);
     }
     if (bridge.setUrl) bridge.setUrl();
+  }
+  /* Turn to Detail and bring a card into view (a tile's press). */
+  function openCard(key) {
+    turn('detail');
+    requestAnimationFrame(function () {
+      var c = document.querySelector('#ovwBody [data-card="' + key + '"]');
+      if (!c) return;
+      c.scrollIntoView({ block: 'start' });
+      var h = c.querySelector('.ovw-cardhead h3');
+      if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
+    });
   }
   /* The way on at a page's foot: Summary continues to Detail, Detail goes
      back to Summary. */
