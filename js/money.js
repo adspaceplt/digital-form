@@ -376,12 +376,12 @@
     return hit ? hit[1] : String(k || '');
   }
   /* Payment terms cover the whole quotation, NET 7 unless chosen; 30 days
-     or more waits on ADspace's approval, NET 7 until then. */
+     or more is subject to ADspace's approval, said once (2026-11-12). */
   var PAY_DAYS = [7, 14, 30, 60, 90];
   function payLine(days) {
     var d = Number(days) || 7;
     return 'Payment is due within ' + d + ' days of the invoice date' +
-      (d >= 30 ? ', subject to ADspace\'s approval; until then, within 7 days of the invoice date.' : '.');
+      (d >= 30 ? ', subject to ADspace\'s approval.' : '.');
   }
 
   window.ADspaceMoney = {

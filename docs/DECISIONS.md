@@ -9857,3 +9857,13 @@ alone was refused `empty` by quote_price before they were added
   charge SST on the advertising budget (the user: "No need say this in
   quotation pdf"); the line that the budget is paid to the platforms in
   advance and includes their own SST and withholding tax stays.
+
+- 2026-11-12, the quotation PDF says each term once (the user: "Too many
+  duplicates … Payment terms / Within 7 days of the invoice date … straight
+  below the advertising, which is very confusing"): the payment terms and
+  the validity stand in TERMS alone (no longer on the acceptance page under
+  the advertising budget, nor in the lead sentence); the Service Terms are
+  named in TERMS alone, the acceptance accepting the terms set out in the
+  document; 30 days or more reads subject to ADspace's approval, without
+  "until then, within 7 days"; the budget is payable before the service
+  commences (no "in advance" beside it). The acceptance keeps the figures.
