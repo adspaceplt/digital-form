@@ -9976,6 +9976,8 @@ Not built from the mockup: people beside each stage (the report holds no
 assignees by stage) and a tooltip pill on the trend (the chart already
 gives a figure on hover or a tap).
 
+### 2026-11-12 · Lighter marks
+The user found the VIC ring "really bold and thick, which is no longer minimalist, modern, and elegant", and asked for the rest to be checked. The ring was 2px of the card then 1.5px of gold, with a crown disc over it; it is now a 1px gap and a 1px gold hairline at 72%, the crown 14px. Checked the same way: the VIC tag 600 → 500, the task progress ring stroke 2.6 → 2, the Dashboard's stage rings 3.5 → 2 with their number at 500, the lead figures 600 → 500, and a list row's record name 600 → 500 (Clients, My Work, Services, Team, Reports, Needs attention, Waiting for you), as the revamp's references set them. Headings keep 600.
 ### 2026-11-12 · The clients behind the Dashboard's Sales counts
 The user: the Summary's Won, Churned and New leads read a number and
 Committed monthly value a total, "but then it's not one client committed
