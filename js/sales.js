@@ -185,5 +185,21 @@
     return { active: sum(f.activeNow), won: sum(f.won), churned: sum(f.churned) };
   }
 
-  window.ADspaceSales = { figures: figures, reasonWord: reasonWord, movesOf: movesOf };
+  /* Better or worse (the Dashboard and Analytics read the one rule): a
+     figure against the period before, `good` the way it should move ('up'
+     or 'down'), Better or Worse once it moved by the Business setting
+     `analytics_change_pct` (10%) and, for a count, by at least `min`;
+     else Steady. Nothing to compare reads nothing. */
+  function judge(now, before, good, min) {
+    if (now == null || before == null || isNaN(now) || isNaN(before)) return null;
+    var M = window.ADspaceMoney, raw = M && M.setting ? M.setting('analytics_change_pct') : null;
+    var pct = raw == null || raw === '' || isNaN(Number(raw)) ? 10 : Number(raw);
+    var d = now - before, thr = pct / 100;
+    var rel = before ? Math.abs(d) / Math.abs(before) : (d ? 1 : 0);
+    if (!d || rel < thr || (min && Math.abs(d) < min)) return { tone: 'off', word: 'Steady' };
+    var ok = good === 'up' ? d > 0 : d < 0;
+    return { tone: ok ? 'ok' : 'late', word: ok ? 'Better' : 'Worse' };
+  }
+
+  window.ADspaceSales = { figures: figures, reasonWord: reasonWord, movesOf: movesOf, judge: judge };
 })();

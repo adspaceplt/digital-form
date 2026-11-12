@@ -144,6 +144,17 @@
     return (d > 0 ? '+' : '−') + Math.abs(d) + ' on ' + prevWord(period);
   }
 
+  /* A figure's change with its verdict (the revamp, 2026-11-12): the arrow
+     and the Better or Worse that Analytics already judges by, coloured only
+     where it is judged; Steady stays ink. `good` the way the figure should
+     move. */
+  function trendOf(now, before, good, min) {
+    var v = S() && S().judge ? S().judge(now, before, good, min) : null;
+    var d = now - before;
+    /* No change already reads Same as …: Steady would say it twice. */
+    return { arrow: !d ? '\u2192' : d > 0 ? '\u2197' : '\u2198', tone: v ? v.tone : 'off', word: v && d ? v.word : '' };
+  }
+
   // ---- Reads, one request each a visit ----------------------------------------
   var memo = {};
   function once(key, fn) {
@@ -589,10 +600,11 @@
 
   /* A tile counting one kind of client move: the period, its change on the
      period before and the six months' trend. */
-  function kindTile(key, title, kind) {
-    return { key: key, title: title, can: canLeads, load: function () {
+  function kindTile(key, title, kind, good) {
+    return { key: key, title: title, sec: 'clients', can: canLeads, load: function () {
       return Promise.all([figuresFor('now'), figuresFor('prev'), figuresFor('six')]).then(function (f) {
         return { fig: String(f[0][kind].length), sub: delta(f[0][kind].length, f[1][kind].length),
+                 trend: trendOf(f[0][kind].length, f[1][kind].length, good, 2),
                  spark: f[2].months.map(function (m) { return m[kind]; }) };
       });
     } };
@@ -602,12 +614,12 @@
      has a history, its trend. `load()` answers `{ fig, sub, tone, spark,
      bar }`. */
   var SALES = [
-    kindTile('leads', 'New leads', 'newLeads'),
-    kindTile('won', 'Won', 'won'),
-    kindTile('churned', 'Churned', 'churned'),
+    kindTile('leads', 'New leads', 'newLeads', 'up'),
+    kindTile('won', 'Won', 'won', 'up'),
+    kindTile('churned', 'Churned', 'churned', 'down'),
     /* Committed monthly value for whoever may open a client's Services, from
        the lines that part opens; Active clients for everyone else. */
-    { key: 'value', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
+    { key: 'value', sec: 'clients', title: function () { return canValue() ? 'Committed monthly value' : 'Active clients'; },
       /* Its narrow word: the whole label is cut at a phone's tile (2026-10-15, audit OVW-1). */
       short: function () { return canValue() ? 'Committed value' : ''; }, can: canClients, load: function () {
       if (canValue()) {
@@ -619,6 +631,7 @@
       }
       return Promise.all([figuresFor('now'), figuresFor('six')]).then(function (f) {
         return { fig: String(f[0].activeEnd), sub: delta(f[0].activeEnd, f[0].activeStart),
+                 trend: trendOf(f[0].activeEnd, f[0].activeStart, 'up', 2),
                  spark: f[1].months.map(function (m) { return m.active; }) };
       });
     } }
@@ -627,7 +640,7 @@
     return (d && Array.isArray(d.by_person) ? d.by_person : []).reduce(function (a, p) { return a + (Number(p.completed) || 0); }, 0);
   }
   var OPS = [
-    { key: 'open', title: 'Open tasks', can: canTeamWork, load: function () {
+    { key: 'open', title: 'Open tasks', sec: 'work', can: canTeamWork, load: function () {
       return R.report().then(function (d) {
         if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
         var people = d.open_by_person.filter(function (p) { return Number(p.open) > 0; });
@@ -637,19 +650,19 @@
     } },
     /* The count is the Late tasks signal's; the tile states how late the
        oldest is, so nothing on the page is said twice (2026-10-22, OVW-5). */
-    { key: 'late', title: 'Oldest late', can: canFigures, load: function () {
+    { key: 'late', title: 'Oldest late', sec: 'work', can: canFigures, load: function () {
       return R.report().then(function (d) {
         var l = d.late || [], top = l.reduce(function (a, t) { return Math.max(a, Number(t.days_over) || 0); }, 0);
         return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '', sub: '' };
       });
     } },
-    { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, can: canFigures, load: function () {
+    { key: 'delivered', title: function () { return 'Delivered ' + periodName(period); }, sec: 'work', can: canFigures, load: function () {
       return Promise.all([R.report(), R.reportPrev(), R.months()]).then(function (r) {
         var n = completed(r[0]);
-        return { fig: String(n), sub: delta(n, completed(r[1])), spark: r[2].map(function (x) { return completed(x.d); }) };
+        return { fig: String(n), sub: delta(n, completed(r[1])), trend: trendOf(n, completed(r[1]), 'up', 2), spark: r[2].map(function (x) { return completed(x.d); }) };
       });
     } },
-    { key: 'published', title: function () { return 'Reports published, ' + lastMonth().short; }, can: canReports, load: function () {
+    { key: 'published', title: function () { return 'Reports published, ' + lastMonth().short; }, sec: 'reports', can: canReports, load: function () {
       return R.owed().then(function (items) {
         var done = items.filter(function (x) { return x.status === 'published'; }).length;
         var open = items.filter(function (x) { return x.status !== 'published'; });
@@ -938,7 +951,10 @@
     el.className = 'chartcard ovw-kpi';
     el.setAttribute('data-tile', t.key);
     el.innerHTML = '<span class="ovw-kpi-label"></span><b class="ovw-kpi-fig"><span class="skel skel-w"></span></b>' +
-      '<span class="ovw-kpi-sub"></span><span class="ovw-kpi-trend"></span>';
+      '<span class="ovw-kpi-line"><span class="ovw-kpi-sub"></span></span><span class="ovw-kpi-trend"></span>';
+    /* The section the figure is read from, its mark at the tile's top right. */
+    var mark = t.sec && window.ADspaceAdmin && window.ADspaceAdmin.glyph ? window.ADspaceAdmin.glyph(t.sec) : '';
+    if (mark) { el.classList.add('has-mark'); el.insertAdjacentHTML('afterbegin', '<span class="ovw-kpi-mark" aria-hidden="true">' + mark + '</span>'); }
     label(el, t);
     grid.appendChild(el);
     var run = function () {
@@ -948,6 +964,13 @@
         fig.className = 'ovw-kpi-fig' + (o.tone ? ' is-' + o.tone : '') + (o.money ? ' is-money' : '');
         label(el, t);
         el.querySelector('.ovw-kpi-sub').textContent = o.sub || '';
+        var line = el.querySelector('.ovw-kpi-line');
+        Array.prototype.forEach.call(line.querySelectorAll('.ovw-kpi-arrow, .ovw-kpi-verdict'), function (x) { x.remove(); });
+        line.className = 'ovw-kpi-line' + (o.trend && o.sub ? ' is-' + o.trend.tone : '');
+        if (o.trend && o.sub) {
+          line.insertAdjacentHTML('afterbegin', '<i class="ovw-kpi-arrow" aria-hidden="true">' + o.trend.arrow + '</i>');
+          if (o.trend.word) line.insertAdjacentHTML('beforeend', '<span class="ovw-kpi-verdict">' + esc(o.trend.word) + '</span>');
+        }
         el.querySelector('.ovw-kpi-trend').innerHTML = o.bar != null
           ? '<span class="ovw-kpi-bar" aria-hidden="true"><i style="width:' + Math.round(o.bar * 100) + '%"></i></span>'
           : (o.spark ? CH.spark(o.spark, o.tone) : '');
@@ -961,6 +984,49 @@
         el.querySelector('.ovw-kpi-sub').appendChild(document.createTextNode('Could not load. '));
         el.querySelector('.ovw-kpi-sub').appendChild(b);
       });
+    };
+    run();
+  }
+  /* Work by stage (the revamp, 2026-11-12): the open work in four bands,
+     each its count inside its share of the whole, in its stage's status
+     colour, from the report's own count of open work by stage (`running`). */
+  var BANDS = [
+    { word: 'Not started', tone: 'off', keys: ['intake', 'ready', 'kiv'] },
+    { word: 'In progress', tone: 'warn', keys: ['active', 'revision'] },
+    { word: 'In review', tone: 'warn', keys: ['internal_review', 'client_review', 'waiting'] },
+    { word: 'Approved or live', tone: 'ok', keys: ['approved', 'delivered', 'scheduled', 'live', 'performance'] },
+    { word: 'Blocked', tone: 'late', keys: ['blocked'], hide: true }
+  ];
+  function stages(box) {
+    if (!canFigures()) return;
+    var card = document.createElement('section');
+    card.className = 'chartcard ovw-card ovw-stages';
+    card.id = 'ovwStages';
+    card.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
+    headOf(card, 'Work by stage', ['My Work', '/admin/?s=work', 'work']);
+    box.appendChild(card);
+    var body = card.querySelector('.ovw-body');
+    var run = function () {
+      UI.skeleton(body, 1);
+      R.report().then(function (d) {
+        var by = {}, total = 0;
+        (d.running || []).forEach(function (r) {
+          var n = Number(r.count) || 0, g = r.stage_group || r.stage_key;
+          BANDS.forEach(function (b) { if (b.keys.indexOf(g) >= 0 || b.keys.indexOf(r.stage_key) >= 0) { by[b.word] = (by[b.word] || 0) + n; total += n; } });
+        });
+        var shown = BANDS.filter(function (b) { return !b.hide || by[b.word]; });
+        if (!total) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return; }
+        var C = 2 * Math.PI * 18;
+        body.innerHTML = '<div class="ovw-stage-row">' + shown.map(function (b) {
+          var n = by[b.word] || 0, len = n / total * C;
+          return '<div class="ovw-stage">' +
+            '<svg class="ovw-ring" viewBox="0 0 44 44" role="img" aria-label="' + esc(b.word + ': ' + n + ' of ' + total) + '">' +
+            '<circle class="ovw-ring-track" cx="22" cy="22" r="18"></circle>' +
+            (len ? '<circle class="ovw-ring-arc is-' + b.tone + '" cx="22" cy="22" r="18" transform="rotate(-90 22 22)" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '"></circle>' : '') +
+            '<text x="22" y="26.5" text-anchor="middle">' + n + '</text></svg>' +
+            '<span class="ovw-stage-what"><b>' + esc(b.word) + '</b><small>' + n + ' of ' + total + ' open</small></span></div>';
+        }).join('') + '</div>';
+      }).catch(function (e) { fail(body, 'Work by stage', e, run); });
     };
     run();
   }
@@ -1146,6 +1212,12 @@
     var pick = '';
     var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',
       Document: 'Clients', Campaign: 'Creator Campaigns', Performance: 'Team' };
+    /* The section's mark before its name (the revamp, 2026-11-12). */
+    var SEC_KEY = { 'My Work': 'work', Reports: 'reports', Clients: 'clients', 'Creator Campaigns': 'campaigns', Team: 'team' };
+    function secMark(word) {
+      var k = SEC_KEY[word], A = window.ADspaceAdmin;
+      return k && A && A.glyph ? '<span class="ovw-att-mark" aria-hidden="true">' + A.glyph(k) + '</span>' : '';
+    }
     var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     var wordOf = {};
     SOURCES.forEach(function (s) { wordOf[s.key] = s.word || titleOf(s); });
@@ -1219,7 +1291,7 @@
           : '<span class="chip-state tone is-' + (r.tone || 'warn') + '">' + esc(r.since) + '</span>';
         return '<button class="ovw-att-row" type="button" data-i="' + i + '"' + (i >= SHOWN ? ' hidden' : '') + '>' +
           '<span class="ovw-att-what"><b>' + esc(r.name) + (r.vic && window.ADspaceAdmin ? window.ADspaceAdmin.vicTag(r.vic, true) : '') + '</b>' + (r.meta ? '<small>' + esc(r.meta) + '</small>' : '') + '</span>' +
-          '<span class="ovw-att-sec"><span class="chip">' + esc(SEC_OF[r.tag] || r.tag) + '</span></span>' +
+          '<span class="ovw-att-sec">' + secMark(SEC_OF[r.tag] || r.tag) + '<span class="ovw-att-secword">' + esc(SEC_OF[r.tag] || r.tag) + '</span></span>' +
           '<span class="ovw-att-who">' + (r.who ? esc(r.who) : '<span class="ovw-dash" aria-label="No one">—</span>') + '</span>' +
           '<span class="ovw-att-since">' + since + '</span></button>';
       }).join('');
@@ -1311,6 +1383,7 @@
     } else {
       glance(box);
       list(box);
+      stages(box);
       tiles(box);
       charts(box, PAGE1);
     }
