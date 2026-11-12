@@ -1103,6 +1103,79 @@
     };
     run();
   }
+  /* This month by client (v3, 2026-11-12, "ok yes all"): a card a client
+     whose content month is this month, as My Work's month reads it: its
+     work done of all over a bar, what is late, and its next three open
+     tasks, soonest first. Late months first, then the least done. One read
+     of the months, one of their counts, and the open tasks already read
+     for Needs attention. */
+  function months(box) {
+    if (!canFigures() || !may('ops', 'view')) return;
+    var sec = document.createElement('section');
+    sec.className = 'ovw-months';
+    sec.id = 'ovwMonths';
+    sec.innerHTML = '<div class="ovw-months-head"><h3 class="ovw-group-h">This month by client</h3></div><div class="ovw-month-grid"></div>';
+    box.appendChild(sec);
+    var all = document.createElement('button');
+    all.type = 'button'; all.className = 'btn btn-quiet btn-sm ovgo';
+    all.innerHTML = '<span class="ovgo-word">My Work</span>' + CHEV;
+    all.setAttribute('aria-label', 'My Work: months');
+    all.addEventListener('click', function () { go('/admin/?s=work&view=months', 'work'); });
+    sec.firstChild.appendChild(all);
+    var grid = sec.querySelector('.ovw-month-grid');
+    var key = CK.today().slice(0, 7);
+    var run = function () {
+      UI.skeleton(grid, 2);
+      db.from('ops_engagements').select('id, client_id, period, status, clients(name, logo_url, stage)')
+        .eq('period', key).then(rows).then(function (eng) {
+          eng = (eng || []).filter(function (e) { return e.status !== 'cancelled' && e.clients && e.clients.stage !== 'past'; });
+          /* No client month this month: the section leaves, as a block with
+             no data does. */
+          if (!eng.length) { sec.remove(); return null; }
+          return Promise.all([
+            db.rpc('ops_engagement_counts', { p_engagements: eng.map(function (e) { return e.id; }) }).then(rows),
+            R.openTasks().catch(function () { return []; })
+          ]).then(function (q) {
+            var by = {};
+            (q[0] || []).forEach(function (x) { by[x.engagement_id] = x; });
+            var list = eng.map(function (e) {
+              var c = by[e.id] || {}, live = Number(c.live) || 0, done = Number(c.done) || 0;
+              return { e: e, live: live, done: done, late: Number(c.late) || 0, open: Number(c.open) || 0 };
+            }).sort(function (a, b) {
+              return (b.late > 0) - (a.late > 0) || (a.live ? a.done / a.live : 1) - (b.live ? b.done / b.live : 1) || String(a.e.clients.name).localeCompare(String(b.e.clients.name));
+            });
+            grid.innerHTML = list.map(function (m) { return monthCard(m, q[1] || []); }).join('');
+            Array.prototype.forEach.call(grid.querySelectorAll('[data-go]'), function (b) {
+              b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'work'); });
+            });
+          });
+        }).catch(function (e) { fail(grid, 'This month by client', e, run); });
+    };
+    run();
+  }
+  function monthCard(m, open) {
+    var A = window.ADspaceAdmin, c = m.e.clients;
+    var segs = '', n = Math.min(m.live, 12), on = m.live ? Math.round(m.done / m.live * n) : 0;
+    for (var i = 0; i < n; i++) segs += '<i' + (i < on ? ' class="is-on"' : '') + '></i>';
+    var next = open.filter(function (t) { return t.client_id === m.e.client_id; }).sort(function (a, b) {
+      return String(a.current_final_due_at || '9').localeCompare(String(b.current_final_due_at || '9'));
+    }).slice(0, 3);
+    var now = CK.today();
+    return '<article class="chartcard ovw-month">' +
+      '<button class="ovw-month-who" type="button" data-go="/admin/?s=work&view=months&wc=' + esc(encodeURIComponent(m.e.client_id)) + '">' +
+        (A && A.clientMark ? A.clientMark(c, m.e.client_id) : '') +
+        '<span class="ovw-month-name"><b>' + esc(c.name) + '</b><small>' + esc(CK.month ? CK.month(m.e.period + '-01') : m.e.period) + '</small></span>' + CHEV + '</button>' +
+      '<div class="ovw-month-bar">' + (n ? '<span class="tcheckbar-segs' + (m.live && m.done === m.live ? ' is-done' : '') + '" aria-hidden="true">' + segs + '</span>' : '') +
+        '<span class="ovw-month-pct">' + (m.live ? m.done + ' of ' + m.live + ' done' : 'No tasks') + '</span></div>' +
+      '<p class="ovw-month-line">' + m.open + ' open' + (m.late ? ' · <span class="is-late">' + m.late + ' late</span>' : '') + '</p>' +
+      (next.length ? '<div class="ovw-month-next"><span class="ovw-month-h">Next steps</span>' + next.map(function (t) {
+        var d = t.current_final_due_at ? String(t.current_final_due_at).slice(0, 10) : '', late = d && d < now;
+        return '<button class="ovw-step" type="button" data-go="/admin/?s=work&open=' + esc(encodeURIComponent(t.id)) + '">' +
+          '<span class="ovw-step-dot" aria-hidden="true"></span><span class="ovw-step-what">' + esc(taskName(t)) + '</span>' +
+          '<span class="ovw-step-due' + (late ? ' is-late' : '') + '">' + esc(d ? shortDate(d) : '') + '</span></button>';
+      }).join('') + '</div>' : '') +
+    '</article>';
+  }
   /* The four figures that lead the page (the revamp, 2026-11-12): one row,
      before everything else. The rest stay in their groups further down. */
   var LEAD = ['delivered', 'ontime', 'leads', 'late'];
@@ -1482,6 +1555,15 @@
     } else {
       lead(box);
       stages(box);
+      months(box);
+      /* The line under the Dashboard's name: the open work and what of it
+         is late, from the report the page already reads. */
+      if (canFigures() && window.ADspaceAdmin && window.ADspaceAdmin.counts) {
+        R.report().then(function (d) {
+          var open = (d.running || []).reduce(function (n, r) { return n + (Number(r.count) || 0); }, 0), late = (d.late || []).length;
+          window.ADspaceAdmin.counts('overview', [[open, 'open tasks'], late ? [late, 'late', 'late'] : null]);
+        }).catch(function () {});
+      }
       /* Needs attention beside the on-time trend, the golden proportion
          (the revamp, 2026-11-12); one over the other in a narrow pane. */
       var pair = document.createElement('div');
