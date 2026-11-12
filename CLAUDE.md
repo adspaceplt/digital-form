@@ -1251,10 +1251,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
-  - Every filter off its default is a chip on its own row under the bar
-    (`.cmdbar-chips`, Label: Value with its ×, a press putting that filter
-    back; a view never a chip; Clear filters stays the card's and the empty
-    list's; 2026-11-12).
+  - Every filter is a pill on its own row under the bar (v3, 2026-11-12):
+    at a desk each filter whatever its value (`Stage: All stages`, its
+    value in ink on the deeper tonal step once set), a press opening its
+    choices as a menu under it (`.cmdpill-menu`, the arrows, Escape back to
+    the pill); on a phone only the filters set, a press putting that one
+    back (`.cmdbar-chips`, Label: Value with its ×). A view never a pill;
+    Clear filters stays the card's and the empty list's
   - The Filters sheet focuses its card, never a select (a focused select wears
     the ring, and iOS does not open a select that already has focus).
   - A select the page shows or hides while the card or sheet is open is

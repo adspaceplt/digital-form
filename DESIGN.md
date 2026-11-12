@@ -19,7 +19,8 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   group, then what the section holds as figures and words
   (`ADspaceAdmin.counts`: 14 open · 2 late · 6 due this week; a late part
   in red words), drawn by the section itself. A card on the sheet is white
-  with an inset `--card-edge` hairline, never a shadow; a card inside a
+  with a `--card-edge` hairline drawn as an outline just inside it (never
+  an inset shadow, which the rows' white ground covers), never a shadow; a card inside a
   card is one surface; cards take the large corner (`--radius-lg`). The
   rail's My Work row counts what waits on the reader (`.nav-n`). Phones
   keep their solid head and one-line title. What holds words over other
