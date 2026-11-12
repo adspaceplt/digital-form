@@ -4702,9 +4702,16 @@ span.inv-amt { font-weight: 600; }
 .stg-find .input { width: 100%; }
 .stg.is-phone .stg-find, .stg.is-single .stg-find { margin-bottom: 12px; }
 .stg-go { gap: 10px; }
-.stg-go-g, .stg-hit-g { display: inline-flex; flex: 0 0 auto; width: 15px; height: 15px; color: var(--ink-mute); }
-.stg-go-g svg, .stg-hit-g svg { width: 15px; height: 15px; }
-.stg-go[aria-current] .stg-go-g { color: var(--ink); }
+/* Every group leads with the rail's 26px tile (the user, 2026-11-12: the
+   section marks read as clipped circles beside bare glyphs): a section's
+   glyph on its own tint, any other group's on the internal grey. */
+.stg-go-g, .stg-hit-g {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 26px; height: 26px; border-radius: var(--radius-ctl-sm);
+  background: var(--sec-int-bg); color: var(--sec-int);
+}
+.stg-go-g svg, .stg-hit-g svg { width: 15px; height: 15px; stroke-width: 2; }
+.stg-go-g svg.sec, .stg-hit-g svg.sec { padding: 5.5px; }
 .stg-sec { display: grid; gap: 16px; }
 .stg-sec > .stg-title { margin: 0; }
 .stg-part { display: grid; gap: 8px; }
