@@ -170,12 +170,44 @@
 
     // Page 2: the quotation.
     newPage();
+    /* The revamp (the user, 2026-11-12: "title, body, groups,
+       categorization, hierarchy"): three levels only. The page title, the
+       numbered sections (each part of the fee, then the terms), and the
+       table heads; the quotation's own facts as one block under the title
+       in place of a sentence restating them. */
+    var H1 = 16, H2 = 12, LBL = 8.5;
+    var secNo = 0;
+    var h2 = function (s) {
+      room(80); y -= 8; secNo++;
+      text(secNo + '.', M, y, H2, reg); text(s, M + 18, y, H2, reg);
+      y -= 8;
+    };
+    if (t.layout === 2) {
+      y -= 6; text('Quotation', M, y, H1, reg); y -= 22;
+      var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))], ['Valid until', longDay(q.valid_until)],
+        ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
+      if (t.month) facts.push(['Minimum term', t.term + (Number(t.term) === 1 ? ' month' : ' months')]);
+      var colW = FULL / 3;
+      for (var fi = 0; fi < facts.length; fi += 3) {
+        var rowH = 0;
+        facts.slice(fi, fi + 3).forEach(function (f, k) {
+          var x0 = M + k * colW;
+          text(f[0], x0, y, LBL, book, mute);
+          var vl = wrap(f[1], colW - 12, 10, reg);
+          vl.forEach(function (v, j) { text(v, x0, y - 14 - j * 12, 10, reg); });
+          rowH = Math.max(rowH, 14 + (vl.length - 1) * 12);
+        });
+        y -= rowH + 18;
+      }
+      rule(y + 6); y -= 14;
+    } else {
     heading('Quotation');
     /* Its validity is said once, in TERMS (the user, 2026-11-12: the PDF
        said too much twice). */
     para('Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) +
       ', sets out the services and fees proposed for ' + buyer + '.', 11, 14.5);
     y -= 16;
+    }
 
     var TB = 10, SM = 8, cwQ = 30, cwR = 84, cwA = 92;
     var xA = R, xR = R - cwA - 8, xQ = xR - cwR - 8, wD = xQ - cwQ - 12 - M;
@@ -253,7 +285,7 @@
           right(r[1], R, y + 5, TB, r[2] ? reg : book);
         });
       };
-      var section = function (title) { room(70); y -= 6; text(title, M, y, 10.5, reg); y -= 6; };
+      var section = function (title) { h2(title); y += 2; };
       var folded = MONY.planFold(q.lines);
       var monthly = folded.filter(function (l) { return l.basis !== 'once'; });
       var onceL = folded.filter(function (l) { return l.basis === 'once'; });
@@ -310,52 +342,59 @@
       }
 
       // TERMS.
-      var days2 = Math.round((Date.parse(q.valid_until + 'T00:00:00Z') - Date.parse(dayOf(q.issued_at) + 'T00:00:00Z')) / 864e5);
       /* TERMS in the register of a contract (the user, 2026-11-12: "legal
          professional since this has the legal power when signed"): one
          obligation a clause, each said once. The payment term is the one
          the team chose in Build quote, stated as decided. */
-      var notes2 = ['This Quotation is valid for ' + both(days2) + ' days from its date of issue and shall lapse on ' +
-        longDay(q.valid_until) + ' unless accepted before that date.', MONY.payLine(t.pay_days)];
-      var bill = [];
-      if (t.month) bill.push('The Monthly Service Fee shall be invoiced monthly.');
-      if (t.once) bill.push('One-off Items shall be invoiced in the month in which they are delivered.');
-      if (bill.length) notes2.push(bill.join(' '));
-      if (ads.length) {
-        notes2.push('The Advertising Budget is paid to the advertising platforms on the Client\'s behalf and shall be payable ' +
-          'before the services commence. It is inclusive of any SST and withholding tax imposed by the advertising platforms.');
-      } else if (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; })) {
-        notes2.push('Any advertising budget is excluded from the fees in this Quotation and shall be invoiced separately.');
-      }
+      /* Grouped by subject, numbered through (2026-11-12); what the facts
+         block under the title states (the date it lapses, the payment
+         term, the minimum term) is referred to here, never said again. */
+      var groups = [];
+      var grp = function (h, list) { list = list.filter(Boolean); if (list.length) groups.push({ h: h, list: list }); };
+      var fee = t.month ? Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100 : 0;
+      grp('Validity', ['This Quotation shall lapse if it is not accepted on or before the date stated as Valid until.']);
+      grp('Fees and payment', [
+        t.month ? 'The Monthly Service Fee shall be invoiced monthly' + (own ? '.' : ' for the minimum term.') : '',
+        t.once ? 'One-off Items shall be invoiced in the month in which they are delivered.' : '',
+        'Each invoice shall be paid within the payment term stated above.',
+        t.month ? 'The total Monthly Service Fee payable ' + (own ? 'over the period stated for each line' : 'over the minimum term') +
+          ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.' : ''
+      ]);
+      grp('Advertising budget', [ads.length
+        ? 'The Advertising Budget is paid to the advertising platforms on the Client\'s behalf and shall be payable before the ' +
+          'services commence. It is inclusive of any SST and withholding tax imposed by the advertising platforms.'
+        : (Number(t.budget) > 0 || (q.lines || []).some(function (l) { return l.kind === 'ads' || l.kind === 'plan'; }))
+          ? 'Any advertising budget is excluded from the fees in this Quotation and shall be invoiced separately.' : '']);
       /* Files and further filming (2026-11-12, the user): never part of a
          fee unless a line of the quotation names them. */
-      notes2.push('Additional footage, working files and raw files are excluded unless expressly stated in this Quotation, ' +
-        'and shall be charged separately.');
-      if ((t.on_request || []).length) {
-        notes2.push('The following shall be quoted separately upon request: ' + t.on_request.map(function (x) {
+      grp('Exclusions', ['Additional footage, working files and raw files are excluded unless expressly stated in this Quotation, ' +
+        'and shall be charged separately.',
+        (t.on_request || []).length ? 'The following shall be quoted separately upon request: ' + t.on_request.map(function (x) {
           return x === 'budget' ? 'an advertising budget above the highest tier of the ADspace Rate Card' : x;
-        }).join(', ') + '.');
-      }
-      if (t.month) {
-        var fee = Math.round((Number(t.commitment || 0) - Number((t.once || {}).incl || 0)) * 100) / 100;
-        notes2.push('The total Monthly Service Fee payable ' + (own ? 'over the period stated for each line' : 'over the minimum term of ' +
-          both(t.term) + ' months') + ' is ' + amt(fee, q) + (sstOn ? ', inclusive of SST' : '') + '.');
-      }
-      (Array.isArray(t.terms) ? t.terms : []).forEach(function (x) { if (String(x).trim()) notes2.push(String(x).trim()); });
-      notes2.push('This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
-        'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.');
-      notes2.push('All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.');
-      room(30);
-      y -= 8;
-      text('TERMS', M, y, SM, book, mute);
-      y -= 6;
-      notes2.forEach(function (n, i) {
-        var ls = wrap(n, FULL - 14, 8.5, book);
-        room(ls.length * 12 + 2);
-        y -= 12;
-        text((i + 1) + '.', M, y + 3, 8.5);
-        ls.forEach(function (s2, k) { text(s2, M + 14, y + 3 - k * 12, 8.5); });
-        y -= (ls.length - 1) * 12;
+        }).join(', ') + '.' : '']);
+      grp('Special terms', (Array.isArray(t.terms) ? t.terms : []).map(function (x) { return String(x).trim(); }));
+      grp('Agreement', ['This Quotation shall become binding upon its acceptance and signature by the Client on the acceptance page. ' +
+        'This Quotation, together with the ADspace Service Terms at go.adspace.me/svc-terms, shall constitute the contract between the parties.',
+        'All rates are based on the ADspace Rate Card v.' + q.version + '. E&OE.']);
+      /* The terms on a page of their own (2026-11-12): the fees page
+         ends at its last total, and a long quotation never strands a
+         clause group on a page of its own. */
+      newPage(); y -= 6;
+      h2('Terms and Conditions');
+      var cl = 0, TS = 9.5, TL = 13.5;
+      groups.forEach(function (g) {
+        room(44); y -= 20;
+        text(g.h, M, y, TS + 0.5, reg);
+        y -= 4;
+        g.list.forEach(function (n) {
+          cl++;
+          var ls = wrap(n, FULL - 18, TS, book);
+          room(ls.length * TL + 2);
+          y -= TL;
+          text(cl + '.', M, y, TS, book, mute);
+          ls.forEach(function (s2, k) { text(s2, M + 18, y - k * TL, TS); });
+          y -= (ls.length - 1) * TL;
+        });
       });
     } else {
     headRow();
@@ -437,18 +476,20 @@
 
     // Page 3: Acceptance of quotation, always a page of its own.
     newPage();
-    heading('Acceptance of quotation');
+    var v2 = t.layout === 2;
+    if (v2) { y -= 6; text('Acceptance of Quotation', M, y, H1, reg); y -= 8; } else heading('Acceptance of quotation');
     para('By signing below, the Client accepts Quotation ' + q.ref + ', dated ' + longDay(dayOf(q.issued_at)) + ', and agrees ' +
-      'to be bound by the terms set out in this document.', 11, 14.5);
-    y -= 12;
+      'to be bound by the terms set out in this document.', v2 ? 10.5 : 11, 14.5);
+    y -= v2 ? 22 : 12;
+    if (v2) { text('Figures agreed', M, y, LBL, book, mute); y -= 6; }
     rule(y);
     y -= 4;
     agreed.forEach(function (r) { y -= 16; text(r[0], M, y + 4, TB); right(r[1], R, y + 4, TB); });
     y -= 8;
     rule(y);
-    y -= 24;
+    y -= v2 ? 30 : 24;
 
-    var block = function (title) { text(title, M, y, 11, reg); y -= 12; };
+    var block = function (title) { text(title, M, y, v2 ? H2 : 11, reg); y -= v2 ? 14 : 12; };
     // Issued for and on behalf of ADSPACE PLT: Prepared by, Reviewed by.
     block('Issued for and on behalf of ADSPACE PLT');
     var rev = opts.reviewedBy || {};
