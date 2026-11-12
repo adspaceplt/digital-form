@@ -9994,6 +9994,13 @@ disagrees with its tile. Each client opens its record (its Services from
 the value). The four tiles are a press opening Detail on their card, the
 card's title taking focus. No new read: both cards draw from the clients
 and lines the page already holds.
+- 2026-11-12, Build quote asks Valid for (the user: "Build valid for"):
+  14, 30, 45, 60 or 90 days beside Payment terms, opening on the Business
+  setting; `quote_extras` keeps it as `valid_days` (`bad-valid`), and
+  `quotation_make` and `quotation_edit` count `valid_until` from the
+  quotation's Date by it, else by `quote_valid_days`
+  (`2026-11-12-quotation-valid-for.sql`). The PDF's first term prints the
+  days and the lapse date. A website quotation keeps the setting.
 
 ### 2026-11-12 · The rail's hover shows on glass
 The user: "the hover is not obvious enough". The rail's hover was `--sunk` (#f9f9f9), the glass rail's own shade, so it drew nothing. On the floating desk rail a section and a foot mark now take `--tonal` on hover, the buttons' shade, one step short of the chosen row's raised white; the phone and the narrow drawer keep theirs.
