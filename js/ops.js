@@ -591,7 +591,7 @@
          Done this week and the undo after a completion all need it. */
       var since = new Date(Math.min(periodStart().getTime(), weekStart().getTime())).toISOString();
       var base = function () {
-        return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+        return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null)
           .order('current_final_due_at', { ascending: true, nullsFirst: false });
       };
       Promise.all([
@@ -601,7 +601,7 @@
            id's order, the one no two rows share, and the queue's own order
            (the final date, undated last) is put back here. */
         readPages(function () {
-          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+          return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null)
             .is('completed_at', null).is('cancelled_at', null).order('id');
         }).then(function (x) {
           if (x.data) x.data.sort(function (a, b) {
@@ -615,11 +615,11 @@
            a limit of 500 dropped the newest of This year without a word
            (2026-10-22, WRK-4). */
         readPages(function () {
-          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+          return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null)
             .gte('completed_at', since).order('id');
         }),
         readPages(function () {
-          return db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null)
+          return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null)
             .gte('cancelled_at', since).order('id');
         }),
         /* SEARCHING COMPLETED WORK asks the database, across every month:
@@ -643,7 +643,7 @@
             seen[t.id] = 1;
             return true;
           });
-        return Promise.all([readOwners(tasks), nameClients(tasks)]).then(function (q) {
+        return Promise.all([readOwners(tasks), nameClients(tasks), readExtras(tasks)]).then(function (q) {
           /* A refused read of who owns what is not an empty owner column:
              the scope, the grouping and the capacity strip all hang off it,
              and a queue that quietly says nobody owns anything is worse than
@@ -654,6 +654,7 @@
             return;
           }
           state.tasks = tasks;
+          state.extras = q[2];
           state.owners = {};
           state.ownerIds = {};
           q[0].data.forEach(function (a) {
@@ -678,7 +679,7 @@
      reads the list whole, as before. */
   function refreshOne(id) {
     if (!id || !state.tasks) { load(); return; }
-    db.from('ops_tasks').select('*, clients(name, stage)').eq('id', id).maybeSingle().then(function (r) {
+    db.from('ops_tasks').select('*, clients(name, stage, logo_url)').eq('id', id).maybeSingle().then(function (r) {
       if (r.error) { load(); return; }
       var t = r.data, i = -1;
       state.tasks.forEach(function (x, k) { if (x.id === id) i = k; });
@@ -687,8 +688,10 @@
         paint();
         return;
       }
-      return Promise.all([readOwners([t]), nameClients([t])]).then(function (q) {
+      return Promise.all([readOwners([t]), nameClients([t]), readExtras([t])]).then(function (q) {
         if (q[0].error) { load(); return; }
+        state.extras = state.extras || {};
+        state.extras[id] = q[2][id];
         delete state.owners[id]; delete state.ownerIds[id];
         q[0].data.forEach(function (a) {
           if (a.responsibility !== 'owner') return;
@@ -706,7 +709,7 @@
   function searchOnly() {
     var q = state.find, seq = ++findSeq;
     if (!q || !state.tasks) { if (!state.tasks) load(); return; }
-    findAny(db.from('ops_tasks').select('*, clients(name, stage)').is('archived_at', null), q).then(function (r) {
+    findAny(db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null), q).then(function (r) {
       if (seq !== findSeq || r.error) return;
       var have = {};
       state.tasks.forEach(function (t) { have[t.id] = 1; });
@@ -735,6 +738,26 @@
      this read failed outright: every owner in the console was blank, Mine
      matched nothing, and the record's own owner select fell back to Nobody a
      moment after a save that had worked. */
+  /* What a row and a board card show beside the name (v3, 2026-11-12):
+     each open task's checklist (ticked of all) and its remarks still
+     standing, read for the tasks read in one request a kind a 150, never
+     one a task. A refused read leaves the marks off; it never fails the
+     list. */
+  function readExtras(tasks) {
+    var ids = tasks.filter(function (t) { return !isFinished(t); }).map(function (t) { return t.id; }), parts = [], out = {};
+    for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
+    function slot(id) { return out[id] || (out[id] = { done: 0, of: 0, rem: 0 }); }
+    return Promise.all(parts.map(function (part) {
+      return Promise.all([
+        db.from('ops_task_checklist_items').select('task_id, completed_at').in('task_id', part),
+        db.from('ops_task_events').select('task_id, event_type').in('task_id', part).in('event_type', ['commented', 'comment_removed'])
+      ]).then(function (r) {
+        if (!r[0].error) (r[0].data || []).forEach(function (c) { var x = slot(c.task_id); x.of++; if (c.completed_at) x.done++; });
+        if (!r[1].error) (r[1].data || []).forEach(function (e) { var x = slot(e.task_id); x.rem += e.event_type === 'commented' ? 1 : -1; });
+      }).catch(function () {});
+    })).then(function () { return out; });
+  }
+
   function readOwners(tasks) {
     var ids = tasks.map(function (t) { return t.id; }), parts = [];
     for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
@@ -2052,6 +2075,35 @@
      card did not carry at all; the due date ends that same line, warn once it
      has passed. The stage select sits between them, through the same function
      and the same gates as the list, with a refusal named on the card. */
+  /* v3's marks (the user, 2026-11-12, "ok yes all"): a colleague as an
+     initials disc in a tint of their own, a task's checklist as a bar a
+     check, its remarks as a count. */
+  var AV_TINT = ['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'messages'];
+  function avatar(name) {
+    name = String(name || '');
+    if (!name) return '';
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 997;
+    var ini = window.ADspaceState ? window.ADspaceState.initials(name) : name.slice(0, 2).toUpperCase();
+    return '<span class="tav tav-' + AV_TINT[h % AV_TINT.length] + '" aria-hidden="true">' + esc(ini) + '</span>';
+  }
+  function extrasOf(t) { return (state.extras && state.extras[t.id]) || null; }
+  function checkBar(t) {
+    var x = extrasOf(t);
+    if (!x || !x.of || isFinished(t)) return '';
+    var segs = '', n = Math.min(x.of, 12), on = Math.round(x.done / x.of * n);
+    for (var i = 0; i < n; i++) segs += '<i' + (i < on ? ' class="is-on"' : '') + '></i>';
+    return '<span class="tcheckbar' + (x.done === x.of ? ' is-done' : '') + '" role="img" aria-label="Checklist ' + x.done + ' of ' + x.of + '">' +
+      '<span class="tcheckbar-segs">' + segs + '</span><span class="tcheckbar-n">' + x.done + '/' + x.of + '</span></span>';
+  }
+  function remCount(t) {
+    var x = extrasOf(t);
+    if (!x || x.rem < 1) return '';
+    return '<span class="trem" role="img" aria-label="' + x.rem + (x.rem === 1 ? ' remark' : ' remarks') + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 5.4 15.3A8 8 0 1 1 8.6 18.6z"/></svg>' + x.rem + '</span>';
+  }
+  function fmtTag(t) { var f = formatShort(t); return f ? '<span class="chip tfmt">' + esc(f) + '</span>' : ''; }
+
   function cardOf(t) {
     var el = document.createElement('div');
     var dl = deadlineOf(t);
@@ -2059,13 +2111,13 @@
     el.setAttribute('data-task', t.id);
     /* Late, not merely past: the same rule the queue row draws. */
     var over = isLate(t);
-    var top = [serialOf(t),
-               (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')]
-      .filter(Boolean);
+    var client = (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '');
     var who = state.owners[t.id] || '';
+    var A = window.ADspaceAdmin;
+    var brief = String(t.description || '').trim();
+    var tags = (dl && dl.first ? priorityChip(t, dl) : '') + (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') + fmtTag(t);
     el.innerHTML =
-      '<div class="bcard-top"><span class="bcard-no">' + esc(top[0]) + '</span>' +
-        (top[1] ? '<span class="bcard-client">' + esc(top[1]) + '</span>' : '') +
+      '<div class="bcard-tags">' + tags +
         /* The grip a finger drags from. It carries its own name, because an
            icon-only control that says nothing is one a screen reader cannot
            offer; and it is not a keyboard path — a keyboard moves a stage
@@ -2077,14 +2129,19 @@
             '<circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/>' +
             '<circle cx="15" cy="18" r="1.6"/></svg></span>'
           : '') + '</div>' +
+      '<div class="bcard-top">' + (t.client_id && A && A.clientMark ? A.clientMark(t.clients || {}, t.client_id) : '') +
+        (client ? '<span class="bcard-client">' + esc(client) + '</span>' : '') +
+        '<span class="bcard-no">' + esc(serialOf(t)) + '</span></div>' +
       '<button class="bcard-title" type="button">' + esc(t.title) + vicTag(t.client_id, true) + '</button>' +
-      (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
+      (brief ? '<p class="bcard-brief">' + esc(brief) + '</p>' : '') +
+      checkBar(t) +
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
-        '<span class="bcard-who">' +
+        '<span class="bcard-who">' + avatar(who) +
           (who ? '<span class="bcard-name">' + esc(who) + '</span>'
                : '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
-        (dl && dl.first ? priorityChip(t, dl) : dueOf(t)
+        remCount(t) +
+        (dueOf(t)
           ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
               esc((dueLead(t) ? dueLead(t) + ' ' : '') + shortDate(dueOf(t))) + '</span>'
           : '') +
@@ -2473,18 +2530,21 @@
       '<span class="trow-check">' + check + '</span>' +
       /* The priority is the row's exception, so it sits on the title line
          at its right end, where every card in the portal puts its chip. */
-      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
+      '<button class="task-open" type="button">' + (!elsewhere && t.client_id && window.ADspaceAdmin && window.ADspaceAdmin.clientMark
+        ? '<span class="task-mark">' + window.ADspaceAdmin.clientMark(t.clients || {}, t.client_id) + '</span>' : '') +
+        '<span class="task-text"><span class="task-top"><b>' + esc(t.title) + '</b>' + vicTag(t.client_id, true) +
         (urgentDelivery(t) ? '<span class="tone is-danger task-pri">Urgent delivery</span>' : '') +
         (delayed(t) ? '<span class="tone is-off task-pri">Delayed</span>' : '') +
         (offered(t) && !takeable(t) ? '<span class="tone task-pri">Open to take</span>' : '') + '</span>' +
         '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
-          esc(ctx) + '</small></button>' +
+          esc(ctx) + '</small>' +
+        (fin ? '' : '<span class="task-facts">' + fmtTag(t) + checkBar(t) + remCount(t) + '</span>') + '</span></button>' +
       '<span class="trow-meta">' +
       '<span class="task-owner">' + (canOwn
         ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
-            (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
-        : (who ? esc(who) : '<span class="mute">—</span>')) + '</span>' +
+            avatar(who) + (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
+        : (who ? avatar(who) + esc(who) : '<span class="mute">—</span>')) + '</span>' +
       /* While a priority's deadline runs it is the row's date (the user,
          2026-10-11: two deadlines on one row read wrong); the due date
          returns once it is met, and stays on the task card throughout. */

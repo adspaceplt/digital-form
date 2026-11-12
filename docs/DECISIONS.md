@@ -10052,3 +10052,11 @@ overflow (seen on My Work's group cards). Counts drawn for My Work (open,
 late, due this week, blocked, of the whose-work view) and Clients (active,
 leads, overdue follow-ups, paused); the rest follow with their phases.
 
+### 2026-11-12 · v3, phase 2: My Work's cards
+The board and list take Board3's card: tags, the client's logo, the brief,
+a checklist bar, remarks counted and the colleague as an initials disc (the
+user relaxed the no-avatar rule for this, "ok yes all"). The disc's tint is
+taken from the name, so a colleague reads the same colour everywhere. The
+list row's logo gives way on a narrow pane, where it pushed the title off
+its line.
+
