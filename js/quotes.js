@@ -31,9 +31,9 @@
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     'bad-date': window.ADspaceWords.line.docDate,
-    'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 60.',
+    'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
     'bad-pay': 'Choose the payment terms.',
-    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 60.',
+    'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
@@ -1360,7 +1360,7 @@
     var rows = adsRead();
     if (!rows.length) return 'Add a platform, or untick Include advertising budget.';
     if (rows.some(function (r) { return !(r.budget > 0); })) return 'Enter each platform\'s budget.';
-    if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 60); })) return 'Enter the months, from 1 to 60.';
+    if (rows.some(function (r) { return r.freq === 'monthly' && !(r.months >= 1 && r.months <= 36); })) return 'Enter the months, from 1 to 36.';
     return '';
   }
   /* Advanced (2026-11-12, the user: the quotation takes over what only the
@@ -1398,7 +1398,7 @@
     var rows = cusRead();
     if (rows.some(function (r) { return !r.label; })) return 'Enter each custom line\'s name.';
     if (rows.some(function (r) { return !(r.qty >= 1); })) return 'Enter each custom line\'s quantity.';
-    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 60); })) return 'Enter each custom line\'s months, from 1 to 60.';
+    if (rows.some(function (r) { return r.basis === 'month' && !(r.months >= 1 && r.months <= 36); })) return 'Enter each custom line\'s months, from 1 to 36.';
     if ($('qbTerms').value.split(/\r?\n/).filter(function (x) { return x.trim(); }).length > 10) return window.ADspaceWords.line.terms;
     return '';
   }
@@ -1440,11 +1440,11 @@
   }
   /* Renew lines: the client's confirmed lines, ticked into custom lines
      that confirm the same line for its new term on approval. */
-  function addMonths(day, n) {
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(day || ''));
-    if (!m || !n) return '';
-    var d = new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3]));
-    return d.toISOString().slice(0, 10);
+  /* A renewal starts the day after the line's period ends (ADspaceClock's
+     periodEnd, one copy; 2026-11-12: 31 Jan for a month rolled to 3 Mar). */
+  function renewFrom(day, n) {
+    var C = window.ADspaceClock, end = n ? C.periodEnd(day, n) : '';
+    return end ? C.addDays(end, 1) : '';
   }
   function renewOpen() {
     var box = $('qbRenewBox'), c = B && B.ctx.client;
@@ -1473,7 +1473,7 @@
     (B.renewable || []).filter(function (l) { return ids.indexOf(l.id) > -1; }).forEach(function (l) {
       var month = l.term_adjust === true || Number(l.tenure) > 1;
       $('qbCusRows').insertAdjacentHTML('beforeend', cusRow({ label: l.label, qty: l.qty, rate: l.rate, basis: month ? 'month' : 'once',
-        months: month ? term : null, start: addMonths(l.start_on, Number(l.tenure) || 0), renews: l.id,
+        months: month ? term : null, start: renewFrom(l.start_on, Number(l.tenure) || 0), renews: l.id,
         detail: String(l.detail || '').split(/\r?\n/).filter(function (x) { return x.trim(); }) }));
     });
     $('qbRenewBox').hidden = true; $('qbRenewBox').innerHTML = '';

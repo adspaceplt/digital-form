@@ -219,16 +219,9 @@
     var n = Math.max(1, Number(l.tenure || 1));
     if (!l.start_on) return n > 1 ? n + ' months' : '';
     if (n === 1) return longDate(l.start_on);
-    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dayOf(l.start_on));
-    if (!m) return n + ' months';
-    /* The day before the same day n months on; where that month is too
-       short for the day (a start on the 29th to 31st), its last day, never
-       a day rolled into the month after (the audit of 2026-10-26,
-       finding 8: 31 Dec for two months read 2 March). */
-    var last = new Date(Date.UTC(+m[1], +m[2] - 1 + n + 1, 0)).getUTCDate();
-    var end = +m[3] > last
-      ? new Date(Date.UTC(+m[1], +m[2] - 1 + n, last)).toISOString().slice(0, 10)
-      : new Date(Date.UTC(+m[1], +m[2] - 1 + n, +m[3] - 1)).toISOString().slice(0, 10);
+    /* The period's last day is ADspaceClock's (one copy, 2026-11-12). */
+    var end = window.ADspaceClock.periodEnd(dayOf(l.start_on), n);
+    if (!end) return n + ' months';
     return longDate(l.start_on) + ' to ' + longDate(end);
   }
 
