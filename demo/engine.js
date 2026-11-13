@@ -10997,7 +10997,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (('qty' in e && (!/^[0-9]{1,4}$/.test(String(e.qty)) || Number(e.qty) < 1)) ||
               ('rate' in e && !/^[0-9]{1,7}(\.[0-9]{1,2})?$/.test(String(e.rate))) ||
               ('basis' in e && (['month', 'once'].indexOf(e.basis) < 0 || l.basis !== 'once')) ||
-              ('months' in e && ((e.basis === 'month' ? 'month' : l.basis) !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36))) { editBad = l.label; return; }
+              ('months' in e && ((e.basis === 'month' ? 'month' : l.basis) !== 'month' || !/^[0-9]{1,2}$/.test(String(e.months)) || Number(e.months) < 1 || Number(e.months) > 36)) ||
+              ('detail' in e && (!Array.isArray(e.detail) || e.detail.length < 1 || e.detail.length > 12 ||
+                e.detail.some(function (x) { return typeof x !== 'string' || !x.trim() || x.trim().length > 300; })))) { editBad = l.label; return; }
 
           var swHit = false;
           if (e.basis === 'month' && l.basis === 'once') { l.basis = 'month'; l.was_once = true; l.months = term; swHit = true; }
@@ -11011,6 +11013,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if ('qty' in e && Number(e.qty) !== Number(l.qty)) { l.qty = Number(e.qty); hit = true; }
           if ('rate' in e && Number(e.rate) !== Number(l.rate)) { l.list_rate = Number(l.rate); l.rate = Number(e.rate); hit = true; }
           if ('months' in e && Number(e.months) !== l.months) { l.months = Number(e.months); hit = true; }
+
+          if ('detail' in e) {
+            var dn = e.detail.map(function (x) { return x.trim(); });
+            if (JSON.stringify(dn) !== JSON.stringify(l.detail || [])) { l.list_detail = l.detail || []; l.detail = dn; hit = true; }
+          }
           if (hit || swHit) adjusted++;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
