@@ -319,10 +319,7 @@
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
-          if (edit) {
-            if (items.length < 7) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
-            else acts.unshift('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
-          }
+          if (edit) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
@@ -385,8 +382,10 @@
       WA().on('quotation').then(function (yes) {
         if (!yes) return;
         Array.prototype.forEach.call(host.querySelectorAll('[data-wa]'), function (it) { it.hidden = false; });
+        fitMenus(host);
       });
     }
+    fitMenus(host);
     Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id], .qt-gonerow[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
@@ -408,6 +407,19 @@
           act(it.getAttribute('data-a'), q, ctx, host, btn);
         });
       });
+    });
+  }
+
+  /* A ⋯ keeps to seven items shown (DESIGN.md §5 Menus 8): where the sends
+     make it eight, Edit, the commonest act, stands on the row instead. The
+     item itself moves, so it keeps its press (2026-11-13). */
+  function fitMenus(host) {
+    Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
+      var menu = row.querySelector('[data-menu]'), ed = menu && menu.querySelector('[data-a="edit"]'), dl = row.querySelector('.qt-dl');
+      if (!ed || !dl || menu.querySelectorAll('.kmenu-item:not([hidden])').length <= 7) return;
+      ed.className = 'btn btn-sm'; ed.removeAttribute('role'); ed.removeAttribute('data-g');
+      var view = dl.querySelector('[data-a="view"]');
+      dl.insertBefore(ed, view ? view.nextSibling : dl.firstChild);
     });
   }
 
