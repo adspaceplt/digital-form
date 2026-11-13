@@ -152,6 +152,12 @@
     el.className = 'msg' + (text && tone ? ' ' + tone : '');
   }
   function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+  /* A template reads as words (quote_ready reads Quote ready), its Meta
+     name kept on hover (2026-11-13). */
+  function tplName(t) {
+    var w = String(t || '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return w ? w.charAt(0).toUpperCase() + w.slice(1) : '';
+  }
   function phone(n) {
     var C = window.ADspaceCard;
     if (!n) return '';
@@ -324,6 +330,7 @@
     $('emlPane').hidden = st.tab !== 'email';
     if (st.tab === 'email') mlEnter();
     else { if (st.data) paintList(); load(); }
+    sub();
     var b = bridge();
     if (!quiet && b.setUrl) b.setUrl();
   }
@@ -395,7 +402,7 @@
     }).catch(function (e) {
       if (month !== ml.month) return;
       ml.data = null;
-      $('emlHeads').hidden = true;
+      ml.sub = null; sub();
       $('emlCount').textContent = '';
       if (S && S.failLine) S.failLine(box, 'The emails', said(e), mlLoad);
     });
@@ -415,17 +422,16 @@
     var box = $('emlList'), S = window.ADspaceState, G = window.ADspaceGroup;
     var all = (ml.data || {}).items || [];
     var list = mlShown();
-    /* The month at a glance: what was sent, what arrived and what was
-       opened, and what did not arrive, warn where any did not. */
+    /* The month at a glance, said in the line under the section's name
+       (2026-11-13): what was sent, arrived and was opened, and what did
+       not arrive in red where any did not. */
     var sent = all.filter(function (x) { return x.source !== 'signing'; });
     var bad = sent.filter(function (x) { return /^(bounced|complained|failed)$/.test(x.status); }).length;
-    $('emlHeads').innerHTML = [[sent.filter(function (x) { return x.status !== 'sending' && x.status !== 'failed'; }).length, 'Emails sent'],
-      [sent.filter(function (x) { return x.status === 'delivered' || x.status === 'opened'; }).length, 'Delivered'],
-      [sent.filter(function (x) { return x.status === 'opened'; }).length, 'Opened'],
-      [bad, 'Not delivered', bad ? ' is-warn' : '']].map(function (c) {
-      return '<div class="tally-cell wam-head' + (c[2] || '') + '"><b>' + c[0] + '</b><span>' + esc(c[1]) + '</span></div>';
-    }).join('');
-    $('emlHeads').hidden = false;
+    ml.sub = [[sent.filter(function (x) { return x.status !== 'sending' && x.status !== 'failed'; }).length, 'sent'],
+      [sent.filter(function (x) { return x.status === 'delivered' || x.status === 'opened'; }).length, 'delivered'],
+      [sent.filter(function (x) { return x.status === 'opened'; }).length, 'opened'],
+      bad ? [bad, 'not delivered', 'late'] : null];
+    sub();
     $('emlCount').textContent = !all.length ? '' : list.length !== all.length ? list.length + ' of ' + all.length : plural(all.length, 'email');
     box.innerHTML = '';
     if (!all.length) { S.emptyLine(box, 'No emails.'); return; }
@@ -539,13 +545,11 @@
       st.loading = false;
       st.data = d;
       paintList();
-      paintQueue();
     }).catch(function (e) {
       if (month !== st.month) return;
       st.loading = false;
       st.data = null;
-      $('waHeads').hidden = true;
-      $('waQueue').hidden = true;
+      sub();
       $('waCount').textContent = '';
       if (S && S.failLine) S.failLine(box, 'The messages', said(e), load);
     });
@@ -565,15 +569,29 @@
     });
   }
 
-  function paintHeads() {
-    var d = st.data || {}, c = d.counts || {};
-    var cells = [['utility', 'Utility'], ['marketing', 'Marketing']];
-    if (Number(c.authentication)) cells.push(['authentication', 'Authentication']);
-    var box = $('waHeads');
-    box.innerHTML = cells.map(function (x) {
-      return '<div class="tally-cell wam-head"><b>' + Number(c[x[0]] || 0) + '</b><span>' + esc(x[1]) + ' templates sent</span></div>';
-    }).join('');
-    box.hidden = false;
+  /* The line under the section's name (2026-11-13; it was two rows of
+     figures over the list): each category sent,
+     then at Full Access what waits in the queue, each part only where it
+     holds any, what wants a colleague to look in red. The Email tab says
+     its own. */
+  function sub() {
+    var A = window.ADspaceAdmin;
+    if (!A || !A.counts) return;
+    if (st.tab === 'email') { A.counts('whatsapp', ml.sub || []); return; }
+    var d = st.data;
+    if (!d) { A.counts('whatsapp', []); return; }
+    var c = d.counts || {}, q = d.queue || {}, n = function (v) { return Number(v || 0); };
+    /* The month's total is the bar's count, never said twice. */
+    var parts = [n(c.utility) ? [n(c.utility), 'utility'] : null,
+      n(c.marketing) ? [n(c.marketing), 'marketing'] : null,
+      n(c.authentication) ? [n(c.authentication), 'authentication'] : null];
+    if (may('whatsapp', 'manage')) {
+      parts.push(n(q.queued) ? [n(q.queued), 'waiting to send'] : null,
+        n(q.sending) ? [n(q.sending), 'sending'] : null,
+        n(q.failed) ? [n(q.failed), 'not sent in 7\u00a0days', 'late'] : null,
+        n(q.unknown) ? [n(q.unknown), 'not confirmed in 7\u00a0days', 'late'] : null);
+    }
+    A.counts('whatsapp', parts);
   }
 
   function paintList() {
@@ -582,7 +600,7 @@
     var all = d.items || [];
     var list = shown();
     var filtered = list.length !== all.length;
-    paintHeads();
+    sub();
     $('waCount').textContent = !all.length ? '' : filtered ? list.length + ' of ' + all.length : plural(all.length, 'message');
     box.innerHTML = '';
     if (!all.length) {
@@ -631,10 +649,10 @@
     };
     row.innerHTML =
       '<span class="wam-to"><b>' + esc(x.to_name || phone(x.to_number)) + '</b>' +
-        '<small class="wam-parts">' + parts([KIND[x.purpose] || 'Message', whoOf(x), phone(x.to_number)]) + '</small>' + why + '</span>' +
+        '<small class="wam-parts">' + parts([KIND[x.purpose] || 'Message', whoOf(x), x.to_name ? phone(x.to_number) : '']) + '</small>' + why + '</span>' +
       '<span class="wam-tpl"><span>' + esc(KIND[x.purpose] || 'Message') + '</span>' +
         /* The template's name gives way; its category reads whole (WA-3). */
-        '<small class="wam-tplline' + (CATEGORY[x.category] ? ' is-' + x.category : '') + '">' + (x.template ? '<span class="wam-tplname">' + esc(x.template) + '</span>' : '') +
+        '<small class="wam-tplline' + (CATEGORY[x.category] ? ' is-' + x.category : '') + '">' + (x.template ? '<span class="wam-tplname" title="' + esc(x.template) + '">' + esc(tplName(x.template)) + '</span>' : '') +
           (CATEGORY[x.category] ? '<span class="wam-cat">' + (x.template ? '<span class="wam-sep"> · </span>' : '') + esc(CATEGORY[x.category]) + '</span>' : '') + '</small>' + why + '</span>' +
       '<span class="wam-by">' + esc(!x.created_by || x.created_by === 'system' ? 'Automatic' : x.created_by) + '</span>' +
       '<span class="wam-state"><span class="chip-state ' + s[2] + '">' + esc(s[1]) + '</span>' +
@@ -656,21 +674,6 @@
     return row;
   }
 
-  /* ---- The queue, over the messages at Full Access ------------------------- */
-  function paintQueue() {
-    var q = ((st.data || {}).queue) || {};
-    var box = $('waQueue');
-    if (!st.data || !may('whatsapp', 'manage')) { box.hidden = true; return; }
-    /* Not confirmed (sent in the last seven days, as Not sent counts, and
-       labelled so, the days kept on one line; 2026-10-18) beside Not sent (2026-10-17): either wants a
-       colleague to look, the first before anything is sent again. */
-    box.innerHTML = [['queued', 'Waiting to send'], ['sending', 'Sending'], ['failed', 'Not sent in\u00a07\u00a0days'],
-                     ['unknown', 'Not confirmed in\u00a07\u00a0days']].map(function (c) {
-      var n = Number(q[c[0]] || 0);
-      return '<div class="tally-cell wam-head' + ((c[0] === 'failed' || c[0] === 'unknown') && n ? ' is-warn' : '') + '"><b>' + n + '</b><span>' + esc(c[1]) + '</span></div>';
-    }).join('');
-    box.hidden = false;
-  }
   /* ---- Templates (Settings, Templates; Full Access) ------------------------- */
   function paintTemplates() {
     var box = $('waTplList'), S = window.ADspaceState, G = window.ADspaceGroup;

@@ -97,8 +97,13 @@
        At a desk a view select stays in the bar, so it does not count. */
     if (!(open && open.rec === rec)) {
       var desk = !mq.matches;
+      /* At a desk every filter stands as a pill under the bar (v3), so the
+         mark is drawn only for what the pills do not hold: a view kept in
+         the card (Group by, Sort). Two controls for one filter read as a
+         duplicate (the user, 2026-11-13). */
       rec.btn.hidden = !rec.selects().some(function (sel) {
-        return !sel.hidden && !(desk && sel.hasAttribute('data-nofilter'));
+        if (sel.hidden || (desk && sel.hasAttribute('data-nofilter'))) return false;
+        return !(desk && pillable(sel));
       });
     }
   }
