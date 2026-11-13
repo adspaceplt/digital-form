@@ -5479,17 +5479,17 @@ svg.sec {
 .ovw-ask { display: grid; gap: 8px; }
 .ovw-ask-box { display: flex; align-items: center; gap: 8px; min-height: var(--tap); padding: 0 8px 0 14px;
   background: var(--card); border-radius: var(--radius); outline: 1px solid var(--card-edge); outline-offset: -1px; }
-.ovw-ask-box:focus-within { outline: 2px solid var(--action-ring); }
+.ovw-ask-box:focus-within { box-shadow: 0 0 0 2px var(--action-ring); }
 .ovw-ask-ai { display: inline-flex; color: var(--action-ink); }
 .ovw-ask-ai svg { width: 15px; height: 15px; }
-.ovw-ask-field { flex: 1; min-width: 0; height: var(--ctl-h); border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--field-text); outline: 0; }
+.ovw-ask-field { flex: 1; min-width: 0; align-self: stretch; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--field-text); outline: 0; }
 .ovw-ask-field::placeholder { color: var(--ink-mute); }
 .ovw-ask-key { font: 500 11.5px var(--font); color: var(--ink-mute); padding: 2px 6px; border-radius: 5px; background: var(--tonal); }
 :root.has-tabbar .ovw-ask-key { display: none; }
 /* The suggestions are pills a press asks (the 4-step pass, 2026-11-13: as
    plain words they read as a caption). */
 .ovw-ask-try { display: flex; flex-wrap: wrap; gap: 8px; }
-.ovw-ask-q { border: 0; background: var(--tonal); border-radius: 999px; min-height: var(--ctl-h-sm); padding: 0 12px; font: inherit; font-size: 12.5px; color: var(--ink-soft); cursor: pointer; text-align: left; }
+.ovw-ask-q { border: 0; background: var(--tonal); border-radius: 999px; min-height: var(--ctl-h); padding: 0 14px; font: inherit; font-size: 12.5px; color: var(--ink-soft); cursor: pointer; text-align: left; }
 @media (hover: hover) { .ovw-ask-q:hover { background: var(--tonal-hover); color: var(--ink); } }
 .ovw-ask-q:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 .is-narrow .ovw-ask-q + .ovw-ask-q { display: none; }

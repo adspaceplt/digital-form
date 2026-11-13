@@ -1881,7 +1881,7 @@
           if (!rs.length) return '';
           return '<h4 class="ovw-today-h' + (g[0] === 'late' ? ' is-late' : '') + '">' + g[1] + '</h4>' + rs.map(function (x) {
             var i = items.indexOf(x), mark = x.ring || (bridge.glyph ? bridge.glyph(x.sec) : '');
-            var acts = '<button class="btn btn-sm" type="button" data-a="open">' + esc(x.act || 'Open') + '</button>';
+            var acts = '<button class="btn btn-sm" type="button" data-a="open">' + esc(x.act || 'Open') + CHEV + '</button>';
             return '<div class="ovw-today-row" data-i="' + i + '"><span class="ovw-today-tile' + (x.ring ? ' has-ring' : '') + '">' + mark + '</span>' +
               '<button class="ovw-today-what" type="button" data-a="open"><b>' + esc(x.title) + '</b><small>' +
                 x.meta.filter(Boolean).map(function (m) { return '<span class="nb">' + esc(m) + '</span>'; }).join(' · ') +
