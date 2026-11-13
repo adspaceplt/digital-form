@@ -10311,3 +10311,5 @@ for a select no pill holds (My Work's Group by, Documents' Sort), so
 Clients, Messages and every bar of plain filters lose it; the Clients guide
 rings the pills instead. A copy review renamed the queue's words to the
 Status column's (queued, failed in the last 7 days).
+
+- 2026-11-13 · The console's head at a desk was 32px in at the left, 20 at the right, 9 above the title and 5 under its line (the user: "left right paddings feels not visually balance"). It is now 90px on every section with its words centred and 32px both sides, the body's own inset; `--head-h` carries the 90 so every sticky offset follows. Measured with a scratch script on the rendered head at 1280 and 1440.
