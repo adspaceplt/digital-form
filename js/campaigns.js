@@ -1628,7 +1628,7 @@
   function cpqReadAll(btn) {
     var ids = [];
     ((cpq.data && cpq.data.jobs) || []).forEach(function (j) { if (j.linked && ids.indexOf(j.creator) < 0 && (!j.bill || j.bill.status !== 'paid')) ids.push(j.creator); });
-    if (!ids.length) { loadQueue(); cpqSaid('Read.', 'ok'); return; }
+    if (!ids.length) { loadQueue(); cpqSaid('No bills to read from Bukku.', ''); return; }
     btn.disabled = true;
     var failed = 0, n = 0;
     cpqSaid('Reading from Bukku: 0 of ' + ids.length + '.', '');
@@ -1640,7 +1640,7 @@
       });
     }, Promise.resolve()).then(function () {
       btn.disabled = false;
-      cpqSaid(failed ? 'Read ' + (ids.length - failed) + ' of ' + ids.length + ' creators. Bukku could not be read for ' + failed + '. Try again.' : 'Read from Bukku.', failed ? 'err' : 'ok');
+      cpqSaid(failed ? 'Read ' + (ids.length - failed) + ' of ' + ids.length + ' creators. Bukku could not be read for ' + failed + (failed === 1 ? ' creator' : ' creators') + '. Press Read from Bukku again.' : 'Read from Bukku.', failed ? 'err' : 'ok');
       loadQueue();
     });
   }
