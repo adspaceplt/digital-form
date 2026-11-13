@@ -1153,7 +1153,7 @@
       acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
-    else if (slips.length && (r.status === 'draft' || r.status === 'confirmed')) wait = 'Correct the figures in the commentary to ' + (r.status === 'draft' ? 'submit.' : 'publish. Send it back to correct them.');
+    else if (slips.length && (r.status === 'draft' || r.status === 'confirmed')) wait = r.status === 'draft' ? 'Correct the figures in the commentary to submit.' : 'Send it back to correct the figures in the commentary.';
     else if (metaHold && may('work')) wait = 'Match the figures to Meta to submit.';
     else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting for another manager to confirm.';
