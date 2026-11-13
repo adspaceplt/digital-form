@@ -4107,6 +4107,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   link reads the creator's bills at once, the night reads a creator an
   earlier job awaits (`creator_bills_due`), and an earlier job or booking
   of a creator not linked reads Not linked, never Not billed.
+- Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
+  show amount just internal records creator records and bukku bill for
+  payments"): the fee agreed with the creator a booking, in their payment
+  currency (`creator_fees`, a standard fee a creator `creator_standard_fees`
+  filling each new booking, `creator_bill_claims`; RLS on, no policy, no
+  grant), set on the Payment pane's booking pen and Standard fee at
+  `campaigns.pay` Work (`creator_fee_set`, `creator_standard_fee_set`:
+  `bad-amount`, `billed` once a bill or a claim under ten minutes holds it;
+  filed `creator.updated` from and to), a fee read from a bill Bukku holds
+  (trigger `creator_bills_fee`, backfilled); answered at `campaigns.pay` View
+  alone (`creator_bills_list` `fee`, `standard_fee`; `creator_totals`
+  `agreed`, `owed` (no paid bill) and `margin` (client rate less the fee in
+  one currency)), never to the creator's page or a client. Create bill (a
+  booking Posted or Completed with a fee, no bill, the creator linked) and
+  Create n bills (`bukku-sync` `createbill`, one at a time):
+  `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
+  `billed`, `no-account`, `no-fx`, `creating`, the claim taken), Bukku
+  searched for a bill already holding the Job reference (`in-bukku`, never a
+  second), then one bill on credit, ready, the Job reference in its
+  reference no., one line at the fee on the account chosen in Settings,
+  Money, Bukku (`bukku_bill_account_set`, `bukku-sync` `accounts`: expense
+  and cost of sales), no tax, due on `pay_by`; read back as Read from Bukku
+  reads, `creator_bill_done` letting go of the claim and filing the number.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
