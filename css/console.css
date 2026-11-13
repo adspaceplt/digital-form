@@ -2580,7 +2580,11 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .is-narrow .ovw-groups:not(.is-one) .ovw-kpis { grid-row: auto; grid-template-rows: none; }
 .ovw-kpis { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .ovw-groups.is-one .ovw-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* A lone group of three or two tiles fills its row (Analytics, phase 3). */
+.ovw-groups.is-one .ovw-kpis.is-n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.ovw-groups.is-one .ovw-kpis.is-n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .is-narrow .ovw-groups.is-one .ovw-kpis { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.is-narrow .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: 1 / -1; }
 .ovw-groups.is-one .ovw-kpis > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
 .ovw-kpi-label { font-size: 12px; font-weight: 600; color: var(--ink-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

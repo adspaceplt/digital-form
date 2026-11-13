@@ -973,7 +973,7 @@ screenshotted, and the push names any line it could not settle.
 ## 7. Architecture
 - The Dashboard sits alone above the two chunks, with no label, drawn for
   every colleague (its Me tab; `CLAUDE.md`).
-- Analytics follows it, above the chunks, drawn only for `team.analytics`.
+- Analytics follows it, above the chunks, drawn where any of its charts is readable (each at its section's access; 2026-11-13).
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Video Scripts, Creator

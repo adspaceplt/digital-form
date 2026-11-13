@@ -104,7 +104,11 @@
     var at = CK.at(key + '-' + pad2(Math.min(p.d, last)), pad2(p.h) + ':' + pad2(p.mi));
     return new Date(at.getTime() + ((d.getTime() % 60000) + 60000) % 60000);
   }
+  /* A period is a key of PERIODS, or a span Analytics hands over
+     (`{ from, to, prev, name, prevName }`, phase 3, 2026-11-13), so its
+     cards read Analytics' own period. */
   function rangeOf(p) {
+    if (p && typeof p === 'object') return { from: p.from, to: p.to };
     var now = new Date(), t = CK.today(), m0 = CK.start(t.slice(0, 7) + '-01');
     if (p === 'last') return { from: CK.start(CK.addMonths(t, -1) + '-01'), to: m0 };
     var qKey = t.slice(0, 4) + '-' + pad2(Math.floor((Number(t.slice(5, 7)) - 1) / 3) * 3 + 1);
@@ -115,12 +119,14 @@
     return { from: m0, to: now };
   }
   function prevOf(p) {
+    if (p && typeof p === 'object') return p.prev;
     var r = rangeOf(p), n = p === 'quarter' || p === 'lastq' ? 3 : p === 'year' ? 12 : 1;
     return { from: addMonths(r.from, -n), to: addMonths(r.to, -n) };
   }
   function quarterWord(d) { var p = CK.parts(d); return 'Q' + (Math.floor(p.mo / 3) + 1) + ' ' + p.y; }
   // What a change is measured against, in a word: "on Sept", "on last quarter".
   function prevWord(p) {
+    if (p && typeof p === 'object') return p.prevName;
     if (p === 'quarter') return 'last quarter';
     if (p === 'lastq') return quarterWord(prevOf(p).from);
     if (p === 'year') return 'last year';
@@ -135,6 +141,7 @@
     return a.d + ' ' + MON[a.mo] + ' to ' + b.d + ' ' + MON[b.mo] + ' ' + b.y;
   }
   function periodName(p) {
+    if (p && typeof p === 'object') return p.name;
     return p === 'last' ? MON[CK.parts(rangeOf('last').from).mo] : p === 'quarter' ? 'this quarter'
       : p === 'lastq' ? quarterWord(rangeOf('lastq').from) : p === 'year' ? 'this year' : 'this month';
   }
@@ -1006,6 +1013,12 @@
      starts on its first route instead of an empty page. */
   var ALL = [].concat(SOURCES, SALES, OPS, [].concat.apply([], CHARTS));
   function any() { return ALL.some(function (c) { return c.can(); }); }
+  /* What Team draws: Needs attention's sources, the four figures, Work by
+     person, Clients this month and the on-time trend. */
+  function teamAny() {
+    return SOURCES.some(function (c) { return c.can(); }) || canFigures() || canTeamWork() ||
+      SALES.concat(OPS).some(function (t) { return LEAD.indexOf(t.key) > -1 && t.can(); });
+  }
 
   // ---- Drawing ----------------------------------------------------------------------
   function fail(body, title, e, again) {
@@ -1080,9 +1093,11 @@
     box.appendChild(grid);
     list.forEach(function (t) { tile(grid, t); });
   }
-  function tiles(box) {
-    var rest = function (t) { return LEAD.indexOf(t.key) < 0 && t.can(); };
-    var groups = [['Sales', SALES, 'ovwSales'], ['Operations', OPS, 'ovwOps']].map(function (g) {
+  function tiles(box, only) {
+    /* On Analytics (`only`) the period's own Delivered and On time join
+       their group; Oldest late and New leads stay the Dashboard's. */
+    var rest = function (t) { return (only ? ['late', 'leads'] : LEAD).indexOf(t.key) < 0 && t.can(); };
+    var groups = [['Sales', SALES, 'ovwSales'], ['Operations', OPS, 'ovwOps']].filter(function (g) { return !only || g[0] === only; }).map(function (g) {
       return { head: g[0], list: g[1].filter(rest), id: g[2] };
     }).filter(function (g) { return g.list.length; });
     if (!groups.length) return;
@@ -1093,8 +1108,9 @@
       var sec = document.createElement('section');
       sec.className = 'ovw-group';
       sec.id = g.id;
-      sec.innerHTML = '<h3 class="ovw-group-h"></h3><div class="ovw-kpis"></div>';
-      sec.firstChild.textContent = g.head;
+      sec.innerHTML = '<h3 class="ovw-group-h"></h3><div class="ovw-kpis is-n' + g.list.length + '"></div>';
+      /* The tab already names the group on Analytics. */
+      if (only) sec.firstChild.remove(); else sec.firstChild.textContent = g.head;
       wrap.appendChild(sec);
       var grid = sec.querySelector('.ovw-kpis');
       g.list.forEach(function (t) { tile(grid, t); });
@@ -1166,33 +1182,40 @@
       live.forEach(function (c) { chart(grid, c); });
     });
   }
-  /* Detail: Sales, then Operations, each under its label. */
-  function detail(box) {
-    PAGE2.forEach(function (g) {
-      if (!g[1].some(function (row) { return row.some(function (c) { return c.can(); }); })) return;
-      var h = document.createElement('h3');
-      h.className = 'ovw-group-h ovw-page-h';
-      h.textContent = g[0];
-      box.appendChild(h);
-      charts(box, g[1]);
-    });
+  /* Team detail moved to Analytics (phase 3, 2026-11-13; the user:
+     "Analytics follows each chart's section access"): Analytics asks
+     whether a group holds any card it may read, and draws that group's
+     tiles and charts on its own period. */
+  function groupOf(name) { return PAGE2.filter(function (g) { return g[0] === name; })[0]; }
+  function groupCan(name) {
+    var g = groupOf(name), list = name === 'Sales' ? SALES : OPS;
+    return list.some(function (t) { return ['late', 'leads'].indexOf(t.key) < 0 && t.can(); }) ||
+      Boolean(g && g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }));
   }
-  /* Three pages (the revamp, 2026-11-13; the user: the Dashboard for every
-     colleague): Me, each colleague's own work, offered to everyone; Team
-     and Team detail, the Summary and Detail before, for a group whose
-     Team dashboard is on and one of whose cards is allowed. */
-  var PAGES = [['me', 'Me'], ['summary', 'Team'], ['detail', 'Team detail']];
+  function forAnalytics(box, name, spec, skip) {
+    period = spec;
+    memo = {};
+    tiles(box, name);
+    Array.prototype.forEach.call(box.querySelectorAll('[id^="ovw"]'), function (n) { n.removeAttribute('id'); });
+    var g = groupOf(name);
+    /* A card Analytics already draws on the tab is left out (`skip`). */
+    if (g) charts(box, g[1].map(function (row) { return row.filter(function (c) { return (skip || []).indexOf(c.key) < 0; }); }));
+  }
+  /* Two pages (the revamp, 2026-11-13; the user: the Dashboard for every
+     colleague): Me, each colleague's own work, offered to everyone; Team,
+     for a group whose Team dashboard is on and one of whose cards is
+     allowed. */
+  var PAGES = [['me', 'Me'], ['summary', 'Team']];
   var page = 'me';
   function teamOk() {
     var me = bridge.me && bridge.me();
     if (!me) return false;
     if (!(me.is_admin || me.role === 'admin') && (me.access || {}).overview === 'none') return false;
-    return any();
+    return teamAny();
   }
   function pagesShown() {
-    return PAGES.filter(function (p) { return p[0] === 'me' || (teamOk() && (p[0] === 'summary' || hasDetail())); });
+    return PAGES.filter(function (p) { return p[0] === 'me' || teamOk(); });
   }
-  function hasDetail() { return PAGE2.some(function (g) { return g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }); }); }
   /* A page turn slides (the user, 2026-10-12: the swap "felt too fast,
      lacking the proper sliding"): the page left moves out to one side as
      the new one comes in from the other, Detail from the right and Summary
@@ -1243,33 +1266,21 @@
     }
     if (bridge.setUrl) bridge.setUrl();
   }
-  /* Turn to Detail and bring a card into view (a tile's press). */
+  /* A tile with clients behind it opens their card: on this page where it
+     stands (Analytics), else on Analytics' Sales tab. */
   function openCard(key) {
-    turn('detail');
-    requestAnimationFrame(function () {
-      var c = document.querySelector('#ovwBody [data-card="' + key + '"]');
-      if (!c) return;
-      c.scrollIntoView({ block: 'start' });
-      var h = c.querySelector('.ovw-cardhead h3');
-      if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
-    });
+    var here = document.querySelector('#sectionAnalytics:not([hidden]) [data-card="' + key + '"]');
+    if (!here) {
+      try { sessionStorage.setItem('adspace-anl-card', key); } catch (e) { /* the tab opens at its top */ }
+      go('/admin/?s=analytics', 'analytics');
+      return;
+    }
+    focusCard(here);
   }
-  /* The way on at a page's foot: Summary continues to Detail, Detail goes
-     back to Summary. */
-  function foot(box) {
-    if (!hasDetail()) return;
-    var row = document.createElement('div');
-    row.className = 'ovw-foot';
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'btn ovw-turn';
-    b.id = 'ovwTurn';
-    /* The pair is one act drawn one way: each carries the chevron toward
-       the page it turns to (ux-audit, act glyphs, 2026-10-15). */
-    b.innerHTML = page === 'summary' ? '<span>Continue to Team detail</span>' + CHEV : CHEV.replace('class="ovgo-chev"', 'class="ovgo-chev is-back"') + '<span>Back to Team</span>';
-    b.addEventListener('click', function () { turn(page === 'summary' ? 'detail' : 'summary'); });
-    row.appendChild(b);
-    box.appendChild(row);
+  function focusCard(c) {
+    c.scrollIntoView({ block: 'start' });
+    var h = c.querySelector('.ovw-cardhead h3');
+    if (h) { h.tabIndex = -1; h.focus({ preventScroll: true }); }
   }
 
   var SHOWN = 5;
@@ -1952,8 +1963,6 @@
     greet();
     if (page === 'me') {
       ME.build(box);
-    } else if (page === 'detail' && hasDetail()) {
-      detail(box);
     } else {
       lead(box);
       /* The line under the Dashboard's name: the open work and what of it
@@ -1981,15 +1990,12 @@
         if (ontime) chart(pr, ontime);
       });
       pairOf(function (pr) { TEAM.clients(pr); list(pr); });
-      tiles(box);
-      charts(box, PAGE1.map(function (row) { return row.filter(function (c) { return c.key !== 'ontime'; }); }));
     }
-    if (page !== 'me') foot(box);
     if (keep) window.scrollTo(0, y);
     if (keep && $('ovwPeriod')) $('ovwPeriod').focus({ preventScroll: true });
   }
   function urlState() {
-    return { p: page !== 'me' && period !== 'month' ? period : '', pg: page === 'detail' ? 'detail' : page === 'summary' ? 'team' : '' };
+    return { p: page !== 'me' && period !== 'month' ? period : '', pg: page === 'summary' ? 'team' : '' };
   }
   /* The page reopens on the tab last used (the user's choice, 2026-11-13):
      kept in this browser, the address winning. */
@@ -2004,7 +2010,8 @@
     var want = new URLSearchParams(location.search).get('p');
     period = PERIODS.some(function (p) { return p[0] === want; }) ? want : 'month';
     var pg = new URLSearchParams(location.search).get('pg') || keptPage();
-    page = pg === 'detail' ? 'detail' : (pg === 'team' || pg === 'summary') ? 'summary' : 'me';
+    /* Team detail moved to Analytics (2026-11-13): an old address opens Team. */
+    page = (pg === 'team' || pg === 'summary' || pg === 'detail') ? 'summary' : 'me';
     /* A page this colleague is not offered falls back to Me, which every
        colleague holds. */
     if (!pagesShown().some(function (p) { return p[0] === page; })) page = 'me';
@@ -2018,6 +2025,7 @@
     var sec = $('sectionOverview');
     if (sec && !sec.hidden && !document.hidden) greet();
   }, 60000);
-  window.ADspaceOverview = { enter: enter, urlState: urlState, any: any, greetWord: greetWord };
+  window.ADspaceOverview = { enter: enter, urlState: urlState, any: any, greetWord: greetWord,
+    groupCan: groupCan, forAnalytics: forAnalytics, focusCard: focusCard };
   if (bridge.overviewReady) bridge.overviewReady();
 })();

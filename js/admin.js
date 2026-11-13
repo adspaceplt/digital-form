@@ -1127,7 +1127,8 @@
        2026-10-03). Named the Dashboard on the screen (2026-10-11); a group
        may hide it (`overview` No Access in its access map), which only hides
        the page and never opens a card. */
-    /* Analytics (2026-10-25): an admin's tool, a granted part. */
+    /* Analytics (2026-10-25): each chart follows its section's access since
+       phase 3 (2026-11-13); only its AI analysis is the granted part. */
     if (name === 'analytics') {
       var an = window.ADspaceAnalytics;
       return an && an.allowed ? an.allowed() : may('team.analytics', 'work');
@@ -1784,7 +1785,7 @@
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
     overview:  'Your own work today, and the figures of each section you manage.',
-    analytics: 'Trends across sales and clients, what changed and what to expect next.',
+    analytics: 'Trends across sales, clients and operations, what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
     whatsapp:  'Every WhatsApp message and email the portal has sent, and the delivery status of each.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
@@ -1809,7 +1810,7 @@
      cannot see is left out. Opened once by itself, and again from the ⓘ. */
   var GUIDES = {
     analytics: { name: 'Analytics', steps: [
-      { at: '#anlTabs', text: 'Each tab covers one subject. A section gains a tab once it holds enough history to show a trend.' },
+      { at: '#anlTabs', text: 'Each tab covers one subject, showing the charts your access allows.' },
       { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [

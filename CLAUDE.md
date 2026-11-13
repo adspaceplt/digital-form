@@ -4407,9 +4407,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   month is this month, done and late on one bar). No period: Me is always
   now. The page reopens on the tab last used (`adspace-dash-page`), the
   address winning; a tab not offered falls back to Me.
-- Team and Team detail (`pg=team`, `pg=detail`): the Summary and Detail
-  pages below, offered where the group's Team dashboard is On and one of
-  their cards is allowed (`teamOk()`: `ADspaceOverview.any()`), each card
+- Team (`pg=team`; an older `pg=detail` opens it): the Summary below,
+  offered where the group's Team dashboard is On and one of its cards is
+  allowed (`teamOk()`: `teamAny()`), each card
   still asking Full Access on its own section. Team's group panel names
   the row Team dashboard (On / No Access): `overview` in the access map,
   stored only as `none` (On stores nothing), page-side alone; No Access
@@ -4419,19 +4419,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_report`, a row opening their record's Work) beside On time by
   month, then Clients this month (`#ovwClientsMonth`: each client whose
   content month is this month, its posts done of planned as a status, its
-  report and its meeting) beside Needs attention, then the rest.
+  report and its meeting) beside Needs attention. Team detail's charts,
+  the Sales and Operations tiles and Active clients by month moved to
+  Analytics (phase 3, 2026-11-13); a tile with clients behind it (New
+  leads) opens Analytics on its card.
 - Two pages, from the mockup the user approved (2026-10-12, task 47;
   `digital-form-tests` `mockups/dashboard/`) and then read as the company's
   director would (the user, the same day: "act as the company ceo"; the
-  second page "continuous instead of hiding"): Summary, then Detail (Team
-  and Team detail since 2026-11-13), the strip `#ovwPages` (the view strip,
-  Me · Team · Team detail) at the bar's left, a sideways swipe anywhere on the page
+  second page "continuous instead of hiding"): the strip `#ovwPages` (the
+  view strip, Me · Team since phase 3, 2026-11-13) at the bar's left, a sideways swipe anywhere on the page
   turning it as the strip does (`data-swipe="ovwPages"`; the user,
   2026-10-12); every turn slides (a still copy of the page left moving out
   as the new page comes in from the side moved toward, Detail from the
-  right, `--t-slow`, the bar holding still, the copy clipped below it), and
-  at each page's foot the way on
-  (`#ovwTurn`: Continue to Team detail, Back to Team). The bar's right holds
+  right, `--t-slow`, the bar holding still, the copy clipped below it). The bar's right holds
   the period (`#ovwPeriod`, a select of This month, Last month, This
   quarter, Last quarter, This year: five, so never a segment; `p=`, This
   month left out; each measured on the period before it the same days long,
@@ -4543,10 +4543,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Analytics (`js/analytics.js`, `?s=analytics`)
 - Trends over months, apart from the Dashboard's period (the user,
   2026-10-25; mockup `digital-form-tests` `mockups/analytics`): the rail
-  row after the Dashboard, for whoever holds the granted part
+  row after the Dashboard. Each chart follows its own section's access
+  (phase 3, 2026-11-13; the user: "Analytics follows each chart's section
+  access"): a tab is drawn where any of its cards is readable, the trends
+  at Full Access on Clients (and Leads) as before; Sales then holds Team
+  detail's Sales charts and the Won, Churned and committed value tiles
+  (`ADspaceOverview.forAnalytics`, New leads by source drawn once), and
+  Operations (`tab=ops`) Open tasks, On time, Delivered, Reports
+  published and the Operations charts, each card at its own access and on
+  Analytics' period. Only the AI analysis asks the granted part
   `team.analytics` (an admin's by itself; `2026-10-25-analytics-admin-tool.sql`
-  adds it to `team_roles_admin_guard`, so only an admin grants it), never
-  the start page, never a tab of the phone's bar (under More). The data is
+  adds it to `team_roles_admin_guard`, so only an admin grants it), with
+  both trends readable. Never the start page, never a tab of the phone's bar (under More). The data is
   read under each table's own policies; only an AI analysis is stored.
 - Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
   drawn where its section is at Full Access: Sales (Clients and Leads),

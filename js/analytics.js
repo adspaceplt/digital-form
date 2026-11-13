@@ -105,15 +105,25 @@
   }
 
   // ---- Who sees what -------------------------------------------------------------
-  function allowed() { return may('team.analytics', 'work') && TABS.some(function (t) { return canTab(t[0]); }); }
-  var TABS = [['sales', 'Sales'], ['clients', 'Clients']];
-  /* Each tab reads only what its sections are held at Full Access, as the
-     Dashboard's cards do. */
-  function canTab(k) {
+  /* Each chart follows its own section's access (phase 3, 2026-11-13; the
+     user: "Analytics follows each chart's section access"): a tab is drawn
+     where any of its cards is readable, the trends at Full Access on their
+     sections as before, the cards moved from the Dashboard's Team detail at
+     theirs; only the AI analysis asks Analytics (`team.analytics`). */
+  function allowed() { return TABS.some(function (t) { return canTab(t[0]); }); }
+  var TABS = [['sales', 'Sales'], ['clients', 'Clients'], ['ops', 'Operations']];
+  function O() { return window.ADspaceOverview; }
+  function trends(k) {
     if (k === 'sales') return may('clients', 'manage') && may('clients.leads', 'manage');
     if (k === 'clients') return may('clients', 'manage');
     return false;
   }
+  function moved(k) {
+    var name = k === 'sales' ? 'Sales' : k === 'ops' ? 'Operations' : '';
+    return Boolean(name && O() && O().groupCan && O().groupCan(name));
+  }
+  function canTab(k) { return trends(k) || moved(k); }
+  function canAi() { return may('team.analytics', 'work') && trends('sales') && trends('clients'); }
   /* A group that sees its own clients alone reads its own figures: said
      once under the bar, so they are never taken for the company's. */
   function ownOnly() {
@@ -1006,19 +1016,34 @@
     page.className = 'anl-page';
     page.setAttribute('data-tab', tab);
     box.appendChild(page);
+    var label = TABS.filter(function (t) { return t[0] === tab; })[0][1];
     var run = function () {
       UI.skeleton(page, 6);
-      clients().then(function (cl) {
+      (trends(tab) ? clients() : Promise.resolve(null)).then(function (cl) {
         page.innerHTML = '';
-        if (ownOnly()) {
+        if (ownOnly() && trends(tab)) {
           var own = document.createElement('p');
           own.className = 'anl-own';
           own.textContent = 'Your clients only.';
           page.appendChild(own);
         }
-        aiCard(page, cl);
-        if (tab === 'sales') sales(page, cl); else clientsTab(page, cl);
-      }).catch(function (e) { fail(page, tab === 'sales' ? 'Sales' : 'Clients', e, run); });
+        if (cl && canAi()) aiCard(page, cl);
+        if (cl) { if (tab === 'sales') sales(page, cl); else clientsTab(page, cl); }
+        if (moved(tab)) {
+          var r = rangeOf(period), word = PERIODS.filter(function (p) { return p[0] === period; })[0][1];
+          O().forAnalytics(page, tab === 'sales' ? 'Sales' : 'Operations', {
+            from: r.from, to: r.to, prev: prevOf(period), prevName: prevWord(period),
+            name: period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
+            cl && tab === 'sales' ? ['sources'] : []);
+        }
+        /* A Dashboard tile pressed for its clients lands on its card. */
+        var want = null;
+        try { want = sessionStorage.getItem('adspace-anl-card'); sessionStorage.removeItem('adspace-anl-card'); } catch (e) { /* none */ }
+        if (want) requestAnimationFrame(function () {
+          var c = page.querySelector('[data-card="' + want + '"]');
+          if (c && O().focusCard) O().focusCard(c);
+        });
+      }).catch(function (e) { fail(page, label, e, run); });
     };
     run();
     window.scrollTo(0, y);
