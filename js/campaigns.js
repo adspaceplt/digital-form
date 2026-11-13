@@ -904,7 +904,7 @@
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
   /* A booking's payment (2026-11-09, Creator R3): its Bukku bill read back,
      never marked by hand. */
-  var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'] };
+  var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'], draft: ['Draft in Bukku', 'is-off'] };
   var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
     taken: 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
@@ -969,7 +969,7 @@
         { name: 'tin', label: 'Tax Identification Number (TIN)', value: h.tin || '', required: false, note: 'Optional' },
         { name: 'address', label: 'Billing address', value: h.address || '', rows: 2, required: !held || !h.address },
         { name: 'how', label: 'Payment method', choices: PAY_HOW, value: h.currency ? h.currency + '|' + h.method : 'MYR|bank' },
-        { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, b]; })), value: h.bank || '' },
+        { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, window.ADspaceWords.bank(b)]; })), value: h.bank || '' },
         { name: 'account', label: 'Account no., DuitNow ID or PayNow ID', value: h.account || '', required: !held, note: held && !h.account ? blank + h.account_end + '.' : '' },
         { name: 'email', label: 'Email', value: h.email || '', required: true },
         { name: 'whatsapp', label: 'WhatsApp', value: h.whatsapp || '', required: true }] }, function (v) {
@@ -1025,7 +1025,7 @@
             '<div><dt>Billing address</dt><dd>Not set. The creator will be asked for it on their creator page.</dd></div>') +
           fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : cur.added_by ? 'Added by ' + cur.added_by : '') +
           fact('Currency', cur.currency) +
-          fact('Method', cur.method_word) +
+          fact('Method', window.ADspaceWords.bank(cur.method_word)) +
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
           fact('Account holder', cur.payee) +
           fact('Email', cur.email) +
@@ -1316,12 +1316,12 @@
       var sgd = (j1.fee && j1.fee.currency === 'SGD') || ((payJobs && payJobs.jobs) || []).some(function (x) { return x.fee && x.fee.currency === 'SGD'; });
       field = { name: 'fee', label: 'Amount' + (sgd ? ' (S$)' : ' (RM)'), type: 'text',
         value: j1.fee ? Number(j1.fee.amount).toFixed(2) : '', required: true };
-      body = 'The bill for ' + j1.job + ' will be created in Bukku on ' + c.name + '\'s supplier contact, with its Job reference.';
+      body = 'The bill for ' + j1.job + ' will be created in Bukku as a draft on ' + c.name + '\'s supplier contact, with its Job reference. Post it in Bukku, then press Read from Bukku.';
     } else {
       var sums = {};
       list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
       var total = Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ');
-      body = list.length + ' bills totalling ' + total + ' will be created in Bukku on ' + c.name + '\'s supplier contact, each with its Job reference.';
+      body = list.length + ' bills totalling ' + total + ' will be created in Bukku as drafts on ' + c.name + '\'s supplier contact, each with its Job reference. Post them in Bukku, then press Read from Bukku.';
     }
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
@@ -1360,7 +1360,7 @@
           delete crTotals[c.id]; paintCrRail(c);
           if (!done.length && one) readJobs(); else paintJobs();
           if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
-          else say(one ? 'Bill ' + done[0] + ' created in Bukku.' : done.length + ' bills created in Bukku.', 'ok');
+          else say(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
         });
         return '';
       });

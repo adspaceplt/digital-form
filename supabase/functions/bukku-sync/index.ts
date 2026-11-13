@@ -657,13 +657,15 @@ async function matchCreators(req: Request, origin: string | null): Promise<Respo
 // ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
 /* Every purchase bill of the creator's Bukku contact, a hundred a page, its
    reference read where Bukku keeps it (the bill's reference no., else its
-   description or remarks); a void or draft bill is left out. */
+   description or remarks); a void bill is left out, a draft kept as one
+   (2026-11-13: Create bill makes drafts, read Draft in Bukku). */
 export function billOf(x: any) {
   const ref = [x.number2, x.reference, x.title, x.description, x.remarks].filter((v) => v != null && String(v).trim() !== '')
     .map((v) => String(v).trim()).join(' ').slice(0, 200);
   return { id: Number(x.id), number: String(x.number || ''), ref, date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
     amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
-    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
+    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+    draft: String(x.status || '') === 'draft' };
 }
 /* The latest date among the payments, credits and refunds Bukku applied
    to a bill (its `linked_items` that are not bills), else null. */
@@ -680,7 +682,7 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
     const rows = (r && r.transactions) || [];
     for (const x of rows) {
       if (!x || !x.id || Number(x.contact_id) !== contact) continue;
-      if (x.status && !['ready', 'paid'].includes(String(x.status))) continue;
+      if (x.status && !['draft', 'ready', 'paid'].includes(String(x.status))) continue;
       out.push(billOf(x));
     }
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
@@ -699,7 +701,7 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
   } catch (_e) { /* none known: the day is read again, ten a run */ }
   let asked = 0;
   for (const b of out) {
-    if (asked >= 10 || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
+    if (asked >= 10 || b.draft || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
     asked++;
     try { b.paid_on = paidOn(await bukku('GET', `/purchases/bills/${b.id}`).then((r: any) => (r && r.transaction) || null)); }
     catch (_e) { /* left for the next read */ }
@@ -739,8 +741,8 @@ async function billHolding(contact: number, ref: string): Promise<string | null>
   return null;
 }
 /* The bill as Bukku's Create Bill takes it: on credit, the Job reference in
-   its reference no., one line at the fee on the chosen account, no tax,
-   ready (not a draft, which the portal does not read). */
+   its reference no., one line at the fee on the chosen account, no tax, a
+   draft (read back once it is posted in Bukku). */
 export function billBody(p: any, item?: any): Record<string, unknown> {
   const line: Record<string, unknown> = { account_id: Number((item && item.account_id) || p.account),
     description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255), unit_price: Number(p.amount), quantity: 1 };
@@ -751,10 +753,14 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
     line.product_id = Number(item.product_id);
     if (item.product_unit_id) line.product_unit_id = Number(item.product_unit_id);
   }
+  if (item && item.classification_code) line.classification_code = String(item.classification_code);
   const out: Record<string, unknown> = {
     payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
     currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
-    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200), status: 'ready',
+    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200),
+    /* A draft for the team to check and post in Bukku, its e-Invoice action
+       NORMAL (2026-11-13, the user: "Keep it normal and draft at bukku"). */
+    status: 'draft', myinvois_action: 'NORMAL',
     form_items: [line]
   };
   if (p.due) out.due_date = String(p.due);
@@ -764,7 +770,8 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
    newest bills first, then any creator's; five read at most. */
 export function itemOf(bill: any): any {
   for (const l of ((bill && bill.form_items) || []) as any[])
-    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null };
+    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null,
+      classification_code: l.classification_code || null };
   return null;
 }
 async function lastItem(contact: number): Promise<any> {

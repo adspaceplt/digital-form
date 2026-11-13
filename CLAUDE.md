@@ -1849,9 +1849,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   and never sends a contact's email or number; an email or number typed into
   a question is masked by the function. `list_tasks` with a `query` finds a
   task by its words as My Work's search does (every task the colleague may
-  see, open, finished or cancelled; title, code, description, brief or
-  number), every word matching and a platform by any of its names (xhs,
-  rednote, 小红书; IG; FB; `ALIAS`); the prompt tells Claude to search again
+  see, open, finished or cancelled; title, code, description, brief,
+  client or number), every word matching and a platform by any of its
+  names (xhs, rednote, 小红书; IG; FB; a short name a whole word), words
+  such as the and task left out, task 1008 a number: one search,
+  `ADspaceOps.taskSearch`, My Work's own, read whole before it is matched; the prompt tells Claude to search again
   in fewer words before saying a task is not there (the user, 2026-11-13:
   "find the xhs account renewal task" found nothing). A client's name and its work go to
   Claude (approved by the user for the assistant, 2026-11-13).
@@ -4137,11 +4139,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
   `billed`, `no-account`, `no-fx`, `creating`, the claim taken), Bukku
   searched for a bill already holding the Job reference (`in-bukku`, never a
-  second), then one bill on credit, ready, the Job reference in its
-  reference no., one line at the fee on the account chosen in Settings,
-  Money, Bukku (`bukku_bill_account_set`, `bukku-sync` `accounts`: expense
-  and cost of sales), no tax, due on `pay_by`; read back as Read from Bukku
-  reads, `creator_bill_done` letting go of the claim and filing the number.
+  second), then one bill on credit, a draft with e-Invoice action NORMAL,
+  the Job reference in its reference no., one line at the fee (the item,
+  unit and classification code of the creator's last bill where one holds
+  them, else the account chosen in Settings, Money, Bukku:
+  `bukku_bill_account_set`, `bukku-sync` `accounts`, expense and cost of
+  sales), no tax, due on `pay_by`; read back as Read from Bukku reads,
+  `creator_bill_done` letting go of the claim and filing the number. A
+  draft is kept as one (`creator_bills.status` `draft`,
+  `2026-11-13-creator-bill-drafts.sql`), the booking reading Draft in Bukku
+  until it is posted there; each bill's ⋯ holds Open in Bukku (`billlink`).
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is

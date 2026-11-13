@@ -626,7 +626,7 @@
            history is too long to hold in the browser, and a search that
            looked only at what happened to be loaded would say "no matches"
            about a task that exists. */
-        state.find ? findAny(base(), state.find) : Promise.resolve({ data: [] })
+        state.find ? findAny(base, state.find) : Promise.resolve({ data: [] })
       ]).then(function (r) {
         if (r[0] && r[0].error) {
           state.err = r[0].error;
@@ -709,7 +709,7 @@
   function searchOnly() {
     var q = state.find, seq = ++findSeq;
     if (!q || !state.tasks) { if (!state.tasks) load(); return; }
-    findAny(db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null), q).then(function (r) {
+    findAny(function () { return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null); }, q).then(function (r) {
       if (seq !== findSeq || r.error) return;
       var have = {};
       state.tasks.forEach(function (t) { have[t.id] = 1; });
@@ -884,14 +884,66 @@
      any month: by its title, code or description, and by its number typed
      as #WT00001, WT1 or 1. The page's own filters and Whose work do not
      narrow a search. */
-  function findAny(q, text) {
-    var v = String(text || '').replace(/["\\%*,()]/g, '').trim();
-    if (!v) return Promise.resolve({ data: [] });
-    var ors = ['title.ilike."%' + v + '%"', 'code.ilike."%' + v + '%"', 'content_desc.ilike."%' + v + '%"'];
-    var n = /^#?(?:wt)?0*(\d{1,7})$/i.exec(v.replace(/\s+/g, ''));
-    if (n) ors.push('task_no.eq.' + Number(n[1]));
-    return q.or(ors.join(',')).limit(200);
+  /* ONE TASK SEARCH, My Work's and the Assistant's (2026-11-13, the code
+     review): every word typed must match somewhere (the title, code,
+     description, brief or client), words such as "the" or "task" are not
+     asked for, a platform matches by any of its names (a short one, ig, fb,
+     tt, yt, xhs, as a whole word: never inside "design"), a number finds its
+     task (#WT01008, WT1008, task 1008), and a client's name finds its work.
+     The database is asked for the longest word, read whole a thousand at a
+     time, then held to every word: never cut before it is matched. */
+  var FIND_FILLER = { the: 1, a: 1, an: 1, task: 1, tasks: 1, for: 1, of: 1, on: 1, my: 1, to: 1, and: 1, about: 1,
+    with: 1, in: 1, find: 1, show: 1, me: 1, please: 1, all: 1 };
+  var FIND_ALIAS = [['xhs', 'rednote', 'xiaohongshu', '小红书', 'red note'], ['ig', 'instagram'], ['fb', 'facebook'],
+    ['tt', 'tiktok', 'tik tok'], ['yt', 'youtube']];
+  function findWords(text) {
+    var all = String(text || '').toLowerCase().replace(/["\\%*,()_]/g, ' ').split(/\s+/).filter(Boolean);
+    var kept = all.filter(function (w) { return !FIND_FILLER[w] && (w.length > 1 || /\d/.test(w)); });
+    return kept.length ? kept : all.filter(function (w) { return w.length > 1; });
   }
+  function findNames(w) {
+    for (var i = 0; i < FIND_ALIAS.length; i++) if (FIND_ALIAS[i].indexOf(w) >= 0) return FIND_ALIAS[i];
+    return [w];
+  }
+  function findHas(hay, n) {
+    if (n.length > 3 || !/^[a-z]+$/.test(n) || findNames(n).length < 2) return hay.indexOf(n) >= 0;
+    return new RegExp('(^|[^a-z0-9])' + n + '([^a-z0-9]|$)').test(hay);
+  }
+  function findNumber(words) {
+    var n = /^#?(?:wt)?0*(\d{1,7})$/i.exec(words.join(''));
+    return n ? Number(n[1]) : null;
+  }
+  function findMatch(hay, words, t) {
+    var num = findNumber(words);
+    if (num != null && t && Number(t.task_no) === num) return true;
+    return words.length > 0 && words.every(function (w) { return findNames(w).some(function (n) { return findHas(hay, n); }); });
+  }
+  function findHay(t) {
+    return [t.title, t.code, t.content_desc, t.description, t.clients && t.clients.name].join(' ').toLowerCase();
+  }
+  function taskSearch(make, text) {
+    var words = findWords(text);
+    if (!words.length) return Promise.resolve({ data: [] });
+    var num = findNumber(words);
+    var lead = words.slice().sort(function (x, y) { return y.length - x.length; })[0];
+    var names = findNames(lead);
+    return db.from('clients').select('id').or(names.map(function (n) { return 'name.ilike."%' + n + '%"'; }).join(',')).limit(200)
+      .then(function (r) { return r.error ? [] : (r.data || []).map(function (c) { return c.id; }); },
+            function () { return []; })
+      .then(function (ids) {
+        var ors = [];
+        names.forEach(function (n) {
+          ['title', 'code', 'content_desc', 'description'].forEach(function (c) { ors.push(c + '.ilike."%' + n + '%"'); });
+        });
+        if (ids.length) ors.push('client_id.in.(' + ids.join(',') + ')');
+        if (num != null) ors.push('task_no.eq.' + num);
+        return readPages(function () { return make().or(ors.join(',')).order('id'); }, 5000);
+      }).then(function (r) {
+        if (r.error && r.error.code !== 'too-many') return r;
+        return { data: (r.data || []).filter(function (t) { return findMatch(findHay(t), words, t); }) };
+      });
+  }
+  function findAny(make, text) { return taskSearch(make, text); }
 
   /* THE DAY, IN THE ORDER IT IS WORKED. What is overdue, what is due today,
      what is in hand, what is ready for review, what is coming, what is waiting
@@ -1128,8 +1180,9 @@
                formatWord(t), TASK_TYPE_WORD[t.task_type] || t.task_type,
                (t.clients && t.clients.name), state.owners[t.id],
                serialOf(t), stageLabel(t)].join(' ').toLowerCase();
-    /* A number is found whether it is typed with the hash or without it. */
-    return hay.indexOf(state.find) > -1 || hay.indexOf('#' + state.find) > -1;
+    /* A number is found whether it is typed with the hash or without it;
+       the words typed as the database search reads them (taskSearch). */
+    return hay.indexOf(state.find) > -1 || hay.indexOf('#' + state.find) > -1 || findMatch(hay, findWords(state.find), t);
   }
   /* Inside a band the rows read by how soon, then by when: an Urgent task
      owed on Friday sits above a Normal one owed on Thursday, because the band
@@ -8875,6 +8928,7 @@
 
   wire();
   window.ADspaceOps = {
+    taskSearch: taskSearch,
     /* A date move's reason in words, for a report's delayed post too (2026-11-05). */
     reasonWord: function (k) { return reasonWord(k); },
     /* A Meet answer in the team's words, for the client's Calls and visits too. */
