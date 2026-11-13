@@ -636,6 +636,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
   suite needs a fixed time of day.
+- `work`: "High says its deadline under the post" and "Urgent says its own
+  hours" fail when the deadline falls just after midnight (`12:06am` read
+  against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
