@@ -37,9 +37,35 @@
   /* Under the page's own bar, across its width (the console's head beside
      the rail, a client page's bar edge to edge); a page with none, at the
      top of the screen. */
+  /* While a sheet is open (the Assistant, a form, a question), the line runs
+     under that sheet's own head, across its card, never across the page
+     behind it (the user, 2026-11-13). The top sheet is the one drawn last
+     at the highest layer. */
+  function sheetHead() {
+    const open = Array.prototype.filter.call(document.querySelectorAll('.sheet:not([hidden])'), function (s) {
+      return s.getClientRects().length && getComputedStyle(s).visibility !== 'hidden';
+    });
+    if (!open.length) return null;
+    let top = open[0], z = -1;
+    open.forEach(function (s) { const n = parseInt(getComputedStyle(s).zIndex, 10) || 0; if (n >= z) { z = n; top = s; } });
+    const card = top.querySelector('.sheet-card') || top;
+    const c = card.getBoundingClientRect();
+    if (!c.width || !c.height) return null;
+    const head = card.firstElementChild;
+    const h = head && head.getBoundingClientRect();
+    /* Under the head where the card leads with one, else along its top
+       edge inside its corners. */
+    const isHead = head && /head|ask-?top|sheet-top/i.test(head.className || '') && h.height && h.height < c.height / 2;
+    const inset = isHead ? 0 : Math.min(18, c.width / 4);
+    return { top: isHead ? h.bottom : c.top, left: c.left + inset, width: c.width - inset * 2, bottom: 1 };
+  }
   function placeBar(el) {
+    let r = sheetHead();
+    if (r) {
+      el.style.top = Math.round(r.top) + 'px'; el.style.left = Math.round(r.left) + 'px'; el.style.width = Math.round(r.width) + 'px';
+      return;
+    }
     const heads = document.querySelectorAll('.console-head, .topbar');
-    let r = null;
     for (let i = 0; i < heads.length; i++) {
       const b = heads[i].getBoundingClientRect();
       if (b.width && b.height && b.bottom > 0) { r = b; break; }
@@ -50,6 +76,7 @@
   }
   function loadBegin() {
     busyN++;
+    if (bar && bar.classList.contains('is-on')) placeBar(bar);
     if (busyN === 1 && !barTimer) {
       barTimer = setTimeout(function () {
         barTimer = null;

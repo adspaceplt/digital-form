@@ -10151,3 +10151,15 @@ beverage and Technology, 2026-11-04); the sample data now uses them. The
 walk's quotation read "6 contents per month" because its fixture copies a
 quotation issued before 2026-10-27, which keeps the words it was issued
 with, as any issued quotation does; not a defect.
+
+### 2026-11-13 — The loading line in a sheet, and the section title's face
+The user: "when the window is opened (eg. the AI asks on desktop), the
+loading sliding bar slides over it but it follows the main page header".
+`placeBar` measured the console's head alone, so a request from the
+Assistant (or any sheet) drew the line across the page and over the sheet
+at the head's height. It now runs under the top open sheet's head across
+its card (`sheetHead`, the card's top edge inside its corners where a card
+leads with no head), placed again as each request begins; `tests/loadbar.js`
+measures it at 1280 and 390. "The Dashboard title feels not right": the
+v3 head drew the section's name in the system face at 22/500 while every
+other heading reads in Slate; it is Slate at 22/600 now.
