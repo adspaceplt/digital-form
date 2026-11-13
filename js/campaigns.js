@@ -1055,7 +1055,7 @@
     html += '<div class="readgroup" id="cpayBukku"></div>';
     html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
       '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="cpayBills" hidden></button>' +
-      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><div id="cpayJobs"></div></section>';
+      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><p class="msg" id="cpayJobMsg" role="status"></p><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
@@ -1080,7 +1080,7 @@
       if (btn) btn.disabled = false;
       if (payFor !== c) return;
       if (d.error) {
-        if (fresh && payJobs) { var m = $('cpayMsg'); if (m) { m.textContent = JOB_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
+        if (fresh && payJobs) { var m = $('cpayJobMsg'); if (m) { m.textContent = JOB_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
         UI.failLine(host, 'The payments', JOB_SAID[d.error] || d.error, function () { readJobs(fresh); });
         return;
       }
@@ -1300,7 +1300,7 @@
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
       check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
-      var m = $('cpayMsg'), done = [], refused = [];
+      var m = $('cpayJobMsg'), done = [], refused = [];
       var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
       /* One booking: its amount kept as the creator fee first, then billed. */
       var first = Promise.resolve('');
