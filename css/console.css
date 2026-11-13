@@ -848,10 +848,10 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .cpay-spacer { visibility: hidden; }
 .cpay-earlier-h { margin: 16px 0 4px; }
 .cpay-read { font-size: 12.5px; margin: 8px 0 0; }
-/* Creator fees (2026-11-13): the head's acts, the standard fee, a row's Create bill. */
+/* Creator fees (2026-11-13): the head's acts, a row's Create bill. */
+#cpayJobMsg { margin: 0 0 8px; }
+#cpayJobMsg:empty { display: none; }
 .cpay-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.cpay-std { margin: 0 0 4px; }
-.cpay-std dd { display: flex; align-items: center; gap: 8px; }
 .cpay-acct { margin: 4px 0 8px; }
 .cpay-job-r .cpay-mk { margin-top: 6px; }
 

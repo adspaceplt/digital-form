@@ -1055,11 +1055,11 @@
     html += '<div class="readgroup" id="cpayBukku"></div>';
     html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
       '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="cpayBills" hidden></button>' +
-      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><div id="cpayJobs"></div></section>';
+      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><p class="msg" id="cpayJobMsg" role="status"></p><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
-    $('cpayBills').addEventListener('click', function () { makeBills(billable(), $('cpayBills')); });
+    $('cpayBills').addEventListener('click', function () { makeBills(billable().filter(function (j) { return j.fee && Number(j.fee.amount) > 0; }), $('cpayBills')); });
     if ($('cpayAdd')) $('cpayAdd').addEventListener('click', function () { addPayDetails($('cpayAdd'), cur && cur.status !== 'declined' ? cur : null); });
     if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
     if (open) {
@@ -1080,7 +1080,7 @@
       if (btn) btn.disabled = false;
       if (payFor !== c) return;
       if (d.error) {
-        if (fresh && payJobs) { var m = $('cpayMsg'); if (m) { m.textContent = JOB_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
+        if (fresh && payJobs) { var m = $('cpayJobMsg'); if (m) { m.textContent = JOB_SAID[d.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(d) : 'Bukku could not be read. Try again.'); m.className = 'msg err'; } return; }
         UI.failLine(host, 'The payments', JOB_SAID[d.error] || d.error, function () { readJobs(fresh); });
         return;
       }
@@ -1100,11 +1100,13 @@
     if (!host || !d) return;
     var work = mayPart('campaigns.pay', 'work');
     var btn = $('cpayRead'); if (btn) btn.hidden = !(d.linked && work);
-    /* Bookings ready for a bill (CREATOR FEES, 2026-11-13): posted, a fee,
-       no bill, the creator linked and the account chosen. */
+    /* Bookings ready for a bill (CREATOR FEES, 2026-11-13): posted, no
+       bill, the creator linked and the account chosen; Create bill asks the
+       amount, so Create n bills takes only those whose fee is set. */
     var ready = billable();
     var many = $('cpayBills');
-    if (many) { many.hidden = ready.length < 2; many.textContent = 'Create ' + ready.length + ' bills'; }
+    var feed = ready.filter(function (j) { return j.fee && Number(j.fee.amount) > 0; });
+    if (many) { many.hidden = feed.length < 2; many.textContent = 'Create ' + feed.length + ' bills'; }
     var day = function (v) { return v ? ADspaceClock.date(v) : ''; };
     var POSTED = ['posted', 'completed'];
     var jobs = d.jobs || [];
@@ -1123,17 +1125,22 @@
         '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
           '<span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
         '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + mk + '</div>' +
-        (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
+        (b && b.number ? payMenu(j.job, [bkItem(b.number), work ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-a="earlier">Edit</button>' : ''])
+          : work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
         '</div>';
     };
+    /* A bill's page in Bukku, from the row's ⋯ (2026-11-13, the user: "give a
+       button link to open up the respective bukku bill page in menu"). */
+    function bkItem(num) { return '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="bukku" data-num="' + esc(num) + '">Open in Bukku</button>'; }
+    function payMenu(name, items) {
+      items = items.filter(Boolean);
+      if (!items.length) return '';
+      return '<span class="team-act"><button class="kmenu-btn" type="button" data-a="rowmenu" aria-label="More actions for ' + esc(name || '') + '" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" role="menu" hidden>' + items.join('') + '</div></span>';
+    }
     var html = '';
-    /* The standard fee a new booking takes, and why no bill can be made. */
-    if (d.pay) html += '<dl class="ovfacts cpay-std"><div><dt>Standard fee</dt><dd>' +
-      (d.standard_fee ? esc(billMoney(d.standard_fee.amount, d.standard_fee.currency)) : '<span class="muted">Not set</span>') +
-      (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="stdfee" aria-label="Edit standard fee">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
-      '</dd></div></dl>';
+    /* Why no bill can be made. */
     if (work && d.linked && d.bill_account === false && jobs.some(function (j) { return !j.bill && POSTED.indexOf(j.state) > -1; }))
       html += '<p class="msg warn cpay-acct">' + esc(JOB_SAID['no-account']) + '</p>';
     html += jobs.length ? jobs.map(rowOf).join('') : '<p class="emptyline">No bookings.</p>';
@@ -1151,8 +1158,7 @@
         return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
           '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
           '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
-          (work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="pastmenu" aria-label="More actions for ' + esc(e.ref) + '" aria-expanded="false">' + DOTS + '</button>' +
-            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button></div></span>' : '') +
+          payMenu(e.ref, [b && b.number ? bkItem(b.number) : '', work ? '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button>' : '']) +
           '</div>';
       }).join('') : '<p class="emptyline">No earlier jobs.</p>';
     }
@@ -1162,7 +1168,7 @@
           '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
           '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
           (b.amount != null ? '<span class="cpay-job-sub">' + esc(billMoney(b.amount, b.currency)) + '</span>' : '') + '</div>' +
-          (work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
+          (b.number ? payMenu(b.number, [bkItem(b.number)]) : work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
       }).join('');
     }
     if (d.read_at) html += '<p class="muted cpay-read">Read from Bukku ' + esc(day(d.read_at) + ', ' + ADspaceClock.clock(d.read_at)) + '</p>';
@@ -1176,12 +1182,11 @@
         makeBills(jobs.filter(function (x) { return x.option === opt; }), b);
       });
     });
-    var std = host.querySelector('[data-a="stdfee"]');
-    if (std) std.addEventListener('click', function () { standardFee(std); });
     var add = host.querySelector('[data-a="addpast"]');
     if (add) add.addEventListener('click', function () { addPast(add); });
-    host.querySelectorAll('[data-a="pastmenu"]').forEach(function (button) {
+    host.querySelectorAll('[data-a="rowmenu"]').forEach(function (button) {
       var m = button.parentNode.querySelector('.kmenu');
+      var shut = function () { m.hidden = true; button.setAttribute('aria-expanded', 'false'); };
       button.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = m.hidden;
@@ -1190,13 +1195,29 @@
         button.setAttribute('aria-expanded', String(open));
         if (open) window.ADspaceMenu.place(button, m);
       });
-      m.querySelector('[data-a="pastremove"]').addEventListener('click', function () {
-        m.hidden = true;
-        button.setAttribute('aria-expanded', 'false');
+      var rm = m.querySelector('[data-a="pastremove"]');
+      if (rm) rm.addEventListener('click', function () {
+        shut();
         var row = button.closest('[data-past]');
         removePast(row.getAttribute('data-past'), row.getAttribute('data-ref'));
       });
+      var bk = m.querySelector('[data-a="bukku"]');
+      if (bk) bk.addEventListener('click', function () { shut(); openBill(bk.getAttribute('data-num')); });
     });
+  }
+  /* The tab opens at the press (a later window is blocked), then goes to
+     the bill's page once bukku-sync names it. */
+  function openBill(num) {
+    var c = payFor, m = $('cpayJobMsg');
+    if (!c) return;
+    var tab = window.open('', '_blank');
+    db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: c.id, number: num } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }).then(function (x) {
+      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
+      if (tab) tab.close();
+      if (m) { m.textContent = 'Bill ' + num + ' could not be opened in Bukku. Press Read from Bukku, then try again.'; m.className = 'msg err'; }
+    }).catch(function () { if (tab) tab.close(); });
   }
   function pastSaid(d) {
     return d.error === 'taken' ? JOB_SAID['job-taken'] : d.error === 'bad-ref' ? JOB_SAID['job-bad'] : JOB_SAID[d.error] || d.error;
@@ -1275,31 +1296,12 @@
       });
     });
   }
-  /* The standard fee a creator's new bookings take. */
-  function standardFee(btn) {
-    var c = payFor, d = payJobs;
-    if (!c || !d) return;
-    var cur = d.standard_fee ? d.standard_fee.currency : null;
-    window.ADspaceConfirm.ask({ title: 'Standard fee', go: 'Save', wait: true, opener: btn,
-      field: { name: 'fee', label: 'Standard fee' + (cur === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text',
-        value: d.standard_fee ? Number(d.standard_fee.amount).toFixed(2) : '', required: false,
-        note: 'Applies to each new booking of this creator.' },
-      check: function (v) { return feeOk(feeIn(v.fee)) ? '' : JOB_SAID['bad-amount']; } }, function (v) {
-      return db.rpc('creator_standard_fee_set', { p_creator: c.id, p_amount: feeIn(v.fee) }).then(function (r) {
-        var x = r.data || {};
-        if (r.error) return r.error.message;
-        if (x.error) return JOB_SAID[x.error] || x.error;
-        readJobs();
-        return '';
-      });
-    });
-  }
   /* The bookings a bill can be made for, as last read. */
   function billable() {
     var d = payJobs;
     if (!d || !d.pay || !d.linked || !d.bill_account || !mayPart('campaigns.pay', 'work')) return [];
     return (d.jobs || []).filter(function (j) {
-      return !j.bill && ['posted', 'completed'].indexOf(j.state) > -1 && j.fee && Number(j.fee.amount) > 0;
+      return !j.bill && ['posted', 'completed'].indexOf(j.state) > -1;
     });
   }
   /* Create bill: one booking, or every one ready (Create n bills), each
@@ -1308,35 +1310,59 @@
   function makeBills(list, btn) {
     var c = payFor;
     if (!c || !list.length) return;
-    var sums = {};
-    list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
-    var total = Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ');
-    var one = list.length === 1;
+    var one = list.length === 1, j1 = list[0];
+    var body, field;
+    if (one) {
+      var sgd = (j1.fee && j1.fee.currency === 'SGD') || ((payJobs && payJobs.jobs) || []).some(function (x) { return x.fee && x.fee.currency === 'SGD'; });
+      field = { name: 'fee', label: 'Amount' + (sgd ? ' (S$)' : ' (RM)'), type: 'text',
+        value: j1.fee ? Number(j1.fee.amount).toFixed(2) : '', required: true };
+      body = 'The bill for ' + j1.job + ' will be created in Bukku as a draft on ' + c.name + '\'s supplier contact, with its Job reference. Post it in Bukku, then press Read from Bukku.';
+    } else {
+      var sums = {};
+      list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
+      var total = Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ');
+      body = list.length + ' bills totalling ' + total + ' will be created in Bukku as drafts on ' + c.name + '\'s supplier contact, each with its Job reference. Post them in Bukku, then press Read from Bukku.';
+    }
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
-      opener: btn, body: (one ? 'A bill for ' + list[0].job + ' of ' + total : list.length + ' bills totalling ' + total) +
-        ' will be created in Bukku on ' + c.name + '\'s supplier contact, ' + (one ? 'with its' : 'each with its') + ' Job reference.' }, function () {
-      var m = $('cpayMsg'), done = [], refused = [];
-      if (btn) btn.disabled = true;
+      opener: btn, body: body, field: field, wait: one,
+      check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
+      var m = $('cpayJobMsg'), done = [], refused = [];
       var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
-      return list.reduce(function (p, j) {
-        return p.then(function () {
+      /* One booking: its amount kept as the creator fee first, then billed. */
+      var first = Promise.resolve('');
+      if (one) {
+        var amt = feeIn(v && v.fee);
+        if (amt !== (j1.fee ? Number(j1.fee.amount) : null))
+          first = db.rpc('creator_fee_set', { p_option: j1.option, p_amount: amt }).then(function (r) {
+            var x = r.data || {};
+            if (r.error) return r.error.message;
+            return x.error ? (JOB_SAID[x.error] || x.error) : '';
+          });
+      }
+      return first.then(function (msg) {
+        if (msg) return msg;
+        if (btn) btn.disabled = true;
+        list.reduce(function (p, j) {
+          return p.then(function () {
+            if (payFor !== c) return;
+            return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
+              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
+            }).then(function (x) {
+              if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
+              if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
+              else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
+              else done.push(x.made || j.job);
+            }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
+          });
+        }, Promise.resolve()).then(function () {
+          if (btn) btn.disabled = false;
           if (payFor !== c) return;
-          return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
-            return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
-          }).then(function (x) {
-            if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
-            if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
-            else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
-            else done.push(x.made || j.job);
-          }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
+          delete crTotals[c.id]; paintCrRail(c);
+          if (!done.length && one) readJobs(); else paintJobs();
+          if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
+          else say(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
         });
-      }, Promise.resolve()).then(function () {
-        if (btn) btn.disabled = false;
-        if (payFor !== c) return;
-        delete crTotals[c.id]; paintCrRail(c);
-        paintJobs();
-        if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
-        else say(one ? 'Bill ' + done[0] + ' created in Bukku.' : done.length + ' bills created in Bukku.', 'ok');
+        return '';
       });
     });
   }
