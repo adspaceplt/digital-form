@@ -4203,7 +4203,7 @@
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : d.scope === 'drafts' ? 'You have used your ' + (d.limit || 10) + ' report drafts for today.'
       : d.scope === 'checks' ? 'You have used your ' + (d.limit || 10) + ' commentary checks for today.'
-      : d.scope === 'next' ? 'You have used your ' + (d.limit || 3) + ' Next batch uses for today.'
+      : d.scope === 'next' ? 'You have used your ' + (d.limit || 3) + ' Next batch suggestions for today.'
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
     return who + (when ? ' Resets at ' + when + '.' : '');
   }
@@ -4221,7 +4221,7 @@
     'not-draft': 'Write with AI works only on a draft.',
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'not-found': 'This report no longer exists.',
-    'wrong-kind': 'Next batch is written for an Advertising Report alone.'
+    'wrong-kind': 'Next batch is available on an Advertising Report only.'
   };
 
   // ---- Next batch ------------------------------------------------------------------------
@@ -4261,8 +4261,8 @@
     var ads = st.ads.length, linked = st.metaLinks && (st.metaLinks.ad_accounts || []).length;
     var s = n && n.source;
     if (s && s.meta) return ['Read from Meta', plural(s.ads || 0, 'ad') + ' · Frequency and CTR by day' + (s.read_at ? ' · Read ' + aiWhen(s.read_at) : '')];
-    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta could not be read.')];
-    if (st.meta && linked) return ['Reads from Meta', plural(ads, 'ad') + ' · Frequency and CTR by day, the last 14 days of the period'];
+    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta did not answer. Write with AI again to try.')];
+    if (st.meta && linked) return ['Will read from Meta', plural(ads, 'ad') + ' · Frequency and CTR by day, the last 14 days of the period'];
     return ['Report figures only', plural(ads, 'ad') + ' · ' + (!metaOn() ? 'Meta checks are off.' : 'No ad account is linked.')];
   }
   /* 13 Nov, 9:42am, in Malaysia. */
@@ -4272,7 +4272,7 @@
   }
   function nbSave(rid, patch) {
     return db.from('sm_reports').update(patch).eq('id', rid).select('*').then(function (res) {
-      if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.');
+      if (res.error || !(res.data || []).length) throw res.error || new Error('Not saved. The database refused the request.');
       if (st.open && st.open.id === rid) st.open = res.data[0];
       return res.data[0];
     });
@@ -4318,7 +4318,7 @@
           (n.by_name ? '<span class="nb-by">Written by AI for ' + esc(n.by_name) + (n.at ? ', ' + esc(aiWhen(n.at)) : '') + '</span>' : '') + '</div>' +
         '<div class="nb-rows">' + rows + '</div>' +
         '<div class="nb-print"><div><b>Next Batch page in the PDF</b><span>' +
-          esc(added ? 'The suggestions added to the commentary, ' + added + ' of ' + items.length : 'None added to the commentary') + '</span></div>' +
+          esc(added ? added + ' of ' + items.length + ' suggestions added.' : 'No suggestions added.') + '</span></div>' +
           (ed ? '<button class="switch" type="button" role="switch" data-a="nbprint" aria-checked="' + (r.next_batch_print !== false) + '" aria-label="Next Batch page in the PDF"><span class="switch-knob"></span></button>'
             : '<span class="nb-printv">' + (r.next_batch_print !== false ? 'On' : 'Off') + '</span>') + '</div>'
         : '<div class="nb-empty"></div>') + '</div>' + paper + '</div>';
@@ -4339,13 +4339,13 @@
           fileReport('report.saved', 'Next batch · Added to Focus for next month: ' + it.title);
           paintSteps(); paintNext();
           var h = st.host.querySelector('.rp-next [data-m="nb' + i + '"]');
-          undoBar('Added to Focus for next month.', h, function () {
+          undoBar('Added to commentary.', h, function () {
             var ins2 = Object.assign({}, st.open.insights || {});
             if (String(was).trim()) ins2.focus = was; else delete ins2.focus;
             var nb2 = JSON.parse(JSON.stringify(nbOf(st.open)));
             if (nb2.items[i]) nb2.items[i].added = false;
             nbSave(rid, { insights: ins2, next_batch: nb2 }).then(function () {
-              fileReport('report.saved', 'Next batch · Taken back from Focus for next month: ' + it.title);
+              fileReport('report.saved', 'Next batch · Removed from Focus for next month: ' + it.title);
               paintSteps(); paintNext();
             }).catch(function (e) { say(st.host.querySelector('.rp-next [data-m="nb' + i + '"]'), said(e), 'err'); });
           });
@@ -4412,7 +4412,7 @@
               ad_ids: a ? (a.ad_ids || []) : [], title: it.title, evidence: it.evidence, plan: it.plan, why: it.why, points: it.points || [], added: false };
           }) };
         return nbSave(rid, { next_batch: nb }).then(function () { return { ok: nb.items.length }; },
-          function (err) { return { said: 'Written, but not saved: ' + said(err) }; });
+          function (err) { return { said: 'The suggestions were not saved. ' + said(err) + ' Write with AI again.' }; });
       }).catch(function (e) {
         return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
       }).then(function (out) {
@@ -4426,10 +4426,10 @@
     if (nbKept[rid]) { var kept = nbKept[rid]; delete nbKept[rid]; setTimeout(function () { nbTold(rid, kept.out, kept.before); }, 0); }
     paintLeft();
     wb.addEventListener('click', function () {
-      var uses = 'This uses one of your Next batch uses' + (lastLeft != null ? ' (' + lastLeft + ' left today).' : '.');
+      var uses = 'This uses one of today\'s Next batch runs' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
       window.ADspaceConfirm.ask(items.length
-        ? { title: 'Replace the suggestions?', body: uses + ' The new suggestions replace those listed; Undo puts them back.', go: 'Replace' }
-        : { title: 'Write suggestions?', body: uses + ' The suggestions are saved to the report as they arrive.', go: 'Write' }, write);
+        ? { title: 'Replace the suggestions?', body: uses + ' The new suggestions will replace those listed. Undo restores them.', go: 'Replace' }
+        : { title: 'Write suggestions?', body: uses + ' The suggestions will be saved to the report.', go: 'Write' }, write);
     });
   }
   function nbTold(rid, out, before) {
