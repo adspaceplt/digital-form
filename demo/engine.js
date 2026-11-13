@@ -106,7 +106,7 @@
     sm_report_platforms: 'id report_id platform account_name handle group_key group_label position metrics followers_start followers_end growth_override growth_reason er_basis metric_notes summary worked improve actions created_at platform_name',
     sm_report_posts: 'id report_id platform_id posted_on title caption content_type url thumb_data views reach impressions interactions engagements likes comments shares saves notable observation position created_at',
     sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by',
-    sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request',
+    sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print',
     team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at',
     team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at'
   };
@@ -134,6 +134,8 @@
     agent_schedule_cancel: 'p_id',
     agent_schedule_list: '',
     ai_agent_left: '',
+    ai_next_claim: 'p_report',
+    ai_next_left: 'p_report',
     ai_agent_turn: 'p_press',
     ai_agent_tokens: 'p_press p_in p_out p_model',
     video_script_picture: 'p_script p_scene p_kind p_url p_press p_thumb',
@@ -6886,7 +6888,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var lb = r.brand_id && (DB.client_brands || []).filter(function (x) { return x.id === r.brand_id; })[0];
           if (lb && lb.logo === 'adspace') return null;
           return lc ? { name: lc.name, logo: lc.report_logo || null } : null;
-        }()) },
+        }()),
+
+        next_batch: (r.kind === 'ads' && r.next_batch_print !== false && r.next_batch && Array.isArray(r.next_batch.items))
+          ? r.next_batch.items.filter(function (i) { return i && i.added === true; }).map(function (i) {
+              return { kind: i.kind || null, ad: i.ad || null, title: i.title || null, plan: i.plan || null, why: i.why || null, points: i.points || [] }; })
+          : null },
       platforms: DB.sm_report_platforms.filter(function (p) { return p.report_id === r.id; }).sort(function (a, b) { return a.position - b.position; })
         .map(function (p) { return Object.assign({}, p); }),
       posts: DB.sm_report_posts.filter(function (p) { return p.report_id === r.id; })
@@ -7000,8 +7007,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return row && row.daily != null ? row.daily : dflt;
   }
 
-  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, per_report: 1 };
-  var AI_USES = ['drafts', 'checks', 'caption', 'script', 'picture', 'analysis', 'checklist', 'analytics', 'agent'];
+  var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, next: 3, per_report: 1 };
+  var AI_USES = ['drafts', 'checks', 'caption', 'script', 'picture', 'analysis', 'checklist', 'analytics', 'agent', 'next'];
   function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
   function aiPurpose(x) { return x.purpose || 'draft'; }
   function aiCheckRoom(m, rep) {
@@ -7984,6 +7991,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       (DB.ai_drafts = DB.ai_drafts || []).push(agRow);
       return { id: agRow.id, left: agLim - agUsed - 1, limit: agLim };
     }
+
+    if (name === 'ai_next_left' || name === 'ai_next_claim') {
+      if (!me || !smCan('work')) return { error: 'denied' };
+      var nxSince = aiDay(), nxLim = aiCap(me.id, 'next');
+      var nxUsed = (DB.ai_drafts || []).filter(function (x) { return x.team_member_id === me.id && x.purpose === 'next' && x.outcome !== 'failed' &&
+        new Date(x.created_at).getTime() >= nxSince; }).length;
+      var nxLeft = Math.max(0, nxLim - nxUsed);
+      if (name === 'ai_next_left') return { left: nxLeft, limit: nxLim, scope: nxLim === 0 ? 'stopped' : 'next', next: nxLeft > 0 || nxLim === 0 ? null : new Date(nxSince + 864e5).toISOString() };
+      var nxR = (DB.sm_reports || []).filter(function (x) { return x.id === a.p_report; })[0];
+      if (!nxR || !scopeSeen(nxR.client_id, 'work')) return { error: 'not-found' };
+      if (nxR.kind !== 'ads') return { error: 'wrong-kind' };
+      if (nxR.status !== 'draft') return { error: 'not-draft' };
+      if (nxLim === 0) return { error: 'ai-limit', scope: 'stopped', limit: 0 };
+      if (!nxLeft) return { error: 'ai-limit', scope: 'next', limit: nxLim, next: new Date(nxSince + 864e5).toISOString() };
+      var nxRow = { id: nid('aid'), report_id: nxR.id, team_member_id: me.id, client_id: nxR.client_id, kind: 'ads', period_start: nxR.period_start,
+        period_end: nxR.period_end, purpose: 'next', outcome: 'drafted', version_no: nxR.version_no, created_at: new Date().toISOString() };
+      (DB.ai_drafts = DB.ai_drafts || []).push(nxRow);
+      return { id: nxRow.id, left: nxLim - nxUsed - 1, limit: nxLim };
+    }
     if (name === 'ai_agent_turn' || name === 'ai_agent_tokens') {
       if (!me) return { error: 'denied' };
       var agD = (DB.ai_drafts || []).filter(function (x) { return x.id === a.p_press && x.team_member_id === me.id && x.purpose === 'agent'; })[0];
@@ -8159,7 +8185,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var sc2 = String(a.p_scope || '').trim(), nm2, def2;
       var unit2 = ' a day';
       var W2 = { drafts: 'Report drafts', checks: 'Commentary checks', caption: 'Captions', script: 'Scripts',
-        picture: 'Scene pictures', analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses', agent: 'Assistant' };
+        picture: 'Scene pictures', analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses', agent: 'Assistant', next: 'Next batch' };
       var per2 = sc2 === 'per_report';
       if (per2) { if (dl != null && dl > 1) return { error: 'bad-limit' }; nm2 = 'One draft and one check a report a day'; }
       else if (W2[sc2]) { nm2 = W2[sc2]; def2 = AI_CAP_STD[sc2]; }
@@ -9365,7 +9391,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return Promise.resolve({ data: asOut, error: null });
     }
-    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
+    if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^ai_next_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];
       if (sr) return Promise.resolve({ data: { error: sr }, error: null });
       var smWas = (DB.sm_reports || []).filter(function (x) { return x.id === (args || {}).p_id; }).map(function (x) { return x.status + '|' + (x.sent_on || ''); })[0];
@@ -14503,7 +14529,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return q;
     };
     return { from: builder, rpc: freshRpc, storage: storage,
-      functions: { invoke: function (name, opts) {
+      functions: { invoke: function fnInvoke(name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
 
         if (name === 'sign-download' && opts && opts.body && opts.body.reportVersion) {
@@ -14664,7 +14690,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var mR = function (d) { return Promise.resolve({ data: d, error: null }); };
           var mMe = smMe(), mAcc = mMe ? opsAccess(mMe) : null;
           if (mb.action === 'assets' && !opsAllowed('clients.brand', 'work')) return mR({ error: 'denied' });
-          if (['assets', 'ads', 'posts', 'pictures', 'creatives'].indexOf(mb.action) < 0) return Promise.resolve({ data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 400 } });
+          if (['assets', 'ads', 'posts', 'pictures', 'creatives', 'daily'].indexOf(mb.action) < 0) return Promise.resolve({ data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: 400 } });
           if (!mf) return mR({ error: 'not-connected' });
           if (mf.error) return mR({ error: mf.error });
           if (mb.action === 'assets') return mR(JSON.parse(JSON.stringify(mf.assets || { ad_accounts: [], pages: [], instagram: [] })));
@@ -14682,12 +14708,24 @@ function opsCodeRange(cid, period, ty, src, seq) {
               return /^https:\/\/([^/]+\.)?(fbcdn\.net|cdninstagram\.com)\//.test(String(u)); }).slice(0, 6).map(function (u) {
               return mPics[u] ? { url: u, type: mPics[u].type, b64: mPics[u].b64 } : { url: u, error: 'not-read' }; }) });
           }
-          if ((mb.action === 'ads' || mb.action === 'creatives') !== (mRep.kind === 'ads')) return mR({ error: 'wrong-kind' });
+          if ((mb.action === 'ads' || mb.action === 'creatives' || mb.action === 'daily') !== (mRep.kind === 'ads')) return mR({ error: 'wrong-kind' });
           return rpc('meta_links_list', { p_client: mRep.client_id }).then(function (lr) {
             var ld = lr.data || {};
             if (lr.error || ld.error) return { data: { error: 'denied' }, error: null };
             var mine = (ld.links || []).filter(function (x) { return (x.brand_id || null) === (mRep.brand_id || null); })[0] || {};
 
+            if (mb.action === 'daily') {
+              if (!(mine.ad_accounts || []).length) return { data: { error: 'no-mapping' }, error: null };
+              var dy = mf.daily || {}, end0 = String(mRep.period_end).slice(0, 10);
+              var since0 = new Date(Date.parse(end0 + 'T00:00:00Z') - 13 * 864e5).toISOString().slice(0, 10);
+              if (since0 < String(mRep.period_start).slice(0, 10)) since0 = String(mRep.period_start).slice(0, 10);
+              var dAds = (DB.sm_report_ads || []).filter(function (x) { return x.report_id === mRep.id; }).map(function (x) {
+                var days = [];
+                (x.ad_ids || []).forEach(function (ad) { (dy[String(ad)] || []).forEach(function (d) { days.push(Object.assign({}, d)); }); });
+                return { row: x.id, days: days };
+              }).filter(function (x) { return x.days.length; });
+              return { data: { since: since0, until: end0, ads: dAds, read_at: new Date().toISOString() }, error: null };
+            }
             if (mb.action === 'creatives') {
               var linked = (mine.ad_accounts || []).map(function (x) { return String(x.id); });
               var cr = mf.creatives || {};
@@ -15428,8 +15466,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           opts = opts || {}; opts.body = opts.body || {};
           var rid = opts && opts.body && opts.body.report_id;
           var rr = (DB.sm_reports || []).filter(function (x) { return x.id === rid; })[0];
-          if (!window.__aiDraft) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, error: null });
-          if (window.__aiDraft.error) return Promise.resolve({ data: Object.assign({}, window.__aiDraft), error: null });
+          if (opts.body.mode === 'next' ? !window.__aiNext : !window.__aiDraft) return Promise.resolve({ data: { error: 'ai-not-set-up', missing: ['ANTHROPIC_API_KEY'] }, error: null });
+          if (opts.body.mode !== 'next' && window.__aiDraft.error) return Promise.resolve({ data: Object.assign({}, window.__aiDraft), error: null });
           if (!rr) return Promise.resolve({ data: { error: 'not-found' }, error: null });
 
           if (opts.body.mode === 'check') {
@@ -15465,6 +15503,33 @@ function opsCodeRange(cid, period, ty, src, seq) {
               outcome: 'drafted', purpose: 'check', result: { findings: found }, basis: basis, version_no: rr.version_no, created_at: new Date().toISOString() });
             persist();
             return Promise.resolve({ data: { check: { findings: found }, basis: basis, left: limC - usedC - 1 }, error: null });
+          }
+
+          if (opts.body.mode === 'next') {
+            if (rr.status !== 'draft') return Promise.resolve({ data: { error: 'not-draft' }, error: null });
+            if (rr.kind !== 'ads') return Promise.resolve({ data: { error: 'wrong-kind' }, error: null });
+            var nxAds = (DB.sm_report_ads || []).filter(function (a) { return a.report_id === rid; }).sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
+            if (!nxAds.length) return Promise.resolve({ data: { error: 'no-ads' }, error: null });
+            window.__nextAsked = (window.__nextAsked || []).concat([JSON.parse(JSON.stringify(opts.body))]);
+            return fnInvoke('meta-import', { body: { action: 'daily', report_id: rid } }).then(function (mr) {
+              var md = (mr && mr.data) || {};
+              var source = Array.isArray(md.ads) ? { meta: true, ads: md.ads.length, since: md.since, until: md.until, read_at: md.read_at }
+                : { meta: false, ads: nxAds.length, why: md.error || 'meta-failed' };
+              var cl = rpc('ai_next_claim', { p_report: rid });
+              return Promise.resolve(cl).then(function (c0) {
+                var g = (c0 && c0.data) || c0 || {};
+                if (g.error) return { data: g, error: null };
+                var nx = window.__aiNext || {};
+                if (nx.error) return { data: { error: nx.error }, error: null };
+                var items = (nx.items || []).map(function (it) {
+                  var o = Object.assign({}, it);
+                  if (typeof it.rowAt === 'number') o.row = nxAds[it.rowAt] ? nxAds[it.rowAt].id : null;
+                  delete o.rowAt;
+                  return o;
+                });
+                return { data: { next: { items: items, source: source, dropped: 0 }, left: g.left }, error: null };
+              });
+            });
           }
           if (rr.status !== 'draft') return Promise.resolve({ data: { error: 'not-draft' }, error: null });
           var nads = (DB.sm_report_ads || []).filter(function (a) { return a.report_id === rid; }).length;

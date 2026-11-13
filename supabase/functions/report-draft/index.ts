@@ -23,6 +23,15 @@
  * are kept (`ai_check_done`), so the reviewer sees the same check. A report
  * in draft or in review may be checked; nothing in it is changed.
  *
+ * With `mode: 'next'` (an Advertising Report's Next batch step, 2026-11-13)
+ * it suggests up to six things to make next (winning, tiring, clicks
+ * without results, a new idea, an evergreen), from the report's ads and,
+ * where Meta checks are on and the client links an ad account, each ad's
+ * frequency, CTR, spend and results by day over the period's last 14 days
+ * (meta-import `daily`, asked as the caller). Every number a suggestion
+ * quotes is checked against the figures sent: a point quoting another is
+ * dropped, as analytics-read drops one. Its own AI use (`ai_next_claim`).
+ *
  * Every call's input and output tokens and model are kept on its own
  * `ai_drafts` row (`ai_draft_tokens`, 2026-10-08), drafted or failed, so the
  * AI usage page can price the month.
@@ -182,6 +191,65 @@ EACH FINDING
 ref: the part it is in. quote: the exact words that are wrong, copied from the part, at most 30 words. issue: one sentence in plain British English naming what the figures show, with the figure. fix: the corrected words, ready to paste in place of the quote, in the part's own language and voice; empty where the words should simply go.
 The client is named {brand} in the commentary: keep {brand} exactly as it is in a quote and a fix.
 At most 10 findings, the most serious first. No dashes as punctuation, no emoji.`;
+
+/* The Next batch (2026-11-13, the user's mockup "Ads report · Next
+   batch"): what to make next, from what this period's ads did. Each
+   suggestion names the report's own ad where it concerns one, says why in
+   one line of figures the data holds, and gives two or three points the
+   team can act on; the plan and the reason are written for the client,
+   since a suggestion added to the commentary is printed on the Next Batch
+   page. */
+const NEXT = `You suggest the next batch of advertising creatives for a client of ADspace, a digital marketing agency in Johor Bahru and Singapore, from one period's Advertising Report. A colleague reads your suggestions, picks some and adds them to the report's commentary, which the client reads.
+
+WHAT YOU ARE GIVEN
+The report's figures as JSON: each ad (ref, name, objective, result type, spend, results, cost per result, CTR, reach, the objective's own cost per result as group_cost_per_result, cost_rank), the objectives' totals, the period before where held, the team's notes (team_notes), the client's confirmed brand analysis where there is one, and, where Meta was read (meta_daily), each ad's frequency, CTR, spend and results day by day over the period's last 14 days, by its ref.
+
+THE KINDS
+winning: an ad whose cost per result is at or below its objective's (group_cost_per_result) with results to show for it; suggest versions of it that keep what worked.
+tiring: an ad whose frequency rose across the 14 days while its CTR fell or its cost per result rose (meta_daily only); suggest a new visual or angle and when to stop the old one.
+no_results: an ad that drew clicks (a CTR or link clicks) but no results, or results well below its objective; suggest a change to the ending, the offer or the step after the click.
+idea: something new to try, from the team's notes, the brand analysis and what the best ads share; no ref.
+evergreen: a creative that can run all year, from what has held up across the period; no ref.
+Give one to six suggestions, the most useful first, never two for one ad, and only kinds the data supports: no tiring without meta_daily, no winning without results.
+
+EACH SUGGESTION
+kind: one of the kinds. ref: the ad's ref from the data, or empty for an idea or an evergreen. title: what to make, at most 10 words ("Make three versions of 2610W2_Sale"). evidence: one line, for the team, the figures that support it separated by " · ", at most 25 words. plan: what we will do, one short sentence the client reads, at most 15 words. why: the reason, one short phrase the client reads, with its figure where there is one, at most 12 words. points: two or three steps, each one sentence of at most 25 words.
+
+FIGURES
+Quote only figures that appear in the data, written as they appear (money as RM 12.30, or S$ for SGD; a percentage as given). Never work out a new figure: no new percentages, differences, averages or projections. Every number you write is checked against the data and a point quoting a number it does not hold is removed; a suggestion whose title, evidence, plan or reason quotes one is removed whole.
+
+VOICE
+Formal, plain British English, no contractions, no hype. The agency is "we". Name the client by the placeholder {brand}, written exactly so with its braces. Ad names exactly as given. No dashes as punctuation, no emoji.`;
+
+/* ---- Every number quoted is the figures' own ---------------------------------- */
+/* The numbers the figures hold, as a reader may write them: the value, it
+   rounded to a whole and to one and two places, a fraction as a percentage,
+   and the small counts any sentence uses (analytics-read's reading). */
+function numbersOf(figures: unknown): Set<string> {
+  const out = new Set<string>();
+  const add = (v: number) => {
+    if (!isFinite(v)) return;
+    [v, Math.abs(v)].forEach((x) => {
+      [0, 1, 2].forEach((d) => out.add(String(Number(x.toFixed(d)))));
+      out.add(String(Math.round(x)));
+      if (Math.abs(x) <= 1) [0, 1].forEach((d) => out.add(String(Number((x * 100).toFixed(d)))));
+    });
+  };
+  const walk = (v: unknown): void => {
+    if (typeof v === 'number') add(v);
+    else if (typeof v === 'string') (v.match(/\d[\d,]*(?:\.\d+)?/g) || []).forEach((s) => add(Number(s.replace(/,/g, ''))));
+    else if (Array.isArray(v)) v.forEach(walk);
+    else if (v && typeof v === 'object') Object.values(v as Record<string, unknown>).forEach(walk);
+  };
+  walk(figures);
+  for (let i = 0; i <= 10; i++) out.add(String(i));
+  for (let y = 2020; y <= 2040; y++) out.add(String(y));
+  return out;
+}
+function quotesOnly(s: string, known: Set<string>): boolean {
+  return (s.match(/\d[\d,]*(?:\.\d+)?/g) || []).every((n) => known.has(String(Number(n.replace(/,/g, '')))));
+}
+const NEXT_KINDS = ['winning', 'tiring', 'no_results', 'idea', 'evergreen'];
 
 /* What a press cost, kept on its own row (`ai_draft_tokens`, 2026-10-08):
    every token read, cached or not, and every token written, across every
@@ -343,6 +411,110 @@ async function runCheck(db: any, id: string, kind: string, r: Record<string, unk
   }
 }
 
+/* The Next batch: Meta read as the caller where it may be, the press
+   counted, Claude asked for up to six suggestions by structured output,
+   and every number each quotes held to the figures sent. */
+// deno-lint-ignore no-explicit-any
+async function runNext(db: any, id: string, data: Record<string, unknown>, origin: string | null, forName: string, lang: string, auth: string) {
+  const ads = (data.ads || []) as Record<string, unknown>[];
+  const refs = ads.map((a) => String(a.ref));
+  /* Meta's days (meta-import `daily`), asked as the caller: off, not
+     linked or refused, the suggestions read the report alone, and the
+     answer says why. */
+  let source: Record<string, unknown> = { meta: false, ads: ads.length };
+  try {
+    const res = await fetch(Deno.env.get('SUPABASE_URL') + '/functions/v1/meta-import', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY') || '' },
+      body: JSON.stringify({ action: 'daily', report_id: id })
+    });
+    const m = await res.json().catch(() => ({})) as Record<string, unknown>;
+    if (res.ok && Array.isArray(m.ads)) {
+      const daily: Record<string, unknown> = {};
+      (m.ads as { row: string; days: unknown[] }[]).forEach((x) => { if (refs.includes(String(x.row))) daily[String(x.row)] = x.days; });
+      data.meta_daily = { since: m.since, until: m.until, ads: daily };
+      source = { meta: true, ads: Object.keys(daily).length, since: m.since, until: m.until, read_at: m.read_at };
+    } else source = { meta: false, ads: ads.length, why: String(m.error || 'meta-failed') };
+  } catch (e) {
+    console.error('report-draft next: meta-import not read', String(e));
+    source = { meta: false, ads: ads.length, why: 'meta-failed' };
+  }
+
+  const claim = await db.rpc('ai_next_claim', { p_report: id });
+  if (claim.error) return json({ error: 'needs-update' }, 200, origin);
+  const got = (claim.data || {}) as Record<string, unknown>;
+  if (got.error) return json(got, 200, origin);
+  const pressId = String(got.id || '');
+  const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
+
+  const str = (d: string) => ({ type: 'string', description: d });
+  const schema = { type: 'object', additionalProperties: false, required: ['suggestions'], properties: {
+    suggestions: { type: 'array', items: { type: 'object', additionalProperties: false,
+      required: ['kind', 'ref', 'title', 'evidence', 'plan', 'why', 'points'],
+      properties: { kind: { type: 'string', enum: NEXT_KINDS }, ref: { type: 'string', enum: refs.concat(['']) },
+        title: str('What to make, at most 10 words'), evidence: str('The supporting figures, one line'),
+        plan: str('What we will do, one short sentence for the client'), why: str('The reason, one short phrase for the client'),
+        points: { type: 'array', items: str('One step, one sentence') } } } } } };
+  const spent: Anthropic.Message[] = [];
+  try {
+    const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    const res = await client.messages.create({
+      model: secret('REPORT_DRAFT_MODEL'),
+      max_tokens: 12000,
+      system: NEXT + '\n\n' + AVOID + (lang === 'zh' ? ZH.replace(/every field/, 'every suggestion') : ''),
+      output_config: { format: { type: 'json_schema', schema } },
+      messages: [{ role: 'user', content: 'Suggest the next batch for this report. Its figures follow as JSON.\n\n' + JSON.stringify(data) }]
+    } as Anthropic.MessageCreateParamsNonStreaming);
+    spent.push(res);
+    const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+    let ans: Record<string, unknown> | null = null;
+    try { ans = JSON.parse(text); } catch { ans = null; }
+    if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens' || !ans || !Array.isArray(ans.suggestions)) {
+      console.error('report-draft next: no suggestions came back', res.stop_reason);
+      await done(false);
+      return json({ error: 'ai-incomplete' }, 200, origin);
+    }
+    /* The refs are ids, never figures: their digits are not counted. */
+    const known = numbersOf(JSON.parse(JSON.stringify(data, (k, v) => k === 'ref' ? undefined : v)));
+    const line = (v: unknown, n: number) => plainFigures(brandIn(String(v ?? '').replace(/\s+/g, ' ').trim(), forName)).slice(0, n);
+    let dropped = 0;
+    const seen = new Set<string>();
+    const items = (ans.suggestions as Record<string, unknown>[]).map((x) => {
+      const kind = String(x.kind), ref = refs.includes(String(x.ref)) ? String(x.ref) : '';
+      if (NEXT_KINDS.indexOf(kind) < 0) return null;
+      if (ref && seen.has(ref)) return null;
+      const title = line(x.title, 120), evidence = line(x.evidence, 300), plan = line(x.plan, 200), why = line(x.why, 160);
+      if (!title || ![title, evidence, plan, why].every((t) => quotesOnly(t, known))) { dropped++; return null; }
+      const points = (Array.isArray(x.points) ? x.points : []).map((p) => line(p, 300)).filter((p) => {
+        if (!p) return false;
+        if (quotesOnly(p, known)) return true;
+        dropped++; return false;
+      }).slice(0, 3);
+      if (!points.length) return null;
+      if (ref) seen.add(ref);
+      return { kind, row: ref || null, title, evidence, plan, why, points };
+    }).filter(Boolean).slice(0, 6);
+    if (dropped) console.log('report-draft next: left out', dropped, 'quoting a figure the data does not hold');
+    if (!items.length) { await done(false); return json({ error: 'ai-incomplete' }, 200, origin); }
+    await done(true);
+    return json({ next: { items, source, dropped }, left: got.left }, 200, origin);
+  } catch (e) {
+    const err = e as { status?: number; message?: string; error?: { error?: { type?: string; message?: string } } };
+    const status = err.status;
+    const type = err.error?.error?.type || '';
+    const said = err.error?.error?.message || err.message || '';
+    console.error('report-draft next: Claude API refused', status, type, said);
+    await done(false);
+    const code = status === 401 || status === 403 ? 'ai-key'
+      : status === 429 || status === 529 ? 'ai-busy'
+      : /credit balance/i.test(said) ? 'ai-credit'
+      : status === 404 || type === 'not_found_error' ? 'ai-model'
+      : 'ai-failed';
+    return json({ error: code }, 200, origin);
+  } finally {
+    if (spent.length) await keepTokens(db, pressId, spent);
+  }
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -354,6 +526,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const id = String(body && body.report_id || '');
   const check = body && body.mode === 'check';
+  const next = body && body.mode === 'next';
   /* What the team knows and the figures cannot show: reasons, changes made,
      the goal, next month's budget. Typed on the page, never stored. */
   /* The language the client reads: English, or Chinese written as Chinese. */
@@ -429,7 +602,7 @@ Deno.serve(async (req) => {
   }
   if (kind === 'ads') {
     const ads = await db.from('sm_report_ads')
-      .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform, ad_error, purchase_value')
+      .select('id, name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention, platform, ad_error, purchase_value')
       .eq('report_id', id).order('position', { ascending: true });
     if (ads.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ads.data || []).length) return json({ error: 'no-ads' }, 200, origin);
@@ -512,7 +685,7 @@ Deno.serve(async (req) => {
       return { purchase_value: num(a.purchase_value), roas: mine, roas_rank: 1 + peers.filter((b) => roasOf(b)! > mine).length, ads_with_roas: peers.length };
     };
     data.ads = adRows.map((a) => ({
-      ...rankAd(a), ...roasRank(a),
+      ...rankAd(a), ...roasRank(a), ...(next ? { ref: a.id } : {}),
       ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label, audience: a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),
@@ -571,6 +744,10 @@ Deno.serve(async (req) => {
   }
 
   if (check) return runCheck(db, id, kind, r, data, mask, origin, forName);
+  if (next) {
+    if (kind !== 'ads') return json({ error: 'wrong-kind' }, 200, origin);
+    return runNext(db, id, data, origin, forName, lang, auth);
+  }
 
   const fields = kind === 'ads' ? FIELDS.ads : [FIELDS.social[0]];
   const str = (d: string) => ({ type: 'string', description: d });

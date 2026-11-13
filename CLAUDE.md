@@ -291,7 +291,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `analytics.js`, the Analytics trends (`js/sales.js`, `js/chart.js` line bands) | analytics, overview, sales, levels, team, then `ui` |
 | `supabase/functions/analytics-read/`, Analytics' Write with AI, the ANALYTICS READ WITH AI and ANALYTICS ALERTS sections | analytics, analyticsfn, smsql, abroadsql, mailfn, settings, sql |
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
-| `reports.js`, `smreport.js` | reports, adsreport, audit, metaimport, smsql, engage |
+| `reports.js`, `smreport.js` | reports, adsreport, nextbatch, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas approval) | abroadsql, abroad, abroadrec, sql, settings, team, teamrec, then `ui` |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
@@ -6123,6 +6123,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `by_objective` (the period's spend, results and cost per result, every
     ad counted) and its `group_cost_per_result` counts every ad that spent
     (`tests/objcost.js`).
+  - Next batch (`2026-11-13-ads-next-batch.sql`; the user, 2026-11-13: "approve build both"): an Advertising Report's step between Commentary and Check and submit, never opened on by itself; Write with AI (`report-draft` `mode: 'next'`, its own use `ai_next_claim`, 3 a day, AI usage's Next batch) reads the report's ads and, where `meta_checks_on()` and an ad account is linked, Meta's frequency, CTR, spend and results by day over the period's last 14 days (`meta-import` `daily`, asked as the caller), and keeps up to six suggestions on the report (`sm_reports.next_batch`, a draft field), each a kind (Winning, Tiring, Clicks without {result}, New idea, Evergreen), its ad, title, evidence, plan, reason and points, a number none of the figures sent holds dropped; Add to commentary appends its points to Focus for next month with Undo, filed `report.saved`; Create task opens Add task prefilled (`ADspaceOps.add(pre)`); those added print on the PDF's Next Batch page while `next_batch_print` is on, the snapshot sending them alone, never the evidence, and `figureSlips` reads its amounts (`tests/nextbatch.js`).
   - The Report audit (2026-10-09; the user: "there shouldnt be any
     mismatches"; `2026-10-09-report-audit.sql`): one card under Check and
     submit's checks (`.rp-aicheck`: Report audit, Run audit with the

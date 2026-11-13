@@ -10184,6 +10184,27 @@ Report in the database, where it flagged exactly the seven and one more
 (Laman Waringin, 25 Sept to 8 Oct, naming two WhatsApp ads not in the
 report) and no correct figure. The seven are revised as new versions.
 
+### 2026-11-13 · Next batch on an Advertising Report
+The user approved the mockup "Ads report · Next batch" ("approve build
+both"): a report's last month should say what to make next, not only how
+the month went. A fifth step on an Advertising Report, between Commentary
+and Check and submit, asks Claude for up to six suggestions (winning,
+tiring, clicks without results, a new idea, an evergreen) from the
+report's own ads and, where Meta checks are on and an ad account is
+linked, each ad's frequency and CTR by day over the period's last 14 days,
+which `meta-import` reads as the caller (`daily`) and `report-draft` asks
+for itself, so the figures Claude reads are Meta's and the report's, never
+the page's. After the commentary figures of the same day, every number a
+suggestion quotes is held to the figures sent, as analytics-read holds
+its own: a point quoting another is dropped, and a suggestion whose
+title, evidence, plan or reason does is dropped whole. The suggestions are
+a draft field on the report, so the draft-only guard holds them; only
+those added to the commentary leave for the client, on a Next Batch page
+the snapshot sends without their evidence, and the page's amounts join
+`figureSlips`. Their own AI use (3 a day) keeps them from spending a
+report's draft. Not done: a version restored keeps the draft's
+suggestions (its function deletes rows, so restating it is a SQL Editor
+run of its own).
 
 ### 2026-11-13 · The Assistant books, publishes, sends and schedules, each behind its card
 The user approved the mockups "Assistant · actions with Confirm" and
