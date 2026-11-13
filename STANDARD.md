@@ -619,8 +619,6 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `quotes`: six checks still look for Download on a quotation's row; #1099
-  moved it into the row's ⋯ (2026-11-13).
 - `reports`: four AI usage checks still count eight uses; the Assistant
   added a ninth column and Next batch a tenth (2026-11-13).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
