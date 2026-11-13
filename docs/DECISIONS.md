@@ -10137,3 +10137,17 @@ among the tools. Captions, scripts, checklists and commentary stay on their
 screens' Write with AI, which hold the house style and the declaration. A
 question is its own AI use, 30 a day, counted once with its steps capped at
 twelve; the purpose and the three Activity tags need the SQL Editor part.
+
+### 2026-11-13 — Findings from the full gate on the new design
+The full gate on main (e2a83961, tests cc4ed35) passed whole, uxaudit and
+matrix included. Reading every client page by eye at 390 and 1280 found
+two things. The creator page's Payments row cut the campaign name
+("Laman Cit…") on a phone to keep the Job reference beside it on one line:
+on a phone the reference now stands under the name, so the name keeps the
+line (`tests/creator.js` measures it at 390). The demo's sample data still
+read "4 contents" in its package names and F&B and Tech as industries,
+words the live portal retired (content pieces, 2026-10-27; Food and
+beverage and Technology, 2026-11-04); the sample data now uses them. The
+walk's quotation read "6 contents per month" because its fixture copies a
+quotation issued before 2026-10-27, which keeps the words it was issued
+with, as any issued quotation does; not a defect.
