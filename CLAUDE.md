@@ -869,7 +869,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   connection drops before the answer (`steadyFetch`); a write is never sent
   twice. Every request it sends is counted: one out `showAfter` (300ms)
   draws the loading line (`.loadbar`, 2px under the page's own bar across
-  its width; the minute's `page_pulse` never shows it) until the last
+  its width, under an open sheet's head across its card while one is open; the minute's `page_pulse` never shows it) until the last
   answers; a read (GET) unanswered at `giveUpAfter` (20s) is given up,
   never tried again, so the page says it could not load with Try again; a
   write is never cut off; a skeleton past `slowAfter` (8s) reads Still

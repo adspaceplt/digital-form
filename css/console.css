@@ -5011,7 +5011,7 @@ svg.sec {
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   :root:not(.has-tabbar) .console-body { padding-inline: 32px; }
-  :root:not(.has-tabbar) .console-title { font-size: 22px; font-weight: 500; letter-spacing: -.02em; min-height: 30px; }
+  :root:not(.has-tabbar) .console-title { font-family: var(--font-head); font-size: 22px; font-weight: 600; letter-spacing: -.02em; min-height: 30px; }
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
