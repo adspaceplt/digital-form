@@ -709,6 +709,50 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
   return t.data || { error: 'not-filed' };
 }
 
+/* The chart of accounts flattened (parents and their children), the expense
+   and cost of sales accounts alone, A to Z by code. */
+export function expenseAccounts(raw: any): any[] {
+  const top = Array.isArray(raw) ? raw : ((raw && (raw.items || raw.data)) || []);
+  const out: any[] = [];
+  const walk = (list: any[]) => {
+    for (const a of list || []) {
+      if (!a) continue;
+      if (a.id && /expense|cost_of_sales/.test(String(a.type || '')) && !a.is_archived)
+        out.push({ id: Number(a.id), code: String(a.code || ''), name: String(a.name || '').slice(0, 120), type: String(a.type) });
+      if (Array.isArray(a.children)) walk(a.children);
+    }
+  };
+  walk(top);
+  return out.sort((x, y) => (x.code || x.name).localeCompare(y.code || y.name, 'en', { numeric: true }));
+}
+/* A bill of the contact already holding the Job reference, drafts included,
+   so a second press, or one made by hand, is never made twice. */
+async function billHolding(contact: number, ref: string): Promise<string | null> {
+  const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const k = key(ref);
+  if (k.length < 4) return null;
+  const r = await bukku('GET', `/purchases/bills?search=${encodeURIComponent(ref)}&contact_id=${contact}&page=1&page_size=100`);
+  for (const x of ((r && r.transactions) || []) as any[]) {
+    if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
+    if (key([x.number2, x.reference, x.title, x.description, x.remarks, x.number].join(' ')).includes(k)) return String(x.number || x.id);
+  }
+  return null;
+}
+/* The bill as Bukku's Create Bill takes it: on credit, the Job reference in
+   its reference no., one line at the fee on the chosen account, no tax,
+   ready (not a draft, which the portal does not read). */
+export function billBody(p: any): Record<string, unknown> {
+  const out: Record<string, unknown> = {
+    payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
+    currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
+    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200), status: 'ready',
+    form_items: [{ account_id: Number(p.account), description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255),
+      unit_price: Number(p.amount), quantity: 1 }]
+  };
+  if (p.due) out.due_date = String(p.due);
+  return out;
+}
+
 // ---- A billing entity from Bukku (2026-10-29, one step 2026-10-30) ------------
 /* Add entity's Bukku customers (the user, 2026-10-30: "just add and pull
    from Bukku instead of the multiple steps"). Held as the overdue invoices
@@ -1179,6 +1223,44 @@ Deno.serve(async (req) => {
       return json({ ok: true, codes: list }, 200, origin);
     }
 
+    /* The accounts a creator's bill may post to (CREATOR FEES, 2026-11-13):
+       the chart of accounts' expense and cost of sales accounts, read for
+       Settings, Money, Bukku. Read only, asked of bukku_config as taxes is. */
+    if (action === 'accounts') {
+      const me = await db.rpc('bukku_config');
+      if (me.error) return json({ error: 'needs-update' }, 200, origin);
+      if (me.data && me.data.error) return json({ error: me.data.error }, 200, origin);
+      const r = await bukku('POST', '/v2/lists', { lists: ['accounts'], params: {} });
+      return json({ ok: true, accounts: expenseAccounts(r && r.accounts) }, 200, origin);
+    }
+    /* A creator's bill made in Bukku from the booking's fee (CREATOR FEES,
+       2026-11-13): asked of creator_bill_prep as the caller, which holds the
+       press ten minutes; Bukku asked first for a bill already holding the Job
+       reference, so a second press makes nothing; the bills read back. */
+    if (action === 'createbill') {
+      const oid = String(body.option || '');
+      if (!/^[0-9a-f-]{36}$/i.test(oid)) return json({ error: 'bad-request' }, 400, origin);
+      const prep = await db.rpc('creator_bill_prep', { p_option: oid });
+      if (prep.error) return json({ error: 'needs-update' }, 200, origin);
+      const p = prep.data || {};
+      if (p.error) return json({ error: p.error }, 200, origin);
+      let made: string | null = null, had: string | null = null;
+      try {
+        had = await billHolding(Number(p.contact_id), String(p.ref));
+        if (!had) {
+          const r = await bukku('POST', '/purchases/bills', billBody(p));
+          made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
+        }
+      } catch (e) {
+        await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+        throw e;
+      }
+      await creatorBills(String(p.creator), Number(p.contact_id));
+      await db.rpc('creator_bill_done', { p_option: oid, p_number: made });
+      const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
+      if (list.error) return json({ error: 'needs-update' }, 200, origin);
+      return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
+    }
     if (action === 'invoices' || action === 'remind' || action === 'deliver') return await invoiceAction(action, body, db, origin);
     /* A completed month's invoice (2026-11-10): asked as the caller, read
        from Bukku, kept by the service role. */
