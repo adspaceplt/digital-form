@@ -1316,12 +1316,12 @@
       var sgd = (j1.fee && j1.fee.currency === 'SGD') || ((payJobs && payJobs.jobs) || []).some(function (x) { return x.fee && x.fee.currency === 'SGD'; });
       field = { name: 'fee', label: 'Amount' + (sgd ? ' (S$)' : ' (RM)'), type: 'text',
         value: j1.fee ? Number(j1.fee.amount).toFixed(2) : '', required: true };
-      body = 'The bill for ' + j1.job + ' will be created in Bukku on ' + c.name + '\'s supplier contact, with its Job reference.';
+      body = 'The bill for ' + j1.job + ' will be created in Bukku as a draft on ' + c.name + '\'s supplier contact, with its Job reference. Post it in Bukku, then press Read from Bukku.';
     } else {
       var sums = {};
       list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
       var total = Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ');
-      body = list.length + ' bills totalling ' + total + ' will be created in Bukku on ' + c.name + '\'s supplier contact, each with its Job reference.';
+      body = list.length + ' bills totalling ' + total + ' will be created in Bukku as drafts on ' + c.name + '\'s supplier contact, each with its Job reference. Post them in Bukku, then press Read from Bukku.';
     }
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: body, field: field, wait: one,
@@ -1360,7 +1360,7 @@
           delete crTotals[c.id]; paintCrRail(c);
           if (!done.length && one) readJobs(); else paintJobs();
           if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
-          else say(one ? 'Bill ' + done[0] + ' created in Bukku.' : done.length + ' bills created in Bukku.', 'ok');
+          else say(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
         });
         return '';
       });

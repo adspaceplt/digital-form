@@ -739,8 +739,8 @@ async function billHolding(contact: number, ref: string): Promise<string | null>
   return null;
 }
 /* The bill as Bukku's Create Bill takes it: on credit, the Job reference in
-   its reference no., one line at the fee on the chosen account, no tax,
-   ready (not a draft, which the portal does not read). */
+   its reference no., one line at the fee on the chosen account, no tax, a
+   draft (read back once it is posted in Bukku). */
 export function billBody(p: any, item?: any): Record<string, unknown> {
   const line: Record<string, unknown> = { account_id: Number((item && item.account_id) || p.account),
     description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255), unit_price: Number(p.amount), quantity: 1 };
@@ -755,10 +755,10 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
   const out: Record<string, unknown> = {
     payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
     currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
-    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200), status: 'ready',
-    /* Bukku asks every bill its e-Invoice action (2026-11-13: "The myinvois
-       action field is required"): the earlier creator bill's, else NORMAL. */
-    myinvois_action: String((item && item.myinvois_action) || 'NORMAL'),
+    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200),
+    /* A draft for the team to check and post in Bukku, its e-Invoice action
+       NORMAL (2026-11-13, the user: "Keep it normal and draft at bukku"). */
+    status: 'draft', myinvois_action: 'NORMAL',
     form_items: [line]
   };
   if (p.due) out.due_date = String(p.due);
@@ -769,7 +769,7 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
 export function itemOf(bill: any): any {
   for (const l of ((bill && bill.form_items) || []) as any[])
     if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null,
-      classification_code: l.classification_code || null, myinvois_action: (bill && bill.myinvois_action) || null };
+      classification_code: l.classification_code || null };
   return null;
 }
 async function lastItem(contact: number): Promise<any> {
