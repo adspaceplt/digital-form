@@ -4411,8 +4411,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   sent join it) beside Next 5 days (`#ovwWeek`: five working days, their
   tasks by due date and the client meetings they lead) and My clients this
   month (`#ovwMyClients`: the clients they are person in charge of whose
-  month is this month, done and late on one bar). No period: Me is always
-  now. The page reopens on the tab last used (`adspace-dash-page`), the
+  month is this month, done and late on one bar). Each of their tasks on
+  Today and Next 5 days leads with its ring (phase 4, the user,
+  2026-11-13: `ringOf`, the outer line the time used from its owner's
+  assignment to the end of its final date, the inner fill its checklist
+  done; amber once the time runs more than 20 points ahead of the work, or
+  80% gone with no checklist, red once late; none with no final date). No
+  period: Me is always now. The page reopens on the tab last used (`adspace-dash-page`), the
   address winning; a tab not offered falls back to Me.
 - Team (`pg=team`; an older `pg=detail` opens it): the Summary below,
   offered where the group's Team dashboard is On and one of its cards is
@@ -4421,12 +4426,20 @@ Each line is a rule that broke once. Its reason is in the archive.
   the row Team dashboard (On / No Access): `overview` in the access map,
   stored only as `none` (On stores nothing), page-side alone; No Access
   hides the Team tabs, never Me. Team (phase 2, after the user's Halo
-  references, 2026-11-13) reads the four figures, then People
-  (`#ovwPeople`: each colleague's open, late, delivered and on time from
-  `ops_report`, a row opening their record's Work) beside On time by
-  month, then Clients this month (`#ovwClientsMonth`: each client whose
-  content month is this month, its posts done of planned as a status, its
-  report and its meeting) beside Needs attention. Team detail's charts,
+  references, 2026-11-13) reads the four figures (compact: the figure
+  and its trend on one line, phase 4; Oldest late's trend the work
+  delivered late each of the last six months), then Work by stage
+  (`#ovwStages`, phase 4, the user's Workload strip: a ring a stage
+  holding open work, split on track light grey, due within 2 days amber,
+  late red, its count in the middle and who holds it under it, opening My
+  Work's board), then People (`#ovwPeople`: each colleague's open work as
+  a bar on one scale, its late part red, then open, late, delivered and
+  on time from `ops_report`, a row opening their record's Work) beside On
+  time by month, then Clients this month (`#ovwClientsMonth`: each client
+  whose content month is this month, its posts done green, late red and
+  open grey on one bar, its report and its meeting) beside Needs
+  attention. Open tasks and Open work by person are today's figures, so
+  Team's alone, never Analytics' (phase 4). Team detail's charts,
   the Sales and Operations tiles and Active clients by month moved to
   Analytics (phase 3, 2026-11-13); a tile with clients behind it (New
   leads) opens Analytics on its card.

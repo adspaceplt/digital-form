@@ -5584,3 +5584,86 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .ovw-hide-n { display: none; }
 .is-narrow .ovw-tr.is-people { grid-template-columns: minmax(0, 1fr) 44px 44px 56px; }
 .is-narrow .ovw-tr.is-cmonth { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* PHASE 4 (the user, 2026-11-13): the Dashboard's figures compact, the
+   figure and its trend on one line, so four tiles never spend a card's
+   height on two or three digits ("we really need space"). */
+.ovw-kpis.ovw-lead > .ovw-kpi { --kpi-x: 14px; padding-top: 12px; padding-bottom: 12px; grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: none; column-gap: 12px; row-gap: 0; align-content: start; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-label { grid-column: 1 / -1; grid-row: 1; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-fig { grid-column: 1; grid-row: 2; font-size: 22px; line-height: 28px; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-trend { grid-column: 2; grid-row: 2; align-self: center; width: 72px; height: 24px; margin: 0; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-trend:empty { display: none; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-trend .chart-spark { height: 24px; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-trend .ovw-kpi-bar { margin-top: 0; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-line { grid-column: 1 / -1; grid-row: 3; }
+.ovw-lead > .ovw-kpi .ovw-kpi-line:has(.ovw-kpi-arrow) { margin-top: 8px; padding-top: 6px; padding-bottom: 6px; }
+.ovw-lead > .ovw-kpi.has-mark .ovw-kpi-mark { top: 8px; right: 8px; }
+
+/* A task's ring: the time used outside, the checklist done inside. */
+.ovw-ring { display: inline-flex; flex: none; width: 30px; height: 30px; }
+.ovw-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ovw-ring circle { fill: none; }
+.ovw-ring .r-track { stroke: var(--line-soft); stroke-width: 3; }
+.ovw-ring .r-time { stroke-width: 3; stroke-linecap: round; }
+.ovw-ring.is-ok .r-time { stroke: var(--dot-ok); }
+.ovw-ring.is-wait .r-time { stroke: var(--dot-wait); }
+.ovw-ring.is-late .r-time { stroke: var(--dot-late); }
+.ovw-ring .r-in { fill: var(--sunk); stroke: none; }
+.ovw-ring .r-work { stroke: var(--ink-soft); stroke-width: 10.5; }
+.ovw-today-tile.has-ring { background: none; }
+.ovw-ev.has-ring::before { display: none; }
+.ovw-ev .ovw-ring { width: 16px; height: 16px; }
+.ovw-ev .ovw-ring .r-track, .ovw-ev .ovw-ring .r-time { stroke-width: 4; }
+.ovw-ev-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* Work by stage: a ring a stage, its late part red, who holds it under it. */
+.ovw-stages { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px 8px; }
+.ovw-stage { display: grid; justify-items: center; align-content: start; gap: 6px; padding: 8px 4px; border: 0; border-radius: var(--radius-sm);
+  background: none; color: inherit; font: inherit; cursor: pointer; text-align: center; min-width: 0; }
+@media (hover: hover) { .ovw-stage:hover { background: var(--sunk); } }
+.ovw-stage:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+.ovw-stage svg { width: 56px; height: 56px; }
+.ovw-stage circle { fill: none; stroke-width: 5; transform: rotate(-90deg); transform-origin: 32px 32px; }
+.ovw-stage .r-track { stroke: var(--line-soft); }
+.ovw-stage .r-part.is-ok { stroke: var(--dot-off); }
+.ovw-stage .r-part.is-soon { stroke: var(--dot-wait); }
+.ovw-stage .r-part.is-late { stroke: var(--dot-late); }
+.ovw-stage-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 12px 0 0; font-size: 12.5px; color: var(--ink-soft); }
+.ovw-stage-key span { display: inline-flex; align-items: center; gap: 6px; }
+.ovw-stage-key span::before { content: ''; width: 8px; height: 8px; border-radius: 50%; }
+.ovw-stage-key .is-ok::before { background: var(--dot-off); }
+.ovw-stage-key .is-soon::before { background: var(--dot-wait); }
+.ovw-stage-key .is-late::before { background: var(--dot-late); }
+.ovw-stage text { font-size: 17px; font-weight: 500; fill: var(--ink); font-variant-numeric: tabular-nums; }
+.ovw-stage b { font-size: 12.5px; font-weight: 500; color: var(--ink-soft); line-height: 1.3; }
+.ovw-stage-who { display: flex; justify-content: center; min-height: 22px; padding-left: 5px; }
+.ovw-stage-who .tav { margin-left: -5px; box-shadow: 0 0 0 2px var(--card); }
+.ovw-stage-more { margin-left: 4px; font-size: 11.5px; color: var(--ink-mute); align-self: center; }
+.is-narrow .ovw-stages { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+/* A row's bar: open work on one scale (late red), or a month's posts done,
+   late and open. */
+.ovw-pbar { display: flex; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; gap: 2px; margin-top: 4px; }
+.ovw-pbar i { display: block; height: 100%; background: var(--ink-mute); }
+.ovw-pbar i.is-late { background: var(--dot-late); }
+.ovw-pbar i.is-done { background: var(--dot-ok); }
+.ovw-pbar.is-month { margin-top: 0; }
+.ovw-cprog { display: grid; gap: 4px; min-width: 0; }
+.ovw-cprog small { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; }
+.ovw-cprog small.is-late { color: var(--err); }
+.is-narrow .ovw-cprog { width: 112px; }
+/* A tile drawing its trend gives up its section mark, which stood in its way. */
+.ovw-lead > .ovw-kpi:has(.ovw-kpi-trend:not(:empty)) > .ovw-kpi-mark { display: none; }
+.ovw-lead > .ovw-kpi:has(.ovw-kpi-trend:not(:empty)) .ovw-kpi-label { padding-right: 0; }
+/* The person's bar runs the name column's width, on one scale. */
+.ovw-tr.is-people .ovw-who-t { flex: 1; }
+/* Tiles of one row share a height: the change strip stands at the foot, never
+   a gap under it; the figure keeps one line, its trend narrower on a phone. */
+.ovw-kpis.ovw-lead > .ovw-kpi { grid-template-rows: auto auto 1fr; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-line { align-self: end; }
+.ovw-lead > .ovw-kpi > .ovw-kpi-fig { white-space: nowrap; overflow-wrap: normal; }
+.is-narrow .ovw-lead > .ovw-kpi > .ovw-kpi-trend { width: 44px; }
+.is-narrow .ovw-stage svg { width: 44px; height: 44px; }
+.is-narrow .ovw-stages { gap: 8px 4px; }
+.ovw-kpis.ovw-lead > .ovw-kpi:has(.ovw-kpi-arrow) { padding-bottom: 0; }

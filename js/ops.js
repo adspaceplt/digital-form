@@ -1424,15 +1424,16 @@
     var me = bridge.me && bridge.me();
     if (!me || !me.id || !may('ops', 'view')) return Promise.resolve({ tasks: [], waiting: [], failed: [] });
     var cat = state.catAt ? Promise.resolve() : new Promise(function (ok) { loadCatalogue(function () { state.catAt = Date.now(); ok(); }); });
-    var failed = [];
+    var failed = [], since = {}, ticks = {};
     var tasks = cat.then(function () {
       return readPages(function () {
-        return db.from('ops_task_assignees').select('task_id').eq('team_member_id', me.id)
+        return db.from('ops_task_assignees').select('task_id, assigned_at').eq('team_member_id', me.id)
           .eq('responsibility', 'owner').is('ended_at', null).order('task_id');
       });
     }).then(function (r) {
       if (r.error) { failed.push('Tasks'); return []; }
       var ids = (r.data || []).map(function (a) { return a.task_id; }), parts = [];
+      (r.data || []).forEach(function (a) { since[a.task_id] = a.assigned_at; });
       for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
       return Promise.all(parts.map(function (part) {
         return db.from('ops_tasks').select('*, clients(name, stage, logo_url, slug)').in('id', part)
@@ -1440,7 +1441,9 @@
       })).then(function (rs) {
         var out = [];
         rs.forEach(function (x) { if (x.error) { if (failed.indexOf('Tasks') < 0) failed.push('Tasks'); } else out = out.concat(x.data || []); });
-        return nameClients(out).then(function () { return out; });
+        /* The checklist ticked of all, for the ring on each row (phase 4,
+           2026-11-13); a refused read leaves the ring its time alone. */
+        return Promise.all([nameClients(out), readExtras(out).then(function (x) { ticks = x; })]).then(function () { return out; });
       });
     }).then(function (list) {
       return list.map(function (t) {
@@ -1450,7 +1453,11 @@
           client: (t.clients && t.clients.name) || '', clientId: t.client_id || null, stage: stageLabel(t),
           due: due || null, days: n, late: late, lateWord: lateBy, urgent: urgentDelivery(t),
           lateDays: late && t.current_final_due_at ? Math.max(0, Math.floor((Date.now() - dayOf(t.current_final_due_at).getTime()) / 86400000) + 1) : 0,
-          deadline: dl && !dl.over && dl.first ? dl.words : '', meetingAt: null };
+          deadline: dl && !dl.over && dl.first ? dl.words : '', meetingAt: null,
+          /* Time used from the assignment to the final date, and the
+             checklist done (the Dashboard's ring, phase 4). */
+          from: since[t.id] || t.created_at || null, finalAt: t.current_final_due_at || null,
+          checks: ticks[t.id] && ticks[t.id].of ? { done: ticks[t.id].done, of: ticks[t.id].of } : null };
       });
     });
     var wait = loadWaiting().then(function () { return { rows: state.waiting || [], failed: state.waitFail || [] }; });
