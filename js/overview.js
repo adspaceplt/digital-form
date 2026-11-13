@@ -1552,7 +1552,7 @@
               var names = Object.keys(x.who).sort(function (a, b) { return x.who[b] - x.who[a] || a.localeCompare(b); });
               var ok = x.n - x.late - x.soon, parts = [['ok', ok], ['soon', x.soon], ['late', x.late]].filter(function (p) { return p[1] > 0; });
               var say = x.label + ': ' + x.n + ' open' + (x.soon ? ', ' + x.soon + ' due within 2 days' : '') + (x.late ? ', ' + x.late + ' late' : '') +
-                (names.length ? '. Held by ' + names.join(', ') : '');
+                (names.length ? '. Assigned to ' + names.join(', ') : '');
               var off = 0, gap = parts.length > 1 ? 1.5 : 0;
               var ring = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="r-track" cx="32" cy="32" r="27"/>' + parts.map(function (p) {
                 var len = p[1] / x.n * 100, c = '<circle class="r-part is-' + p[0] + '" cx="32" cy="32" r="27" pathLength="100" stroke-dasharray="' +
