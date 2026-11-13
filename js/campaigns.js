@@ -969,7 +969,7 @@
         { name: 'tin', label: 'Tax Identification Number (TIN)', value: h.tin || '', required: false, note: 'Optional' },
         { name: 'address', label: 'Billing address', value: h.address || '', rows: 2, required: !held || !h.address },
         { name: 'how', label: 'Payment method', choices: PAY_HOW, value: h.currency ? h.currency + '|' + h.method : 'MYR|bank' },
-        { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, b]; })), value: h.bank || '' },
+        { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, window.ADspaceWords.bank(b)]; })), value: h.bank || '' },
         { name: 'account', label: 'Account no., DuitNow ID or PayNow ID', value: h.account || '', required: !held, note: held && !h.account ? blank + h.account_end + '.' : '' },
         { name: 'email', label: 'Email', value: h.email || '', required: true },
         { name: 'whatsapp', label: 'WhatsApp', value: h.whatsapp || '', required: true }] }, function (v) {
@@ -1025,7 +1025,7 @@
             '<div><dt>Billing address</dt><dd>Not set. The creator will be asked for it on their creator page.</dd></div>') +
           fact('Source', cur.source === 'import' ? 'Imported from AP01 form' : cur.added_by ? 'Added by ' + cur.added_by : '') +
           fact('Currency', cur.currency) +
-          fact('Method', cur.method_word) +
+          fact('Method', window.ADspaceWords.bank(cur.method_word)) +
           fact(({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch \u2019n Go eWallet number' })[cur.method] || 'Account', cur.account || 'Ending ' + cur.account_end) +
           fact('Account holder', cur.payee) +
           fact('Email', cur.email) +

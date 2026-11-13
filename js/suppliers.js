@@ -237,6 +237,7 @@
     var v = s[k];
     if (k === 'kind') return v === 'individual' ? 'Individual' : v === 'company' ? 'Company' : '';
     if (k === 'currency') return v === 'SGD' ? 'SGD / S$' : v === 'MYR' ? 'MYR / RM' : '';
+    if (k === 'bank_name') return window.ADspaceWords.bank(v);
     return v == null ? '' : String(v);
   }
   function factsOf(s, items) {
@@ -775,7 +776,7 @@
     editing = { form: form && form.id };
     if (!$('supEdTerm').options.length) {
       $('supEdTerm').innerHTML = '<option value="">Choose a term</option>' + TERMS.map(function (t) { return '<option>' + t + '</option>'; }).join('');
-      $('supEdBank').innerHTML = '<option value="">Choose a bank</option>' + BANKS.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('');
+      $('supEdBank').innerHTML = '<option value="">Choose a bank</option>' + BANKS.map(function (t) { return '<option value="' + esc(t) + '">' + esc(window.ADspaceWords.bank(t)) + '</option>'; }).join('');
     }
     F.forEach(function (x) {
       var v = x[0] in a ? a[x[0]] : s[x[0]];
