@@ -10964,13 +10964,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         else if (budget > cover) {
           var cost = adsCost(budget);
           if (cost == null) req.push('budget');
-          else if (cover > 0) L({ slug: null, kind: 'ads', basis: 'month', label: 'Advertising budget coverage, up to ' + rmw(budget), qty: 1, rate: cost - adsCost(cover) });
+          else if (cover > 0) L({ slug: null, kind: 'ads', basis: 'month', label: 'Additional advertising budget coverage, ' + rmw(cover) + ' to ' + rmw(budget), qty: 1, rate: cost - adsCost(cover) });
           else {
             var ads = role('ads').sort(function (x, y) { return x.spec.budget - y.spec.budget; });
             var a1 = ads.filter(function (x) { return x.spec.budget >= budget; })[0] || ads[ads.length - 1];
-            L({ slug: a1.slug, kind: 'ads', basis: 'month', label: 'Meta advertising · advertising budget up to ' + rmw(a1.spec.budget),
-              detail: String(text.ads_included || '').split('\n').filter(function (d) { return d.trim(); }), qty: 1, rate: Number(a1.rate) });
-            if (budget > a1.spec.budget) L({ slug: null, kind: 'ads', basis: 'month', label: 'Advertising budget coverage, up to ' + rmw(budget), qty: 1, rate: cost - Number(a1.rate) });
+            L({ slug: a1.slug, kind: 'ads', basis: 'month', label: 'Meta advertising · advertising budget up to ' + rmw(Math.max(budget, a1.spec.budget)),
+              detail: String(text.ads_included || '').split('\n').filter(function (d) { return d.trim(); }), qty: 1, rate: Math.max(cost, Number(a1.rate)) });
           }
         }
         var onceBad = false;

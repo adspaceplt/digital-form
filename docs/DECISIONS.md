@@ -10285,3 +10285,13 @@ first fix was deployed on the read of one error alone; the limits page was
 read only after the second.
 ### 2026-11-13 · A record is hairline cards on the white sheet
 The user, on a client record's Services tab: "too many buttons, no clear inner sections, everything looks like on one piece of paper"; then, on the mockup (Client Record Layout), "proceed A to D; E not needed". v3 had put the record on the white sheet with its parts as headings over white lists, so Quotations, Service lines, Requests and Documents, and the rail's Profile, Timeline, Details and Recent activity, had no boundary between them; every part's head carried a filled button; a quotation row carried Download, Preview PDF, Edit, Send link on WhatsApp and a ⋯; the Timeline drew a pen on every row. A grey ground inside the record (the mockup's A) was built first and declined before release: "keep white sheet is good. keep hairline too else it looks too bold. it has to be minimal elegant contrast rather just be visible visually." Now: the record stays on the white sheet; each part is a `section.rec-part` card with its count (`partN` in js/crm.js), each rail block a card, every card in a record edged by `--part-edge` (ink at 11%, one step above `--card-edge`) and 16px from the next; part add acts are `.btn-quiet .btn-sm` (Build quote and Add creators turn blue only when they are the record's next step, as paintDeal and the campaign's draft rule already decided); a quotation row keeps Preview PDF and its next step, Download and Edit in its ⋯, Edit staying on the row only where the ⋯ would pass seven (§5 Menus 8: the commonest act moves onto the screen); rail pens show on hover and focus with a fine pointer; a figure in a row reads at 500. A part whose list is already cards (Engagements' months, Billing's and Brand's read groups, a campaign's booking cards) keeps its head on the sheet over them rather than nesting cards. E (a strip inside Services) was declined: it adds a press.
+
+### 2026-11-13 · A quotation's advertising budget on one line
+The user, on Build quote with no plan and RM 8,000 asked: "up to 4,000 and
+again up to 8,000". `quote_price` drew Meta advertising at its largest tier
+(up to RM 4,000) and then a coverage line up to RM 8,000 priced at the
+difference, so the budget read twice. With no plan it is now one line, Meta
+advertising for the budget asked at the card's whole cost; beside a plan the
+line past its cover names its band (Additional advertising budget coverage,
+RM 4,000 to RM 8,000). Quotations already made keep their lines as sent
+(`2026-11-13-quotation-ads-one-line.sql`).
