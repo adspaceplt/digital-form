@@ -657,13 +657,15 @@ async function matchCreators(req: Request, origin: string | null): Promise<Respo
 // ---- A creator's bills (2026-11-09, CREATOR PAYMENTS) -------------------------
 /* Every purchase bill of the creator's Bukku contact, a hundred a page, its
    reference read where Bukku keeps it (the bill's reference no., else its
-   description or remarks); a void or draft bill is left out. */
+   description or remarks); a void bill is left out, a draft kept as one
+   (2026-11-13: Create bill makes drafts, read Draft in Bukku). */
 export function billOf(x: any) {
   const ref = [x.number2, x.reference, x.title, x.description, x.remarks].filter((v) => v != null && String(v).trim() !== '')
     .map((v) => String(v).trim()).join(' ').slice(0, 200);
   return { id: Number(x.id), number: String(x.number || ''), ref, date: /^\d{4}-\d{2}-\d{2}$/.test(String(x.date || '')) ? String(x.date) : null,
     amount: cents(x.amount), balance: x.balance == null || x.balance === '' ? null : cents(x.balance),
-    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR' };
+    currency: /^[A-Z]{3}$/.test(String(x.currency_code || '')) ? String(x.currency_code) : 'MYR',
+    draft: String(x.status || '') === 'draft' };
 }
 /* The latest date among the payments, credits and refunds Bukku applied
    to a bill (its `linked_items` that are not bills), else null. */
@@ -680,7 +682,7 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
     const rows = (r && r.transactions) || [];
     for (const x of rows) {
       if (!x || !x.id || Number(x.contact_id) !== contact) continue;
-      if (x.status && !['ready', 'paid'].includes(String(x.status))) continue;
+      if (x.status && !['draft', 'ready', 'paid'].includes(String(x.status))) continue;
       out.push(billOf(x));
     }
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
@@ -699,7 +701,7 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
   } catch (_e) { /* none known: the day is read again, ten a run */ }
   let asked = 0;
   for (const b of out) {
-    if (asked >= 10 || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
+    if (asked >= 10 || b.draft || b.balance == null || b.balance > 0 || known.has(b.id)) continue;
     asked++;
     try { b.paid_on = paidOn(await bukku('GET', `/purchases/bills/${b.id}`).then((r: any) => (r && r.transaction) || null)); }
     catch (_e) { /* left for the next read */ }

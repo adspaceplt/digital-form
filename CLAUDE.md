@@ -4136,11 +4136,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
   `billed`, `no-account`, `no-fx`, `creating`, the claim taken), Bukku
   searched for a bill already holding the Job reference (`in-bukku`, never a
-  second), then one bill on credit, ready, the Job reference in its
-  reference no., one line at the fee on the account chosen in Settings,
-  Money, Bukku (`bukku_bill_account_set`, `bukku-sync` `accounts`: expense
-  and cost of sales), no tax, due on `pay_by`; read back as Read from Bukku
-  reads, `creator_bill_done` letting go of the claim and filing the number.
+  second), then one bill on credit, a draft with e-Invoice action NORMAL,
+  the Job reference in its reference no., one line at the fee (the item,
+  unit and classification code of the creator's last bill where one holds
+  them, else the account chosen in Settings, Money, Bukku:
+  `bukku_bill_account_set`, `bukku-sync` `accounts`, expense and cost of
+  sales), no tax, due on `pay_by`; read back as Read from Bukku reads,
+  `creator_bill_done` letting go of the claim and filing the number. A
+  draft is kept as one (`creator_bills.status` `draft`,
+  `2026-11-13-creator-bill-drafts.sql`), the booking reading Draft in Bukku
+  until it is posted there; each bill's ⋯ holds Open in Bukku (`billlink`).
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is

@@ -3262,7 +3262,7 @@ function cardSlugFree(name, self, email) {
       var opt = billOption(creator, x.ref, x.number);
       var b = DB.creator_bills.filter(function (y) { return y.bill_id === x.id; })[0];
 
-      var st = x.balance == null || x.balance === '' ? (b ? b.status : 'processing') : Number(x.balance) <= 0 ? 'paid' : 'processing';
+      var st = x.draft ? 'draft' : x.balance == null || x.balance === '' ? (b && b.status !== 'draft' ? b.status : 'processing') : Number(x.balance) <= 0 ? 'paid' : 'processing';
       var o0 = (DB.campaign_options || []).filter(function (o) { return o.id === opt; })[0];
       var tell = function (b2) {
         b2.paid_told_at = now; told++;
@@ -3279,7 +3279,7 @@ function cardSlugFree(name, self, email) {
         var was = b.status;
         Object.assign(b, { creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date, amount: x.amount, balance: x.balance == null || x.balance === '' ? b.balance : x.balance,
           currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now, paid_seen_at: st === 'paid' ? (b.paid_seen_at || now) : null, paid_on: st === 'paid' ? (x.paid_on || b.paid_on || null) : null });
-        if (st === 'paid' && was === 'processing' && !b.paid_told_at && opt) tell(b);
+        if (st === 'paid' && (was === 'processing' || was === 'draft') && !b.paid_told_at && opt) tell(b);
       }
     });
     DB.creator_bills.forEach(function (b) { if (b.creator_id === creator && seen.indexOf(b.bill_id) < 0) b.gone = true; });
@@ -14989,12 +14989,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var made = null;
               if (!had) {
                 made = { id: 9000 + window.__bukkuBills.length, contact_id: p.contact_id, number: 'PI-' + String(900 + window.__bukkuBills.length).padStart(5, '0'),
-                  number2: p.ref, description: p.description, date: p.date, amount: p.amount, balance: p.amount, currency_code: p.currency, status: 'ready', account_id: p.account };
+                  number2: p.ref, description: p.description, date: p.date, amount: p.amount, balance: p.amount, currency_code: p.currency, status: 'draft', account_id: p.account };
                 window.__bukkuBills.push(made);
               }
-              var rows = window.__bukkuBills.filter(function (x) { return Number(x.contact_id) === Number(p.contact_id) && (!x.status || x.status === 'ready' || x.status === 'paid'); })
+              var rows = window.__bukkuBills.filter(function (x) { return Number(x.contact_id) === Number(p.contact_id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
                 .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
-                  amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; });
+                  amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR', draft: x.status === 'draft' }; });
               creatorBillsTake(p.creator, Number(p.contact_id), rows);
               return fin(made ? made.number : null).then(function () {
                 var out = creatorBillsList(p.creator);
@@ -15007,9 +15007,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (!opsMe() || !opsAllowed('campaigns.creators', 'view')) return bkR({ error: 'denied' });
             if (!blk) return bkR({ error: 'not-linked' });
             if (window.__bukkuDown) return bkR({ error: 'bukku-unreachable' });
-            var brows = (window.__bukkuBills || []).filter(function (x) { return Number(x.contact_id) === Number(blk.contact_id) && (!x.status || x.status === 'ready' || x.status === 'paid'); })
+            var brows = (window.__bukkuBills || []).filter(function (x) { return Number(x.contact_id) === Number(blk.contact_id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
               .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
-                amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; });
+                amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR', draft: x.status === 'draft' }; });
             creatorBillsTake(bkb.creator, Number(blk.contact_id), brows);
             return bkR(creatorBillsList(bkb.creator));
           }
@@ -15286,7 +15286,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               return rpc('bukku_link_only', { p_kind: p.kind, p_id: p.id, p_contact: ct.id, p_code: ct.contact_code }).then(function () {
 
                 if (p.kind === 'creator') creatorBillsTake(p.id, Number(ct.id), (window.__bukkuBills || []).filter(function (x) {
-                  return Number(x.contact_id) === Number(ct.id) && (!x.status || x.status === 'ready' || x.status === 'paid'); })
+                  return Number(x.contact_id) === Number(ct.id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
                   .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
                     amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR' }; }));
                 return { data: { ok: true, contact: ct.id, code: ct.contact_code, linked: true }, error: null };

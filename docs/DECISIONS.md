@@ -10365,3 +10365,6 @@ their fee from the bill Bukku already holds. The copy review moved every
 
 ### 2026-11-13 · Create bill asks the amount; no standard fee
 The user, on a posted booking with no fee and no Create bill: "lets not set a standard bill but then allow to manually enter an amount or prompt a window to enter the amount befor creating bill". Create bill now stands on every posted booking without a bill (creator linked, account chosen) and asks the amount, prefilled with the fee where set; the amount is saved as the booking's fee, then the bill is made. The Standard fee row is gone from the Payment pane; its table and function stay in the database, unused, and the rows already saved are cleared by hand so no new booking takes one.
+
+### 2026-11-13 · A draft bill reads Draft in Bukku, never Not billed
+Create bill makes a draft (the user: "Keep it normal and draft at bukku"), but Read from Bukku left drafts out, so the booking read Not billed after "Draft bill AB2611022 created in Bukku." (the user: "Bill created but still showing Not billed"). Drafts are now read and kept as `draft`, shown Draft in Bukku (grey) until posted there, then Processing and Paid; a bill read Paid after a draft tells the creator as one after Processing does. `tests/camp.js` holds the draft, then posted, reads.

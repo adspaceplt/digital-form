@@ -904,7 +904,7 @@
     request: 'Payment request', posted: 'Post recorded', paid: 'Payment sent' };
   /* A booking's payment (2026-11-09, Creator R3): its Bukku bill read back,
      never marked by hand. */
-  var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'] };
+  var JOB_STATE = { paid: ['Paid', 'is-ok'], processing: ['Processing', 'is-warn'], draft: ['Draft in Bukku', 'is-off'] };
   var JOB_SAID = { denied: 'You do not have permission to change payments. Please ask an admin.',
     'bad-ref': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
     taken: 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
