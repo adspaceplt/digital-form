@@ -1229,8 +1229,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     row's height; a desk keeps My Work's views at the left of the bar's own
     line (`tests/cmdbar.js`).
   - A record's pane heads itself one way (2026-11-03, the user: Calls and
-    visits beside Quotations): each part an `h2` in `.viewhead` (19px,
-    Slate), its act a `.btn` at the control's height, and an empty list
+    visits beside Quotations): each part an `h2` in `.viewhead` (15/600,
+    the panel title's size, inside its card since 2026-11-13), its act a
+    `.btn-sm` (quiet where it adds), and an empty list
     words alone, its act the heading's; `.empty` and `.emptyline` are one
     look and one height (the mute ink at 400; `tests/cmdbar.js`).
   - Every record leaves by one Back (`.backlink`: the arrow and the word
@@ -1912,9 +1913,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ai_agent_tokens`). The stand-in answers `portal-agent` from
   `window.__agentReplies` (`tests/agent.js`).
 - A strict tool's field that may be one of a list or null is `anyOf` a
-  string enum and null (`optEnum`), never an enum on a type list, which
-  Claude's API refuses for every question (2026-11-13; `tests/agent.js`
-  reads the function's source for it). The stand-in never sends the
+  string enum and null (`optEnum`), never an enum on a type list; strict is
+  kept to the change cards but `propose_schedule` (`LOOSE`), since Claude's
+  API takes 20 strict tools, 24 optional and 16 nullable fields a request
+  and refuses every question past them (2026-11-13; `tests/agent.js` reads
+  the function's tool list and counts them). The stand-in never sends the
   schemas to Claude, so only a live question proves them.
 
 ### Console search (`js/search.js`)
@@ -6632,7 +6635,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   at its fee), extra contents at the plan's whole saving to the nearest
   RM 10 (`extra_rates`), Translate every content (a content a language
   after the first), the advertising budget past the plan's cover (Meta
-  advertising, then coverage; past the largest, on request), one-off items
+  advertising for the budget asked as one line, beside a plan Additional
+  advertising budget coverage from its cover to the budget; past the largest,
+  on request), one-off items
   apart; the term's percentage on the monthly subtotal, SST on the rest at
   the rate in force on the day it is priced (MYT), none for a client whose
   `sst_applies` is false (`quote_tax_snap`; a preview names its client in
