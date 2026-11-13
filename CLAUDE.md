@@ -868,7 +868,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   decision is shown only on the database's own `ok` (audit F5, 2026-10-10). It retries a GET once when the
   connection drops before the answer (`steadyFetch`); a write is never sent
   twice. Every request it sends is counted: one out `showAfter` (300ms)
-  draws the loading line (`.loadbar`, 2px under the page's own bar across
+  draws the loading line (`.loadbar`, appended inside its host on each
+  request so whatever is laid over the host draws over it, 2px under the page's own bar across
   its width, under an open sheet's head across its card while one is open; the minute's `page_pulse` never shows it) until the last
   answers; a read (GET) unanswered at `giveUpAfter` (20s) is given up,
   never tried again, so the page says it could not load with Try again; a

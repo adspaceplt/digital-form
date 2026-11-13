@@ -10245,5 +10245,14 @@ The user: "Inside admin dont need this Needs approval it should only show to cli
 ### 2026-11-13 · The signatory's name as written
 The user: "signature sign off use Maxwell Yee instead of MAXWELL YEE (not all caps)". The letter engine's sign-off (the Quotation Cover and every client and HR letter) and the Supplier Service Agreement's signing block printed the signatory's name in capitals; both now print it as it is held. Company names under "To" and in the acceptance stay in capitals, as Billing holds them.
 
+### 2026-11-13 · The loading line lives inside its host; layers have names
+The user: "the loading slider could be above and above a window pop out". The
+line was one fixed box at z-index 96, placed by measuring the head or sheet it
+sat under, so it drew over every menu, popover and the finder (all 50 to 96).
+It is now appended inside its host (the open sheet's head, else the card's top
+edge, else the console head or a client page's bar) at `top: 100%`, re-homed on
+each request, so anything laid over the host draws over it. Every page-level
+z-index in `css/portal.css` became a named token on one scale (`--z-sticky` to
+`--z-picker`), values unchanged. `tests/loadbar.js` passes unchanged.
 ### 2026-11-13 · A line's description edited for one quotation
 The user: a line's description in Build quote "shouldnt be dead end when inside admin … have to go a big round and republish the rate card". Each line now has Edit (Add description where it has none) under its description: the points typed apply to that quotation alone, `quote_adjust` taking the edit `detail` and keeping the card's as `list_detail`; Use Rate Card puts the card's back. The Months box widened from 64 to 84px, which had cut One-off to One-o.
