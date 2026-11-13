@@ -1263,7 +1263,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     can be pressed. Its glyph is the row ⋯'s three dots across.
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
-    wasting one row for the filters"), each filter whatever its value (`Stage: All stages`, its
+    wasting one row for the filters"), on a row of their own under it
+    where the line cannot hold them, the count and the acts keeping the
+    line (`fitPills`, measured as the bar or its search resizes), each filter whatever its value (`Stage: All stages`, its
     value in ink on the deeper tonal step once set), a press opening its
     choices as a menu under it (`.cmdpill-menu`, the arrows, Escape back to
     the pill); on a phone, on a row of their own under the bar, only the filters set, a press putting that one
@@ -4627,6 +4629,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-03-task-client-names.sql`).
 - The row:
   - A tick (everyday task) or a progress ring (content task).
+  - Assigned to is a pill, the disc and the name, one press opening the
+    colleagues as the finder under it (`ADspaceForm.find`, any length of
+    list; the user, 2026-11-13: "it requires a second click").
   - The name cell opens the task; the row is not one button.
   - The stage select moves the task (`moveTo()` is the one path for the row,
     the card, a drop and the task's head).

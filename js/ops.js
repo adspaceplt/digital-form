@@ -2535,7 +2535,7 @@
       '<span class="trow-meta">' +
       '<span class="task-owner">' + (canOwn
         ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
-            avatar(who) + (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
+            avatar(who) + (who ? '<span class="tname">' + esc(who) + '</span>' : '<span class="mute">Assign</span>') + '</button>'
         : (who ? avatar(who) + esc(who) : '<span class="mute">—</span>')) + '</span>' +
       /* While a priority's deadline runs it is the row's date (the user,
          2026-10-11: two deadlines on one row read wrong); the due date
@@ -2869,11 +2869,26 @@
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
-    btn.hidden = true;
+    /* One press opens the colleagues to choose from (the user, 2026-11-13:
+       "it requires a second click"): the finder hangs under the cell from a
+       select laid unseen over the name, which stays in place; where the
+       finder cannot open, the select stands in the name's place as before. */
+    Array.prototype.forEach.call(btn.parentNode.querySelectorAll('.tinline-pick'), function (x) { x.remove(); });
     btn.parentNode.appendChild(sel);
-    sel.focus();
-    var put = function () { if (sel.parentNode) sel.remove(); btn.hidden = false; };
-    sel.addEventListener('blur', function () { if (!sel.disabled) setTimeout(put, 120); });
+    var finder = window.ADspaceForm && window.ADspaceForm.find;
+    if (finder) {
+      sel.classList.add('is-under');
+      /* The pill keeps its fill while its choices are open. */
+      if (window.MutationObserver) new MutationObserver(function () {
+        btn.setAttribute('aria-expanded', sel.getAttribute('aria-expanded') === 'true' && sel.parentNode ? 'true' : 'false');
+      }).observe(sel, { attributes: true, attributeFilter: ['aria-expanded'] });
+    }
+    if (!finder || !finder(sel)) { sel.classList.remove('is-under'); btn.hidden = true; sel.focus(); }
+    var put = function () { if (sel.parentNode) sel.remove(); btn.hidden = false; btn.setAttribute('aria-expanded', 'false'); };
+    sel.addEventListener('blur', function () {
+      var box = document.getElementById('pickerBox');
+      if (!sel.disabled && !(box && !box.hidden)) setTimeout(put, 120);
+    });
     sel.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); put(); btn.focus(); } });
     sel.addEventListener('change', function () {
       var pick = sel.value;
