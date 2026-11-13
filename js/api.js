@@ -25,54 +25,53 @@
   const QUIET = /\/rpc\/(page_pulse|guide_seen_mark)\b/;
   let busyN = 0, barTimer = null, bar = null;
   function barEl() {
-    if (bar && bar.isConnected) return bar;
+    if (bar) return bar;
     bar = document.createElement('div');
     bar.className = 'loadbar';
     bar.setAttribute('role', 'progressbar');
     bar.setAttribute('aria-label', 'Loading');
     bar.innerHTML = '<span></span>';
-    (document.body || document.documentElement).appendChild(bar);
     return bar;
   }
-  /* Under the page's own bar, across its width (the console's head beside
-     the rail, a client page's bar edge to edge); a page with none, at the
-     top of the screen. */
-  /* While a sheet is open (the Assistant, a form, a question), the line runs
-     under that sheet's own head, across its card, never across the page
-     behind it (the user, 2026-11-13). The top sheet is the one drawn last
-     at the highest layer. */
-  function sheetHead() {
-    const open = Array.prototype.filter.call(document.querySelectorAll('.sheet:not([hidden])'), function (s) {
-      return s.getClientRects().length && getComputedStyle(s).visibility !== 'hidden';
-    });
-    if (!open.length) return null;
-    let top = open[0], z = -1;
-    open.forEach(function (s) { const n = parseInt(getComputedStyle(s).zIndex, 10) || 0; if (n >= z) { z = n; top = s; } });
-    const card = top.querySelector('.sheet-card') || top;
-    const c = card.getBoundingClientRect();
-    if (!c.width || !c.height) return null;
-    const head = card.firstElementChild;
-    const h = head && head.getBoundingClientRect();
-    /* Under the head where the card leads with one, else along its top
-       edge inside its corners. */
-    const isHead = head && /head|ask-?top|sheet-top/i.test(head.className || '') && h.height && h.height < c.height / 2;
-    const inset = isHead ? 0 : Math.min(18, c.width / 4);
-    return { top: isHead ? h.bottom : c.top, left: c.left + inset, width: c.width - inset * 2, bottom: 1 };
-  }
-  function placeBar(el) {
-    let r = sheetHead();
-    if (r) {
-      el.style.top = Math.round(r.top) + 'px'; el.style.left = Math.round(r.left) + 'px'; el.style.width = Math.round(r.width) + 'px';
-      return;
+  /* The line lives inside what it sits under, so anything laid over that
+     (a menu, a popover, the finder, a sheet) draws over the line too: under
+     the page's own bar across its width (the console's head beside the
+     rail, a client page's bar edge to edge); while a sheet is open (the
+     Assistant, a form, a question), under that sheet's own head across its
+     card, never across the page behind it (the user, 2026-11-13), else along
+     the card's top edge inside its corners; a page with neither, at the top
+     of the screen. The top sheet is the one drawn last at the highest layer. */
+  function seen(el) { return el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'; }
+  function barHost() {
+    const open = Array.prototype.filter.call(document.querySelectorAll('.sheet:not([hidden])'), seen);
+    if (open.length) {
+      let top = open[0], z = -1;
+      open.forEach(function (s) { const n = parseInt(getComputedStyle(s).zIndex, 10) || 0; if (n >= z) { z = n; top = s; } });
+      const card = top.querySelector('.sheet-card') || top;
+      const c = card.getBoundingClientRect();
+      if (c.width && c.height) {
+        const head = card.firstElementChild;
+        const h = head && head.getBoundingClientRect();
+        const isHead = head && /head|ask-?top|sheet-top/i.test(head.className || '') && h.height && h.height < c.height / 2;
+        return { el: isHead ? head : card, edge: !isHead };
+      }
     }
     const heads = document.querySelectorAll('.console-head, .topbar');
     for (let i = 0; i < heads.length; i++) {
       const b = heads[i].getBoundingClientRect();
-      if (b.width && b.height && b.bottom > 0) { r = b; break; }
+      if (b.width && b.height && b.bottom > 0) return { el: heads[i], edge: false };
     }
-    el.style.top = (r ? Math.round(r.bottom) : 0) + 'px';
-    el.style.left = (r ? Math.round(r.left) : 0) + 'px';
-    el.style.width = (r ? Math.round(r.width) : window.innerWidth) + 'px';
+    return { el: document.body, edge: false, top: true };
+  }
+  function placeBar(el) {
+    const h = barHost();
+    if (el.parentNode !== h.el) {
+      if (el.parentNode && el.parentNode.classList) el.parentNode.classList.remove('is-barhost');
+      h.el.appendChild(el);
+    }
+    if (h.el !== document.body && getComputedStyle(h.el).position === 'static') h.el.classList.add('is-barhost');
+    el.classList.toggle('is-edge', !!h.edge);
+    el.classList.toggle('is-top', !!h.top);
   }
   function loadBegin() {
     busyN++;

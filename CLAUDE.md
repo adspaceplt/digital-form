@@ -240,7 +240,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | Copy, markup a script draws, a state of one screen | The above, plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` for a layout change); `ui` waits for the daily run |
+| Shared layout, navigation, `css/portal.css` or `css/console.css`, a component | The above for every screen it reaches, plus `cssguard` (and `geom` and `fit` for a layout change); `ui` waits for the daily run |
 | A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `js/guide.js`, `tests/stub2.js` | The suites that call what changed (`grep -l`), plus screenshots where what it draws changed; `all` (with `ui`) once a day after the merges |
 | `supabase/schema.sql` or a migration | `sql` and `policies`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`, `confirmonce`, `meetmsgsql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
@@ -573,8 +573,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   it; five or fewer take the bar whole. More lists only what the bar does
   not (`.is-tabbed`), then the rail's foot: one line of the build at the
   left, then Settings' mark and the Activity record's at the right edge
-  (each named for a screen reader and on hover), at a desk as under the
-  bar (the user, 2026-10-10: "activity log can go inline with version
+  (each named for a screen reader and on hover); at a desk the rail is
+  212px and its marks take a row of their own on the sections' left edge,
+  the build under them (the user, 2026-11-13: "the left panel could width
+  could be smaller") (the user, 2026-10-10: "activity log can go inline with version
   code", "just activity record icons would do"; 2026-10-11: "the settings
   button to fit beside activity record as just icons same as it", "the
   rearrange tabs also next to settings"), Arrange sections' mark first. The menu toggle gives way to it; the drawer stays for a narrow desk window.
@@ -713,7 +715,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `adspace-files`; see `ADspaceDocs.save`). `client/sw.js` holds that
   alone, at `/client/file/`, registered by `js/portal.js`. A failed
   registration is silent.
-- The rail's foot names the build beside Settings' and the Activity record's marks (`#appVersion`,
+- The rail's foot names the build with Settings' and the Activity record's marks (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from
@@ -868,7 +870,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   decision is shown only on the database's own `ok` (audit F5, 2026-10-10). It retries a GET once when the
   connection drops before the answer (`steadyFetch`); a write is never sent
   twice. Every request it sends is counted: one out `showAfter` (300ms)
-  draws the loading line (`.loadbar`, 2px under the page's own bar across
+  draws the loading line (`.loadbar`, appended inside its host on each
+  request so whatever is laid over the host draws over it, 2px under the page's own bar across
   its width, under an open sheet's head across its card while one is open; the minute's `page_pulse` never shows it) until the last
   answers; a read (GET) unanswered at `giveUpAfter` (20s) is given up,
   never tried again, so the page says it could not load with Try again; a
@@ -6707,7 +6710,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
   filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
-  figure back. A line may be priced at RM 0, a complimentary line (the
+  figure back. A line's description is the Rate Card's until Edit under
+  it rewrites it for that quotation (the edit's `detail`, one to twelve
+  points of 300 at most, the card's kept as `list_detail`; Use Rate Card
+  puts it back; 2026-11-13), which the PDF and /quote/ print. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
@@ -6910,7 +6916,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
   closing on its own total, the term's total a sentence in TERMS, the term
   row a discount or a surcharge (`ADspaceMoney.termLine`); an older one redraws
-  as kept. Build quote asks Payment terms (NET 7 unless chosen; 30 and longer
+  as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
   subject to ADspace's approval, `payLine`) and Include advertising budget (a
   row a platform, Monthly or One-off; the client's money, kept in the totals,
   never a service line or revenue; `quote_extras`). Its Advanced switch adds

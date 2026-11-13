@@ -1640,8 +1640,25 @@
            quotation, not as a row of its own; on unless unticked. */
         var fold = hasPlan && l.kind !== 'plan' && l.basis === 'month' && Number(l.rate) === 0 ?
           '<label class="tickline qb-inplan"><input type="checkbox" data-key="' + esc(l.key || '') + '"' + (l.in_plan ? ' checked' : '') + '> Include in plan</label>' : '';
+        /* The description is the Rate Card's until the team changes it for
+           this quotation (2026-11-13, the user: "shouldnt be dead end when
+           inside admin"); the card itself changes only when it is
+           published. A custom line is written in Advanced. */
+        var own = !!(B && B.edits[l.key] && B.edits[l.key].detail);
+        var desc = '';
+        if (l.kind !== 'custom' && B) {
+          desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
+            (B.descKey === l.key ?
+              '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
+              '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div>' :
+              (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+              '<div class="qb-desc-acts">' + (own ? '<span class="qb-desc-own">Edited</span>' : '') +
+                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (incl.length ? 'Edit' : 'Add description') + '</button>' +
+                (own ? '<button type="button" class="btn btn-quiet btn-sm qb-desc-card">Use Rate Card</button>' : '') + '</div>') +
+            '</div>';
+        } else if (incl.length) desc = '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
         return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
-          (incl.length ? '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+          desc +
           /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
              Months cell. */
@@ -1780,6 +1797,34 @@
        puts back the card's. */
     $('qbLines').addEventListener('input', function (e) {
       if (B && e.target.closest('.qb-val')) { $('qbSave').disabled = true; $('qbPreview').disabled = true; }
+    });
+    /* A line's description, edited for this quotation (2026-11-13). */
+    $('qbLines').addEventListener('click', function (e) {
+      var w = e.target.closest('.qb-incl[data-key]');
+      if (!w || !B) return;
+      var k = w.getAttribute('data-key');
+      if (e.target.closest('.qb-desc-edit')) {
+        B.descKey = k; $('qbLines').innerHTML = table(B.priced);
+        var ta = $('qbLines').querySelector('.qb-desc');
+        if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+      } else if (e.target.closest('.qb-desc-cancel')) {
+        B.descKey = null; $('qbLines').innerHTML = table(B.priced);
+      } else if (e.target.closest('.qb-desc-done')) {
+        var pts = String(w.querySelector('.qb-desc').value).split(/\r?\n/)
+          .map(function (x) { return x.replace(/^\s*[-•·]\s*/, '').trim(); }).filter(Boolean);
+        if (pts.length > 12 || pts.some(function (x) { return x.length > 300; })) {
+          $('qbMsg').textContent = 'Enter up to 12 points, each up to 300 characters.'; $('qbMsg').className = 'msg err';
+          return;
+        }
+        var e3 = B.edits[k] || {};
+        if (pts.length) e3.detail = pts; else delete e3.detail;
+        if (Object.keys(e3).length) B.edits[k] = e3; else delete B.edits[k];
+        B.descKey = null; $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
+        preview();
+      } else if (e.target.closest('.qb-desc-card')) {
+        if (B.edits[k]) { delete B.edits[k].detail; if (!Object.keys(B.edits[k]).length) delete B.edits[k]; }
+        preview();
+      }
     });
     $('qbLines').addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.isComposing && e.target.closest('.qb-val')) { e.preventDefault(); e.target.blur(); }

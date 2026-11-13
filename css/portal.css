@@ -18,6 +18,12 @@
    `--ok-solid`/`--on-ok`), since in dark the fill is light and white text on it
    would disappear. */
 :root {
+  /* Layers, lowest to highest: every page-level z-index is one of these;
+     a rule inside a component keeps its own small figure. */
+  --z-sticky: 20; --z-head: 30; --z-cover: 39; --z-bar: 40;
+  --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
+  --z-drawer-scrim: 55; --z-drawer: 60; --z-pull: 70; --z-sheet-side: 85;
+  --z-sheet: 90; --z-guide-sheet: 92; --z-pop-sheet: 93; --z-ask: 95; --z-picker: 96;
   --ink:        #1b1a17;
   --ink-soft:   #524e47;
   --ink-mute:   #6b6760;
@@ -359,7 +365,7 @@ a { color: inherit; }
 .shell { max-width: 1240px; margin: 0 auto; padding: 0 24px 96px; }
 
 .topbar {
-  position: sticky; top: 0; z-index: 40;
+  position: sticky; top: 0; z-index: var(--z-bar);
   background: var(--chrome);
   -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--line);
@@ -938,7 +944,7 @@ textarea.input-sm[data-oneline] { padding-block: calc((var(--ctl-h-sm) - 2px - 1
 
 /* ---------- QR ---------- */
 .qr-modal {
-  position: fixed; inset: 0; z-index: 90; display: none;
+  position: fixed; inset: 0; z-index: var(--z-sheet); display: none;
   background: rgba(0,0,0,.45); align-items: center; justify-content: center; padding: 24px;
 }
 .qr-modal.is-open { display: flex; }
@@ -1932,7 +1938,7 @@ dd > .linkbtn::before { inset: 3px 0; }
 /* A question asked about something on a sheet sits above that sheet: every
    sheet is moved to the end of the page on open, so without its own layer
    the question could open underneath the sheet it was about. */
-#askSheet { z-index: 95; }
+#askSheet { z-index: var(--z-ask); }
 
 /* The Passkeys sheet: a short list, one row a passkey, the ⋯ at the end. */
 .sheet-card.pk-card { width: min(520px, 100%); }
@@ -2458,7 +2464,7 @@ body.is-plain .topbar { background: var(--chrome); }
   padding: 0 28px; height: var(--head-h); flex: 0 0 auto;
   border-bottom: 1px solid var(--line);
   background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
-  position: sticky; top: 0; z-index: 30;
+  position: sticky; top: 0; z-index: var(--z-head);
 }
 /* Safari on an iPhone takes the colour behind the status bar from the sticky
    bar at the top of the page, and it passes over a translucent one: the
@@ -2541,7 +2547,7 @@ body.is-plain .topbar { background: var(--chrome); }
 
 @media (max-width: 860px) {
   .sidebar {
-    position: fixed; left: 0; top: 0; z-index: 60; width: 244px; flex-basis: 244px;
+    position: fixed; left: 0; top: 0; z-index: var(--z-drawer); width: 244px; flex-basis: 244px;
     transform: translateX(-100%);
     transition: transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
   }
@@ -2553,7 +2559,7 @@ body.is-plain .topbar { background: var(--chrome); }
      drawer shows nothing, and it left the tappable region overlapping it. */
   .scrim {
     position: fixed; top: 0; right: 0; bottom: 0; left: 244px;
-    z-index: 55; background: rgba(0,0,0,.35); border: 0; padding: 0;
+    z-index: var(--z-drawer-scrim); background: rgba(0,0,0,.35); border: 0; padding: 0;
   }
 }
 
@@ -2579,7 +2585,7 @@ body.is-plain .topbar { background: var(--chrome); }
    Opens over the work and hands it straight back, so reading the record never
    costs you the place you were in. */
 .sheet {
-  position: fixed; inset: 0; z-index: 90; display: flex;
+  position: fixed; inset: 0; z-index: var(--z-sheet); display: flex;
   align-items: center; justify-content: center; padding: 24px;
   background: var(--scrim);
 }
@@ -3267,7 +3273,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    gutter. A guessed 20px sat inside it on desktop and overflowed it on a
    phone, where the gutter is 16. */
 .confirmbar {
-  position: sticky; bottom: 0; z-index: 40; margin: 18px -24px 0;
+  position: sticky; bottom: 0; z-index: var(--z-bar); margin: 18px -24px 0;
   background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--line);
 }
@@ -3375,7 +3381,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
    with My Work's select bar, which comes later on the page and so drew over
    the bar's own ⋯ menu (reported 2026-09-24). */
 .kmenu {
-  position: absolute; top: 44px; right: 12px; z-index: 50;
+  position: absolute; top: 44px; right: 12px; z-index: var(--z-menu);
   width: min(320px, calc(100vw - 48px));
   background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
@@ -4729,6 +4735,10 @@ body > .shell { width: 100%; }
 .cl-mark.has-logo { background: #fff; border: 1px solid var(--line); }
 .cl-mark img { width: 100%; height: 100%; object-fit: contain; }
 .cl-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+/* A cell clips at one line (`.crm-c`), and a block inside it takes no
+   ellipsis of its own: a long name wraps under itself instead of being cut
+   at the column's edge (2026-11-13). */
+.cl-who > :is(.cl-name, b) { white-space: normal; }
 /* Any row a client leads (Video Scripts, Reports, Creator Campaigns;
    2026-11-10): the mark beside what the row names, 4px of room for a VIC's
    ring inside a cell that clips its overflow. */
@@ -5589,14 +5599,18 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* Past the expected wait, one line under the shape (js/state.js). */
 .skel-slow { margin: 4px 15px 12px; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
 
-/* The loading line (js/api.js): 2px under the page's top bar while a
-   request has been out a moment, a segment of the soft ink sliding across
-   it; placed by the script on the bar it sits under. */
+/* The loading line (js/api.js): 2px under the bar or sheet head it lives
+   in, while a request has been out a moment, a segment of the soft ink
+   sliding across it. Inside its host, so whatever is laid over the host
+   (a menu, a popover, the finder, a sheet) draws over the line too. */
+.is-barhost { position: relative; }
 .loadbar {
-  position: fixed; top: 0; left: 0; height: 2px; z-index: 96;
+  position: absolute; top: 100%; left: 0; right: 0; height: 2px; z-index: 1;
   overflow: hidden; pointer-events: none; opacity: 0;
   transition: opacity var(--t) var(--ease-out);
 }
+.loadbar.is-edge { top: 0; left: 18px; right: 18px; }
+.loadbar.is-top { position: fixed; top: 0; }
 .loadbar.is-on { opacity: 1; }
 .loadbar > span {
   position: absolute; top: 0; bottom: 0; left: 0; width: 38%;
@@ -6321,7 +6335,7 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
    rests on beside it: what it is, the copy in full, what was said last time,
    where it stands, and the one place to decide. */
 .canvas {
-  position: fixed; inset: 0; z-index: 95; display: flex;
+  position: fixed; inset: 0; z-index: var(--z-ask); display: flex;
   align-items: center; justify-content: center; padding: 24px;
   background: var(--scrim);
   animation: mk-scrim-in var(--t) var(--ease-out);
@@ -6746,7 +6760,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    the way of `elementFromPoint`, which is how the column under the finger is
    found at all. */
 .bcard-ghost {
-  position: fixed; z-index: 90; pointer-events: none; margin: 0;
+  position: fixed; z-index: var(--z-sheet); pointer-events: none; margin: 0;
   box-shadow: var(--shadow-lift); opacity: .96;
   transform: rotate(1.2deg);
 }
@@ -6994,7 +7008,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    `ADspaceMenu.pop`), so every bar is one shape at any width. */
 .cmdbar-filters[hidden] { display: none !important; }
 .cmdpop {
-  position: fixed; z-index: 50; width: min(300px, calc(100vw - 32px));
+  position: fixed; z-index: var(--z-menu); width: min(300px, calc(100vw - 32px));
   background: var(--card); border: 1px solid var(--line);
   padding: 16px; display: flex; flex-direction: column; gap: 12px;
   transform-origin: top left; animation: mk-menu-in var(--t) var(--ease-out);
@@ -7281,7 +7295,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    do next, the facts, the brief, the checklist, the files, the talk, the time
    and what happened lately. The cards are what the user asked for on
    2026-09-23; a column of hairlines had read as one long form. */
-.sheet.sheet-side { z-index: 85; justify-content: flex-end; align-items: stretch; padding: 0; }
+.sheet.sheet-side { z-index: var(--z-sheet-side); justify-content: flex-end; align-items: stretch; padding: 0; }
 .sheet-side > .sheet-card.taskcard {
   width: min(520px, 100%); max-height: none; height: 100%;
   padding: 0; border-radius: 0; background: var(--page);
@@ -7414,7 +7428,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* Several tasks at once. It stays under the console bar while the list
    scrolls, so the count and the two acts are never a screen from the ticks. */
 .bulkbar {
-  position: sticky; top: var(--head-h); z-index: 20;
+  position: sticky; top: var(--head-h); z-index: var(--z-sticky);
   display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   margin: 0 0 12px; padding: 8px 12px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -7554,7 +7568,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-line > b { min-width: 0; }
 .rp-line > .chip { flex: none; }
 .sheet-foot > .rp-adfoot { order: 1; margin-right: auto; display: flex; align-items: center; }
-.kmenu.rp-idspop { z-index: 93; width: min(320px, calc(100vw - 32px)); padding: 16px; gap: 8px; }
+.kmenu.rp-idspop { z-index: var(--z-pop-sheet); width: min(320px, calc(100vw - 32px)); padding: 16px; gap: 8px; }
 .rp-idspop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .rp-idslist { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
 .rp-idslist .serial-copy { margin-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -7776,7 +7790,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    comes down with the finger, turns as it travels, takes the ink once a
    release would reload, and turns on its own while the page is fetched. */
 .pullmark {
-  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: 70;
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: var(--z-pull);
   width: 36px; height: 36px; margin-top: -36px; border-radius: 50%;
   display: grid; place-items: center; pointer-events: none;
   background: var(--card); color: var(--ink-mute); box-shadow: var(--shadow-lift);
@@ -8183,7 +8197,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    shows. Nothing under it is dimmed or locked.
    ========================================================================= */
 .guidecard {
-  position: fixed; z-index: 50;
+  position: fixed; z-index: var(--z-menu);
   width: min(320px, calc(100vw - 32px));
   display: grid; gap: 8px; padding: 14px 16px 16px;
   background: var(--raised); border: 1px solid var(--line-lift);
@@ -8193,7 +8207,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .guidecard[hidden] { display: none; }
 /* A guide inside a sheet (Arrange sections, a new WhatsApp message) stands
    above it, under a question asked over it (95). */
-.guidecard.is-insheet { z-index: 92; }
+.guidecard.is-insheet { z-index: var(--z-guide-sheet); }
 .guide-head { align-items: baseline; }
 .guide-title { min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .guide-n { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -8659,7 +8673,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .picker {
   /* Over the question sheet too (#askSheet, 95): a long list asked inside
      a question opened under its scrim. */
-  position: fixed; z-index: 96; display: flex; flex-direction: column;
+  position: fixed; z-index: var(--z-picker); display: flex; flex-direction: column;
   background: var(--raised); border: 1px solid var(--line-lift);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 6px; overflow: hidden;
@@ -8818,12 +8832,12 @@ body.ncpage { background: var(--nc-ground); }
    screen. An admin working on reads one warn line over the section.
    ========================================================================= */
 .maint-cover {
-  position: fixed; inset: 0; z-index: 39;
+  position: fixed; inset: 0; z-index: var(--z-cover);
   min-height: 0; margin: 0;
   padding: calc(var(--head-h) + 24px) 16px calc(24px + env(safe-area-inset-bottom, 0px));
   background: var(--card); overflow-y: auto;
 }
-body:not(:has(> .topbar)) .maint-cover { z-index: 60; padding-top: 24px; }
+body:not(:has(> .topbar)) .maint-cover { z-index: var(--z-drawer); padding-top: 24px; }
 .maint-cover:focus { outline: none; }
 body.is-maint { overflow: hidden; }
 .maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }
@@ -9191,7 +9205,7 @@ body.is-maint { overflow: hidden; }
 }
 .tabbar { display: none; }
 :root.has-tabbar .tabbar:not([hidden]) {
-  position: fixed; z-index: 45;
+  position: fixed; z-index: var(--z-tabbar);
   left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
   bottom: var(--tabbar-bottom);
   max-width: calc(var(--tabs, 5) * 120px + 10px); margin: 0 auto;
@@ -9213,7 +9227,7 @@ body.is-maint { overflow: hidden; }
    rises from behind the bar and is taken out of reach while shut. */
 :root.has-tabbar .sidebar {
   position: fixed; top: auto; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: var(--tabbar-space); z-index: 44;
+  bottom: var(--tabbar-space); z-index: var(--z-tabmore);
   width: auto; height: auto; flex-basis: auto;
   max-height: calc(100vh - var(--tabbar-space) - var(--head-h) - 16px);
   padding: 8px 12px;
@@ -9234,7 +9248,7 @@ body.is-maint { overflow: hidden; }
 :root.has-tabbar .navgroup.is-tabbed { display: none; }
 :root.has-tabbar .sidebar { padding-bottom: 4px; }
 :root.has-tabbar .scrim {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 43;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: var(--z-tabscrim);
   background: var(--scrim); border: 0; padding: 0;
 }
 /* What sits at the foot keeps clear of the bar. */
