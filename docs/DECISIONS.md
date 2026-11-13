@@ -10403,3 +10403,19 @@ the line out for everyone else. `2026-11-13-creator-margin-admins.sql`.
 ### 2026-11-14 · The system account is the super admin
 The user, on the access model: the IT account is "the very master of the account", never assigned work, never changed by anyone, and able to get in when everyone else is locked out; then "make it the only one who can make or remove admins. He has the most highest power on the portal", and it "can stop receiving any work notices". Most of this already held for the system account (no picker offers it, nobody else changes its row, access expiry and the overseas check skip it, the last admin is kept). Added: while an active system account exists, only it makes or removes an admin or an admin group (`team_super_ok`, `super-only`; with none active an admin still does, so the portal is never left with nobody able to), and no work notice is written to it but a failed scheduled job's, which IT needs. This reverses 2026-10-24's "System account acts same as other admins" for notices. Team names it Super admin.
 
+### 2026-11-13 · Creator payments in one queue
+Paying creators meant opening each creator's page, its Payment pane, one at a
+time; the user: it would not scale to hundreds of creators. The approved
+mockup (digital-form-tests mockups/creator-payments) put the work in one
+queue on Creator Campaigns: Details to review first (the user: "be the first
+go this queue"), Ready to bill, Draft in Bukku, Awaiting payment, Paid. One
+read, `creator_payments_queue`, answers the details waiting and every booking
+posted in the portal or holding a live bill, amounts at Creator payments View
+as the creator's page reads them; Create bill and Read from Bukku reuse
+bukku-sync's calls, one creator after another. Paid is held to a period, the
+user's list: Last 3 days, Last 7 days, This month and last month (the
+default), Last month, Last 3 months, This year. The payment request and
+details-to-review notices now open their row in the queue. A booking that
+reached Completed before the portal stamped posted days is never Ready to
+bill, so the queue does not fill with jobs paid before the portal.
+`demo.js` reads the function as a read (its name holds "queue").

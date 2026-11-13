@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261113zw">
-<link rel="stylesheet" href="/css/console.css?v=20261114">
+<link rel="stylesheet" href="/css/console.css?v=20261114a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -130,7 +130,7 @@
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="/js/config.js?v=20261111"></script>
-<script src="/js/demo.js?v=20261029m"></script>
+<script src="/js/demo.js?v=20261114a"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261113zzh"></script>
 <script src="/js/clock.js?v=20261112z"></script>
@@ -2233,6 +2233,7 @@
       <div class="tabrow" id="campSectionTabs" role="tablist">
         <button class="tab is-on" id="tabCampaigns" data-tab="campaigns" type="button" role="tab">Campaigns</button>
         <button class="tab" id="tabRoster" data-tab="roster" data-need="campaigns.creators:view" type="button" role="tab">Creators</button>
+        <button class="tab" id="tabPayments" data-tab="payments" data-need="campaigns.creators:view" type="button" role="tab">Payments<span class="tab-n is-err" id="tabPayN" hidden></span></button>
       </div>
 
       <!-- ---- Campaign form: a sheet for New campaign and Edit (2026-10-10:
@@ -2623,6 +2624,50 @@
       </div>
 
       <!-- ---- Creators list ---- -->
+      <!-- ---- Payments (2026-11-13): every creator's payment work in one
+           queue, as the approved mockup: Details to review, Ready to bill,
+           Draft in Bukku, Awaiting payment, Paid. ---- -->
+      <div id="payView" hidden>
+        <div class="cmdbar" id="cpqBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="cpqFind" type="search" placeholder="Search creator, Job reference or bill" aria-label="Search payments" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="cpqClient" aria-label="Filter by client" data-default="all"><option value="all">All clients</option></select>
+          <select class="select select-sm" id="cpqCampaign" aria-label="Filter by campaign" data-default="all"><option value="all">All campaigns</option></select>
+          <select class="select select-sm" id="cpqCur" aria-label="Filter by currency" data-default="all">
+            <option value="all">All currencies</option>
+            <option value="MYR">MYR</option>
+            <option value="SGD">SGD</option>
+          </select>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet">
+              <span class="cmdbar-count" id="cpqCount"></span>
+            </span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm" id="cpqRead" data-need="campaigns.pay:work" type="button" hidden>Read from Bukku</button>
+              <button class="btn btn-sm btn-primary" id="cpqBills" data-need="campaigns.pay:work" type="button" hidden></button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="cpqMsg" role="status"></div>
+        <div id="cpqList"></div>
+        <div class="sheet" id="cpqSheet" hidden>
+          <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="cpqSheetTitle" tabindex="-1">
+            <div class="sheet-head">
+              <div class="cpq-sheet-t"><h3 id="cpqSheetTitle">Payment details</h3><p class="muted cpq-sheet-sub" id="cpqSheetSub"></p></div>
+              <button class="iconbtn" id="cpqSheetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </div>
+            <div class="sheet-body" id="cpqSheetBody"></div>
+            <div class="sheet-foot">
+              <button class="btn btn-primary" id="cpqApprove" type="button">Approve</button>
+              <button class="btn btn-danger" id="cpqDecline" type="button">Decline</button>
+              <button class="btn btn-quiet" id="cpqCancel" type="button">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="rosterView" hidden>
         <!-- No heading: the tab above it says Creators, and the command bar
              under it carries the search, the filter, the count and the one
@@ -6466,7 +6511,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261112zt"></script>
 <script src="/js/scriptpdf.js?v=20261112zt"></script>
 <script src="/js/ratecardpdf.js?v=20261112zt"></script>
-<script src="/js/campaigns.js?v=20261113zzj"></script>
+<script src="/js/campaigns.js?v=20261114a"></script>
 <script src="/js/ops.js?v=20261114"></script>
 <script src="/js/perf.js?v=20261112zt"></script>
 <script src="/js/health.js?v=20261112h"></script>

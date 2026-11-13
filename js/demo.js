@@ -116,7 +116,7 @@
     'begin tokens searches step used close upsert subscribe unsubscribe consent ask end expire hide revert draft shot new kick queue make profile').split(' ');
   var WRITES = { campaign_qc_pass: 1, ops_engagement_set_check: 1, override_service_state: 1, review_caption_undo: 1, sm_report_brand: 1,
     client_brand_logo: 1, verify_letter: 1, ops_recurring_daily: 1, my_hr_remind: 1 };
-  var READS = { review_set_counts: 1, rate_card_current: 1, ai_draft_usage: 1, wa_compose_prepare: 1, supplier_email_prepare: 1, bukku_prepare: 1, wa_sent_recently: 1, guide_seen_mark: 1 };
+  var READS = { review_set_counts: 1, creator_payments_queue: 1, rate_card_current: 1, ai_draft_usage: 1, wa_compose_prepare: 1, supplier_email_prepare: 1, bukku_prepare: 1, wa_sent_recently: 1, guide_seen_mark: 1 };
   function writes(name) {
     if (WRITES[name]) return true;
     if (READS[name] || /^(get_|me$)/.test(name) || /(_list|_read|_state|_left|_last|_mine|_check|_ok|_word|_of|_get|_counts)$/.test(name)) return false;
