@@ -6705,7 +6705,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
   filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
-  figure back. A line may be priced at RM 0, a complimentary line (the
+  figure back. A line's description is the Rate Card's until Edit under
+  it rewrites it for that quotation (the edit's `detail`, one to twelve
+  points of 300 at most, the card's kept as `list_detail`; Use Rate Card
+  puts it back; 2026-11-13), which the PDF and /quote/ print. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
