@@ -10254,3 +10254,5 @@ edge, else the console head or a client page's bar) at `top: 100%`, re-homed on
 each request, so anything laid over the host draws over it. Every page-level
 z-index in `css/portal.css` became a named token on one scale (`--z-sticky` to
 `--z-picker`), values unchanged. `tests/loadbar.js` passes unchanged.
+### 2026-11-13 · A line's description edited for one quotation
+The user: a line's description in Build quote "shouldnt be dead end when inside admin … have to go a big round and republish the rate card". Each line now has Edit (Add description where it has none) under its description: the points typed apply to that quotation alone, `quote_adjust` taking the edit `detail` and keeping the card's as `list_detail`; Use Rate Card puts the card's back. The Months box widened from 64 to 84px, which had cut One-off to One-o.
