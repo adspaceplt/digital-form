@@ -10378,3 +10378,13 @@ The user: "Analytics follows each chart's section access, proceed". The Dashboar
 The code review of the day's build found the Assistant's task search apart from My Work's: a client's name found nothing, "the" and "task" had to match, "task 1008" was no number, ig matched inside "design", and 200 rows were cut before the words were matched. Both now ask `ADspaceOps.taskSearch` (js/ops.js), read whole a thousand at a time. The agent suite's access check passed whatever came back; it now compares the search with the colleague's own read. `ADspaceState.fit` let go of no element a repaint removed; it now unobserves them. Touch N Go Digital, the stored bank key, reads as Touch ’n Go Digital wherever it is shown (`ADspaceWords.bank`). The full gate on b3eee947 failed four suites: uxaudit compared the console's 76px head with client pages' 64px bar (now held apart, the console's sign-in bar with the console's), the Assistant's chips stood 30px under a 34px floor and its box drew no ring the walk could see, Build quote's description counted as a column and its Edit had no pen, the removed quotations' toggle sat 4px from the list, My Work's Assigned to sat 4px outside its column (#1119); docmail and mailfn counted Duplicate and 19 functions.
 ### 2026-11-13 · A draft bill reads Draft in Bukku, never Not billed
 Create bill makes a draft (the user: "Keep it normal and draft at bukku"), but Read from Bukku left drafts out, so the booking read Not billed after "Draft bill AB2611022 created in Bukku." (the user: "Bill created but still showing Not billed"). Drafts are now read and kept as `draft`, shown Draft in Bukku (grey) until posted there, then Processing and Paid; a bill read Paid after a draft tells the creator as one after Processing does. `tests/camp.js` holds the draft, then posted, reads.
+
+### 2026-11-13 · A bill the portal made stays on its booking by Bukku's ID
+The user asked whether a created bill is tied to its booking by Bukku's own
+ID, so that only a voided or deleted bill lets Create bill make another. It
+was tied by the Job reference alone: a reference edited or cleared in Bukku
+dropped the bill from its booking and Create bill offered a second bill.
+Now `createbill` passes the new bill's Bukku ID to the read-back, and
+`creator_bills.made_for` keeps the booking for that ID whatever the
+reference reads later; a bill Bukku stops listing is gone as before. Held by
+`tests/bukkufn.js`, `tests/camp.js` and `tests/sql.js`.

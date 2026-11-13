@@ -3259,8 +3259,9 @@ function cardSlugFree(name, self, email) {
     DB.creator_bills = DB.creator_bills || [];
     var seen = [], told = 0, now = new Date().toISOString();
     rows.forEach(function (x) {
-      var opt = billOption(creator, x.ref, x.number);
       var b = DB.creator_bills.filter(function (y) { return y.bill_id === x.id; })[0];
+
+      var opt = (b && b.made_for) || x.made_for || billOption(creator, x.ref, x.number);
 
       var st = x.draft ? 'draft' : x.balance == null || x.balance === '' ? (b && b.status !== 'draft' ? b.status : 'processing') : Number(x.balance) <= 0 ? 'paid' : 'processing';
       var o0 = (DB.campaign_options || []).filter(function (o) { return o.id === opt; })[0];
@@ -3272,7 +3273,7 @@ function cardSlugFree(name, self, email) {
       };
       seen.push(x.id);
       if (!b) DB.creator_bills.push({ bill_id: x.id, creator_id: creator, contact_id: contact, number: x.number, ref: x.ref, bill_date: x.date,
-        amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, gone: false, read_at: now,
+        amount: x.amount, balance: x.balance, currency: x.currency || 'MYR', status: st, option_id: opt, made_for: x.made_for || null, gone: false, read_at: now,
         paid_seen_at: st === 'paid' ? now : null, paid_told_at: st === 'paid' ? now : null, paid_on: st === 'paid' ? (x.paid_on || null) : null });
       if (!b && st === 'paid' && o0 && o0.posted_on) tell(DB.creator_bills[DB.creator_bills.length - 1]);
       else if (b) {
@@ -14995,6 +14996,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               var rows = window.__bukkuBills.filter(function (x) { return Number(x.contact_id) === Number(p.contact_id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
                 .map(function (x) { return { id: Number(x.id), number: String(x.number || ''), ref: [x.number2, x.description].filter(Boolean).join(' '), date: x.date || null,
                   amount: Number(x.amount), balance: Number(x.balance), currency: x.currency_code || 'MYR', draft: x.status === 'draft' }; });
+              if (made) rows.forEach(function (r) { if (r.id === made.id) r.made_for = bkb.option; });
               creatorBillsTake(p.creator, Number(p.contact_id), rows);
               return fin(made ? made.number : null).then(function () {
                 var out = creatorBillsList(p.creator);
