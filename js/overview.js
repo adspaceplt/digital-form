@@ -1769,7 +1769,9 @@
           card.innerHTML = head;
           var b = document.createElement('div');
           card.appendChild(b);
-          UI.emptyLine(b, 'Nothing needs you today.');
+          /* A failed read is never drawn as nothing to do. */
+          if (d.failed.length) UI.failLine(b, d.failed.join(', '), 'The data could not be loaded.', redraw);
+          else UI.emptyLine(b, 'Nothing needs you today.');
           return;
         }
         var chips = kinds.length > 2 ? '<div class="ovw-today-chips" role="group" aria-label="Show">' + kinds.map(function (k) {

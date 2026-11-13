@@ -624,6 +624,9 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   (2026-11-08); its wait for the preview needs finding.
 
 
+- `head`: the campaign record's Add creators button (`#showAddOption`) is not
+  visible after its first card is opened, on main as well (2026-11-13).
+
 - `analytics`: "every Sales tile that compares says Better, Worse, Steady or
   Above alert" fails on main (2026-11-12, before the revamp touched it).
 - `tabbar`: "a refused save is said in the sheet, which stays with the order"
