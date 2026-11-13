@@ -3329,7 +3329,7 @@ function cardSlugFree(name, self, email) {
     var fcur = function (o) { return feeOf(o).currency; }, famt = function (o) { return feeOf(o).amount; };
     var agreed = pay ? group(booked, fcur, famt, 'bookings') : null;
     var owed = pay ? group(booked.filter(function (o) { return !paidOpt(o); }), fcur, famt, 'bookings') : null;
-    var margin = pay && opsAllowed('campaigns.campaigns', 'view') ? group(booked.filter(function (o) { return cliCur(o) === feeOf(o).currency; }), fcur,
+    var margin = pay && opsAllowed('campaigns.campaigns', 'view') && opsGranted('team.perfadmin', 'work') ? group(booked.filter(function (o) { return cliCur(o) === feeOf(o).currency; }), fcur,
       function (o) { return Number(o.rate) - Number(feeOf(o).amount); }, 'bookings') : null;
     return { ok: true, pay: pay, billed: billed, agreed: agreed, owed: owed, margin: margin, paid: paid };
   }

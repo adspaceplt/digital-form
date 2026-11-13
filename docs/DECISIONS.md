@@ -10392,6 +10392,14 @@ reference reads later; a bill Bukku stops listing is gone as before. Held by
 ### 2026-11-13 · Dashboard phase 4: rings, a stage strip and bars
 The user approved the phase 4 mockup ("ready to proceed"), asking only that the figure tiles stop spending a card's height on two or three digits ("our portal is actually very space … we really need space"). Built: a time-against-work ring on each of the colleague's tasks on Me, Work by stage back on Team, Work by person and Clients this month as bars, the lead tiles compact with the figure and its trend on one line, and Open tasks and Open work by person taken off Analytics, as today's figures belong to Team. The first stage strip drew each ring in its stage's one tone with its late part red; the user read it as one colour a ring and asked for each ring to split as the work stands ("some portion is light gray, some portion is orange, amber, and some portion is red"), so a ring now splits on track, due within 2 days and late. Oldest late's trend is the work delivered late each month, since how late a task stood on a past day is not kept.
 
+### 2026-11-13 · A creator's margin is an admin's alone
+The creator page's Totals read Margin (the client rate less the fee agreed
+with the creator) to anyone holding Creator payments at View. The user:
+"I don't think this could be reviewed by anyone else, maybe just admins."
+`creator_totals` now answers `margin` only where `perf_is_admin()` holds
+(team.perfadmin, the admin's part for revenue and profit); the rail leaves
+the line out for everyone else. `2026-11-13-creator-margin-admins.sql`.
+
 ### 2026-11-14 · The system account is the super admin
 The user, on the access model: the IT account is "the very master of the account", never assigned work, never changed by anyone, and able to get in when everyone else is locked out; then "make it the only one who can make or remove admins. He has the most highest power on the portal", and it "can stop receiving any work notices". Most of this already held for the system account (no picker offers it, nobody else changes its row, access expiry and the overseas check skip it, the last admin is kept). Added: while an active system account exists, only it makes or removes an admin or an admin group (`team_super_ok`, `super-only`; with none active an admin still does, so the portal is never left with nobody able to), and no work notice is written to it but a failed scheduled job's, which IT needs. This reverses 2026-10-24's "System account acts same as other admins" for notices. Team names it Super admin.
 
