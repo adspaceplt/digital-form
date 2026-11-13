@@ -1257,11 +1257,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
-  - Every filter is a pill on its own row under the bar (v3, 2026-11-12):
-    at a desk each filter whatever its value (`Stage: All stages`, its
+  - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
+    line between the search and the count (the user, 2026-11-13: "we're
+    wasting one row for the filters"), each filter whatever its value (`Stage: All stages`, its
     value in ink on the deeper tonal step once set), a press opening its
     choices as a menu under it (`.cmdpill-menu`, the arrows, Escape back to
-    the pill); on a phone only the filters set, a press putting that one
+    the pill); on a phone, on a row of their own under the bar, only the filters set, a press putting that one
     back (`.cmdbar-chips`, Label: Value with its ×). A view never a pill;
     Clear filters stays the card's and the empty list's
   - The Filters sheet focuses its card, never a select (a focused select wears
