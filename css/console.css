@@ -5358,6 +5358,11 @@ svg.sec {
 /* v3's filter pills at a desk: every filter its label and value; one left
    at its default reads its value in the soft ink, one set reads it in ink
    on the deeper tonal step. Its choices open as a menu under it. */
+/* They stand on the bar's own line, between the search and the count, never
+   a row of their own (the user, 2026-11-13: "we're wasting one row for the
+   filters"); a bar whose pills outrun the line wraps them after the search. */
+.cmdbar-chips.is-pills { order: 1; flex: 0 1 auto; }
+.cmdbar:has(> .cmdbar-chips.is-pills:not([hidden])) > .cmdbar-end { order: 2; }
 .cmdbar-chips.is-pills .cmdbar-pill b { font-weight: 400; color: var(--ink-soft); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set { background: var(--tonal-press); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set b { font-weight: 500; color: var(--ink); }
