@@ -10271,3 +10271,6 @@ the Clients list (and Content Review's, Reports', Video Scripts' rows) was cut
 bare at its column, since `.crm-c`'s ellipsis applies to the cell, not the name
 block inside it. The name now wraps under itself. Shown failing on the old
 stylesheet and passing on the new.
+
+### 2026-11-13 · The rail's chosen row, its edge drawn inside
+The user: the chosen section in the rail looked "cut off slightly" at its left and right. The rail's list scrolls when its sections do not fit (`overflow-y: auto`), and a scroller clips sideways too, so the row's 1px ring, drawn outside it, lost its sides. The ring is now an inset shadow, inside the row, in both themes.
