@@ -4120,18 +4120,19 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
   show amount just internal records creator records and bukku bill for
   payments"): the fee agreed with the creator a booking, in their payment
-  currency (`creator_fees`, a standard fee a creator `creator_standard_fees`
-  filling each new booking, `creator_bill_claims`; RLS on, no policy, no
-  grant), set on the Payment pane's booking pen and Standard fee at
-  `campaigns.pay` Work (`creator_fee_set`, `creator_standard_fee_set`:
+  currency (`creator_fees`, `creator_bill_claims`; RLS on, no policy, no
+  grant; no standard fee is offered, the user, 2026-11-13: "lets not set a
+  standard"), set on the Payment pane's booking pen, or typed into Create
+  bill's question, at `campaigns.pay` Work (`creator_fee_set`:
   `bad-amount`, `billed` once a bill or a claim under ten minutes holds it;
   filed `creator.updated` from and to), a fee read from a bill Bukku holds
   (trigger `creator_bills_fee`, backfilled); answered at `campaigns.pay` View
   alone (`creator_bills_list` `fee`, `standard_fee`; `creator_totals`
   `agreed`, `owed` (no paid bill) and `margin` (client rate less the fee in
   one currency)), never to the creator's page or a client. Create bill (a
-  booking Posted or Completed with a fee, no bill, the creator linked) and
-  Create n bills (`bukku-sync` `createbill`, one at a time):
+  booking Posted or Completed with no bill, the creator linked, the account
+  chosen; it asks the amount, the fee written in, and keeps it as the fee
+  first) and Create n bills (those with a fee) (`bukku-sync` `createbill`, one at a time):
   `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
   `billed`, `no-account`, `no-fx`, `creating`, the claim taken), Bukku
   searched for a bill already holding the Job reference (`in-bukku`, never a
