@@ -658,7 +658,10 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
   never a select on every row.
 - Hover is one step lighter than selected (`--sunk` against `--line-soft`),
   never equal. Every hover lives inside `@media (hover: hover)`. A hover is the
-  next step of its ground, never `--fill`.
+  next step of its ground, never `--fill`. Where the chosen is a white
+  thumb or row on a grey ground (a strip's tabs, a segment, the rail on the
+  frame), the hover is that white at half (`--card` at 55 to 60%), never a
+  grey the ground already is (2026-11-13: the hover read as missing).
 - The chosen one of several is a fill, never a shadow and never a weight:
   every tab, view, segment, nav item and finder option reads at 400, chosen
   or not (the user, 2026-10-04);

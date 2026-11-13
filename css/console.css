@@ -5048,7 +5048,16 @@ svg.sec {
 .console-count.is-late, .console-count.is-late b { color: var(--err); }
 @media (min-width: 861px) {
   :root:not(.has-tabbar) { scroll-padding-top: calc(var(--head-h) + 12px); }
-  :root:not(.has-tabbar) body, :root:not(.has-tabbar) .console { background: var(--frame); }
+  /* The sign-in page and every cover stay white (the user, 2026-11-13:
+     "fully white would be ok"); the grey frame is the signed-in console's. */
+  :root:not(.has-tabbar) body:not(.is-plain), :root:not(.has-tabbar) .console { background: var(--frame); }
+  /* A hover the eye finds on the grey frame (the user, 2026-11-13: "why is
+     the hover missing"): the chosen row's white at half, never a grey the
+     frame already is. */
+  @media (hover: hover) {
+    :root:not(.has-tabbar) .sidebar .navitem:not(.is-on):hover,
+    :root:not(.has-tabbar) .sidebar .railfoot:not(.is-on):hover { background: color-mix(in srgb, var(--card) 60%, transparent); }
+  }
   :root:not(.has-tabbar) .sidebar {
     margin: 0; height: 100vh; top: 0; border: 0; border-radius: 0;
     background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
