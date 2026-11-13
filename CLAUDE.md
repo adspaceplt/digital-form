@@ -4380,8 +4380,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Overview.
 - Every colleague's start page (the revamp, 2026-11-13; the user: "the
   Dashboard for everyone", "proceed build fully"): `sectionAllowed('overview')`
-  answers any signed-in colleague, and `firstAllowed()` lists it first, No
-  access the floor (`?s=noaccess`; 2026-11-11), so `/admin/` with no `?s=`
+  answers any colleague holding a section, and `firstAllowed()` lists it first, No
+  access the floor (a colleague holding none) (`?s=noaccess`; 2026-11-11), so `/admin/` with no `?s=`
   lands there, and every other page names itself (the Clients list writes
   `s=clients`; a client's record reads as Clients from `client=` alone).
 - The head greets the colleague on the Dashboard alone (`greet()`, the

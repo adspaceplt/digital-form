@@ -1134,8 +1134,9 @@
     }
     /* The Dashboard is every colleague's (the revamp, 2026-11-13): its Me
        tab is their own work; the group's switch (`overview` No Access) now
-       hides only its Team tabs (js/overview.js `teamOk`). */
-    if (name === 'overview') return Boolean(me);
+       hides only its Team tabs (js/overview.js `teamOk`). A colleague who
+       holds no section meets No access, which tells them to ask an admin. */
+    if (name === 'overview') return Boolean(me) && SECTIONS.some(function (k) { return may(k, 'view'); });
     return may(name, 'view');
   }
 

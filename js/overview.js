@@ -1605,8 +1605,12 @@
     function myLeads() {
       var me = bridge.me && bridge.me();
       if (!me || !may('clients.leads', 'view')) return Promise.resolve([]);
-      if (!leadMemo) leadMemo = db.from('clients').select('id, name, slug, stage, stage_since, logo_url')
-        .eq('sales_by', me.id).in('stage', ['lead', 'contacted', 'proposal', 'active']).then(rows);
+      /* Every read is made inside its promise, so one the client cannot
+         build is a refusal said on the page, never a thrown page. */
+      if (!leadMemo) leadMemo = Promise.resolve().then(function () {
+        return db.from('clients').select('id, name, slug, stage, stage_since, logo_url')
+          .eq('sales_by', me.id).in('stage', ['lead', 'contacted', 'proposal', 'active']);
+      }).then(rows);
       return leadMemo;
     }
     function staleOf(c) {
@@ -1628,8 +1632,10 @@
     function unsent() {
       var me = bridge.me && bridge.me(), SM = window.ADspaceSmReport;
       if (!me || !may('reports', 'view')) return Promise.resolve([]);
-      return db.from('sm_reports').select('id, kind, period_start, period_end, brand_name, client_id, clients(name)')
-        .eq('status', 'published').is('sent_on', null).eq('submitted_by', me.id).then(rows).then(function (list) {
+      return Promise.resolve().then(function () {
+        return db.from('sm_reports').select('id, kind, period_start, period_end, brand_name, client_id, clients(name)')
+          .eq('status', 'published').is('sent_on', null).eq('submitted_by', me.id);
+      }).then(rows).then(function (list) {
           return (list || []).map(function (r) {
             return { kind: 'report', title: (r.kind === 'ads' ? 'Advertising Report' : 'Accounts Report') + ' · ' + (SM && SM.periodWord ? SM.periodWord(r.period_start, r.period_end) : r.period_start),
               meta: [r.brand_name || (r.clients && r.clients.name) || '', 'Published, not sent'], sec: 'reports',
@@ -1836,9 +1842,9 @@
       var days = [], dd = CK.today();
       while (days.length < 5) { var wd = CK.weekday(dd); if (wd !== 0 && wd !== 6) days.push(dd); dd = CK.addDays(dd, 1); }
       card.querySelector('.ovw-today-n').textContent = CK.date(days[0], { year: false }) + ' to ' + CK.date(days[4], { year: false });
-      var meet = may('ops', 'view') && me ? db.from('ops_engagements').select('id, meeting_at, meeting_channel, clients(name)')
+      var meet = may('ops', 'view') && me ? Promise.resolve().then(function () { return db.from('ops_engagements').select('id, meeting_at, meeting_channel, clients(name)')
         .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00+08:00').toISOString())
-        .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()).then(rows).catch(function () { return null; }) : Promise.resolve([]);
+        .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()); }).then(rows).catch(function () { return null; }) : Promise.resolve([]);
       meet.then(function (ms) {
         var html = days.map(function (day, i) {
           var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
@@ -1879,8 +1885,10 @@
       var host = card.querySelector('.ovw-mycl-list');
       var run = function () {
         UI.skeleton(host, 2);
-        db.from('ops_engagements').select('id, client_id, status, clients!inner(name, slug, owner, stage)').eq('period', CK.today().slice(0, 7))
-          .eq('clients.owner', me.name).then(rows).then(function (eng) {
+        Promise.resolve().then(function () {
+          return db.from('ops_engagements').select('id, client_id, status, clients!inner(name, slug, owner, stage)').eq('period', CK.today().slice(0, 7))
+            .eq('clients.owner', me.name);
+        }).then(rows).then(function (eng) {
             eng = (eng || []).filter(function (e) { return e.status !== 'cancelled'; });
             if (!eng.length) { card.remove(); return; }
             return db.rpc('ops_engagement_counts', { p_engagements: eng.map(function (e) { return e.id; }) }).then(rows).then(function (cs) {
