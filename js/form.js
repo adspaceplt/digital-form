@@ -876,9 +876,10 @@
      a move with its own questions) and a disabled one never open it. */
   var FIND_AT = 10;
   var findBox = null, findSel = null, findAct = -1, findRows = [];
-  function findable(sel) {
+  function findable(sel, any) {
     if (!sel || sel.tagName !== 'SELECT' || sel.multiple || sel.size > 1 || sel.disabled) return false;
     if (sel.__seg || sel.hasAttribute('data-seg') || sel.hasAttribute('data-nofind') || sel.classList.contains('state-select')) return false;
+    if (any) return true;
     var n = 0;
     for (var i = 0; i < sel.options.length; i++) if (!sel.options[i].hidden) n++;
     return n >= FIND_AT;
@@ -1032,8 +1033,8 @@
     if (up) { findBox.style.top = ''; findBox.style.bottom = (vh - r.top + 4) + 'px'; }
     else { findBox.style.bottom = ''; findBox.style.top = (r.bottom + 4) + 'px'; }
   }
-  function findOpen(sel, typed) {
-    if (!findable(sel)) return false;
+  function findOpen(sel, typed, any) {
+    if (!findable(sel, any)) return false;
     findShell();
     findSel = sel;
     var cur = sel.value;
@@ -1141,6 +1142,10 @@
     dateOk: dateOk,
     /* A date as the date boxes write it: 01/10/2026. */
     dmy: dmyOf,
+    /* Open the finder on a select at once, however short its list: a value
+       changed in place opens its choices at the first press (My Work's
+       Assigned to; the user, 2026-11-13: "it requires a second click"). */
+    find: function (sel) { return findOpen(sel, '', true); },
     FLOOR: FLOOR
   };
   function start() {

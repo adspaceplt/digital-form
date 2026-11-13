@@ -1263,7 +1263,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     can be pressed. Its glyph is the row ⋯'s three dots across.
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
-    wasting one row for the filters"), each filter whatever its value (`Stage: All stages`, its
+    wasting one row for the filters"), on a row of their own under it
+    where the line cannot hold them, the count and the acts keeping the
+    line (`fitPills`, measured as the bar or its search resizes), each filter whatever its value (`Stage: All stages`, its
     value in ink on the deeper tonal step once set), a press opening its
     choices as a menu under it (`.cmdpill-menu`, the arrows, Escape back to
     the pill); on a phone, on a row of their own under the bar, only the filters set, a press putting that one
@@ -4036,7 +4038,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
   `no-note`; filed `creator.updated`); the newest approval is paid to, the
   one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens
-  their page on Payment.
+  their page on Payment. A set sent to review tells the Marketing
+  department who can open the Creators List, an admin among them, in the
+  bell and on their phone (trigger `creator_pay_requests_notice`, kind
+  `creator.details`, opening that Payment pane in place; the user,
+  2026-11-13: "these should land to Marketing Department personnel"), and
+  the sets waiting are counted in red on the Creator Campaigns rail row,
+  the Creators tab and the phone's tab (`creator_pay_states`, read on
+  sign-in and with the Creators List; `ADspaceAdmin.payStates`). A notice
+  linking a console page opens it in place, never a second console.
   The emails (`creator_emails`, RLS on, no policy, no grant) are queued in
   their templates' words (`creator_email_templates`: Details received to
   the creator, Details to review to the finance address with the account's
@@ -4107,6 +4117,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   link reads the creator's bills at once, the night reads a creator an
   earlier job awaits (`creator_bills_due`), and an earlier job or booking
   of a creator not linked reads Not linked, never Not billed.
+- Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
+  show amount just internal records creator records and bukku bill for
+  payments"): the fee agreed with the creator a booking, in their payment
+  currency (`creator_fees`, a standard fee a creator `creator_standard_fees`
+  filling each new booking, `creator_bill_claims`; RLS on, no policy, no
+  grant), set on the Payment pane's booking pen and Standard fee at
+  `campaigns.pay` Work (`creator_fee_set`, `creator_standard_fee_set`:
+  `bad-amount`, `billed` once a bill or a claim under ten minutes holds it;
+  filed `creator.updated` from and to), a fee read from a bill Bukku holds
+  (trigger `creator_bills_fee`, backfilled); answered at `campaigns.pay` View
+  alone (`creator_bills_list` `fee`, `standard_fee`; `creator_totals`
+  `agreed`, `owed` (no paid bill) and `margin` (client rate less the fee in
+  one currency)), never to the creator's page or a client. Create bill (a
+  booking Posted or Completed with a fee, no bill, the creator linked) and
+  Create n bills (`bukku-sync` `createbill`, one at a time):
+  `creator_bill_prep` as the caller (`not-posted`, `no-fee`, `not-linked`,
+  `billed`, `no-account`, `no-fx`, `creating`, the claim taken), Bukku
+  searched for a bill already holding the Job reference (`in-bukku`, never a
+  second), then one bill on credit, ready, the Job reference in its
+  reference no., one line at the fee on the account chosen in Settings,
+  Money, Bukku (`bukku_bill_account_set`, `bukku-sync` `accounts`: expense
+  and cost of sales), no tax, due on `pay_by`; read back as Read from Bukku
+  reads, `creator_bill_done` letting go of the claim and filing the number.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
@@ -4625,6 +4658,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-03-task-client-names.sql`).
 - The row:
   - A tick (everyday task) or a progress ring (content task).
+  - Assigned to is a pill, the disc and the name, one press opening the
+    colleagues as the finder under it (`ADspaceForm.find`, any length of
+    list; the user, 2026-11-13: "it requires a second click").
   - The name cell opens the task; the row is not one button.
   - The stage select moves the task (`moveTo()` is the one path for the row,
     the card, a drop and the task's head).

@@ -143,6 +143,32 @@
         '<span>' + esc(label) + ': <b>' + esc(word) + '</b></span>' + CLOSE + '</button>';
     }).join('');
     rec.chipSels = list;
+    fitPills(rec);
+    requestAnimationFrame(function () { fitPills(rec); });
+  }
+  /* The pills stand on the bar's own line where it holds them all; where
+     it does not (My Work's Months: the views, the client, the search, three
+     pills, the count and two acts), they take a row of their own under it
+     and the count and the acts keep the bar's line (2026-11-13). Measured
+     on the bar, again whenever its size or its pills change. */
+  function fitPills(rec) {
+    var bar = rec.bar, chips = rec.chips;
+    if (!chips || !chips.classList.contains('is-pills') || chips.hidden || !bar.offsetParent) {
+      bar.classList.remove('pills-row'); return;
+    }
+    var end = bar.querySelector(':scope > .cmdbar-end');
+    var wrapped = function () {
+      if (!end || end.hidden) return false;
+      var first = null;
+      Array.prototype.some.call(bar.children, function (c) { if (c !== chips && c.offsetParent && c.getClientRects().length) { first = c; return true; } return false; });
+      if (!first) return false;
+      var a = first.getBoundingClientRect(), b = end.getBoundingClientRect(), c = chips.getBoundingClientRect();
+      return b.top > a.bottom - 2 || c.top > a.bottom - 2;
+    };
+    /* Taken off and measured in one go: the bar ends as it began whenever
+       the answer is the same, so the observer is not woken again. */
+    bar.classList.remove('pills-row');
+    if (wrapped()) bar.classList.add('pills-row');
   }
   var pillMenu = null;
   function shutPill(back) {
@@ -592,6 +618,12 @@
     bars.push(rec);
     paintBadge(rec);
     paintChips(rec);
+    if (window.ResizeObserver) {
+      /* The bar, and the search as it grows and shuts. */
+      var ro = new ResizeObserver(function () { fitPills(rec); });
+      ro.observe(bar);
+      if (find) ro.observe(find);
+    }
   }
   function wireAll() {
     Array.prototype.forEach.call(document.querySelectorAll('.cmdbar'), wire);
