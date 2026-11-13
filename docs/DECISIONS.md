@@ -10295,4 +10295,21 @@ advertising for the budget asked at the card's whole cost; beside a plan the
 line past its cover names its band (Additional advertising budget coverage,
 RM 4,000 to RM 8,000). Quotations already made keep their lines as sent
 (`2026-11-13-quotation-ads-one-line.sql`).
+
+
+### 2026-11-13 · Messages reads its figures in the header line; no second Filters mark
+The user, on a screenshot of Messages: "is this good layout design". Two rows
+of figures stood over the list, four of them nought (the queue) and the
+categories repeating what the header could say; the template column read
+Meta's slugs (feedback_request); a row with no name showed its number twice;
+and at a desk the Filters mark stood beside pills that already held every
+filter. The figures now read in the line under the section's name
+(`ADspaceAdmin.counts`), a figure at nought left out and the month's total
+left to the bar's count; a template reads as words with its Meta name on
+hover; the number is said once. The Filters mark is drawn at a desk only
+for a select no pill holds (My Work's Group by, Documents' Sort), so
+Clients, Messages and every bar of plain filters lose it; the Clients guide
+rings the pills instead. A copy review renamed the queue's words to the
+Status column's (queued, failed in the last 7 days).
+
 - 2026-11-13 · The console's head at a desk was 32px in at the left, 20 at the right, 9 above the title and 5 under its line (the user: "left right paddings feels not visually balance"). It is now 90px on every section with its words centred and 32px both sides, the body's own inset; `--head-h` carries the 90 so every sticky offset follows. Measured with a scratch script on the rendered head at 1280 and 1440.
