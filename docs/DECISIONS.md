@@ -10274,3 +10274,18 @@ stylesheet and passing on the new.
 
 ### 2026-11-13 · The rail's chosen row, its edge drawn inside
 The user: the chosen section in the rail looked "cut off slightly" at its left and right. The rail's list scrolls when its sections do not fit (`overflow-y: auto`), and a scroller clips sideways too, so the row's 1px ring, drawn outside it, lost its sides. The ring is now an inset shadow, inside the row, in both themes.
+
+### 2026-11-13 · Messages reads its figures in the header line; no second Filters mark
+The user, on a screenshot of Messages: "is this good layout design". Two rows
+of figures stood over the list, four of them nought (the queue) and the
+categories repeating what the header could say; the template column read
+Meta's slugs (feedback_request); a row with no name showed its number twice;
+and at a desk the Filters mark stood beside pills that already held every
+filter. The figures now read in the line under the section's name
+(`ADspaceAdmin.counts`), a figure at nought left out and the month's total
+left to the bar's count; a template reads as words with its Meta name on
+hover; the number is said once. The Filters mark is drawn at a desk only
+for a select no pill holds (My Work's Group by, Documents' Sort), so
+Clients, Messages and every bar of plain filters lose it; the Clients guide
+rings the pills instead. A copy review renamed the queue's words to the
+Status column's (queued, failed in the last 7 days).

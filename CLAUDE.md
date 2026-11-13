@@ -1269,10 +1269,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
-  - At a desk the filters are behind the same Filters mark (after the bar's
-    last select), in a card hung from it (`#cmdPop`, `ADspaceMenu.pop`,
-    Clear, Escape or a press elsewhere shuts it); a `data-nofilter` select is
-    a view and stays in the bar at a desk.
+  - At a desk the Filters mark (after the bar's last select) is drawn only
+    for a select no pill holds (a view kept in the card: `#workGroup`,
+    `#regSort`), its card hung from it (`#cmdPop`, `ADspaceMenu.pop`, Clear,
+    Escape or a press elsewhere shuts it); a bar whose filters are all pills
+    draws none (the user, 2026-11-13: a duplicate); a `data-nofilter` select
+    is a view and stays in the bar at a desk.
 - `js/form.js` owns forms.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
@@ -7694,7 +7696,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   client in scope, overdue reminders at Clients: Billing View, a
   quotation's signing code at Clients: Quotations View, never the code,
   read Code sent, Signed or Expired, Requested by Client), the month's sent, delivered, opened and
-  not delivered above it, filtered by Type and Status; a row is one button
+  not delivered (red, where any) in the line under the section's name, filtered by Type and Status; a row is one button
   opening the email as sent (`#emlSheet`: From, To, Copy, the client or
   supplier opening its record, Reference, Sent by, Status, each step's
   time, a bounce's reason, the message). Sign-in and invitation emails are
@@ -7792,12 +7794,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`REASON`, by Meta's code) and Open contacts (a client contact's
   Account) or Open creator (the Creators List) where the reader may
   (2026-10-27, WA-10). An empty month reads No messages. alone, New
-  message being the bar's (WA-8). Above it the month's templates sent by
-  category (Utility, Marketing; Authentication where any; a message Meta failed left out). The bar: search
+  message being the bar's (WA-8). The line under the section's name
+  reads the month's templates sent by category (utility, marketing;
+  authentication where any; a message Meta failed left out), a figure at
+  nought left out and the month's total the bar's count alone (2026-11-13);
+  a template reads as words (`tplName`: Quote ready), its Meta name on
+  hover. The bar: search
   (name, client, template, a number as typed), Month (a view, the last
   twelve), Type and Status behind Filters, the count, New message (Work).
-- At Full Access the queue (waiting, sending, not sent and not confirmed
-  in 7 days, `wa_messages` `queue`; `#waQueue`) heads the messages. The
+- At Full Access the queue joins that line (queued, sending, failed and
+  not confirmed in the last 7 days, the last two in red, each only where
+  it holds any; `wa_messages` `queue`). The
   templates are Settings, Messages: WhatsApp templates (`#waTplSheet`,
   `ADspaceWhatsApp.manage`; 2026-10-29: the section's Templates tab gone,
   an older `tab=templates` reads the messages): one template a purpose (`wa_templates`: `report`,

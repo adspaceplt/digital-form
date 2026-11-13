@@ -586,10 +586,10 @@
       n(c.marketing) ? [n(c.marketing), 'marketing'] : null,
       n(c.authentication) ? [n(c.authentication), 'authentication'] : null];
     if (may('whatsapp', 'manage')) {
-      parts.push(n(q.queued) ? [n(q.queued), 'waiting to send'] : null,
+      parts.push(n(q.queued) ? [n(q.queued), 'queued'] : null,
         n(q.sending) ? [n(q.sending), 'sending'] : null,
-        n(q.failed) ? [n(q.failed), 'not sent in 7\u00a0days', 'late'] : null,
-        n(q.unknown) ? [n(q.unknown), 'not confirmed in 7\u00a0days', 'late'] : null);
+        n(q.failed) ? [n(q.failed), 'failed in the last 7\u00a0days', 'late'] : null,
+        n(q.unknown) ? [n(q.unknown), 'not confirmed in the last 7\u00a0days', 'late'] : null);
     }
     A.counts('whatsapp', parts);
   }
