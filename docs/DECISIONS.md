@@ -10388,3 +10388,7 @@ Now `createbill` passes the new bill's Bukku ID to the read-back, and
 `creator_bills.made_for` keeps the booking for that ID whatever the
 reference reads later; a bill Bukku stops listing is gone as before. Held by
 `tests/bukkufn.js`, `tests/camp.js` and `tests/sql.js`.
+
+### 2026-11-13 · Dashboard phase 4: rings, a stage strip and bars
+The user approved the phase 4 mockup ("ready to proceed"), asking only that the figure tiles stop spending a card's height on two or three digits ("our portal is actually very space … we really need space"). Built: a time-against-work ring on each of the colleague's tasks on Me, Work by stage back on Team, Work by person and Clients this month as bars, the lead tiles compact with the figure and its trend on one line, and Open tasks and Open work by person taken off Analytics, as today's figures belong to Team. The first stage strip drew each ring in its stage's one tone with its late part red; the user read it as one colour a ring and asked for each ring to split as the work stands ("some portion is light gray, some portion is orange, amber, and some portion is red"), so a ring now splits on track, due within 2 days and late. Oldest late's trend is the work delivered late each month, since how late a task stood on a past day is not kept.
+

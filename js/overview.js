@@ -648,14 +648,6 @@
     return (d && Array.isArray(d.by_person) ? d.by_person : []).reduce(function (a, p) { return a + (Number(p.completed) || 0); }, 0);
   }
   var OPS = [
-    { key: 'open', title: 'Open tasks', sec: 'work', can: canTeamWork, load: function () {
-      return R.report().then(function (d) {
-        if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
-        var people = d.open_by_person.filter(function (p) { return Number(p.open) > 0; });
-        var n = people.reduce(function (a, p) { return a + (Number(p.open) || 0); }, 0);
-        return { fig: String(n), sub: people.length === 1 ? 'With 1 person' : 'Across ' + people.length + ' people' };
-      });
-    } },
     /* On time (the revamp, 2026-11-12, in place of the rings): the share of
        the work due in the period delivered by its date, work still late
        counted against it, as the rings read it. */
@@ -676,12 +668,16 @@
     /* The count is the Late tasks signal's; the tile states how late the
        oldest is, so nothing on the page is said twice (2026-10-22, OVW-5). */
     { key: 'late', title: 'Oldest late', sec: 'work', can: canFigures, load: function () {
-      return R.report().then(function (d) {
+      /* Its trend is the work delivered late each of the last six months
+         (phase 4, 2026-11-13): how late a task is cannot be read back. */
+      var lateBy = function (x) { return (x.d.by_person || []).reduce(function (a, p) { return a + Math.max(0, (Number(p.completed) || 0) - (Number(p.on_time) || 0)); }, 0); };
+      return Promise.all([R.report(), R.months().catch(function () { return null; })]).then(function (q) {
+        var d = q[0], spark = q[1] ? q[1].map(lateBy) : null;
         var l = d.late || [], oldest = l.reduce(function (a, t) { return a && (Number(a.days_over) || 0) >= (Number(t.days_over) || 0) ? a : t; }, null);
         var top = oldest ? Number(oldest.days_over) || 0 : 0;
         /* Which task it is, and whose, so the tile names what to open (the
            user, 2026-11-13: the tile read as half empty on a phone). */
-        return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '',
+        return { fig: l.length ? daysWord(top) : 'None', tone: l.length ? 'err' : '', spark: spark && spark.some(Boolean) ? spark : null,
                  sub: oldest ? [oldest.title, oldest.client].filter(Boolean).join(' · ') : 'No work is late' };
       });
     } },
@@ -931,22 +927,6 @@
     ]],
     ['Operations', [
       [
-      { key: 'load', title: 'Open work by person', can: canTeamWork, all: ['My Work', '/admin/?s=work', 'work'], load: function () {
-        return R.report().then(function (d) {
-          if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
-          /* Work nobody holds reads Unassigned, as the list on Summary says it
-             (ux-audit OVW-5, 2026-10-15); the database names it otherwise. */
-          var list = d.open_by_person.filter(function (r) { return Number(r.open) > 0; })
-            .map(function (r) { if (!r.team_member_id) r.name = 'Unassigned'; return r; });
-          if (!list.length) return { empty: 'No open tasks.' };
-          return { kind: 'bars', inline: true, rows: list.map(function (r) {
-              var late = Number(r.late) || 0;
-              return { label: r.name, value: Number(r.open) || 0, part: late, note: late ? late + ' late' : '', noteTone: late ? 'err' : '' };
-            }),
-            fmt: function (v) { return String(v); },
-            table: { heads: ['Assigned to', 'Open', 'Late'], rows: list.map(function (r) { return [r.name, String(r.open), String(r.late || 0)]; }) } };
-        });
-      } },
       { key: 'waits', title: 'Where work waits', can: canFigures,
         all: ['My Work', '/admin/?s=work', 'work'], load: function () {
         return R.report().then(function (d) {
@@ -1487,6 +1467,28 @@
     if (crumb) { crumb.textContent = CK.date(CK.today(), { weekday: true, year: false }); crumb.hidden = false; }
   }
   // ---- Team: who and which client is at risk (the revamp, phase 2) -----------
+  /* A task's ring (phase 4, the user, 2026-11-13): the outer line the time
+     used from its assignment to the end of its final date, the inner fill
+     its checklist done. Green while the work keeps up, amber once the time
+     runs more than 20 points ahead of the work (with no checklist, once 80%
+     of the time is gone), red once late. Nothing is drawn with no date. */
+  function ringOf(t) {
+    if (!t || !t.finalAt || !t.from) return '';
+    var from = Date.parse(t.from), end = Date.parse(CK.day(t.finalAt) + 'T23:59:59+08:00');
+    if (isNaN(from) || isNaN(end)) return '';
+    var used = end > from ? (Date.now() - from) / (end - from) : 1;
+    used = Math.max(0, Math.min(1, used));
+    var w = t.checks ? t.checks.done / t.checks.of : null;
+    var tone = t.late ? 'late' : (w == null ? used >= 0.8 : used - w > 0.2) ? 'wait' : 'ok';
+    var say = 'Time used ' + Math.round(used * 100) + '%. ' + (t.checks ? 'Checklist ' + t.checks.done + ' of ' + t.checks.of + ' done.' : 'No checklist.');
+    return '<span class="ovw-ring is-' + tone + '" role="img" aria-label="' + esc(say) + '" title="' + esc(say) + '"><svg viewBox="0 0 36 36" aria-hidden="true">' +
+      '<circle class="r-track" cx="18" cy="18" r="15.5"/>' +
+      '<circle class="r-time" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="' + (used * 100).toFixed(1) + ' 100"/>' +
+      '<circle class="r-in" cx="18" cy="18" r="10.5"/>' +
+      (w ? '<circle class="r-work" cx="18" cy="18" r="5.25" pathLength="100" stroke-dasharray="' + (w * 100).toFixed(1) + ' 100"/>' : '') +
+      '</svg></span>';
+  }
+
   var TEAM = (function () {
     function card(host, id, title, to) {
       var c = document.createElement('section');
@@ -1498,6 +1500,79 @@
       return c.querySelector('.ovw-body');
     }
     function pc(a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; }
+    /* Work by stage (phase 4, 2026-11-13; the user's Workload strip): a
+       ring a stage holding open work, split by how its work stands: on
+       track light grey, due within two days amber, late red (the late rule
+       My Work reads); its count in the middle and who holds it under its
+       name; a stage opens My Work's board. */
+    function stages(host) {
+      if (!canTeamWork()) return;
+      var body = card(host, 'ovwStages', 'Work by stage', ['My Work', '/admin/?s=work&view=board', 'work']);
+      var run = function () {
+        UI.skeleton(body, 2);
+        Promise.all([R.report(), R.openTasks()]).then(function (q) {
+          var d = q[0], by = {}, order = [], byKey = {}, lateIds = {};
+          (d.running || []).forEach(function (r) {
+            var k = r.label || r.stage_key;
+            byKey[r.stage_key] = k;
+            if (!by[k]) { by[k] = { label: k, n: 0, late: 0, soon: 0, pos: Number(r.position) || 0, who: {} }; order.push(k); }
+            by[k].n += Number(r.count) || 0;
+            by[k].pos = Math.min(by[k].pos, Number(r.position) || 0);
+          });
+          (d.late || []).forEach(function (t) { lateIds[t.task_id] = true; if (by[t.stage]) by[t.stage].late++; });
+          var tasks = q[1] || [], soonTo = CK.addDays(CK.today(), 2);
+          tasks.forEach(function (t) {
+            var st = by[byKey[t.stage_key]];
+            if (!st || lateIds[t.id] || !t.current_final_due_at) return;
+            var dd = CK.day(t.current_final_due_at);
+            if (dd >= CK.today() && dd <= soonTo) st.soon++;
+          });
+          var list = order.map(function (k) { return by[k]; }).filter(function (x) { return x.n > 0; })
+            .sort(function (a, b) { return a.pos - b.pos || a.label.localeCompare(b.label); });
+          if (!list.length) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return null; }
+          /* Who holds each stage's work: the owners of the open tasks, read
+             for those tasks alone, a 150 a request; a refused read leaves the
+             discs off. */
+          var ids = tasks.map(function (t) { return t.id; }), parts = [], stageOf = {};
+          tasks.forEach(function (t) { stageOf[t.id] = byKey[t.stage_key]; });
+          for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
+          return Promise.all(parts.map(function (part) {
+            return db.from('ops_task_assignees').select('task_id, team_members!ops_task_assignees_team_member_id_fkey(name)')
+              .in('task_id', part).eq('responsibility', 'owner').is('ended_at', null).then(rows).catch(function () { return []; });
+          })).then(function (rs) {
+            rs.forEach(function (l) {
+              (l || []).forEach(function (a) {
+                var st = by[stageOf[a.task_id]], nm = a.team_members && a.team_members.name;
+                if (st && nm) st.who[nm] = (st.who[nm] || 0) + 1;
+              });
+            });
+            var A = window.ADspaceAdmin;
+            body.innerHTML = '<div class="ovw-stages">' + list.map(function (x) {
+              x.soon = Math.min(x.soon, x.n - x.late);
+              var names = Object.keys(x.who).sort(function (a, b) { return x.who[b] - x.who[a] || a.localeCompare(b); });
+              var ok = x.n - x.late - x.soon, parts = [['ok', ok], ['soon', x.soon], ['late', x.late]].filter(function (p) { return p[1] > 0; });
+              var say = x.label + ': ' + x.n + ' open' + (x.soon ? ', ' + x.soon + ' due within 2 days' : '') + (x.late ? ', ' + x.late + ' late' : '') +
+                (names.length ? '. Assigned to ' + names.join(', ') : '');
+              var off = 0, gap = parts.length > 1 ? 1.5 : 0;
+              var ring = '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="r-track" cx="32" cy="32" r="27"/>' + parts.map(function (p) {
+                var len = p[1] / x.n * 100, c = '<circle class="r-part is-' + p[0] + '" cx="32" cy="32" r="27" pathLength="100" stroke-dasharray="' +
+                  Math.max(0.5, len - gap).toFixed(1) + ' 100" stroke-dashoffset="' + (-off).toFixed(1) + '"/>';
+                off += len;
+                return c;
+              }).join('') + '<text x="32" y="32" dominant-baseline="central" text-anchor="middle">' + x.n + '</text></svg>';
+              var discs = names.slice(0, 3).map(function (nm) { return A && A.avatar ? A.avatar(nm) : ''; }).join('') +
+                (names.length > 3 ? '<span class="ovw-stage-more">+' + (names.length - 3) + '</span>' : '');
+              return '<button class="ovw-stage" type="button" aria-label="' + esc(say) + '">' + ring + '<b>' + esc(x.label) + '</b>' +
+                '<span class="ovw-stage-who">' + discs + '</span></button>';
+            }).join('') + '</div><p class="ovw-stage-key"><span class="is-ok">On track</span><span class="is-soon">Due within 2 days</span><span class="is-late">Late</span></p>';
+            Array.prototype.forEach.call(body.querySelectorAll('.ovw-stage'), function (b) {
+              b.addEventListener('click', function () { go('/admin/?s=work&view=board', 'work'); });
+            });
+          });
+        }).catch(function (e) { fail(body, 'Work by stage', e, run); });
+      };
+      run();
+    }
     /* People: each colleague's open work and what of it is late now, and
        what they delivered in the period and how much of it on time, from
        the report the page already reads; late first, then the most open.
@@ -1523,11 +1598,15 @@
           var list = Object.keys(by).map(function (k) { return by[k]; }).filter(function (p) { return p.open || p.done; })
             .sort(function (a, b) { return (b.late > 0) - (a.late > 0) || b.late - a.late || b.open - a.open || String(a.name).localeCompare(String(b.name)); });
           if (!list.length) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return; }
-          var open = may('team', 'view');
+          var open = may('team', 'view'), most = list.reduce(function (m, p) { return Math.max(m, p.open); }, 1);
           body.innerHTML = '<div class="ovw-tr ovw-th is-people"><span>Colleague</span><span>Open</span><span>Late</span><span class="ovw-hide-n">Delivered</span><span>On time</span></div>' +
             list.map(function (p) {
               var A = window.ADspaceAdmin, disc = A && A.avatar ? A.avatar(p.name) : '';
-              var cells = '<span class="ovw-who">' + disc + '<b>' + esc(p.name) + '</b></span>' +
+              /* The open work as a bar on one scale, its late part red
+                 (phase 4, 2026-11-13). */
+              var bar = '<span class="ovw-pbar" aria-hidden="true"><i style="width:' + ((p.open - p.late) / most * 100).toFixed(1) + '%"></i>' +
+                (p.late ? '<i class="is-late" style="width:' + (p.late / most * 100).toFixed(1) + '%"></i>' : '') + '</span>';
+              var cells = '<span class="ovw-who">' + disc + '<span class="ovw-who-t"><b>' + esc(p.name) + '</b>' + bar + '</span></span>' +
                 '<span class="ovw-n">' + p.open + '</span>' +
                 '<span class="ovw-n' + (p.late ? ' is-late' : '') + '">' + (p.late || '—') + '</span>' +
                 '<span class="ovw-n ovw-hide-n">' + (p.done || '—') + '</span>' +
@@ -1581,7 +1660,10 @@
                 var sub = (r ? 'Report ' + (r[0] === 'Draft' ? 'in draft' : r[0].toLowerCase()) + ' · ' : '') + 'Meeting ' + meet.charAt(0).toLowerCase() + meet.slice(1);
                 return '<button class="ovw-tr is-cmonth" type="button"' + (i >= SHOWN ? ' hidden' : '') + ' data-go="/admin/?s=work&view=months&wc=' + esc(encodeURIComponent(m.e.client_id)) + '">' +
                   '<span class="ovw-who">' + (A && A.clientMark ? A.clientMark(m.e.clients, m.e.client_id) : '') + '<span class="ovw-who-t"><b>' + esc(m.e.clients.name) + '</b><small class="ovw-show-n">' + esc(sub) + '</small></span></span>' +
-                  '<span class="chip-state is-' + tone + '">' + (m.live ? m.done + ' of ' + m.live : 'No tasks') + (m.late ? ' · ' + m.late + ' late' : '') + '</span>' +
+                  /* Done green, late red, open grey on one bar (phase 4). */
+                  '<span class="ovw-cprog"><span class="ovw-pbar is-month" aria-hidden="true">' + (m.live ? '<i class="is-done" style="width:' + (m.done / m.live * 100).toFixed(1) + '%"></i>' +
+                    (m.late ? '<i class="is-late" style="width:' + (Math.min(m.late, m.live - m.done) / m.live * 100).toFixed(1) + '%"></i>' : '') : '') + '</span>' +
+                    '<small' + (m.late ? ' class="is-late"' : '') + '>' + (m.live ? m.done + ' of ' + m.live : 'No tasks') + (m.late ? ' · ' + m.late + ' late' : '') + '</small></span>' +
                   '<span class="ovw-hide-n">' + (r ? '<span class="chip-state is-' + r[1] + '">' + r[0] + '</span>' : '<span class="muted">—</span>') + '</span>' +
                   '<span class="ovw-hide-n ovw-meet">' + esc(meet) + '</span></button>';
               }).join('') +
@@ -1603,7 +1685,7 @@
       };
       run();
     }
-    return { people: people, clients: clients };
+    return { people: people, clients: clients, stages: stages };
   })();
 
   function redraw() { build(true); }
@@ -1767,7 +1849,7 @@
         if (!t.late && t.days !== 0 && !t.urgent) return;
         items.push({ group: t.late || t.urgent ? 'late' : 'today', kind: 'task', title: t.code ? t.code + ' ' + t.name : t.name,
           meta: [t.client || 'Internal', t.stage], late: t.late, lateWord: t.late ? t.lateWord : t.urgent ? 'Urgent delivery' : t.deadline,
-          sec: 'work', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), go: 'work', act: 'Open' });
+          sec: 'work', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), go: 'work', act: 'Open', ring: ringOf(t) });
       });
       extra.forEach(function (x) { x.group = x.late ? 'late' : 'today'; items.push(x); });
       /* What waits on the colleague's decision is its own card under Today
@@ -1798,9 +1880,9 @@
           var rs = list.filter(function (x) { return x.group === g[0]; });
           if (!rs.length) return '';
           return '<h4 class="ovw-today-h' + (g[0] === 'late' ? ' is-late' : '') + '">' + g[1] + '</h4>' + rs.map(function (x) {
-            var i = items.indexOf(x), mark = bridge.glyph ? bridge.glyph(x.sec) : '';
+            var i = items.indexOf(x), mark = x.ring || (bridge.glyph ? bridge.glyph(x.sec) : '');
             var acts = '<button class="btn btn-sm" type="button" data-a="open">' + esc(x.act || 'Open') + '</button>';
-            return '<div class="ovw-today-row" data-i="' + i + '"><span class="ovw-today-tile">' + mark + '</span>' +
+            return '<div class="ovw-today-row" data-i="' + i + '"><span class="ovw-today-tile' + (x.ring ? ' has-ring' : '') + '">' + mark + '</span>' +
               '<button class="ovw-today-what" type="button" data-a="open"><b>' + esc(x.title) + '</b><small>' +
                 x.meta.filter(Boolean).map(function (m) { return '<span class="nb">' + esc(m) + '</span>'; }).join(' · ') +
                 (x.lateWord ? ' · <span class="nb' + (x.late || x.lateWord === 'Urgent delivery' ? ' is-late' : '') + '">' + esc(x.lateWord) + '</span>' : '') + '</small></button>' +
@@ -1846,7 +1928,8 @@
       meet.then(function (ms) {
         var html = days.map(function (day, i) {
           var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
-            return '<span class="ovw-ev' + (t.late ? ' is-late' : '') + '">' + esc(t.code || t.name) + (t.code ? ' ' + esc(t.name) : '') + '</span>';
+            var rg = ringOf(t);
+            return '<span class="ovw-ev' + (t.late ? ' is-late' : '') + (rg ? ' has-ring' : '') + '">' + rg + '<span class="ovw-ev-t">' + esc(t.code || t.name) + (t.code ? ' ' + esc(t.name) : '') + '</span></span>';
           });
           (ms || []).forEach(function (m) {
             if (CK.day(m.meeting_at) !== day) return;
@@ -1984,6 +2067,7 @@
         if (!pr.children.length) pr.remove();
         else if (pr.children.length === 1) pr.classList.add('is-one');
       };
+      TEAM.stages(box);
       pairOf(function (pr) {
         TEAM.people(pr);
         var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];
