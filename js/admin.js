@@ -995,6 +995,7 @@
       if (me) loadRail();
       meLoaded = true;
       go();
+      if (me) readPayWaiting();
     }).catch(function () { me = null; meFailed = true; meLoaded = true; go(); });
   }
 
@@ -1347,6 +1348,7 @@
     bar.hidden = !tabs.length && !more;
     paintTabOn();
     paintTabDot();
+    paintPayWaiting();
   }
   /* The chosen tab's fill is one surface (`.tabbar-thumb`) laid on the tab
      chosen, sliding there as the choice moves (the user, 2026-10-11: "allow
@@ -1408,6 +1410,50 @@
       t.appendChild(dot);
     } else if (dot && !tabWaiting) dot.remove();
     else if (dot) dot.querySelector('.sr').textContent = ', ' + tabWaiting + ' waiting for you';
+  }
+  /* Creator payment details waiting for a decision (the user, 2026-11-13:
+     "it doesnt prompt notification … could it have like a reddot"): the
+     Creator Campaigns row and the Creators tab count them, red, read once
+     on sign-in and again whenever the Creators List reads them. */
+  var payWaiting = 0;
+  function paintPayWaiting() {
+    var word = 'Payment details to review: ' + payWaiting;
+    var row = document.querySelector('.navitem[data-section="campaigns"]');
+    if (row) {
+      var n = row.querySelector('.nav-n');
+      if (payWaiting && !n) { n = document.createElement('b'); n.className = 'nav-n is-err'; row.appendChild(n); }
+      if (n && !payWaiting) n.remove();
+      else if (n) { n.textContent = String(payWaiting); n.setAttribute('aria-label', word); }
+    }
+    var tab = $('tabRoster');
+    if (tab) {
+      var c = tab.querySelector('.tab-n');
+      if (payWaiting && !c) { c = document.createElement('span'); c.className = 'tab-n is-err'; tab.appendChild(c); }
+      if (c && !payWaiting) c.remove();
+      else if (c) { c.textContent = String(payWaiting); c.setAttribute('aria-label', word); }
+    }
+    var bar = $('tabBar');
+    var t = bar && bar.querySelector('.tabbar-tab[data-tab="campaigns"]');
+    if (!t) return;
+    var dot = t.querySelector('.tabbar-dot');
+    if (payWaiting && !dot) {
+      dot = document.createElement('span');
+      dot.className = 'tabbar-dot';
+      dot.innerHTML = '<span class="sr"></span>';
+      t.appendChild(dot);
+    }
+    if (dot && !payWaiting) dot.remove();
+    else if (dot) dot.querySelector('.sr').textContent = ', ' + word;
+  }
+  function setPayWaiting(states) {
+    var n = 0;
+    Object.keys(states || {}).forEach(function (k) { if (states[k] === 'pending') n++; });
+    payWaiting = n;
+    paintPayWaiting();
+  }
+  function readPayWaiting() {
+    if (!may('campaigns.creators', 'view')) return;
+    db.rpc('creator_pay_states').then(function (r) { if (!r.error) setPayWaiting(r.data); }).catch(function () {});
   }
   /* The chosen tab is the section on screen; one the bar does not hold
      chooses More, as an iPhone app does. My records (the account menu)
@@ -6071,6 +6117,9 @@
     counts: counts,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },
+    /* The Creators List's payment details standing, for the rail's count. */
+    payStates: setPayWaiting,
+    payWaiting: readPayWaiting,
     linkLock: linkLock,
     wireLogoUpload: wireLogoUpload,
     editSettings: editSettings,

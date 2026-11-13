@@ -5168,6 +5168,9 @@ svg.sec {
   .console .rec-rail .tl-pen[aria-expanded="true"] { opacity: 1; }
 }
 .nav-n { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* A count of what needs acting on now takes the red pill a tab's does
+   (creator payment details to review, 2026-11-13). */
+.nav-n.is-err { min-width: 18px; padding: 0 5px; border-radius: 5px; text-align: center; color: var(--err); background: var(--err-bg); }
 /* The Dashboard's lead row: four figures across, two by two when narrow. */
 .ovw-kpis.ovw-lead { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ovw-kpis.ovw-lead > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }
@@ -5231,8 +5234,20 @@ svg.sec {
 .tav-campaigns { --sec: var(--sec-campaigns); --sec-bg: var(--sec-campaigns-bg); }
 .tav-reports { --sec: var(--sec-reports); --sec-bg: var(--sec-reports-bg); }
 .tav-messages { --sec: var(--sec-messages); --sec-bg: var(--sec-messages-bg); }
-.task-owner .tav, .task-owner .tinline .tav { margin-right: 8px; vertical-align: middle; }
-.task-owner .tinline { display: inline-flex; align-items: center; }
+.task-owner .tav { margin-right: 8px; vertical-align: middle; }
+/* The person a task is assigned to, as a pill a press changes (the user,
+   2026-11-13: "the design is not refine here"): the disc 4px inside the
+   pill's edge, the name after it cut with an ellipsis, the fill round the
+   pair on hover. The cell gives the pill its 4px back on each side, so the
+   cell's clip never cuts the fill. */
+.task-owner:has(> .tinline) { position: relative; padding: 5px 4px; margin: -5px -4px; }
+.task-owner .tinline { display: inline-flex; align-items: center; gap: 8px; margin-left: -4px; padding: 0 10px 0 4px; }
+.task-owner .tinline .tav { margin-right: 0; }
+.task-owner .tinline .tname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.task-owner .tinline::before { inset: calc(50% - 15px) 0; border-radius: 15px; }
+.task-owner .tinline[aria-expanded="true"]::before { background: var(--line-soft); }
+/* The select the finder opens from lies unseen over the name. */
+.task-owner .tinline-pick.is-under { position: absolute; inset: 0; width: auto; height: auto; min-height: 0; opacity: 0; pointer-events: none; }
 .chip.tfmt { font-weight: 500; }
 .tcheckbar { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .tcheckbar-segs { display: flex; gap: 2px; width: 56px; height: 4px; }
@@ -5380,6 +5395,7 @@ svg.sec {
    filters"); a bar whose pills outrun the line wraps them after the search. */
 .cmdbar-chips.is-pills { order: 1; flex: 0 1 auto; }
 .cmdbar:has(> .cmdbar-chips.is-pills:not([hidden])) > .cmdbar-end { order: 2; }
+.cmdbar.pills-row > .cmdbar-chips.is-pills { order: 99; flex: 1 0 100%; }
 .cmdbar-chips.is-pills .cmdbar-pill b { font-weight: 400; color: var(--ink-soft); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set { background: var(--tonal-press); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set b { font-weight: 500; color: var(--ink); }
