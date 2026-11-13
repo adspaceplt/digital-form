@@ -1917,6 +1917,53 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rp-aiacts { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex: 0 0 auto; }
 .is-narrow .rp-airow { flex-direction: column; align-items: stretch; }
 .is-narrow .rp-ailang { justify-content: space-between; }
+/* Next batch (2026-11-13, the mockup "Ads report · Next batch"): the
+   sources and Write with AI in the shaded block, the suggestions a row each
+   (the ad's picture, its kind, the title, the evidence in mute, the
+   points, the acts at the right edge), the PDF switch under a hairline,
+   and beside them at a desk the page the client reads. */
+.nb-grid { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.is-narrow .nb-grid { grid-template-columns: minmax(0, 1fr); }
+.rp-next .nb-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.nb-srcw { display: flex; flex-direction: column; min-width: 0; }
+.nb-srcw b { font-size: 13px; font-weight: 600; }
+.nb-srcw span { font-size: 12.5px; color: var(--ink-mute); }
+.nb-head { display: flex; align-items: baseline; gap: 8px; padding-top: 8px; }
+.nb-head .ovsec-title { margin: 0; }
+.nb-by { margin-left: auto; font-size: 12.5px; color: var(--ink-mute); text-align: right; }
+.nb-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line-soft); }
+.nb-thumb { width: 64px; height: 80px; border-radius: var(--radius-ctl-sm); }
+.nb-thumb.is-empty { background: var(--sunk); }
+.nb-title { margin: 6px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.nb-ev { margin: 4px 0 8px; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.nb-pts { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; overflow-wrap: anywhere; }
+.nb-body .msg:empty { display: none; }
+.nb-acts { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.nb-acts > .chip-state { align-self: flex-end; }
+.is-narrow .nb-row { grid-template-columns: 48px minmax(0, 1fr); gap: 12px; }
+.is-narrow .nb-thumb { width: 48px; height: 60px; }
+.is-narrow .nb-head { flex-wrap: wrap; }
+.is-narrow .nb-by { flex-basis: 100%; margin-left: 0; text-align: left; }
+.is-narrow .nb-acts > .chip-state { align-self: center; }
+.is-narrow .nb-acts { grid-column: 1 / -1; flex-direction: row; flex-wrap: wrap; align-items: center; }
+.is-narrow .nb-acts > .btn { flex: 1 1 0; }
+.nb-print { display: flex; align-items: center; gap: 12px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.nb-print > div { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.nb-print b { font-size: 14px; font-weight: 500; }
+.nb-print span { font-size: 12.5px; color: var(--ink-mute); }
+.nb-printv { font-size: 13px; color: var(--ink-soft); }
+.nb-paper-h { font-size: 12px; font-weight: 600; color: var(--ink-mute); margin: 0 0 8px; }
+.nb-paper { min-height: 420px; background: #ffffff; color: #1a1a1a; border-radius: 4px; box-shadow: var(--shadow); padding: 22px 20px;
+  display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.nb-paper-mark { font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 13px; color: #515151; }
+.nb-paper-t { font-size: 15px; font-weight: 500; }
+.nb-paper-l { font-size: 11.5px; line-height: 1.5; color: #515151; margin: 0; }
+.nb-paper table { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.4; }
+.nb-paper th, .nb-paper td { border: 1px solid #f2f2f2; padding: 4px 5px; text-align: left; vertical-align: top; font-weight: 400; overflow-wrap: break-word; }
+.nb-paper th { background: #f2f2f2; }
+.nb-paper-none { font-size: 11.5px; color: #6b6760; margin: 0; }
+.nb-paper-f { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #6b6760; }
+.is-narrow .nb-side { display: none; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
 .rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; align-items: center; }
@@ -2940,7 +2987,7 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .aiu-head .btn { flex: 0 0 auto; }
 .aiu-note { color: var(--ink-mute); font-size: 12.5px; }
 .aiu-tbl { display: grid; }
-.aiu-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(9, 68px) 16px; align-items: center; column-gap: 8px;
+.aiu-tr { display: grid; grid-template-columns: minmax(0, 1fr) repeat(10, 64px) 16px; align-items: center; column-gap: 8px;
   padding: 10px 0; border-top: 1px solid var(--line-soft); font-variant-numeric: tabular-nums; }
 .aiu-th { padding-top: 0; border-top: 0; align-items: end; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .aiu-th > span:not(:first-child) { text-align: right; }

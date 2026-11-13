@@ -620,7 +620,7 @@ section holds only what is true of the project as a whole.
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `reports`: four AI usage checks still count eight uses; the Assistant
-  added a ninth column (2026-11-13).
+  added a ninth column and Next batch a tenth (2026-11-13).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.

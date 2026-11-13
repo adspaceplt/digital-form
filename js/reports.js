@@ -548,7 +548,7 @@
      where its next step is. */
   var STEPS = {
     social: [['accounts', 'Accounts'], ['posts', 'Posts'], ['text', 'Commentary'], ['check', 'Check and submit']],
-    ads:    [['figures', 'Figures'], ['ads', 'Ads'], ['text', 'Commentary'], ['check', 'Check and submit']]
+    ads:    [['figures', 'Figures'], ['ads', 'Ads'], ['text', 'Commentary'], ['next', 'Next batch'], ['check', 'Check and submit']]
   };
   /* Past draft nothing is submitted from the last step, so it is Check
      (ux-audit RPT-5). */
@@ -563,7 +563,8 @@
     var r = st.open;
     if (!r || r.status !== 'draft') return 'check';
     var s = stepsOf(r);
-    for (var i = 0; i < s.length - 1; i++) if (!stepDone(s[i][0])) return s[i][0];
+    /* Next batch is optional: a report opens on it only by a press. */
+    for (var i = 0; i < s.length - 1; i++) if (s[i][0] !== 'next' && !stepDone(s[i][0])) return s[i][0];
     return 'check';
   }
 
@@ -852,6 +853,12 @@
     String(prev).replace(/(?:S\$|RM)\s?(\d[\d,]*\.\d{2})(?!\d)/g, function (all, n2) { add(Number(n2.replace(/,/g, ''))); return all; });
     var ins = r.insights || {}, slips = [];
     var fields = [['intro', 'Summary', r.intro || ins.executive_summary]].concat(TEXT.ads.slice(1).concat(TEXT_MORE).map(function (f) { return [f[0], f[1], ins[f[0]]]; }));
+    /* The Next Batch page prints what each suggestion added will do and
+       why (2026-11-13): its amounts are held to the same figures. */
+    var nb = nbOf(r);
+    if (nb && r.next_batch_print !== false) nb.items.filter(function (i) { return i.added; }).forEach(function (i) {
+      fields.push(['next', 'Next Batch', [i.plan, i.why].concat(i.points || []).join('\n')]);
+    });
     fields.forEach(function (f) {
       String(f[2] || '').replace(/(S\$|RM)\s?(\d[\d,]*\.\d{2})(?!\d)/g, function (all, cur, n) {
         var v = Number(n.replace(/,/g, ''));
@@ -891,6 +898,7 @@
     /* Done once every block is written; part written reads n of N with
        the empty mark, never the done tick (2026-10-22, RPT-8). */
     if (k === 'text') { var cs = commentaryState(); return cs.n > 0 && cs.n >= cs.of; }
+    if (k === 'next') { var nb = nbOf(r); return !!(nb && nb.items.length); }
     return r.status && r.status !== 'draft';
   }
   function stepNote(k) {
@@ -903,6 +911,7 @@
     }
     if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
     if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
+    if (k === 'next') return nbNote();
     return (STATUS[r.status] || STATUS.draft)[0];
   }
 
@@ -1043,7 +1052,7 @@
     };
     var next = nextOf(k);
     var foot = next && (!ed || (k !== 'text' && k !== 'figures'))
-      ? '<div class="rp-stepfoot"><button class="btn' + (ed ? ' btn-primary' : '') + '" type="button" data-a="next">Next: ' + esc(next[1]) + '</button></div>' : '';
+      ? '<div class="rp-stepfoot"><button class="btn' + (ed && k !== 'next' ? ' btn-primary' : '') + '" type="button" data-a="next">Next: ' + esc(next[1]) + '</button></div>' : '';
     if (k === 'accounts') {
       box.innerHTML = '<div class="rp-sec">' + head('Accounts', ed ? '<button class="btn btn-sm" type="button" data-a="addacc">' + ICON.plus + 'Add account</button>' : '') +
         '<div class="rp-accs"></div></div>' + foot;
@@ -1081,6 +1090,9 @@
     } else if (k === 'text') {
       box.innerHTML = '<div class="rp-sec">' + head('Commentary') + '<div class="rp-text"></div></div>' + foot;
       paintText();
+    } else if (k === 'next') {
+      box.innerHTML = '<div class="rp-sec"><div class="rp-next"></div></div>' + foot;
+      paintNext();
     } else {
       paintCheck(box);
     }
@@ -3952,7 +3964,7 @@
     };
     var sb = box.querySelector('[data-a="savetext"]'), sn = box.querySelector('[data-a="savenext"]');
     sb.addEventListener('click', function () { save(sb); });
-    sn.addEventListener('click', function () { save(sn, function () { goStep('check'); }); });
+    sn.addEventListener('click', function () { save(sn, function () { goStep((nextOf('text') || ['check'])[0]); }); });
     /* Draft with AI (the user, 2026-10-01): the report's own figures are sent
        to the report-draft function, and its draft fills the fields for the
        team to read and edit. Nothing is saved until Save; what is already
@@ -4191,6 +4203,7 @@
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : d.scope === 'drafts' ? 'You have used your ' + (d.limit || 10) + ' report drafts for today.'
       : d.scope === 'checks' ? 'You have used your ' + (d.limit || 10) + ' commentary checks for today.'
+      : d.scope === 'next' ? 'You have used your ' + (d.limit || 3) + ' Next batch uses for today.'
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
     return who + (when ? ' Resets at ' + when + '.' : '');
   }
@@ -4207,8 +4220,228 @@
     'no-posts': 'Add the month\'s posts before drafting.',
     'not-draft': 'Write with AI works only on a draft.',
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
-    'not-found': 'This report no longer exists.'
+    'not-found': 'This report no longer exists.',
+    'wrong-kind': 'Next batch is written for an Advertising Report alone.'
   };
+
+  // ---- Next batch ------------------------------------------------------------------------
+  /* An Advertising Report's Next batch (the user, 2026-11-13: "approve
+     build both", the mockup "Ads report · Next batch"): Write with AI reads
+     the report's ads and, where Meta checks are on and the client links an
+     ad account, each ad's frequency and CTR by day over the period's last
+     14 days, and suggests up to six things to make next. They are kept on
+     the report as a draft field (`next_batch`); each may be added to Focus
+     for next month, or made a task in My Work. Those added print on a Next
+     Batch page while its switch is on (`next_batch_print`). */
+  var NB_KIND = { winning: ['Winning', 'is-ok'], tiring: ['Tiring', 'is-warn'], no_results: ['', 'is-danger'],
+    idea: ['New idea', 'is-off'], evergreen: ['Evergreen', 'is-off'] };
+  var nbRun = {}, nbKept = {};
+  /* The page's one line under its title, as the PDF prints it. */
+  var NB_LEAD = window.ADspaceWords.line.nextBatchLead;
+  function nbOf(r) { var n = r && r.next_batch; return n && Array.isArray(n.items) ? n : null; }
+  function nbAd(it) { return it && it.row ? st.ads.filter(function (a) { return a.id === it.row; })[0] || null : null; }
+  /* Clicks without the objective's own result: Clicks without leads. */
+  function nbKindWord(it) {
+    var k = NB_KIND[it.kind] || NB_KIND.idea;
+    if (it.kind !== 'no_results') return k[0];
+    var a = nbAd(it), o = a && OBJECTIVES.filter(function (x) { return x[0] === a.objective; })[0];
+    var w = (a && a.result_label && resultWord(a.result_label)) || (o && o[2]) || 'results';
+    return 'Clicks without ' + w.toLowerCase();
+  }
+  function nbAddedCount(n) { return n ? n.items.filter(function (i) { return i.added; }).length : 0; }
+  function nbNote() {
+    var n = nbOf(st.open);
+    if (!n || !n.items.length) return 'Optional';
+    var a = nbAddedCount(n);
+    return a ? a + ' of ' + n.items.length + ' added' : plural(n.items.length, 'suggestion');
+  }
+  /* What the suggestions read: Meta's days where they may be read, else
+     the report's own figures, said in one line. */
+  function nbSource(n) {
+    var ads = st.ads.length, linked = st.metaLinks && (st.metaLinks.ad_accounts || []).length;
+    var s = n && n.source;
+    if (s && s.meta) return ['Read from Meta', plural(s.ads || 0, 'ad') + ' · Frequency and CTR by day' + (s.read_at ? ' · Read ' + aiWhen(s.read_at) : '')];
+    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta could not be read.')];
+    if (st.meta && linked) return ['Reads from Meta', plural(ads, 'ad') + ' · Frequency and CTR by day, the last 14 days of the period'];
+    return ['Report figures only', plural(ads, 'ad') + ' · ' + (!metaOn() ? 'Meta checks are off.' : 'No ad account is linked.')];
+  }
+  /* 13 Nov, 9:42am, in Malaysia. */
+  function aiWhen(iso) {
+    var d = ADspaceClock.day(iso), t = aiClock(iso).replace(' ', '');
+    return d ? dayWord(d).replace(/ \d{4}$/, '') + ', ' + t : t;
+  }
+  function nbSave(rid, patch) {
+    return db.from('sm_reports').update(patch).eq('id', rid).select('*').then(function (res) {
+      if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.');
+      if (st.open && st.open.id === rid) st.open = res.data[0];
+      return res.data[0];
+    });
+  }
+  function paintNext() {
+    var box = st.host.querySelector('.rp-next');
+    if (!box) return;
+    var r = st.open, ed = editable(), rid = r.id, n = nbOf(r), items = n ? n.items : [];
+    var src = nbSource(n);
+    var opsOk = !!(window.ADspaceOps && window.ADspaceOps.add && bridge.may && bridge.may('ops', 'work'));
+    var added = nbAddedCount(n);
+    var rows = items.map(function (it, i) {
+      var a = nbAd(it), k = NB_KIND[it.kind] || NB_KIND.idea;
+      return '<div class="nb-row" data-i="' + i + '">' +
+        '<span class="rp-thumb nb-thumb' + (a && a.thumb_data ? '' : ' is-empty') + '">' + (a && a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
+        '<div class="nb-body"><span class="chip-state ' + k[1] + '">' + esc(nbKindWord(it)) + '</span>' +
+          '<h4 class="nb-title">' + esc(it.title) + '</h4>' +
+          (it.evidence ? '<p class="nb-ev">' + esc(it.evidence) + '</p>' : '') +
+          '<ul class="nb-pts">' + (it.points || []).map(function (p) { return '<li>' + esc(p) + '</li>'; }).join('') + '</ul>' +
+          '<div class="msg" data-m="nb' + i + '"></div></div>' +
+        '<div class="nb-acts">' +
+          (it.added ? '<span class="chip-state is-ok">Added to commentary</span>'
+            : ed ? '<button class="btn btn-sm" type="button" data-a="nbadd">' + ICON.plus + 'Add to commentary</button>' : '') +
+          (opsOk ? '<button class="btn btn-sm" type="button" data-a="nbtask">' + ICON.plus + 'Create task</button>' : '') +
+        '</div></div>';
+    }).join('');
+    var shown = items.filter(function (it) { return it.added; });
+    var paper = items.length && r.next_batch_print !== false ? '<aside class="nb-side" aria-label="The page the client reads"><p class="nb-paper-h">The page the client reads</p>' +
+      '<div class="nb-paper"><span class="nb-paper-mark">ADspace</span><span class="nb-paper-t">Next Batch</span>' +
+      '<p class="nb-paper-l">' + esc(NB_LEAD) + '</p>' +
+      (shown.length ? '<table><thead><tr><th>Creative</th><th>What we will do</th><th>Why</th></tr></thead><tbody>' + shown.map(function (it) {
+        return '<tr><td>' + esc(it.ad || it.title) + '</td><td>' + esc(it.plan || it.title) + '</td><td>' + esc(it.why || '') + '</td></tr>';
+      }).join('') + '</tbody></table>' : '<p class="nb-paper-none">None added to the commentary.</p>') +
+      '<span class="nb-paper-f"><span>PRIVATE &amp; CONFIDENTIAL</span></span></div></aside>' : '';
+    box.innerHTML = '<div class="nb-grid"><div class="nb-main">' + (ed ? '<div class="rp-aidraft nb-src">' +
+        '<div class="rp-airow"><div class="nb-srcw"><b>' + esc(src[0]) + '</b><span>' + esc(src[1]) + '</span></div>' +
+        '<div class="rp-aiacts"><span class="rp-aileft" data-m="nbleft" hidden></span>' +
+        '<button class="btn btn-sm btn-primary btn-icon" type="button" data-a="nbwrite">' + AI_GLYPH + 'Write with AI</button></div></div>' +
+        '<div class="row rp-ainotes"><div><label class="field-label" for="rpNbNotes">Notes for the suggestions</label>' +
+          '<textarea class="input" id="rpNbNotes" rows="2" placeholder="Offers, launches, new material"></textarea></div></div></div>' +
+        '<div class="msg" data-m="nb"></div>' : '') +
+      (items.length ? '<div class="nb-head"><h3 class="ovsec-title">Suggestions</h3><span class="tab-n">' + items.length + '</span>' +
+          (n.by_name ? '<span class="nb-by">Written by AI for ' + esc(n.by_name) + (n.at ? ', ' + esc(aiWhen(n.at)) : '') + '</span>' : '') + '</div>' +
+        '<div class="nb-rows">' + rows + '</div>' +
+        '<div class="nb-print"><div><b>Next Batch page in the PDF</b><span>' +
+          esc(added ? 'The suggestions added to the commentary, ' + added + ' of ' + items.length : 'None added to the commentary') + '</span></div>' +
+          (ed ? '<button class="switch" type="button" role="switch" data-a="nbprint" aria-checked="' + (r.next_batch_print !== false) + '" aria-label="Next Batch page in the PDF"><span class="switch-knob"></span></button>'
+            : '<span class="nb-printv">' + (r.next_batch_print !== false ? 'On' : 'Off') + '</span>') + '</div>'
+        : '<div class="nb-empty"></div>') + '</div>' + paper + '</div>';
+    if (!items.length) UI.emptyLine(box.querySelector('.nb-empty'), 'No suggestions.');
+    var m = box.querySelector('[data-m="nb"]');
+    var rowMsg = function (i) { return box.querySelector('[data-m="nb' + i + '"]'); };
+    /* Add to commentary: the points go to the end of Focus for next month
+       in one write with the mark, filed as a save; Undo puts both back. */
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="nbadd"]'), function (b) {
+      b.addEventListener('click', function () {
+        var i = Number(b.closest('.nb-row').getAttribute('data-i')), it = items[i];
+        var ins = Object.assign({}, st.open.insights || {}), was = ins.focus || '';
+        ins.focus = (String(was).trim() ? String(was).replace(/\s+$/, '') + '\n' : '') + (it.points || []).join('\n');
+        var nb = JSON.parse(JSON.stringify(nbOf(st.open)));
+        nb.items[i].added = true;
+        b.disabled = true;
+        nbSave(rid, { insights: ins, next_batch: nb }).then(function () {
+          fileReport('report.saved', 'Next batch · Added to Focus for next month: ' + it.title);
+          paintSteps(); paintNext();
+          var h = st.host.querySelector('.rp-next [data-m="nb' + i + '"]');
+          undoBar('Added to Focus for next month.', h, function () {
+            var ins2 = Object.assign({}, st.open.insights || {});
+            if (String(was).trim()) ins2.focus = was; else delete ins2.focus;
+            var nb2 = JSON.parse(JSON.stringify(nbOf(st.open)));
+            if (nb2.items[i]) nb2.items[i].added = false;
+            nbSave(rid, { insights: ins2, next_batch: nb2 }).then(function () {
+              fileReport('report.saved', 'Next batch · Taken back from Focus for next month: ' + it.title);
+              paintSteps(); paintNext();
+            }).catch(function (e) { say(st.host.querySelector('.rp-next [data-m="nb' + i + '"]'), said(e), 'err'); });
+          });
+        }).catch(function (e) { b.disabled = false; say(rowMsg(i), said(e), 'err'); });
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="nbtask"]'), function (b) {
+      b.addEventListener('click', function () {
+        var i = Number(b.closest('.nb-row').getAttribute('data-i')), it = items[i];
+        window.ADspaceOps.add({ link: 'c:' + st.client.id, linkName: st.client.name || 'Client', title: it.title,
+          desc: (it.points || []).join('\n'),
+          then: function () { var h = rowMsg(i); if (h && h.isConnected) say(h, 'Task added.', 'ok'); } });
+      });
+    });
+    var pr = box.querySelector('[data-a="nbprint"]');
+    if (pr) pr.addEventListener('click', function () {
+      var on = pr.getAttribute('aria-checked') !== 'true';
+      pr.setAttribute('aria-checked', String(on)); pr.disabled = true;
+      nbSave(rid, { next_batch_print: on }).then(function () {
+        pr.disabled = false;
+        fileReport('report.saved', 'Next Batch page in the PDF: ' + (on ? 'Off → On' : 'On → Off'));
+      }).catch(function (e) { pr.disabled = false; pr.setAttribute('aria-checked', String(!on)); say(m, said(e), 'err'); });
+    });
+    if (!ed) return;
+    var notes = $('rpNbNotes'), noteKey = 'adspace-next-notes:' + rid;
+    try { notes.value = localStorage.getItem(noteKey) || ''; } catch (e) { /* storage refused */ }
+    notes.addEventListener('input', function () {
+      try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
+    });
+    var wb = box.querySelector('[data-a="nbwrite"]'), lastLeft = null;
+    var here = function () {
+      var b0 = st.open && st.open.id === rid && st.host && st.host.querySelector('.rp-next [data-a="nbwrite"]');
+      return b0 ? { b: b0, m: st.host.querySelector('.rp-next [data-m="nb"]') } : null;
+    };
+    var paintLeft = function () {
+      db.rpc('ai_next_left', { p_report: rid }).then(function (res) {
+        var d = res && res.data, h = here(), line = h && st.host.querySelector('.rp-next [data-m="nbleft"]');
+        if (!line) return;
+        if (res.error || !d || d.error || d.left == null) { line.hidden = true; return; }
+        line.hidden = false; lastLeft = d.left;
+        line.textContent = d.left + ' left today';
+        line.classList.toggle('is-out', !d.left);
+        if (nbRun[rid]) return;
+        h.b.disabled = !d.left;
+        if (!d.left && !h.m.textContent) say(h.m, aiLimit(d), 'warn');
+      }).catch(function () { /* an older database: no line */ });
+    };
+    /* The suggestions are kept on the report as they arrive, with Undo
+       putting the earlier list back. */
+    var write = function () {
+      wb.disabled = true; wb.innerHTML = AI_GLYPH + 'Writing';
+      say(m, '');
+      nbRun[rid] = true;
+      var before = nbOf(st.open) ? JSON.parse(JSON.stringify(st.open.next_batch)) : null;
+      var asked = { r: st.open, c: st.client };
+      db.functions.invoke('report-draft', { body: { report_id: rid, mode: 'next', notes: notes.value.trim(), lang: r.lang === 'zh' ? 'zh' : 'en' } }).then(function (res) {
+        var d = res && res.data;
+        if (res.error || !d || d.error || !d.next) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
+        var mine = me() || {};
+        var nb = { at: new Date().toISOString(), by: mine.id || null, by_name: mine.name || '', source: d.next.source || null,
+          items: (d.next.items || []).map(function (it, i) {
+            var a = it.row ? st.ads.filter(function (x) { return x.id === it.row; })[0] : null;
+            return { id: 'n' + Date.now().toString(36) + i, kind: it.kind, row: a ? a.id : null, ad: a ? adName(a.name) : '',
+              ad_ids: a ? (a.ad_ids || []) : [], title: it.title, evidence: it.evidence, plan: it.plan, why: it.why, points: it.points || [], added: false };
+          }) };
+        return nbSave(rid, { next_batch: nb }).then(function () { return { ok: nb.items.length }; },
+          function (err) { return { said: 'Written, but not saved: ' + said(err) }; });
+      }).catch(function (e) {
+        return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
+      }).then(function (out) {
+        delete nbRun[rid];
+        fileReport(out.ok ? 'report.ai_drafted' : 'report.ai_failed', 'Next batch · ' + (out.ok ? plural(out.ok, 'suggestion') : out.said), asked.r, asked.c);
+        if (!here()) { nbKept[rid] = { out: out, before: before }; return; }
+        nbTold(rid, out, before);
+      });
+    };
+    if (nbRun[rid]) { wb.disabled = true; wb.innerHTML = AI_GLYPH + 'Writing'; }
+    if (nbKept[rid]) { var kept = nbKept[rid]; delete nbKept[rid]; setTimeout(function () { nbTold(rid, kept.out, kept.before); }, 0); }
+    paintLeft();
+    wb.addEventListener('click', function () {
+      var uses = 'This uses one of your Next batch uses' + (lastLeft != null ? ' (' + lastLeft + ' left today).' : '.');
+      window.ADspaceConfirm.ask(items.length
+        ? { title: 'Replace the suggestions?', body: uses + ' The new suggestions replace those listed; Undo puts them back.', go: 'Replace' }
+        : { title: 'Write suggestions?', body: uses + ' The suggestions are saved to the report as they arrive.', go: 'Write' }, write);
+    });
+  }
+  function nbTold(rid, out, before) {
+    paintSteps(); paintNext();
+    var m = st.host && st.host.querySelector('.rp-next [data-m="nb"]');
+    if (!m) return;
+    if (!out.ok) { say(m, out.said, 'err'); return; }
+    undoBar('Written by AI. Read before adding.', m, function () {
+      nbSave(rid, { next_batch: before }).then(function () { paintSteps(); paintNext(); })
+        .catch(function (e) { say(m, said(e), 'err'); });
+    });
+  }
 
   // ---- The advertising report ------------------------------------------------------------
   /* An advertising report is the account's figures for the period, one row
@@ -5614,8 +5847,8 @@
      this calendar month cost. Read again on every open. */
   var AI_USES = [['drafts', 'Report drafts', 'draft'], ['checks', 'Commentary checks', 'check'], ['caption', 'Captions', 'caption'],
     ['script', 'Scripts', 'script'], ['picture', 'Scene pictures', 'picture'], ['analysis', 'Brand analyses', 'analysis'], ['checklist', 'Checklists', 'checklist'],
-    ['analytics', 'Analytics analyses', 'analytics'], ['agent', 'Assistant', 'agent']];
-  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, per_report: 1 };
+    ['analytics', 'Analytics analyses', 'analytics'], ['agent', 'Assistant', 'agent'], ['next', 'Next batch', 'next']];
+  var AI_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, next: 3, per_report: 1 };
   function aiTokens(n) {
     n = Number(n) || 0;
     return n >= 1e6 ? (Math.round(n / 1e5) / 10) + 'M' : n >= 1e3 ? Math.round(n / 1e3) + 'K' : String(n);
