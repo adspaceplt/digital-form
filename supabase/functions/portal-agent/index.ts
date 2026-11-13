@@ -79,8 +79,14 @@ const day = { type: 'string', description: 'A date as YYYY-MM-DD, Malaysia time.
 const optDay = { type: ['string', 'null'], description: 'A date as YYYY-MM-DD, Malaysia time, or null.' };
 // A nullable choice: strict tools refuse an enum on a type list, so it is one of the words or null.
 function optEnum(values: string[]) { return { anyOf: [{ type: 'string', enum: values }, { type: 'null' }] }; }
+/* Strict is kept to the changes drawn as a card: Claude's API takes 20 strict
+   tools a request and 16 nullable fields across them (2026-11-13). The reads,
+   and propose_schedule (13 nullable fields), go unenforced: the page checks
+   their input itself. tests/agent.js counts both limits. */
+const LOOSE = new Set(['find_clients', 'client_summary', 'list_tasks', 'waiting_on_me', 'list_reports',
+  'find_colleagues', 'client_months', 'list_sets', 'list_campaigns', 'find_contacts', 'propose_schedule']);
 function tool(name: string, description: string, props: Record<string, unknown>) {
-  return { name, description, strict: true,
+  return { name, description, ...(LOOSE.has(name) ? {} : { strict: true }),
     input_schema: { type: 'object', additionalProperties: false, required: Object.keys(props), properties: props } };
 }
 const TOOLS = [

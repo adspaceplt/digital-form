@@ -10274,5 +10274,14 @@ stylesheet and passing on the new.
 
 ### 2026-11-13 · The rail's chosen row, its edge drawn inside
 The user: the chosen section in the rail looked "cut off slightly" at its left and right. The rail's list scrolls when its sections do not fit (`overflow-y: auto`), and a scroller clips sideways too, so the row's 1px ring, drawn outside it, lost its sides. The ring is now an inset shadow, inside the row, in both themes.
+### 2026-11-13: the Assistant refused again, on the strict tool limit
+v3 still read "The Assistant could not answer.": Claude's API takes 20
+strict tools a request and v3 marked 23, and its nullable fields across
+strict tools (32) passed the limit of 16 as well. v4 keeps strict on the
+change cards alone (12 tools, 15 nullable fields); the reads and
+propose_schedule go unenforced, their input checked by the page as before.
+tests/agent.js now evaluates the tool list and holds all three limits. The
+first fix was deployed on the read of one error alone; the limits page was
+read only after the second.
 ### 2026-11-13 · A record is hairline cards on the white sheet
 The user, on a client record's Services tab: "too many buttons, no clear inner sections, everything looks like on one piece of paper"; then, on the mockup (Client Record Layout), "proceed A to D; E not needed". v3 had put the record on the white sheet with its parts as headings over white lists, so Quotations, Service lines, Requests and Documents, and the rail's Profile, Timeline, Details and Recent activity, had no boundary between them; every part's head carried a filled button; a quotation row carried Download, Preview PDF, Edit, Send link on WhatsApp and a ⋯; the Timeline drew a pen on every row. A grey ground inside the record (the mockup's A) was built first and declined before release: "keep white sheet is good. keep hairline too else it looks too bold. it has to be minimal elegant contrast rather just be visible visually." Now: the record stays on the white sheet; each part is a `section.rec-part` card with its count (`partN` in js/crm.js), each rail block a card, every card in a record edged by `--part-edge` (ink at 11%, one step above `--card-edge`) and 16px from the next; part add acts are `.btn-quiet .btn-sm` (Build quote and Add creators turn blue only when they are the record's next step, as paintDeal and the campaign's draft rule already decided); a quotation row keeps Preview PDF and its next step, Download and Edit in its ⋯, Edit staying on the row only where the ⋯ would pass seven (§5 Menus 8: the commonest act moves onto the screen); rail pens show on hover and focus with a fine pointer; a figure in a row reads at 500. A part whose list is already cards (Engagements' months, Billing's and Brand's read groups, a campaign's booking cards) keeps its head on the sheet over them rather than nesting cards. E (a strip inside Services) was declined: it adds a press.
