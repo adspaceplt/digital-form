@@ -205,11 +205,12 @@
   function mayWork() { return mayPart('campaigns.campaigns', 'work'); }
   function showTab(name) {
     // The Creators List is a part of the section and may be shut to a group.
-    if (name === 'roster' && !mayPart('campaigns.creators', 'view')) name = 'campaigns';
+    if ((name === 'roster' || name === 'payments') && !mayPart('campaigns.creators', 'view')) name = 'campaigns';
     state.tab = name;
     $('campListView').hidden = !(name === 'campaigns' && !state.campaign);
     $('campWork').hidden     = !(name === 'campaigns' && state.campaign);
     $('rosterView').hidden   = name !== 'roster';
+    $('payView').hidden      = name !== 'payments';
     campStrip();
     Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-tab') === name);
@@ -220,6 +221,7 @@
       loadRoster(function () { rosterDraft.restore(); if (!crRec.id) restoreScroll(); });
     }
     if (name === 'campaigns' && !state.campaign) { loadCampaigns(); campDraft.restore(); restoreScroll(); }
+    if (name === 'payments') loadQueue();
   }
   /* A record stands alone, as a client's and a colleague's do: the section's
      Campaigns / Creators List strip gives way while a campaign is open
@@ -1396,6 +1398,378 @@
       return decidePay(false, String((v && v.note) || v || '').trim());
     });
   }
+
+  /* ---- Payments (2026-11-13) ----------------------------------------------
+     Every creator's payment work in one queue (the user, 2026-11-13: one
+     creator at a time "won't scale"; the approved mockup): Details to
+     review first, then Ready to bill, Draft in Bukku, Awaiting payment and
+     Paid within its period. One read (`creator_payments_queue`); Create bill
+     and Read from Bukku go through bukku-sync as the creator's page does. */
+  var cpq = { data: null, from: null, said: null, row: null };
+  var CPQ_PERIODS = [['3d', 'Last 3 days'], ['7d', 'Last 7 days'], ['mm', 'This month and last month'],
+    ['lm', 'Last month'], ['3m', 'Last 3 months'], ['yr', 'This year']];
+  var cpqPeriod = 'mm';
+  function cpqRange(k) {
+    var C = ADspaceClock, today = C.today(), p = today.split('-'), y = Number(p[0]), m = Number(p[1]);
+    var first = function (yy, mm) { while (mm < 1) { mm += 12; yy -= 1; } return yy + '-' + String(mm).padStart(2, '0') + '-01'; };
+    if (k === '3d') return { from: C.addDays(today, -2) };
+    if (k === '7d') return { from: C.addDays(today, -6) };
+    if (k === 'lm') return { from: first(y, m - 1), to: C.addDays(first(y, m), -1) };
+    if (k === '3m') return { from: first(y, m - 2) };
+    if (k === 'yr') return { from: y + '-01-01' };
+    return { from: first(y, m - 1) };
+  }
+  function cpqSaid(text, cls) { var m = $('cpqMsg'); if (m) { m.textContent = text || ''; m.className = 'msg' + (cls ? ' ' + cls : ''); } }
+  function loadQueue(countOnly) {
+    if (!mayPart('campaigns.creators', 'view')) return;
+    var r = cpqRange(cpqPeriod);
+    if (!countOnly && !cpq.data) UI.skeleton($('cpqList'), 4);
+    db.rpc('creator_payments_queue', { p_paid_from: r.from }).then(function (x) {
+      var d = x.data || {};
+      if (x.error || d.error) {
+        if (countOnly) return;
+        UI.failLine($('cpqList'), 'The payments', (x.error && (/could not find|schema cache/i.test(x.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : x.error.message)) ||
+          (d.error === 'denied' ? 'You do not have permission to view creator payments. Please ask an admin.' : d.error), function () { loadQueue(); });
+        return;
+      }
+      cpq.data = d; cpq.from = r;
+      cpqCount();
+      if (!countOnly || state.tab === 'payments') paintQueue();
+    }).catch(function (e) { if (!countOnly) UI.failLine($('cpqList'), 'The payments', e.message, function () { loadQueue(); }); });
+  }
+  /* The tab's red count: what waits on the team now (details to review and
+     bookings ready to bill). */
+  function cpqGroups(d) {
+    var today = ADspaceClock.today(), r = cpq.from || {};
+    var g = { review: d.review || [], ready: [], draft: [], waiting: [], paid: [] };
+    (d.jobs || []).forEach(function (j) {
+      var b = j.bill;
+      if (!b) g.ready.push(j);
+      else if (b.status === 'draft') g.draft.push(j);
+      else if (b.status === 'processing') { j._late = !!(j.pay_by && j.pay_by < today); g.waiting.push(j); }
+      else if (b.status === 'paid') { var pd = b.paid_on || b.date || ''; if (!r.to || pd <= r.to) g.paid.push(j); }
+    });
+    g.waiting.sort(function (a, b) { return (b._late - a._late) || String(a.pay_by || '').localeCompare(String(b.pay_by || '')); });
+    g.paid.sort(function (a, b) { return String(b.bill.paid_on || '').localeCompare(String(a.bill.paid_on || '')); });
+    return g;
+  }
+  function cpqCount() {
+    var n = $('tabPayN'), d = cpq.data;
+    if (!n || !d) return;
+    var g = cpqGroups(d), k = g.review.length + g.ready.length;
+    n.textContent = k; n.hidden = !k;
+  }
+  function cpqFilters(d) {
+    var fill = function (id, all, pairs) {
+      var sel = $(id), was = sel.value;
+      sel.innerHTML = '<option value="all">' + all + '</option>' + pairs.map(function (p) { return '<option value="' + esc(p[0]) + '">' + esc(p[1]) + '</option>'; }).join('');
+      sel.value = pairs.some(function (p) { return p[0] === was; }) ? was : 'all';
+    };
+    var cl = {}, cm = {};
+    (d.jobs || []).forEach(function (j) {
+      if (j.client) cl[j.client] = (j.client_code ? j.client_code + ' · ' : '') + j.client;
+      if (j.campaign_id) cm[j.campaign_id] = j.campaign || 'Untitled campaign';
+    });
+    fill('cpqClient', 'All clients', Object.keys(cl).sort(function (a, b) { return cl[a].localeCompare(cl[b], 'en', { numeric: true }); }).map(function (k) { return [k, cl[k]]; }));
+    fill('cpqCampaign', 'All campaigns', Object.keys(cm).sort(function (a, b) { return cm[a].localeCompare(cm[b]); }).map(function (k) { return [k, cm[k]]; }));
+  }
+  function cpqMatch(j, isReview) {
+    var q = ($('cpqFind').value || '').trim().toLowerCase(), cl = $('cpqClient').value, cm = $('cpqCampaign').value, cur = $('cpqCur').value;
+    if (cur !== 'all' && j.currency !== cur) return false;
+    if (!isReview) {
+      if (cl !== 'all' && j.client !== cl) return false;
+      if (cm !== 'all' && j.campaign_id !== cm) return false;
+    } else if (cl !== 'all' || cm !== 'all') return false;
+    if (!q) return true;
+    var hay = [j.name, j.code, j.job, j.ref, j.campaign, j.client, j.client_code, j.bill && j.bill.number].join(' ').toLowerCase();
+    return q.split(/\s+/).every(function (w) { return hay.indexOf(w) > -1; });
+  }
+  function cpqDay(v) { return v ? ADspaceClock.date(v) : ''; }
+  function cpqWhen(ts) {
+    if (!ts) return '';
+    var d = ADspaceClock.day(ts), t = ADspaceClock.today();
+    return d === t ? 'Today' : d === ADspaceClock.addDays(t, -1) ? 'Yesterday' : cpqDay(ts);
+  }
+  /* Bookings a bill can be made for now: the creator linked, the account chosen. */
+  function cpqBillable(j) { var d = cpq.data; return !!(d && d.pay && d.work && d.bill_account && j.linked && !j.bill); }
+  function paintQueue() {
+    var d = cpq.data, host = $('cpqList');
+    if (!d || !host) return;
+    cpqFilters(d);
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
+    var g = cpqGroups(d), GRP = window.ADspaceGroup, work = !!d.work;
+    var rv = g.review.filter(function (r) { return cpqMatch(r, true); });
+    var pick = function (list) { return list.filter(function (j) { return cpqMatch(j); }); };
+    var ready = pick(g.ready), draft = pick(g.draft), waiting = pick(g.waiting), paid = pick(g.paid);
+    var shown = rv.length + ready.length + draft.length + waiting.length + paid.length;
+    var all = g.review.length + g.ready.length + g.draft.length + g.waiting.length + g.paid.length;
+    $('cpqCount').textContent = shown === all ? all + (all === 1 ? ' item' : ' items') : shown + ' of ' + all;
+    var read = $('cpqRead'); if (read) read.hidden = !work;
+    var feed = ready.filter(function (j) { return cpqBillable(j) && j.fee && Number(j.fee.amount) > 0; });
+    var many = $('cpqBills'); if (many) { many.hidden = feed.length < 2; many.textContent = 'Create ' + feed.length + ' bills'; }
+    host.innerHTML = '';
+    if (work && d.pay && d.bill_account === false && g.ready.length) {
+      var w = document.createElement('p'); w.className = 'msg warn cpq-acct'; w.textContent = JOB_SAID['no-account']; host.appendChild(w);
+    }
+    var amt = function (j) {
+      var b = j.bill;
+      if (b && b.amount != null) return '<span class="cpq-fig">' + esc(billMoney(b.amount, b.currency)) + '</span>';
+      if (!b && j.fee) return '<span class="cpq-fig">' + esc(billMoney(j.fee.amount, j.fee.currency)) + '</span>';
+      return d.pay && !b ? '<span class="muted">Fee not set</span>' : '';
+    };
+    var sub = function (j, withBill) {
+      var parts = [];
+      if (withBill && j.bill && j.bill.number) parts.push('<span class="nb cpq-mono">' + esc(j.bill.number) + '</span>');
+      parts.push('<span class="nb">' + esc(j.campaign || '') + '</span>');
+      if (j.client_code || j.client) parts.push('<span class="nb">' + esc(j.client_code || j.client) + '</span>');
+      return parts.join(' · ');
+    };
+    var row = function (j, right, act) {
+      return '<div class="cpq-row" data-opt="' + esc(j.option) + '" data-creator="' + esc(j.creator) + '">' +
+        '<div class="cpq-l"><span class="cpq-name">' + esc(j.name || '') + ' <span class="cpq-mono cpq-job">' + esc(j.job || '') + '</span></span>' +
+          '<span class="cpq-sub">' + right.sub + '</span></div>' +
+        '<div class="cpq-r">' + right.top + '<span class="cpq-sub' + (right.late ? ' is-late' : '') + '">' + right.when + '</span></div>' +
+        (act ? '<div class="cpq-act">' + act + '</div>' : '<div class="cpq-act"></div>') + '</div>';
+    };
+    var section = function (key, name, list, rows, marks) {
+      if (!list.length) return;
+      host.appendChild(GRP.section({ route: 'creator-payments', key: key, name: name, count: list.length, marks: marks || '',
+        shut: key === 'paid' && GRP.shut('creator-payments', 'paid', false, false),
+        table: function () { var t = document.createElement('div'); t.className = 'cpq-list'; t.innerHTML = rows; return t; } }));
+    };
+    section('review', 'Details to review', rv, rv.map(function (r) {
+      return '<div class="cpq-row" data-req="' + esc(r.id) + '" data-creator="' + esc(r.creator) + '">' +
+        '<div class="cpq-l"><span class="cpq-name">' + esc(r.name || '') + (r.code ? ' <span class="cpq-mono cpq-job">' + esc(r.code) + '</span>' : '') + '</span>' +
+          '<span class="cpq-sub"><span class="nb">' + esc(window.ADspaceWords.bank(r.method_word) + ' ending ' + r.account_end) + '</span> · <span class="nb">' + esc(r.currency) + '</span>' +
+          (r.replaces ? ' · <span class="nb">Replaces approved details</span>' : '') + '</span></div>' +
+        '<div class="cpq-r"><span class="chip-state is-warn">To review</span><span class="cpq-sub">' + esc(cpqWhen(r.created_at)) + '</span></div>' +
+        '<div class="cpq-act"><button class="btn btn-sm" type="button" data-a="review">Review</button></div></div>';
+    }).join(''));
+    section('ready', 'Ready to bill', ready, ready.map(function (j) {
+      var act = cpqBillable(j) ? '<button class="btn btn-sm" type="button" data-a="mkbill">Create bill</button>'
+        : !j.linked ? '<button class="btn btn-sm" type="button" data-a="open">Link to Bukku</button>' : '';
+      var late = j.pay_by && j.pay_by < ADspaceClock.today();
+      return row(j, { top: amt(j), sub: sub(j), when: j.pay_by ? 'Pay by ' + esc(cpqDay(j.pay_by)) : '', late: late }, act);
+    }).join(''));
+    section('draft', 'Draft in Bukku', draft, draft.map(function (j) {
+      return row(j, { top: amt(j), sub: sub(j, true), when: j.pay_by ? 'Pay by ' + esc(cpqDay(j.pay_by)) : '' },
+        '<button class="btn btn-sm" type="button" data-a="bukku" data-num="' + esc(j.bill.number || '') + '">Open in Bukku</button>');
+    }).join(''));
+    var lateN = waiting.filter(function (j) { return j._late; }).length;
+    section('waiting', 'Awaiting payment', waiting, waiting.map(function (j) {
+      var days = j._late ? ADspaceClock.between(j.pay_by, ADspaceClock.today()) : 0;
+      return row(j, { top: amt(j), sub: sub(j, true), when: j._late ? days + (days === 1 ? ' day late' : ' days late') : j.pay_by ? 'Pay by ' + esc(cpqDay(j.pay_by)) : '', late: j._late },
+        '<button class="btn btn-sm" type="button" data-a="bukku" data-num="' + esc(j.bill.number || '') + '">Open in Bukku</button>');
+    }).join(''), lateN ? '<span class="tab-n is-err">' + lateN + ' late</span>' : '');
+    var per = '<select class="select select-sm cpq-period" id="cpqPeriod" aria-label="Paid period">' +
+      CPQ_PERIODS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === cpqPeriod ? ' selected' : '') + '>' + p[1] + '</option>'; }).join('') + '</select>';
+    if (paid.length) section('paid', 'Paid', paid, paid.map(function (j) {
+      return row(j, { top: amt(j), sub: sub(j, true), when: 'Paid ' + esc(cpqDay(j.bill.paid_on)) }, '');
+    }).join(''), per);
+    else {
+      var none = document.createElement('section'); none.className = 'crm-group cpq-paid-none';
+      none.innerHTML = '<div class="crm-group-head"><h3 class="cpq-h">Paid<span class="tab-n">0</span></h3>' + per + '</div>';
+      host.appendChild(none);
+    }
+    if (!shown && all) { var e = document.createElement('p'); e.className = 'emptyline'; e.textContent = 'No matches.'; host.insertBefore(e, host.firstChild); }
+    if (d.read_at) { var rd = document.createElement('p'); rd.className = 'muted cpay-read'; rd.textContent = 'Read from Bukku ' + cpqDay(d.read_at) + ', ' + ADspaceClock.clock(d.read_at); host.appendChild(rd); }
+    var ps = $('cpqPeriod');
+    if (ps) {
+      ps.addEventListener('click', function (e) { e.stopPropagation(); });
+      ps.addEventListener('change', function () { cpqPeriod = ps.value; try { localStorage.setItem('adspace-cpq-period', cpqPeriod); } catch (e) {} loadQueue(); });
+    }
+    cpqFocusRow();
+  }
+  /* A notice or an email links a row (`row=`, a booking or a set of details):
+     it opens its card and is brought into view, ringed for a moment. */
+  function cpqFocusRow() {
+    var id = cpq.row; if (!id) return;
+    var el = document.querySelector('#cpqList [data-opt="' + id + '"], #cpqList [data-req="' + id + '"]');
+    if (!el) return;
+    cpq.row = null;
+    el.scrollIntoView({ block: 'center' });
+    el.classList.add('is-flash');
+    setTimeout(function () { el.classList.remove('is-flash'); }, 2400);
+  }
+  function cpqJob(opt) { return ((cpq.data && cpq.data.jobs) || []).filter(function (j) { return j.option === opt; })[0]; }
+  $('cpqList').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-a]'); if (!b || !$('cpqList').contains(b)) return;
+    var r = b.closest('.cpq-row'), a = b.getAttribute('data-a');
+    if (a === 'review') return cpqReview(r.getAttribute('data-req'), b);
+    if (a === 'mkbill') return cpqBills([cpqJob(r.getAttribute('data-opt'))], b);
+    if (a === 'open') return cpqOpenCreator(r.getAttribute('data-creator'));
+    if (a === 'bukku') return cpqOpenBill(r.getAttribute('data-creator'), b.getAttribute('data-num'));
+  });
+  ['cpqFind', 'cpqClient', 'cpqCampaign', 'cpqCur'].forEach(function (id) {
+    var last = null;
+    ['input', 'change'].forEach(function (ev) { $(id).addEventListener(ev, function () { var v = $(id).value; if (v === last) return; last = v; paintQueue(); }); });
+  });
+  $('cpqRead').addEventListener('click', function () { cpqReadAll($('cpqRead')); });
+  $('cpqBills').addEventListener('click', function () {
+    var g = cpqGroups(cpq.data || {});
+    cpqBills(g.ready.filter(function (j) { return cpqMatch(j) && cpqBillable(j) && j.fee && Number(j.fee.amount) > 0; }), $('cpqBills'));
+  });
+  function cpqOpenCreator(id) {
+    crRec.id = id; crRec.pane = 'payment';
+    showTab('roster');
+  }
+  function cpqOpenBill(creator, num) {
+    var tab = window.open('', '_blank');
+    db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: creator, number: num } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }).then(function (x) {
+      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
+      if (tab) tab.close();
+      cpqSaid('Bill ' + num + ' could not be opened in Bukku. Press Read from Bukku, then try again.', 'err');
+    }).catch(function () { if (tab) tab.close(); });
+  }
+  /* Read from Bukku for every creator the queue holds who is linked, one
+     after another, then the queue read again. */
+  function cpqReadAll(btn) {
+    var ids = [];
+    ((cpq.data && cpq.data.jobs) || []).forEach(function (j) { if (j.linked && ids.indexOf(j.creator) < 0 && (!j.bill || j.bill.status !== 'paid')) ids.push(j.creator); });
+    if (!ids.length) { loadQueue(); cpqSaid('Read.', 'ok'); return; }
+    btn.disabled = true;
+    var failed = 0, n = 0;
+    cpqSaid('Reading from Bukku: 0 of ' + ids.length + '.', '');
+    ids.reduce(function (p, id) {
+      return p.then(function () {
+        return db.functions.invoke('bukku-sync', { body: { action: 'bills', creator: id } }).then(function (r) {
+          return window.ADspaceAPI.fnRefusal(r).then(function (code) { if (code || !r.data || r.data.error) failed++; });
+        }).catch(function () { failed++; }).then(function () { n++; cpqSaid('Reading from Bukku: ' + n + ' of ' + ids.length + '.', ''); });
+      });
+    }, Promise.resolve()).then(function () {
+      btn.disabled = false;
+      cpqSaid(failed ? 'Read ' + (ids.length - failed) + ' of ' + ids.length + ' creators. Bukku could not be read for ' + failed + '. Try again.' : 'Read from Bukku.', failed ? 'err' : 'ok');
+      loadQueue();
+    });
+  }
+  /* Create bill, one booking or several, as the creator's page does. */
+  function cpqBills(list, btn) {
+    list = list.filter(Boolean);
+    if (!list.length) return;
+    var one = list.length === 1, j1 = list[0], field, body;
+    if (one) {
+      field = { name: 'fee', label: 'Amount' + (j1.currency === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text', value: j1.fee ? Number(j1.fee.amount).toFixed(2) : '', required: true };
+      body = 'The bill for ' + j1.job + ' will be created in Bukku as a draft on ' + j1.name + '\'s supplier contact, with its Job reference. Post it in Bukku, then press Read from Bukku.';
+    } else {
+      var sums = {};
+      list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
+      body = list.length + ' bills totalling ' + Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ') +
+        ' will be created in Bukku as drafts, each on its creator\'s supplier contact with its Job reference. Post them in Bukku, then press Read from Bukku.';
+    }
+    window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
+      opener: btn, body: body, field: field, wait: one,
+      check: one ? function (v) { var n = feeIn(v.fee); return n != null && n > 0 && feeOk(n) ? '' : JOB_SAID['bad-amount']; } : undefined }, function (v) {
+      var done = [], refused = [];
+      var first = Promise.resolve('');
+      if (one) {
+        var amt = feeIn(v && v.fee);
+        if (amt !== (j1.fee ? Number(j1.fee.amount) : null))
+          first = db.rpc('creator_fee_set', { p_option: j1.option, p_amount: amt }).then(function (r) {
+            var x = r.data || {};
+            if (r.error) return r.error.message;
+            return x.error ? (JOB_SAID[x.error] || x.error) : '';
+          });
+      }
+      return first.then(function (msg) {
+        if (msg) return msg;
+        if (btn) btn.disabled = true;
+        cpqSaid(one ? '' : 'Creating bills: 0 of ' + list.length + '.', '');
+        list.reduce(function (p, j) {
+          return p.then(function () {
+            return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
+              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
+            }).then(function (x) {
+              if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
+              else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
+              else done.push(x.made || j.job);
+            }).catch(function (e) { refused.push(j.job + ': ' + e.message); }).then(function () {
+              if (!one) cpqSaid('Creating bills: ' + (done.length + refused.length) + ' of ' + list.length + '.', '');
+            });
+          });
+        }, Promise.resolve()).then(function () {
+          if (btn) btn.disabled = false;
+          if (refused.length) cpqSaid((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
+          else cpqSaid(one ? 'Draft bill ' + done[0] + ' created in Bukku.' : done.length + ' draft bills created in Bukku.', 'ok');
+          loadQueue();
+        });
+        return '';
+      });
+    });
+  }
+  /* Review: the set waiting, read whole where the reader may, with Approve
+     and Decline at Creator payments Work (`creator_pay_decide`). */
+  var cpqReq = null;
+  function cpqReview(reqId, btn) {
+    var r = ((cpq.data && cpq.data.review) || []).filter(function (x) { return x.id === reqId; })[0];
+    if (!r) return;
+    cpqReq = { id: reqId, creator: r.creator, name: r.name };
+    $('cpqSheetTitle').textContent = r.name || 'Payment details';
+    var sw = cpqWhen(r.created_at);
+    $('cpqSheetSub').textContent = r.ref + ' · Submitted ' + (/^(Today|Yesterday)$/.test(sw) ? sw.toLowerCase() : sw);
+    UI.skeleton($('cpqSheetBody'), 3);
+    var work = !!(cpq.data && cpq.data.work);
+    $('cpqApprove').hidden = !work; $('cpqDecline').hidden = !work;
+    window.ADspaceSheet.show($('cpqSheet'), { opener: btn });
+    db.rpc('creator_pay_list', { p_creator: r.creator }).then(function (x) {
+      var d = x.data || {};
+      if (x.error || d.error) { UI.failLine($('cpqSheetBody'), 'The payment details', (x.error && x.error.message) || PAY_SAID[d.error] || d.error, function () { cpqReview(reqId); }); return; }
+      var rows = (d.rows || []).filter(function (y) { return y.status !== 'withdrawn'; });
+      var cur = rows.filter(function (y) { return y.id === reqId; })[0];
+      var was = rows.filter(function (y) { return y.status === 'approved'; })[0];
+      if (!cur) { $('cpqSheetBody').innerHTML = '<p class="emptyline">These details no longer exist.</p>'; return; }
+      var fact = function (k, v, chg) { return v ? '<div><dt>' + esc(k) + '</dt><dd>' + esc(v) + (chg ? ' <span class="chip">Changed</span>' : '') + '</dd></div>' : ''; };
+      var how = function (y) { return window.ADspaceWords.bank(y.method_word) + ' ending ' + y.account_end; };
+      var acct = ({ bank: 'Account no.', duitnow: 'DuitNow ID', paynow: 'PayNow ID', tng: 'Touch ’n Go eWallet number' })[cur.method] || 'Account';
+      var jobs = ((cpq.data && cpq.data.jobs) || []).filter(function (j) { return j.creator === r.creator && !j.bill; });
+      $('cpqSheetBody').innerHTML =
+        '<section class="fsec"><h4 class="fsec-h">Billing</h4><dl class="ovfacts">' +
+          fact('Billing as', PAY_KIND[cur.bill_kind]) +
+          fact(cur.bill_kind === 'brn' ? 'Business Registration No.' : cur.bill_kind === 'passport' ? 'Passport No.' : 'NRIC No.', cur.id_no || 'Ending ' + cur.id_end) +
+          fact('Legal name', cur.legal_name, was && was.legal_name !== cur.legal_name) +
+          fact('TIN', cur.tin) + fact('Billing address', cur.address, was && was.address !== cur.address) + '</dl></section>' +
+        '<section class="fsec"><h4 class="fsec-h">Payment</h4><dl class="ovfacts">' +
+          fact('Currency', cur.currency, was && was.currency !== cur.currency) +
+          fact('Method', window.ADspaceWords.bank(cur.method_word), was && how(was) !== how(cur)) +
+          (was && how(was) !== how(cur) ? fact('Before', how(was)) : '') +
+          fact(acct, cur.account || 'Ending ' + cur.account_end) +
+          fact('Account holder', cur.payee) + '</dl></section>' +
+        '<section class="fsec"><h4 class="fsec-h">Contact</h4><dl class="ovfacts">' + fact('Email', cur.email) + fact('WhatsApp', cur.whatsapp) + '</dl></section>' +
+        (jobs.length ? '<section class="fsec"><h4 class="fsec-h">Bookings waiting on these details</h4><dl class="ovfacts">' +
+          jobs.map(function (j) { return '<div><dt class="cpq-mono">' + esc(j.job) + '</dt><dd>' + esc(j.campaign + (j.posted_on ? ' · Posted ' + cpqDay(j.posted_on) : '')) + '</dd></div>'; }).join('') + '</dl></section>' : '') +
+        '<p class="msg" id="cpqSheetMsg" role="status"></p>';
+    }).catch(function (e) { UI.failLine($('cpqSheetBody'), 'The payment details', e.message, function () { cpqReview(reqId); }); });
+  }
+  function cpqDecide(ok, note) {
+    var q = cpqReq; if (!q) return Promise.resolve('');
+    return db.rpc('creator_pay_decide', { p_id: q.id, p_ok: ok, p_note: note || null }).then(function (r) {
+      var d = r.data || {};
+      if (r.error) return r.error.message;
+      if (d.error) return PAY_SAID[d.error] || d.error;
+      window.ADspaceSheet.close();
+      cpqSaid((q.name || 'The creator') + (ok ? '’s details approved.' : '’s details declined.'), 'ok');
+      reloadPayStates();
+      loadQueue();
+      return '';
+    });
+  }
+  $('cpqApprove').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    cpqDecide(true).then(function (said) {
+      b.disabled = false;
+      if (said) { var m = $('cpqSheetMsg'); if (m) { m.textContent = said; m.className = 'msg err'; } }
+    });
+  });
+  $('cpqDecline').addEventListener('click', function () {
+    window.ADspaceConfirm.ask({ title: 'Decline payment details?', go: 'Decline', wait: true, opener: $('cpqDecline'),
+      body: 'The creator will see the reason and be asked to submit their details again.',
+      field: { name: 'note', label: 'Reason', rows: 3, maxlength: 300 } }, function (v) {
+      return cpqDecide(false, String((v && v.note) || v || '').trim());
+    });
+  });
+  ['cpqCancel', 'cpqSheetClose'].forEach(function (id) { $(id).addEventListener('click', function () { window.ADspaceSheet.close(); }); });
+  try { var cpqKept = localStorage.getItem('adspace-cpq-period'); if (CPQ_PERIODS.some(function (p) { return p[0] === cpqKept; })) cpqPeriod = cpqKept; } catch (e) {}
 
   /* A creators list ⋯ hangs off a table row, so it is placed on the viewport
      rather than inside the row that would clip it. */
@@ -6306,7 +6680,7 @@
     urlState: function () {
       return {
         campaign: state.campaign ? state.campaign.id : '',
-        tab: (!state.campaign && state.tab === 'roster') ? 'roster' : '',
+        tab: (!state.campaign && (state.tab === 'roster' || state.tab === 'payments')) ? state.tab : '',
         /* A creator's page (2026-11-10), its pane after it. */
         creator: (!state.campaign && state.tab === 'roster' && crRec.id) ? crRec.id : '',
         /* Overview is the default, so a link to a campaign is the campaign
@@ -6322,7 +6696,7 @@
       var id = params.get('campaign');
       /* An address that names the Creators List and no campaign (a search
          result) opens the list, even with a campaign open before. */
-      if (!id && params.get('tab') === 'roster' && state.campaign) { state.campaign = null; $('campWork').hidden = true; }
+      if (!id && (params.get('tab') === 'roster' || params.get('tab') === 'payments') && state.campaign) { state.campaign = null; $('campWork').hidden = true; }
       if (id && !(state.campaign && state.campaign.id === id)) {
         db.from('campaigns').select('*, clients(name, market, bill_sgd, sst_applies, logo_url)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
@@ -6331,6 +6705,7 @@
             b.classList.toggle('is-on', b.getAttribute('data-tab') === 'campaigns');
           });
           $('rosterView').hidden = true;
+          $('payView').hidden = true;
           openCampaign(r.data, true);
         });
         return;
@@ -6341,7 +6716,9 @@
       var roster = params.get('tab') === 'roster';
       crRec.id = roster ? (params.get('creator') || params.get('pay') || null) : null;
       crRec.pane = params.get('pay') && !params.get('creator') ? 'payment' : (params.get('pane') || 'overview');
-      showTab(roster ? 'roster' : 'campaigns');
+      /* Payments (2026-11-13): a notice or an email names a row (`row=`). */
+      if (params.get('tab') === 'payments') { cpq.row = params.get('row') || null; showTab('payments'); }
+      else { showTab(roster ? 'roster' : 'campaigns'); loadQueue(true); }
       var forClient = params.get('new');
       if (forClient) {
         loadClients(function () {

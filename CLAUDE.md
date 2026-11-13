@@ -4044,7 +4044,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   their page on Payment. A set sent to review tells the Marketing
   department who can open the Creators List, an admin among them, in the
   bell and on their phone (trigger `creator_pay_requests_notice`, kind
-  `creator.details`, opening that Payment pane in place; the user,
+  `creator.details`, opening its row in Payments in place; the user,
   2026-11-13: "these should land to Marketing Department personnel"), and
   the sets waiting are counted in red on the Creator Campaigns rail row,
   the Creators tab and the phone's tab (`creator_pay_states`, read on
@@ -4075,7 +4075,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   today) and `pay_by` (`creator_pay_days_myr` 10 or `creator_pay_days_other`
   21 working days on, by the approved details' currency; Settings, Clients:
   Creator payments) and queues Payment request to the finance address and
-  Post recorded to the creator, with the bell (`creator.payment`) for
+  Post recorded to the creator, with the bell (`creator.payment`, opening
+  its row in Payments) for
   `campaigns.pay` Work, once a booking (trigger `campaign_options_posted`,
   `_posted_mail`). The team puts the Job reference in the Bukku bill's
   reference; `bukku-sync` `bills` (Read from Bukku on the sheet's Payments,
@@ -4120,6 +4121,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   link reads the creator's bills at once, the night reads a creator an
   earlier job awaits (`creator_bills_due`), and an earlier job or booking
   of a creator not linked reads Not linked, never Not billed.
+- Payments (`tab=payments`, `2026-11-13-creator-payments-queue.sql`; the
+  user, 2026-11-13, approving mockups/creator-payments: one creator at a
+  time "won't scale"): Creator Campaigns' third tab, at Creators List View,
+  every creator's payment work in one read (`creator_payments_queue(p_paid_from)`):
+  Details to review first (Review opens `#cpqSheet`: the set, what changed
+  against the approved one, the bookings waiting; Approve and Decline at
+  `campaigns.pay` Work through `creator_pay_decide`), then Ready to bill
+  (posted in the portal, no live bill; Create bill as the creator's page,
+  Link to Bukku opening their Payment pane where they are not linked),
+  Draft in Bukku, Awaiting payment (past Pay by in red, the card counting
+  it) and Paid, a bill paid within the period (`#cpqPeriod`: Last 3 days,
+  Last 7 days, This month and last month by default, Last month, Last 3
+  months, This year; kept in this browser, `adspace-cpq-period`); the tab
+  counts in red what waits (details to review, bookings ready to bill);
+  the client, campaign and currency pills and the search filter every
+  group; Create n bills (those with a fee) and Read from Bukku (each linked
+  creator in the queue, one after another) at `campaigns.pay` Work; the fee
+  and every amount at `campaigns.pay` View alone; `row=` (a booking or a
+  set of details) opens its row, ringed (`tests/payqueue.js`).
 - Creator fees (`2026-11-13-creator-fees.sql`; the user, 2026-11-13: "no
   show amount just internal records creator records and bukku bill for
   payments"): the fee agreed with the creator a booking, in their payment

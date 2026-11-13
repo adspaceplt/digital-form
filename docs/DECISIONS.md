@@ -10400,3 +10400,20 @@ with the creator) to anyone holding Creator payments at View. The user:
 (team.perfadmin, the admin's part for revenue and profit); the rail leaves
 the line out for everyone else. `2026-11-13-creator-margin-admins.sql`.
 
+### 2026-11-13 · Creator payments in one queue
+Paying creators meant opening each creator's page, its Payment pane, one at a
+time; the user: it would not scale to hundreds of creators. The approved
+mockup (digital-form-tests mockups/creator-payments) put the work in one
+queue on Creator Campaigns: Details to review first (the user: "be the first
+go this queue"), Ready to bill, Draft in Bukku, Awaiting payment, Paid. One
+read, `creator_payments_queue`, answers the details waiting and every booking
+posted in the portal or holding a live bill, amounts at Creator payments View
+as the creator's page reads them; Create bill and Read from Bukku reuse
+bukku-sync's calls, one creator after another. Paid is held to a period, the
+user's list: Last 3 days, Last 7 days, This month and last month (the
+default), Last month, Last 3 months, This year. The payment request and
+details-to-review notices now open their row in the queue. A booking that
+reached Completed before the portal stamped posted days is never Ready to
+bill, so the queue does not fill with jobs paid before the portal.
+`demo.js` reads the function as a read (its name holds "queue").
+
