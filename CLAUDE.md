@@ -6056,6 +6056,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     lesser of the report's and the colleague's, read without writing); at
     0 the button rests and the line under it says why and when the next
     is free.
+  - Every amount an Advertising Report's commentary states is one the
+    report holds (`figureSlips`, js/reports.js; 2026-11-13: seven published
+    reports read an objective's cost per result with the ads that brought
+    nothing left out): each ad's spend, cost per result, cost per 1,000
+    reached and return; each objective's, every ad counted, an ad with no
+    result type counted with its objective's one; the account's; the period
+    before's and the change; what a few ads spent together; and an amount
+    the period before's own report gave. One that matches none is a row of
+    Check and submit (Figures in the commentary) and holds Submit and
+    Publish; an amount with no cents is left alone. `report-draft` sends
+    `by_objective` (the period's spend, results and cost per result, every
+    ad counted) and its `group_cost_per_result` counts every ad that spent
+    (`tests/objcost.js`).
   - The Report audit (2026-10-09; the user: "there shouldnt be any
     mismatches"; `2026-10-09-report-audit.sql`): one card under Check and
     submit's checks (`.rp-aicheck`: Report audit, Run audit with the

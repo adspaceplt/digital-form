@@ -113,7 +113,7 @@ TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
 
 READING THE FIGURES
-Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the lowest cost; out of ads_in_group), worked out for you: say an ad had the lowest or the second-lowest cost per result only from it, and never name an ad the highest cost; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so. A Sales ad may carry purchase_value and roas (its purchase value over its amount spent, both as Meta reports them) with roas_rank (1 is the highest, out of ads_with_roas): for a Sales objective the return is the measure the client reads first, so say what the ads returned (a ROAS of 3.25x, written with the x) and which returned most only from roas_rank; give a Sales objective's own ROAS as its purchase values added up over what those ads spent; never add ROAS across objectives or platforms, never work out a ROAS the data does not give, and where purchase values are given say once that they are as Meta reports them.
+by_objective holds each objective's spend, results and cost_per_result for the period, every ad counted: a cost per result for an objective is said only from it (or previous.by_objective for the period before), never worked out from the ads. Each ad carries cost_rank, its place by cost per result among the ads of its platform, objective and result type (1 is the lowest cost; out of ads_in_group), worked out for you: say an ad had the lowest or the second-lowest cost per result only from it, and never name an ad the highest cost; each also carries group_cost_per_result, its objective's own cost per result, the measure for an ad that cost more. Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means few stopped on the opening, so the opening is what we change first. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so. A Sales ad may carry purchase_value and roas (its purchase value over its amount spent, both as Meta reports them) with roas_rank (1 is the highest, out of ads_with_roas): for a Sales objective the return is the measure the client reads first, so say what the ads returned (a ROAS of 3.25x, written with the x) and which returned most only from roas_rank; give a Sales objective's own ROAS as its purchase values added up over what those ads spent; never add ROAS across objectives or platforms, never work out a ROAS the data does not give, and where purchase values are given say once that they are as Meta reports them.
 Where the ads run on both Meta and TikTok, each ad names its platform and the account figures are given per platform: treat them as two platforms, never add reach or results across them, and compare cost per result only within one platform. On TikTok the hook rate is 2-second views over impressions and the hold rate 6-second views over 2-second views.
 
 FIELDS
@@ -455,18 +455,43 @@ Deno.serve(async (req) => {
        counts it (the user, 2026-10-09). */
     const adRows = ads.data as Record<string, unknown>[];
     const cprOf = (a: Record<string, unknown>) => num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? num(a.spend)! / num(a.results)! : null);
-    const groupOf = (a: Record<string, unknown>) => [a.platform || 'meta', a.objective || '', a.result_label || ''].join('|');
+    /* An ad that brought nothing carries no result type: it is counted with
+       the one its objective's other ads count (2026-11-13). */
+    const labelOf = (a: Record<string, unknown>) => {
+      if (a.result_label) return String(a.result_label);
+      const ls = Array.from(new Set(adRows.filter((b) => b.result_label && (b.platform || 'meta') === (a.platform || 'meta') && b.objective === a.objective).map((b) => String(b.result_label))));
+      return ls.length === 1 ? ls[0] : '';
+    };
+    const groupOf = (a: Record<string, unknown>) => [a.platform || 'meta', a.objective || '', labelOf(a)].join('|');
     /* An ad the team marked (2026-10-16, `ad_error`) is never ranked, as
        the PDF leaves it out; its reason stays with the team. */
     const marked = (a: Record<string, unknown>) => !!String(a.ad_error || '').trim();
     /* The objective's own cost per result (its spend over its results, the
        marked ads left out), so a shortfall is read against the objective,
        never against its best ad (the user, 2026-10-16). */
+    /* Every ad that spent counts, a result left empty as none: an ad that
+       spent and brought nothing is part of what the objective cost
+       (2026-11-13: CraftStone's Leads read S$11.62 a lead, not S$12.19,
+       with two ads that brought no lead left out). */
     const groupAvg = (a: Record<string, unknown>) => {
-      const g = adRows.filter((b) => !marked(b) && groupOf(b) === groupOf(a) && num(b.results) && num(b.spend) !== null);
-      const res = g.reduce((t, b) => t + num(b.results)!, 0), sp = g.reduce((t, b) => t + num(b.spend)!, 0);
+      const g = adRows.filter((b) => !marked(b) && groupOf(b) === groupOf(a) && num(b.spend) !== null);
+      const res = g.reduce((t, b) => t + (num(b.results) || 0), 0), sp = g.reduce((t, b) => t + num(b.spend)!, 0);
       return g.length > 1 && res ? Math.round(sp / res * 100) / 100 : null;
     };
+    /* The period's own figures by objective, every ad included as the
+       report's Results by objective adds them, so the summary never works
+       one out (2026-11-13). */
+    const byObjective: Record<string, Record<string, unknown>> = {};
+    adRows.forEach((a) => {
+      const k = [a.platform || 'meta', a.objective || '', labelOf(a)].join(' · ');
+      const o = byObjective[k] || (byObjective[k] = { spend: 0, results: 0 });
+      o.spend = Math.round(((o.spend as number) + (num(a.spend) || 0)) * 100) / 100;
+      o.results = (o.results as number) + (num(a.results) || 0);
+    });
+    Object.values(byObjective).forEach((o) => {
+      o.cost_per_result = (o.results as number) ? Math.round((o.spend as number) / (o.results as number) * 100) / 100 : null;
+    });
+    data.by_objective = byObjective;
     const rankAd = (a: Record<string, unknown>) => {
       const mine = cprOf(a);
       const peers = adRows.filter((b) => !marked(b) && groupOf(b) === groupOf(a) && num(b.results) && cprOf(b) !== null);

@@ -10163,3 +10163,24 @@ leads with no head), placed again as each request begins; `tests/loadbar.js`
 measures it at 1280 and 390. "The Dashboard title feels not right": the
 v3 head drew the section's name in the system face at 22/500 while every
 other heading reads in Slate; it is Slate at 22/600 now.
+
+### 2026-11-13 · Commentary figures held to the report's own
+The user reviewed CraftStone's October Advertising Report: its summary read
+S$11.62 a lead where Meta and the report's own tables read S$12.19 (S$828.74
+over 68 leads). `report-draft` handed Claude each objective's cost per
+result (`group_cost_per_result`) with the ads that spent and brought no
+result left out, and an ad with no result carried no result type, so it
+fell in a group of its own as well. The commentary check read against the
+same figure and passed; the reviewers confirmed; seven published reports
+went out with it (CraftStone, Roro, Learning Bee Desa Cemerlang and S P
+Setia for October, Laman Waringin for two periods, Huna Employment). The
+user: "these reports mismatches are critical and very serious errors".
+Fixed three ways: the average counts every ad that spent, an unlabelled ad
+with its objective's result type; the period's totals by objective go to
+Claude as `by_objective`, the one place it reads an objective's cost; and
+the page holds Submit and Publish while the commentary states an amount the
+report does not hold (`figureSlips`), run first over every Advertising
+Report in the database, where it flagged exactly the seven and one more
+(Laman Waringin, 25 Sept to 8 Oct, naming two WhatsApp ads not in the
+report) and no correct figure. The seven are revised as new versions.
+
