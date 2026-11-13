@@ -1142,7 +1142,7 @@
     if (paid) {
       f.innerHTML = [
         [T0.payTo, paid.payee],
-        [T0.payMethod, [T0.payMethods[paid.method] || paid.method, paid.bank]],
+        [T0.payMethod, [T0.payMethods[paid.method] || paid.method, window.ADspaceWords.bank(paid.bank)]],
         [T0.payAccount, fill(T0.payEnding, { n: paid.account_end })],
         [T0.payBilling, [T0.payKinds[paid.bill_kind] || '', fill(T0.payEnding, { n: paid.id_end })]],
         [T0.payName, paid.legal_name],
@@ -1208,7 +1208,7 @@
         ' value="' + esc(v[k] || '') + '">';
     };
     var options = function (list, word, cur) {
-      return list.map(function (o) { return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(word ? word[o] : o) + '</option>'; }).join('');
+      return list.map(function (o) { return '<option value="' + esc(o) + '"' + (cur === o ? ' selected' : '') + '>' + esc(word ? word[o] : window.ADspaceWords.bank(o)) + '</option>'; }).join('');
     };
     var methods = METHODS[v.currency] || METHODS.MYR;
     if (methods.indexOf(v.method) < 0) v.method = methods[0];

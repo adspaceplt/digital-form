@@ -142,6 +142,11 @@
     el.classList.toggle('is-tight', w <= t);
   }
 
+  /* Each element is watched once, and one a repaint took off the page is
+     let go at the next call, so a list redrawn all day holds no old rows
+     (2026-11-13, the code review); with no ResizeObserver one resize
+     listener reads every selector asked for. */
+  var watched = [], sels = {}, onResize = null;
   function fit(sel) {
     var els = document.querySelectorAll(sel || FIT);
     if (window.ResizeObserver) {
@@ -150,13 +155,22 @@
           for (var i = 0; i < rs.length; i++) markFit(rs[i].target);
         });
       }
-      Array.prototype.forEach.call(els, function (el) { markFit(el); obs.observe(el); });
+      watched = watched.filter(function (el) { if (el.isConnected) return true; obs.unobserve(el); return false; });
+      Array.prototype.forEach.call(els, function (el) {
+        markFit(el);
+        if (watched.indexOf(el) < 0) { obs.observe(el); watched.push(el); }
+      });
       return;
     }
     // No ResizeObserver: the window is the only signal there is.
-    var all = function () { Array.prototype.forEach.call(els, markFit); };
-    all();
-    window.addEventListener('resize', all);
+    sels[sel || FIT] = 1;
+    Array.prototype.forEach.call(els, markFit);
+    if (!onResize) {
+      onResize = function () {
+        Object.keys(sels).forEach(function (k) { Array.prototype.forEach.call(document.querySelectorAll(k), markFit); });
+      };
+      window.addEventListener('resize', onResize);
+    }
   }
 
   /* Self-installing, so a page added later cannot forget it. */

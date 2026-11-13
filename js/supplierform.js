@@ -68,7 +68,7 @@
   function select(id, k, req, opts, none) {
     return '<select class="select" id="' + id + '" data-k="' + k + '"' + (req ? ' aria-required="true"' : '') + '>' +
       (none ? '<option value="">' + esc(none) + '</option>' : '') +
-      opts.map(function (o) { return '<option value="' + esc(o) + '"' + (typed[k] === o ? ' selected' : '') + '>' + esc(o === 'Touch N Go Digital' ? 'Touch \u2019n Go Digital' : o) + '</option>'; }).join('') +
+      opts.map(function (o) { return '<option value="' + esc(o) + '"' + (typed[k] === o ? ' selected' : '') + '>' + esc(window.ADspaceWords.bank(o)) + '</option>'; }).join('') +
       '</select>';
   }
   function seg(id, k, opts, label) {

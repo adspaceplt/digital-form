@@ -218,6 +218,10 @@
      the member's row and by Performance, so the words are said once. The
      keys are what the database stores (`team_members.department`,
      `team_members.role_family`). Console only, so English only. */
+  /* A bank as people read it: the stored list keeps Touch N Go Digital (the
+     database checks it), said as the company writes it (2026-11-13, the
+     tone review). */
+  W.bank = function (v) { return String(v == null ? '' : v).replace(/Touch N Go Digital/g, 'Touch \u2019n Go Digital'); };
   W.dept = { creative: 'Creative', marketing: 'Marketing' };
   W.roleStd = { visual: 'Visual / Designer', video: 'Video Production Specialist',
                 planner: 'PM / Content Planner / Copywriter', account: 'Account Media / Ads / Account Manager' };
