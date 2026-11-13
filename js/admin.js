@@ -2669,6 +2669,12 @@
     'assistant.task':        ['Changed through the Assistant', '', 'ops'],
     'assistant.call':        ['Changed through the Assistant', '', 'clients'],
     'assistant.report':      ['Changed through the Assistant', '', 'reports'],
+    'assistant.meeting':     ['Changed through the Assistant', '', 'ops'],
+    'assistant.campaign':    ['Changed through the Assistant', '', 'campaigns'],
+    'assistant.set':         ['Changed through the Assistant', '', 'review'],
+    'assistant.whatsapp':    ['Sent through the Assistant', '', 'whatsapp'],
+    /* A run a colleague scheduled through the Assistant, or cancelled. */
+    'assistant.schedule':    ['Scheduled through the Assistant', '', 'ops'],
     'client.added':          ['Client added', 'is-ok', 'clients'],
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],

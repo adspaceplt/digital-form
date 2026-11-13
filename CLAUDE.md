@@ -283,7 +283,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/whatsapp.js`, `supabase/functions/wa-send/`, `supabase/functions/wa-hook/`, the WHATSAPP sections, the EMAIL LOG and NEW EMAIL sections | whatsapp, wafn, waapprove, maillogsql, smsql, crm, perms, sql, then `ui` |
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
-| `agent.js`, `supabase/functions/portal-agent/`, the PORTAL ASSISTANT sections | agent, search, caption, sql, smsql, demo, then `ui` |
+| `agent.js`, `supabase/functions/portal-agent/`, the PORTAL ASSISTANT and ASSISTANT ACTIONS AND SCHEDULES sections | agent, search, caption, whatsapp, meetmsgsql, sql, smsql, demo, then `ui` |
 | `maintenance.js` | upgrade, sql, then `ui` |
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
@@ -1819,7 +1819,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the verify page as a link;
   - the redirect hosts `hi.adspace.me` and `go.adspace.me` as links.
 
-### The Assistant (`js/agent.js`, `portal-agent`, `2026-11-13-portal-assistant.sql`)
+### The Assistant (`js/agent.js`, `portal-agent`, `2026-11-13-portal-assistant.sql`, `2026-11-13-assistant-actions.sql`)
 - Ask in the console's head (`#agentOpen`, Ctrl + J; the user, 2026-11-13:
   "ok approve, all colleagues, build all phases") opens `#agentSheet`: beside
   the page at a desk, a card above the tab bar on a phone. Every active
@@ -1828,24 +1828,78 @@ Each line is a rule that broke once. Its reason is in the archive.
   asks Claude (`AGENT_MODEL`, unset `claude-opus-5-5`; server-side fallback
   on) with a fixed list of tools and runs none of them: every tool runs on the
   page as the colleague. A read (`find_clients`, `client_summary`,
-  `list_tasks`, `waiting_on_me`, `list_reports`, `find_colleagues`) makes the
+  `list_tasks`, `waiting_on_me`, `list_reports`, `find_colleagues`,
+  `client_months`, `list_sets`, `list_campaigns`, `find_contacts`) makes the
   screens' own reads under their policies, asks `may()` first (no-access),
   and never sends a contact's email or number; an email or number typed into
   a question is masked by the function. A client's name and its work go to
   Claude (approved by the user for the assistant, 2026-11-13).
 - A change is a `propose_*` tool, drawn as a card of what will be written,
-  from and to (`.ag-confirm`); nothing is written until Confirm, through the
-  function the screen uses (`ops_create_task`, `ops_assign_task`,
-  `ops_request_due_change`, `ops_add_comment`, a Calls and visits row with
-  the lead moved to Contacted, `sm_report_sent`); Undo where the screen
-  offers one (Reassign, the call, Mark as sent); filed `assistant.task`,
-  `assistant.call` or `assistant.report` (… confirmed through the Assistant)
-  beside the section's own line; what was confirmed, cancelled or undone is
-  told to Claude with the next question. `open_page` draws a button to the
-  record on its own screen. The assistant never deletes, sends to a client,
-  creator or supplier, or touches money, billing, access or performance:
-  none is among its tools. Captions, scripts, checklists and commentary stay
-  their own screens' Write with AI.
+  from and to (`.ag-confirm`, its act Confirm, else the screen's own word:
+  Book, Create, Publish, Unpublish, Send); nothing is written until it is
+  pressed, through the function the screen uses (`ops_create_task`,
+  `ops_assign_task`, `ops_request_due_change`, `ops_add_comment`, a Calls
+  and visits row with the lead moved to Contacted, `sm_report_sent`); Undo
+  where the screen offers one (Reassign, the call, Mark as sent); filed
+  `assistant.task`, `assistant.call` or `assistant.report` (… confirmed
+  through the Assistant) beside the section's own line; what was confirmed,
+  cancelled or undone is told to Claude with the next question. `open_page`
+  draws a button to the record on its own screen (`client_month` the
+  client's Months). The assistant never deletes, sends to a creator or
+  supplier, writes an email, or touches money, billing, quotations, access
+  or performance: none is among its tools. Captions, scripts, checklists
+  and commentary stay their own screens' Write with AI.
+- Actions behind their card (the user, 2026-11-13: "approve build both",
+  the mockups "Assistant · actions with Confirm" and "Assistant · phone"):
+  - `propose_meeting` books a client month's meeting as its Meeting sheet
+    does (`ops_engagement_set_meeting`, then `meet-create` for a Google Meet,
+    the default; On site takes a Google Meet off): the month must be the
+    client's and open, a Google Meet from the next half hour; the card reads
+    Client, Month, When (to when, MYT), Channel, Led by; done, the link joins
+    it with Copy message (`ADspaceOps.meetingMessage`) and Open month; a slot
+    the calendar holds (`slot-taken`) is refused in the card and the month
+    put back; Undo moves an earlier event back or takes this one off;
+    filed `assistant.meeting`.
+  - `propose_campaign` makes a creator campaign as New campaign does (a
+    draft, its creators, its person in charge, a link key; Active clients;
+    Creator Campaigns: Campaigns at Work), filed `campaign.created` and
+    `assistant.campaign`; no Undo (its way out is Delete, never the
+    Assistant's).
+  - `propose_publish_set` / `propose_unpublish_set` as the set's head does
+    (Content Review: Sets at Work, an empty set never published), Undo the
+    other way, filed `set.published` / `set.withdrawn` and `assistant.set`.
+  - `propose_whatsapp` sends an approved template to a client's contact
+    through the composer's path (`wa_compose_prepare`, the purpose's own
+    template read afresh, else one named for a plain message; never a
+    Document header; `wa-send`, which files it before Meta is asked;
+    `ADspaceWhatsApp.may`): the card reads To (greeting and number),
+    Template and its category, Sent recently, and the message as it will
+    read; sent within `wa_repeat_hours`, it says so in warn and its act
+    reads Send again (`again`); filed `assistant.whatsapp`.
+  - `propose_schedule` keeps any of a reminder, Mark as sent, Add task,
+    Publish or Unpublish set and a WhatsApp approval reminder, feedback
+    request or representative for later (`agent_schedules`, RLS on, no
+    policy, no grant; `agent_schedule_add` with `bad-time` (a minute to 92
+    days ahead), `bad-kind`, `bad-condition`, `too-many` past 50 waiting,
+    and the kind's own refusals at the colleague's access now;
+    `agent_schedule_cancel`, `agent_schedule_list`), with an optional
+    condition (`set_undecided`, `report_not_sent`, `task_open`); Undo
+    cancels it; filed `assistant.schedule`. A Google Meet is never
+    scheduled. pg_cron `agent-schedules` runs `agent_schedules_run()` every
+    five minutes: each row due as the colleague who confirmed it
+    (`request.jwt.claims`, as `ops_recurring_daily`), their access asked
+    again, a condition no longer holding Skipped, a refusal or a fault
+    Failed and told to them (`assistant.failed`); a reminder is a notice to
+    the bell and the phone (`assistant.reminder`, opening its task, report
+    or client); a WhatsApp is queued through `wa_enqueue` under the
+    colleague's name after Sent recently is asked; `jobs_watch` counts the
+    failed runs for the admins' morning notice.
+  - The sheet's head holds Scheduled n (`#agentSched`, drawn while the
+    colleague has any, n those waiting) opening the list (`#agentSchedBox`:
+    each run's name, when and kind, Cancel while it waits, else its state
+    and what happened); the empty conversation lists what the Assistant can
+    do, Find and Do, after you confirm, then what waits (`#agentSchedHome`).
+    The stand-in runs due rows through `window.__agentRun()`.
 - A question is an AI use of its own (`ai_drafts.purpose` `agent`, 30 a
   person a day, AI usage's Assistant column): counted before Claude is asked
   (`ai_agent_claim`), each later step naming it (`ai_agent_turn`, the

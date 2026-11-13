@@ -14,8 +14,14 @@
  *   - open_page draws a button to the record on its own screen.
  * Each confirmed change is filed in the Activity record under the colleague,
  * marked as made through the Assistant (`assistant.task`, `assistant.call`,
- * `assistant.report`). The assistant never deletes, sends to a client,
- * touches money, access or performance: those are not among its tools.
+ * `assistant.report`, `assistant.meeting`, `assistant.campaign`,
+ * `assistant.set`, `assistant.whatsapp`, `assistant.schedule`).
+ * Since 2026-11-13 (the user: "approve build both") it may book a month's
+ * meeting, create a campaign, publish or unpublish a set, and send a
+ * WhatsApp template to a client, each only behind its card; and schedule a
+ * reminder or one of those for later (`agent_schedule_add`, run as the
+ * colleague every five minutes). It never deletes, and never touches
+ * money, billing, access or performance: those are not among its tools.
  */
 (function () {
   'use strict';
@@ -61,6 +67,21 @@
   var STAGE = { lead: 'Lead', contacted: 'Contacted', proposal: 'Proposal sent', active: 'Active', paused: 'Paused', past: 'Past' };
   var REPORT_STATE = { draft: 'Draft', review: 'In review', confirmed: 'Confirmed', published: 'Published' };
   var REPORT_KIND = { social: 'Accounts Report', ads: 'Advertising Report' };
+  var CHANNEL = { google_meet: 'Google Meet', onsite: 'On site', zoom: 'Zoom', other: 'Other' };
+  var CAMP_STATE = { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' };
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  function monthName(p) {
+    var m = /^(\d{4})-(\d{2})/.exec(String(p || ''));
+    return m ? MON[Number(m[2]) - 1] + ' ' + m[1] : String(p || '');
+  }
+  /* A moment as the console writes it: Tue 18 Nov, 3:00pm (Malaysia). */
+  function whenWord(iso) {
+    if (!iso || !CLOCK) return '';
+    var d = CLOCK.day(iso);
+    var wd = CLOCK.weekday ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][CLOCK.weekday(d)] + ' ' : '';
+    return wd + CLOCK.date(d, { year: false }) + ', ' + CLOCK.clock(iso);
+  }
+  function validTime(v) { return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(v || '')); }
 
   /* ---- Days, Malaysia's ------------------------------------------------------ */
   function today() { return CLOCK ? CLOCK.today() : new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10); }
@@ -243,6 +264,62 @@
         if (next) q = q.lt('period_end', next + '-01');
       }
       return q.order('period_start', { ascending: false }).limit(30).then(rows).then(function (list) { return { reports: list.map(reportRow) }; });
+    },
+    /* A client's content months in My Work: whether each is confirmed,
+       and its meeting, so a meeting is booked on the right month. */
+    client_months: function (a) {
+      if (!may('ops')) return Promise.resolve(noAccess());
+      return team().then(function () {
+        return db.from('ops_engagements').select('id, period, status, meeting_at, meeting_channel, meeting_minutes, meeting_na, meeting_owner_id, meeting_event_id')
+          .eq('client_id', a.client_id).order('period', { ascending: false }).limit(8);
+      }).then(rows).then(function (list) {
+        return { months: list.map(function (e) {
+          return { month: e.period, name: monthName(e.period), state: e.status === 'cancelled' ? 'Cancelled' : e.status === 'completed' ? 'Completed' : 'Open',
+            meeting: e.meeting_na ? 'Not needed this month' : e.meeting_at ? whenWord(e.meeting_at) + ' · ' + (CHANNEL[e.meeting_channel] || 'Meeting') +
+              (e.meeting_owner_id ? ' · led by ' + nameOf(e.meeting_owner_id) : '') : 'Not set' };
+        }) };
+      });
+    },
+    /* A client's content sets in Content Review, where each one's posts
+       stand, newest first. */
+    list_sets: function (a) {
+      if (!may('review.sets')) return Promise.resolve(noAccess());
+      return db.from('batches').select('id, title, period, published, created_at').eq('client_id', a.client_id)
+        .order('created_at', { ascending: false }).limit(12).then(rows).then(function (list) {
+          if (!list.length) return { sets: [] };
+          return db.rpc('review_set_counts', { p_sets: list.map(function (b) { return b.id; }) }).then(function (r) {
+            var n = {};
+            (r.data || []).forEach(function (x) { n[x.set_id] = x; });
+            return { sets: list.map(function (b) {
+              var c = n[b.id] || {};
+              return { set_id: b.id, title: b.title, month: b.period ? monthName(b.period) : 'Ad hoc', state: b.published ? 'Published' : 'Draft',
+                posts: c.n_posts || 0, approved: c.n_approved || 0, changes_requested: c.n_changes || 0, not_decided: c.n_undecided || 0 };
+            }) };
+          });
+        });
+    },
+    list_campaigns: function (a) {
+      if (!may('campaigns.campaigns')) return Promise.resolve(noAccess());
+      var q = db.from('campaigns').select('id, title, state, slots, owner, campaign_code, clients(name)');
+      if (a.client_id) q = q.eq('client_id', a.client_id);
+      return q.order('created_at', { ascending: false }).limit(15).then(rows).then(function (list) {
+        return { campaigns: list.map(function (c) {
+          return { campaign_id: c.id, title: c.title || 'Untitled campaign', campaign_id_code: c.campaign_code || null,
+            client: (c.clients && c.clients.name) || null, state: CAMP_STATE[c.state] || c.state, creators: c.slots, person_in_charge: c.owner || null };
+        }) };
+      });
+    },
+    /* A client's contacts, to name who a WhatsApp goes to: never a number
+       or an email, only whether WhatsApp can reach them. */
+    find_contacts: function (a) {
+      if (!may('clients.contacts')) return Promise.resolve(noAccess());
+      return db.from('client_contacts').select('id, salutation, name, role, is_primary, whatsapp, phone').eq('client_id', a.client_id)
+        .is('archived_at', null).limit(20).then(rows).then(function (list) {
+          return { contacts: list.map(function (k) {
+            return { contact_id: k.id, name: [k.salutation, k.name].filter(Boolean).join(' '), role: k.role || null, primary: !!k.is_primary,
+              whatsapp: !!((k.whatsapp && !/^@/.test(k.whatsapp)) || k.phone) };
+          }) };
+        });
     },
     find_colleagues: function (a) {
       return Promise.all([team(), db.rpc('team_task_takers')]).then(function (g) {
@@ -431,8 +508,437 @@
             undo: function () { return db.rpc('sm_report_sent', { p_id: a.report_id, p_on: a._was }).then(rpcOk); } };
         });
       }
+    },
+
+    /* A client month's meeting (2026-11-13, the user: "approve build
+       both"): saved as the month's Meeting sheet saves it, then booked on
+       the shared calendar by `meet-create` for a Google Meet; a slot the
+       calendar holds is refused in the card and the month put back. */
+    propose_meeting: {
+      title: 'Book meeting', go: 'Book',
+      card: function (a) {
+        if (!may('ops', 'work')) return Promise.reject(new Error('You do not have permission to book meetings. Please ask an admin.'));
+        if (!validDay(a.date) || !validTime(a.time)) return Promise.reject(new Error('Enter a valid date and time.'));
+        var mins = Number(a.minutes) || 30;
+        if (mins < 15 || mins > 240) return Promise.reject(new Error('Choose a length from 15 to 240 minutes.'));
+        var at = CLOCK.at(a.date, a.time);
+        var google = a.channel !== 'onsite';
+        if (google && at.getTime() < nextSlot().getTime()) return Promise.reject(new Error('Choose a time from ' + whenWord(nextSlot().toISOString()) + '.'));
+        return Promise.all([team(), db.from('clients').select('id, name, client_code, slug').eq('id', a.client_id).maybeSingle(),
+          db.from('ops_engagements').select('id, period, status, meeting_at, meeting_channel, meeting_minutes, meeting_link, meeting_owner_id, meeting_event_id, meeting_na')
+            .eq('client_id', a.client_id).eq('period', String(a.month || '').slice(0, 7)).maybeSingle()]).then(function (g) {
+          var c = g[1].data, e = g[2].data;
+          if (!c) throw new Error('That client could not be found.');
+          if (!e) throw new Error('That client has no ' + monthName(a.month) + ' in My Work. Add the month first.');
+          if (e.status === 'cancelled' || e.status === 'completed') throw new Error('That month is ' + e.status + '. Reopen it in My Work first.');
+          var lead = a.led_by || (me() || {}).id;
+          if (a.led_by && !nameOf(a.led_by)) throw new Error('That colleague could not be found. Ask again with their name.');
+          a._client = c; a._eng = e; a._at = at; a._mins = mins; a._lead = lead; a._google = google;
+          return [['Client', c.name + (c.client_code ? ' · ' + c.client_code : '')], ['Month', monthName(e.period)],
+                  ['When', whenWord(at.toISOString()) + ' to ' + CLOCK.clock(new Date(at.getTime() + mins * 60000).toISOString())],
+                  ['Channel', google ? 'Google Meet' : 'On site'], ['Led by', lead === (me() || {}).id ? 'You' : nameOf(lead)],
+                  e.meeting_at && !e.meeting_na ? ['Replaces', whenWord(e.meeting_at)] : null];
+        });
+      },
+      run: function (a) {
+        var e = a._eng, c = a._client;
+        var set = function (at, ch, owner, mins, link) {
+          return db.rpc('ops_engagement_set_meeting', { p_engagement: e.id, p_at: at, p_channel: ch, p_owner: owner, p_note: null, p_na: false,
+            p_minutes: mins, p_link: link }).then(rpcOk);
+        };
+        var meet = function (action) {
+          return db.functions.invoke('meet-create', { body: { engagementId: e.id, action: action } })
+            .then(function (r) { return r.error ? { error: 'unreachable' } : (r.data || {}); }, function () { return { error: 'unreachable' }; });
+        };
+        /* A pasted link is kept only for a channel that has one; the
+           calendar makes a Google Meet's. */
+        return set(a._at.toISOString(), a._google ? 'google_meet' : 'onsite', a._lead, a._mins, '').then(function () {
+          /* On site takes the month's Google Meet off the calendar, as the
+             sheet does when the channel changes. */
+          if (!a._google) return e.meeting_event_id ? meet('delete').then(function () { return {}; }) : {};
+          return meet('create');
+        }).then(function (d) {
+          if (d && d.error) {
+            var back = e.meeting_at && !e.meeting_na
+              ? set(e.meeting_at, e.meeting_channel, e.meeting_owner_id, e.meeting_minutes, e.meeting_link || '').then(function () {
+                  return e.meeting_event_id ? meet('create') : null;
+                }).catch(function () { return null; })
+              : Promise.resolve();
+            return back.then(function () {
+              throw new Error('Not booked. ' + meetSaid(d) + (e.meeting_at && !e.meeting_na ? '' : ' The month keeps the time without a link.'));
+            });
+          }
+          return db.from('ops_engagements').select('meeting_at, meeting_minutes, meeting_link').eq('id', e.id).maybeSingle();
+        }).then(function (r) {
+          var x = (r && r.data) || {};
+          file('assistant.meeting', c.name, monthName(e.period) + ' meeting booked for ' + whenWord(a._at.toISOString()));
+          var OPS = window.ADspaceOps;
+          var message = OPS && OPS.meetingMessage ? OPS.meetingMessage({ at: a._at.toISOString(), minutes: a._mins, online: a._google,
+            month: monthName(e.period), channel: a._google ? 'Google Meet' : 'On site', link: x.meeting_link || '' }) : '';
+          return { said: 'Booked.', open: { kind: 'client_month', id: c.slug || c.id, label: 'Open month' },
+            facts: x.meeting_link ? [['Link', x.meeting_link]] : null, copy: message || null,
+            /* The month's meeting as it was: an event it had moves back;
+               an event this booking made leaves the calendar first, so the
+               link it had is written back after. */
+            undo: function () {
+              var had = e.meeting_at && !e.meeting_na;
+              var gone = a._google && !e.meeting_event_id
+                ? meet('delete').then(function (d) { if (d && d.error) throw new Error('Not undone. The Google Meet could not be removed from the calendar.'); })
+                : Promise.resolve();
+              return gone.then(function () {
+                if (!had) return null;
+                return set(e.meeting_at, e.meeting_channel, e.meeting_owner_id, e.meeting_minutes, e.meeting_link || '').then(function () {
+                  return e.meeting_event_id ? meet('create') : null;
+                });
+              });
+            } };
+        });
+      }
+    },
+
+    /* A creator campaign, made as New campaign makes it: a draft with no
+       creators, the colleague's own link key. */
+    propose_campaign: {
+      title: 'Create campaign', go: 'Create',
+      card: function (a) {
+        if (!may('campaigns.campaigns', 'work')) return Promise.reject(new Error('You do not have permission to create campaigns. Please ask an admin.'));
+        var title = String(a.title || '').trim();
+        if (!/[\p{L}\p{N}]/u.test(title) || title.length > 120) return Promise.reject(new Error('Enter a campaign name.'));
+        var slots = Number(a.creators);
+        if (!(slots >= 1 && slots <= 200) || Math.floor(slots) !== slots) return Promise.reject(new Error('Enter 1 or more creators.'));
+        return Promise.all([team(), db.from('clients').select('id, name, client_code, stage').eq('id', a.client_id).maybeSingle()]).then(function (g) {
+          var c = g[1].data;
+          if (!c) throw new Error('That client could not be found.');
+          if (c.stage !== 'active') throw new Error('Campaigns are made for an Active client.');
+          if (a.person_in_charge && !nameOf(a.person_in_charge)) throw new Error('That colleague could not be found. Ask again with their name.');
+          a._client = c; a._title = title; a._slots = slots;
+          a._owner = a.person_in_charge ? nameOf(a.person_in_charge) : (me() || {}).name || '';
+          return [['Client', c.name + (c.client_code ? ' · ' + c.client_code : '')], ['Title', title], ['Creators', String(slots)],
+                  ['Person in charge', a.person_in_charge && a.person_in_charge !== (me() || {}).id ? a._owner : 'You'],
+                  ['Format', FORMAT[a.format] || 'Site visit'], ['State', 'Draft, no creators yet']];
+        });
+      },
+      run: function (a) {
+        return db.from('campaigns').insert({
+          client_id: a._client.id, title: a._title, purpose: null, slots: a._slots, deadline: null,
+          push_format: FORMAT[a.format] ? a.format : 'site_visit', deliverable: a.deliverable === 'graphic' ? 'graphic' : 'video',
+          owner: a._owner || null, backups_open: false, access_token: API.accessToken(), state: 'draft',
+          created_by: (bridge.actor && bridge.actor()) || null
+        }).select('id').then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
+          if (bridge.log) bridge.log('campaign.created', a._title, a._slots + ' creators');
+          file('assistant.campaign', a._title, 'Campaign created for ' + a._client.name);
+          return { said: 'Created.', open: { kind: 'campaign', id: r.data[0].id, label: 'Open campaign' } };
+        });
+      }
+    },
+
+    propose_publish_set: setMove(true),
+    propose_unpublish_set: setMove(false),
+
+    /* A WhatsApp template, through the composer's own path: the record's
+       facts from `wa_compose_prepare`, Sent recently asked first, then
+       `wa-send`, which files it before Meta is asked. Nothing goes without
+       Send. */
+    propose_whatsapp: {
+      title: 'Send on WhatsApp', go: 'Send',
+      card: function (a) { return waCard(a); },
+      run: function (a) {
+        return db.functions.invoke('wa-send', { body: { action: 'compose', to_kind: 'contact', to_id: a.contact_id, purpose: a._purpose,
+          ref: a._ref, template: { name: a._tpl.name, language: a._tpl.language }, values: a._values, header_value: '', again: a._recent ? true : undefined } })
+          .then(function (res) {
+            var d = res && res.data;
+            if (res.error || !d || d.error) {
+              var code = (d && d.error) || 'wa-failed';
+              if (code === 'recent') throw new Error('It was sent on WhatsApp moments ago. Ask again to see who sent it.');
+              throw new Error(WA() && WA().said ? WA().said({ code: code }) : 'Not sent. Please try again.');
+            }
+            file('assistant.whatsapp', a._prep.subject || a._prep.client || '', (a._tplWord || a._tpl.name) + ' sent to ' + (d.to || a._prep.name));
+            return { said: 'Sent.', open: a._prep.client_id ? { kind: 'client', id: a._prep.client_id, pane: 'account', label: 'Open client' } : null };
+          });
+      }
+    },
+
+    /* Something for later (2026-11-13): kept by `agent_schedule_add` and run
+       every five minutes as the colleague, their access asked again then.
+       A Google Meet is never scheduled: the calendar must answer at once. */
+    propose_schedule: {
+      title: function (a) { return SCHED_TITLE[a.kind] || 'Schedule'; },
+      card: function (a) { return schedCard(a); },
+      run: function (a) {
+        return db.rpc('agent_schedule_add', { p_kind: a.kind, p_at: a._at.toISOString(), p_title: a._title, p_payload: a._payload,
+          p_condition: a.condition || null, p_ref: a._cref || null }).then(function (r) {
+          if (r.error) throw new Error(/function|schema cache/i.test(r.error.message || '') ? SAID['needs-update'] : r.error.message);
+          var d = r.data || {};
+          if (d.error) throw new Error(SCHED_SAID[d.error] || refusal(d.error));
+          readSched();
+          return { said: 'Scheduled.', undo: function () {
+            return db.rpc('agent_schedule_cancel', { p_id: d.id }).then(rpcOk).then(function () { readSched(); });
+          } };
+        });
+      }
     }
   };
+
+  var FORMAT = { site_visit: 'Site visit', event: 'Event', seeding: 'Product seeding', tenant_trail: 'Tenant trail' };
+  function WA() { return window.ADspaceWhatsApp; }
+
+  /* The earliest a Google Meet can be booked: the next half hour, as the
+     month's Meeting sheet holds it. */
+  function nextSlot() { var half = 30 * 60000; return new Date(Math.floor(Date.now() / half) * half + half); }
+  function meetSaid(d) {
+    var k = d && d.error;
+    if (k === 'slot-taken') return 'The shared calendar already has a meeting' + (d.start ? ' at ' + CLOCK.clock(d.start) + (d.end ? ' to ' + CLOCK.clock(d.end) : '') : '') + '. Choose another time.';
+    if (k === 'meet-not-set-up') return 'Google Meet is not set up yet. Please contact an admin.';
+    if (k === 'google-token' || k === 'google-refused') return 'Google Meet is not available at the moment. Please contact an admin.';
+    if (k === 'meet-pending') return 'Google is still creating the link. Open the month and press Create Google Meet in a moment.';
+    return 'Google Meet could not be reached. Try again.';
+  }
+
+  /* Publish or unpublish a content set, as the set's own head does. */
+  function setMove(on) {
+    return {
+      title: on ? 'Publish set' : 'Unpublish set', go: on ? 'Publish' : 'Unpublish',
+      card: function (a) {
+        if (!may('review.sets', 'work')) return Promise.reject(new Error('You do not have permission to publish sets. Please ask an admin.'));
+        return db.from('batches').select('id, title, period, published, client_id, clients(name)').eq('id', a.set_id).maybeSingle().then(function (r) {
+          var b = r.data;
+          if (!b) throw new Error('That set could not be found.');
+          if (Boolean(b.published) === on) throw new Error(on ? 'That set is already published.' : 'That set is not published.');
+          return db.rpc('review_set_counts', { p_sets: [b.id] }).then(function (q) {
+            var n = ((q.data || [])[0] || {}).n_posts || 0;
+            if (on && !n) throw new Error('That set holds no posts. Add assets before publishing.');
+            a._set = b;
+            return [['Set', b.title + ' · ' + n + (n === 1 ? ' post' : ' posts')], ['Client', (b.clients && b.clients.name) || ''],
+                    ['Change', on ? 'Draft → Published' : 'Published → Draft'],
+                    ['Client sees', on ? 'On the review link at once' : 'No longer on the review link']];
+          });
+        });
+      },
+      run: function (a) {
+        var b = a._set, client = (b.clients && b.clients.name) || '';
+        var go = function (next) {
+          return db.from('batches').update({ published: next }).eq('id', b.id).select('id').then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
+            if (bridge.log) bridge.log(next ? 'set.published' : 'set.withdrawn', client + ' — ' + b.title);
+          });
+        };
+        return go(on).then(function () {
+          file('assistant.set', client + ' — ' + b.title, on ? 'Published' : 'Unpublished');
+          return { said: on ? 'Published.' : 'Unpublished.', open: { kind: 'set', id: b.id, label: 'Open set' },
+            undo: function () { return go(!on); } };
+        });
+      }
+    };
+  }
+
+  /* The WhatsApp card: the recipient and the record as the database names
+     them, the template the purpose has on (else the one named), each
+     variable filled as the composer fills it, and Sent recently. */
+  function waCard(a) {
+    var X = WA();
+    var purpose = a.purpose;
+    if (!X || !X.meta) return Promise.reject(new Error('WhatsApp is not available on this page. Open Messages.'));
+    if (['approval', 'feedback', 'representative', 'message'].indexOf(purpose) < 0) return Promise.reject(new Error('Choose what the message is for.'));
+    if (!X.may(purpose)) return Promise.reject(new Error('You do not have permission to send this on WhatsApp. Please ask an admin.'));
+    var ref = purpose === 'approval' ? (a.ref || null) : null;
+    if (purpose === 'approval' && !ref) return Promise.reject(new Error('Name the set or the booking that waits for approval.'));
+    /* Which template each purpose has on is read afresh: it is changed in
+       Settings while a page stays open. */
+    var onNow = db.rpc('wa_templates_read').then(function (r) { return { list: ((r && r.data) || {}).templates || [] }; }, function () { return { list: [] }; });
+    return Promise.all([db.rpc('wa_compose_prepare', { p_to_kind: 'contact', p_to: a.contact_id, p_purpose: purpose, p_ref: ref }), X.meta(), onNow]).then(function (g) {
+      var prep = g[0].data || {};
+      if (g[0].error) throw new Error(g[0].error.message);
+      if (prep.error) throw new Error(X.said ? X.said({ code: prep.error }) : 'This message cannot be sent.');
+      var meta = g[1] || {}, set = g[2] || {};
+      if (meta.error) throw new Error(X.said ? X.said(meta.error) : 'The templates could not be read.');
+      var list = (meta.list || []).filter(function (t) { return t.supported; });
+      var mine = (set.list || []).filter(function (t) { return t.purpose === purpose && t.active && t.name; })[0];
+      var tpl = a.template ? list.filter(function (t) { return t.name === a.template; })[0]
+        : mine ? list.filter(function (t) { return t.name === mine.name && t.language === mine.lang; })[0] : null;
+      if (!tpl) {
+        if (purpose === 'message' || a.template) {
+          state.notes.push('The templates the portal can send are: ' + list.filter(function (t) { return t.header !== 'DOCUMENT'; }).map(function (t) { return t.name; }).join(', ') + '.');
+          throw new Error(a.template ? 'That template is not approved for the portal. Choose another.' : 'Name the template to send.');
+        }
+        throw new Error('The WhatsApp template for this message is off. An admin turns it on in Settings.');
+      }
+      if (tpl.header === 'DOCUMENT' || tpl.header_var) throw new Error('This template carries a file or a header of its own. Send it from its record.');
+      if (X.badButton(tpl)) throw new Error('This template\'s link button cannot be filled. Choose another template.');
+      return whatWaits(purpose, ref).then(function (what) {
+        var link = prep.link ? location.origin + '/' + prep.link : '';
+        var fill = function (v) {
+          var low = String(v).toLowerCase();
+          if (/^\d+$/.test(v)) return v === '1' ? prep.greeting || prep.name || '' : v === '2' ? prep.client || '' :
+            v === '3' ? (purpose === 'approval' ? what : purpose === 'representative' ? prep.rep || '' : '') :
+            v === '4' && purpose === 'approval' ? link : '';
+          if (purpose === 'approval' && /link|url|approve/.test(low)) return link;
+          if (purpose === 'representative' && /rep|sales|person|staff|colleague/.test(low)) return prep.rep || '';
+          if (purpose === 'approval' && /what|item|waiting|set|draft|content/.test(low)) return what;
+          if (/client|brand|company|business/.test(low)) return prep.client || '';
+          if (/name|greet|salut|contact|recipient/.test(low)) return prep.greeting || prep.name || '';
+          return '';
+        };
+        var values = {};
+        (tpl.body_vars || []).forEach(function (v) { values[v] = fill(v); });
+        var empty = Object.keys(values).filter(function (k) { return !values[k]; });
+        if (empty.length) throw new Error('This template needs words the Assistant cannot fill. Send it from Messages.');
+        var body = String(tpl.body || '').replace(/\{\{\s*([A-Za-z0-9_]+)\s*\}\}/g, function (m, v) { return values[v] || m; });
+        var btns = (tpl.buttons || []).map(function (b) { return '[ ' + b.text + ' ]'; }).join('  ');
+        a._purpose = purpose; a._ref = ref; a._tpl = tpl; a._values = values; a._prep = prep;
+        a._tplWord = (purpose === 'approval' ? 'Approval reminder' : purpose === 'feedback' ? 'Feedback request' : purpose === 'representative' ? 'Representative' : tpl.name);
+        return db.rpc('wa_sent_recently', { p_to_kind: 'contact', p_to: a.contact_id, p_purpose: purpose, p_ref: ref, p_template: tpl.name }).then(function (r) {
+          var rec = r.data && r.data.recent ? r.data : null;
+          a._recent = rec;
+          var hours = (r.data && r.data.hours) || 24;
+          return { facts: [['To', (prep.greeting || prep.name) + ' · ' + X.phone(prep.number)], ['Template', a._tplWord + (X.category(tpl.category) ? ' · ' + X.category(tpl.category) : '')],
+                           ['Sent recently', rec ? 'Yes, ' + whenWord(rec.at) + (rec.by ? ' by ' + rec.by : '') : 'None in ' + hours + ' hours']],
+                   preview: body + (tpl.footer ? '\n\n' + tpl.footer : '') + (btns ? '\n\n' + btns : ''),
+                   warn: rec ? 'This was sent recently. Send it again only if it is still needed.' : '', go: rec ? 'Send again' : 'Send' };
+        });
+      });
+    });
+  }
+  /* What waits on the client, as My Work's Remind words it. */
+  function whatWaits(purpose, ref) {
+    if (purpose !== 'approval') return Promise.resolve('');
+    return db.from('batches').select('id, title').eq('id', ref).maybeSingle().then(function (r) {
+      if (r.data) {
+        return db.rpc('review_set_counts', { p_sets: [ref] }).then(function (q) {
+          var n = ((q.data || [])[0] || {}).n_undecided || 0;
+          return n + (n === 1 ? ' post' : ' posts') + (r.data.title ? ' in ' + r.data.title : '');
+        });
+      }
+      return db.from('campaign_options').select('id, creators(name), campaigns(title)').eq('id', ref).maybeSingle().then(function (o) {
+        var x = o.data || {};
+        return ((x.creators && x.creators.name) || 'The creator') + '\'s draft for ' + (String((x.campaigns && x.campaigns.title) || '').trim() || 'your campaign');
+      });
+    });
+  }
+
+  /* ---- Something for later ------------------------------------------------- */
+  var SCHED_TITLE = { reminder: 'Schedule reminder', mark_sent: 'Schedule mark as sent', add_task: 'Schedule task',
+    publish_set: 'Schedule publish', unpublish_set: 'Schedule unpublish', whatsapp: 'Schedule WhatsApp' };
+  var SCHED_KIND = { reminder: 'Reminder', mark_sent: 'Mark as sent', add_task: 'Add task', publish_set: 'Publish set',
+    unpublish_set: 'Unpublish set', whatsapp: 'WhatsApp' };
+  var SCHED_SAID = { 'bad-time': 'Choose a time from a minute from now to 92 days ahead.', 'bad-title': 'Enter what it is about.',
+    'bad-condition': 'That condition cannot be checked. Ask again without it.', 'bad-payload': 'Something it needs is missing. Ask again.',
+    'too-many': 'You have 50 runs waiting. Cancel one under Scheduled first.', 'wa-off': 'The WhatsApp template for this message is off. An admin turns it on in Settings.',
+    'not-found': 'That record could not be found.', 'bad-kind': 'That cannot be scheduled.' };
+  var COND = { set_undecided: 'The set still has posts the client has not decided', report_not_sent: 'The report is not yet marked as sent',
+    task_open: 'The task is not yet finished' };
+  function schedCard(a) {
+    if (!SCHED_KIND[a.kind]) return Promise.reject(new Error('That cannot be scheduled. A Google Meet is booked straight away.'));
+    if (!validDay(a.date) || !validTime(a.time)) return Promise.reject(new Error('Enter a valid date and time.'));
+    var at = CLOCK.at(a.date, a.time);
+    if (at.getTime() < Date.now() + 60000) return Promise.reject(new Error('Choose a time later than now.'));
+    if (a.condition && !COND[a.condition]) return Promise.reject(new Error('That condition cannot be checked. Ask again without it.'));
+    a._at = at;
+    a._cref = a.condition === 'set_undecided' ? (a.set_id || a.ref) : a.condition === 'report_not_sent' ? a.report_id : a.condition === 'task_open' ? a.task_id : null;
+    if (a.condition && !a._cref) return Promise.reject(new Error('Name the record the condition is about.'));
+    var when = ['When', whenWord(at.toISOString())];
+    var only = a.condition ? ['Only if', COND[a.condition]] : null;
+    var done = function (what, title, payload, more) {
+      a._title = String(a.title || title || '').trim().slice(0, 200) || title;
+      a._payload = payload;
+      return [when].concat(what, [only], more || []);
+    };
+    if (a.kind === 'reminder') {
+      var text = String(a.message || '').trim();
+      if (text.length < 2) return Promise.reject(new Error('Enter what to be reminded of.'));
+      return Promise.resolve(done([['To', 'You, in the bell and on your phone']], text.slice(0, 120),
+        { message: text.slice(0, 500), task_id: a.task_id || null, report_id: a.report_id || null, client_id: a.client_id || null }, [['Message', text]]));
+    }
+    if (a.kind === 'mark_sent') {
+      return CHANGE.propose_mark_sent.card({ report_id: a.report_id, sent_on: a.date }).then(function (f) {
+        var r = a._rep = f;
+        return done([r[0], r[1], ['Sent', 'Marked as sent on the day it runs']], 'Mark ' + (r[0][1] || 'the report') + ' as sent', { report_id: a.report_id });
+      });
+    }
+    if (a.kind === 'add_task') {
+      var t = { title: a.task_title || a.title, client_id: a.client_id || null, owner_id: a.owner_id || null, due_date: a.due_date, priority: a.priority || 'normal', description: a.message || null };
+      return CHANGE.propose_add_task.card(t).then(function (f) {
+        var payload = { title: String(t.title || '').trim().slice(0, 200), workflow_key: 'task', scope: t.client_id ? 'client' : 'internal',
+          client_id: t.client_id, engagement_id: null, task_type: 'adhoc', owner_id: t.owner_id || (me() || {}).id,
+          final_due_at: t.due_date + 'T00:00:00Z', description: t.description, priority_level: PRIORITY[t.priority] || 3, checklist: [] };
+        return done(f.filter(Boolean), 'Add task: ' + payload.title, payload);
+      });
+    }
+    if (a.kind === 'publish_set' || a.kind === 'unpublish_set') {
+      var on = a.kind === 'publish_set';
+      return setMove(on).card({ set_id: a.set_id }).catch(function (e) {
+        /* A set empty now may hold its posts by then; one published now is
+           still refused. */
+        if (on && /holds no posts/.test(e.message)) return [['Set', 'Holds no posts yet']];
+        throw e;
+      }).then(function (f) {
+        return done([f[0], f[1], f[2]], (on ? 'Publish ' : 'Unpublish ') + String(f[0][1] || 'set').split(' · ')[0], { set_id: a.set_id });
+      });
+    }
+    if (a.kind === 'whatsapp') {
+      if (['approval', 'feedback', 'representative'].indexOf(a.purpose) < 0) return Promise.reject(new Error('Only an approval reminder, a feedback request or a representative\'s introduction can be scheduled.'));
+      var w0 = { contact_id: a.contact_id, purpose: a.purpose, ref: a.ref, template: null };
+      return waCard(w0).then(function (w) {
+        return done([w.facts[0], w.facts[1]], w0._tplWord + ' to ' + (w0._prep.name || ''),
+          { to_id: a.contact_id, purpose: a.purpose, ref: a.ref || null }, [['Sent recently', 'Checked again when it runs']]);
+      });
+    }
+    return Promise.reject(new Error('That cannot be scheduled.'));
+  }
+
+  /* ---- Scheduled: the colleague's own runs ----------------------------------- */
+  var sched = { rows: [], open: false };
+  var STATE_WORD = { waiting: ['Waiting', 'is-warn'], running: ['Running', 'is-warn'], done: ['Done', 'is-ok'], skipped: ['Skipped', 'is-off'],
+    failed: ['Failed', 'is-danger'], cancelled: ['Cancelled', 'is-off'] };
+  function readSched() {
+    return db.rpc('agent_schedule_list').then(function (r) {
+      var d = r.data || {};
+      sched.rows = r.error || d.error ? [] : (d.rows || []);
+      sched.failed = Boolean(r.error || d.error);
+      paintSched();
+    }, function () { sched.rows = []; paintSched(); });
+  }
+  function schedRow(s) {
+    var st = STATE_WORD[s.state] || [s.state, ''];
+    return '<li class="ag-srow" data-id="' + esc(s.id) + '"><span class="ag-stitle">' + esc(s.title) + '</span>' +
+      (s.state === 'waiting' ? '<button class="btn btn-sm" type="button" data-cancel="' + esc(s.id) + '">Cancel</button>'
+        : '<span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>') +
+      '<span class="ag-smeta">' + esc(whenWord(s.run_at) + ' · ' + (SCHED_KIND[s.kind] || s.kind)) + '</span>' +
+      (s.result && s.state !== 'waiting' ? '<span class="ag-sres">' + esc(s.result) + '</span>' : '') + '</li>';
+  }
+  function paintSched() {
+    var waiting = sched.rows.filter(function (s) { return s.state === 'waiting'; });
+    var b = $('agentSched'), n = $('agentSchedN'), boxEl = $('agentSchedBox'), home = $('agentSchedHome');
+    if (b) {
+      b.hidden = !sched.rows.length;
+      if (n) { n.textContent = String(waiting.length); n.hidden = !waiting.length; }
+      if (!sched.rows.length && sched.open) toggleSched(false);
+    }
+    if (boxEl) boxEl.querySelector('ul').innerHTML = sched.rows.length ? sched.rows.map(schedRow).join('') : '<li class="ag-snone">Nothing scheduled.</li>';
+    if (home) {
+      home.hidden = !waiting.length;
+      home.querySelector('ul').innerHTML = waiting.map(schedRow).join('');
+    }
+  }
+  function toggleSched(on) {
+    sched.open = on == null ? !sched.open : on;
+    var b = $('agentSched'), boxEl = $('agentSchedBox');
+    if (boxEl) boxEl.hidden = !sched.open;
+    if (b) b.setAttribute('aria-expanded', String(sched.open));
+  }
+  function cancelSched(id, btn0) {
+    btn0.disabled = true;
+    db.rpc('agent_schedule_cancel', { p_id: id }).then(rpcOk).then(function () {
+      state.notes.push('The colleague cancelled a scheduled run.');
+      return readSched();
+    }).catch(function (e) {
+      btn0.disabled = false;
+      var li = btn0.closest('li');
+      if (li && !li.querySelector('.msg')) { var m = document.createElement('span'); m.className = 'msg err ag-sres'; m.textContent = e.message; li.appendChild(m); }
+    });
+  }
 
   /* ---- Where a record opens: its own address, then its section ------------ */
   function addressOf(o) {
@@ -440,6 +946,7 @@
     switch (o.kind) {
       case 'client': return ['/admin/?client=' + id + (o.pane && o.pane !== 'overview' ? '&tab=' + encodeURIComponent(o.pane) : ''), 'clients'];
       case 'task': return ['/admin/?s=work&open=' + id, 'work'];
+      case 'client_month': return ['/admin/?s=work&view=months&wc=' + id, 'work'];
       case 'report': return ['/admin/?s=reports&report=' + id, 'reports'];
       case 'set': return ['/admin/?s=review&set=' + id, 'review'];
       case 'script': return ['/admin/?s=scripts&script=' + id, 'scripts'];
@@ -495,24 +1002,33 @@
 
   function cardFor(use, def) {
     var a = use.input || {};
-    var el = add('<h4>' + esc(def.title) + '</h4><div class="ag-card-body"></div>' +
-      '<div class="ag-acts"><button type="button" class="btn btn-primary ag-yes">Confirm</button><button type="button" class="btn btn-quiet ag-no">Cancel</button></div>' +
+    var title = typeof def.title === 'function' ? def.title(a) : def.title;
+    var el = add('<h4>' + esc(title) + '</h4><div class="ag-card-body"></div>' +
+      '<div class="ag-acts"><button type="button" class="btn btn-primary ag-yes">' + esc(def.go || 'Confirm') + '</button><button type="button" class="btn btn-quiet ag-no">Cancel</button></div>' +
       '<p class="msg ag-msg" role="status"></p>', 'ag-confirm');
     var yes = el.querySelector('.ag-yes'), no = el.querySelector('.ag-no'), msg = el.querySelector('.ag-msg');
+    var facts = [];
     yes.disabled = true;
-    def.card(a).then(function (f) {
-      el.querySelector('.ag-card-body').innerHTML = factsHtml(f);
+    def.card(a).then(function (got) {
+      /* A card answers its facts, or its facts with the message as it will
+         read, a warning, and its own word for the act. */
+      var o = Array.isArray(got) ? { facts: got } : got;
+      facts = o.facts.filter(Boolean);
+      el.querySelector('.ag-card-body').innerHTML = factsHtml(facts) +
+        (o.preview ? '<p class="ag-preview">' + esc(o.preview) + '</p>' : '') +
+        (o.warn ? '<p class="msg warn">' + esc(o.warn) + '</p>' : '');
+      if (o.go) yes.textContent = o.go;
       yes.disabled = false;
     }).catch(function (e) {
       el.querySelector('.ag-acts').remove();
       el.querySelector('.ag-card-body').innerHTML = '';
       msg.className = 'msg warn ag-msg'; msg.textContent = (e && e.message) || 'This change cannot be made. Ask again.';
-      state.notes.push('The proposed change (' + def.title + ') could not be prepared: ' + msg.textContent);
+      state.notes.push('The proposed change (' + title + ') could not be prepared: ' + msg.textContent);
     });
     no.addEventListener('click', function () {
       el.querySelector('.ag-acts').remove();
       msg.className = 'msg ag-msg'; msg.textContent = 'Cancelled.';
-      state.notes.push('The colleague cancelled the proposed change: ' + def.title + '.');
+      state.notes.push('The colleague cancelled the proposed change: ' + title + '.');
     });
     yes.addEventListener('click', function () {
       yes.disabled = true; no.disabled = true;
@@ -522,7 +1038,14 @@
         var line = document.createElement('div');
         line.className = 'ag-done';
         line.innerHTML = '<span>' + esc(out.said) + '</span>';
-        if (out.open) line.appendChild(openBtn(out.open));
+        /* What the act made (a meeting's link) joins the facts. */
+        if (out.facts) el.querySelector('.ag-card-body').innerHTML = factsHtml(facts.concat(out.facts));
+        if (out.copy) {
+          var cp = document.createElement('button');
+          cp.type = 'button'; cp.className = 'btn btn-sm ag-copy'; cp.textContent = 'Copy message';
+          cp.addEventListener('click', function () { if (window.ADspaceCopy) window.ADspaceCopy.to(cp, out.copy); });
+          line.appendChild(cp);
+        }
         if (out.undo) {
           var u = document.createElement('button');
           u.type = 'button'; u.className = 'btn btn-sm'; u.textContent = 'Undo';
@@ -530,13 +1053,14 @@
             u.disabled = true;
             out.undo().then(function () {
               line.innerHTML = '<span>Undone.</span>';
-              state.notes.push('The colleague undid the change: ' + def.title + '.');
+              state.notes.push('The colleague undid the change: ' + title + '.');
             }).catch(function (e) { u.disabled = false; msg.className = 'msg err ag-msg'; msg.textContent = (e && e.message) || 'Not undone.'; });
           });
           line.appendChild(u);
         }
+        if (out.open) line.appendChild(openBtn(out.open));
         msg.replaceWith(line);
-        state.notes.push('The colleague confirmed the change and it was made: ' + def.title + '. ' + out.said);
+        state.notes.push('The colleague confirmed the change and it was made: ' + title + '. ' + out.said);
       }).catch(function (e) {
         yes.disabled = false; no.disabled = false;
         msg.className = 'msg err ag-msg'; msg.textContent = (e && e.message) || 'Not saved.';
@@ -665,6 +1189,7 @@
     SHEET.show(box, { opener: btn, focus: desk ? '#agentQ' : null, onClose: function () { btn.setAttribute('aria-expanded', 'false'); } });
     btn.setAttribute('aria-expanded', 'true');
     readLeft();
+    readSched();
   }
   function close() { if (SHEET.isOpen(box)) SHEET.close(); }
   function clear() {
@@ -678,6 +1203,14 @@
   btn.addEventListener('click', open);
   $('agentClose') && $('agentClose').addEventListener('click', close);
   $('agentClear') && $('agentClear').addEventListener('click', clear);
+  $('agentSched') && $('agentSched').addEventListener('click', function () { toggleSched(); });
+  ['agentSchedBox', 'agentSchedHome'].forEach(function (id) {
+    var el = $(id);
+    if (el) el.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-cancel]');
+      if (b && !b.disabled) cancelSched(b.getAttribute('data-cancel'), b);
+    });
+  });
   $('agentForm').addEventListener('submit', function (e) {
     e.preventDefault();
     var t = field.value;
@@ -700,5 +1233,5 @@
     }
   });
 
-  window.ADspaceAgent = { open: open, ask: function (t) { open(); ask(t); }, _tools: { read: READ, change: CHANGE } };
+  window.ADspaceAgent = { open: open, ask: function (t) { open(); ask(t); }, _tools: { read: READ, change: CHANGE }, scheduled: readSched };
 })();
