@@ -1229,8 +1229,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     row's height; a desk keeps My Work's views at the left of the bar's own
     line (`tests/cmdbar.js`).
   - A record's pane heads itself one way (2026-11-03, the user: Calls and
-    visits beside Quotations): each part an `h2` in `.viewhead` (19px,
-    Slate), its act a `.btn` at the control's height, and an empty list
+    visits beside Quotations): each part an `h2` in `.viewhead` (15/600,
+    the panel title's size, inside its card since 2026-11-13), its act a
+    `.btn-sm` (quiet where it adds), and an empty list
     words alone, its act the heading's; `.empty` and `.emptyline` are one
     look and one height (the mute ink at 400; `tests/cmdbar.js`).
   - Every record leaves by one Back (`.backlink`: the arrow and the word

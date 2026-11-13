@@ -5107,7 +5107,9 @@ svg.sec {
 .console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; padding: 0 5px 2px; }
 .console .rec-part:has(> .viewhead[hidden]) { display: none; }
 .console .rec-part > .viewhead { margin: 0; padding: 16px 15px 8px; }
-.console .rec-part > .viewhead h2 { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 0 1 auto; }
+/* Every heading in a record's panes is one size, whether it heads a card or
+   the cards under it (a record's pane heads itself one way, 2026-11-03). */
+.console .rec:not(.cportal) .viewhead h2 { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 0 1 auto; }
 .console .rec-part > .viewhead .headmark { gap: 8px; }
 .console .rec-part .part-n { margin-left: 0; }
 .console .rec-part > .msg:empty { display: none; }

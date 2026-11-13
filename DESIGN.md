@@ -149,9 +149,9 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Level | Size / weight / tracking | Where |
 |---|---|---|
 | Display | 24/600/-.02em (21 phone); 26 review hero; 20 batch title | `.cover-panel h2`, `.batch-title` |
-| Section heading | 19/600/-.02em | `.viewhead h2`, record name (the creator portal's `h1` too) |
+| Section heading | 19/600/-.02em | `.viewhead h2` (a record's pane heads take the panel title's 15/600), record name (the creator portal's `h1` too) |
 | Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.qnext-title`, `.lockcard-title`) |
-| Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
+| Panel and group title | 15/600/-.01em | a record's `.viewhead h2`, `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
 | Money in a row | 13.5px tabular, its figure at 500 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
 | A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (2026-10-31; uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
