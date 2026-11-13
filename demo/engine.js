@@ -10968,7 +10968,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           else {
             var ads = role('ads').sort(function (x, y) { return x.spec.budget - y.spec.budget; });
             var a1 = ads.filter(function (x) { return x.spec.budget >= budget; })[0] || ads[ads.length - 1];
-            L({ slug: a1.slug, kind: 'ads', basis: 'month', label: 'Meta advertising · advertising budget up to ' + rmw(Math.max(budget, a1.spec.budget)),
+            L({ slug: a1.slug, kind: 'ads', basis: 'month', label: 'Meta advertising · budget up to ' + rmw(Math.max(budget, a1.spec.budget)),
               detail: String(text.ads_included || '').split('\n').filter(function (d) { return d.trim(); }), qty: 1, rate: Math.max(cost, Number(a1.rate)) });
           }
         }
