@@ -965,9 +965,10 @@ screenshotted, and the push names any line it could not settle.
     everything else keeps this one.
   - **Internal**: Documents, Suppliers, Short Links, Services, Team.
   - The Handbook is a mark at the rail's foot before Settings' (2026-11-11).
-  - The Activity record is a mark at the rail's foot, at the right edge of
-    the build's line, Arrange sections' and Settings' marks before it (`.sidebar-foot`, each a
-    `.railrow`, not a section).
+  - The Activity record is a mark at the rail's foot, last of the row
+    Arrange sections', the Handbook's and Settings' marks make, the build
+    under them at a desk's 212px rail (`.sidebar-foot`, each a `.railrow`,
+    not a section).
   - A chunk whose every route is withheld hides its label.
 - Everything hangs off a client. Only active clients appear in Content Review,
   campaigns and reports.

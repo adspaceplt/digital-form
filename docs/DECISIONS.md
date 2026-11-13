@@ -10244,3 +10244,6 @@ The user: "Inside admin dont need this Needs approval it should only show to cli
 
 ### 2026-11-13 · The signatory's name as written
 The user: "signature sign off use Maxwell Yee instead of MAXWELL YEE (not all caps)". The letter engine's sign-off (the Quotation Cover and every client and HR letter) and the Supplier Service Agreement's signing block printed the signatory's name in capitals; both now print it as it is held. Company names under "To" and in the acceptance stay in capitals, as Billing holds them.
+
+### 2026-11-13 · The rail at 212px, its marks a row of their own
+The user, on a client record at a narrowed window: "the left panel could width could be smaller, yet u need to solve the four buttons below". The desk rail was 244px, its rows wide with empty room, and the record's tab strip clipped (Brand cut) beside it. The rail is now 212px; the foot's four marks (Arrange sections, Handbook, Settings, Activity record) take one row from the sections' left edge and the build line reads under them, since the four marks and the build no longer fit one line. The phone's More keeps the one line. `run` and `appver` measure the new order.
