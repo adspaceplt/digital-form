@@ -1656,10 +1656,10 @@
             var prop = open.filter(function (c) { return c.stage === 'proposal'; }).length;
             return { fig: String(open.length), sub: prop ? prop + ' proposal' + (prop === 1 ? '' : 's') + ' sent' : 'No proposals sent' };
           }) },
-         { key: 'me-follow', title: 'Follow-ups late', sec: 'clients', load: lg(function (l) {
+         { key: 'me-follow', title: 'Overdue follow-ups', sec: 'clients', load: lg(function (l) {
             var late = l.filter(function (c) { return c.stage !== 'active' && staleOf(c); });
             var oldest = late.reduce(function (m, c) { return Math.max(m, staleOf(c)); }, 0);
-            return { fig: String(late.length), tone: late.length ? 'err' : '', sub: late.length ? 'Oldest ' + daysWord(oldest) : 'None late' };
+            return { fig: String(late.length), tone: late.length ? 'err' : '', sub: late.length ? 'Oldest ' + daysWord(oldest) + ' overdue' : 'None overdue' };
           }) },
          { key: 'me-contacted', title: 'Contacted', sec: 'clients', load: lg(function (l) {
             return { fig: String(l.filter(function (c) { return c.stage === 'contacted'; }).length), sub: 'Awaiting a proposal' };
@@ -1748,7 +1748,7 @@
         var list = items.filter(function (x) { return on === 'all' || x.kind === on; });
         var kinds = KINDS.filter(function (k) { return k[0] === 'all' || items.some(function (x) { return x.kind === k[0]; }); });
         var head = '<div class="chart-head"><h3 class="chart-title">Today</h3><span class="ovw-today-n">' +
-          (items.length ? items.length + ' to clear' : '') + '</span></div>';
+          (items.length ? items.length + (items.length === 1 ? ' item' : ' items') : '') + '</span></div>';
         if (!items.length) {
           card.innerHTML = head;
           var b = document.createElement('div');
@@ -1761,7 +1761,7 @@
           return '<button class="ovw-chip' + (k[0] === on ? ' is-on' : '') + '" type="button" data-k="' + k[0] + '" aria-pressed="' + (k[0] === on) + '">' +
             esc(k[1]) + ' <b>' + n + '</b></button>';
         }).join('') + '</div>' : '';
-        var GROUPS = [['late', 'Late'], ['wait', 'Waiting on you'], ['today', 'Due today']];
+        var GROUPS = [['late', 'Late'], ['wait', 'Waiting for you'], ['today', 'Due today']];
         var html = GROUPS.map(function (g) {
           var rs = list.filter(function (x) { return x.group === g[0]; });
           if (!rs.length) return '';
@@ -1778,12 +1778,14 @@
           }).join('');
         }).join('');
         card.innerHTML = head + chips + '<div class="ovw-today-list">' + (html || '<p class="emptyline">No entries.</p>') + '</div>' +
-          (d.failed.length ? '<p class="msg err">Could not load: ' + esc(d.failed.join(', ')) + '.</p>' : '');
+          (d.failed.length ? '<div class="errline"><b>Could not load ' + esc(d.failed.join(', ')) + '.</b>' +
+            '<button class="btn btn-sm" type="button" data-a="retry">Try again</button></div>' : '');
       };
       card.addEventListener('click', function (e) {
         var chip = e.target.closest('.ovw-chip');
         if (chip) { on = chip.getAttribute('data-k'); paint(); return; }
         var b = e.target.closest('[data-a]'), row = e.target.closest('.ovw-today-row');
+        if (b && b.getAttribute('data-a') === 'retry') { redraw(); return; }
         if (!b || !row) return;
         var x = items[Number(row.getAttribute('data-i'))];
         if (!x) return;
