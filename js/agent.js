@@ -530,7 +530,7 @@
           var c = g[1].data, e = g[2].data;
           if (!c) throw new Error('That client could not be found.');
           if (!e) throw new Error('That client has no ' + monthName(a.month) + ' in My Work. Add the month first.');
-          if (e.status === 'cancelled' || e.status === 'completed') throw new Error('That month is ' + e.status + '. Reopen it in My Work first.');
+          if (e.status === 'cancelled' || e.status === 'completed') throw new Error('That month is ' + (e.status === 'cancelled' ? 'Cancelled' : 'Completed') + '. Reopen it in My Work first.');
           var lead = a.led_by || (me() || {}).id;
           if (a.led_by && !nameOf(a.led_by)) throw new Error('That colleague could not be found. Ask again with their name.');
           a._client = c; a._eng = e; a._at = at; a._mins = mins; a._lead = lead; a._google = google;
@@ -609,13 +609,13 @@
         return Promise.all([team(), db.from('clients').select('id, name, client_code, stage').eq('id', a.client_id).maybeSingle()]).then(function (g) {
           var c = g[1].data;
           if (!c) throw new Error('That client could not be found.');
-          if (c.stage !== 'active') throw new Error('Campaigns are made for an Active client.');
+          if (c.stage !== 'active') throw new Error('A campaign needs an Active client. Make the client Active first.');
           if (a.person_in_charge && !nameOf(a.person_in_charge)) throw new Error('That colleague could not be found. Ask again with their name.');
           a._client = c; a._title = title; a._slots = slots;
           a._owner = a.person_in_charge ? nameOf(a.person_in_charge) : (me() || {}).name || '';
           return [['Client', c.name + (c.client_code ? ' · ' + c.client_code : '')], ['Title', title], ['Creators', String(slots)],
                   ['Person in charge', a.person_in_charge && a.person_in_charge !== (me() || {}).id ? a._owner : 'You'],
-                  ['Format', FORMAT[a.format] || 'Site visit'], ['State', 'Draft, no creators yet']];
+                  ['Format', FORMAT[a.format] || 'Site visit'], ['State', 'Draft · No creators']];
         });
       },
       run: function (a) {
@@ -651,7 +651,7 @@
             var d = res && res.data;
             if (res.error || !d || d.error) {
               var code = (d && d.error) || 'wa-failed';
-              if (code === 'recent') throw new Error('It was sent on WhatsApp moments ago. Ask again to see who sent it.');
+              if (code === 'recent') throw new Error('This was sent on WhatsApp recently. Send it again only if it is still needed.');
               throw new Error(WA() && WA().said ? WA().said({ code: code }) : 'Not sent. Please try again.');
             }
             file('assistant.whatsapp', a._prep.subject || a._prep.client || '', (a._tplWord || a._tpl.name) + ' sent to ' + (d.to || a._prep.name));
@@ -763,7 +763,7 @@
           state.notes.push('The templates the portal can send are: ' + list.filter(function (t) { return t.header !== 'DOCUMENT'; }).map(function (t) { return t.name; }).join(', ') + '.');
           throw new Error(a.template ? 'That template is not approved for the portal. Choose another.' : 'Name the template to send.');
         }
-        throw new Error('The WhatsApp template for this message is off. An admin turns it on in Settings.');
+        throw new Error('The WhatsApp template for this message is off. Please ask an admin to turn it on in Settings.');
       }
       if (tpl.header === 'DOCUMENT' || tpl.header_var) throw new Error('This template carries a file or a header of its own. Send it from its record.');
       if (X.badButton(tpl)) throw new Error('This template\'s link button cannot be filled. Choose another template.');
@@ -825,7 +825,7 @@
     unpublish_set: 'Unpublish set', whatsapp: 'WhatsApp' };
   var SCHED_SAID = { 'bad-time': 'Choose a time from a minute from now to 92 days ahead.', 'bad-title': 'Enter what it is about.',
     'bad-condition': 'That condition cannot be checked. Ask again without it.', 'bad-payload': 'Something it needs is missing. Ask again.',
-    'too-many': 'You have 50 runs waiting. Cancel one under Scheduled first.', 'wa-off': 'The WhatsApp template for this message is off. An admin turns it on in Settings.',
+    'too-many': 'You have 50 scheduled actions. Cancel one under Scheduled first.', 'wa-off': 'The WhatsApp template for this message is off. Please ask an admin to turn it on in Settings.',
     'not-found': 'That record could not be found.', 'bad-kind': 'That cannot be scheduled.' };
   var COND = { set_undecided: 'The set still has posts the client has not decided', report_not_sent: 'The report is not yet marked as sent',
     task_open: 'The task is not yet finished' };
@@ -871,7 +871,7 @@
       return setMove(on).card({ set_id: a.set_id }).catch(function (e) {
         /* A set empty now may hold its posts by then; one published now is
            still refused. */
-        if (on && /holds no posts/.test(e.message)) return [['Set', 'Holds no posts yet']];
+        if (on && /holds no posts/.test(e.message)) return [['Set', 'No posts']];
         throw e;
       }).then(function (f) {
         return done([f[0], f[1], f[2]], (on ? 'Publish ' : 'Unpublish ') + String(f[0][1] || 'set').split(' · ')[0], { set_id: a.set_id });

@@ -319,8 +319,8 @@ begin
                       and x.purpose = p ->> 'purpose' and x.to_number = v ->> 'number' order by x.id limit 1);
     insert into public.activity_log (actor, action, subject, detail)
     values (m.name, 'assistant.whatsapp', coalesce(v ->> 'subject', s.title),
-            'WhatsApp queued to ' || coalesce(v ->> 'name', '') || ' · scheduled through the Assistant');
-    return jsonb_build_object('ok', true, 'said', 'Queued on WhatsApp.');
+            'Sent on WhatsApp to ' || coalesce(v ->> 'name', '') || ' · scheduled through the Assistant');
+    return jsonb_build_object('ok', true, 'said', 'Sent on WhatsApp.');
   end if;
   return jsonb_build_object('error', 'bad-kind');
 end $$;
@@ -332,7 +332,7 @@ returns text
 language sql immutable set search_path = public as $$
   select case p_code
     when 'denied' then 'You no longer have permission to do this.'
-    when 'not-found' then 'The record no longer exists or is out of your reach.'
+    when 'not-found' then 'This item no longer exists, or you no longer have access to it.'
     when 'not-published' then 'The report is not published.'
     when 'bad-date' then 'The date is outside the report''s period.'
     when 'empty' then 'The set holds no posts.'
@@ -348,7 +348,7 @@ language sql immutable set search_path = public as $$
     when 'month-closed' then 'The client''s content month is closed.'
     when 'month-not-confirmed' then 'The client''s content month is not confirmed.'
     when 'not-team' then 'You are no longer an active colleague.'
-    else 'It could not be done (' || coalesce(p_code, 'unknown') || ').'
+    else 'It could not be done. Schedule it again, or ask an admin.'
   end
 $$;
 revoke all on function public.agent_schedule_said(text) from public, anon, authenticated;
@@ -376,7 +376,7 @@ begin
     v_why := null; v := null;
     select * into m from public.team_members t where t.id = s.team_member_id;
     if m.id is null or not m.active or m.removed_at is not null or m.email is null then
-      v_why := 'Its colleague is no longer active.';
+      v_why := 'The colleague who scheduled this is no longer active.';
     else
       perform set_config('request.jwt.claims', jsonb_build_object('email', m.email, 'role', 'authenticated')::text, true);
       if not public.is_team() then
@@ -518,7 +518,7 @@ begin
     case when v_quiet then 'the S3 report did not arrive' end,
     case when v_wa > 0 then v_wa || case when v_wa = 1 then ' automatic WhatsApp message' else ' automatic WhatsApp messages' end
                             || ' failed to send' end,
-    case when v_agent > 0 then v_agent || case when v_agent = 1 then ' run scheduled through the Assistant' else ' runs scheduled through the Assistant' end
+    case when v_agent > 0 then v_agent || case when v_agent = 1 then ' scheduled Assistant action' else ' scheduled Assistant actions' end
                                || ' could not be done' end,
     case when v_rules > 0 then v_rules || case when v_rules = 1 then ' repeating task could' else ' repeating tasks could' end
                                || ' not be made: ' || v_names
