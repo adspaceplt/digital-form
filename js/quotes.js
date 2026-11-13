@@ -38,7 +38,7 @@
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
-    expired: 'This quotation has expired. Duplicate it to quote again.',
+    expired: 'This quotation has expired. Use Build quote to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
     lines: 'Not saved. Service lines were created from this quotation. Refresh the page to revise it.',
@@ -273,7 +273,8 @@
             /* A team's quotation is edited from its ⋯: in place until sent
                out, else its revision (2026-11-06). A website one is the
                row's Edit or Adjust and send. */
-            items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
+            /* No Duplicate (the user, 2026-11-13: "Remove Duplicate, move
+               Edit into the menu"): Build quote makes a new one. */
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
@@ -639,7 +640,6 @@
         body: 'The Quotation ready message, with the link to ' + q.ref + ', will be sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
-    if (a === 'copy') { build(ctx, q.selection, btn); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */
