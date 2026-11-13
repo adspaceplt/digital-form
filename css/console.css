@@ -5069,11 +5069,16 @@ svg.sec {
     box-shadow: 0 0 0 1px var(--card-edge); min-height: calc(100vh - 24px);
   }
   :root:not(.has-tabbar) .console-head {
-    margin: 0; top: 0; border-radius: 18px 18px 0 0; padding: 0 20px 0 32px;
+    margin: 0; top: 0; border-radius: 18px 18px 0 0; padding: 0 32px;
     background: var(--card); background-image: none; border-bottom: 0;
     box-shadow: inset 0 -1px 0 var(--line-soft);
     -webkit-backdrop-filter: none; backdrop-filter: none;
   }
+  /* The head is one height on every section and its words stand in its
+     middle, the sides at the body's 32px (the user, 2026-11-13: "left right
+     paddings feels not visually balance"): 90px holds the title and its
+     line with 20px above and below; every sticky offset reads it. */
+  :root:not(.has-tabbar):has(.console) { --head-h: 90px; }
   :root:not(.has-tabbar) .console-body { padding-inline: 32px; }
   :root:not(.has-tabbar) .console-title { font-family: var(--font-head); font-size: 22px; font-weight: 600; letter-spacing: -.02em; min-height: 30px; }
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }

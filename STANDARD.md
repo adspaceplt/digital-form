@@ -621,6 +621,7 @@ Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `reports`: four AI usage checks still count eight uses; the Assistant
   added a ninth column and Next batch a tenth (2026-11-13).
+- `cmdbar`: "a client's pane headings … an empty list one height of words" at 390 and 1280 fails on main (2026-11-13: an empty list reads 41px, the record's parts made cards).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
