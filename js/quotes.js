@@ -38,7 +38,7 @@
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
     'bad-terms': window.ADspaceWords.line.terms,
-    expired: 'This quotation has expired. Duplicate it to quote again.',
+    expired: 'This quotation has expired. Use Build quote to quote again.',
     sent: 'Not saved. This quotation was sent meanwhile. Refresh the page to revise it.',
     removed: 'This quotation has been removed. Restore it first.',
     lines: 'Not saved. Service lines were created from this quotation. Refresh the page to revise it.',
@@ -273,7 +273,8 @@
             /* A team's quotation is edited from its ⋯: in place until sent
                out, else its revision (2026-11-06). A website one is the
                row's Edit or Adjust and send. */
-            items.push('<button class="kmenu-item" data-g="2" data-a="copy" type="button" role="menuitem">Duplicate</button>');
+            /* No Duplicate (the user, 2026-11-13: "Remove Duplicate, move
+               Edit into the menu"): Build quote makes a new one. */
             /* Send on WhatsApp (2026-10-14): the quotation's PDF to a contact,
                drawn only once the template is on (`waOn` below). */
             if (WA() && WA().may('quotation') && q.status !== 'not_proceeding' && !awaiting(q)) {
@@ -318,10 +319,7 @@
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
-          if (edit) {
-            if (items.length < 7) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
-            else acts.unshift('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
-          }
+          if (edit) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
@@ -384,8 +382,10 @@
       WA().on('quotation').then(function (yes) {
         if (!yes) return;
         Array.prototype.forEach.call(host.querySelectorAll('[data-wa]'), function (it) { it.hidden = false; });
+        fitMenus(host);
       });
     }
+    fitMenus(host);
     Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id], .qt-gonerow[data-id]'), function (row) {
       var q = rows.filter(function (x) { return x.id === row.getAttribute('data-id'); })[0];
       var menu = row.querySelector('[data-menu]'), btn = row.querySelector('[data-a="menu"]');
@@ -407,6 +407,19 @@
           act(it.getAttribute('data-a'), q, ctx, host, btn);
         });
       });
+    });
+  }
+
+  /* A ⋯ keeps to seven items shown (DESIGN.md §5 Menus 8): where the sends
+     make it eight, Edit, the commonest act, stands on the row instead. The
+     item itself moves, so it keeps its press (2026-11-13). */
+  function fitMenus(host) {
+    Array.prototype.forEach.call(host.querySelectorAll('.qt-row[data-id]'), function (row) {
+      var menu = row.querySelector('[data-menu]'), ed = menu && menu.querySelector('[data-a="edit"]'), dl = row.querySelector('.qt-dl');
+      if (!ed || !dl || menu.querySelectorAll('.kmenu-item:not([hidden])').length <= 7) return;
+      ed.className = 'btn btn-sm'; ed.removeAttribute('role'); ed.removeAttribute('data-g');
+      var view = dl.querySelector('[data-a="view"]');
+      dl.insertBefore(ed, view ? view.nextSibling : dl.firstChild);
     });
   }
 
@@ -639,7 +652,6 @@
         body: 'The Quotation ready message, with the link to ' + q.ref + ', will be sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
-    if (a === 'copy') { build(ctx, q.selection, btn); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */

@@ -10313,3 +10313,6 @@ rings the pills instead. A copy review renamed the queue's words to the
 Status column's (queued, failed in the last 7 days).
 
 - 2026-11-13 · The console's head at a desk was 32px in at the left, 20 at the right, 9 above the title and 5 under its line (the user: "left right paddings feels not visually balance"). It is now 90px on every section with its words centred and 32px both sides, the body's own inset; `--head-h` carries the 90 so every sticky offset follows. Measured with a scratch script on the rendered head at 1280 and 1440.
+### 2026-11-13 · A quotation's ⋯ holds Edit, not Duplicate
+The user, told that Edit stayed on the quotation row because the ⋯ was full at seven: "Remove Duplicate, move Edit into the menu". Duplicate leaves the quotation's ⋯ (Build quote makes a new quotation; the expired refusal now says Use Build quote to quote again.), so Edit takes its place in the ⋯ on a typical quotation. The cap counts the items shown (`fitMenus`, run again once the WhatsApp items are revealed): only where Send on WhatsApp and Send by email are both shown would the ⋯ hold eight, and Edit then moves onto the row.
+
