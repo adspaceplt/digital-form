@@ -752,6 +752,8 @@
                ['paused', 'Paused'], ['resumed', 'Resumed'], ['winback', 'Win-backs']];
   var MOVED_SHOWN = 5;
   /* A client in a card's table: its name over its Client ID, opening its record. */
+  /* The chevron of every Show N more on the Dashboard. */
+  var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   function clientButton(c, tab) {
     return '<button type="button" class="linkbtn ovw-client" data-go="' + esc(clientUrl(c, tab)) + '">' +
       '<span>' + esc(c.name || 'Untitled client') + '</span>' + (c.client_code ? '<small>' + esc(c.client_code) + '</small>' : '') + '</button>';
@@ -1064,122 +1066,6 @@
     };
     run();
   }
-  /* Work by stage (the revamp, 2026-11-12): the open work in four bands,
-     each its count inside its share of the whole, in its stage's status
-     colour, from the report's own count of open work by stage (`running`). */
-  var BANDS = [
-    { word: 'Not started', tone: 'off', keys: ['intake', 'ready', 'kiv'] },
-    { word: 'In progress', tone: 'warn', keys: ['active', 'revision'] },
-    { word: 'In review', tone: 'warn', keys: ['internal_review', 'client_review', 'waiting'] },
-    { word: 'Approved or live', tone: 'ok', keys: ['approved', 'delivered', 'scheduled', 'live', 'performance'] },
-    { word: 'Blocked', tone: 'late', keys: ['blocked'], hide: true }
-  ];
-  function stages(box) {
-    if (!canFigures()) return;
-    var card = document.createElement('section');
-    card.className = 'chartcard ovw-card ovw-stages';
-    card.id = 'ovwStages';
-    card.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
-    headOf(card, 'Work by stage', ['My Work', '/admin/?s=work', 'work']);
-    box.appendChild(card);
-    var body = card.querySelector('.ovw-body');
-    var run = function () {
-      UI.skeleton(body, 1);
-      R.report().then(function (d) {
-        var by = {}, total = 0;
-        (d.running || []).forEach(function (r) {
-          var n = Number(r.count) || 0, g = r.stage_group || r.stage_key;
-          BANDS.forEach(function (b) { if (b.keys.indexOf(g) >= 0 || b.keys.indexOf(r.stage_key) >= 0) { by[b.word] = (by[b.word] || 0) + n; total += n; } });
-        });
-        var shown = BANDS.filter(function (b) { return !b.hide || by[b.word]; });
-        if (!total) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return; }
-        var C = 2 * Math.PI * 18;
-        body.innerHTML = '<div class="ovw-stage-row">' + shown.map(function (b) {
-          var n = by[b.word] || 0, len = n / total * C;
-          return '<div class="ovw-stage">' +
-            '<svg class="ovw-ring" viewBox="0 0 44 44" role="img" aria-label="' + esc(b.word + ': ' + n + ' of ' + total) + '">' +
-            '<circle class="ovw-ring-track" cx="22" cy="22" r="18"></circle>' +
-            (len ? '<circle class="ovw-ring-arc is-' + b.tone + '" cx="22" cy="22" r="18" transform="rotate(-90 22 22)" stroke-dasharray="' + len.toFixed(2) + ' ' + (C - len).toFixed(2) + '"></circle>' : '') +
-            '<text x="22" y="26.5" text-anchor="middle">' + n + '</text></svg>' +
-            '<span class="ovw-stage-what"><b>' + esc(b.word) + '</b><small>' + Math.round(n / total * 100) + '% of open</small></span></div>';
-        }).join('') + '</div>';
-      }).catch(function (e) { fail(body, 'Work by stage', e, run); });
-    };
-    run();
-  }
-  /* This month by client (v3, 2026-11-12, "ok yes all"): a card a client
-     whose content month is this month, as My Work's month reads it: its
-     work done of all over a bar, what is late, and its next three open
-     tasks, soonest first. Late months first, then the least done. One read
-     of the months, one of their counts, and the open tasks already read
-     for Needs attention. */
-  function months(box) {
-    if (!canFigures() || !may('ops', 'view')) return;
-    var sec = document.createElement('section');
-    sec.className = 'ovw-months';
-    sec.id = 'ovwMonths';
-    sec.innerHTML = '<div class="ovw-months-head"><h3 class="ovw-group-h">This month by client</h3></div><div class="ovw-month-grid"></div>';
-    box.appendChild(sec);
-    var all = document.createElement('button');
-    all.type = 'button'; all.className = 'btn btn-quiet btn-sm ovgo';
-    all.innerHTML = '<span class="ovgo-word">My Work</span>' + CHEV;
-    all.setAttribute('aria-label', 'My Work: months');
-    all.addEventListener('click', function () { go('/admin/?s=work&view=months', 'work'); });
-    sec.firstChild.appendChild(all);
-    var grid = sec.querySelector('.ovw-month-grid');
-    var key = CK.today().slice(0, 7);
-    var run = function () {
-      UI.skeleton(grid, 2);
-      db.from('ops_engagements').select('id, client_id, period, status, clients(name, logo_url, stage)')
-        .eq('period', key).then(rows).then(function (eng) {
-          eng = (eng || []).filter(function (e) { return e.status !== 'cancelled' && e.clients && e.clients.stage !== 'past'; });
-          /* No client month this month: the section leaves, as a block with
-             no data does. */
-          if (!eng.length) { sec.remove(); return null; }
-          return Promise.all([
-            db.rpc('ops_engagement_counts', { p_engagements: eng.map(function (e) { return e.id; }) }).then(rows),
-            R.openTasks().catch(function () { return []; })
-          ]).then(function (q) {
-            var by = {};
-            (q[0] || []).forEach(function (x) { by[x.engagement_id] = x; });
-            var list = eng.map(function (e) {
-              var c = by[e.id] || {}, live = Number(c.live) || 0, done = Number(c.done) || 0;
-              return { e: e, live: live, done: done, late: Number(c.late) || 0, open: Number(c.open) || 0 };
-            }).sort(function (a, b) {
-              return (b.late > 0) - (a.late > 0) || (a.live ? a.done / a.live : 1) - (b.live ? b.done / b.live : 1) || String(a.e.clients.name).localeCompare(String(b.e.clients.name));
-            });
-            grid.innerHTML = list.map(function (m) { return monthCard(m, q[1] || []); }).join('');
-            Array.prototype.forEach.call(grid.querySelectorAll('[data-go]'), function (b) {
-              b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'work'); });
-            });
-          });
-        }).catch(function (e) { fail(grid, 'This month by client', e, run); });
-    };
-    run();
-  }
-  function monthCard(m, open) {
-    var A = window.ADspaceAdmin, c = m.e.clients;
-    var segs = '', n = Math.min(m.live, 12), on = m.live ? Math.round(m.done / m.live * n) : 0;
-    for (var i = 0; i < n; i++) segs += '<i' + (i < on ? ' class="is-on"' : '') + '></i>';
-    var next = open.filter(function (t) { return t.client_id === m.e.client_id; }).sort(function (a, b) {
-      return String(a.current_final_due_at || '9').localeCompare(String(b.current_final_due_at || '9'));
-    }).slice(0, 3);
-    var now = CK.today();
-    return '<article class="chartcard ovw-month">' +
-      '<button class="ovw-month-who" type="button" data-go="/admin/?s=work&view=months&wc=' + esc(encodeURIComponent(m.e.client_id)) + '">' +
-        (A && A.clientMark ? A.clientMark(c, m.e.client_id) : '') +
-        '<span class="ovw-month-name"><b>' + esc(c.name) + '</b><small>' + esc(CK.month ? CK.month(m.e.period + '-01') : m.e.period) + '</small></span>' + CHEV + '</button>' +
-      '<div class="ovw-month-bar">' + (n ? '<span class="tcheckbar-segs' + (m.live && m.done === m.live ? ' is-done' : '') + '" aria-hidden="true">' + segs + '</span>' : '') +
-        '<span class="ovw-month-pct">' + (m.live ? m.done + ' of ' + m.live + ' done' : 'No tasks') + '</span></div>' +
-      '<p class="ovw-month-line">' + m.open + ' open' + (m.late ? ' · <span class="is-late">' + m.late + ' late</span>' : '') + '</p>' +
-      (next.length ? '<div class="ovw-month-next"><span class="ovw-month-h">Next steps</span>' + next.map(function (t) {
-        var d = t.current_final_due_at ? String(t.current_final_due_at).slice(0, 10) : '', late = d && d < now;
-        return '<button class="ovw-step" type="button" data-go="/admin/?s=work&open=' + esc(encodeURIComponent(t.id)) + '">' +
-          '<span class="ovw-step-dot" aria-hidden="true"></span><span class="ovw-step-what">' + esc(taskName(t)) + '</span>' +
-          '<span class="ovw-step-due' + (late ? ' is-late' : '') + '">' + esc(d ? shortDate(d) : '') + '</span></button>';
-      }).join('') + '</div>' : '') +
-    '</article>';
-  }
   /* The four figures that lead the page (the revamp, 2026-11-12): one row,
      before everything else. The rest stay in their groups further down. */
   var LEAD = ['delivered', 'ontime', 'leads', 'late'];
@@ -1414,7 +1300,6 @@
       var k = SEC_KEY[word], A = window.ADspaceAdmin;
       return k && A && A.glyph ? '<span class="ovw-att-mark" aria-hidden="true">' + A.glyph(k) + '</span>' : '';
     }
-    var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
     var wordOf = {};
     SOURCES.forEach(function (s) { wordOf[s.key] = s.word || titleOf(s); });
     function strip(a) {
@@ -1590,6 +1475,126 @@
     var crumb = $('sectionCrumb');
     if (crumb) { crumb.textContent = CK.date(CK.today(), { weekday: true, year: false }); crumb.hidden = false; }
   }
+  // ---- Team: who and which client is at risk (the revamp, phase 2) -----------
+  var TEAM = (function () {
+    function card(host, id, title, to) {
+      var c = document.createElement('section');
+      c.className = 'chartcard ovw-card ovw-tbl';
+      c.id = id;
+      c.innerHTML = '<h3 class="chart-title"></h3><div class="ovw-body"></div>';
+      headOf(c, title, to);
+      host.appendChild(c);
+      return c.querySelector('.ovw-body');
+    }
+    function pc(a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; }
+    /* People: each colleague's open work and what of it is late now, and
+       what they delivered in the period and how much of it on time, from
+       the report the page already reads; late first, then the most open.
+       A row opens the colleague's own Work. */
+    function people(host) {
+      if (!canTeamWork()) return;
+      var body = card(host, 'ovwPeople', 'People', ['My Work', '/admin/?s=work', 'work']);
+      var run = function () {
+        UI.skeleton(body, 3);
+        R.report().then(function (d) {
+          if (!Array.isArray(d.open_by_person)) throw new Error('This feature is not available yet. Please contact an admin.');
+          var by = {};
+          d.open_by_person.forEach(function (r) {
+            if (!r.team_member_id) return;
+            by[r.team_member_id] = { id: r.team_member_id, name: r.name, open: Number(r.open) || 0, late: Number(r.late) || 0, done: 0, on: 0 };
+          });
+          (d.by_person || []).forEach(function (x) {
+            var id = x.team_member_id || x.id;
+            if (!id) return;
+            var p = by[id] || (by[id] = { id: id, name: x.name, open: 0, late: 0, done: 0, on: 0 });
+            p.done = Number(x.completed) || 0; p.on = Number(x.on_time) || 0;
+          });
+          var list = Object.keys(by).map(function (k) { return by[k]; }).filter(function (p) { return p.open || p.done; })
+            .sort(function (a, b) { return (b.late > 0) - (a.late > 0) || b.late - a.late || b.open - a.open || String(a.name).localeCompare(String(b.name)); });
+          if (!list.length) { body.innerHTML = ''; UI.emptyLine(body, 'No open tasks.'); return; }
+          var open = may('team', 'view');
+          body.innerHTML = '<div class="ovw-tr ovw-th is-people"><span>Colleague</span><span>Open</span><span>Late</span><span class="ovw-hide-n">Delivered</span><span>On time</span></div>' +
+            list.map(function (p) {
+              var A = window.ADspaceAdmin, disc = A && A.avatar ? A.avatar(p.name) : '';
+              var cells = '<span class="ovw-who">' + disc + '<b>' + esc(p.name) + '</b></span>' +
+                '<span class="ovw-n">' + p.open + '</span>' +
+                '<span class="ovw-n' + (p.late ? ' is-late' : '') + '">' + (p.late || '—') + '</span>' +
+                '<span class="ovw-n ovw-hide-n">' + (p.done || '—') + '</span>' +
+                '<span class="ovw-n">' + pc(p.on, p.done) + '</span>';
+              return open ? '<button class="ovw-tr is-people" type="button" data-go="/admin/?s=team&member=' + esc(encodeURIComponent(p.id)) + '&mtab=work">' + cells + '</button>'
+                : '<div class="ovw-tr is-people">' + cells + '</div>';
+            }).join('');
+          Array.prototype.forEach.call(body.querySelectorAll('[data-go]'), function (b) {
+            b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'team'); });
+          });
+        }).catch(function (e) { fail(body, 'People', e, run); });
+      };
+      run();
+    }
+    /* Clients this month: each client whose content month is this month, its
+       work done of planned and what is late, its report for last month and
+       its next meeting; late first, then the least done. A row opens the
+       client's Months in My Work. */
+    function clients(host) {
+      if (!canFigures() || !may('ops', 'view')) return;
+      var body = card(host, 'ovwClientsMonth', 'Clients this month', ['My Work', '/admin/?s=work&view=months', 'work']);
+      var key = CK.today().slice(0, 7);
+      var run = function () {
+        UI.skeleton(body, 3);
+        Promise.resolve().then(function () {
+          return db.from('ops_engagements').select('id, client_id, period, status, meeting_at, meeting_na, clients(name, logo_url, stage)').eq('period', key);
+        }).then(rows).then(function (eng) {
+          eng = (eng || []).filter(function (e) { return e.status !== 'cancelled' && e.clients && e.clients.stage !== 'past'; });
+          if (!eng.length) { body.innerHTML = ''; UI.emptyLine(body, 'No client month this month.'); return null; }
+          return Promise.all([
+            db.rpc('ops_engagement_counts', { p_engagements: eng.map(function (e) { return e.id; }) }).then(rows),
+            canReports() ? R.owed().catch(function () { return null; }) : Promise.resolve(null)
+          ]).then(function (q) {
+            var by = {}, rep = {};
+            (q[0] || []).forEach(function (x) { by[x.engagement_id] = x; });
+            (q[1] || []).forEach(function (x) { if (x.client_id && !x.brand) rep[x.client_id] = x; });
+            var REP = { published: ['Published', 'ok'], confirmed: ['Confirmed', 'warn'], review: ['In review', 'warn'], draft: ['Draft', 'warn'], none: ['Not started', 'off'] };
+            var list = eng.map(function (e) {
+              var c = by[e.id] || {};
+              return { e: e, live: Number(c.live) || 0, done: Number(c.done) || 0, late: Number(c.late) || 0, rep: rep[e.client_id] };
+            }).sort(function (a, b) {
+              return (b.late > 0) - (a.late > 0) || (a.live ? a.done / a.live : 1) - (b.live ? b.done / b.live : 1) || String(a.e.clients.name).localeCompare(String(b.e.clients.name));
+            });
+            var A = window.ADspaceAdmin, now = Date.now(), SHOWN = 8, more = Math.max(0, list.length - SHOWN);
+            body.innerHTML = '<div class="ovw-tr ovw-th is-cmonth"><span>Client</span><span>Posts</span><span class="ovw-hide-n">Report</span><span class="ovw-hide-n">Meeting</span></div>' +
+              list.map(function (m, i) {
+                var tone = m.late ? 'danger' : m.live && m.done === m.live ? 'ok' : 'warn', r = m.rep && REP[m.rep.status];
+                var meet = m.e.meeting_na ? 'Not needed' : m.e.meeting_at ? (Date.parse(m.e.meeting_at) < now ? 'Held ' : '') + CK.date(m.e.meeting_at, { year: false }) : 'Not set';
+                /* On a narrow pane the report and the meeting read as a line
+                   under the name, never dropped (the 4-step pass, 2026-11-13). */
+                var sub = (r ? 'Report ' + r[0].toLowerCase() : 'No report') + ' · ' + (m.e.meeting_na ? 'No meeting' : 'Meeting ' + meet.charAt(0).toLowerCase() + meet.slice(1));
+                return '<button class="ovw-tr is-cmonth" type="button"' + (i >= SHOWN ? ' hidden' : '') + ' data-go="/admin/?s=work&view=months&wc=' + esc(encodeURIComponent(m.e.client_id)) + '">' +
+                  '<span class="ovw-who">' + (A && A.clientMark ? A.clientMark(m.e.clients, m.e.client_id) : '') + '<span class="ovw-who-t"><b>' + esc(m.e.clients.name) + '</b><small class="ovw-show-n">' + esc(sub) + '</small></span></span>' +
+                  '<span class="chip-state is-' + tone + '">' + (m.live ? m.done + ' of ' + m.live : 'No tasks') + (m.late ? ' · ' + m.late + ' late' : '') + '</span>' +
+                  '<span class="ovw-hide-n">' + (r ? '<span class="chip-state is-' + r[1] + '">' + r[0] + '</span>' : '<span class="muted">—</span>') + '</span>' +
+                  '<span class="ovw-hide-n ovw-meet">' + esc(meet) + '</span></button>';
+              }).join('') +
+              (more ? '<button class="btn btn-sm ovw-more" type="button" aria-expanded="false"><span>Show ' + more + ' more</span>' + DOWN + '</button>' : '');
+            Array.prototype.forEach.call(body.querySelectorAll('[data-go]'), function (b) {
+              b.addEventListener('click', function () { go(b.getAttribute('data-go'), 'work'); });
+            });
+            var mb = body.querySelector('.ovw-more');
+            if (mb) mb.addEventListener('click', function () {
+              var open = mb.getAttribute('aria-expanded') !== 'true';
+              var rs = Array.prototype.slice.call(body.querySelectorAll('button.ovw-tr')).slice(SHOWN);
+              rs.forEach(function (b) { b.hidden = !open; });
+              mb.setAttribute('aria-expanded', String(open));
+              mb.firstChild.textContent = open ? 'Show fewer' : 'Show ' + more + ' more';
+              if (open && rs[0]) rs[0].focus();
+            });
+          });
+        }).catch(function (e) { fail(body, 'Clients this month', e, run); });
+      };
+      run();
+    }
+    return { people: people, clients: clients };
+  })();
+
   function redraw() { build(true); }
   var ME = (function () {
     var memo = null;
@@ -1754,11 +1759,9 @@
           sec: 'work', url: '/admin/?s=work&open=' + encodeURIComponent(t.id), go: 'work', act: 'Open' });
       });
       extra.forEach(function (x) { x.group = x.late ? 'late' : 'today'; items.push(x); });
-      d.waiting.forEach(function (r) {
-        items.push({ group: 'wait', kind: r.request ? 'decision' : 'wait', title: r.title, meta: [r.meta, r.state].filter(Boolean),
-          late: r.late, lateWord: r.age || '', sec: r.section, url: r.url, open: r.open, request: r.request, act: 'Open' });
-      });
-      var KINDS = [['all', 'All'], ['task', 'Tasks'], ['decision', 'Decisions'], ['wait', 'Waiting'], ['lead', 'Leads'], ['report', 'Reports']];
+      /* What waits on the colleague's decision is its own card under Today
+         (Waiting for you, drawn by My Work's own script), never a row here. */
+      var KINDS = [['all', 'All'], ['task', 'Tasks'], ['lead', 'Leads'], ['report', 'Reports']];
       var on = 'all';
       var paint = function () {
         var list = items.filter(function (x) { return on === 'all' || x.kind === on; });
@@ -1779,15 +1782,13 @@
           return '<button class="ovw-chip' + (k[0] === on ? ' is-on' : '') + '" type="button" data-k="' + k[0] + '" aria-pressed="' + (k[0] === on) + '">' +
             esc(k[1]) + ' <b>' + n + '</b></button>';
         }).join('') + '</div>' : '';
-        var GROUPS = [['late', 'Late'], ['wait', 'Waiting for you'], ['today', 'Due today']];
+        var GROUPS = [['late', 'Late'], ['today', 'Due today']];
         var html = GROUPS.map(function (g) {
           var rs = list.filter(function (x) { return x.group === g[0]; });
           if (!rs.length) return '';
           return '<h4 class="ovw-today-h' + (g[0] === 'late' ? ' is-late' : '') + '">' + g[1] + '</h4>' + rs.map(function (x) {
             var i = items.indexOf(x), mark = bridge.glyph ? bridge.glyph(x.sec) : '';
-            var acts = x.request && may('ops', 'work')
-              ? '<button class="btn btn-sm" type="button" data-a="no">Decline</button><button class="btn btn-sm" type="button" data-a="yes">Approve</button>'
-              : '<button class="btn btn-sm" type="button" data-a="open">' + esc(x.act || 'Open') + '</button>';
+            var acts = '<button class="btn btn-sm" type="button" data-a="open">' + esc(x.act || 'Open') + '</button>';
             return '<div class="ovw-today-row" data-i="' + i + '"><span class="ovw-today-tile">' + mark + '</span>' +
               '<button class="ovw-today-what" type="button" data-a="open"><b>' + esc(x.title) + '</b><small>' +
                 x.meta.filter(Boolean).map(function (m) { return '<span class="nb">' + esc(m) + '</span>'; }).join(' · ') +
@@ -1813,22 +1814,6 @@
           go(x.url, x.go || x.sec);
           return;
         }
-        var btns = row.querySelectorAll('.ovw-today-acts .btn');
-        Array.prototype.forEach.call(btns, function (y) { y.disabled = true; });
-        window.ADspaceOps.decideDue(x.request, a === 'yes').then(function () {
-          items.splice(items.indexOf(x), 1);
-          paint();
-          var said = document.createElement('p');
-          said.className = 'msg ok';
-          said.textContent = a === 'yes' ? 'Extension approved.' : 'Extension declined.';
-          card.appendChild(said);
-        }).catch(function (err) {
-          Array.prototype.forEach.call(btns, function (y) { y.disabled = false; });
-          var said = document.createElement('p');
-          said.className = 'msg err';
-          said.textContent = 'Not saved. ' + ((err && err.message) || 'Please try again.');
-          row.appendChild(said);
-        });
       });
       paint();
     }
@@ -1852,9 +1837,6 @@
           var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
             return '<span class="ovw-ev' + (t.late ? ' is-late' : '') + '">' + esc(t.code || t.name) + (t.code ? ' ' + esc(t.name) : '') + '</span>';
           });
-          if (i === 0) ts = d.tasks.filter(function (t) { return t.late; }).map(function (t) {
-            return '<span class="ovw-ev is-late">' + esc(t.code ? t.code + ' ' + t.name : t.name) + ' · late</span>';
-          }).concat(ts);
           (ms || []).forEach(function (m) {
             if (CK.day(m.meeting_at) !== day) return;
             ts.push('<span class="ovw-ev is-meet">' + esc(CK.clock(m.meeting_at, { space: false })) + ' · ' + esc((m.clients && m.clients.name) || 'Meeting') + '</span>');
@@ -1925,15 +1907,30 @@
       left.className = 'ovw-me-main'; right.className = 'ovw-me-side';
       cols.appendChild(left); cols.appendChild(right);
       box.appendChild(cols);
-      UI.skeleton(left, 4);
+      var todayHost = document.createElement('div');
+      todayHost.className = 'ovw-me-today';
+      left.appendChild(todayHost);
+      /* Waiting for you, painted into this host by My Work's own script
+         (`paintWaiting`): its Approve, Decline and Remind as they were. */
+      var wait = document.createElement('div');
+      wait.id = 'workWaiting';
+      wait.setAttribute('data-narrow', '860');
+      wait.hidden = true;
+      left.appendChild(wait);
+      var waitMsg = document.createElement('p');
+      waitMsg.id = 'ovwWaitMsg';
+      waitMsg.className = 'msg';
+      waitMsg.setAttribute('aria-live', 'polite');
+      left.appendChild(waitMsg);
+      UI.skeleton(todayHost, 4);
       var lost = [];
       var named = function (p, word) { return p.catch(function () { lost.push(word); return []; }); };
       Promise.all([read(), named(leads(), 'Leads'), named(unsent(), 'Reports')]).then(function (r) {
         var d = { tasks: r[0].tasks, waiting: r[0].waiting, failed: r[0].failed.concat(lost) };
         ask(wrap, d);
         if (!wrap.children.length) wrap.remove();
-        left.innerHTML = '';
-        today(left, d, r[1].concat(r[2]));
+        todayHost.innerHTML = '';
+        today(todayHost, d, r[1].concat(r[2]));
         if (may('ops', 'view')) week(right, d);
         clients(right);
         if (!right.children.length) cols.classList.add('is-one');
@@ -1941,7 +1938,7 @@
           var late = d.tasks.filter(function (t) { return t.late; }).length;
           window.ADspaceAdmin.counts('overview', [[d.tasks.length, d.tasks.length === 1 ? 'open task' : 'open tasks'], late ? [late, 'late', 'late'] : null]);
         }
-      }).catch(function (e) { fail(left, 'Your work', e, redraw); });
+      }).catch(function (e) { fail(todayHost, 'Your work', e, redraw); });
     }
     return { build: build };
   })();
@@ -1959,8 +1956,6 @@
       detail(box);
     } else {
       lead(box);
-      stages(box);
-      months(box);
       /* The line under the Dashboard's name: the open work and what of it
          is late, from the report the page already reads. */
       if (canFigures() && window.ADspaceAdmin && window.ADspaceAdmin.counts) {
@@ -1969,16 +1964,23 @@
           window.ADspaceAdmin.counts('overview', [[open, 'open tasks'], late ? [late, 'late', 'late'] : null]);
         }).catch(function () {});
       }
-      /* Needs attention beside the on-time trend, the golden proportion
-         (the revamp, 2026-11-12); one over the other in a narrow pane. */
-      var pair = document.createElement('div');
-      pair.className = 'ovw-pair';
-      box.appendChild(pair);
-      list(pair);
-      var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];
-      if (ontime) chart(pair, ontime);
-      if (!pair.children.length) pair.remove();
-      else if (pair.children.length === 1) pair.classList.add('is-one');
+      /* Team (the revamp, phase 2, 2026-11-13): People beside the on-time
+         trend, then Clients this month beside Needs attention, each pair
+         on the golden proportion; one over the other in a narrow pane. */
+      var pairOf = function (fill) {
+        var pr = document.createElement('div');
+        pr.className = 'ovw-pair';
+        box.appendChild(pr);
+        fill(pr);
+        if (!pr.children.length) pr.remove();
+        else if (pr.children.length === 1) pr.classList.add('is-one');
+      };
+      pairOf(function (pr) {
+        TEAM.people(pr);
+        var ontime = PAGE1[0].filter(function (c) { return c.key === 'ontime' && c.can(); })[0];
+        if (ontime) chart(pr, ontime);
+      });
+      pairOf(function (pr) { TEAM.clients(pr); list(pr); });
       tiles(box);
       charts(box, PAGE1.map(function (row) { return row.filter(function (c) { return c.key !== 'ontime'; }); }));
     }

@@ -1163,13 +1163,12 @@
      capacity strip draws only with the board, where the question it answers
      (who has room this week) is the question being asked. */
   function viewBox() {
-    var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
+    var list = $('workQueue'), board = $('workBoard'), cal = $('workCal');
     var wc = $('workClients');
     if (wc) wc.hidden = state.view !== 'months';
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
     if (cal) cal.hidden = state.view !== 'calendar';
-    if (cap) cap.hidden = state.view !== 'board';
     return state.view === 'board' ? board
          : state.view === 'months' ? wc
          : state.view === 'calendar' ? cal : list;
@@ -1406,14 +1405,6 @@
       return { tasks: r[0], waiting: r[1].rows, failed: failed.concat(r[1].failed) };
     });
   }
-  /* An extension decided from the Dashboard, as Waiting for you decides it. */
-  function decideDue(request, yes) {
-    return db.rpc('ops_decide_due_change', { p_request: request, p_approve: Boolean(yes), p_note: null }).then(function (r) {
-      if (r.error) throw r.error;
-      if (r.data && r.data.error) throw new Error(r.data.error);
-      return r.data;
-    });
-  }
   /* A report on a calendar month is named by the month alone, short
      (Sept 2026), so its line fits a phone. */
   function wholeMonth(a, b) {
@@ -1431,7 +1422,9 @@
     /* A failed read keeps the tab bar's dot at its last count. */
     if (!fail.length || rows.length >= (state.waitShown || 0)) state.waitShown = rows.length;
     if (bridge.waiting) bridge.waiting(state.waitShown);
-    var on = state.view === 'list' && state.scope === 'mine' && state.filter === 'day' && !state.find && (rows.length || fail.length);
+    /* Drawn on the Dashboard's Me tab since the revamp (2026-11-13), the
+       one place a colleague decides: shown while it holds anything. */
+    var on = rows.length || fail.length;
     box.hidden = !on;
     if (!on) { box.innerHTML = ''; return; }
     box.innerHTML = '';
@@ -1492,16 +1485,16 @@
           if (a === 'remind') {
             window.ADspaceWhatsApp.compose({ purpose: 'approval', clientId: r.remind.clientId, ref: r.remind.ref,
               what: r.remind.what, link: r.remind.link, opener: b,
-              onSent: function (d, line) { msg('workMsg', line, 'ok'); } });
+              onSent: function (d, line) { msg('ovwWaitMsg', line, 'ok'); } });
             return;
           }
           Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = true; });
-          call('ops_decide_due_change', { p_request: r.request, p_approve: a === 'yes', p_note: null }, 'workMsg', function () {
-            msg('workMsg', a === 'yes' ? 'Extension approved.' : 'Extension declined.', 'ok');
+          call('ops_decide_due_change', { p_request: r.request, p_approve: a === 'yes', p_note: null }, 'ovwWaitMsg', function () {
+            msg('ovwWaitMsg', a === 'yes' ? 'Extension approved.' : 'Extension declined.', 'ok');
             state.waiting = (state.waiting || []).filter(function (x) { return x !== r; });
             paintWaiting();
             loadWaiting();
-            refreshOne(r.task);
+            if (state.tasks) refreshOne(r.task);
           }, function () {
             Array.prototype.forEach.call(row.querySelectorAll('.wfy-acts .btn'), function (x) { x.disabled = false; });
           });
@@ -1861,7 +1854,6 @@
         cols.push({ key: s.key, name: s.label, wip: null, keys: [s.key] });
       }
     });
-    paintCapacity();
     box.innerHTML = '';
     if (!mine.length) {
       UI.emptyLine(box, 'No tasks in this workflow.', '', null);
@@ -2351,41 +2343,8 @@
     var today = CK.today();
     return CK.start(CK.addDays(today, -((CK.weekday(today) + 6) % 7)));
   }
-  function loadCapacity() { paintCapacity(); }
-  function paintCapacity() {
-    var box = $('workCap');
-    if (!box || state.view !== 'board') return;
-    var me = bridge.me && bridge.me();
-    var team = may('ops.all', 'view');
-    var end = new Date(weekStart().getTime() + 7 * 86400000);
-    var mins = {}, open = {};
-    (state.tasks || []).forEach(function (t) {
-      var who = state.ownerIds[t.id];
-      if (isFinished(t) || !who) return;
-      open[who] = (open[who] || 0) + 1;
-      if (t.current_final_due_at && new Date(t.current_final_due_at) < end) {
-        mins[who] = (mins[who] || 0) + (Number(t.estimate_minutes) || 0);
-      }
-    });
-    var people = pickable().filter(function (m) {
-      if (!team) return me && m.id === me.id;
-      return m.capacity_minutes_week || mins[m.id] || open[m.id];
-    });
-    /* With no weekly capacity set for anybody shown, the strip says only
-       "no capacity set" against empty bars, so it is not drawn
-       (ux-audit WORK-6, 2026-10-15). */
-    if (!people.length || !people.some(function (m) { return m.capacity_minutes_week; })) { box.innerHTML = ''; return; }
-    var hours = function (n) { return (Math.round(n / 30) / 2) + 'h'; };
-    box.innerHTML = '<div class="capstrip">' + people.map(function (m) {
-      var used = mins[m.id] || 0, cap = m.capacity_minutes_week || 0;
-      var pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
-      return '<div class="caprow' + (cap && used > cap ? ' is-over' : '') + '">' +
-        '<span class="caprow-name">' + esc(m.name) + '</span>' +
-        '<span class="caprow-fig">' + hours(used) + (cap ? ' planned of ' + hours(cap) : ' planned · no capacity set') +
-          (open[m.id] ? ' · ' + open[m.id] + ' open' : '') + '</span>' +
-        '<span class="capbar"><i style="width:' + pct + '%"></i></span></div>';
-    }).join('') + '</div>';
-  }
+  /* The capacity strip left the board for the Dashboard's People
+     (the revamp, 2026-11-13). */
 
   // ---- The view ------------------------------------------------------------
   /* The segment and the bar's controls follow the view: Group by is the
@@ -2433,7 +2392,6 @@
     if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'months';
     showPeriod();
     if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
-    if (state.view === 'board') loadCapacity();
   }
   /* The segment answers the press first and the view is drawn a frame
      later: drawn in the same task, a long list held the choice back until it
@@ -8657,10 +8615,10 @@
         document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
       }
     }
-    /* Under the phone's tab bar My Work's dot says what waits on you from
-       whichever section the console opens on: Waiting for you is read once
-       here, then again each time My Work loads. */
-    if (!state.waitRead && document.documentElement.classList.contains('has-tabbar') && may('ops', 'view')) {
+    /* The Dashboard's rail count and its tab bar dot say what waits on you
+       from whichever section the console opens on: Waiting for you is read
+       once here, then again each time the Dashboard's Me tab draws. */
+    if (!state.waitRead) {
       state.waitRead = true;
       loadWaiting();
     }
@@ -8940,7 +8898,6 @@
     recordTaskRows: recordTaskRows,
     /* The Dashboard's Me tab (2026-11-13). */
     mine: mine,
-    decideDue: decideDue,
     open: function (id) { openDrawer(id); }
   };
   if (bridge.opsReady) bridge.opsReady();

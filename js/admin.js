@@ -1384,8 +1384,9 @@
      to answer: My Work's Waiting for you), as My Work last read it. */
   var tabWaiting = 0;
   function paintTabDot() {
-    /* The rail's My Work row counts it too (the revamp, 2026-11-12). */
-    var row = document.querySelector('.navitem[data-section="work"]');
+    /* The rail's Dashboard row counts it too, where Waiting for you
+       stands since the revamp (2026-11-13). */
+    var row = document.querySelector('.navitem[data-section="overview"]');
     if (row) {
       var n = row.querySelector('.nav-n');
       if (tabWaiting && !n) { n = document.createElement('b'); n.className = 'nav-n'; row.appendChild(n); }
@@ -1393,7 +1394,7 @@
       else if (n) { n.textContent = String(tabWaiting); n.setAttribute('aria-label', tabWaiting + ' waiting for you'); }
     }
     var bar = $('tabBar');
-    var t = bar && bar.querySelector('.tabbar-tab[data-tab="work"]');
+    var t = bar && bar.querySelector('.tabbar-tab[data-tab="overview"]');
     if (!t) return;
     var dot = t.querySelector('.tabbar-dot');
     if (tabWaiting && !dot) {

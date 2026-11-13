@@ -597,9 +597,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
   slides to it and follows a finger dragged along the bar, letting go
   on a tab opening it ("allow the selected … button to slide around left
-  right"); a section More holds chooses More. My Work carries a red dot
-  while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
-  `paintWaiting`; read once on sign-in under the bar), never a profile
+  right"); a section More holds chooses More. The Dashboard carries a red
+  dot while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
+  `paintWaiting`; read once on sign-in, the rail's Dashboard row counting
+  it too; 2026-11-13), never a profile
   photo tab (`tests/tabbar.js`, `tests/waiting.js`). It sits low, 14px
   less than the home bar's inset above the edge (`--tabbar-bottom`; the
   user: "can go abit down"), and scrolling down draws it in to its glyphs
@@ -4412,7 +4413,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   still asking Full Access on its own section. Team's group panel names
   the row Team dashboard (On / No Access): `overview` in the access map,
   stored only as `none` (On stores nothing), page-side alone; No Access
-  hides the Team tabs, never Me.
+  hides the Team tabs, never Me. Team (phase 2, after the user's Halo
+  references, 2026-11-13) reads the four figures, then People
+  (`#ovwPeople`: each colleague's open, late, delivered and on time from
+  `ops_report`, a row opening their record's Work) beside On time by
+  month, then Clients this month (`#ovwClientsMonth`: each client whose
+  content month is this month, its posts done of planned as a status, its
+  report and its meeting) beside Needs attention, then the rest.
 - Two pages, from the mockup the user approved (2026-10-12, task 47;
   `digital-form-tests` `mockups/dashboard/`) and then read as the company's
   director would (the user, the same day: "act as the company ceo"; the
@@ -4653,8 +4660,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
-  - Waiting for you (`#workWaiting`, 2026-10-08): above the list on Open,
-    Assigned to me, with no search, one card of what waits on the reader's
+  - Waiting for you (`#workWaiting`, 2026-10-08; on the Dashboard's Me tab
+    since the revamp, 2026-11-13, My Work holding it no more): one card of
+    what waits on the reader's
     decision: an extension asked of them (Decline / Approve in the row,
     `ops_decide_due_change`), a report they review, a booking Submitted on a
     campaign they run, a client request Requested and a set with Changes
@@ -4725,10 +4733,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; in a gap the nearest column does. A card held at the board's edge
     scrolls it. A card never starts the browser's own drag, and a press on
     it selects no text (a stray selection cancelled the next drag).
-  - The capacity strip fills each person's bar from the `estimate_minutes`
-    of their open tasks due by the week's end, overdue included, against
-    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours. It is
-    drawn only while somebody shown has a capacity set.
+  - No capacity strip (removed with the revamp, 2026-11-13): the
+    Dashboard's Team tab names each person's open, late and delivered work.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two

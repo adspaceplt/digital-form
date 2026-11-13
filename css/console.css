@@ -5005,31 +5005,12 @@ svg.sec {
 .ovw-kpi-verdict { font-size: 12.5px; color: var(--ink-soft); }
 /* Its dot leads the word, so a verdict wrapped to the next line never
    starts on a stray separator (2026-11-13). */
-.ovw-kpi-verdict { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ovw-kpi-verdict { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .ovw-kpi-verdict::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--dot-off); }
 .ovw-kpi-line.is-ok .ovw-kpi-verdict::before { background: var(--dot-ok); }
 .ovw-kpi-line.is-late .ovw-kpi-verdict::before { background: var(--dot-late); }
 .ovw-kpi-line.is-ok .ovw-kpi-verdict { color: var(--ok); font-weight: 600; }
 .ovw-kpi-line.is-late .ovw-kpi-verdict { color: var(--err); font-weight: 600; }
-/* Work by stage: one card split by hairlines, a stage a cell, its count in
-   a segmented ring with its share in the stage's status colour. */
-.ovw-stage-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
-.ovw-stage { display: flex; align-items: center; gap: 12px; padding: 4px 16px; min-width: 0; }
-.ovw-stage + .ovw-stage { border-left: 1px solid var(--line-soft); }
-.ovw-stage:first-child { padding-left: 0; }
-.ovw-ring { width: 44px; height: 44px; flex: 0 0 auto; }
-.ovw-ring-track { fill: none; stroke: var(--line); stroke-width: 2; stroke-dasharray: 5.2 2.3; }
-.ovw-ring-arc { fill: none; stroke: var(--dot-off); stroke-width: 2; stroke-linecap: round; }
-.ovw-ring-arc.is-warn { stroke: var(--dot-wait); }
-.ovw-ring-arc.is-ok { stroke: var(--dot-ok); }
-.ovw-ring-arc.is-late { stroke: var(--dot-late); }
-.ovw-ring text { font-size: 13px; font-weight: 500; fill: var(--ink); font-variant-numeric: tabular-nums; }
-.ovw-stage-what { display: grid; min-width: 0; }
-.ovw-stage-what b { font-weight: 600; font-size: 13.5px; }
-.ovw-stage-what small { font-size: 12.5px; color: var(--ink-mute); }
-.is-narrow .ovw-stage-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); row-gap: 12px; }
-.is-narrow .ovw-stage { padding: 0; }
-.is-narrow .ovw-stage + .ovw-stage { border-left: 0; }
 .ovw-att-sec { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .ovw-att-mark { display: flex; flex: 0 0 auto; }
 .ovw-att-mark svg.sec { width: 13px; height: 13px; padding: 4.5px; border-radius: 7px; }
@@ -5218,7 +5199,7 @@ svg.sec {
    references set their titles (the user, 2026-11-12: "minimalist, modern,
    elegant"); bold stays for headings and a total. */
 .console :is(.crm-c-name, .task-top > b, .crow-name b, .svc-name b, .group-name b, .rp-name b,
-  .ovw-att-what b, .wfy-what b, .ovw-stage-what b, .init-name b, .ovname, .ac-name, .rl-what,
+  .ovw-att-what b, .wfy-what b, .init-name b, .ovname, .ac-name, .rl-what,
   .caprow-name, .bookreg-fold-name, .crr-bk-name b, .qt-gonename b, .ck-item-name b) { font-weight: 500; }
 
 /* v3, phase 2 (the user, 2026-11-12, "ok yes all"): My Work's board and
@@ -5294,41 +5275,6 @@ svg.sec {
 .is-narrow .task-mark { display: none; }
 .is-narrow .task-open:has(> .task-mark) { flex-direction: column; align-items: stretch; justify-content: center; gap: 2px; }
 
-/* v3, phase 3 (2026-11-12): the Dashboard. This month by client: a card a
-   client's content month, three across (two, then one, as the pane
-   narrows): who over the month, the work done as a bar, what is open and
-   late, then its next steps. */
-.ovw-months { display: grid; gap: 12px; }
-.ovw-months-head { display: flex; align-items: center; gap: 12px; }
-.ovw-months-head .ovgo { margin-left: auto; }
-.ovw-months-head .ovw-group-h { margin: 0; }
-.ovw-month-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
-.is-narrow .ovw-month-grid { grid-template-columns: minmax(0, 1fr); }
-@media (max-width: 1100px) { .ovw-month-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-.ovw-month { display: grid; gap: 10px; margin: 0; }
-.ovw-month-who { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.ovw-month-who .ovgo-chev { margin-left: auto; width: 14px; height: 14px; color: var(--ink-mute); flex: 0 0 auto; }
-.ovw-month-name { display: grid; min-width: 0; }
-.ovw-month-name b { font-weight: 500; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ovw-month-name small { font-size: 12px; color: var(--ink-mute); }
-.ovw-month-bar { display: flex; align-items: center; gap: 10px; }
-.ovw-month-bar .tcheckbar-segs { flex: 1; width: auto; display: flex; gap: 2px; height: 4px; }
-.ovw-month-bar .tcheckbar-segs i { flex: 1; border-radius: 2px; background: var(--line); }
-.ovw-month-bar .tcheckbar-segs i.is-on { background: var(--dot-wait); }
-.ovw-month-bar .tcheckbar-segs.is-done i { background: var(--dot-ok); }
-.ovw-month-pct { font-size: 12.5px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ovw-month-line { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
-.ovw-month-line .is-late { color: var(--err); }
-.ovw-month-next { display: grid; border-top: 1px solid var(--line-soft); padding-top: 8px; }
-.ovw-month-h { font-size: 12px; font-weight: 600; color: var(--ink-mute); padding-bottom: 4px; }
-.ovw-step { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: var(--ctl-h-sm); padding: 0; border: 0; background: none;
-  font: inherit; font-size: 13px; color: var(--ink); text-align: left; cursor: pointer; border-top: 1px solid var(--line-soft); }
-.ovw-step:first-of-type { border-top: 0; }
-.ovw-step-dot { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--line-ctl); flex: 0 0 auto; }
-.ovw-step-what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ovw-step-due { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
-.ovw-step-due.is-late { color: var(--err); }
-@media (hover: hover) { .ovw-step:hover .ovw-step-what, .ovw-month-who:hover b { color: var(--action-ink); } }
 /* A figure tile ends on a shaded strip holding its change (v3's footer). */
 /* The strip runs the tile's own width: the tile and its strip share one
    inline padding, so a narrow pane's smaller padding never leaves the strip
@@ -5531,7 +5477,7 @@ svg.sec {
    field, then Today beside the next five days and the colleague's clients
    on the record's proportion; one column on a narrow pane. */
 .ovw-ask { display: grid; gap: 8px; }
-.ovw-ask-box { display: flex; align-items: center; gap: 10px; min-height: var(--tap); padding: 0 8px 0 14px;
+.ovw-ask-box { display: flex; align-items: center; gap: 8px; min-height: var(--tap); padding: 0 8px 0 14px;
   background: var(--card); border-radius: var(--radius); outline: 1px solid var(--card-edge); outline-offset: -1px; }
 .ovw-ask-box:focus-within { outline: 2px solid var(--action-ring); }
 .ovw-ask-ai { display: inline-flex; color: var(--action-ink); }
@@ -5540,9 +5486,12 @@ svg.sec {
 .ovw-ask-field::placeholder { color: var(--ink-mute); }
 .ovw-ask-key { font: 500 11.5px var(--font); color: var(--ink-mute); padding: 2px 6px; border-radius: 5px; background: var(--tonal); }
 :root.has-tabbar .ovw-ask-key { display: none; }
-.ovw-ask-try { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-left: 4px; }
-.ovw-ask-q { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 12.5px; color: var(--ink-soft); cursor: pointer; text-align: left; }
-@media (hover: hover) { .ovw-ask-q:hover { color: var(--ink); } }
+/* The suggestions are pills a press asks (the 4-step pass, 2026-11-13: as
+   plain words they read as a caption). */
+.ovw-ask-try { display: flex; flex-wrap: wrap; gap: 8px; }
+.ovw-ask-q { border: 0; background: var(--tonal); border-radius: 999px; min-height: var(--ctl-h-sm); padding: 0 12px; font: inherit; font-size: 12.5px; color: var(--ink-soft); cursor: pointer; text-align: left; }
+@media (hover: hover) { .ovw-ask-q:hover { background: var(--tonal-hover); color: var(--ink); } }
+.ovw-ask-q:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 .is-narrow .ovw-ask-q + .ovw-ask-q { display: none; }
 .ovw-me-cols { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .ovw-me-cols.is-one, .is-narrow .ovw-me-cols { grid-template-columns: minmax(0, 1fr); }
@@ -5550,7 +5499,7 @@ svg.sec {
 .ovw-me-main, .ovw-me-side { display: grid; gap: 12px; min-width: 0; }
 .ovw-today .chart-head, .ovw-week .chart-head, .ovw-mycl .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .ovw-today-n { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
-.ovw-today-chips { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+.ovw-today-chips { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
 .ovw-chip { flex: none; height: var(--ctl-h-sm); padding: 0 12px; border: 0; border-radius: 999px; background: var(--tonal);
   color: var(--ink-soft); font: inherit; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
 .ovw-chip b { font-weight: 600; }
@@ -5587,7 +5536,7 @@ svg.sec {
 .ovw-ev.is-none, .ovw-ev.is-more { color: var(--ink-mute); }
 .ovw-ev.is-none::before { display: none; }
 .ovw-mycl-list { display: grid; }
-.ovw-mycl-row { display: grid; gap: 6px; padding: 10px 0; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+.ovw-mycl-row { display: grid; gap: 8px; padding: 12px 0; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
 .ovw-mycl-row:first-child { border-top: 0; padding-top: 0; }
 .ovw-mycl-top { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .ovw-mycl-top b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -5603,3 +5552,35 @@ svg.sec {
 .ovw-today .chart-title, .ovw-week .chart-title, .ovw-mycl .chart-title { margin-bottom: 0; }
 .ovw-today-chips + .ovw-today-list > .ovw-today-h:first-child { margin-top: 12px; }
 .ovw-week .ovw-days, .ovw-mycl .ovw-mycl-list { margin-top: 12px; }
+
+/* TEAM (the revamp, phase 2, 2026-11-13): People and Clients this month,
+   each a card of rows a button opening its record; the figures tabular on
+   one right edge; on a narrow pane the quieter columns leave. */
+.ovw-tbl .ovw-body { display: grid; }
+.ovw-tr { display: grid; align-items: center; gap: 12px; min-height: 48px; padding: 8px 0; border: 0; border-top: 1px solid var(--line-soft);
+  background: none; font: inherit; color: inherit; text-align: left; width: 100%; }
+button.ovw-tr { cursor: pointer; }
+@media (hover: hover) { button.ovw-tr:hover .ovw-who b { color: var(--action-ink); } }
+button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; border-radius: var(--radius-sm); }
+.ovw-th { min-height: 0; padding: 0 0 8px; border-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ovw-tr.is-people { grid-template-columns: minmax(0, 1fr) 48px 48px 72px 64px; }
+.ovw-tr.is-cmonth { grid-template-columns: minmax(0, 1fr) 128px 104px 88px; }
+.ovw-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.ovw-who-t { display: grid; min-width: 0; }
+.ovw-who-t small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-show-n { display: none; }
+.is-narrow .ovw-show-n { display: block; }
+#ovwClientsMonth .ovw-more.btn { min-width: 0; margin: 8px 0 0; justify-self: start; gap: 4px; }
+/* An empty Waiting for you leaves no gap (the 4-step pass, 2026-11-13). */
+#ovwWaitMsg:empty { display: none; }
+.ovw-who b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-who .cl-mark { width: 24px; height: 24px; flex: none; }
+.ovw-n { text-align: right; font-variant-numeric: tabular-nums; }
+.ovw-th .ovw-n, .ovw-th > span:not(:first-child) { text-align: right; }
+.is-people > span:not(:first-child) { text-align: right; }
+.ovw-n.is-late { color: var(--err); }
+.ovw-meet { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.is-cmonth .chip-state { white-space: nowrap; }
+.is-narrow .ovw-hide-n { display: none; }
+.is-narrow .ovw-tr.is-people { grid-template-columns: minmax(0, 1fr) 44px 44px 56px; }
+.is-narrow .ovw-tr.is-cmonth { grid-template-columns: minmax(0, 1fr) auto; }
