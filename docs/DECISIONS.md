@@ -10254,6 +10254,11 @@ edge, else the console head or a client page's bar) at `top: 100%`, re-homed on
 each request, so anything laid over the host draws over it. Every page-level
 z-index in `css/portal.css` became a named token on one scale (`--z-sticky` to
 `--z-picker`), values unchanged. `tests/loadbar.js` passes unchanged.
+### 2026-11-13 · A line's description edited for one quotation
+The user: a line's description in Build quote "shouldnt be dead end when inside admin … have to go a big round and republish the rate card". Each line now has Edit (Add description where it has none) under its description: the points typed apply to that quotation alone, `quote_adjust` taking the edit `detail` and keeping the card's as `list_detail`; Use Rate Card puts the card's back. The Months box widened from 64 to 84px, which had cut One-off to One-o.
+### 2026-11-13 · The rail at 212px, its marks a row of their own
+The user, on a client record at a narrowed window: "the left panel could width could be smaller, yet u need to solve the four buttons below". The desk rail was 244px, its rows wide with empty room, and the record's tab strip clipped (Brand cut) beside it. The rail is now 212px; the foot's four marks (Arrange sections, Handbook, Settings, Activity record) take one row from the sections' left edge and the build line reads under them, since the four marks and the build no longer fit one line. The phone's More keeps the one line. `run` and `appver` measure the new order.
+
 
 ### 2026-11-13 · Words stay inside their boxes as the window narrows
 The user: "now the text could flow out beyond a card, which is weird". Needs

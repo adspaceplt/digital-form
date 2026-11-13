@@ -3858,11 +3858,17 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    (2026-10-15): each field keeps a row of words' height, its target
    overflowing the row evenly; on a phone they run under the name, each
    under its label, the subtotal at the right of the name. */
-.qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 64px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
+.qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 84px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
 /* A line's inclusions run under its name, the figures staying on the
    name's line (2026-11-04). */
 .qb-row:has(> .qb-incl) { grid-template-areas: "name qty rate mo amt" "incl . . . ." "tax . . . ."; }
 .qb-row > .qb-incl { grid-area: incl; margin-top: 2px; }
+/* A line's description edited for this quotation (2026-11-13). */
+.qb-incl .qb-desc-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 2px 0 0 -10px; }
+.qb-incl .qb-desc-acts > .btn { min-width: 0; }
+.qb-incl .qb-desc-own { padding-left: 10px; }
+.qb-incl .qb-desc-own { font-size: 12px; color: var(--ink-mute); }
+.qb-incl .qb-desc { width: 100%; margin-top: 4px; }
 .qb-row > .qb-name { grid-area: name; }
 .qb-row > .qb-taxc { grid-area: tax; }
 .qb-row > .qb-qty { grid-area: qty; }
@@ -5046,6 +5052,14 @@ svg.sec {
     background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: 100dvh; } }
+  /* The rail at a desk is 212px (the user, 2026-11-13: "the left panel
+     could width could be smaller"), so the foot's four marks take a row of
+     their own, from the sections' left edge, and the build reads under them. */
+  :root:not(.has-tabbar) .sidebar { flex-basis: 212px; padding-inline: 12px; }
+  :root:not(.has-tabbar) .sidebar-foot { flex-wrap: wrap; gap: 4px; }
+  :root:not(.has-tabbar) .sidebar-foot .railrow,
+  :root:not(.has-tabbar) .sidebar-foot .railrow:not([hidden]) ~ .railrow { order: 0; margin: 0; }
+  :root:not(.has-tabbar) .sidebar-foot .appver { order: 1; flex: 1 0 100%; padding: 0 10px; text-align: left; }
   :root:not(.has-tabbar) .navitem.is-on { background: var(--card); box-shadow: 0 0 0 1px var(--card-edge); }
   :root:not(.has-tabbar) .console-main {
     margin: 12px 12px 12px 0; border-radius: 18px; background: var(--card);

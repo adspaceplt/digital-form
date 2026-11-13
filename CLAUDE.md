@@ -573,8 +573,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   it; five or fewer take the bar whole. More lists only what the bar does
   not (`.is-tabbed`), then the rail's foot: one line of the build at the
   left, then Settings' mark and the Activity record's at the right edge
-  (each named for a screen reader and on hover), at a desk as under the
-  bar (the user, 2026-10-10: "activity log can go inline with version
+  (each named for a screen reader and on hover); at a desk the rail is
+  212px and its marks take a row of their own on the sections' left edge,
+  the build under them (the user, 2026-11-13: "the left panel could width
+  could be smaller") (the user, 2026-10-10: "activity log can go inline with version
   code", "just activity record icons would do"; 2026-10-11: "the settings
   button to fit beside activity record as just icons same as it", "the
   rearrange tabs also next to settings"), Arrange sections' mark first. The menu toggle gives way to it; the drawer stays for a narrow desk window.
@@ -713,7 +715,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   `adspace-files`; see `ADspaceDocs.save`). `client/sw.js` holds that
   alone, at `/client/file/`, registered by `js/portal.js`. A failed
   registration is silent.
-- The rail's foot names the build beside Settings' and the Activity record's marks (`#appVersion`,
+- The rail's foot names the build with Settings' and the Activity record's marks (`#appVersion`,
   `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
   Malaysia and the merge commit's first seven characters (`v26.10.06 ·
   fb89b43`; the user, 2026-10-06: short, but which build), read from
@@ -6706,7 +6708,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
   filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
-  figure back. A line may be priced at RM 0, a complimentary line (the
+  figure back. A line's description is the Rate Card's until Edit under
+  it rewrites it for that quotation (the edit's `detail`, one to twelve
+  points of 300 at most, the card's kept as `list_detail`; Use Rate Card
+  puts it back; 2026-11-13), which the PDF and /quote/ print. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
