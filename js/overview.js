@@ -1382,8 +1382,13 @@
     var card = document.createElement('section');
     card.className = 'chartcard ovw-card ovw-att';
     card.id = 'ovwAttention';
+    /* Its four columns need 620px: beside the on-time chart in a narrowed
+       window the card is narrower than that, so it takes the phone's two-line
+       row there (the user, 2026-11-13: the names broke and overran the rows). */
+    card.setAttribute('data-narrow', '620');
     card.innerHTML = '<div class="ovw-cardhead"><h3>Needs attention</h3><span class="ovw-count" hidden></span></div><div class="ovw-srcs-host"></div><div class="ovw-body"></div>';
     box.appendChild(card);
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit('#ovwAttention');
     var body = card.querySelector('.ovw-body'), host = card.querySelector('.ovw-srcs-host');
     var pick = '';
     var SEC_OF = { Task: 'My Work', Report: 'Reports', Lead: 'Clients', Client: 'Clients', Request: 'Clients',

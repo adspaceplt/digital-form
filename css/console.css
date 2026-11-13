@@ -5087,7 +5087,7 @@ svg.sec {
 .ovw-pair > .chartcard { margin: 0; }
 @media (max-width: 1100px) { .ovw-pair { grid-template-columns: minmax(0, 1fr); } }
 /* Beside the trend the list's columns tighten, the name keeping the room. */
-.console-body:not(.is-narrow) .ovw-pair:not(.is-one) :is(.ovw-att-head, .ovw-att-row) { grid-template-columns: minmax(0, 1fr) 118px 96px 104px; gap: 2px 12px; }
+.console-body:not(.is-narrow) .ovw-pair:not(.is-one) .ovw-att:not(.is-narrow) :is(.ovw-att-head, .ovw-att-row) { grid-template-columns: minmax(0, 1fr) 118px 96px 104px; gap: 2px 12px; }
 .ovw-att-who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The clients behind the Sales counts (Detail, 2026-11-12): a tile with
