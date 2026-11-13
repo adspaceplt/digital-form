@@ -10242,6 +10242,9 @@ reads the function's source and fails an enum on a type list.
 ### 2026-11-13 · Payment terms read bare in Build quote
 The user: "Inside admin dont need this Needs approval it should only show to client facing. We're alr the admin making decisions". Build quote's Payment terms read NET 30 · Needs approval and the like; the colleague building the quotation is the one deciding, so the choices now read NET 7 to NET 90 alone. A note about approval belongs only where a client chooses a term.
 
+### 2026-11-13 · The signatory's name as written
+The user: "signature sign off use Maxwell Yee instead of MAXWELL YEE (not all caps)". The letter engine's sign-off (the Quotation Cover and every client and HR letter) and the Supplier Service Agreement's signing block printed the signatory's name in capitals; both now print it as it is held. Company names under "To" and in the acceptance stay in capitals, as Billing holds them.
+
 ### 2026-11-13 · The loading line lives inside its host; layers have names
 The user: "the loading slider could be above and above a window pop out". The
 line was one fixed box at z-index 96, placed by measuring the head or sheet it
