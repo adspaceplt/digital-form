@@ -4735,6 +4735,10 @@ body > .shell { width: 100%; }
 .cl-mark.has-logo { background: #fff; border: 1px solid var(--line); }
 .cl-mark img { width: 100%; height: 100%; object-fit: contain; }
 .cl-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+/* A cell clips at one line (`.crm-c`), and a block inside it takes no
+   ellipsis of its own: a long name wraps under itself instead of being cut
+   at the column's edge (2026-11-13). */
+.cl-who > :is(.cl-name, b) { white-space: normal; }
 /* Any row a client leads (Video Scripts, Reports, Creator Campaigns;
    2026-11-10): the mark beside what the row names, 4px of room for a VIC's
    ring inside a cell that clips its overflow. */
