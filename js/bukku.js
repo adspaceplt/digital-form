@@ -457,7 +457,7 @@
       var F = [['Client ID', d.field_client], ['Supplier ID', d.field_supplier], ['Creator ID', d.field_creator]];
       var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
       var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not set'; });
-      var acct = d.bill_account_name ? 'Creator bills to ' + d.bill_account_name : 'Creator bill account not set';
+      var acct = d.bill_account_name ? 'Creator bill account: ' + d.bill_account_name : 'Creator bill account not set';
       if (!on.length) return 'Not set · ' + acct;
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
       return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat([acct])

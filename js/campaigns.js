@@ -912,10 +912,10 @@
     'job-bad': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
     /* CREATOR FEES (2026-11-13) */
     'bad-amount': 'Enter the fee as an amount, for example 1200.', billed: 'This booking already has a bill in Bukku. Change the bill in Bukku, then Read from Bukku.',
-    'not-posted': 'A bill is made once the booking is posted.', 'no-fee': 'Enter the creator fee first.',
+    'not-posted': 'Move the booking to Posted first, then create its bill.', 'no-fee': 'Enter the creator fee first.',
     'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
     'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
-    creating: 'This bill is already being made. Read from Bukku in a minute.' };
+    creating: 'This bill is already being created. Press Read from Bukku in a minute.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
@@ -1250,7 +1250,7 @@
     fields.push({ name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
       note: 'The job ID on this booking\'s AP01 form, used to find its bill in Bukku.' });
     window.ADspaceConfirm.ask({ title: j.job || 'Booking', go: 'Save', wait: true, opener: btn, fields: fields,
-      body: pay && fixed && j.fee ? 'Creator fee ' + billMoney(j.fee.amount, j.fee.currency) + ', fixed by its bill in Bukku.' : undefined,
+      body: pay && fixed && j.fee ? 'The creator fee is ' + billMoney(j.fee.amount, j.fee.currency) + '. Change it on the bill in Bukku.' : undefined,
       check: function (v) { return pay && !fixed && !feeOk(feeIn(v.fee)) ? JOB_SAID['bad-amount'] : ''; } }, function (v) {
       var ref = String((v && v.ref) || '').trim() || null;
       var fee = pay && !fixed ? feeIn(v.fee) : undefined;
@@ -1282,7 +1282,7 @@
     window.ADspaceConfirm.ask({ title: 'Standard fee', go: 'Save', wait: true, opener: btn,
       field: { name: 'fee', label: 'Standard fee' + (cur === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text',
         value: d.standard_fee ? Number(d.standard_fee.amount).toFixed(2) : '', required: false,
-        note: 'Each new booking of this creator takes it. Change it on a booking where the fee differs.' },
+        note: 'Applies to each new booking of this creator.' },
       check: function (v) { return feeOk(feeIn(v.fee)) ? '' : JOB_SAID['bad-amount']; } }, function (v) {
       return db.rpc('creator_standard_fee_set', { p_creator: c.id, p_amount: feeIn(v.fee) }).then(function (r) {
         var x = r.data || {};
@@ -1313,7 +1313,7 @@
     var one = list.length === 1;
     window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
       opener: btn, body: (one ? 'A bill for ' + list[0].job + ' of ' + total : list.length + ' bills totalling ' + total) +
-        ' will be made in Bukku on ' + c.name + '\'s supplier contact, each with its Job reference.' }, function () {
+        ' will be created in Bukku on ' + c.name + '\'s supplier contact, ' + (one ? 'with its' : 'each with its') + ' Job reference.' }, function () {
       var m = $('cpayMsg'), done = [], refused = [];
       if (btn) btn.disabled = true;
       var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
@@ -1324,7 +1324,7 @@
             return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
           }).then(function (x) {
             if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
-            if (x.error === 'in-bukku') refused.push(j.job + ': a bill holding this Job reference is already in Bukku (' + (x.number || '') + ').');
+            if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
             else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
             else done.push(x.made || j.job);
           }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
