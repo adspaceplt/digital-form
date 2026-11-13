@@ -45,6 +45,10 @@
      until it is submitted or cancelled. A refresh in the middle of a campaign
      used to throw all of it away. `extra` is for the parts that are not plain
      fields: the profile link rows and the platform ticks. */
+  /* A booking register takes its two-line row at 575px of its own width and under:
+     a date and time (10 Sept 2026, 2:00pm) needs 135px beside the 120px name, the
+     step and the acts (2026-11-13). */
+  var REG_TIGHT = '575';
   var DRAFT = 'adspace.admin.draft.';
   function keepDraft(boxId, ids, extra) {
     var key = DRAFT + boxId;
@@ -957,18 +961,20 @@
       fields: [
         { name: 'bill_kind', label: 'Billing as', choices: [['nric', 'Individual (NRIC)'], ['passport', 'Individual (Passport)'], ['brn', 'Company']], value: h.bill_kind || 'nric' },
         { name: 'id_no', label: 'NRIC, Passport or Business Registration No.', value: h.id_no || '', required: !held, note: held && !h.id_no ? blank + h.id_end + '.' : '' },
-        { name: 'legal_name', label: 'Legal name', value: h.legal_name || '', required: true },
+        /* The bill and the transfer go to the legal name, so it is the
+           account holder too (the user, 2026-11-13); creator_pay_check sets
+           it and opens every word on a capital. */
+        { name: 'legal_name', label: 'Legal name', value: h.legal_name || '', required: true, note: 'The bank account is held in this name.' },
         { name: 'tin', label: 'Tax Identification Number (TIN)', value: h.tin || '', required: false, note: 'Optional' },
         { name: 'address', label: 'Billing address', value: h.address || '', rows: 2, required: !held || !h.address },
         { name: 'how', label: 'Payment method', choices: PAY_HOW, value: h.currency ? h.currency + '|' + h.method : 'MYR|bank' },
         { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, b]; })), value: h.bank || '' },
         { name: 'account', label: 'Account no., DuitNow ID or PayNow ID', value: h.account || '', required: !held, note: held && !h.account ? blank + h.account_end + '.' : '' },
-        { name: 'payee', label: 'Account holder', value: h.payee || '', required: true },
         { name: 'email', label: 'Email', value: h.email || '', required: true },
         { name: 'whatsapp', label: 'WhatsApp', value: h.whatsapp || '', required: true }] }, function (v) {
       var how = String(v.how || 'MYR|bank').split('|');
       var vals = { bill_kind: v.bill_kind, id_no: v.id_no, legal_name: v.legal_name, tin: v.tin, address: v.address,
-        currency: how[0], method: how[1], bank: how[1] === 'bank' ? v.bank : '', account: v.account, payee: v.payee, email: v.email, whatsapp: v.whatsapp };
+        currency: how[0], method: how[1], bank: how[1] === 'bank' ? v.bank : '', account: v.account, payee: v.legal_name, email: v.email, whatsapp: v.whatsapp };
       return db.rpc('creator_pay_add', { p_creator: c.id, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error) return /could not find|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;
@@ -2993,6 +2999,7 @@
     var when = isDelivery() ? 'Delivery' : 'Shoot';
     var t = document.createElement('div');
     t.className = 'bookreg sched-reg';
+    t.setAttribute('data-narrow', '640'); t.setAttribute('data-tight', REG_TIGHT);
     t.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span><span>' + when +
       '</span><span>Post date</span><span></span></div>';
     function logField(label, key, value, type) {
@@ -3133,6 +3140,7 @@
     box.className = '';
     box.innerHTML = '';
     box.appendChild(t);
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
   }
 
   /* How a schedule change is named on the record. */
@@ -3424,6 +3432,7 @@
          each card rather than down a column. The card is still the record —
          the steps open inside it — it just stops being a card. */
       box.className = 'bookreg';
+      box.setAttribute('data-narrow', '640'); box.setAttribute('data-tight', REG_TIGHT);
       box.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span>' +
         '<span>Booking</span><span>Step</span><span></span></div>';
       var sorted = state.options.slice().sort(function (a, b) {
@@ -3467,6 +3476,7 @@
       }
     }
 
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
     // Accepting is offered exactly when the client has chosen something.
     var waiting = mayWork() ? state.options.filter(function (o) { return o.state === 'shortlisted'; }) : [];
     $('campLock').hidden = !waiting.length;

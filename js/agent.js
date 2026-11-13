@@ -529,7 +529,7 @@
             .eq('client_id', a.client_id).eq('period', String(a.month || '').slice(0, 7)).maybeSingle()]).then(function (g) {
           var c = g[1].data, e = g[2].data;
           if (!c) throw new Error('That client could not be found.');
-          if (!e) throw new Error('That client has no ' + monthName(a.month) + ' in My Work. Add the month first.');
+          if (!e) throw new Error('That client has no content month for ' + monthName(a.month) + ' in My Work. Add the month first.');
           if (e.status === 'cancelled' || e.status === 'completed') throw new Error('That month is ' + (e.status === 'cancelled' ? 'Cancelled' : 'Completed') + '. Reopen it in My Work first.');
           var lead = a.led_by || (me() || {}).id;
           if (a.led_by && !nameOf(a.led_by)) throw new Error('That colleague could not be found. Ask again with their name.');
@@ -537,7 +537,7 @@
           return [['Client', c.name + (c.client_code ? ' · ' + c.client_code : '')], ['Month', monthName(e.period)],
                   ['When', whenWord(at.toISOString()) + ' to ' + CLOCK.clock(new Date(at.getTime() + mins * 60000).toISOString())],
                   ['Channel', google ? 'Google Meet' : 'On site'], ['Led by', lead === (me() || {}).id ? 'You' : nameOf(lead)],
-                  e.meeting_at && !e.meeting_na ? ['Replaces', whenWord(e.meeting_at)] : null];
+                  e.meeting_at && !e.meeting_na ? ['Current meeting', whenWord(e.meeting_at)] : null];
         });
       },
       run: function (a) {
@@ -712,7 +712,7 @@
             a._set = b;
             return [['Set', b.title + ' · ' + n + (n === 1 ? ' post' : ' posts')], ['Client', (b.clients && b.clients.name) || ''],
                     ['Change', on ? 'Draft → Published' : 'Published → Draft'],
-                    ['Client sees', on ? 'On the review link at once' : 'No longer on the review link']];
+                    ['Client view', on ? 'On the review link at once' : 'No longer on the review link']];
           });
         });
       },
@@ -751,9 +751,9 @@
     return Promise.all([db.rpc('wa_compose_prepare', { p_to_kind: 'contact', p_to: a.contact_id, p_purpose: purpose, p_ref: ref }), X.meta(), onNow]).then(function (g) {
       var prep = g[0].data || {};
       if (g[0].error) throw new Error(g[0].error.message);
-      if (prep.error) throw new Error(X.said ? X.said({ code: prep.error }) : 'This message cannot be sent.');
+      if (prep.error) throw new Error(X.said ? X.said({ code: prep.error }) : 'This message cannot be sent. Send it from Messages.');
       var meta = g[1] || {}, set = g[2] || {};
-      if (meta.error) throw new Error(X.said ? X.said(meta.error) : 'The templates could not be read.');
+      if (meta.error) throw new Error(X.said ? X.said(meta.error) : 'The templates could not be read. Try again.');
       var list = (meta.list || []).filter(function (t) { return t.supported; });
       var mine = (set.list || []).filter(function (t) { return t.purpose === purpose && t.active && t.name; })[0];
       var tpl = a.template ? list.filter(function (t) { return t.name === a.template; })[0]
@@ -765,7 +765,7 @@
         }
         throw new Error('The WhatsApp template for this message is off. Please ask an admin to turn it on in Settings.');
       }
-      if (tpl.header === 'DOCUMENT' || tpl.header_var) throw new Error('This template carries a file or a header of its own. Send it from its record.');
+      if (tpl.header === 'DOCUMENT' || tpl.header_var) throw new Error('This template includes a file or a header. Send it from the report, quotation or letter it belongs to.');
       if (X.badButton(tpl)) throw new Error('This template\'s link button cannot be filled. Choose another template.');
       return whatWaits(purpose, ref).then(function (what) {
         var link = prep.link ? location.origin + '/' + prep.link : '';
@@ -824,9 +824,9 @@
   var SCHED_KIND = { reminder: 'Reminder', mark_sent: 'Mark as sent', add_task: 'Add task', publish_set: 'Publish set',
     unpublish_set: 'Unpublish set', whatsapp: 'WhatsApp' };
   var SCHED_SAID = { 'bad-time': 'Choose a time from a minute from now to 92 days ahead.', 'bad-title': 'Enter what it is about.',
-    'bad-condition': 'That condition cannot be checked. Ask again without it.', 'bad-payload': 'Something it needs is missing. Ask again.',
+    'bad-condition': 'That condition cannot be checked. Ask again without it.', 'bad-payload': 'Some details are missing. Ask again with the name, the date and the time.',
     'too-many': 'You have 50 scheduled actions. Cancel one under Scheduled first.', 'wa-off': 'The WhatsApp template for this message is off. Please ask an admin to turn it on in Settings.',
-    'not-found': 'That record could not be found.', 'bad-kind': 'That cannot be scheduled.' };
+    'not-found': 'That set, report or task no longer exists.', 'bad-kind': 'That cannot be scheduled.' };
   var COND = { set_undecided: 'The set still has posts the client has not decided', report_not_sent: 'The report is not yet marked as sent',
     task_open: 'The task is not yet finished' };
   function schedCard(a) {
@@ -837,9 +837,9 @@
     if (a.condition && !COND[a.condition]) return Promise.reject(new Error('That condition cannot be checked. Ask again without it.'));
     a._at = at;
     a._cref = a.condition === 'set_undecided' ? (a.set_id || a.ref) : a.condition === 'report_not_sent' ? a.report_id : a.condition === 'task_open' ? a.task_id : null;
-    if (a.condition && !a._cref) return Promise.reject(new Error('Name the record the condition is about.'));
+    if (a.condition && !a._cref) return Promise.reject(new Error('Name the set, report or task the condition is about.'));
     var when = ['When', whenWord(at.toISOString())];
-    var only = a.condition ? ['Only if', COND[a.condition]] : null;
+    var only = a.condition ? ['Condition', COND[a.condition]] : null;
     var done = function (what, title, payload, more) {
       a._title = String(a.title || title || '').trim().slice(0, 200) || title;
       a._payload = payload;

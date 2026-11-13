@@ -314,7 +314,7 @@ button.appver {
 .bookreg-fold[aria-expanded="true"] { border-bottom: 1px solid var(--line-soft); }
 .bookreg-fold-name { font-size: 13.5px; font-weight: 600; }
 .bookreg-fold-count { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.is-tight .bookreg-fold .kcard-lead { flex-basis: auto; }
+:is(.is-tight, .bookreg.is-tight) .bookreg-fold .kcard-lead { flex-basis: auto; }
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
 .kcard {
   position: relative;              /* the actions menu positions against this */
@@ -875,12 +875,12 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 /* The link and the ⋯ stand over the end of the name's line, which keeps
    their room clear, so the second line has the row's whole width for the
    state's whole word and its date (320: "Changes requested" beside a date). */
-.is-tight .bookreg .kcard-head > .kcard-act { grid-area: name; justify-self: end; }
-.is-tight .bookreg .kcard-head:has(.kcard-act > :nth-child(2)) > .kcard-name { padding-right: calc(2 * var(--ctl-h) + 10px); }
-.is-tight .bookreg .kcard-head:has(.kcard-act > :only-child) > .kcard-name { padding-right: calc(var(--ctl-h) + 8px); }
-.is-tight .bookreg .kcard-lead { grid-area: lead; min-width: max-content; }
-.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; min-width: max-content; }
-.is-tight .bookreg .kcard-tags:empty { display: none; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head > .kcard-act { grid-area: name; justify-self: end; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(.kcard-act > :nth-child(2)) > .kcard-name { padding-right: calc(2 * var(--ctl-h) + 10px); }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head:has(.kcard-act > :only-child) > .kcard-name { padding-right: calc(var(--ctl-h) + 8px); }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-lead { grid-area: lead; min-width: max-content; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags { grid-area: tags; justify-self: start; flex-wrap: nowrap; min-width: max-content; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-tags:empty { display: none; }
 /* A stated track outlives the cell in it, so the row that draws no ⋯ gives
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
@@ -3706,6 +3706,9 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   padding: 10px 15px; min-height: 56px; border-bottom: 1px solid var(--line-soft);
 }
 .stg-row:last-child { border-bottom: 0; }
+/* A switch's Undo is a shaded line of its card, under the row it changed. */
+.stg-card > .undobar-here { margin: 0; border: 0; border-radius: 0; border-bottom: 1px solid var(--line-soft); padding: 8px 15px; }
+.stg-card > .undobar-here:last-child { border-bottom: 0; }
 .stg-what { display: grid; gap: 2px; min-width: 0; }
 .stg-name { margin: 0; font-weight: 500; color: var(--ink); }
 .stg-meta { margin: 0; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
@@ -5081,23 +5084,31 @@ svg.sec {
   }
   /* The head is one height on every section and its words stand in its
      middle, the sides at the body's 32px (the user, 2026-11-13: "left right
-     paddings feels not visually balance"): 90px holds the title and its
-     line with 20px above and below; every sticky offset reads it. */
-  :root:not(.has-tabbar):has(.console) { --head-h: 90px; }
+     paddings feels not visually balance"): 76px holds the title and its
+     line with 13px above and below (90 read as empty space, the same day);
+     every sticky offset reads it. A record's Back is the first thing under
+     it, at the body's own 20px. */
+  :root:not(.has-tabbar):has(.console) { --head-h: 76px; }
+  :root:not(.has-tabbar) .console-body .backlink { margin-top: 0; }
   :root:not(.has-tabbar) .console-body { padding-inline: 32px; }
   :root:not(.has-tabbar) .console-title { font-family: var(--font-head); font-size: 22px; font-weight: 600; letter-spacing: -.02em; min-height: 30px; }
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) {
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg) {
     background-color: var(--card); box-shadow: none;
     /* An outline drawn just inside the card, above what it holds: an inset
        shadow is painted under the rows, whose white ground hid the edge
        (the user, 2026-11-12: "border missing" on Clients). */
     outline: 1px solid var(--card-edge); outline-offset: -1px;
   }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part)
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .bookreg)
     :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) { box-shadow: none; outline: 0; }
+  /* A register's rows are lines of one card, never cards of their own (the
+     user, 2026-11-13: each booking read as a card of its own). */
+  :root:not(.has-tabbar) .console .bookreg .kcard { border-radius: 0; margin: 0; border-width: 0 0 1px; border-color: var(--line-soft); }
+  :root:not(.has-tabbar) .console .bookreg .kcard:last-child { border-bottom: 0; }
+  :root:not(.has-tabbar) .console .bookreg .kcard-head { padding-block: 7px; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups):focus-visible {
     outline: 2px solid var(--action-ring); outline-offset: 2px;
   }
@@ -5116,7 +5127,7 @@ svg.sec {
 }
 .console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; padding: 0 5px 2px; }
 .console .rec-part:has(> .viewhead[hidden]) { display: none; }
-.console .rec-part > .viewhead { margin: 0; padding: 16px 15px 8px; }
+.console .rec-part > .viewhead { margin: 0; padding: 14px 15px 6px; }
 /* Every heading in a record's panes is one size, whether it heads a card or
    the cards under it (a record's pane heads itself one way, 2026-11-03). */
 .console .rec:not(.cportal) .viewhead h2 { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 0 1 auto; }
@@ -5125,7 +5136,7 @@ svg.sec {
 .console .rec-part > .msg:empty { display: none; }
 .console .rec-part > .msg { margin: 0; padding: 0 15px 8px; }
 .console .rec-part .crm-table { background: none; border: 0; border-radius: 0; box-shadow: none; outline: 0; margin: 0; }
-.console .rec-part .empty, #crmWork .rec-part .empty, #campWork .rec-part .empty { background: none; border: 0; margin: 0; padding: 4px 15px 16px; }
+.console .rec-part .empty, #crmWork .rec-part .empty, #campWork .rec-part .empty { background: none; border: 0; margin: 0; padding: 2px 15px 14px; }
 .console .rec-part .crm-removed-toggle { margin: 4px 15px 12px; }
 .console .rec-pane:has(> .rec-part) { display: flex; flex-direction: column; gap: 16px; }
 .console .rec:not(.cportal) .rec-panes { gap: 16px; }
@@ -5353,6 +5364,11 @@ svg.sec {
 /* v3's filter pills at a desk: every filter its label and value; one left
    at its default reads its value in the soft ink, one set reads it in ink
    on the deeper tonal step. Its choices open as a menu under it. */
+/* They stand on the bar's own line, between the search and the count, never
+   a row of their own (the user, 2026-11-13: "we're wasting one row for the
+   filters"); a bar whose pills outrun the line wraps them after the search. */
+.cmdbar-chips.is-pills { order: 1; flex: 0 1 auto; }
+.cmdbar:has(> .cmdbar-chips.is-pills:not([hidden])) > .cmdbar-end { order: 2; }
 .cmdbar-chips.is-pills .cmdbar-pill b { font-weight: 400; color: var(--ink-soft); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set { background: var(--tonal-press); }
 .cmdbar-chips.is-pills .cmdbar-pill.is-set b { font-weight: 500; color: var(--ink); }

@@ -10316,3 +10316,23 @@ Status column's (queued, failed in the last 7 days).
 ### 2026-11-13 · A quotation's ⋯ holds Edit, not Duplicate
 The user, told that Edit stayed on the quotation row because the ⋯ was full at seven: "Remove Duplicate, move Edit into the menu". Duplicate leaves the quotation's ⋯ (Build quote makes a new quotation; the expired refusal now says Use Build quote to quote again.), so Edit takes its place in the ⋯ on a typical quotation. The cap counts the items shown (`fitMenus`, run again once the WhatsApp items are revealed): only where Send on WhatsApp and Send by email are both shown would the ⋯ hold eight, and Edit then moves onto the row.
 
+
+- 2026-11-13 · Space and corners on a record (the user: "so many dummy spaces", then "all rounded corners are not consistent??"). The console head came down from 90px to 76 (its words still centred, 13px above and below), a record's Back lost its own 14px over the body's 20, and a record part's head and empty line lost 2px each. The rail's cards and a record's part cards had been left out of the squircle list, so they drew a round corner beside the head card's squircle; they joined it. `tests/corners.js` counted a box as drawn only by its ground, border or shadow and so never saw the outlined cards; it counts an outline now, and fails on the old CSS.
+
+- 2026-11-13 · A campaign's Creators read as five cards (the user: "consumes too many unused spacings … scrolling through one part requires to be very long"). The v3 desk rule outlined every `.kcard` with the large corner, which reached a register's rows and undid the register's own rows (no corner, a `--line-soft` line between). The register is now the card (`.bookreg` in the card list), its rows lines inside it again, 48px a row (7px over and under the 34px controls, from 11).
+
+- 2026-11-13 · A booking's date was cut in a narrow pane, "12 Sept 20…" (the user: "it shouldn't cut off"). Measured: the summary (10 Sept 2026, 2:00pm) needs 135px, and between a 1100 and 1200 window the register is 486 to 534px, leaving it 50 to 98. A wrap is no answer (uxaudit refuses a summary that wraps or clips), so the register states its own tight line (`data-tight`, 575, read by `ADspaceState.fit`) and under it takes the phone's two-line row, the date whole under the step. `geom` read the tight row by the pane alone and still held the one-line row to 56 to 72px, which #1107 made 48; it reads the register's own class and 48 to 64 now.
+
+- 2026-11-13 · A Settings switch's Undo stood after its card's last row (the user: "if the card rows have 20 items once i make changes to one, i dont even see it"). It is a shaded line of the card under the row pressed, and reads Turned on. / Turned off. (it read "Automatic emails is on."). `tests/settings.js` holds it under its own row.
+### 2026-11-13 · The AI report rule says per
+The copy review of the builds since #1067 found the AI usage rule read
+"One draft and one check a report a day"; a label says per, never "a". It
+reads One draft and one check per report per day, on AI usage and in the
+history line `ai_draft_set_limit` files
+(`2026-11-13-ai-limit-per-report-words.sql`).
+
+- 2026-11-13 · The Clients list's phone row read three lines where a name was long (Client ID · Industry · person, or Person in charge · Sales: name). The user: "{client id} {person}", the Person in charge for Active and Paused, the Sales by for a lead and a Past client. Two lines a row.
+
+- 2026-11-13 · A creator's payment details (the user: "force the creator payment Legal name to be first letter always capital"; "the account holder, make it read only copy the Legal name, as we only can issue bill and transfer to this person with the same bank account name"). `creator_pay_check`, the one check of the creator's page and the team's Add details, opens every word of the name on a capital and leaves the rest as typed (LIM RAYMOND stays), and sets the account holder to the name whatever is sent (`2026-11-13-creator-payee-is-legal-name.sql`, applied live and read back). The creator's page shows the holder read only beside the name (Same as the name above while empty); Add details asks no holder. None of the six live sets needed correcting.
+
+- 2026-11-13 · The filter pills stood on a row of their own under every bar, a row spent on four pills (the user: "we're wasting one row for the filters dont you think so?"). At a desk they now stand on the bar's own line, between the search and the count; a phone keeps them on their own row, set filters alone. Every bar measured 30px at 1280; `tests/cmdbar.js` holds the pills on the search's line.

@@ -4203,7 +4203,7 @@
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
       : d.scope === 'drafts' ? 'You have used your ' + (d.limit || 10) + ' report drafts for today.'
       : d.scope === 'checks' ? 'You have used your ' + (d.limit || 10) + ' commentary checks for today.'
-      : d.scope === 'next' ? 'You have used your ' + (d.limit || 3) + ' Next batch suggestions for today.'
+      : d.scope === 'next' ? 'You have used ' + ((d.limit || 3) === 1 ? 'today\'s Next batch run.' : 'your ' + (d.limit || 3) + ' Next batch runs for today.')
       : 'You have used your ' + (d.limit || 10) + ' AI uses for today.';
     return who + (when ? ' Resets at ' + when + '.' : '');
   }
@@ -4261,7 +4261,7 @@
     var ads = st.ads.length, linked = st.metaLinks && (st.metaLinks.ad_accounts || []).length;
     var s = n && n.source;
     if (s && s.meta) return ['Read from Meta', plural(s.ads || 0, 'ad') + ' · Frequency and CTR by day' + (s.read_at ? ' · Read ' + aiWhen(s.read_at) : '')];
-    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta did not answer. Write with AI again to try.')];
+    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta did not respond. Press Write with AI to try again.')];
     if (st.meta && linked) return ['Will read from Meta', plural(ads, 'ad') + ' · Frequency and CTR by day, the last 14 days of the period'];
     return ['Report figures only', plural(ads, 'ad') + ' · ' + (!metaOn() ? 'Meta checks are off.' : 'No ad account is linked.')];
   }
@@ -4300,10 +4300,10 @@
         '</div></div>';
     }).join('');
     var shown = items.filter(function (it) { return it.added; });
-    var paper = items.length && r.next_batch_print !== false ? '<aside class="nb-side" aria-label="The page the client reads"><p class="nb-paper-h">The page the client reads</p>' +
+    var paper = items.length && r.next_batch_print !== false ? '<aside class="nb-side" aria-label="Client PDF page"><p class="nb-paper-h">Client PDF page</p>' +
       '<div class="nb-paper"><span class="nb-paper-mark">ADspace</span><span class="nb-paper-t">Next Batch</span>' +
       '<p class="nb-paper-l">' + esc(NB_LEAD) + '</p>' +
-      (shown.length ? '<table><thead><tr><th>Creative</th><th>What we will do</th><th>Why</th></tr></thead><tbody>' + shown.map(function (it) {
+      (shown.length ? '<table><thead><tr><th>Creative</th><th>Plan</th><th>Reason</th></tr></thead><tbody>' + shown.map(function (it) {
         return '<tr><td>' + esc(it.ad || it.title) + '</td><td>' + esc(it.plan || it.title) + '</td><td>' + esc(it.why || '') + '</td></tr>';
       }).join('') + '</tbody></table>' : '<p class="nb-paper-none">None added to the commentary.</p>') +
       '<span class="nb-paper-f"><span>PRIVATE &amp; CONFIDENTIAL</span></span></div></aside>' : '';
@@ -5892,8 +5892,8 @@
               '" value="' + v + '" aria-label="' + esc(u[1] + ', a day') + '"><span class="aiu-unit">a day</span></span>' :
             '<span class="aiu-lim-v">' + esc(dayWord(v)) + '</span>') + '</div>';
         }).join('') +
-        '<div class="aiu-lim aiu-per"><span class="aiu-lim-n">One draft and one check a report a day</span>' + (editing ?
-          '<button class="switch" type="button" role="switch" data-k="per_report" aria-checked="' + (lim('per_report') > 0) + '" aria-label="One draft and one check a report a day"><span class="switch-knob"></span></button>' :
+        '<div class="aiu-lim aiu-per"><span class="aiu-lim-n">One draft and one check per report per day</span>' + (editing ?
+          '<button class="switch" type="button" role="switch" data-k="per_report" aria-checked="' + (lim('per_report') > 0) + '" aria-label="One draft and one check per report per day"><span class="switch-knob"></span></button>' :
           '<span class="aiu-lim-v">' + (lim('per_report') > 0 ? 'On' : 'Off') + '</span>') + '</div>' +
         '</div></section>';
     };

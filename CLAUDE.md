@@ -668,7 +668,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   chips inserting at the caret, a field it cannot fill marked as it is
   typed; no test email (Send test to me removed, the user, 2026-11-10;
   `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
-  press with Undo under its card. A search heads the group list (a
+  press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
   phone's page), finding a row by its name, group or value across every
   group and opening its group on its control (Enter takes the first);
   each setting has this one place: no Tax and terms
@@ -1206,7 +1206,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `failLine`) and `initials`. **A failed read is never drawn as an empty list.**
   - `fit` writes `is-narrow` (≤640) and `is-tight` (≤460) on `.console-body`,
     `.rec-pane` and `.rec-rail` from a `ResizeObserver`. A list may state its
-    own line (`data-narrow="860"`), and a sheet outside the console body
+    own line (`data-narrow="860"`) and its own tight line (`data-tight`: a
+    booking register at 575, so a date and its time never cut), and a sheet outside the console body
     states one to be fitted at all (`#taskDrawer` `data-narrow="460"`).
   - Never container queries: they contain the fixed ⋯ menus.
 - `js/group.js` draws every directory card:
@@ -1256,11 +1257,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
     can be pressed. Its glyph is the row ⋯'s three dots across.
-  - Every filter is a pill on its own row under the bar (v3, 2026-11-12):
-    at a desk each filter whatever its value (`Stage: All stages`, its
+  - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
+    line between the search and the count (the user, 2026-11-13: "we're
+    wasting one row for the filters"), each filter whatever its value (`Stage: All stages`, its
     value in ink on the deeper tonal step once set), a press opening its
     choices as a menu under it (`.cmdpill-menu`, the arrows, Escape back to
-    the pill); on a phone only the filters set, a press putting that one
+    the pill); on a phone, on a row of their own under the bar, only the filters set, a press putting that one
     back (`.cmdbar-chips`, Label: Value with its ×). A view never a pill;
     Clear filters stays the card's and the empty list's
   - The Filters sheet focuses its card, never a select (a focused select wears
@@ -1978,12 +1980,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the record head's white disc, initials only while none is held or where
     it fails to load), and the Client ID sits under the name in the token
     face and is searched; on a phone it leads the meta line instead
-    (`.crm-meta-code`), which reads Client ID · Industry · the one person
-    the stage needs (a lead its Sales by, else its Person in charge; a
-    client its Person in charge, then Sales: {name} only where another
-    colleague sold it, Industry then left to the desk and the record so the
-    line keeps to one row; `metaPeople`), Last activity left to the desk and the
-    record (the user, 2026-11-04; 2026-11-07).
+    (`.crm-meta-code`), which reads Client ID · one person (`metaPeople`): Active
+    and Paused the Person in charge, a lead and a Past client the Sales by,
+    else the Person in charge; Industry and Last activity left to the desk
+    and the record (the user, 2026-11-04; 2026-11-13).
   - On a phone the row is two columns: name over meta, and the chip over the
     age in a fixed 120px track, top aligned. The meta omits what is not known,
     never showing a bare currency sign.
@@ -3980,7 +3980,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (optional), the billing address, Currency (MYR, SGD) and the methods it
   takes (Bank transfer, DuitNow, Touch 'n Go eWallet; Bank transfer,
   PayNow), the bank (the supplier form's list for that currency), the
-  account and its holder, email, WhatsApp and the confirmation tick, in
+  account and its holder (the legal name itself, read only: the bill and
+  the transfer go to that name; `creator_pay_check` sets it and opens every
+  word of the name on a capital, the rest as typed; 2026-11-13), email, WhatsApp and the confirmation tick, in
   English and 中文; checked as `creator_pay_check` checks it, refused by
   field. Each set is a `creator_pay_requests` row (RLS on, no policy, no
   grant) under a reference from the pattern on the creator row of

@@ -2237,7 +2237,7 @@
         var lead = window.ADspaceWords && window.ADspaceWords.line && window.ADspaceWords.line.nextBatchLead;
         if (lead) leadLine(lead);
         table([{ w: 0.3, align: 'left' }, { w: 0.4, align: 'left' }, { w: 0.3, align: 'left' }],
-          [{ t: 'Creative', align: 'left' }, { t: 'What we will do', align: 'left' }, { t: 'Why', align: 'left' }],
+          [{ t: 'Creative', align: 'left' }, { t: 'Plan', align: 'left' }, { t: 'Reason', align: 'left' }],
           nb.map(function (x) {
             return { cells: [{ t: adName(words(x.ad).trim() || words(x.title).trim()) }, { t: words(x.plan).trim() || words(x.title).trim() }, { t: words(x.why).trim() }] };
           }));

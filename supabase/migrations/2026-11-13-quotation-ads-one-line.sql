@@ -184,7 +184,7 @@ begin
        limit 1;
       v_from := least(v_budget, (v_s->'spec'->>'budget')::numeric);
       v_lines := v_lines || jsonb_build_object('slug', v_s->>'slug', 'kind', 'ads', 'basis', 'month',
-        'label', 'Meta advertising · advertising budget up to ' || public.quote_rm(greatest(v_budget, (v_s->'spec'->>'budget')::numeric)),
+        'label', 'Meta advertising · budget up to ' || public.quote_rm(greatest(v_budget, (v_s->'spec'->>'budget')::numeric)),
         'detail', coalesce((select jsonb_agg(d) from unnest(string_to_array(coalesce(v_text->>'ads_included', ''), E'\n')) d
                              where btrim(d) <> ''), '[]'::jsonb),
         'qty', 1, 'rate', greatest(v_cost, (v_s->>'rate')::numeric));

@@ -726,18 +726,15 @@
     return late ? '<span class="tone is-danger crm-band-late">' + late + ' overdue</span>' : '';
   }
 
-  /* The phone's line names the one person the stage needs (the user,
-     2026-11-07): a lead the colleague selling it, a client the colleague
-     running it, and Sales by after them only where somebody else sold it,
-     so two bare names never stand side by side unexplained. A row naming
-     its seller leaves Industry to the desk and the record, so the line
-     keeps to one row on a phone (the user, 2026-11-07). */
+  /* The phone's line is the Client ID and one person, so a row is two lines
+     (the user, 2026-11-13): Active and Paused name the Person in charge, who
+     runs it; a lead and a Past client name its Sales by, else its Person in
+     charge. Industry and the rest stay at a desk and in the record. */
   function metaPeople(c) {
     var sold = c.sales_by ? salesByName(c.sales_by) : '';
-    var lead = stageWord(c.stage || 'lead')[3] === 'leads';
-    if (lead) return [c.industry, sold || c.owner];
-    if (sold && sold !== c.owner) return [c.owner, 'Sales: ' + sold];
-    return [c.industry, c.owner];
+    var stage = c.stage || 'lead';
+    if (stage === 'active' || stage === 'paused') return [c.owner];
+    return [sold || c.owner];
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
@@ -8317,7 +8314,7 @@
   window.ADspaceCRM = {
     /* How a lead's first call is filed, as this pane words it: "Contacted the
        same day" or "Contacted after 3 days" (the Assistant files it alike). */
-    contactedWord: function (c) { return 'Contacted ' + (daysSince(c && c.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(c) || 'no time')); },
+    contactedWord: function (c) { return 'Contacted' + (daysSince(c && c.stage_since) === 0 ? ' the same day' : ageWord(c) ? ' after ' + ageWord(c) : ''); },
     /* Settings' Industries changed the list: the next form reads it again. */
     industriesReload: function () { industries.rows = null; industries.asked = null; },
     sourceWord: sourceWord,

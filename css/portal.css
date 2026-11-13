@@ -3341,7 +3341,7 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 }
 .bookreg-fold .kfold { color: var(--ink-mute); }
 @media (hover: hover) { .bookreg-fold:hover { background: var(--sunk); } }
-.is-tight .bookreg-fold { padding: 10px 14px; gap: 10px; }
+:is(.is-tight, .bookreg.is-tight) .bookreg-fold { padding: 10px 14px; gap: 10px; }
 .kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
 .kcard-act .kmenu-btn { margin-left: 0; }
@@ -4450,7 +4450,7 @@ body > .shell { width: 100%; }
    padding with it. The row becomes three lines under the number: who, where
    it has got to, and what the booking is. The state keeps a line it can be
    read down rather than sharing one with a summary that would squeeze it. */
-.is-tight .bookreg-head { display: none; }
+:is(.is-tight, .bookreg.is-tight) .bookreg-head { display: none; }
 /* Two lines, as a phone list row reads: the name with its link and ⋯ at
    the right edge, then the state (its dot and whole word) at the left and
    its date at the right (the user's ruling, 2026-10-15). The state
@@ -4458,19 +4458,19 @@ body > .shell { width: 100%; }
    the ⋯ a name had 90px at 320 and wrapped to three and four lines (audit
    CAMP-7 had let it wrap rather than cut its end). With the line to itself
    a name holds one line and every collapsed booking is one height. */
-.is-tight .bookreg .kcard-head {
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-head {
   grid-template-columns: auto max-content minmax(0, 1fr);
   grid-template-areas: "lead name name" "lead tags sum";
   gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
-.is-tight .bookreg .kcard-name { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.is-tight .bookreg .kcard-sum {
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-name { grid-area: name; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-sum {
   grid-area: sum; white-space: nowrap; overflow: hidden;
   text-overflow: ellipsis; text-align: right; color: var(--ink-mute);
 }
 /* On a phone these are named areas, so an empty one is a blank line held
    open by the gap and can safely leave. */
-.is-tight .bookreg .kcard-sum:empty { visibility: hidden; }
+:is(.is-tight .bookreg, .bookreg.is-tight) .kcard-sum:empty { visibility: hidden; }
 /* Two lines, not four: who and what they cost, then where to find them with
    their record at the end of the same line. A grid row each for the links
    and the record put a 120px row on the screen, which is five creators on a
@@ -6160,15 +6160,15 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
    The fields line up under the name, so the body starts on the name's x. */
 .sched-reg .kcard-head { cursor: pointer; }
 .sched-lab { display: none; }
-.is-tight .sched-reg .sched-lab { display: inline; color: var(--ink-mute); }
+:is(.is-tight .sched-reg, .sched-reg.is-tight) .sched-lab { display: inline; color: var(--ink-mute); }
 /* On a phone each date of a schedule row takes its own line under the
    name, its word before it: beside the post date the shoot's date and time
    had 130px and was cut (2026-10-23, the day's gate). */
-.is-tight .sched-reg .kcard-head {
+:is(.is-tight .sched-reg, .sched-reg.is-tight) .kcard-head {
   grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas: "lead name" "lead sum" "lead tags";
 }
-.is-tight .sched-reg .kcard-sum { text-align: left; }
+:is(.is-tight .sched-reg, .sched-reg.is-tight) .kcard-sum { text-align: left; }
 .sched-reg .sched-pubday {
   font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
@@ -9806,7 +9806,7 @@ body.qs-page { background: var(--card); }
    strip's sliding thumb in its squircle track, a count in its tab
    (2026-11-07, the user: "it looks all different"). */
 @supports (corner-shape: squircle) {
-  .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head,
+  .panel, .softpanel, .stg-card, .stg-nav, .ovcard, .chartcard, .ovw-kpi, .kcard, .rec-head, .rec-part, .railblock, .readgroups,
   .sheet-card, .askcard, .kmenu, .popcard, .picker, .guidecard, .cover-panel, .cp-card, .qs-pick, .qs-side,
   .btn, .input, .select, textarea, .acttab, .rectabs, .tabrow, .cmdbar-views, .tab, .undobar, .msg.warn,
   .iconbtn, .kmenu-btn, .plink, .stg-go, .navitem, .railrow, .backlink, .railnext, .railmiss, .linkbtn,
