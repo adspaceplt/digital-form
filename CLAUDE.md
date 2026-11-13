@@ -668,7 +668,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   chips inserting at the caret, a field it cannot fill marked as it is
   typed; no test email (Send test to me removed, the user, 2026-11-10;
   `2026-11-10-template-test-email-removed.sql`). A row carries what a press opens (`open`); a switch acts at the
-  press with Undo under its card. A search heads the group list (a
+  press with Undo under its own row (Turned on. / Turned off.; the user, 2026-11-13). A search heads the group list (a
   phone's page), finding a row by its name, group or value across every
   group and opening its group on its control (Enter takes the first);
   each setting has this one place: no Tax and terms
