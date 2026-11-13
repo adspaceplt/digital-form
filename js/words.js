@@ -322,6 +322,9 @@
     docDate: 'Choose a date from 14 Aug 2023 to today.',
     /* A document's own terms (2026-11-12): a quotation's and a letter's. */
     terms: 'Enter up to ten terms, each of up to 400 characters.',
+    /* The Next Batch page's line under its title (2026-11-13): the PDF
+       and the report's Next batch step print it alike. */
+    nextBatchLead: 'What we will run next, based on this period\'s results.',
     /* A template naming a field its sender does not fill (2026-11-10):
        "Unknown field {chanel}. Use {meeting}, {date} or {link}." */
     unknownField: function (field, fields) {

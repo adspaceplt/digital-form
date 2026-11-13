@@ -2223,6 +2223,25 @@
           table([{ w: 1, align: 'left' }], [{ t: b[0], align: 'left' }], [{ cells: [{ items: pointTree(b[1]) }], split: true }]);
         });
       })();
+
+      // ------------------------------------------------ Next Batch
+      /* The suggestions the team added to the commentary, while the
+         report's switch is on (2026-11-13, the mockup "Ads report · Next
+         batch"): a table of Creative, What we will do and Why, the
+         creator code hidden. The snapshot sends nothing else of them. */
+      (function nextBatch() {
+        var nb = (Array.isArray(rep.next_batch) ? rep.next_batch : []).filter(function (x) { return x && words(x.title).trim(); });
+        if (!nb.length) return;
+        newPage('Next Batch');
+        pageTitle('Next Batch');
+        var lead = window.ADspaceWords && window.ADspaceWords.line && window.ADspaceWords.line.nextBatchLead;
+        if (lead) leadLine(lead);
+        table([{ w: 0.3, align: 'left' }, { w: 0.4, align: 'left' }, { w: 0.3, align: 'left' }],
+          [{ t: 'Creative', align: 'left' }, { t: 'What we will do', align: 'left' }, { t: 'Why', align: 'left' }],
+          nb.map(function (x) {
+            return { cells: [{ t: adName(words(x.ad).trim() || words(x.title).trim()) }, { t: words(x.plan).trim() || words(x.title).trim() }, { t: words(x.why).trim() }] };
+          }));
+      })();
     }
 
     // ------------------------------------------------------- Heads and feet

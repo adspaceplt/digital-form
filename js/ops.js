@@ -4172,7 +4172,7 @@
      field ready for the next, so a list of the week's tasks is typed in one
      go; the client and the month are named once, in More options, and the
      task takes them from there. */
-  var qkKey = '', qkMade = 0;
+  var qkKey = '', qkMade = 0, qkThen = null;
   function linkOptions(sel, chosen) {
     var engs = (state.engList || []).slice().sort(function (a, b) {
       return byClient(a.clients || {}, b.clients || {}) ||
@@ -4202,6 +4202,9 @@
   }
   function openQuick(pre, from) {
     if (!may('ops', 'work')) return;
+    /* Opened from another section before My Work was read this visit (a
+       report's Next batch): the colleagues and clients are read first. */
+    if (!state.catAt) { loadCatalogue(function () { state.catAt = Date.now(); openQuick(pre, from); }); return; }
     loadEngs(function () {
       var me = bridge.me && bridge.me();
       $('qkOwner').innerHTML = pickable().map(function (m) {
@@ -4209,9 +4212,16 @@
       }).join('');
       $('qkDue').value = dateValue(new Date());
       linkOptions($('qkLink'), pre && pre.link || '');
-      $('qkMore').open = false;
-      $('qkTitle').value = ''; $('qkDesc').value = ''; $('qkCheck').value = ''; $('qkPri').value = '3';
-      qkMade = 0; qkKey = '';
+      /* A client the list does not hold yet (My Work not read this visit)
+         is offered by the name the opener gave (Next batch, 2026-11-13). */
+      if (pre && pre.link && pre.linkName && $('qkLink').value !== pre.link) {
+        var po = document.createElement('option');
+        po.value = pre.link; po.textContent = pre.linkName;
+        $('qkLink').appendChild(po); $('qkLink').value = pre.link;
+      }
+      $('qkTitle').value = (pre && pre.title) || ''; $('qkDesc').value = (pre && pre.desc) || ''; $('qkCheck').value = ''; $('qkPri').value = '3';
+      $('qkMore').open = !!(pre && pre.desc);
+      qkMade = 0; qkKey = ''; qkThen = (pre && pre.then) || null;
       msg('qkMsg', '');
       /* Switched to from the content form, which stayed on the screen while
          the months were read: the two change places in one frame, so there
@@ -4257,9 +4267,11 @@
       sheet('quickSheet', false);
       state.rowSaid = { id: t.id, word: 'Added.' };
       refreshOne(t.id);
+      if (qkThen) { var th = qkThen; qkThen = null; th(t); }
     }, function () { btn.disabled = false; });
   }
   function closeQuick() {
+    qkThen = null;
     sheet('quickSheet', false);
     if (qkMade) load();
     qkMade = 0;
@@ -8838,7 +8850,9 @@
     openMeetMessage: openMeetMessage,
     meetMessageLine: meetMessageLine,
     /* Add task, from anywhere: the tab bar's My Work held down. */
-    add: function () { if (may('ops', 'work')) openQuick(); },
+    /* With a prefill (a report's Next batch, 2026-11-13): the client, the
+       title, the brief, and what to do once it is made. */
+    add: function (pre) { if (may('ops', 'work')) openQuick(pre && pre.link ? pre : null); },
     reload: function () { if (state.task) readTask(state.task.id); },
     /* The client record's Work pane: drawn by this script into that pane. */
     clientWork: clientWork,

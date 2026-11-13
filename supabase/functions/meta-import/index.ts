@@ -41,6 +41,14 @@
  *                        the page to draw down and keep. No figure is read,
  *                        so it is not held to Meta checks. Reports at Work,
  *                        an Advertising Report in draft.
+ *   daily { report_id }  each of the report's own ads, by the Ad IDs its rows
+ *                        hold, day by day over the period's last 14 days:
+ *                        frequency, CTR, amount spent and results, for the
+ *                        Next batch suggestions (2026-11-13). Read only, as
+ *                        the audit reads: Reports at Work, an Advertising
+ *                        Report in draft, Meta checks on, only the ad
+ *                        accounts the client (or brand) links. Every figure is
+ *                        Meta's.
  *   `audit: true` on either (the Report audit, 2026-10-09) reads the same for
  *                        the page to compare, never to import: an Advertising
  *                        Report in review or confirmed too, since Meta is
@@ -69,7 +77,7 @@
  * about the caller itself.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
-import { adsText, ageText, reachWithAges, facebookText, instagramText, periodWindow, refusalOf, insightOf } from './shape.mjs';
+import { adsText, ageText, reachWithAges, facebookText, instagramText, periodWindow, refusalOf, insightOf, resultOf } from './shape.mjs';
 import { cors, json } from '../_shared/cors.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
@@ -283,7 +291,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
   const action = String(body.action || '');
-  if (['assets', 'ads', 'posts', 'pictures', 'creatives'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
+  if (['assets', 'ads', 'posts', 'pictures', 'creatives', 'daily'].indexOf(action) < 0) return json({ error: 'bad-request' }, 400, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });
@@ -341,7 +349,7 @@ Deno.serve(async (req) => {
       }));
       return json({ pictures }, 200, origin);
     }
-    if ((action === 'ads' || action === 'creatives') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
+    if ((action === 'ads' || action === 'creatives' || action === 'daily') !== (r.kind === 'ads')) return json({ error: 'wrong-kind' }, 200, origin);
     const lk = await db.rpc('meta_links_list', { p_client: r.client_id });
     const ld = (lk.data || {}) as Record<string, unknown>;
     if (lk.error || ld.error) return json({ error: lk.error ? 'needs-update' : 'denied' }, 200, origin);
@@ -365,6 +373,57 @@ Deno.serve(async (req) => {
         pictures.push({ id: row.id, ...out });
       }
       return json({ pictures }, 200, origin);
+    }
+
+    /* The Next batch read (2026-11-13): the report's own ads, by the Ad IDs
+       its rows hold, a day at a time over the period's last 14 days (never
+       before the period), from each ad account the client links. A row
+       whose ads Meta does not answer for is left out; nothing is written. */
+    if (action === 'daily') {
+      const rows = await db.from('sm_report_ads').select('id, ad_ids').eq('report_id', id);
+      if (rows.error) return json({ error: 'not-found' }, 200, origin);
+      const rowOf: Record<string, string> = {};
+      ((rows.data || []) as { id: string; ad_ids: string[] | null }[]).forEach((x) => {
+        (x.ad_ids || []).map(String).filter((a) => /^\d+$/.test(a)).forEach((a) => { rowOf[a] = x.id; });
+      });
+      const ids = Object.keys(rowOf);
+      const accounts = ((mine.ad_accounts || []) as { id: string }[]).map((a) => String(a.id).replace(/^act_/, '')).filter((a) => /^\d+$/.test(a));
+      if (!accounts.length) return json({ error: 'no-mapping' }, 200, origin);
+      const end = String(r.period_end).slice(0, 10), start = String(r.period_start).slice(0, 10);
+      const from = new Date(Date.parse(end + 'T00:00:00Z') - 13 * 864e5).toISOString().slice(0, 10);
+      const since = from < start ? start : from;
+      const out: Record<string, { day: string; frequency: number | null; ctr: number | null; spend: number | null; results: number | null }[]> = {};
+      if (ids.length) {
+        const range = JSON.stringify({ since, until: end });
+        for (const acc of accounts) {
+          for (let i = 0; i < ids.length; i += 50) {
+            const part = ids.slice(i, i + 50);
+            const got = await adInsights('act_' + acc, range, { time_increment: '1', filtering: JSON.stringify([{ field: 'ad.id', operator: 'IN', value: part }]) },
+              ['ad_id', 'date_start', 'frequency', 'ctr', 'spend', 'reach', 'optimization_goal', 'actions', 'video_thruplay_watched_actions']);
+            got.forEach((g) => {
+              const row = rowOf[String(g.ad_id || '')];
+              if (!row) return;
+              const n = (v: unknown) => { const x = Number(v); return v == null || v === '' || !isFinite(x) ? null : Math.round(x * 100) / 100; };
+              (out[row] = out[row] || []).push({ day: String(g.date_start || '').slice(0, 10), frequency: n(g.frequency), ctr: n(g.ctr),
+                spend: n(g.spend), results: resultOf(g).results });
+            });
+          }
+        }
+      }
+      /* Two Ad IDs of one row on one day are one day of that row. */
+      const ads = Object.keys(out).map((row) => {
+        const days: Record<string, { day: string; frequency: number | null; ctr: number | null; spend: number | null; results: number | null }> = {};
+        out[row].forEach((d) => {
+          const was = days[d.day];
+          if (!was) { days[d.day] = { ...d }; return; }
+          was.spend = was.spend === null && d.spend === null ? null : Math.round(((was.spend || 0) + (d.spend || 0)) * 100) / 100;
+          was.results = was.results === null && d.results === null ? null : (was.results || 0) + (d.results || 0);
+          was.frequency = Math.max(was.frequency || 0, d.frequency || 0) || null;
+          was.ctr = Math.max(was.ctr || 0, d.ctr || 0) || null;
+        });
+        return { row, days: Object.values(days).sort((a, b) => a.day.localeCompare(b.day)) };
+      });
+      return json({ since, until: end, ads, read_at: new Date().toISOString() }, 200, origin);
     }
 
     if (action === 'ads') {
