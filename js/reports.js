@@ -771,6 +771,117 @@
     groups.forEach(function (g) { if (PLAT_FIELDS.some(function (f) { return has(g.lead[f[0]]); })) n++; });
     return { n: n, of: 1 + groups.length };
   }
+  /* Every amount the Advertising Report's commentary states is one the
+     report itself holds (2026-11-13: CraftStone's October summary read
+     S$11.62 a lead where its own tables read S$12.19). The figures it may
+     say: each ad's spend, cost per result and purchase value; each
+     objective's spend and cost per result, every ad counted (and with a
+     marked ad left out, as the comparison reads it); the account's spend;
+     the period before's; and the change between the two. An amount with no
+     cents is a budget or a benchmark the notes gave, and is left alone. */
+  function figureSlips() {
+    var r = st.open || {};
+    if (r.kind !== 'ads') return [];
+    var t = r.ads_totals || {}, ok = [];
+    var c = function (n) { return Math.round(n * 100) / 100; };
+    var add = function (n) { if (isFinite(n) && n !== null && n !== '') ok.push(c(Number(n))); };
+    var groups = {};
+    var labelOf = function (a) {
+      if (a.result_label) return a.result_label;
+      var ls = [];
+      st.ads.forEach(function (b) { if (b.result_label && (b.platform || 'meta') === (a.platform || 'meta') && b.objective === a.objective && ls.indexOf(b.result_label) < 0) ls.push(b.result_label); });
+      return ls.length === 1 ? ls[0] : '';
+    };
+    st.ads.forEach(function (a) {
+      var sp = Number(a.spend) || 0, res = Number(a.results) || 0;
+      add(sp); if (a.purchase_value != null) add(a.purchase_value);
+      if (a.cpr != null) add(a.cpr);
+      if (res) add(sp / res);
+      if (Number(a.reach)) add(sp / Number(a.reach) * 1000);
+      [[a.platform || 'meta', a.objective, labelOf(a)].join('|'), [a.platform || 'meta', a.objective].join('|')].forEach(function (k, i) {
+        [k, k + (adErr(a) ? '|x' : '|ok')].forEach(function (kk, j) {
+          if (j && adErr(a)) return;
+          var g = groups[kk + '#' + i] || (groups[kk + '#' + i] = { sp: 0, res: 0, obj: a.objective });
+          g.sp += sp; g.res += res;
+        });
+      });
+    });
+    var prevG = t.prev_groups || {};
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k], p = prevG[g.obj];
+      add(g.sp); if (g.res) add(g.sp / g.res);
+      if (p && p.spend != null) {
+        add(Math.abs(g.sp - p.spend));
+        if (g.res && p.results) add(Math.abs(g.sp / g.res - p.spend / p.results));
+      }
+    });
+    Object.keys(prevG).forEach(function (k) { var p = prevG[k] || {}; add(p.spend); if (p.results) add(p.spend / p.results); });
+    [t, t.tiktok || {}].forEach(function (x) {
+      add(x.spend); add(x.prev_spend);
+      if (x.spend != null && x.prev_spend != null) add(Math.abs(x.spend - x.prev_spend));
+    });
+    /* What a reach objective cost a thousand, and what a Sales objective
+       returned for each ringgit (ROAS said as money), each objective's. */
+    var gr = {};
+    st.ads.forEach(function (a) {
+      var k = (a.platform || 'meta') + '|' + a.objective, g = gr[k] || (gr[k] = { sp: 0, reach: 0, pv: 0, pvsp: 0 });
+      g.sp += Number(a.spend) || 0; g.reach += Number(a.reach) || 0;
+      if (a.purchase_value != null) { g.pv += Number(a.purchase_value) || 0; g.pvsp += Number(a.spend) || 0; if (Number(a.spend)) add(Number(a.purchase_value) / Number(a.spend)); }
+    });
+    Object.keys(gr).forEach(function (k) { var g = gr[k]; if (g.reach) add(g.sp / g.reach * 1000); if (g.pvsp) add(g.pv / g.pvsp); });
+    Object.keys(prevG).forEach(function (k) { var p = prevG[k] || {}; if (p.results) add(p.spend / p.results * 1000); });
+    /* What the ads that brought nothing spent between them, in all and by
+       objective. */
+    var none = {};
+    st.ads.forEach(function (a) { if (!Number(a.results)) { var k = a.objective || ''; none[k] = (none[k] || 0) + (Number(a.spend) || 0); none[''] = (none[''] || 0) + (k ? Number(a.spend) || 0 : 0); } });
+    Object.keys(none).forEach(function (k) { add(none[k]); });
+    /* A few ads named together: what they spent between them. */
+    var sp = st.ads.map(function (a) { return Number(a.spend) || 0; }), n = sp.length;
+    if (n <= 40) {
+      for (var i = 0; i < n; i++) for (var j = i + 1; j < n; j++) {
+        add(sp[i] + sp[j]);
+        for (var k3 = j + 1; k3 < n; k3++) {
+          add(sp[i] + sp[j] + sp[k3]);
+          for (var k4 = k3 + 1; k4 < n; k4++) add(sp[i] + sp[j] + sp[k3] + sp[k4]);
+        }
+      }
+    }
+    /* The period before, as its own report said it. */
+    if (!(st.prevText && st.prevText.id === r.id)) return null;
+    var prev = st.prevText.text;
+    String(prev).replace(/(?:S\$|RM)\s?(\d[\d,]*\.\d{2})(?!\d)/g, function (all, n2) { add(Number(n2.replace(/,/g, ''))); return all; });
+    var ins = r.insights || {}, slips = [];
+    var fields = [['intro', 'Summary', r.intro || ins.executive_summary]].concat(TEXT.ads.slice(1).concat(TEXT_MORE).map(function (f) { return [f[0], f[1], ins[f[0]]]; }));
+    fields.forEach(function (f) {
+      String(f[2] || '').replace(/(S\$|RM)\s?(\d[\d,]*\.\d{2})(?!\d)/g, function (all, cur, n) {
+        var v = Number(n.replace(/,/g, ''));
+        /* Meta rounds each ad to the sen, so a sum may sit a few sen off. */
+        var known = ok.some(function (k) { return Math.abs(k - v) <= Math.max(0.011, v * 0.0005); });
+        if (!known && !slips.some(function (s) { return s.amount === all && s.where === f[1]; })) slips.push({ amount: all.replace(/\s/, ' '), where: f[1] });
+        return all;
+      });
+    });
+    return slips;
+  }
+  /* The period before's report, read once a report is open, for the
+     figures its commentary gave. */
+  function loadPrevText(r, done) {
+    if (r.kind !== 'ads' || (st.prevText && st.prevText.id === r.id) || st.prevAsk === r.id) return;
+    st.prevAsk = r.id;
+    var q = db.from('sm_reports').select('intro, insights').eq('client_id', r.client_id).eq('kind', 'ads')
+      .lt('period_end', r.period_start).order('period_end', { ascending: false }).limit(1);
+    q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
+    q.then(function (res) {
+      var p = (res.data || [])[0];
+      st.prevText = { id: r.id, text: p ? [p.intro].concat(Object.values(p.insights || {})).join('\n') : '' };
+      if (st.open && st.open.id === r.id && done) done();
+    }).catch(function () { st.prevText = { id: r.id, text: '' }; if (done) done(); });
+  }
+  function slipWords(slips) {
+    var by = {};
+    slips.forEach(function (s) { (by[s.where] = by[s.where] || []).push(s.amount); });
+    return Object.keys(by).map(function (w) { return by[w].join(', ') + ' in ' + w; }).join('; ');
+  }
   function stepDone(k) {
     var r = st.open || {}, t = r.ads_totals || {};
     if (k === 'accounts') return st.platforms.length > 0;
@@ -1011,6 +1122,16 @@
         '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? PEN_MARK + 'Edit' : 'View' + ICON.go) + '</button></div>';
     }).join('');
     var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
+    /* An amount the commentary states that the report does not hold holds
+       Submit and Publish until it is corrected (2026-11-13). */
+    var slips = figureSlips(), pending = slips === null;
+    if (pending) { slips = []; loadPrevText(r, function () { if (st.step === 'check' && box.isConnected) paintCheck(box); }); }
+    if (slips.length) {
+      rows += '<div class="rp-check is-missing" data-check="figures">' +
+        '<span class="rp-check-mark" aria-hidden="true"></span>' +
+        '<span class="rp-check-t"><b>Figures in the commentary</b><small>' + esc(slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report.') + '</small></span>' +
+        '<button class="btn btn-sm btn-quiet" type="button" data-to="text">' + (editable() ? PEN_MARK + 'Edit' : 'View' + ICON.go) + '</button></div>';
+    }
     var mine = r.submitted_by && r.submitted_by === myId();
     /* A named reviewer confirms, or an admin in their place; a report
        submitted before reviewers keeps the earlier rule. */
@@ -1020,9 +1141,9 @@
     /* While the client links Meta, Submit rests until the Report audit's
        reading matches (2026-10-09); `holdSubmit` lets it go. */
     var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
-    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit</button>');
+    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length || slips.length || pending ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
-    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish</button>');
+    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish"' + (slips.length || pending ? ' disabled' : '') + '>Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     /* Sending back is a write at Reports Work, as sm_report_return checks:
        a submitter whose group is now at View is not offered Take back
@@ -1032,6 +1153,7 @@
       acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !reviewing && !(named ? isAdmin() : may('manage')) ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
+    else if (slips.length && (r.status === 'draft' || r.status === 'confirmed')) wait = 'Correct the figures in the commentary to ' + (r.status === 'draft' ? 'submit.' : 'publish. Send it back to correct them.');
     else if (metaHold && may('work')) wait = 'Match the figures to Meta to submit.';
     else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting for another manager to confirm.';
@@ -2268,6 +2390,8 @@
     var r = st.open, m = box.querySelector('[data-m="check"]');
     var on = function (a, fn) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('submit', function (b) {
+      var slips = figureSlips() || [];
+      if (slips.length) { say(m, slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report. Correct the commentary to submit.', 'err'); return; }
       var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
       var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
       var ask = { title: 'Submit?', body: 'The reviewer will be notified and will check it before it is published. It cannot be edited while in review.', go: 'Submit' };
@@ -2313,6 +2437,8 @@
       stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
     });
     on('publish', function (b) {
+      var slips = figureSlips() || [];
+      if (slips.length) { say(m, slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report. Send it back to correct the commentary.', 'err'); return; }
       /* Meta's figures still move while the period runs, so an Advertising
          Report it is read for publishes from the day after (2026-10-12). */
       if (r.kind === 'ads' && metaCan(r) && periodRuns(r)) {
