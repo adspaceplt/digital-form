@@ -533,6 +533,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied), with the same words on
   every client page (`js/words.js`).
+- The console's sign-in page and every cover are white to the edge
+  (`body.is-plain`); the grey frame is the signed-in console's alone (the
+  user, 2026-11-13: "fully white would be ok"). Client pages stay as they
+  are, never v3 (the user, 2026-11-13).
 - Malaysia's clock (`js/chrome.js`, 2026-10-12; the user: "this entire
   portal should follow the timezone of malaysia"): a device whose clock is
   not GMT+8 (Malaysia and Singapore share it) is told on every page that
