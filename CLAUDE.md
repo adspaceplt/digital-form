@@ -1906,6 +1906,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   caller's own, under 30 minutes, twelve steps at most), its tokens added
   (`ai_agent_tokens`). The stand-in answers `portal-agent` from
   `window.__agentReplies` (`tests/agent.js`).
+- A strict tool's field that may be one of a list or null is `anyOf` a
+  string enum and null (`optEnum`), never an enum on a type list, which
+  Claude's API refuses for every question (2026-11-13; `tests/agent.js`
+  reads the function's source for it). The stand-in never sends the
+  schemas to Claude, so only a live question proves them.
 
 ### Console search (`js/search.js`)
 - One control in the console head (`#searchOpen`, before the bell and the

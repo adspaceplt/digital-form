@@ -77,6 +77,8 @@ const str = { type: 'string' };
 const opt = { type: ['string', 'null'] };
 const day = { type: 'string', description: 'A date as YYYY-MM-DD, Malaysia time.' };
 const optDay = { type: ['string', 'null'], description: 'A date as YYYY-MM-DD, Malaysia time, or null.' };
+// A nullable choice: strict tools refuse an enum on a type list, so it is one of the words or null.
+function optEnum(values: string[]) { return { anyOf: [{ type: 'string', enum: values }, { type: 'null' }] }; }
 function tool(name: string, description: string, props: Record<string, unknown>) {
   return { name, description, strict: true,
     input_schema: { type: 'object', additionalProperties: false, required: Object.keys(props), properties: props } };
@@ -115,8 +117,8 @@ const TOOLS = [
       channel: { type: 'string', enum: ['google_meet', 'onsite'] }, led_by: opt }),
   tool('propose_campaign', 'Propose creating a creator campaign as a draft for an Active client. creators is how many creators it books. person_in_charge a person_id or null for the colleague asking. format and deliverable null for Site visit and Video.',
     { client_id: str, title: str, creators: { type: 'integer' }, person_in_charge: opt,
-      format: { type: ['string', 'null'], enum: ['site_visit', 'event', 'seeding', 'tenant_trail', null] },
-      deliverable: { type: ['string', 'null'], enum: ['video', 'graphic', null] } }),
+      format: optEnum(['site_visit', 'event', 'seeding', 'tenant_trail']),
+      deliverable: optEnum(['video', 'graphic']) }),
   tool('propose_publish_set', 'Propose publishing a content set, so the client sees it on their review link.', { set_id: str }),
   tool('propose_unpublish_set', 'Propose unpublishing a content set, so the client no longer sees it.', { set_id: str }),
   tool('propose_whatsapp', 'Propose sending a WhatsApp template to a client\'s contact. purpose approval (a reminder that a set or a creator\'s draft waits; ref the set_id or the booking), feedback (asks an Active client for feedback), representative (introduces a lead\'s Sales by colleague) or message (template names the approved template). The card shows the message as it will read.',
@@ -124,10 +126,10 @@ const TOOLS = [
   tool('propose_schedule', 'Propose doing something later, at a date and time (Malaysia time). kind reminder (message is what to be reminded of; client_id, task_id or report_id what it opens), mark_sent (report_id), add_task (task_title, client_id, owner_id, due_date, priority, message as the brief), publish_set or unpublish_set (set_id), whatsapp (contact_id, purpose approval, feedback or representative, ref). title is a short name for the list. condition null, or set_undecided (set_id or ref), report_not_sent (report_id) or task_open (task_id). Fields a kind does not use are null.',
     { kind: { type: 'string', enum: ['reminder', 'mark_sent', 'add_task', 'publish_set', 'unpublish_set', 'whatsapp'] },
       date: day, time: str, title: str, message: opt, client_id: opt, task_id: opt, report_id: opt, set_id: opt,
-      contact_id: opt, purpose: { type: ['string', 'null'], enum: ['approval', 'feedback', 'representative', null] }, ref: opt,
+      contact_id: opt, purpose: optEnum(['approval', 'feedback', 'representative']), ref: opt,
       task_title: opt, owner_id: opt, due_date: optDay,
-      priority: { type: ['string', 'null'], enum: ['normal', 'medium', 'high', 'urgent', null] },
-      condition: { type: ['string', 'null'], enum: ['set_undecided', 'report_not_sent', 'task_open', null] } }),
+      priority: optEnum(['normal', 'medium', 'high', 'urgent']),
+      condition: optEnum(['set_undecided', 'report_not_sent', 'task_open']) }),
   tool('open_page', 'Offer the colleague a button that opens a record on its own screen: a client (pane overview, calls, services, billing, brand, engagements), a client\'s months in My Work (client_month, id the client_id), a task, a report, a content set, a video script, a campaign, My Work or the Dashboard.',
     { kind: { type: 'string', enum: ['client', 'client_month', 'task', 'report', 'set', 'script', 'campaign', 'my_work', 'dashboard'] },
       id: opt, pane: opt, label: str })
