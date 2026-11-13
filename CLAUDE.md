@@ -870,7 +870,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   decision is shown only on the database's own `ok` (audit F5, 2026-10-10). It retries a GET once when the
   connection drops before the answer (`steadyFetch`); a write is never sent
   twice. Every request it sends is counted: one out `showAfter` (300ms)
-  draws the loading line (`.loadbar`, 2px under the page's own bar across
+  draws the loading line (`.loadbar`, appended inside its host on each
+  request so whatever is laid over the host draws over it, 2px under the page's own bar across
   its width, under an open sheet's head across its card while one is open; the minute's `page_pulse` never shows it) until the last
   answers; a read (GET) unanswered at `giveUpAfter` (20s) is given up,
   never tried again, so the page says it could not load with Try again; a
@@ -6707,7 +6708,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`bad-edit`), the card's rate kept as `list_rate` and named under the
   line (Rate card RM …), the commitment counting each line's months,
   filed `n lines changed`; a website quotation is never adjusted; empty puts the card's
-  figure back. A line may be priced at RM 0, a complimentary line (the
+  figure back. A line's description is the Rate Card's until Edit under
+  it rewrites it for that quotation (the edit's `detail`, one to twelve
+  points of 300 at most, the card's kept as `list_detail`; Use Rate Card
+  puts it back; 2026-11-13), which the PDF and /quote/ print. A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,
