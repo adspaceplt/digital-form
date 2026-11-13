@@ -1785,7 +1785,7 @@
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
     overview:  'Your own work today, and the figures of each section you manage.',
-    analytics: 'Trends across sales, clients and operations, what changed and what to expect next.',
+    analytics: 'Trends across sales, clients and operations: what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
     whatsapp:  'Every WhatsApp message and email the portal has sent, and the delivery status of each.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',

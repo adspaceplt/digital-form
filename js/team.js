@@ -245,7 +245,7 @@
                 /* Trends and forecasts (2026-10-25); since phase 3
                    (2026-11-13) the charts follow their sections, and this
                    part writes the AI analysis alone. */
-                ['analytics', 'Analytics AI analysis']],
+                ['analytics', 'AI analysis on Analytics']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
