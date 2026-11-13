@@ -5240,10 +5240,10 @@ svg.sec {
 /* The person a task is assigned to, as a pill a press changes (the user,
    2026-11-13: "the design is not refine here"): the disc 4px inside the
    pill's edge, the name after it cut with an ellipsis, the fill round the
-   pair on hover. The cell gives the pill its 4px back on each side, so the
-   cell's clip never cuts the fill. */
-.task-owner:has(> .tinline) { position: relative; padding: 5px 4px; margin: -5px -4px; }
-.task-owner .tinline { display: inline-flex; align-items: center; gap: 8px; margin-left: -4px; padding: 0 10px 0 4px; }
+   pair on hover. The cell keeps its column (uxaudit `cols`) and lets the
+   fill run 4px past its edge, the name cut inside the pill. */
+.task-owner:has(> .tinline) { position: relative; overflow: visible; }
+.task-owner .tinline { display: inline-flex; align-items: center; gap: 8px; margin-left: -4px; padding: 0 10px 0 4px; max-width: calc(100% + 4px); }
 .task-owner .tinline .tav { margin-right: 0; }
 .task-owner .tinline .tname { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .task-owner .tinline::before { inset: calc(50% - 15px) 0; border-radius: 15px; }
