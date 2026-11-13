@@ -134,7 +134,12 @@
        the narrow row, which is the one the phone already reads. */
     var n = parseInt(el.getAttribute('data-narrow'), 10) || NARROW;
     el.classList.toggle('is-narrow', w <= n);
-    el.classList.toggle('is-tight', w <= TIGHT);
+    /* A register whose row holds a date and a time (the bookings) states
+       its own tight line (`data-tight`): under it the row's summary takes the
+       name's second line, never a column too narrow to hold it (the user,
+       2026-11-13: "it shouldn't cut off"). */
+    var t = parseInt(el.getAttribute('data-tight'), 10) || TIGHT;
+    el.classList.toggle('is-tight', w <= t);
   }
 
   function fit(sel) {
