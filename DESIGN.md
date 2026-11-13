@@ -28,7 +28,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   2026-11-13: "keep white sheet is good. keep hairline too else it looks
   too bold"): the head, each part of a pane (`.rec-part`: its head inside
   the card at 15/600 with its count as a `.tab-n`, its list the card's
-  rows) and each rail block, each edged by `--part-edge` (ink at 11%; light
+  rows) and each rail block, each edged by `--part-edge` (a register (`.bookreg`) the card, its rows lines in it; ink at 11%; light
   ink at 12% in dark), 16px apart, the grouping carried by the space; a
   part's add act is quiet (`.btn-quiet .btn-sm` with its glyph) unless it
   is the record's next step; a rail fact's pen and ⋯ show on hover and
