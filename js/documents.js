@@ -765,7 +765,7 @@
     if (doc.signed) y -= 60;
     else if (named) y -= LH * 0.5;
     if (named) {
-      text(String(sig.name || '').toUpperCase(), M, y, BODY, bold); y -= LH;
+      text(String(sig.name || ''), M, y, BODY, bold); y -= LH;
       if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; }
     }
 
