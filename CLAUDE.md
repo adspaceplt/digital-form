@@ -1979,12 +1979,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the record head's white disc, initials only while none is held or where
     it fails to load), and the Client ID sits under the name in the token
     face and is searched; on a phone it leads the meta line instead
-    (`.crm-meta-code`), which reads Client ID · Industry · the one person
-    the stage needs (a lead its Sales by, else its Person in charge; a
-    client its Person in charge, then Sales: {name} only where another
-    colleague sold it, Industry then left to the desk and the record so the
-    line keeps to one row; `metaPeople`), Last activity left to the desk and the
-    record (the user, 2026-11-04; 2026-11-07).
+    (`.crm-meta-code`), which reads Client ID · one person (`metaPeople`): Active
+    and Paused the Person in charge, a lead and a Past client the Sales by,
+    else the Person in charge; Industry and Last activity left to the desk
+    and the record (the user, 2026-11-04; 2026-11-13).
   - On a phone the row is two columns: name over meta, and the chip over the
     age in a fixed 120px track, top aligned. The meta omits what is not known,
     never showing a bare currency sign.

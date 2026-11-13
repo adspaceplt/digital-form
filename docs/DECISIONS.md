@@ -10330,3 +10330,5 @@ The copy review of the builds since #1067 found the AI usage rule read
 reads One draft and one check per report per day, on AI usage and in the
 history line `ai_draft_set_limit` files
 (`2026-11-13-ai-limit-per-report-words.sql`).
+
+- 2026-11-13 · The Clients list's phone row read three lines where a name was long (Client ID · Industry · person, or Person in charge · Sales: name). The user: "{client id} {person}", the Person in charge for Active and Paused, the Sales by for a lead and a Past client. Two lines a row.
