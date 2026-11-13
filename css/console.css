@@ -5164,6 +5164,9 @@ svg.sec {
   .console .rec-rail .tl-pen[aria-expanded="true"] { opacity: 1; }
 }
 .nav-n { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* A count of what needs acting on now takes the red pill a tab's does
+   (creator payment details to review, 2026-11-13). */
+.nav-n.is-err { min-width: 18px; padding: 0 5px; border-radius: 5px; text-align: center; color: var(--err); background: var(--err-bg); }
 /* The Dashboard's lead row: four figures across, two by two when narrow. */
 .ovw-kpis.ovw-lead { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ovw-kpis.ovw-lead > .ovw-kpi:last-child:nth-child(odd) { grid-column: auto; }

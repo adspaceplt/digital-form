@@ -8670,6 +8670,7 @@
     if (!x.task_id && /^abroad\./.test(x.kind || '')) return 'team';
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
+    if (!x.task_id && /^creator\./.test(x.kind || '')) return 'campaigns';
     if (!x.task_id && x.report_id) return 'reports';
     if (!x.task_id && x.script_id) return 'scripts';
     if (!x.task_id && x.supplier_id) return 'suppliers';
@@ -8717,6 +8718,18 @@
     /* A notice with a link opens it in a tab of its own: the outstation
        record after an on-site meeting (2026-10-09). */
     if (x.link && /^https:\/\//i.test(x.link)) {
+      /* A link to a console page (a creator's payment details to review, a
+         payment request) opens here, never a second console in a new tab
+         (2026-11-13). */
+      var lu = null;
+      try { lu = new URL(x.link); } catch (e) {}
+      var home = String((window.ADSPACE_ORG || {}).verifyUrl || '').split('/')[0];
+      if (lu && lu.pathname === '/admin/' && (lu.host === location.host || lu.host === home)) {
+        var ls = new URLSearchParams(lu.search).get('s');
+        history.replaceState(null, '', '/admin/' + lu.search);
+        if (ls && bridge.show) bridge.show(ls);
+        return;
+      }
       window.open(x.link, '_blank', 'noopener');
       return;
     }

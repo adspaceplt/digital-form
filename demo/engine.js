@@ -9944,6 +9944,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
               cpMethod(cpNew.method, cpNew.bank) + ' ending ' + cpNew.account.slice(-4));
             DB.activity_log[DB.activity_log.length - 1].actor = 'Creator page';
             cpQueue('received', cpNew); cpQueue('review', cpNew);
+
+            DB.ops_notifications = DB.ops_notifications || [];
+            (DB.team_members || []).forEach(function (tm) {
+              var acc = tm.access || {}, lv = acc['campaigns.creators'] || acc.campaigns;
+              if (!tm.active || tm.removed_at || tm.system || tm.department !== 'marketing' || (!(tm.is_admin || tm.role === 'admin') && (!lv || lv === 'none'))) return;
+              DB.ops_notifications.push({ id: nid('nt'), team_member_id: tm.id, task_id: null, kind: 'creator.details',
+                title: 'Payment details to review · ' + cpC.name,
+                body: cpRef + ' · Sent on the creator page',
+                link: 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + cpC.id,
+                dedupe_key: 'creator.details:' + cpNew.id + ':' + tm.id, read_at: null, created_at: new Date().toISOString() });
+            });
             cpOut = { ok: true, ref: cpRef };
           }
         }

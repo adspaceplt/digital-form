@@ -4030,7 +4030,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   creator reads) at its Work (`creator_pay_decide`: `denied`, `decided`,
   `no-note`; filed `creator.updated`); the newest approval is paid to, the
   one before it Replaced. `?s=campaigns&tab=roster&pay={creator}` opens
-  their page on Payment.
+  their page on Payment. A set sent to review tells the Marketing
+  department who can open the Creators List, an admin among them, in the
+  bell and on their phone (trigger `creator_pay_requests_notice`, kind
+  `creator.details`, opening that Payment pane in place; the user,
+  2026-11-13: "these should land to Marketing Department personnel"), and
+  the sets waiting are counted in red on the Creator Campaigns rail row,
+  the Creators tab and the phone's tab (`creator_pay_states`, read on
+  sign-in and with the Creators List; `ADspaceAdmin.payStates`). A notice
+  linking a console page opens it in place, never a second console.
   The emails (`creator_emails`, RLS on, no policy, no grant) are queued in
   their templates' words (`creator_email_templates`: Details received to
   the creator, Details to review to the finance address with the account's

@@ -248,7 +248,7 @@
       }
       state.creators = r.data || [];
       /* Each creator's payment details standing (2026-11-08), one read. */
-      var states = db.rpc('creator_pay_states').then(function (p) { state.payStates = (!p.error && p.data) || {}; })
+      var states = db.rpc('creator_pay_states').then(function (p) { state.payStates = (!p.error && p.data) || {}; if (!p.error && window.ADspaceAdmin.payStates) window.ADspaceAdmin.payStates(state.payStates); })
         .catch(function () { state.payStates = {}; });
       loadRecord(function () { states.then(function () { paintRoster(); if (crRec.id) paintCrRec(); if (then) then(); }); });
     });
@@ -695,6 +695,7 @@
     db.rpc('creator_pay_states').then(function (p) {
       if (p.error) return;
       state.payStates = p.data || {};
+      if (window.ADspaceAdmin.payStates) window.ADspaceAdmin.payStates(state.payStates);
       paintRoster();
       var c = crRec.id && crOf(crRec.id);
       if (c) paintCrRail(c);
