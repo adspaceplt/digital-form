@@ -376,14 +376,15 @@
     return function (text, tone) { said = text ? { row: id, text: text, tone: tone || '' } : null; paint(); };
   }
   /* A switch acts at the press and offers its way back where it happened
-     (the overnight review, 2026-11-10). */
+     (the overnight review, 2026-11-10): under its own row, never after the
+     card's last, which a long card put out of sight (the user, 2026-11-13). */
   function undoSwitch(id, text, on) {
     var row = document.querySelector('#setList .stg-row[data-row="' + id + '"]');
     if (!row || !bridge.undoHere) return;
     bridge.undoHere(text, function () {
       var sw = document.querySelector('#setList .stg-row[data-row="' + id + '"] [role="switch"]');
       if (sw && (sw.getAttribute('aria-checked') === 'true') === on) sw.click();
-    }, row.closest('.stg-card'));
+    }, row);
   }
   function rowHtml(r) {
     var next = nextLine(r.id);
@@ -565,7 +566,7 @@
       return window.ADspaceMoney.load(true).catch(function () {});
     }).then(function () {
       said = null; paint();
-      undoSwitch('meta', to ? 'Meta checks are on.' : 'Meta checks are off.', to);
+      undoSwitch('meta', to ? 'Turned on.' : 'Turned off.', to);
     }).catch(function (e) {
       sw.setAttribute('aria-checked', to ? 'false' : 'true');
       sw.disabled = false;
@@ -594,7 +595,7 @@
       return window.ADspaceMoney.load(true).catch(function () {});
     }).then(function () {
       said = null; paint();
-      undoSwitch(id, word + (to ? ' is on.' : ' is off.'), to);
+      undoSwitch(id, to ? 'Turned on.' : 'Turned off.', to);
     }).catch(function (e) {
       sw.setAttribute('aria-checked', to ? 'false' : 'true');
       sw.disabled = false;
