@@ -10238,3 +10238,13 @@ null (`optEnum`); v3 deployed and read back. The suites missed it because
 the stand-in answers `portal-agent` itself and never sends the schemas to
 Claude, and no API key is in the sandbox to send them; `tests/agent.js` now
 reads the function's source and fails an enum on a type list.
+
+### 2026-11-13: the Assistant refused again, on the strict tool limit
+v3 still read "The Assistant could not answer.": Claude's API takes 20
+strict tools a request and v3 marked 23, and its nullable fields across
+strict tools (32) passed the limit of 16 as well. v4 keeps strict on the
+change cards alone (12 tools, 15 nullable fields); the reads and
+propose_schedule go unenforced, their input checked by the page as before.
+tests/agent.js now evaluates the tool list and holds all three limits. The
+first fix was deployed on the read of one error alone; the limits page was
+read only after the second.
