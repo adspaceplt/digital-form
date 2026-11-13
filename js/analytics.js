@@ -272,7 +272,7 @@
   }
   function tiles(box, list) {
     var wrap = document.createElement('div');
-    wrap.className = 'ovw-groups is-one';
+    wrap.className = 'ovw-groups is-one anl-tiles';
     wrap.innerHTML = '<section class="ovw-group"><div class="ovw-kpis"></div></section>';
     box.appendChild(wrap);
     var grid = wrap.querySelector('.ovw-kpis');
