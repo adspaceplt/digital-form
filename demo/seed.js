@@ -71,18 +71,18 @@
      or gone, in the order they came. A Active, Z Paused, P left after
      Active, L lost as a lead; l, c and p the leads still open. */
   var BRANDS = [
-    ['Bayview Residences', 'Property'], ['Kopi Corner', 'F&B'], ['Lumi Skin Studio', 'Wellness'], ['Urban Fit Gym', 'Wellness'],
-    ['Northpoint Motors', 'Automotive'], ['Little Sprouts Academy', 'Education'], ['Maple Home Living', 'Lifestyle'], ['Sunrise Bakehouse', 'F&B'],
-    ['Velvet Bridal House', 'Lifestyle'], ['Peak Outdoor Supply', 'Retail'], ['Jade Garden Kitchen', 'F&B'], ['Brightway Tuition', 'Education'],
-    ['Coral Bay Retreat', 'Lifestyle'], ['Tech Haven Gadgets', 'Tech'], ['Golden Grain Foods', 'Retail'], ['Bloom & Petal Florist', 'Retail'],
+    ['Bayview Residences', 'Property'], ['Kopi Corner', 'Food and beverage'], ['Lumi Skin Studio', 'Wellness'], ['Urban Fit Gym', 'Wellness'],
+    ['Northpoint Motors', 'Automotive'], ['Little Sprouts Academy', 'Education'], ['Maple Home Living', 'Lifestyle'], ['Sunrise Bakehouse', 'Food and beverage'],
+    ['Velvet Bridal House', 'Lifestyle'], ['Peak Outdoor Supply', 'Retail'], ['Jade Garden Kitchen', 'Food and beverage'], ['Brightway Tuition', 'Education'],
+    ['Coral Bay Retreat', 'Lifestyle'], ['Tech Haven Gadgets', 'Technology'], ['Golden Grain Foods', 'Retail'], ['Bloom & Petal Florist', 'Retail'],
     ['Summit Freight', 'Other'], ['Pure Spring Water', 'Retail'], ['Harbour Smile Dental', 'Wellness'], ['Cedar Lane Homes', 'Property'],
-    ['Mango Tree Café', 'F&B'], ['Silverline Auto Care', 'Automotive'], ['Starlight Dance Studio', 'Education'], ['Ocean Breeze Seafood', 'F&B'],
-    ['Nova Interiors', 'Lifestyle'], ['Greenfield Organics', 'Retail'], ['Pixel Point Electronics', 'Tech'], ['Riverside Suites', 'Property'],
-    ['Kinetic Physio', 'Wellness'], ['Saffron Spice House', 'F&B'], ['Aurora Optics', 'Retail'], ['Willow Kids Wear', 'Retail'],
-    ['Metro Laundry Co', 'Other'], ['Evergreen Landscapes', 'Other'], ['Crescent Bakery', 'F&B'], ['Lotus Yoga Centre', 'Wellness'],
-    ['Ironclad Hardware', 'Retail'], ['Blue Lagoon Swim School', 'Education'], ['Amber Candle Co', 'Lifestyle'], ['Highland Tea Room', 'F&B'],
-    ['Vista Property Group', 'Property'], ['Swift Courier', 'Other'], ['Rosewood Furniture', 'Lifestyle'], ['Prime Cuts Butchery', 'F&B'],
-    ['Zen Garden Spa', 'Wellness'], ['Apex Coding School', 'Education'], ['Cloudnine Bedding', 'Lifestyle'], ['Fresh Press Juicery', 'F&B']];
+    ['Mango Tree Café', 'Food and beverage'], ['Silverline Auto Care', 'Automotive'], ['Starlight Dance Studio', 'Education'], ['Ocean Breeze Seafood', 'Food and beverage'],
+    ['Nova Interiors', 'Lifestyle'], ['Greenfield Organics', 'Retail'], ['Pixel Point Electronics', 'Technology'], ['Riverside Suites', 'Property'],
+    ['Kinetic Physio', 'Wellness'], ['Saffron Spice House', 'Food and beverage'], ['Aurora Optics', 'Retail'], ['Willow Kids Wear', 'Retail'],
+    ['Metro Laundry Co', 'Other'], ['Evergreen Landscapes', 'Other'], ['Crescent Bakery', 'Food and beverage'], ['Lotus Yoga Centre', 'Wellness'],
+    ['Ironclad Hardware', 'Retail'], ['Blue Lagoon Swim School', 'Education'], ['Amber Candle Co', 'Lifestyle'], ['Highland Tea Room', 'Food and beverage'],
+    ['Vista Property Group', 'Property'], ['Swift Courier', 'Other'], ['Rosewood Furniture', 'Lifestyle'], ['Prime Cuts Butchery', 'Food and beverage'],
+    ['Zen Garden Spa', 'Wellness'], ['Apex Coding School', 'Education'], ['Cloudnine Bedding', 'Lifestyle'], ['Fresh Press Juicery', 'Food and beverage']];
   var FATE = 'ALPALZALAPLALALPAZLALAPLALAZLAPALALALAAlLApcAlpcp';
   var SOURCES = ['referral', 'website', 'instagram', 'facebook', 'website', 'referral', 'tiktok', 'event', 'whatsapp', 'outreach'];
   var OWNERS = ['d1', 'd3', 'd1', 'd4'];
@@ -141,7 +141,7 @@
     if (activeOnce) {
       var rate = RATES[i % RATES.length];
       DB.client_services.push({ id: 'ds' + (i + 1), client_id: id, service_slug: 'pkg-' + (rate >= 3600 ? 'c' : rate >= 2800 ? 'b' : 'a'),
-        label: rate >= 3600 ? 'Package C · 3 platforms · 8 contents' : rate >= 2800 ? 'Package B · 2 platforms · 4 contents' : 'Package A · 1 platform · 4 contents',
+        label: rate >= 3600 ? 'Package C · 3 platforms · 8 content pieces' : rate >= 2800 ? 'Package B · 2 platforms · 4 content pieces' : 'Package A · 1 platform · 4 content pieces',
         qty: 1, rate: rate, unit: 'month', state: 'confirmed', tenure: 12, start_on: dayOf(at(won)), term_adjust: true, term_pct: -5,
         created_at: at(won - 5 * 864e5), archived_at: null, tax_code: 'SV8' });
     }
@@ -338,15 +338,15 @@
   DB.services = [
     { slug: 'static-graphic', category: 'Content', name: 'Static graphic', rate: 300, unit: 'Per post', position: 10, active: true },
     { slug: 'reels-60', category: 'Content', name: 'Reels, up to 60 seconds', rate: 750, unit: 'Per video', position: 14, active: true },
-    { slug: 'pkg-a', category: 'Monthly packages', name: 'Package A · 1 platform · 4 contents', rate: 1800, unit: 'Per month, 6 month minimum', position: 40, active: true, min_months: 6,
+    { slug: 'pkg-a', category: 'Monthly packages', name: 'Package A · 1 platform · 4 content pieces', rate: 1800, unit: 'Per month, 6 month minimum', position: 40, active: true, min_months: 6,
       spec: { role: 'plan', plan: 'A', ads: false, platforms: 1, contents: 4, mix: [{ graphic: 2, reel: 2 }], best_for: 'Brands starting out on social media' },
-      detail: '1 platform\n4 contents each month: 2 graphics and 2 reels\nContent posting and community replies\nMonthly accounts report' },
-    { slug: 'pkg-b', category: 'Monthly packages', name: 'Package B · 2 platforms · 4 contents', rate: 2800, unit: 'Per month, 6 month minimum', position: 41, active: true, min_months: 6,
+      detail: '1 platform\n4 content pieces each month: 2 graphics and 2 reels\nContent posting and community replies\nMonthly accounts report' },
+    { slug: 'pkg-b', category: 'Monthly packages', name: 'Package B · 2 platforms · 4 content pieces', rate: 2800, unit: 'Per month, 6 month minimum', position: 41, active: true, min_months: 6,
       spec: { role: 'plan', plan: 'B', ads: false, platforms: 2, contents: 4, mix: [{ graphic: 1, reel: 3 }, { reel: 4 }], best_for: 'Brands building steady momentum' },
-      detail: 'Up to 2 platforms\n4 contents each month\nContent planning and copywriting\nMonthly accounts report' },
-    { slug: 'pkg-c', category: 'Monthly packages', name: 'Package C · 3 platforms · 8 contents', rate: 3600, unit: 'Per month, 6 month minimum', position: 42, active: true, min_months: 6,
+      detail: 'Up to 2 platforms\n4 content pieces each month\nContent planning and copywriting\nMonthly accounts report' },
+    { slug: 'pkg-c', category: 'Monthly packages', name: 'Package C · 3 platforms · 8 content pieces', rate: 3600, unit: 'Per month, 6 month minimum', position: 42, active: true, min_months: 6,
       spec: { role: 'plan', plan: 'C', ads: true, platforms: 3, contents: 8, mix: [{ graphic: 4, reel: 4 }], best_for: 'Brands ready to grow with advertising' },
-      detail: 'Up to 3 platforms\n8 contents each month\nMeta advertising management\nMonthly accounts and advertising reports' },
+      detail: 'Up to 3 platforms\n8 content pieces each month\nMeta advertising management\nMonthly accounts and advertising reports' },
     { slug: 'koc-10', category: 'KOC programmes', name: 'KOC package · 10 creators', rate: 4200, unit: 'Per campaign', position: 50, active: true },
     { slug: 'rev-minor', category: 'Add-ons', name: 'Minor revision', rate: 150, unit: 'Per asset, per round', position: 70, active: true },
     { slug: 'urgent', category: 'Add-ons', name: 'Urgent fee', rate: 120, unit: 'Per affected asset, per round', position: 72, active: true, spec: { role: 'addon', group: 'Revisions & Turnaround' } }];

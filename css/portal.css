@@ -5811,7 +5811,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .crpays-note[hidden] { display: none; }
 /* The e-Invoice section of the payment details form: one line of fact above the tick. */
 .crpay-einv { margin: 0 0 12px; font-size: 14px; line-height: 1.55; color: var(--ink-soft); }
-@media (max-width: 640px) { .crpay-facts > div { grid-template-columns: 104px minmax(0, 1fr); } }
+@media (max-width: 640px) {
+  .crpay-facts > div { grid-template-columns: 104px minmax(0, 1fr); }
+  /* On a phone the campaign keeps the line's width and its Job reference
+     stands under it, so the name is never cut for the reference (2026-11-13). */
+  .crpay-what { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .crpay-name { max-width: 100%; }
+}
 .input[aria-invalid="true"] { border-color: var(--err); }
 @media (max-width: 640px) {
   /* The chrome's "Forget this device" gives up its word on a phone, the way
