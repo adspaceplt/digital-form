@@ -10295,3 +10295,4 @@ advertising for the budget asked at the card's whole cost; beside a plan the
 line past its cover names its band (Additional advertising budget coverage,
 RM 4,000 to RM 8,000). Quotations already made keep their lines as sent
 (`2026-11-13-quotation-ads-one-line.sql`).
+- 2026-11-13 · The console's head at a desk was 32px in at the left, 20 at the right, 9 above the title and 5 under its line (the user: "left right paddings feels not visually balance"). It is now 90px on every section with its words centred and 32px both sides, the body's own inset; `--head-h` carries the 90 so every sticky offset follows. Measured with a scratch script on the rendered head at 1280 and 1440.
