@@ -10332,3 +10332,5 @@ history line `ai_draft_set_limit` files
 (`2026-11-13-ai-limit-per-report-words.sql`).
 
 - 2026-11-13 · The Clients list's phone row read three lines where a name was long (Client ID · Industry · person, or Person in charge · Sales: name). The user: "{client id} {person}", the Person in charge for Active and Paused, the Sales by for a lead and a Past client. Two lines a row.
+
+- 2026-11-13 · A creator's payment details (the user: "force the creator payment Legal name to be first letter always capital"; "the account holder, make it read only copy the Legal name, as we only can issue bill and transfer to this person with the same bank account name"). `creator_pay_check`, the one check of the creator's page and the team's Add details, opens every word of the name on a capital and leaves the rest as typed (LIM RAYMOND stays), and sets the account holder to the name whatever is sent (`2026-11-13-creator-payee-is-legal-name.sql`, applied live and read back). The creator's page shows the holder read only beside the name (Same as the name above while empty); Add details asks no holder. None of the six live sets needed correcting.

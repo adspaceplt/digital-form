@@ -3979,7 +3979,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (optional), the billing address, Currency (MYR, SGD) and the methods it
   takes (Bank transfer, DuitNow, Touch 'n Go eWallet; Bank transfer,
   PayNow), the bank (the supplier form's list for that currency), the
-  account and its holder, email, WhatsApp and the confirmation tick, in
+  account and its holder (the legal name itself, read only: the bill and
+  the transfer go to that name; `creator_pay_check` sets it and opens every
+  word of the name on a capital, the rest as typed; 2026-11-13), email, WhatsApp and the confirmation tick, in
   English and 中文; checked as `creator_pay_check` checks it, refused by
   field. Each set is a `creator_pay_requests` row (RLS on, no policy, no
   grant) under a reference from the pattern on the creator row of

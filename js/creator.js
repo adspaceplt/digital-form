@@ -109,7 +109,7 @@
       payCurrency: 'Currency', payMethods: { bank: 'Bank transfer', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go eWallet' },
       payBank: 'Bank', payChooseBank: 'Choose a bank',
       payAcctLabel: { bank: 'Account number', duitnow: 'DuitNow ID', paynow: 'PayNow ID (mobile number or UEN)', tng: 'Touch \u2019n Go eWallet mobile number' },
-      payPayee: 'Account holder name', payWhatsapp: 'WhatsApp number',
+      payPayee: 'Account holder name', payPayeeSame: 'Same as the name above', payWhatsapp: 'WhatsApp number',
       payKeep: 'Leave blank to keep the number ending {n}.',
       payKeepAs: 'Leave blank to keep {v}.',
       payConfirm: 'I confirm these details are correct and authorise ADSPACE PLT to make payments to this account.',
@@ -219,7 +219,7 @@
       payCurrency: '货币', payMethods: { bank: '银行转账', duitnow: 'DuitNow', paynow: 'PayNow', tng: 'Touch \u2019n Go 电子钱包' },
       payBank: '银行', payChooseBank: '请选择银行',
       payAcctLabel: { bank: '银行账号', duitnow: 'DuitNow ID', paynow: 'PayNow ID（手机号码或 UEN）', tng: 'Touch \u2019n Go 电子钱包手机号码' },
-      payPayee: '账户持有人姓名', payWhatsapp: 'WhatsApp号码',
+      payPayee: '账户持有人姓名', payPayeeSame: '与上方名称相同', payWhatsapp: 'WhatsApp号码',
       payKeep: '留空即保留尾号为{n}的号码。',
       payKeepAs: '留空即保留{v}。',
       payConfirm: '本人确认以上资料正确无误，并授权 ADSPACE PLT 将款项付至此账户。',
@@ -1232,7 +1232,10 @@
           esc(T0.payChooseBank) + '</option>' + options(banks, null, v.bank) + '</select>') : '') +
         field('account', T0.payAcctLabel[v.method], input('account', !keepAcct, 'inputmode="' + (v.method === 'bank' ? 'numeric' : 'text') + '" autocomplete="off" spellcheck="false" maxlength="40"'),
           keepAcct ? fill(T0.payKeep, { n: h.account_end }) : '') +
-        field('payee', T0.payPayee, input('payee', !kept('payee'), 'maxlength="120"'), keepAs('payee')) +
+        /* The account holder is the legal name (the user, 2026-11-13: the bill
+           and the transfer go to that name alone), read only beside it. */
+        '<div class="row"><div><span class="field-label">' + esc(T0.payPayee) + '</span><p class="readfield" id="pf_payee">' +
+          esc(v.legal_name || kept('legal_name') || T0.payPayeeSame) + '</p><span class="msg" id="pf_payeeMsg"></span></div></div>' +
       '</section>' +
       '<section class="fsec"><h4 class="fsec-h">' + esc(T0.payHeads.contact) + '</h4>' +
         field('email', T0.payEmail, input('email', !kept('email'), 'type="email" inputmode="email" autocomplete="email" maxlength="160" placeholder="email@adspace.me"'), keepAs('email')) +
@@ -1241,6 +1244,16 @@
         '<span class="msg" id="pf_confirmMsg"></span>') +
       '<div class="msg" id="paySheetMsg" role="status"></div>';
     if (window.ADspaceForm) window.ADspaceForm.scan($('payFields'));
+    var nm = $('pf_legal_name');
+    if (nm) {
+      var mirror = function () { $('pf_payee').textContent = nm.value.trim() || kept('legal_name') || T0.payPayeeSame; };
+      nm.addEventListener('input', mirror);
+      /* Every word opens on a capital, as the database keeps it. */
+      nm.addEventListener('blur', function () { nm.value = capWords(nm.value); mirror(); });
+    }
+  }
+  function capWords(x) {
+    return String(x || '').replace(/\s+/g, ' ').trim().split(' ').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
   }
   function openPay(opener, mode) {
     var T0 = t();
@@ -1285,6 +1298,7 @@
     Object.keys(payTyped).forEach(function (k) { vals[k] = payTyped[k]; });
     vals.confirm = 'true';
     if (vals.method !== 'bank') vals.bank = '';
+    vals.payee = vals.legal_name;
     db.rpc('creator_pay_submit', { p_code: code, p_values: vals }).then(function (r) {
       btn.disabled = false;
       var d = r.data || {};
