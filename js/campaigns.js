@@ -1125,10 +1125,20 @@
         '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
           '<span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
         '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + mk + '</div>' +
-        (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
+        (b && b.number ? payMenu(j.job, [bkItem(b.number), work ? '<button class="kmenu-item" data-g="2" type="button" role="menuitem" data-a="earlier">Edit</button>' : ''])
+          : work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
         '</div>';
     };
+    /* A bill's page in Bukku, from the row's ⋯ (2026-11-13, the user: "give a
+       button link to open up the respective bukku bill page in menu"). */
+    function bkItem(num) { return '<button class="kmenu-item" data-g="1" type="button" role="menuitem" data-a="bukku" data-num="' + esc(num) + '">Open in Bukku</button>'; }
+    function payMenu(name, items) {
+      items = items.filter(Boolean);
+      if (!items.length) return '';
+      return '<span class="team-act"><button class="kmenu-btn" type="button" data-a="rowmenu" aria-label="More actions for ' + esc(name || '') + '" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" role="menu" hidden>' + items.join('') + '</div></span>';
+    }
     var html = '';
     /* Why no bill can be made. */
     if (work && d.linked && d.bill_account === false && jobs.some(function (j) { return !j.bill && POSTED.indexOf(j.state) > -1; }))
@@ -1148,8 +1158,7 @@
         return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
           '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
           '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
-          (work ? '<span class="team-act"><button class="kmenu-btn" type="button" data-a="pastmenu" aria-label="More actions for ' + esc(e.ref) + '" aria-expanded="false">' + DOTS + '</button>' +
-            '<div class="kmenu" role="menu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button></div></span>' : '') +
+          payMenu(e.ref, [b && b.number ? bkItem(b.number) : '', work ? '<button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-a="pastremove">Remove</button>' : '']) +
           '</div>';
       }).join('') : '<p class="emptyline">No earlier jobs.</p>';
     }
@@ -1159,7 +1168,7 @@
           '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
           '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
           (b.amount != null ? '<span class="cpay-job-sub">' + esc(billMoney(b.amount, b.currency)) + '</span>' : '') + '</div>' +
-          (work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
+          (b.number ? payMenu(b.number, [bkItem(b.number)]) : work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
       }).join('');
     }
     if (d.read_at) html += '<p class="muted cpay-read">Read from Bukku ' + esc(day(d.read_at) + ', ' + ADspaceClock.clock(d.read_at)) + '</p>';
@@ -1175,8 +1184,9 @@
     });
     var add = host.querySelector('[data-a="addpast"]');
     if (add) add.addEventListener('click', function () { addPast(add); });
-    host.querySelectorAll('[data-a="pastmenu"]').forEach(function (button) {
+    host.querySelectorAll('[data-a="rowmenu"]').forEach(function (button) {
       var m = button.parentNode.querySelector('.kmenu');
+      var shut = function () { m.hidden = true; button.setAttribute('aria-expanded', 'false'); };
       button.addEventListener('click', function (e) {
         e.stopPropagation();
         var open = m.hidden;
@@ -1185,13 +1195,29 @@
         button.setAttribute('aria-expanded', String(open));
         if (open) window.ADspaceMenu.place(button, m);
       });
-      m.querySelector('[data-a="pastremove"]').addEventListener('click', function () {
-        m.hidden = true;
-        button.setAttribute('aria-expanded', 'false');
+      var rm = m.querySelector('[data-a="pastremove"]');
+      if (rm) rm.addEventListener('click', function () {
+        shut();
         var row = button.closest('[data-past]');
         removePast(row.getAttribute('data-past'), row.getAttribute('data-ref'));
       });
+      var bk = m.querySelector('[data-a="bukku"]');
+      if (bk) bk.addEventListener('click', function () { shut(); openBill(bk.getAttribute('data-num')); });
     });
+  }
+  /* The tab opens at the press (a later window is blocked), then goes to
+     the bill's page once bukku-sync names it. */
+  function openBill(num) {
+    var c = payFor, m = $('cpayJobMsg');
+    if (!c) return;
+    var tab = window.open('', '_blank');
+    db.functions.invoke('bukku-sync', { body: { action: 'billlink', creator: c.id, number: num } }).then(function (r) {
+      return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+    }).then(function (x) {
+      if (x.url) { if (tab) tab.location.href = x.url; else window.open(x.url, '_blank', 'noopener'); return; }
+      if (tab) tab.close();
+      if (m) { m.textContent = 'Bill ' + num + ' could not be opened in Bukku. Press Read from Bukku, then try again.'; m.className = 'msg err'; }
+    }).catch(function () { if (tab) tab.close(); });
   }
   function pastSaid(d) {
     return d.error === 'taken' ? JOB_SAID['job-taken'] : d.error === 'bad-ref' ? JOB_SAID['job-bad'] : JOB_SAID[d.error] || d.error;
@@ -1320,7 +1346,7 @@
           return p.then(function () {
             if (payFor !== c) return;
             return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
-              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+              return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code, message: r.data && r.data.message } : (r.data || { error: 'failed' }); });
             }).then(function (x) {
               if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
               if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
