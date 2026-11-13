@@ -4897,6 +4897,10 @@ body.hb-gate #tabBar { display: none; }
    (`--chrome`, 72%): words under words never read through it. */
 .console-head { background-color: var(--chrome); background-image: var(--glass-bar-sheen); border-bottom-color: transparent;
   box-shadow: inset 0 -1px 0 var(--glass-edge); }
+/* Under a finger the head stays solid (CLAUDE.md: Safari colours the status
+   bar from an opaque bar): the glass above, a later rule, let the figure
+   tiles read through it with no blur (the user, 2026-11-13). */
+@media (pointer: coarse) { .console-head { background-color: var(--chrome-solid); background-image: none; } }
 /* The rail at a desk: a pane of glass floating on the page. */
 @media (min-width: 861px) {
   :root:not(.has-tabbar) .sidebar {
