@@ -3,6 +3,7 @@
 
   var LIVE_COLS = {
     activity_log: 'id actor action subject detail created_at ref',
+    agent_schedules: 'id team_member_id kind run_at title payload condition condition_ref state result created_at ran_at cancelled_at',
     ai_drafts: 'id report_id team_member_id outcome created_at client_id kind period_start period_end purpose result basis version_no brand_id batch_id input_tokens output_tokens model script_id web_searches agent_steps',
     brand_analyses: 'id client_id version analysis sources basis hypothesis model press_id created_by created_at confirmed_by confirmed_at',
     client_brands: 'id client_id name active logo created_at updated_at',
@@ -129,6 +130,9 @@
     ai_picture_claim: 'p_script p_count',
     ai_picture_left: '',
     ai_agent_claim: '',
+    agent_schedule_add: 'p_kind p_at p_title p_payload p_condition p_ref',
+    agent_schedule_cancel: 'p_id',
+    agent_schedule_list: '',
     ai_agent_left: '',
     ai_next_claim: 'p_report',
     ai_next_left: 'p_report',
@@ -6900,6 +6904,103 @@ function opsCodeRange(cid, period, ty, src, seq) {
     };
   }
 
+  var AS_KINDS = ['reminder', 'mark_sent', 'add_task', 'publish_set', 'unpublish_set', 'whatsapp'];
+  function agentSchedCheck(kind, p) {
+    if (kind === 'reminder') return String(p.message || '').trim().length >= 2 ? null : 'bad-payload';
+    if (kind === 'mark_sent') {
+      if (!opsAllowed('reports', 'work')) return 'denied';
+      return (DB.sm_reports || []).some(function (r) { return r.id === p.report_id; }) ? null : 'not-found';
+    }
+    if (kind === 'add_task') return !opsAllowed('ops', 'work') ? 'denied' : String(p.title || '').trim() ? null : 'bad-payload';
+    if (kind === 'publish_set' || kind === 'unpublish_set') {
+      if (!opsAllowed('review.sets', 'work')) return 'denied';
+      return (DB.batches || []).some(function (b) { return b.id === p.set_id; }) ? null : 'not-found';
+    }
+    if (kind === 'whatsapp') {
+      if (['approval', 'feedback', 'representative'].indexOf(p.purpose) < 0) return 'bad-payload';
+      if (!(DB.wa_templates || []).some(function (t) { return t.purpose === p.purpose && t.active && t.name; })) return 'wa-off';
+      return null;
+    }
+    return 'bad-kind';
+  }
+  function agentSched(name, a) {
+    var me = opsMe();
+    if (!me) return { error: 'denied' };
+    var rows = DB.agent_schedules = DB.agent_schedules || [];
+    if (name === 'agent_schedule_list') {
+      var since = Date.now() - 14 * 864e5;
+      return { rows: JSON.parse(JSON.stringify(rows.filter(function (s) {
+        return s.team_member_id === me.id && (s.state === 'waiting' || Date.parse(s.ran_at || s.cancelled_at || s.created_at) > since);
+      }).sort(function (x, y) {
+        var wx = x.state === 'waiting', wy = y.state === 'waiting';
+        if (wx !== wy) return wx ? -1 : 1;
+        return wx ? Date.parse(x.run_at) - Date.parse(y.run_at) : Date.parse(y.ran_at || y.cancelled_at || y.created_at) - Date.parse(x.ran_at || x.cancelled_at || x.created_at);
+      }).map(function (s) { return { id: s.id, kind: s.kind, title: s.title, run_at: s.run_at, state: s.state, result: s.result || null,
+        condition: s.condition || null, ran_at: s.ran_at || null, cancelled_at: s.cancelled_at || null }; }))) };
+    }
+    if (name === 'agent_schedule_cancel') {
+      var s0 = rows.filter(function (s) { return s.id === a.p_id && s.team_member_id === me.id; })[0];
+      if (!s0) return { error: 'not-found' };
+      if (s0.state !== 'waiting') return { error: 'not-waiting', state: s0.state };
+      s0.state = 'cancelled'; s0.cancelled_at = nowIso();
+      DB.activity_log.push({ id: nid('a'), actor: me.name, action: 'assistant.schedule', subject: s0.title, detail: 'Scheduled run cancelled', created_at: nowIso() });
+      return { ok: true };
+    }
+    if (AS_KINDS.indexOf(a.p_kind) < 0) return { error: 'bad-kind' };
+    var at = Date.parse(a.p_at || '');
+    if (!(at >= Date.now() + 60e3 && at <= Date.now() + 92 * 864e5)) return { error: 'bad-time' };
+    var title = String(a.p_title || '').trim();
+    if (title.length < 2 || title.length > 200) return { error: 'bad-title' };
+    if (!a.p_condition !== !a.p_ref || (a.p_condition && ['set_undecided', 'report_not_sent', 'task_open'].indexOf(a.p_condition) < 0)) return { error: 'bad-condition' };
+    var err = agentSchedCheck(a.p_kind, a.p_payload || {});
+    if (err) return { error: err };
+    if (rows.filter(function (s) { return s.team_member_id === me.id && s.state === 'waiting'; }).length >= 50) return { error: 'too-many' };
+    var row = { id: nid('as'), team_member_id: me.id, kind: a.p_kind, run_at: new Date(at).toISOString(), title: title, payload: JSON.parse(JSON.stringify(a.p_payload || {})),
+      condition: a.p_condition || null, condition_ref: a.p_ref || null, state: 'waiting', result: null, created_at: nowIso(), ran_at: null, cancelled_at: null };
+    rows.push(row);
+    DB.activity_log.push({ id: nid('a'), actor: me.name, action: 'assistant.schedule', subject: title,
+      detail: 'Scheduled for ' + row.run_at + ' · confirmed through the Assistant', created_at: nowIso() });
+    return { ok: true, id: row.id };
+  }
+
+  window.__agentRun = function () {
+    var due = (DB.agent_schedules || []).filter(function (s) { return s.state === 'waiting' && Date.parse(s.run_at) <= Date.now(); });
+    var holds = function (s) {
+      if (!s.condition) return true;
+      if (s.condition === 'report_not_sent') return (DB.sm_reports || []).some(function (r) { return r.id === s.condition_ref && !r.sent_on; });
+      if (s.condition === 'task_open') return (DB.ops_tasks || []).some(function (t) { return t.id === s.condition_ref && !t.completed_at && !t.cancelled_at; });
+      return (DB.posts || []).some(function (p) {
+        return p.batch_id === s.condition_ref && !(DB.reviews || []).some(function (r) { return r.post_id === p.id && !r.undone_at && (r.round || 1) === (p.round || 1); });
+      });
+    };
+    var one = function (s) {
+      var m = (DB.team_members || []).filter(function (x) { return x.id === s.team_member_id; })[0];
+      var fail = function (why) {
+        s.state = 'failed'; s.ran_at = nowIso(); s.result = why;
+        if (m) DB.ops_notifications.push({ id: nid('n'), team_member_id: m.id, kind: 'assistant.failed', title: 'Not done: ' + s.title, body: why,
+          created_at: nowIso(), dedupe_key: 'agent.failed.' + s.id });
+      };
+      if (!holds(s)) { s.state = 'skipped'; s.ran_at = nowIso(); s.result = 'Skipped: the condition no longer holds.'; return Promise.resolve(); }
+      var err = agentSchedCheck(s.kind, s.payload);
+      if (err) { fail(err); return Promise.resolve(); }
+      var done = function (said) { s.state = 'done'; s.ran_at = nowIso(); s.result = said; };
+      if (s.kind === 'reminder') {
+        DB.ops_notifications.push({ id: nid('n'), team_member_id: m.id, kind: 'assistant.reminder', title: s.title, body: s.payload.message,
+          task_id: s.payload.task_id || null, report_id: s.payload.report_id || null, client_id: s.payload.client_id || null,
+          created_at: nowIso(), dedupe_key: 'agent.' + s.id });
+        done('Reminder sent to you.'); return Promise.resolve();
+      }
+      if (s.kind === 'publish_set' || s.kind === 'unpublish_set') {
+        var b = (DB.batches || []).filter(function (x) { return x.id === s.payload.set_id; })[0];
+        b.published = s.kind === 'publish_set'; done(b.published ? 'Published.' : 'Unpublished.'); return Promise.resolve();
+      }
+      var call = s.kind === 'mark_sent' ? window.__rpc('sm_report_sent', { p_id: s.payload.report_id, p_on: appToday() })
+        : s.kind === 'add_task' ? window.__rpc('ops_create_task', { p_payload: s.payload, p_idem: 'agent-schedule-' + s.id })
+        : Promise.resolve({ data: { ok: true } });
+      return call.then(function (r) { var d = r.data || {}; if (r.error || d.error) fail((d && d.error) || 'fault'); else done('Done.'); });
+    };
+    return due.reduce(function (p, s) { return p.then(function () { return one(s); }); }, Promise.resolve()).then(function () { persist(); return due.length; });
+  };
   function aiDay() { var n = Date.now() + 8 * 36e5; return n - (n % 864e5) - 8 * 36e5; }
   function aiLimit(scope, dflt) {
     var row = (DB.ai_draft_limits || []).filter(function (l) { return l.scope === scope; })[0];
@@ -9283,6 +9384,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var baOut = baRpc(name, args || {});
       persist();
       return Promise.resolve({ data: baOut, error: null });
+    }
+
+    if (/^agent_schedule_(add|cancel|list)$/.test(name)) {
+      var asOut = agentSched(name, args || {});
+      persist();
+      return Promise.resolve({ data: asOut, error: null });
     }
     if (/^sm_report_|^sm_client_reports$|^sm_reports_owed$|^client_brands?_(list|save|logo)$|^meta_links_(list|save)$|^ai_draft_(left|usage|set_limit|tokens)$|^ai_caption_(left|claim)$|^ai_script_(left|claim)$|^ai_picture_(left|claim)$|^ai_agent_(left|claim|turn|tokens)$|^ai_next_(left|claim)$|^video_script_(picture|frame)$|^ai_check_(last|left)$|^portal_reports?$/.test(name)) {
       var sr = window.__refuseRpc && window.__refuseRpc[name];

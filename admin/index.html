@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261113">
-<link rel="stylesheet" href="/css/console.css?v=20261113f">
+<link rel="stylesheet" href="/css/console.css?v=20261113g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -156,7 +156,7 @@
 <script src="/js/maintenance.js?v=20261112"></script>
 <script src="/js/announce.js?v=20261112h"></script>
 <script src="/js/notice.js?v=20261112h"></script>
-<script src="/js/whatsapp.js?v=20261112h"></script>
+<script src="/js/whatsapp.js?v=20261113f"></script>
 <script src="/js/mailtpl.js?v=20261112h"></script>
 <script src="/js/docmail.js?v=20261112h"></script>
 <script src="/js/push.js?v=20261001a"></script>
@@ -607,10 +607,39 @@
         <div class="ag-head">
           <svg class="spark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>
           <h3 id="agentTitle">Assistant</h3>
+          <button class="btn btn-sm" id="agentSched" type="button" aria-expanded="false" aria-controls="agentSchedBox" hidden>Scheduled <span class="tab-n" id="agentSchedN" hidden></span></button>
           <button class="btn btn-quiet btn-sm" id="agentClear" type="button">Clear</button>
           <button class="iconbtn" id="agentClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
         </div>
-        <div class="ag-log" id="agentLog" role="log" aria-live="polite" aria-label="Conversation"><p class="ag-empty">Nothing is changed until you confirm it.</p></div>
+        <section class="ag-sched" id="agentSchedBox" aria-label="Scheduled" hidden><ul class="ag-slist"></ul></section>
+        <div class="ag-log" id="agentLog" role="log" aria-live="polite" aria-label="Conversation">
+          <div class="ag-empty">
+            <div class="ag-can">
+              <h4>Find</h4>
+              <ul>
+                <li>Clients, their months and what is late</li>
+                <li>Tasks, and what waits for you</li>
+                <li>Reports, colleagues, campaigns, sets</li>
+              </ul>
+            </div>
+            <div class="ag-can">
+              <h4>Do, after you confirm</h4>
+              <ul>
+                <li>Create, reassign or re-date a task; add a remark</li>
+                <li>Log a call or visit</li>
+                <li>Book a meeting with Google Meet</li>
+                <li>Create a creator campaign</li>
+                <li>Publish or unpublish a content set</li>
+                <li>Send a WhatsApp template; mark a report as sent</li>
+                <li>Schedule a reminder or any of these for later</li>
+              </ul>
+            </div>
+            <div class="ag-can" id="agentSchedHome" hidden>
+              <h4>Scheduled</h4>
+              <ul class="ag-slist"></ul>
+            </div>
+          </div>
+        </div>
         <form class="ag-foot" id="agentForm" novalidate>
           <div class="ag-chips" id="agentChips">
             <button class="ag-chip" type="button" data-ask="What is waiting for me?">Waiting for me</button>
@@ -6402,7 +6431,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261113a"></script>
+<script src="/js/admin.js?v=20261113f"></script>
 <script src="/js/documents.js?v=20261112zt"></script>
 <script src="/js/letters.js?v=20261112zt"></script>
 <script src="/js/smreport.js?v=20261113f"></script>
@@ -6430,7 +6459,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/perf.js?v=20261112zt"></script>
 <script src="/js/health.js?v=20261112h"></script>
 <script src="/js/search.js?v=20261112d"></script>
-<script src="/js/agent.js?v=20261113c"></script>
+<script src="/js/agent.js?v=20261113f"></script>
 <script src="/js/overview.js?v=20261113a"></script>
 <script src="/js/analytics.js?v=20261112zt"></script>
 <script src="/js/settings.js?v=20261112h"></script>

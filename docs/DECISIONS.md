@@ -10205,3 +10205,24 @@ the snapshot sends without their evidence, and the page's amounts join
 report's draft. Not done: a version restored keeps the draft's
 suggestions (its function deletes rows, so restating it is a SQL Editor
 run of its own).
+
+### 2026-11-13 · The Assistant books, publishes, sends and schedules, each behind its card
+The user approved the mockups "Assistant · actions with Confirm" and
+"Assistant · phone" ("approve build both"), widening what the Assistant may
+do: book a client month's meeting (Google Meet by default), create a creator
+campaign as a draft, publish or unpublish a content set, send a WhatsApp
+template to a client's contact, and keep any of these, or a reminder, for
+later. Each stays a `propose_*` card that writes nothing until pressed, and
+each runs on the page through the function its screen already uses
+(`ops_engagement_set_meeting` and `meet-create`; the campaigns insert of New
+campaign; the set head's `batches` update; `wa_compose_prepare`,
+`wa_sent_recently` and `wa-send` compose), so a refusal reads as the screen's
+and Undo is offered only where the screen offers one. Considered and set
+aside: running the schedules through an edge function with the service
+role, which would act past the colleague's own access; they run in the
+database as the colleague (`request.jwt.claims`, as the morning repeats do),
+their access asked again at the run, so access taken away in between stops
+the run and tells them. A Google Meet is never scheduled because the shared
+calendar must answer the booking at once (`slot-taken`); a scheduled
+WhatsApp goes through `wa_enqueue` and asks Sent recently again at the run.
+A failed run tells its colleague and joins the admins' morning notice.

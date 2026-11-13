@@ -5304,14 +5304,36 @@ svg.sec {
 .sheet-side > .sheet-card.agentcard {
   width: min(420px, 100%); max-height: none; height: 100%; padding: 0; border-radius: 0;
   background: var(--card); box-shadow: none; border-left: 1px solid var(--line);
-  display: grid; grid-template-rows: auto minmax(0, 1fr) auto;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto;
   animation: mk-side-in var(--t-slow) var(--ease);
 }
 .ag-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line-soft); }
 .ag-head h3 { margin: 0; flex: 1 1 auto; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .ag-head .spark, .ag-confirm .spark { width: 15px; height: 15px; color: var(--action-ink); flex: 0 0 auto; }
 .ag-log { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
-.ag-empty { margin: auto 0; font-size: 13px; color: var(--ink-mute); text-align: center; padding: 0 12px; }
+.ag-head { grid-row: 1; }
+.ag-log { grid-row: 3; }
+.ag-foot { grid-row: 4; }
+/* What the Assistant can do, in two groups, then what the colleague
+   scheduled (2026-11-13, the phone mockup). */
+.ag-empty { display: grid; gap: 16px; align-content: start; font-size: 13.5px; }
+.ag-empty[hidden] { display: none; }
+.ag-can h4 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ag-can ul { margin: 0; padding: 0; list-style: none; }
+.ag-can li { padding: 5px 0; border-top: 1px solid var(--line-soft); line-height: 1.5; }
+.ag-can li:first-child { border-top: 0; }
+.ag-head > .btn { flex: 0 0 auto; min-width: 0; }
+.ag-head #agentSched .tab-n { margin-left: 2px; }
+.ag-sched { grid-row: 2; max-height: 40vh; overflow-y: auto; padding: 4px 16px 8px; border-bottom: 1px solid var(--line-soft); background: var(--sunk); }
+.ag-slist { margin: 0; padding: 0; list-style: none; }
+.ag-srow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.ag-srow:first-child { border-top: 0; }
+.ag-can .ag-srow { padding: 5px 0; }
+.ag-stitle { overflow-wrap: anywhere; color: var(--ink); }
+.ag-smeta, .ag-sres { grid-column: 1 / -1; font-size: 12px; color: var(--ink-mute); }
+.ag-sres.msg { color: var(--err); }
+.ag-snone { padding: 8px 0; font-size: 13px; color: var(--ink-mute); }
+.ag-preview { margin: 0; padding: 10px 12px; background: var(--field); border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
 .ag-me {
   align-self: flex-end; max-width: 85%; background: var(--field); color: var(--ink);
   border-radius: var(--radius) var(--radius) 4px var(--radius); padding: 8px 12px; overflow-wrap: anywhere;
@@ -5328,7 +5350,7 @@ svg.sec {
 }
 .ag-confirm h4 { margin: 0; font-size: 13px; font-weight: 600; }
 .ag-confirm.is-done { background: var(--sunk); border-color: transparent; }
-.ag-facts { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 13px; }
+.ag-facts { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 13px; }
 .ag-facts dt { color: var(--ink-mute); }
 .ag-facts dd { margin: 0; overflow-wrap: anywhere; }
 .ag-acts { display: flex; flex-direction: row-reverse; justify-content: flex-start; gap: 8px; }

@@ -1535,6 +1535,13 @@
     compose: function (o) { wireComposer(); compose(o); },
     may: maySend,
     on: on,
+    /* What the Assistant's WhatsApp card reads (2026-11-13): Meta's
+       approved templates, a number as written,
+       a category's word, a button that can never be filled. */
+    meta: metaTemplates,
+    phone: phone,
+    category: function (c) { return CATEGORY[c] || ''; },
+    badButton: badButton,
     /* How many purposes have a template on, of how many (the Settings
        row, 2026-10-14, ux-audit SET-7). */
     templates: function () {
