@@ -751,10 +751,14 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
     line.product_id = Number(item.product_id);
     if (item.product_unit_id) line.product_unit_id = Number(item.product_unit_id);
   }
+  if (item && item.classification_code) line.classification_code = String(item.classification_code);
   const out: Record<string, unknown> = {
     payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
     currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
     tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200), status: 'ready',
+    /* Bukku asks every bill its e-Invoice action (2026-11-13: "The myinvois
+       action field is required"): the earlier creator bill's, else NORMAL. */
+    myinvois_action: String((item && item.myinvois_action) || 'NORMAL'),
     form_items: [line]
   };
   if (p.due) out.due_date = String(p.due);
@@ -764,7 +768,8 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
    newest bills first, then any creator's; five read at most. */
 export function itemOf(bill: any): any {
   for (const l of ((bill && bill.form_items) || []) as any[])
-    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null };
+    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null,
+      classification_code: l.classification_code || null, myinvois_action: (bill && bill.myinvois_action) || null };
   return null;
 }
 async function lastItem(contact: number): Promise<any> {
