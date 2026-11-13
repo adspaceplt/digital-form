@@ -18,7 +18,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   names the section at 22/600 in Slate (`--font-head`, as every heading; the user, 2026-11-13: the system face read as another family) over one line (`.console-sub`, the same Slate at 13.6px, the title over φ; the user, 2026-11-13): the rail's
   group, then what the section holds as figures and words
   (`ADspaceAdmin.counts`: 14 open · 2 late · 6 due this week; a late part
-  in red words), drawn by the section itself; the head is 90px on every section, its words centred in it and its sides at the body's 32px (`--head-h`, which every sticky offset reads). A card on the sheet is white
+  in red words), drawn by the section itself; the head is 76px on every section, its words centred in it and its sides at the body's 32px (`--head-h`, which every sticky offset reads). A card on the sheet is white
   with a `--card-edge` hairline drawn as an outline just inside it (never
   an inset shadow, which the rows' white ground covers), never a shadow; a card inside a
   card is one surface; cards take the large corner (`--radius-lg`). The
