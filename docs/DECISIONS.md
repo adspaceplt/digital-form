@@ -10320,3 +10320,10 @@ The user, told that Edit stayed on the quotation row because the ⋯ was full at
 - 2026-11-13 · Space and corners on a record (the user: "so many dummy spaces", then "all rounded corners are not consistent??"). The console head came down from 90px to 76 (its words still centred, 13px above and below), a record's Back lost its own 14px over the body's 20, and a record part's head and empty line lost 2px each. The rail's cards and a record's part cards had been left out of the squircle list, so they drew a round corner beside the head card's squircle; they joined it. `tests/corners.js` counted a box as drawn only by its ground, border or shadow and so never saw the outlined cards; it counts an outline now, and fails on the old CSS.
 
 - 2026-11-13 · A campaign's Creators read as five cards (the user: "consumes too many unused spacings … scrolling through one part requires to be very long"). The v3 desk rule outlined every `.kcard` with the large corner, which reached a register's rows and undid the register's own rows (no corner, a `--line-soft` line between). The register is now the card (`.bookreg` in the card list), its rows lines inside it again, 48px a row (7px over and under the 34px controls, from 11).
+
+### 2026-11-13 · The AI report rule says per
+The copy review of the builds since #1067 found the AI usage rule read
+"One draft and one check a report a day"; a label says per, never "a". It
+reads One draft and one check per report per day, on AI usage and in the
+history line `ai_draft_set_limit` files
+(`2026-11-13-ai-limit-per-report-words.sql`).

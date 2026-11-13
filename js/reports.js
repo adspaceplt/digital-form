@@ -5892,8 +5892,8 @@
               '" value="' + v + '" aria-label="' + esc(u[1] + ', a day') + '"><span class="aiu-unit">a day</span></span>' :
             '<span class="aiu-lim-v">' + esc(dayWord(v)) + '</span>') + '</div>';
         }).join('') +
-        '<div class="aiu-lim aiu-per"><span class="aiu-lim-n">One draft and one check a report a day</span>' + (editing ?
-          '<button class="switch" type="button" role="switch" data-k="per_report" aria-checked="' + (lim('per_report') > 0) + '" aria-label="One draft and one check a report a day"><span class="switch-knob"></span></button>' :
+        '<div class="aiu-lim aiu-per"><span class="aiu-lim-n">One draft and one check per report per day</span>' + (editing ?
+          '<button class="switch" type="button" role="switch" data-k="per_report" aria-checked="' + (lim('per_report') > 0) + '" aria-label="One draft and one check per report per day"><span class="switch-knob"></span></button>' :
           '<span class="aiu-lim-v">' + (lim('per_report') > 0 ? 'On' : 'Off') + '</span>') + '</div>' +
         '</div></section>';
     };
