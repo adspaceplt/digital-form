@@ -2535,7 +2535,7 @@
       '<span class="trow-meta">' +
       '<span class="task-owner">' + (canOwn
         ? '<button class="tinline" type="button" data-a="owner" aria-label="Assigned to, ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
-            avatar(who) + (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
+            avatar(who) + (who ? '<span class="tname">' + esc(who) + '</span>' : '<span class="mute">Assign</span>') + '</button>'
         : (who ? avatar(who) + esc(who) : '<span class="mute">—</span>')) + '</span>' +
       /* While a priority's deadline runs it is the row's date (the user,
          2026-10-11: two deadlines on one row read wrong); the due date
@@ -2869,11 +2869,26 @@
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + pickable().map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
-    btn.hidden = true;
+    /* One press opens the colleagues to choose from (the user, 2026-11-13:
+       "it requires a second click"): the finder hangs under the cell from a
+       select laid unseen over the name, which stays in place; where the
+       finder cannot open, the select stands in the name's place as before. */
+    Array.prototype.forEach.call(btn.parentNode.querySelectorAll('.tinline-pick'), function (x) { x.remove(); });
     btn.parentNode.appendChild(sel);
-    sel.focus();
-    var put = function () { if (sel.parentNode) sel.remove(); btn.hidden = false; };
-    sel.addEventListener('blur', function () { if (!sel.disabled) setTimeout(put, 120); });
+    var finder = window.ADspaceForm && window.ADspaceForm.find;
+    if (finder) {
+      sel.classList.add('is-under');
+      /* The pill keeps its fill while its choices are open. */
+      if (window.MutationObserver) new MutationObserver(function () {
+        btn.setAttribute('aria-expanded', sel.getAttribute('aria-expanded') === 'true' && sel.parentNode ? 'true' : 'false');
+      }).observe(sel, { attributes: true, attributeFilter: ['aria-expanded'] });
+    }
+    if (!finder || !finder(sel)) { sel.classList.remove('is-under'); btn.hidden = true; sel.focus(); }
+    var put = function () { if (sel.parentNode) sel.remove(); btn.hidden = false; btn.setAttribute('aria-expanded', 'false'); };
+    sel.addEventListener('blur', function () {
+      var box = document.getElementById('pickerBox');
+      if (!sel.disabled && !(box && !box.hidden)) setTimeout(put, 120);
+    });
     sel.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); put(); btn.focus(); } });
     sel.addEventListener('change', function () {
       var pick = sel.value;
@@ -8670,6 +8685,7 @@
     if (!x.task_id && /^abroad\./.test(x.kind || '')) return 'team';
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
+    if (!x.task_id && /^creator\./.test(x.kind || '')) return 'campaigns';
     if (!x.task_id && x.report_id) return 'reports';
     if (!x.task_id && x.script_id) return 'scripts';
     if (!x.task_id && x.supplier_id) return 'suppliers';
@@ -8717,6 +8733,18 @@
     /* A notice with a link opens it in a tab of its own: the outstation
        record after an on-site meeting (2026-10-09). */
     if (x.link && /^https:\/\//i.test(x.link)) {
+      /* A link to a console page (a creator's payment details to review, a
+         payment request) opens here, never a second console in a new tab
+         (2026-11-13). */
+      var lu = null;
+      try { lu = new URL(x.link); } catch (e) {}
+      var home = String((window.ADSPACE_ORG || {}).verifyUrl || '').split('/')[0];
+      if (lu && lu.pathname === '/admin/' && (lu.host === location.host || lu.host === home)) {
+        var ls = new URLSearchParams(lu.search).get('s');
+        history.replaceState(null, '', '/admin/' + lu.search);
+        if (ls && bridge.show) bridge.show(ls);
+        return;
+      }
       window.open(x.link, '_blank', 'noopener');
       return;
     }
