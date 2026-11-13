@@ -787,6 +787,12 @@
   var SYSTEM = { ids: {}, names: {} };
   /* A colleague is a system account by its row's own mark, else by its id
      or name in the console's one read. */
+  /* The super admin (2026-11-14): the active system account alone makes or
+     removes an admin; with none active, every admin does. */
+  function isSuperMe() {
+    if (!isAdminMe()) return false;
+    return SYSTEM.live ? Boolean(me && SYSTEM.ids[me.id]) : true;
+  }
   function isSystem(m) {
     if (!m) return false;
     if (typeof m === 'string') return Boolean(SYSTEM.ids[m] || SYSTEM.names[m]);
@@ -966,9 +972,9 @@
     /* System accounts (2026-10-08): kept for IT, never offered for work, so
        every picker asks `isSystem` from this one read. A read that fails
        leaves the set empty, never the console. */
-    var sys = db.from('team_members').select('id, name').eq('system', true).then(function (r) {
-      SYSTEM = { ids: {}, names: {} };
-      (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; });
+    var sys = db.from('team_members').select('id, name, active').eq('system', true).then(function (r) {
+      SYSTEM = { ids: {}, names: {}, live: 0 };
+      (r && !r.error && r.data || []).forEach(function (m) { SYSTEM.ids[m.id] = true; if (m.name) SYSTEM.names[m.name] = true; if (m.active !== false) SYSTEM.live++; });
     }, function () {});
     /* Asked beside me(), never after it (2026-10-26): neither needs its
        answer, and waiting for it cost the phone one more round trip. */
@@ -6133,6 +6139,7 @@
     ICON: ICON,
     glyph: sectionGlyph,
     isSystem: isSystem,
+    isSuper: isSuperMe,
     takesTasks: takesTasks,
     /* Very Important Clients (2026-10-15): the one read and the one tag. */
     vic: vicOf,

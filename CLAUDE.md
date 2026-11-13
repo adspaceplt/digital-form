@@ -1700,16 +1700,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   every colleague picker, the capacity bars, the review list, Health and the
   report reviewers leave it out (`ADspaceAdmin.isSystem`, one read beside
   `me()`; `sm_report_may_review`); Set access expiry for everyone skips it.
-  Every notice an admin or a colleague is sent reaches it as any other
-  (Notices, a form answered, a quotation request, an overseas request; the
-  user, 2026-10-24: "System account acts same as other admins";
-  `2026-10-24-admin-notices-system-account.sql`); task reminders do not.
+  It is the super admin (`2026-11-14-super-admin.sql`; the user,
+  2026-11-14: "the most highest power on the portal"): it takes no work
+  notice (trigger `ops_notifications_a_super_quiet` writes none to it, so no
+  bell, push or WhatsApp; a failed scheduled job's `jobs.failed` still
+  reaches it), and while it is active it alone makes or removes an admin
+  (below).
   The mark is set only with no sign-in (the connector or the SQL editor;
   a signed-in insert sending it, a `removed_at` or an `erased_at` is refused
   by trigger `team_members_insert_guard`, `2026-10-18-new-colleague-added-plain.sql`);
   trigger `team_members_system_guard` lets only the account itself change its
   standing, access date, group, admin mark or email (`system-account`).
-  Team shows it with a System tag and no ⋯ for anyone else.
+  Team shows it with a Super admin tag and no ⋯ for anyone else.
   - The team list is never derived from `auth.users`. The cutover sweep runs
     only while `team_members` is empty and skips client contacts.
   - A wrong row is stood down (`active = false`), never deleted.
@@ -1762,6 +1764,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   strip is drawn only where two tabs show.
 - The Admin group has no ⋯ and cannot be deleted. A group delete takes
   `.select('slug')` and names a refusal.
+- While an active system account exists, it alone (the super admin) makes
+  a colleague or a group admin, or changes an admin's group, admin mark or
+  standing, or makes or deletes an admin group (`team_super_ok()`,
+  `super-only`, `2026-11-14-super-admin.sql`; with none active an admin
+  does); the page offers an admin group, Admin in Start from, and Set
+  inactive or Delete on an admin only to it (`ADspaceAdmin.isSuper`).
 - Only an admin makes a colleague or a group admin, or changes an admin's
   group, access, access date, email or standing (`team_admin_guard`,
   `team_roles_admin_guard`, `admin-only`; 2026-10-17), and only an admin
