@@ -55,6 +55,7 @@ begin
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.ai_draft_set_limit(text, integer) from public, anon, authenticated;
+grant execute on function public.ai_draft_set_limit(text, integer) to authenticated;
 -- END OF AI LIMIT PER REPORT IN WORDS -----------------------------------
 
 select public.functions_tidy();
