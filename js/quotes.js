@@ -197,8 +197,11 @@
     var maySet = ctx.may('clients.quotes', 'work');
     /* Delete, a removed quotation's alone, is Full Access (2026-10-31). */
     var mayDelete = ctx.may('clients.quotes', 'manage');
-    var html = '<div class="viewhead qt-head"><span class="headmark"><h2>Quotations</h2></span>' +
-      (maySet ? '<button class="btn" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
+    /* The part is a card, its count beside its title and its add act quiet
+       until it is the record's next step (the user, 2026-11-13, A to D). */
+    var html = '<div class="viewhead qt-head"><span class="headmark"><h2>Quotations</h2>' +
+      (shown.length ? '<span class="tab-n part-n">' + shown.length + '</span>' : '') + '</span>' +
+      (maySet ? '<button class="btn btn-quiet btn-sm" id="qtBuild" type="button">' + PLUS + 'Build quote</button>' : '') + '</div>' +
       '<div class="msg" id="qtMsg"></div>';
     /* What needs the team first, then what stands, then what is settled,
        then what is over (Expired, Revised, Cancelled); each newest first
@@ -248,11 +251,12 @@
           /* A team's quotation is edited from its row too: in place until
              sent out, else its revision (2026-11-06; on the row since
              2026-11-08, so the ⋯ keeps to seven). */
-          if (maySet && !q.removed_at && q.source !== 'website' && editable(q)) {
-            acts.push('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
-          }
+          /* Edit goes into the ⋯ with Download (the user, 2026-11-13, C),
+             unless the ⋯ would pass seven: then it is the commonest act and
+             stays on the row (DESIGN.md §5 Menus 8). */
+          var edit = (maySet && !q.removed_at && q.source !== 'website' && editable(q)) || (maySet && awaiting(q) && editable(q));
           if (maySet && awaiting(q) && editable(q)) {
-            acts.push('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
+            /* Its Edit is below. */
           } else if (maySet && !q.removed_at && q.source === 'website' && !q._revised && !q.signed_at && st[1] !== 'is-off' && q.status !== 'not_proceeding') {
             acts.push('<button class="btn btn-sm" data-a="adjust" type="button">Adjust and send</button>');
           }
@@ -313,6 +317,11 @@
             if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
+          if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
+          if (edit) {
+            if (items.length < 7) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
+            else acts.unshift('<button class="btn btn-sm" data-a="edit" type="button">Edit</button>');
+          }
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
             /* A date holds together on a phone (2026-10-20, CLI-10). */
             '<span class="svc-name qt-name"><b class="qt-ref">' + esc(q.ref) + '</b>' +
@@ -321,8 +330,7 @@
             '<span class="svc-rate svc-amt qt-amt"><b>' + esc(h[0]) + '</b>' + (h[1] ? '<small>' + esc(h[1]) + '</small>' : '') + '</span>' +
             '<span class="qt-state"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' +
               (st[2] ? '<small>' + wholeDays(esc(st[2])) + '</small>' : '') + '</span>' +
-            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="pdf" type="button">Download</button>' +
-              '<button class="btn btn-sm" data-a="view" type="button">Preview PDF</button>') + acts.join('') + '</span>' +
+            '<span class="qt-dl">' + (q.removed_at ? '' : '<button class="btn btn-sm" data-a="view" type="button">Preview PDF</button>') + acts.join('') + '</span>' +
             '<span class="team-act">' + (items.length ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
               DOTS + '</button><div class="kmenu" data-menu hidden>' + items.join('') + '</div>' : '') + '</span></div>';
         }).join('') + '</div>';
@@ -1688,8 +1696,8 @@
     return out;
   }
 
-  /* The quotation just made is marked where it lands and its Download
-     takes focus, the mark leaving after the Undo bar's time (2026-10-22,
+  /* The quotation just made is marked where it lands and its Preview PDF
+     takes focus (its Download is in the ⋯ since 2026-11-13), the mark leaving after the Undo bar's time (2026-10-22,
      QT-2). */
   var NEW_MS = 8000;
   function markNew(ref) {
@@ -1698,7 +1706,7 @@
     })[0];
     if (!row) return;
     row.classList.add('is-new');
-    var dl = row.querySelector('.qt-dl [data-a="pdf"]');
+    var dl = row.querySelector('.qt-dl [data-a="view"]');
     if (dl) dl.focus({ preventScroll: false });
     setTimeout(function () { row.classList.remove('is-new'); }, NEW_MS);
   }

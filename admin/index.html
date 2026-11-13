@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261113b">
-<link rel="stylesheet" href="/css/console.css?v=20261113zs">
+<link rel="stylesheet" href="/css/portal.css?v=20261113zt">
+<link rel="stylesheet" href="/css/console.css?v=20261113zt">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -1012,10 +1012,13 @@
           </div>
 
           <div class="rec-pane" data-pane="contacts" hidden>
-        <!-- The people. A company does not answer the phone. -->
+        <!-- The people. A company does not answer the phone. A part is a
+             card on the record's grey ground, its add act quiet in its head
+             (the user, 2026-11-13, A to D). -->
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Contacts</h2></span>
-          <button class="btn btn-primary" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
               <div class="sheet" id="crmContactBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmContactTitle">
@@ -1076,13 +1079,16 @@
         </div>
       </div>
         <div id="crmContacts"></div>
+        </section>
         <!-- Emails written to this client from Messages' New email
              (2026-11-04): who, when, whether it arrived, opening it whole. -->
+        <section class="rec-part">
         <div class="viewhead" id="crmEmailsHead" hidden>
           <span class="headmark"><h2>Emails</h2></span>
-          <button class="btn" id="crmNewEmail" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
+          <button class="btn btn-quiet btn-sm" id="crmNewEmail" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New email</button>
         </div>
         <div id="crmEmails" hidden></div>
+        </section>
           </div>
 
           <div class="rec-pane" data-pane="billing" hidden>
@@ -1095,7 +1101,7 @@
           <div class="viewhead pane-form-head">
             <span class="headmark"><h2>Billing details</h2></span>
             <span class="muted" id="crmBillSummary"></span>
-            <button class="btn" id="crmBillEdit" data-need="clients.billing:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
+            <button class="btn btn-sm" id="crmBillEdit" data-need="clients.billing:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
           </div>
           <!-- The client's details form (2026-10-14): a link the client fills
                in, the answers waiting here (js/crm.js, js/details.js). It
@@ -1202,7 +1208,7 @@
           <div class="viewhead pane-form-head">
             <span class="headmark"><h2>Brand profile</h2></span>
             <span class="muted" id="crmBrandSummary"></span>
-            <button class="btn" id="crmBrandEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
+            <button class="btn btn-sm" id="crmBrandEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
           </div>
           <div class="readgroups" id="crmBrandRead"></div>
           <div class="msg" id="crmBrandNote"></div>
@@ -1406,22 +1412,24 @@
           </div>
         </div>
       </div>
-        <div id="crmQuotes" class="qt-box" hidden></div>
+        <div id="crmQuotes" class="qt-box rec-part" hidden></div>
         <!-- The pane is two sections alike (the user, 2026-10-14): Quotations
              with Build quote above, then the client's service lines with Add
              service, each heading over its own list. -->
-        <div class="viewhead qt-head svc-linehead" data-need="clients.services:view">
+        <section class="rec-part" data-need="clients.services:view">
+        <div class="viewhead qt-head svc-linehead">
           <span class="headmark"><h2>Service lines</h2></span>
-          <button class="btn" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
         </div>
-        <div class="msg" id="crmServiceMsg" data-need="clients.services:view"></div>
-        <div id="crmServices" data-need="clients.services:view"></div>
+        <div class="msg" id="crmServiceMsg"></div>
+        <div id="crmServices"></div>
+        </section>
         <!-- What the client asked for from the portal. The team moves each
              one along and may set a fee and a reply the client reads. -->
-        <div id="crmRequests" hidden>
+        <div id="crmRequests" class="rec-part" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Requests</h2></span>
-          <button class="btn" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add request</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddRequest" data-need="clients.requests:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add request</button>
         </div>
               <!-- A request the client made on a call or in a chat, recorded
                    by a colleague (2026-10-31). -->
@@ -1490,12 +1498,14 @@
 
           <div class="rec-pane" data-pane="documents" hidden>
         <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+          <button class="btn btn-quiet btn-sm" id="crmIssueDoc" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
+        </section>
           </div>
 
         <!-- What goes on the letter, chosen before it is issued. To quote
@@ -1753,9 +1763,10 @@
 
           <div class="rec-pane" data-pane="calls" hidden>
         <!-- Every call, visit and message, newest first. -->
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log call</button>
+          <button class="btn btn-quiet btn-sm" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Log call</button>
         </div>
               <div class="sheet" id="crmTouchBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmTouchTitle">
@@ -1824,16 +1835,19 @@
         </div>
       </div>
         <div id="crmTouches"></div>
+        </section>
           </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
         <!-- The portal's own record of what was done to this client. It keys
              on the client's name, which is the only link activity_log carries;
              a rename therefore leaves the older entries behind. -->
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Record of changes</h2></span>
         </div>
         <div id="crmLogList"></div>
+        </section>
           </div>
 
 
@@ -2413,8 +2427,8 @@
              the sections inside it are the moments. -->
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn" id="bulkToggle" data-need="campaigns.campaigns:work" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
-          <button class="btn" id="showAddOption" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
+          <button class="btn btn-quiet btn-sm" id="bulkToggle" data-need="campaigns.campaigns:work" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+          <button class="btn btn-quiet btn-sm" id="showAddOption" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
         </div>
 
         <div class="panel" id="bulkBox" hidden>
@@ -2498,14 +2512,16 @@
           </div>
 
           <div class="rec-pane" data-pane="schedule" hidden>
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Schedule</h2></span>
-          <button class="btn" id="schedBulk" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+          <button class="btn btn-quiet btn-sm" id="schedBulk" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
         </div>
         <!-- Every booked creator's shoot and publish date in one table, which
              is the question a producer asks before any other. The dates are
              the ones on each booking; nothing here is a second store. -->
         <div id="schedList"></div>
+        </section>
           </div>
 
           <div class="rec-pane" data-pane="client" hidden>
@@ -2564,6 +2580,7 @@
           </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
+        <section class="rec-part">
         <div class="viewhead">
           <span class="headmark"><h2>Activity</h2></span>
         </div>
@@ -2571,6 +2588,7 @@
              campaign id, only the subject it was written with, which is the
              campaign name at the time; a rename leaves older entries behind. -->
         <div id="campLogList"></div>
+        </section>
           </div>
 
 
@@ -6441,10 +6459,10 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/bukku.js?v=20261112h"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
-<script src="/js/quotes.js?v=20261113q"></script>
+<script src="/js/quotes.js?v=20261113zt"></script>
 <script src="/js/quotepdf.js?v=20261112zt"></script>
 <script src="/js/checklists.js?v=20261112zt"></script>
-<script src="/js/crm.js?v=20261113a"></script>
+<script src="/js/crm.js?v=20261113zt"></script>
 <script src="/js/sales.js?v=20261112zr"></script>
 <script src="/js/team.js?v=20261112h"></script>
 <script src="/js/namecard.js?v=20261112g"></script>
@@ -6454,7 +6472,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scripts.js?v=20261112zt"></script>
 <script src="/js/scriptpdf.js?v=20261112zt"></script>
 <script src="/js/ratecardpdf.js?v=20261112zt"></script>
-<script src="/js/campaigns.js?v=20261112i"></script>
+<script src="/js/campaigns.js?v=20261113zt"></script>
 <script src="/js/ops.js?v=20261113f"></script>
 <script src="/js/perf.js?v=20261112zt"></script>
 <script src="/js/health.js?v=20261112h"></script>

@@ -3007,7 +3007,8 @@ main:not(:has([data-shown]:not([hidden]))):not(:has(#ncHost:not(:empty))) > .pag
 .tally-cell.is-total b { color: var(--ink); }
 /* Money and totals in a row at the scale's 600, never the browser's bold
    700 (the client pages audit, PO-2, 2026-10-08). */
-.svc-amt b, .is-total b, .cp-panes b { font-weight: 600; }
+/* A figure in a row reads at 500; 600 is for headings (DESIGN.md §1). */
+.svc-amt b, .is-total b, .cp-panes b { font-weight: 500; }
 
 .profrow .input { flex: 1 1 auto; min-width: 0; }
 .prof-read { flex: 0 0 auto; font-size: 12px; min-width: 150px; }

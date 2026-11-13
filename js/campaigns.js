@@ -2286,7 +2286,8 @@
        holding some never loses its Publish. */
     var none = state.optionsFor === c.id && !(state.options || []).length;
     if (none && c.state === 'draft') move = null;
-    if ($('showAddOption')) $('showAddOption').className = 'btn' + (none ? ' btn-primary' : '');
+    /* Quiet in its head until it is the record's next step (2026-11-13). */
+    if ($('showAddOption')) $('showAddOption').className = 'btn' + (none ? ' btn-primary' : ' btn-quiet btn-sm');
     /* On a phone a move that is not the blue Publish (Unpublish, Reopen
        selection, Resume) is the head ⋯'s lifecycle item, not a row of its
        own above the tabs; at a desk it stays beside the link and its state
