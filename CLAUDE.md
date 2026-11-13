@@ -4443,9 +4443,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     tasks that reached client review plus `late_open`, the open work late
     by the late rule (`2026-10-19-on-time-counts-late-open-work.sql`),
     reading a dash where nothing was due; the on-time and posted rings are
-    gone, posting read in the trend), then Work by stage (`#ovwStages`,
-    `ops_report.running` in four bands), then Needs attention
-    (`#ovwAttention`) beside On time by month (`.ovw-pair`): one list of every source (late
+    gone, posting read in the trend), then Work by person beside On time
+    by month and Clients this month beside Needs attention
+    (`#ovwAttention`, `.ovw-pair`; Work by stage left with phase 2,
+    2026-11-13): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned

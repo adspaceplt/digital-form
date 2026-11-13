@@ -1493,7 +1493,7 @@
        A row opens the colleague's own Work. */
     function people(host) {
       if (!canTeamWork()) return;
-      var body = card(host, 'ovwPeople', 'People', ['My Work', '/admin/?s=work', 'work']);
+      var body = card(host, 'ovwPeople', 'Work by person', ['My Work', '/admin/?s=work', 'work']);
       var run = function () {
         UI.skeleton(body, 3);
         R.report().then(function (d) {
@@ -1567,7 +1567,7 @@
                 var meet = m.e.meeting_na ? 'Not needed' : m.e.meeting_at ? (Date.parse(m.e.meeting_at) < now ? 'Held ' : '') + CK.date(m.e.meeting_at, { year: false }) : 'Not set';
                 /* On a narrow pane the report and the meeting read as a line
                    under the name, never dropped (the 4-step pass, 2026-11-13). */
-                var sub = (r ? 'Report ' + r[0].toLowerCase() : 'No report') + ' · ' + (m.e.meeting_na ? 'No meeting' : 'Meeting ' + meet.charAt(0).toLowerCase() + meet.slice(1));
+                var sub = (r ? 'Report ' + (r[0] === 'Draft' ? 'in draft' : r[0].toLowerCase()) + ' · ' : '') + 'Meeting ' + meet.charAt(0).toLowerCase() + meet.slice(1);
                 return '<button class="ovw-tr is-cmonth" type="button"' + (i >= SHOWN ? ' hidden' : '') + ' data-go="/admin/?s=work&view=months&wc=' + esc(encodeURIComponent(m.e.client_id)) + '">' +
                   '<span class="ovw-who">' + (A && A.clientMark ? A.clientMark(m.e.clients, m.e.client_id) : '') + '<span class="ovw-who-t"><b>' + esc(m.e.clients.name) + '</b><small class="ovw-show-n">' + esc(sub) + '</small></span></span>' +
                   '<span class="chip-state is-' + tone + '">' + (m.live ? m.done + ' of ' + m.live : 'No tasks') + (m.late ? ' · ' + m.late + ' late' : '') + '</span>' +
@@ -1938,7 +1938,7 @@
           var late = d.tasks.filter(function (t) { return t.late; }).length;
           window.ADspaceAdmin.counts('overview', [[d.tasks.length, d.tasks.length === 1 ? 'open task' : 'open tasks'], late ? [late, 'late', 'late'] : null]);
         }
-      }).catch(function (e) { fail(todayHost, 'Your work', e, redraw); });
+      }).catch(function (e) { fail(todayHost, 'Today', e, redraw); });
     }
     return { build: build };
   })();
