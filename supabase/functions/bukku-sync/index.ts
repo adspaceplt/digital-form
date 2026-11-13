@@ -741,16 +741,56 @@ async function billHolding(contact: number, ref: string): Promise<string | null>
 /* The bill as Bukku's Create Bill takes it: on credit, the Job reference in
    its reference no., one line at the fee on the chosen account, no tax,
    ready (not a draft, which the portal does not read). */
-export function billBody(p: any): Record<string, unknown> {
+export function billBody(p: any, item?: any): Record<string, unknown> {
+  const line: Record<string, unknown> = { account_id: Number((item && item.account_id) || p.account),
+    description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255), unit_price: Number(p.amount), quantity: 1 };
+  /* The item the creator's earlier bills were made on (2026-11-13, the user:
+     "check for previous job, item SKU i had it set"): its product and unit,
+     the description ours. */
+  if (item && item.product_id) {
+    line.product_id = Number(item.product_id);
+    if (item.product_unit_id) line.product_unit_id = Number(item.product_unit_id);
+  }
   const out: Record<string, unknown> = {
     payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
     currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
     tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200), status: 'ready',
-    form_items: [{ account_id: Number(p.account), description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255),
-      unit_price: Number(p.amount), quantity: 1 }]
+    form_items: [line]
   };
   if (p.due) out.due_date = String(p.due);
   return out;
+}
+/* The line of an earlier creator bill that names an item: this creator's
+   newest bills first, then any creator's; five read at most. */
+export function itemOf(bill: any): any {
+  for (const l of ((bill && bill.form_items) || []) as any[])
+    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null };
+  return null;
+}
+async function lastItem(contact: number): Promise<any> {
+  try { return await findItem(contact); } catch (_e) { return null; }
+}
+async function findItem(contact: number): Promise<any> {
+  const db = svcDb();
+  const mine = await db.from('creator_bills').select('bill_id').eq('contact_id', contact).eq('gone', false)
+    .order('bill_date', { ascending: false, nullsFirst: false }).limit(3);
+  const any = await db.from('creator_bills').select('bill_id').eq('gone', false)
+    .order('bill_date', { ascending: false, nullsFirst: false }).limit(5);
+  const ids = [...((mine.data || []) as any[]), ...((any.data || []) as any[])].map((r) => Number(r.bill_id))
+    .filter((v, i, a) => v > 0 && a.indexOf(v) === i).slice(0, 5);
+  for (const id of ids) {
+    try {
+      const it = itemOf(await bukku('GET', `/purchases/bills/${id}`).then((r: any) => (r && r.transaction) || null));
+      if (it) return it;
+    } catch (_e) { /* the next one */ }
+  }
+  return null;
+}
+/* A creator bill's page in Bukku: found by its number among the bills the
+   caller reads on the creator's Payment pane, then on the creator's contact. */
+export function billWeb(sub: string, id: number): string | null {
+  const s = String(sub || '').replace(/\.bukku\.my$/i, '');
+  return /^[a-z0-9-]+$/i.test(s) && id > 0 ? `https://${s}.bukku.my/purchases/bills/${id}` : null;
 }
 
 // ---- A billing entity from Bukku (2026-10-29, one step 2026-10-30) ------------
@@ -1248,7 +1288,7 @@ Deno.serve(async (req) => {
       try {
         had = await billHolding(Number(p.contact_id), String(p.ref));
         if (!had) {
-          const r = await bukku('POST', '/purchases/bills', billBody(p));
+          const r = await bukku('POST', '/purchases/bills', billBody(p, await lastItem(Number(p.contact_id))));
           made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
         }
       } catch (e) {
@@ -1260,6 +1300,21 @@ Deno.serve(async (req) => {
       const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
       if (list.error) return json({ error: 'needs-update' }, 200, origin);
       return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
+    }
+    if (action === 'billlink') {
+      const cid = String(body.creator || ''), num = String(body.number || '').trim();
+      if (!/^[0-9a-f-]{36}$/i.test(cid) || !num || num.length > 60) return json({ error: 'bad-request' }, 400, origin);
+      const list = await db.rpc('creator_bills_list', { p_creator: cid });
+      if (list.error) return json({ error: 'needs-update' }, 200, origin);
+      const L = list.data || {};
+      if (L.error) return json({ error: L.error }, 200, origin);
+      const seen = [...(L.jobs || []), ...(L.past || [])].map((x: any) => x && x.bill && x.bill.number)
+        .concat((L.earlier || []).map((b: any) => b && b.number));
+      if (!seen.includes(num)) return json({ error: 'not-found' }, 200, origin);
+      const row = await svcDb().from('creator_bills').select('bill_id').eq('creator_id', cid).eq('number', num).limit(1);
+      const id = Number(((row.data || [])[0] || {}).bill_id || 0);
+      const url = billWeb(secret('BUKKU_SUBDOMAIN'), id);
+      return url ? json({ ok: true, url }, 200, origin) : json({ error: 'not-found' }, 200, origin);
     }
     if (action === 'invoices' || action === 'remind' || action === 'deliver') return await invoiceAction(action, body, db, origin);
     /* A completed month's invoice (2026-11-10): asked as the caller, read
