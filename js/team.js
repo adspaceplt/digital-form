@@ -552,7 +552,7 @@
      group a colleague is in stays listed. */
   function adminGroup(r) { return Boolean(r && (r.is_admin || r.slug === 'admin')); }
   function roleOptions(current) {
-    return state.roles.filter(function (r) { return amAdmin() || !adminGroup(r) || r.slug === current; }).map(function (r) {
+    return state.roles.filter(function (r) { return amSuper() || !adminGroup(r) || r.slug === current; }).map(function (r) {
       return '<option value="' + esc(r.slug) + '"' + (r.slug === current ? ' selected' : '') + '>' + esc(r.name) + '</option>';
     }).join('');
   }
@@ -692,10 +692,11 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
+    if (/own-expiry/.test(t)) return 'Your own access date can only be set by another admin. Please ask another admin.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
-    if (/system-account/.test(t)) return 'This is a system account.';
+    if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
+    if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin. Please ask the super admin.';
     if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin can change your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
@@ -745,7 +746,7 @@
         '<span class="cl-who"><b>' + esc(m.name) +
           (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
           (self ? ' <span class="tone">You</span>' : '') +
-          (m.system ? ' <span class="tone">System</span>' : '') + '</b>' +
+          (m.system ? ' <span class="tone">Super admin</span>' : '') + '</b>' +
           /* A line of parts wraps between its parts, never inside one, so
              Until and its time are read whole (the user, 2026-10-15). */
           (whoLine(m) ? '<small>' + whoLine(m).split(' · ').map(function (x) { return /^Until /.test(x) ? '<span class="team-part">' + esc(x) + '</span>' : esc(x); }).join(' · ') + '</small>' : '') +
@@ -770,23 +771,25 @@
   /* An admin's standing and access date are an admin's to change alone
      (`team_admin_guard`): for anyone else the acts are not drawn, so no
      work moves before the refusal (2026-10-27, TEAM-1). */
-  function adminLocked(m) {
-    return !amAdmin() && Boolean(m.is_admin || adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
-  }
+  function adminRow(m) { return Boolean(m.is_admin || adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0])); }
+  function adminLocked(m) { return !amAdmin() && adminRow(m); }
   function memberMenu(m) {
     var self = me() && me().id === m.id;
     var sysRow = Boolean(m.system) && !self;
     var manage = may('team', 'manage') && !sysRow && !adminLocked(m);
+    /* An admin is stood down or removed by the super admin alone
+       (`team_super_ok`, 2026-11-14). */
+    var standCan = amSuper() || !adminRow(m);
     /* No Edit: every value is changed where it is read on Overview; no Hand
        over work: it is the Work pane's button (MENU-5, 2026-10-22). */
     return (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
               (may('team.invite', 'work') && m.active && m.email && !sysRow ? menuItem('invite', 'Send invitation') : '') +
               /* Access that ended on its date comes back from the Access until
                  pen, so the ⋯ offers no Extend access beside it (TEAM2-8). */
-              (self || !manage || m.removed_at || (!m.active && m.expired_at) ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')) +
+              (self || !manage || !standCan || m.removed_at || (!m.active && m.expired_at) ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
                  their data kept or their personal details deleted. */
-              (self || !manage || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
+              (self || !manage || !standCan || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
   }
   function wireActs(el, m) {
     wireMenu(el);
@@ -993,7 +996,8 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Your own account is removed by another admin.', 'system-account': 'This is a system account.', 'admin-only': ADMIN_ONLY,
+    own: 'Your own account can only be removed by another admin. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
   };
@@ -1125,7 +1129,7 @@
   function groupRow(r) {
     /* The Admin group is nobody's to change, and an admin group is an
        admin's alone (`team_roles_admin_guard`). */
-    var locked = r.slug === 'admin' || (r.is_admin && !amAdmin());
+    var locked = r.slug === 'admin' || (r.is_admin && !amSuper());
     var used = state.rows.some(function (m) { return m.role === r.slug; });
     var el = document.createElement('div');
     el.className = 'group-row';
@@ -1736,7 +1740,7 @@
     /* Only an admin makes a group admin (`team_roles_admin_guard`), so
        Start from offers Admin to an admin alone (S6, 2026-10-24). */
     var adOpt = $('grPreset').querySelector('option[value="admin"]');
-    if (adOpt) adOpt.hidden = !amAdmin();
+    if (adOpt) adOpt.hidden = !amSuper();
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
     var acc = r ? accessOf(r) : null;
@@ -1831,6 +1835,9 @@
     memberOpener = null;
   }
   function amAdmin() { return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin()); }
+  /* The super admin (the system account, 2026-11-14) alone makes or removes
+     an admin; with none active, an admin does. */
+  function amSuper() { var A = window.ADspaceAdmin; return amAdmin() && Boolean(!A || !A.isSuper || A.isSuper()); }
   /* The sheet adds a colleague, nothing else: a colleague is changed on
      their record's Overview, where each value is read (TEAM2-6,
      2026-10-24). */
@@ -2111,7 +2118,7 @@
          2026-11-04). */
       '<section class="panel rec-head mrec-head"><div class="rec-id is-nomark">' +
         '<div class="rec-who"><div class="rec-name"><h2>' + esc(m.name || '') + '</h2>' +
-          (self ? ' <span class="tone">You</span>' : '') + (m.system ? ' <span class="tone">System</span>' : '') + '</div>' +
+          (self ? ' <span class="tone">You</span>' : '') + (m.system ? ' <span class="tone">Super admin</span>' : '') + '</div>' +
           '<p class="rec-id-meta">' + esc(meta) + '</p></div>' +
         '<div class="rec-ctl">' + stateChip(m) + (menu ? menuBtn(menu) : '') + '</div>' +
       '</div></section>' +
@@ -2277,9 +2284,9 @@
     var map = function (o, none) { return [['', none || 'Not set']].concat(Object.keys(o).map(function (k) { return [k, o[k]]; })); };
     /* An admin group is offered to an admin alone, and nobody moves
        themselves or an admin's row without being an admin (TEAM2-1). */
-    var roles = state.roles.filter(function (r) { return amAdmin() || !adminGroup(r) || r.slug === m.role; })
+    var roles = state.roles.filter(function (r) { return amSuper() || !adminGroup(r) || r.slug === m.role; })
       .map(function (r) { return [r.slug, r.name]; });
-    var groupCan = edit && !m.system && !self && (amAdmin() || !adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
+    var groupCan = edit && !m.system && !self && (amSuper() || !adminGroup(state.roles.filter(function (r) { return r.slug === m.role; })[0]));
     var ended = !m.active && m.expired_at && m.access_until;
     host.innerHTML = '<div class="panel mrec-card mrec-ov"><div class="readgroups">' +
       abroadGroup(m) +

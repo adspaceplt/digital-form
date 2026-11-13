@@ -755,7 +755,7 @@
     var now = new Date().toISOString();
     Object.keys(by).forEach(function (m) {
       DB.ops_notifications = DB.ops_notifications || [];
-      DB.ops_notifications.push({ id: 'nt-cl-' + c.id + '-' + m + '-' + Date.now(), team_member_id: m, task_id: null,
+      notePush({ id: 'nt-cl-' + c.id + '-' + m + '-' + Date.now(), team_member_id: m, task_id: null,
         kind: 'client_left', title: (c.name || 'A client') + ' moved to ' + (stage === 'paused' ? 'Paused' : 'Past'),
         body: by[m] + (by[m] === 1 ? ' open task' : ' open tasks') + ' to deliver', read_at: null, created_at: now });
     });
@@ -1322,7 +1322,7 @@
           rows = []; api.__err = { code: '42501', message: 'brand-columns: You do not have permission to change the content brief and brand notes. Please ask an admin.' }; return api;
         }
         if (inHit.some(function (r) { return adminGuard(table, r, Object.assign({}, r, pending)); })) {
-          rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api;
+          rows = []; api.__err = { code: '42501', message: guardWord }; return api;
         }
         if (inHit.some(function (r) { return salesByRefused(table, r, pending); })) {
           rows = []; api.__err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' }; return api;
@@ -1343,7 +1343,7 @@
         }
         rows = DB[table].filter(function (r) { return set.indexOf(String(r[f])) > -1 && scopeOk(table, r, 'view'); });
         if (rows.some(function (r) { return !removalOk(table, r); })) { rows = []; api.__err = SCOPE_REFUSED; return api; }
-        if (rows.some(function (r) { return adminGuard(table, r, null); })) { rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api; }
+        if (rows.some(function (r) { return adminGuard(table, r, null); })) { rows = []; api.__err = { code: '42501', message: guardWord }; return api; }
         DB[table] = DB[table].filter(function (r) { return rows.indexOf(r) < 0; });
         return api;
       }
@@ -1393,7 +1393,7 @@
 
         if (table === 'team_members') going = [];
         if (going.some(function (r) { return !removalOk(table, r); })) { rows = []; api.__err = SCOPE_REFUSED; return api; }
-        if (going.some(function (r) { return adminGuard(table, r, null); })) { rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api; }
+        if (going.some(function (r) { return adminGuard(table, r, null); })) { rows = []; api.__err = { code: '42501', message: guardWord }; return api; }
         DB[table] = DB[table].filter(function (r) { return going.indexOf(r) < 0; });
         rows = going;
 
@@ -1410,7 +1410,7 @@
         var eqHit = DB[table].filter(function (r) { return String(r[f]) === String(v); });
         if (eqHit.some(function (r) { return !scopeOk(table, r, 'view'); })) { rows = []; return api; }
         if (eqHit.some(function (r) { return adminGuard(table, r, Object.assign({}, r, pending)); })) {
-          rows = []; api.__err = { code: '42501', message: 'admin-only' }; return api;
+          rows = []; api.__err = { code: '42501', message: guardWord }; return api;
         }
         if (eqHit.some(function (r) { return !scopeOk(table, r, 'work') || !scopeOk(table, Object.assign({}, r, pending), 'work'); })) {
           rows = []; api.__err = SCOPE_REFUSED; return api;
@@ -1766,7 +1766,7 @@
           err = { code: 'P0001', message: 'hide-function', hint: 'Hide and Restore go through campaign_file_hide.' };
         if (!err && table === 'team_roles' && scopeClash(x)) err = { code: 'P0001', message: 'scope-activity' };
         if (!err && salesByRefused(table, null, x)) err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' };
-        if (!err && adminGuard(table, null, x)) err = { code: '42501', message: 'admin-only' };
+        if (!err && adminGuard(table, null, x)) err = { code: '42501', message: guardWord };
 
         if (!err && table === 'team_members' && x.system) err = { code: 'P0001', message: 'system-account' };
         if (!err && table === 'team_members' && (x.removed_at || x.erased_at)) err = { code: 'P0001', message: 'removed' };
@@ -2882,7 +2882,7 @@ function cardSlugFree(name, self, email) {
   function perfNotify(member, kind, title, key) {
     if (!member) return;
     if (DB.ops_notifications.some(function (n) { return n.dedupe_key === key; })) return;
-    DB.ops_notifications.push({ id: opsId('nt'), team_member_id: member, task_id: null, kind: kind, title: title,
+    notePush({ id: opsId('nt'), team_member_id: member, task_id: null, kind: kind, title: title,
       body: null, read_at: null, created_at: new Date().toISOString(), dedupe_key: key });
   }
 
@@ -4522,8 +4522,41 @@ function cardSlugFree(name, self, email) {
     'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite', 'team.handbook', 'team.announce',
     'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai', 'reports.meta', 'register.types',
     'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay'];
+
+  function notePush(row) {
+    if (row && row.kind !== 'jobs.failed' && (DB.team_members || []).some(function (m) { return m.id === row.team_member_id && m.system; })) return;
+    DB.ops_notifications.push(row);
+  }
+
+  function superGuard(table, old, nw) {
+    var m = opsMe(); if (!m) return null;
+    var live = (DB.team_members || []).filter(function (x) { return x.system && x.active !== false && !x.removed_at; });
+    if (!live.length || live.some(function (x) { return x.id === m.id; })) return null;
+    if (table === 'team_roles') {
+      var adm = function (r) { return Boolean(r && (r.is_admin || r.slug === 'admin')); };
+      if (!old && adm(nw)) return 'super-only';
+      if (!nw && adm(old)) return 'super-only';
+      if (old && nw && Boolean(old.is_admin) !== Boolean(nw.is_admin)) return 'super-only';
+      return null;
+    }
+    if (old && old.system) return null;
+    var was = Boolean(old && (old.is_admin || old.role === 'admin'));
+    if (!nw) return was ? 'super-only' : null;
+    var will = nw.role === 'admin' || DB.team_roles.some(function (g) { return g.slug === nw.role && g.is_admin; });
+    if (will && !was) return 'super-only';
+    if (old && was && ['role', 'is_admin', 'active', 'removed_at'].some(function (k) {
+      return JSON.stringify(nw[k] == null ? null : nw[k]) !== JSON.stringify(old[k] == null ? null : old[k]);
+    })) return 'super-only';
+    return null;
+  }
+  var guardWord = 'admin-only';
   function adminGuard(table, old, nw) {
     if (table !== 'team_members' && table !== 'team_roles') return null;
+    var w = superGuard(table, old, nw) || plainGuard(table, old, nw);
+    if (w) guardWord = w;
+    return w;
+  }
+  function plainGuard(table, old, nw) {
     var m = opsMe(); if (!m || opsAccess(m).admin) return null;
     if (table === 'team_roles') {
       if ((old && (old.is_admin || old.slug === 'admin')) || (nw && (nw.is_admin || nw.slug === 'admin'))) return 'admin-only';
@@ -4704,7 +4737,7 @@ function cardSlugFree(name, self, email) {
     var TELL = ['stage_changed', 'due_changed', 'blocked', 'unblocked', 'revision',
                 'review_decided', 'reopened', 'cancelled', 'due_requested', 'commented'];
     if (own && me && own.team_member_id !== me.id && TELL.indexOf(kind) > -1) {
-      DB.ops_notifications.push({
+      notePush({
         id: opsId('nt'), team_member_id: own.team_member_id, task_id: task,
         kind: kind,
         body: kind === 'commented'
@@ -4750,7 +4783,7 @@ function cardSlugFree(name, self, email) {
       actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
     var own = opsOwner(t.id);
     if (own && (!me || own.team_member_id !== me.id)) {
-      DB.ops_notifications.push({ id: opsId('nt'), team_member_id: own.team_member_id, task_id: t.id, kind: 'stage_changed',
+      notePush({ id: opsId('nt'), team_member_id: own.team_member_id, task_id: t.id, kind: 'stage_changed',
         body: 'Moved to ' + dest.label + ': ' + note + '.', read_at: null, created_at: nowIso() });
     }
     persist();
@@ -4801,7 +4834,7 @@ function cardSlugFree(name, self, email) {
         to_value: { stage_key: 'in_production' }, detail: { note: 'Every scene shot in Video Scripts', script_id: sc.id },
         actor_id: me ? me.id : null, actor_email: null, source: 'portal', created_at: nowIso() });
       var own = opsOwner(t.id), dest = opsStage(t.workflow_id, 'in_production') || {};
-      if (own && (!me || own.team_member_id !== me.id)) DB.ops_notifications.push({ id: opsId('nt'), team_member_id: own.team_member_id,
+      if (own && (!me || own.team_member_id !== me.id)) notePush({ id: opsId('nt'), team_member_id: own.team_member_id,
         task_id: t.id, kind: 'stage_changed', body: 'Moved to ' + (dest.label || 'In progress') + ': every scene shot in Video Scripts.', read_at: null, created_at: nowIso() });
     }
     persist();
@@ -4961,7 +4994,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       from_value: { owner_id: was ? was.team_member_id : null }, to_value: { owner_id: me.id },
       detail: { taken: true, stage_key: t.stage_key }, actor_id: me.id, actor_email: me.email, source: 'portal', created_at: now });
     if (was) {
-      DB.ops_notifications.push({ id: opsId('nt'), team_member_id: was.team_member_id, task_id: t.id, kind: 'taken',
+      notePush({ id: opsId('nt'), team_member_id: was.team_member_id, task_id: t.id, kind: 'taken',
         title: opsSerial(t.task_no) + ' · ' + opsTitle(t), body: 'Taken by ' + (me.name || me.email) + '.', read_at: null, created_at: now });
     }
     persist();
@@ -5051,7 +5084,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             detail: { handover: true, stage_key: args.p_next, from_stage_key: t.stage_key },
             actor_id: me.id, actor_email: me.email, source: 'portal', created_at: now });
           if (args.p_assignee !== me.id) {
-            DB.ops_notifications.push({ id: opsId('nt'), team_member_id: args.p_assignee, task_id: args.p_task,
+            notePush({ id: opsId('nt'), team_member_id: args.p_assignee, task_id: args.p_task,
               kind: 'assigned', body: me.name + ' handed ' + opsSerial(t.task_no) + ' to you at ' + nxt.label + '.',
               read_at: null, created_at: now });
           }
@@ -5393,7 +5426,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             team_member_id: args.p_owner, responsibility: 'owner', assigned_by: me.id,
             started_at: now, ended_at: null });
           if (args.p_owner !== me.id) {
-            DB.ops_notifications.push({ id: opsId('nt'), team_member_id: args.p_owner,
+            notePush({ id: opsId('nt'), team_member_id: args.p_owner,
               task_id: args.p_task, kind: 'assigned',
               body: me.name + ' assigned ' + opsSerial(t.task_no) + ' to you.', read_at: null, created_at: now });
           }
@@ -5428,7 +5461,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         from_value: { owner_id: hd ? hd.team_member_id : null }, to_value: { owner_id: args.p_owner },
         detail: det, actor_id: me.id, actor_email: me.email, source: 'portal', created_at: now });
       if (args.p_owner !== me.id) {
-        DB.ops_notifications.push({ id: opsId('nt'), team_member_id: args.p_owner, task_id: args.p_task,
+        notePush({ id: opsId('nt'), team_member_id: args.p_owner, task_id: args.p_task,
           kind: 'assigned', body: me.name + ' handed ' + opsSerial(t.task_no) + ' to you.', read_at: null, created_at: now });
       }
       t.version = (t.version || 1) + 1;
@@ -7057,7 +7090,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var m = (DB.team_members || []).filter(function (x) { return x.id === s.team_member_id; })[0];
       var fail = function (why) {
         s.state = 'failed'; s.ran_at = nowIso(); s.result = why;
-        if (m) DB.ops_notifications.push({ id: nid('n'), team_member_id: m.id, kind: 'assistant.failed', title: 'Not done: ' + s.title, body: why,
+        if (m) notePush({ id: nid('n'), team_member_id: m.id, kind: 'assistant.failed', title: 'Not done: ' + s.title, body: why,
           created_at: nowIso(), dedupe_key: 'agent.failed.' + s.id });
       };
       if (!holds(s)) { s.state = 'skipped'; s.ran_at = nowIso(); s.result = 'Skipped: the condition no longer holds.'; return Promise.resolve(); }
@@ -7065,7 +7098,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (err) { fail(err); return Promise.resolve(); }
       var done = function (said) { s.state = 'done'; s.ran_at = nowIso(); s.result = said; };
       if (s.kind === 'reminder') {
-        DB.ops_notifications.push({ id: nid('n'), team_member_id: m.id, kind: 'assistant.reminder', title: s.title, body: s.payload.message,
+        notePush({ id: nid('n'), team_member_id: m.id, kind: 'assistant.reminder', title: s.title, body: s.payload.message,
           task_id: s.payload.task_id || null, report_id: s.payload.report_id || null, client_id: s.payload.client_id || null,
           created_at: nowIso(), dedupe_key: 'agent.' + s.id });
         done('Reminder sent to you.'); return Promise.resolve();
@@ -7813,7 +7846,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       opsLog(dt.id, 'delayed', {}, { reason: a.p_reason, note: dnote }, null, { report_id: dr.id });
       smLog(dr, 'report.saved', dcode + ' marked delayed: ' + dword[a.p_reason] + (dnote ? ' · ' + dnote : ''));
       var down = opsOwner(dt.id);
-      if (down && down.team_member_id !== me.id) DB.ops_notifications.push({ id: opsId('nt'), team_member_id: down.team_member_id, task_id: dt.id, kind: 'delayed',
+      if (down && down.team_member_id !== me.id) notePush({ id: opsId('nt'), team_member_id: down.team_member_id, task_id: dt.id, kind: 'delayed',
         title: '#WT' + String(dt.task_no).padStart(5, '0'), body: 'Marked delayed in the Accounts Report by ' + (me.name || me.email) + ': ' + dword[a.p_reason] + '.', created_at: now });
       persist(); return { ok: true, id: dt.id };
     }
@@ -8384,7 +8417,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     var smName = function (id) { return ((DB.team_members || []).filter(function (x) { return x.id === id; })[0] || {}).name || ''; };
     var smTell = function (who, kind, title, body) {
       if (!who || (me && who === me.id)) return;
-      DB.ops_notifications.push({ id: nid('nt'), team_member_id: who, task_id: null, report_id: r.id, kind: kind, title: title, body: body,
+      notePush({ id: nid('nt'), team_member_id: who, task_id: null, report_id: r.id, kind: kind, title: title, body: body,
         read_at: null, created_at: new Date().toISOString(), dedupe_key: kind + ':' + r.id + ':' + who + ':' + Date.now() });
     };
     var smAbout = function () { return ((DB.clients.filter(function (c) { return c.id === r.client_id; })[0] || {}).name || '') + ' · ' + smWord(r.period_start, r.period_end); };
@@ -9410,7 +9443,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         shD.shared_at = shOn ? new Date().toISOString() : null;
         shD.shared_by = shOn ? shMe.name : null;
         if (shOn && !DB.ops_notifications.some(function (n) { return n.dedupe_key === 'hr.letter:' + shD.id; })) {
-          DB.ops_notifications.push({ id: opsId('nt'), team_member_id: shD.member_id, task_id: null, kind: 'hr.letter',
+          notePush({ id: opsId('nt'), team_member_id: shD.member_id, task_id: null, kind: 'hr.letter',
             title: 'A letter was issued to you', body: shD.kind || 'HR letter', read_at: null,
             created_at: new Date().toISOString(), dedupe_key: 'hr.letter:' + shD.id });
         }
@@ -10107,7 +10140,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             (DB.team_members || []).forEach(function (tm) {
               var acc = tm.access || {}, lv = acc['campaigns.creators'] || acc.campaigns;
               if (!tm.active || tm.removed_at || tm.system || tm.department !== 'marketing' || (!(tm.is_admin || tm.role === 'admin') && (!lv || lv === 'none'))) return;
-              DB.ops_notifications.push({ id: nid('nt'), team_member_id: tm.id, task_id: null, kind: 'creator.details',
+              notePush({ id: nid('nt'), team_member_id: tm.id, task_id: null, kind: 'creator.details',
                 title: 'Payment details to review · ' + cpC.name,
                 body: cpRef + ' · Sent on the creator page',
                 link: 'https://digital.adspace.me/admin/?s=campaigns&tab=roster&pay=' + cpC.id,
@@ -11297,7 +11330,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }).forEach(function (m) {
           var dk = kind + ':' + key + ':' + m.id;
           if (DB.ops_notifications.some(function (n) { return n.dedupe_key === dk; })) return;
-          DB.ops_notifications.push({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: kind, title: title, body: body,
+          notePush({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: kind, title: title, body: body,
             read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: cid });
         });
       };
@@ -11420,7 +11453,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var qsNotify = function (ids, kind, title, body, qid, cid) {
         ids.filter(function (v, i, a) { return v && a.indexOf(v) === i; }).forEach(function (mid) {
           var dk = kind + ':' + qid + ':' + mid + ':' + Date.now();
-          DB.ops_notifications.push({ id: nid('nt'), team_member_id: mid, task_id: null, kind: kind, title: title, body: body,
+          notePush({ id: nid('nt'), team_member_id: mid, task_id: null, kind: kind, title: title, body: body,
             read_at: null, created_at: new Date().toISOString(), dedupe_key: dk, client_id: cid });
         });
       };
@@ -12086,7 +12119,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           sent_by: ntMe.id, sent_by_name: ntMe.name, created_at: ntAt, withdrawn_at: null, withdrawn_by: null };
         DB.team_notices.push(ntRow);
         ntTo.forEach(function (m) {
-          DB.ops_notifications.push({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: 'notice', title: ntT, body: ntB,
+          notePush({ id: nid('nt'), team_member_id: m.id, task_id: null, kind: 'notice', title: ntT, body: ntB,
             notice_id: ntRow.id, from_name: ntMe.name, read_at: null, hidden_at: null, created_at: ntAt });
         });
         var ntN = ntTo.length;
@@ -14300,7 +14333,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
       var abNote = function (to, kind, title, body, key) {
         DB.ops_notifications = DB.ops_notifications || [];
-        DB.ops_notifications.push({ id: nid('n'), team_member_id: to, kind: kind, title: title, body: body || null, dedupe_key: key || null, read_at: null, created_at: new Date().toISOString() });
+        notePush({ id: nid('n'), team_member_id: to, kind: kind, title: title, body: body || null, dedupe_key: key || null, read_at: null, created_at: new Date().toISOString() });
       };
       var abDay = function (d) { var x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][x.getUTCMonth()] + ' ' + x.getUTCFullYear(); };
       if (name === 'abroad_state') {
