@@ -1416,12 +1416,13 @@
     return ts ? CK.date(ts, { year: false }) : '';
   }
   function paintWaiting() {
-    var box = $('workWaiting');
-    if (!box) return;
     var rows = state.waiting || [], fail = state.waitFail || [];
-    /* A failed read keeps the tab bar's dot at its last count. */
+    /* A failed read keeps the tab bar's dot at its last count; the count
+       is set from any section, the card drawn only where it stands. */
     if (!fail.length || rows.length >= (state.waitShown || 0)) state.waitShown = rows.length;
     if (bridge.waiting) bridge.waiting(state.waitShown);
+    var box = $('workWaiting');
+    if (!box) return;
     /* Drawn on the Dashboard's Me tab since the revamp (2026-11-13), the
        one place a colleague decides: shown while it holds anything. */
     var on = rows.length || fail.length;
