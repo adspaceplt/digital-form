@@ -24,10 +24,12 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   card is one surface; cards take the large corner (`--radius-lg`). The
   rail's My Work row counts what waits on the reader (`.nav-n`). Inside an
   open record (a client, a campaign, a supplier, a colleague, a creator)
-  the sheet is the page's grey (`--page`) and the record is cards on it
-  (the user, 2026-11-13, "proceed A to D"): the head, each part of a pane
-  (`.rec-part`: its head inside the card at 15/600 with its count as a
-  `.tab-n`, its list the card's rows) and each rail block, 12px apart; a
+  the record stays on the white sheet and is hairline cards (the user,
+  2026-11-13: "keep white sheet is good. keep hairline too else it looks
+  too bold"): the head, each part of a pane (`.rec-part`: its head inside
+  the card at 15/600 with its count as a `.tab-n`, its list the card's
+  rows) and each rail block, each edged by `--part-edge` (ink at 11%; light
+  ink at 12% in dark), 16px apart, the grouping carried by the space; a
   part's add act is quiet (`.btn-quiet .btn-sm` with its glyph) unless it
   is the record's next step; a rail fact's pen and ⋯ show on hover and
   focus at a desk, always under a finger. Phones
@@ -237,7 +239,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
 | Counts and money | `.tallies` > `.tallygroup` > `.tally` > `.tally-cell` (`is-total`, `is-warn`); no cell alone on the last row: on a desk five cells read three over two and six three over three until all fit one row |
 | Completeness | `.ringline` > `.ring` + "2 of 4"; a bar (`.railbar-fill`) in ink while it fills, green (`is-done`) only once complete |
-| A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`) on the grey ground: `.rec-id` identity (a card), `.rectabs` panes, each part a `section.rec-part` card (its `.viewhead` inside, the count beside the title, the add act quiet), `.rec-rail` of `.railblock` cards; a part whose list is already cards (month groups, read groups, booking cards) keeps its head on the ground over them. A row keeps at most two buttons (Preview and its next step); the rest is its ⋯ |
+| A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`) on the white sheet: `.rec-id` identity (a card), `.rectabs` panes, each part a `section.rec-part` card (its `.viewhead` inside, the count beside the title, the add act quiet), `.rec-rail` of `.railblock` cards; a part whose list is already cards (month groups, read groups, booking cards) keeps its head on the sheet over them; every card in a record takes the `--part-edge` hairline, 16px apart. A row keeps at most two buttons (Preview and its next step); the rest is its ⋯ |
 | A record with no artwork (a task) | `.rec-id-plain`: the number as a token (copy control) heading the record, no mark |
 | One record with steps | `.kcard` > `.kcard-head` (name, then summary, then the state beside the ⋯) + `.kstep` |
 | Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` drawn by `ADspaceMenu.items([[open],[change],[send],[mark],[lifecycle],[destroy]])`: fixed order, `hr.kmenu-sep` between groups (always before destroy), Remove/Void/Delete red and last, 13.5/400, one width, role menu/menuitem; ≤7 items; one item only for lifecycle or destroy (§5 Menus and action groups) |
@@ -399,6 +401,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   the card and the page. The walk seeds a 120-character link on both client
   pages. An address that is a row's meta line under its name is one line
   ending in an ellipsis; the whole address is one press away.
+- Words never leave their box: a line is either whole inside its card or
+  row, wrapping under itself and the row growing, or cut with an ellipsis;
+  never cut bare at a column's edge or drawn over the next cell. A block
+  inside a one-line cell (`.crm-c`) wraps (a client's name), since the
+  cell's ellipsis never reaches it. `tests/fit.js` sweeps every console
+  route from 1440 down to 900.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The
