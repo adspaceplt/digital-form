@@ -10226,3 +10226,15 @@ the run and tells them. A Google Meet is never scheduled because the shared
 calendar must answer the booking at once (`slot-taken`); a scheduled
 WhatsApp goes through `wa_enqueue` and asks Sent recently again at the run.
 A failed run tells its colleague and joins the admins' morning notice.
+
+### 2026-11-13: the Assistant could not answer after its actions shipped
+Every question read "The Assistant could not answer. Try again." once
+`portal-agent` v2 went live. Its log held Claude's 400: tools.17
+(`propose_campaign`) declared `format` as `type: ['string', 'null']` with an
+enum, which strict tool schemas refuse, so the whole tool list and every
+question failed. The four such fields (format, deliverable, and the
+schedule's purpose, priority and condition) became `anyOf` a string enum and
+null (`optEnum`); v3 deployed and read back. The suites missed it because
+the stand-in answers `portal-agent` itself and never sends the schemas to
+Claude, and no API key is in the sandbox to send them; `tests/agent.js` now
+reads the function's source and fails an enum on a type list.
