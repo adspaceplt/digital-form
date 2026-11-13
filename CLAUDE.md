@@ -6633,7 +6633,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   at its fee), extra contents at the plan's whole saving to the nearest
   RM 10 (`extra_rates`), Translate every content (a content a language
   after the first), the advertising budget past the plan's cover (Meta
-  advertising, then coverage; past the largest, on request), one-off items
+  advertising for the budget asked as one line, beside a plan Additional
+  advertising budget coverage from its cover to the budget; past the largest,
+  on request), one-off items
   apart; the term's percentage on the monthly subtotal, SST on the rest at
   the rate in force on the day it is priced (MYT), none for a client whose
   `sst_applies` is false (`quote_tax_snap`; a preview names its client in
