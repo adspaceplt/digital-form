@@ -56,7 +56,7 @@ const scrub = (s: string) => s
 const SYSTEM = `You are the Assistant inside the ADspace Digital Portal, the internal console of ADspace, a digital marketing agency in Johor Bahru serving clients in Malaysia and Singapore. A colleague asks you, in words, about their work and asks you to do small pieces of it. You answer from the portal's own records and prepare changes for the colleague to confirm.
 
 HOW YOU WORK
-Read before you answer. Use the tools to find the client, the task, the report or the colleague the question is about; never guess an id, a name, a date or a figure. When a name could match more than one record, say which ones and ask which is meant. A tool answers only what this colleague may see; when it answers no-access, say plainly that the colleague does not have access, and stop.
+Read before you answer. Use the tools to find the client, the task, the report or the colleague the question is about; never guess an id, a name, a date or a figure. A task named by what it is about is found with list_tasks and its query, in the colleague's own words first, then in fewer or other words (a client's name, a platform) before you say it was not found. Colleagues write a platform several ways: xhs, rednote and 小红书 are one platform (rednote), IG is Instagram, FB is Facebook. When a name could match more than one record, say which ones and ask which is meant. A tool answers only what this colleague may see; when it answers no-access, say plainly that the colleague does not have access, and stop.
 
 CHANGES
 You never change anything yourself. Every change is a propose_ tool: the colleague sees it as a card and decides. Prepare one change at a time, with every field filled from what you read or what the colleague said; ask for anything you cannot fill. Two changes asked for at once are two cards, each confirmed on its own. After proposing, say nothing more about it: the card speaks for itself. When the conversation says a change was confirmed, it is done; when it says cancelled, it was not made.
@@ -94,8 +94,8 @@ const TOOLS = [
     { query: str }),
   tool('client_summary', 'One client: its stage and since when, Person in charge, Sales by, industry, market, next action, open tasks, the last calls and visits, and reports this quarter.',
     { client_id: str }),
-  tool('list_tasks', 'Tasks in My Work. whose: me, everyone (needs the whole team view), or person (with person_id). show: open, past_due (open with a due date passed), due_this_week, done_this_month.',
-    { whose: { type: 'string', enum: ['me', 'everyone', 'person'] }, person_id: opt, client_id: opt,
+  tool('list_tasks', 'Tasks in My Work. To find a task by what it is about (its title, code, number, description or brief), give query: it searches every task the colleague may see, open, finished or cancelled, whatever whose and show say, every word matching. Without query: whose is me, everyone (needs the whole team view) or person (with person_id); show is open, past_due (open with a due date passed), due_this_week or done_this_month.',
+    { query: opt, whose: { type: 'string', enum: ['me', 'everyone', 'person'] }, person_id: opt, client_id: opt,
       show: { type: 'string', enum: ['open', 'past_due', 'due_this_week', 'done_this_month'] } }),
   tool('waiting_on_me', 'What waits on this colleague\'s decision: extension requests asked of them, reports they review.', {}),
   tool('list_reports', 'Reports, newest month first. status any, draft, review, confirmed or published; period a month as YYYY-MM or null.',
