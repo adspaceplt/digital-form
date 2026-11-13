@@ -5031,7 +5031,7 @@ svg.sec {
 :root { --frame: #efeeec; --card-edge: #e9e7e3; }
 :root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; }
 .console-headline { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 0 1 auto; }
-.console-sub { display: none; margin: 0; font-size: 12.5px; line-height: 18px; color: var(--ink-soft);
+.console-sub { display: none; margin: 0; font-family: var(--font-head); font-size: 13.6px; line-height: 20px; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .console-crumb:not([hidden]):not(:empty) + .console-counts:not(:empty)::before, .console-count + .console-count::before { content: '\00b7'; margin: 0 6px; color: var(--ink-mute); }
 .console-sub .console-crumb { font-size: inherit; color: var(--ink-mute); }
