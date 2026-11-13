@@ -804,7 +804,10 @@
       }).join('') : '<span class="muted">' + esc(MON.money2(0, 'MY')) + '</span>';
       return '<div><dt>' + label + '</dt><dd class="crtot">' + dd + '</dd></div>';
     }
-    var body = lines(t.billed, 'Billed to clients') + lines(t.paid, 'Paid to creator');
+    /* Creator fees (2026-11-13): agreed, outstanding and margin, at
+       Creator payments View alone (the function leaves them out else). */
+    var body = lines(t.billed, 'Billed to clients') + lines(t.agreed, 'Agreed creator fees') + lines(t.paid, 'Paid to creator') +
+      lines(t.owed, 'Outstanding') + lines(t.margin, 'Margin');
     return body ? '<section class="railblock" id="crTotals"><h3 class="railtitle">Totals</h3><dl class="raildates">' + body + '</dl></section>' : '';
   }
   /* What waits on the team, and the record: a block with nothing leaves. */
@@ -906,7 +909,13 @@
     taken: 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.', 'not-found': 'This booking no longer exists.',
     'not-linked': 'Link the creator to Bukku first.',
     'job-taken': 'That earlier job ID is already on another booking or creator. Check the ID on the AP01 form.',
-    'job-bad': 'Enter the earlier job ID as it was issued, for example AKJ0117.' };
+    'job-bad': 'Enter the earlier job ID as it was issued, for example AKJ0117.',
+    /* CREATOR FEES (2026-11-13) */
+    'bad-amount': 'Enter the fee as an amount, for example 1200.', billed: 'This booking already has a bill in Bukku. Change the bill in Bukku, then Read from Bukku.',
+    'not-posted': 'Move the booking to Posted first, then create its bill.', 'no-fee': 'Enter the creator fee first.',
+    'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
+    'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
+    creating: 'This bill is already being created. Press Read from Bukku in a minute.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
@@ -1044,10 +1053,12 @@
        (2026-11-12), so bills for their earlier job IDs are read. */
     html += '<div class="readgroup" id="cpayBukku"></div>';
     html += '<section class="readgroup" id="cpayJobsSec"><div class="readgroup-head"><h4 class="fsec-h">Payments</h4>' +
-      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></div><div id="cpayJobs"></div></section>';
+      '<span class="cpay-acts"><button class="btn btn-sm" type="button" id="cpayBills" hidden></button>' +
+      '<button class="btn btn-sm" type="button" id="cpayRead" hidden>Read from Bukku</button></span></div><div id="cpayJobs"></div></section>';
     $('cpayBody').innerHTML = '<div class="msg" id="cpayMsg" role="status"></div><div class="readgroups">' + html + '</div>';
     if (window.ADspaceBukku) window.ADspaceBukku.group($('cpayBukku'), 'creator', payFor.id, { after: function () { readJobs(); } });
     $('cpayRead').addEventListener('click', function () { readJobs(true); });
+    $('cpayBills').addEventListener('click', function () { makeBills(billable(), $('cpayBills')); });
     if ($('cpayAdd')) $('cpayAdd').addEventListener('click', function () { addPayDetails($('cpayAdd'), cur && cur.status !== 'declined' ? cur : null); });
     if (payJobs && payJobs.creator === payFor.id) paintJobs(); else readJobs();
     if (open) {
@@ -1088,6 +1099,11 @@
     if (!host || !d) return;
     var work = mayPart('campaigns.pay', 'work');
     var btn = $('cpayRead'); if (btn) btn.hidden = !(d.linked && work);
+    /* Bookings ready for a bill (CREATOR FEES, 2026-11-13): posted, a fee,
+       no bill, the creator linked and the account chosen. */
+    var ready = billable();
+    var many = $('cpayBills');
+    if (many) { many.hidden = ready.length < 2; many.textContent = 'Create ' + ready.length + ' bills'; }
     var day = function (v) { return v ? ADspaceClock.date(v) : ''; };
     var POSTED = ['posted', 'completed'];
     var jobs = d.jobs || [];
@@ -1098,17 +1114,28 @@
       else st = '<span class="chip-state is-off">Not due</span>';
       var sub = [esc(j.campaign || '')];
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
+      if (d.pay) sub.push('<span class="cpay-part">' + (j.fee ? 'Fee ' + esc(billMoney(j.fee.amount, j.fee.currency)) : 'Fee not set') + '</span>');
+      var mk = ready.indexOf(j) > -1 ? '<button class="btn btn-sm cpay-mk" type="button" data-a="mkbill">Create bill</button>' : '';
       var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
         : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
       return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
         '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
           '<span class="cpay-job-sub">' + sub.join(' · ') + '</span></div>' +
-        '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
-        (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Earlier job ID for ' + esc(j.job || '') + '">' +
+        '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + mk + '</div>' +
+        (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="earlier" aria-label="Edit ' + esc(j.job || '') + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
         '</div>';
     };
-    var html = jobs.length ? jobs.map(rowOf).join('') : '<p class="emptyline">No bookings.</p>';
+    var html = '';
+    /* The standard fee a new booking takes, and why no bill can be made. */
+    if (d.pay) html += '<dl class="ovfacts cpay-std"><div><dt>Standard fee</dt><dd>' +
+      (d.standard_fee ? esc(billMoney(d.standard_fee.amount, d.standard_fee.currency)) : '<span class="muted">Not set</span>') +
+      (work ? '<button class="iconbtn cpay-job-pen" type="button" data-a="stdfee" aria-label="Edit standard fee">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg></button>' : '') +
+      '</dd></div></dl>';
+    if (work && d.linked && d.bill_account === false && jobs.some(function (j) { return !j.bill && POSTED.indexOf(j.state) > -1; }))
+      html += '<p class="msg warn cpay-acct">' + esc(JOB_SAID['no-account']) + '</p>';
+    html += jobs.length ? jobs.map(rowOf).join('') : '<p class="emptyline">No bookings.</p>';
     /* A creator's past job IDs from before the portal, each with the bill
        that paid it (2026-11-11). */
     var past = d.past || [];
@@ -1142,6 +1169,14 @@
     host.querySelectorAll('[data-a="earlier"]').forEach(function (b) {
       b.addEventListener('click', function () { earlierJob(b.closest('.cpay-job').getAttribute('data-opt'), b); });
     });
+    host.querySelectorAll('[data-a="mkbill"]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var opt = b.closest('.cpay-job').getAttribute('data-opt');
+        makeBills(jobs.filter(function (x) { return x.option === opt; }), b);
+      });
+    });
+    var std = host.querySelector('[data-a="stdfee"]');
+    if (std) std.addEventListener('click', function () { standardFee(std); });
     var add = host.querySelector('[data-a="addpast"]');
     if (add) add.addEventListener('click', function () { addPast(add); });
     host.querySelectorAll('[data-a="pastmenu"]').forEach(function (button) {
@@ -1197,18 +1232,110 @@
       }, m);
     });
   }
+  /* A booking's creator fee and its earlier job ID (CREATOR FEES,
+     2026-11-13): the fee agreed with the creator, in the currency they are
+     paid in, fixed once its bill is in Bukku. */
+  function feeIn(v) {
+    var t = String(v == null ? '' : v).replace(/[^0-9.]/g, '');
+    return t === '' ? null : Number(t);
+  }
+  function feeOk(v) { return v == null || (isFinite(v) && v >= 0 && v <= 1000000 && Math.round(v * 100) / 100 === v); }
   function earlierJob(opt, btn) {
     var j = ((payJobs && payJobs.jobs) || []).filter(function (x) { return x.option === opt; })[0];
     if (!j) return;
-    window.ADspaceConfirm.ask({ title: 'Earlier job ID', go: 'Save', wait: true, opener: btn,
-      field: { name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
-        note: 'The job ID on this booking\'s AP01 form, used to find its bill in Bukku.' } }, function (v) {
-      return db.rpc('creator_earlier_job_set', { p_option: opt, p_ref: String((v && v.ref) || '').trim() || null }).then(function (r) {
-        var d = r.data || {};
+    var pay = payJobs.pay, fixed = !!j.bill;
+    var fields = [];
+    if (pay && !fixed) fields.push({ name: 'fee', label: 'Creator fee' + (j.fee && j.fee.currency === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text',
+      value: j.fee ? Number(j.fee.amount).toFixed(2) : '', required: false, note: 'The amount agreed with the creator for this booking.' });
+    fields.push({ name: 'ref', label: 'Earlier job ID', value: j.earlier_job || '', required: false, maxlength: 40,
+      note: 'The job ID on this booking\'s AP01 form, used to find its bill in Bukku.' });
+    window.ADspaceConfirm.ask({ title: j.job || 'Booking', go: 'Save', wait: true, opener: btn, fields: fields,
+      body: pay && fixed && j.fee ? 'The creator fee is ' + billMoney(j.fee.amount, j.fee.currency) + '. Change it on the bill in Bukku.' : undefined,
+      check: function (v) { return pay && !fixed && !feeOk(feeIn(v.fee)) ? JOB_SAID['bad-amount'] : ''; } }, function (v) {
+      var ref = String((v && v.ref) || '').trim() || null;
+      var fee = pay && !fixed ? feeIn(v.fee) : undefined;
+      var steps = [];
+      if (fee !== undefined && fee !== (j.fee ? Number(j.fee.amount) : null))
+        steps.push(function () { return db.rpc('creator_fee_set', { p_option: opt, p_amount: fee }); });
+      if (ref !== (j.earlier_job || null))
+        steps.push(function () { return db.rpc('creator_earlier_job_set', { p_option: opt, p_ref: ref }); });
+      return steps.reduce(function (p, step) {
+        return p.then(function (msg) {
+          if (msg) return msg;
+          return step().then(function (r) {
+            var d = r.data || {};
+            if (r.error) return r.error.message;
+            return d.error ? (JOB_SAID[d.error] || d.error) : '';
+          });
+        });
+      }, Promise.resolve('')).then(function (msg) {
+        if (steps.length) { readJobs(); if (payFor) { delete crTotals[payFor.id]; paintCrRail(payFor); } }
+        return msg;
+      });
+    });
+  }
+  /* The standard fee a creator's new bookings take. */
+  function standardFee(btn) {
+    var c = payFor, d = payJobs;
+    if (!c || !d) return;
+    var cur = d.standard_fee ? d.standard_fee.currency : null;
+    window.ADspaceConfirm.ask({ title: 'Standard fee', go: 'Save', wait: true, opener: btn,
+      field: { name: 'fee', label: 'Standard fee' + (cur === 'SGD' ? ' (S$)' : ' (RM)'), type: 'text',
+        value: d.standard_fee ? Number(d.standard_fee.amount).toFixed(2) : '', required: false,
+        note: 'Applies to each new booking of this creator.' },
+      check: function (v) { return feeOk(feeIn(v.fee)) ? '' : JOB_SAID['bad-amount']; } }, function (v) {
+      return db.rpc('creator_standard_fee_set', { p_creator: c.id, p_amount: feeIn(v.fee) }).then(function (r) {
+        var x = r.data || {};
         if (r.error) return r.error.message;
-        if (d.error) return JOB_SAID[d.error] || d.error;
+        if (x.error) return JOB_SAID[x.error] || x.error;
         readJobs();
         return '';
+      });
+    });
+  }
+  /* The bookings a bill can be made for, as last read. */
+  function billable() {
+    var d = payJobs;
+    if (!d || !d.pay || !d.linked || !d.bill_account || !mayPart('campaigns.pay', 'work')) return [];
+    return (d.jobs || []).filter(function (j) {
+      return !j.bill && ['posted', 'completed'].indexOf(j.state) > -1 && j.fee && Number(j.fee.amount) > 0;
+    });
+  }
+  /* Create bill: one booking, or every one ready (Create n bills), each
+     made in Bukku on the creator's contact with the Job reference, one after
+     another, a refusal named against its booking. */
+  function makeBills(list, btn) {
+    var c = payFor;
+    if (!c || !list.length) return;
+    var sums = {};
+    list.forEach(function (j) { var k = j.fee.currency || 'MYR'; sums[k] = (sums[k] || 0) + Number(j.fee.amount); });
+    var total = Object.keys(sums).map(function (k) { return billMoney(Math.round(sums[k] * 100) / 100, k); }).join(' and ');
+    var one = list.length === 1;
+    window.ADspaceConfirm.ask({ title: one ? 'Create bill in Bukku?' : 'Create ' + list.length + ' bills in Bukku?', go: one ? 'Create bill' : 'Create ' + list.length + ' bills',
+      opener: btn, body: (one ? 'A bill for ' + list[0].job + ' of ' + total : list.length + ' bills totalling ' + total) +
+        ' will be created in Bukku on ' + c.name + '\'s supplier contact, ' + (one ? 'with its' : 'each with its') + ' Job reference.' }, function () {
+      var m = $('cpayMsg'), done = [], refused = [];
+      if (btn) btn.disabled = true;
+      var say = function (text, cls) { if (m) { m.textContent = text; m.className = 'msg ' + cls; } };
+      return list.reduce(function (p, j) {
+        return p.then(function () {
+          if (payFor !== c) return;
+          return db.functions.invoke('bukku-sync', { body: { action: 'createbill', option: j.option } }).then(function (r) {
+            return window.ADspaceAPI.fnRefusal(r).then(function (code) { return code ? { error: code } : (r.data || { error: 'failed' }); });
+          }).then(function (x) {
+            if (x.jobs) payJobs = Object.assign({ creator: c.id }, x);
+            if (x.error === 'in-bukku') refused.push(j.job + ': Bill ' + (x.number || '') + ' in Bukku already has this Job reference. Press Read from Bukku.');
+            else if (x.error) refused.push(j.job + ': ' + (JOB_SAID[x.error] || (window.ADspaceBukku && window.ADspaceBukku.said ? window.ADspaceBukku.said(x) : x.error)));
+            else done.push(x.made || j.job);
+          }).catch(function (e) { refused.push(j.job + ': ' + e.message); });
+        });
+      }, Promise.resolve()).then(function () {
+        if (btn) btn.disabled = false;
+        if (payFor !== c) return;
+        delete crTotals[c.id]; paintCrRail(c);
+        paintJobs();
+        if (refused.length) say((done.length ? 'Created ' + done.join(', ') + '. ' : '') + 'Not created: ' + refused.join(' '), 'err');
+        else say(one ? 'Bill ' + done[0] + ' created in Bukku.' : done.length + ' bills created in Bukku.', 'ok');
       });
     });
   }

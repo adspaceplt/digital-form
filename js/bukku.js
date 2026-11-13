@@ -457,21 +457,27 @@
       var F = [['Client ID', d.field_client], ['Supplier ID', d.field_supplier], ['Creator ID', d.field_creator]];
       var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
       var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not set'; });
-      if (!on.length) return 'Not set';
+      var acct = d.bill_account_name ? 'Creator bill account: ' + d.bill_account_name : 'Creator bill account not set';
+      if (!on.length) return 'Not set · ' + acct;
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
-      return [list + (on.length === 1 ? ' field' : ' fields')].concat(off)
+      return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat([acct])
         .map(function (x) { return x.replace(/ /g, '\u00a0'); }).join(' · ');
     });
   }
   function openConfig(btn, sayRow) {
     sayRow = sayRow || function () {};
-    Promise.all([config(), call({ action: 'fields' })]).then(function (a) {
-      var c = a[0], f = a[1];
+    Promise.all([config(), call({ action: 'fields' }), call({ action: 'accounts' })]).then(function (a) {
+      var c = a[0], f = a[1], ac = a[2] || {};
       if (c.error) { sayRow(said(c), 'err'); return; }
       if (f.error) { sayRow(said(f), 'err'); return; }
       var list = (f.fields || []);
       if (!list.length) { sayRow('Bukku has no custom contact fields. Add Client ID, Supplier ID and Creator ID in Bukku first.', 'err'); return; }
       var choices = [['', 'Not set']].concat(list.map(function (x) { return [String(x.id), x.name]; }));
+      /* The account a creator's bill posts to (CREATOR FEES, 2026-11-13). */
+      var accts = ac.error ? [] : (ac.accounts || []);
+      var acctChoices = [['', 'Not set']].concat(accts.map(function (x) { return [String(x.id), (x.code ? x.code + ' · ' : '') + x.name]; }));
+      if (c.bill_account && !accts.some(function (x) { return String(x.id) === String(c.bill_account); }))
+        acctChoices.push([String(c.bill_account), c.bill_account_name || 'Account ' + c.bill_account]);
       window.ADspaceConfirm.ask({
         title: 'Bukku', go: 'Save', wait: true,
         body: 'Choose the Bukku contact field that holds each ID.',
@@ -480,7 +486,8 @@
           { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false },
           { name: 'creator', label: 'Creator ID field', choices: choices, value: c.field_creator ? String(c.field_creator) : '', required: false,
             note: 'If not set, the Creator ID goes in the Supplier ID field.' }
-        ],
+        ].concat(acctChoices.length > 1 ? [{ name: 'account', label: 'Creator bill account', choices: acctChoices,
+          value: c.bill_account ? String(c.bill_account) : '', required: false, note: 'The account a creator\'s bill is posted to in Bukku.' }] : []),
         check: function (v) {
           return v.client && (v.client === v.supplier || v.client === v.creator) ? 'Choose a different field for the Client ID.' : '';
         }
@@ -488,8 +495,13 @@
         return rpc('bukku_config_set', { p_client: v.client ? Number(v.client) : null, p_supplier: v.supplier ? Number(v.supplier) : null,
           p_creator: v.creator ? Number(v.creator) : null }).then(function (d) {
           if (d.error) return said(d);
-          sayRow('Saved.', 'ok');
-          return '';
+          if (!('account' in v) || String(v.account || '') === String(c.bill_account || '')) { sayRow('Saved.', 'ok'); return ''; }
+          var pick = acctChoices.filter(function (x) { return x[0] === v.account; })[0];
+          return rpc('bukku_bill_account_set', { p_account: v.account ? Number(v.account) : null, p_name: pick && v.account ? pick[1] : null }).then(function (d2) {
+            if (d2.error) return said(d2);
+            sayRow('Saved.', 'ok');
+            return '';
+          });
         });
       });
     });

@@ -10342,3 +10342,19 @@ history line `ai_draft_set_limit` files
 - 2026-11-13 · On a phone the Dashboard's figure tiles read through the console head as the page scrolled (the user's screenshot). The revamp's glass rule for the head (`--chrome`, 72%, no blur) came after the coarse-pointer rule that keeps it solid, and won. The head is solid (`--chrome-solid`) under a finger again; `tests/tabbar.js` holds it.
 
 - 2026-11-13 · The Assistant could not find a task by what it was about (the user: "are you able to find the xhs account renewal task"). `list_tasks` could only list by whose, client and due window, forty at a time, with no words to search, so a task named in words was found only by luck; and a colleague's "xhs" is the portal's rednote. `list_tasks` now takes `query`: every task the colleague may see, open, finished or cancelled, by title, code, description, brief or number, every word matching, a platform by any of its names; the prompt has Claude search again in fewer words before it says no. Found by the user asking, not by a suite: `tests/agent.js` checked the tool's refusals and never asked it for a task by name; it does now.
+
+### 2026-11-13 · A creator's fee is kept, made into a Bukku bill, and counted
+The user, on a posted booking reading Not billed: the client rate is what a
+client is charged, while each creator's fee is agreed per campaign and was
+nowhere in the portal, so nothing could be pushed to Bukku or totalled.
+Approved "go as recommended", with "no show amount just internal records
+creator records and bukku bill for payments". Built: a fee a booking and a
+standard fee a creator, both in tables with no grant, answered at Creator
+payments View alone; Create bill, which asks the database first, searches
+Bukku for a bill holding the Job reference before it makes one (a second
+press or a bill keyed by hand is never doubled) and takes a ten-minute
+claim; the account chosen in Settings, Money, Bukku; Totals' Agreed creator
+fees, Outstanding and Margin, one currency at a time. Older bookings took
+their fee from the bill Bukku already holds. The copy review moved every
+"made" to "created", the act's own word.
+
