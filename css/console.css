@@ -5052,6 +5052,14 @@ svg.sec {
     background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none;
   }
   @supports (height: 100dvh) { :root:not(.has-tabbar) .sidebar { height: 100dvh; } }
+  /* The rail at a desk is 212px (the user, 2026-11-13: "the left panel
+     could width could be smaller"), so the foot's four marks take a row of
+     their own, from the sections' left edge, and the build reads under them. */
+  :root:not(.has-tabbar) .sidebar { flex-basis: 212px; padding-inline: 12px; }
+  :root:not(.has-tabbar) .sidebar-foot { flex-wrap: wrap; gap: 4px; }
+  :root:not(.has-tabbar) .sidebar-foot .railrow,
+  :root:not(.has-tabbar) .sidebar-foot .railrow:not([hidden]) ~ .railrow { order: 0; margin: 0; }
+  :root:not(.has-tabbar) .sidebar-foot .appver { order: 1; flex: 1 0 100%; padding: 0 10px; text-align: left; }
   :root:not(.has-tabbar) .navitem.is-on { background: var(--card); box-shadow: 0 0 0 1px var(--card-edge); }
   :root:not(.has-tabbar) .console-main {
     margin: 12px 12px 12px 0; border-radius: 18px; background: var(--card);
