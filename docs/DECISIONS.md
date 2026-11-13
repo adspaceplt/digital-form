@@ -10241,3 +10241,13 @@ reads the function's source and fails an enum on a type list.
 
 ### 2026-11-13 · Payment terms read bare in Build quote
 The user: "Inside admin dont need this Needs approval it should only show to client facing. We're alr the admin making decisions". Build quote's Payment terms read NET 30 · Needs approval and the like; the colleague building the quotation is the one deciding, so the choices now read NET 7 to NET 90 alone. A note about approval belongs only where a client chooses a term.
+
+### 2026-11-13 · The loading line lives inside its host; layers have names
+The user: "the loading slider could be above and above a window pop out". The
+line was one fixed box at z-index 96, placed by measuring the head or sheet it
+sat under, so it drew over every menu, popover and the finder (all 50 to 96).
+It is now appended inside its host (the open sheet's head, else the card's top
+edge, else the console head or a client page's bar) at `top: 100%`, re-homed on
+each request, so anything laid over the host draws over it. Every page-level
+z-index in `css/portal.css` became a named token on one scale (`--z-sticky` to
+`--z-picker`), values unchanged. `tests/loadbar.js` passes unchanged.
