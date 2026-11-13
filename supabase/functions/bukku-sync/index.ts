@@ -675,7 +675,9 @@ export function paidOn(bill: any): string | null {
     .map((l: any) => String(l.date)).sort();
   return ds.length ? ds[ds.length - 1] : null;
 }
-async function creatorBills(creator: string, contact: number): Promise<any> {
+/* `made`: a bill Create bill just made, by Bukku's own ID, held to its
+   booking from then on (`made_for`), whatever its reference reads later. */
+async function creatorBills(creator: string, contact: number, made?: { id: number; option: string }): Promise<any> {
   const out: any[] = [];
   for (let page = 1; page <= 20; page++) {
     const r = await bukku('GET', `/purchases/bills?contact_id=${contact}&page=${page}&page_size=100`);
@@ -683,7 +685,9 @@ async function creatorBills(creator: string, contact: number): Promise<any> {
     for (const x of rows) {
       if (!x || !x.id || Number(x.contact_id) !== contact) continue;
       if (x.status && !['draft', 'ready', 'paid'].includes(String(x.status))) continue;
-      out.push(billOf(x));
+      const b: any = billOf(x);
+      if (made && b.id === made.id) b.made_for = made.option;
+      out.push(b);
     }
     const per = Number(r && r.paging && r.paging.per_page) || rows.length || 100;
     const total = Number(r && r.paging && r.paging.total) || 0;
@@ -1291,18 +1295,19 @@ Deno.serve(async (req) => {
       if (prep.error) return json({ error: 'needs-update' }, 200, origin);
       const p = prep.data || {};
       if (p.error) return json({ error: p.error }, 200, origin);
-      let made: string | null = null, had: string | null = null;
+      let made: string | null = null, had: string | null = null, madeId = 0;
       try {
         had = await billHolding(Number(p.contact_id), String(p.ref));
         if (!had) {
           const r = await bukku('POST', '/purchases/bills', billBody(p, await lastItem(Number(p.contact_id))));
           made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
+          madeId = Number((r && r.transaction && r.transaction.id) || 0);
         }
       } catch (e) {
         await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
         throw e;
       }
-      await creatorBills(String(p.creator), Number(p.contact_id));
+      await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);
       await db.rpc('creator_bill_done', { p_option: oid, p_number: made });
       const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
       if (list.error) return json({ error: 'needs-update' }, 200, origin);

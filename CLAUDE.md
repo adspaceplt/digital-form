@@ -4148,7 +4148,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   `creator_bill_done` letting go of the claim and filing the number. A
   draft is kept as one (`creator_bills.status` `draft`,
   `2026-11-13-creator-bill-drafts.sql`), the booking reading Draft in Bukku
-  until it is posted there; each bill's ⋯ holds Open in Bukku (`billlink`).
+  until it is posted there; each bill's ⋯ holds Open in Bukku (`billlink`); a bill the portal made
+  is held to its booking by Bukku's own bill ID (`creator_bills.made_for`,
+  `2026-11-13-creator-bills-by-bukku-id.sql`), whatever its reference reads
+  later, until Bukku no longer lists it (voided or deleted), which frees the
+  booking for Create bill again.
 - Creator payments sheet (`2026-11-09-creator-payments-sheet.sql`, Creator
   R4; the user, 2026-11-08: the payments spreadsheet, the full bank number
   in it): a set of payment details approved while the sheet is on is
