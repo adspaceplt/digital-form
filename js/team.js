@@ -692,11 +692,11 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
+    if (/own-expiry/.test(t)) return 'Your own access date can only be set by another admin. Please ask another admin.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
-    if (/system-account/.test(t)) return 'This is the super admin account.';
-    if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin.';
+    if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
+    if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin. Please ask the super admin.';
     if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin can change your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
     return t;
@@ -996,8 +996,8 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Your own account is removed by another admin.', 'system-account': 'This is the super admin account.', 'admin-only': ADMIN_ONLY,
-    'super-only': 'Only the super admin can make or remove an admin.',
+    own: 'Your own account can only be removed by another admin. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
   };
