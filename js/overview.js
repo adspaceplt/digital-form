@@ -1644,7 +1644,17 @@
       grid.className = 'ovw-kpis ovw-lead';
       grid.id = 'ovwMeLead';
       box.appendChild(grid);
-      var get = function (f) { return function () { return read().then(f); }; };
+      /* A figure whose read failed says so with Try again, never 0 (the
+         review, 2026-11-13). */
+      var get = function (f, src) {
+        return function () {
+          return read().then(function (d) {
+            var bad = d.failed.filter(function (x) { return src === 'tasks' ? x === 'Tasks' : x !== 'Tasks'; });
+            if (bad.length) throw new Error('Could not load ' + bad.join(', ') + '.');
+            return f(d);
+          });
+        };
+      };
       /* A colleague who sells and holds no My Work (Sales) reads their
          leads' figures in its place. */
       if (!may('ops', 'view')) {
@@ -1673,23 +1683,23 @@
       [{ key: 'me-open', title: 'My open tasks', sec: 'work', load: get(function (d) {
           var week = d.tasks.filter(function (t) { return t.days !== null && t.days >= 0 && t.days <= 7 && !t.late; }).length;
           return { fig: String(d.tasks.length), sub: week ? week + ' due within 7 days' : 'None due within 7 days' };
-        }) },
+        }, 'tasks') },
        { key: 'me-late', title: 'Late', sec: 'work', load: get(function (d) {
           var late = d.tasks.filter(function (t) { return t.late; });
           var oldest = late.reduce(function (m, t) { return Math.max(m, t.lateDays || 0); }, 0);
           return { fig: String(late.length), tone: late.length ? 'err' : '', sub: late.length ? (oldest ? 'Oldest ' + daysWord(oldest) : 'Late today') : 'None late' };
-        }) },
+        }, 'tasks') },
        { key: 'me-today', title: 'Due today', sec: 'work', load: get(function (d) {
           var n = d.tasks.filter(function (t) { return t.days === 0 && !t.late; }).length;
           var next = d.tasks.filter(function (t) { return t.days !== null && t.days > 0; }).sort(function (a, b) { return a.days - b.days; })[0];
           return { fig: String(n), sub: next ? 'Next ' + dayWord(next.due) : 'Nothing further due' };
-        }) },
+        }, 'tasks') },
        { key: 'me-wait', title: 'Waiting for you', sec: 'work', load: get(function (d) {
           var by = {};
           d.waiting.forEach(function (r) { by[r.state] = (by[r.state] || 0) + 1; });
           var parts = Object.keys(by).map(function (k) { return by[k] + ' ' + k.toLowerCase(); });
           return { fig: String(d.waiting.length), sub: parts.length ? parts.slice(0, 2).join(', ') : 'Nothing waiting' };
-        }) }].forEach(function (t) { tile(grid, t); });
+        }, 'wait') }].forEach(function (t) { tile(grid, t); });
     }
     /* The Assistant as one field (Ctrl + J): what is typed opens it with the
        question asked; two suggested questions under it. */
@@ -1828,10 +1838,10 @@
       card.querySelector('.ovw-today-n').textContent = CK.date(days[0], { year: false }) + ' to ' + CK.date(days[4], { year: false });
       var meet = may('ops', 'view') && me ? db.from('ops_engagements').select('id, meeting_at, meeting_channel, clients(name)')
         .eq('meeting_owner_id', me.id).gte('meeting_at', new Date(days[0] + 'T00:00:00+08:00').toISOString())
-        .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()).then(rows).catch(function () { return []; }) : Promise.resolve([]);
+        .lte('meeting_at', new Date(days[4] + 'T23:59:59+08:00').toISOString()).then(rows).catch(function () { return null; }) : Promise.resolve([]);
       meet.then(function (ms) {
         var html = days.map(function (day, i) {
-          var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day; }).map(function (t) {
+          var ts = d.tasks.filter(function (t) { return t.due && CK.day(t.due) === day && !(i === 0 && t.late); }).map(function (t) {
             return '<span class="ovw-ev' + (t.late ? ' is-late' : '') + '">' + esc(t.code || t.name) + (t.code ? ' ' + esc(t.name) : '') + '</span>';
           });
           if (i === 0) ts = d.tasks.filter(function (t) { return t.late; }).map(function (t) {
@@ -1846,6 +1856,14 @@
             '<div class="ovw-day-evs">' + (ts.length ? ts.slice(0, 4).join('') + (ts.length > 4 ? '<span class="ovw-ev is-more">' + (ts.length - 4) + ' more</span>' : '') : '<span class="ovw-ev is-none">Nothing due</span>') + '</div></div>';
         }).join('');
         card.querySelector('.ovw-days').innerHTML = html;
+        /* A refused read of the meetings is said, never drawn as a free day. */
+        if (ms === null) {
+          var f = document.createElement('div');
+          f.className = 'errline';
+          f.innerHTML = '<b>Could not load the meetings.</b><button class="btn btn-sm" type="button">Try again</button>';
+          f.querySelector('button').addEventListener('click', redraw);
+          card.appendChild(f);
+        }
       });
     }
     /* My clients this month: the clients the colleague is person in charge
@@ -1898,8 +1916,10 @@
       cols.appendChild(left); cols.appendChild(right);
       box.appendChild(cols);
       UI.skeleton(left, 4);
-      Promise.all([read(), leads().catch(function () { return []; }), unsent().catch(function () { return []; })]).then(function (r) {
-        var d = r[0];
+      var lost = [];
+      var named = function (p, word) { return p.catch(function () { lost.push(word); return []; }); };
+      Promise.all([read(), named(leads(), 'Leads'), named(unsent(), 'Reports')]).then(function (r) {
+        var d = { tasks: r[0].tasks, waiting: r[0].waiting, failed: r[0].failed.concat(lost) };
         ask(wrap, d);
         if (!wrap.children.length) wrap.remove();
         left.innerHTML = '';
@@ -1980,6 +2000,12 @@
     if (bridge.setUrl) bridge.setUrl();
   }
 
-  window.ADspaceOverview = { enter: enter, urlState: urlState, any: any };
+  /* The greeting follows the clock while the Dashboard is on screen, a
+     minute at a time; it reads nothing (the review, 2026-11-13). */
+  setInterval(function () {
+    var sec = $('sectionOverview');
+    if (sec && !sec.hidden && !document.hidden) greet();
+  }, 60000);
+  window.ADspaceOverview = { enter: enter, urlState: urlState, any: any, greetWord: greetWord };
   if (bridge.overviewReady) bridge.overviewReady();
 })();
