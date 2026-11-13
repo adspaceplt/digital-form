@@ -45,6 +45,10 @@
      until it is submitted or cancelled. A refresh in the middle of a campaign
      used to throw all of it away. `extra` is for the parts that are not plain
      fields: the profile link rows and the platform ticks. */
+  /* A booking register takes its two-line row at 575px of its own width and under:
+     a date and time (10 Sept 2026, 2:00pm) needs 135px beside the 120px name, the
+     step and the acts (2026-11-13). */
+  var REG_TIGHT = '575';
   var DRAFT = 'adspace.admin.draft.';
   function keepDraft(boxId, ids, extra) {
     var key = DRAFT + boxId;
@@ -2866,6 +2870,7 @@
     var when = isDelivery() ? 'Delivery' : 'Shoot';
     var t = document.createElement('div');
     t.className = 'bookreg sched-reg';
+    t.setAttribute('data-narrow', '640'); t.setAttribute('data-tight', REG_TIGHT);
     t.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span><span>' + when +
       '</span><span>Post date</span><span></span></div>';
     function logField(label, key, value, type) {
@@ -3006,6 +3011,7 @@
     box.className = '';
     box.innerHTML = '';
     box.appendChild(t);
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
   }
 
   /* How a schedule change is named on the record. */
@@ -3297,6 +3303,7 @@
          each card rather than down a column. The card is still the record —
          the steps open inside it — it just stops being a card. */
       box.className = 'bookreg';
+      box.setAttribute('data-narrow', '640'); box.setAttribute('data-tight', REG_TIGHT);
       box.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span>' +
         '<span>Booking</span><span>Step</span><span></span></div>';
       var sorted = state.options.slice().sort(function (a, b) {
@@ -3340,6 +3347,7 @@
       }
     }
 
+    if (window.ADspaceState && window.ADspaceState.fit) window.ADspaceState.fit();
     // Accepting is offered exactly when the client has chosen something.
     var waiting = mayWork() ? state.options.filter(function (o) { return o.state === 'shortlisted'; }) : [];
     $('campLock').hidden = !waiting.length;

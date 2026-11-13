@@ -10321,6 +10321,7 @@ The user, told that Edit stayed on the quotation row because the ⋯ was full at
 
 - 2026-11-13 · A campaign's Creators read as five cards (the user: "consumes too many unused spacings … scrolling through one part requires to be very long"). The v3 desk rule outlined every `.kcard` with the large corner, which reached a register's rows and undid the register's own rows (no corner, a `--line-soft` line between). The register is now the card (`.bookreg` in the card list), its rows lines inside it again, 48px a row (7px over and under the 34px controls, from 11).
 
+- 2026-11-13 · A booking's date was cut in a narrow pane, "12 Sept 20…" (the user: "it shouldn't cut off"). Measured: the summary (10 Sept 2026, 2:00pm) needs 135px, and between a 1100 and 1200 window the register is 486 to 534px, leaving it 50 to 98. A wrap is no answer (uxaudit refuses a summary that wraps or clips), so the register states its own tight line (`data-tight`, 575, read by `ADspaceState.fit`) and under it takes the phone's two-line row, the date whole under the step. `geom` read the tight row by the pane alone and still held the one-line row to 56 to 72px, which #1107 made 48; it reads the register's own class and 48 to 64 now.
 ### 2026-11-13 · The AI report rule says per
 The copy review of the builds since #1067 found the AI usage rule read
 "One draft and one check a report a day"; a label says per, never "a". It
