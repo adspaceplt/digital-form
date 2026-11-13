@@ -1673,7 +1673,7 @@
               '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div>' :
               (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
               '<div class="qb-desc-acts">' + (own ? '<span class="qb-desc-own">Edited</span>' : '') +
-                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (incl.length ? 'Edit' : 'Add description') + '</button>' +
+                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit' : 'Add description') + '</button>' +
                 (own ? '<button type="button" class="btn btn-quiet btn-sm qb-desc-card">Use Rate Card</button>' : '') + '</div>') +
             '</div>';
         } else if (incl.length) desc = '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
