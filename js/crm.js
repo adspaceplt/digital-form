@@ -3062,7 +3062,7 @@
        open, the facts it holds (an empty optional one left out). */
     box.innerHTML = '<section class="readgroup ent-head">' +
       '<div class="readgroup-head"><h4 class="fsec-h">Other billing entities' + (others.length ? ' <span class="tab-n">' + others.length + '</span>' : '') + '</h4>' +
-      (work ? '<button class="btn btn-sm" id="crmEntAdd" type="button" data-need="clients.billing:work">Add entity</button>' : '') + '</div>' +
+      (work ? '<button class="btn btn-quiet btn-sm" id="crmEntAdd" type="button" data-need="clients.billing:work">Add entity</button>' : '') + '</div>' +
       (others.length ? '' : '<p class="muted ent-none">None.</p>') + '</section>' +
       others.map(function (e) {
         var rows = [['Business Registration No.', t(e.company_no), true]];
@@ -4785,6 +4785,7 @@
       }
       var rows = (r.data && r.data.rows) || [];
       head.hidden = box.hidden = !rows.length && !mayMail();
+      partN('crmEmails', rows.length);
       /* The empty part is the white card every record part's empty line is
          (`.empty`), the same edges as Contacts above it (2026-11-08). */
       if (!rows.length) { box.innerHTML = '<div class="empty">No emails.</div>'; return; }
@@ -4816,6 +4817,7 @@
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         state.contactsFor = state.client.id;
+        partN('crmContacts', state.contacts.length);
         paintSummary();
         var gone = all.filter(function (c) { return c.archived_at; });
         paintBilling(state.client);
@@ -5252,6 +5254,7 @@
         ovFailed('calls', false);
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
+        partN('crmTouches', state.touches.length);
         paintSummary();
         var gone = all.filter(function (t) { return t.archived_at; });
         box.innerHTML = '';
@@ -5590,12 +5593,12 @@
     act.innerHTML =
       (!canReview ? ''
         : c.review_hidden
-        ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
-        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + CHEVR + '</button>') +
-      (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '') +
+        ? '<button class="btn btn-quiet btn-sm btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
+        : '<button class="btn btn-quiet btn-sm btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + CHEVR + '</button>') +
+      (canCamp ? '<button class="btn btn-quiet btn-sm btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '') +
       /* A month is made in My Work (2026-10-31): this opens its sheet there
          on the client. */
-      (mayPart('ops', 'work') ? '<button class="btn btn-icon" id="crmNewMonth" type="button">' + PLUS + '<span>New month</span></button>' : '');
+      (mayPart('ops', 'work') ? '<button class="btn btn-quiet btn-sm btn-icon" id="crmNewMonth" type="button">' + PLUS + '<span>New month</span></button>' : '');
     var nm = $('crmNewMonth');
     if (nm) nm.addEventListener('click', function () {
       goTo('/admin/?s=work&view=months&wc=' + encodeURIComponent(keyOf(c)) + '&new=month', 'work');
@@ -5745,6 +5748,9 @@
     else if (state.services && state.quotes && !quotes.length) blue = build;
     var gives = Array.prototype.slice.call(document.querySelectorAll('#crmQuotes .qt-dl [data-a="send"], #crmQuotes .qt-dl [data-a="publish"]'));
     [build].concat(gives, signs).forEach(function (b) { if (b) b.classList.toggle('btn-primary', b === blue); });
+    /* Build quote is a quiet act in its card's head until it is the
+       record's next step (2026-11-13). */
+    if (build) build.classList.toggle('btn-quiet', build !== blue);
   }
   function quoteContact() {
     return (state.contacts || []).filter(function (x) { return x.is_primary && !x.archived_at; })[0] ||
@@ -5822,9 +5828,21 @@
     });
   }
 
+  /* A record's part is a card, its count beside its title (the user,
+     2026-11-13, A to D); none is drawn at nought. */
+  function partN(id, n) {
+    var el = $(id), part = el && el.closest('.rec-part');
+    var hm = part && part.querySelector('.viewhead .headmark');
+    if (!hm) return;
+    var t = hm.querySelector('.part-n');
+    if (!n) { if (t) t.remove(); return; }
+    if (!t) { t = document.createElement('span'); t.className = 'tab-n part-n'; hm.appendChild(t); }
+    t.textContent = String(n);
+  }
   function paintServices() {
     var box = $('crmServices');
     var rows = state.services;
+    partN('crmServices', rows.length);
     var gone = state.servicesGone || [];
     var c = state.client;
     box.innerHTML = '';
@@ -6284,6 +6302,7 @@
       return db.from('client_requests').select('*').eq('client_id', id).order('created_at', { ascending: false }).then(function (r) {
         if (r.error || state.client.id !== id) { wrap.hidden = true; return; }
         state.requests = r.data || [];
+        partN('crmRequestList', state.requests.length);
         wrap.hidden = !state.requests.length && !anyPortal && !mayAdd;
         if (wrap.hidden) return;
         box.innerHTML = '';
@@ -6495,6 +6514,7 @@
       /* Kept so the Summary can read them without a second call: the record
          has already paid for this. */
       state.documents = rows || [];
+      partN('crmDocuments', state.documents.length);
       paintSummary();
       /* Which service lines each letter captured. A letter issued before this
          change has none, which is what keeps it out of verification. */

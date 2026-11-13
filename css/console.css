@@ -5076,20 +5076,59 @@ svg.sec {
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) {
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) {
     background-color: var(--card); box-shadow: none;
     /* An outline drawn just inside the card, above what it holds: an inset
        shadow is painted under the rows, whose white ground hid the edge
        (the user, 2026-11-12: "border missing" on Clients). */
     outline: 1px solid var(--card-edge); outline-offset: -1px;
   }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups)
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part)
     :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) { box-shadow: none; outline: 0; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups):focus-visible {
     outline: 2px solid var(--action-ring); outline-offset: 2px;
   }
 }
 .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard) { border-radius: var(--radius-lg); }
+/* A record is cards on a grey ground (the user, 2026-11-13, "proceed A to
+   D"): inside an open record the sheet is the page's grey, each part of a
+   pane (its head and its list) is one white card with its count beside its
+   title and its add act quiet, and each rail block is a card of its own, so
+   the parts read as parts and not as one piece of paper. */
+@media (min-width: 861px) {
+  :root:not(.has-tabbar) .console-main:has(.console-body:not([hidden]) :is(#crmWork, #campWork, #crRec, #supRec, #teamRec):not([hidden])) {
+    background: var(--page);
+  }
+}
+.console .rec-part { background: var(--card); border-radius: var(--radius-lg); min-width: 0; }
+.console .rec-part:has(> .viewhead[hidden]) { display: none; }
+.console .rec-part > .viewhead { margin: 0; padding: 14px 15px 8px; }
+.console .rec-part > .viewhead h2 { font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: -.01em; flex: 0 1 auto; }
+.console .rec-part > .viewhead .headmark { gap: 8px; }
+.console .rec-part .part-n { margin-left: 0; }
+.console .rec-part > .msg:empty { display: none; }
+.console .rec-part > .msg { margin: 0; padding: 0 15px 8px; }
+.console .rec-part .crm-table { background: none; border: 0; border-radius: 0; box-shadow: none; outline: 0; margin: 0; }
+.console .rec-part .empty, #crmWork .rec-part .empty, #campWork .rec-part .empty { background: none; border: 0; margin: 0; padding: 4px 15px 16px; }
+.console .rec-part .crm-removed-toggle { margin: 4px 15px 12px; }
+.console .rec-pane:has(> .rec-part) { display: flex; flex-direction: column; gap: 12px; }
+.console .rec:not(.cportal) .rec-panes { gap: 12px; }
+.console .rec:not(.cportal) > .rec-rail > .railblock,
+.console .rec:not(.cportal) > .rec-rail > .railblock.is-last:not(.rail-after) {
+  background: var(--card); border-radius: var(--radius-lg); border-bottom: 0; padding: 14px 16px; margin: 0 0 12px;
+}
+.console .rec:not(.cportal) > .rec-rail > .railblock.is-last { margin-bottom: 0; }
+@media (max-width: 1100px) {
+  .console .rec:not(.cportal) > .rec-pane:not([hidden]), .console .rec:not(.cportal) > .rec-panes { margin-bottom: 12px; }
+  .console .rec:not(.cportal) > .rec-rail > .railblock.is-last { margin-bottom: 12px; }
+}
+/* A rail fact's pen and ⋯ show on hover and focus at a desk; under a
+   finger they always show (2026-11-13, D). */
+@media (hover: hover) and (pointer: fine) {
+  .console .rec-rail .tl-pen { opacity: 0; transition: opacity var(--t-fast) var(--ease-out); }
+  .console .rec-rail .railblock:hover .tl-pen, .console .rec-rail .railblock:focus-within .tl-pen,
+  .console .rec-rail .tl-pen[aria-expanded="true"] { opacity: 1; }
+}
 .nav-n { margin-left: auto; font-size: 12.5px; font-weight: 600; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 /* The Dashboard's lead row: four figures across, two by two when narrow. */
 .ovw-kpis.ovw-lead { grid-template-columns: repeat(4, minmax(0, 1fr)); }

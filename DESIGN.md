@@ -22,7 +22,15 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   with a `--card-edge` hairline drawn as an outline just inside it (never
   an inset shadow, which the rows' white ground covers), never a shadow; a card inside a
   card is one surface; cards take the large corner (`--radius-lg`). The
-  rail's My Work row counts what waits on the reader (`.nav-n`). Phones
+  rail's My Work row counts what waits on the reader (`.nav-n`). Inside an
+  open record (a client, a campaign, a supplier, a colleague, a creator)
+  the sheet is the page's grey (`--page`) and the record is cards on it
+  (the user, 2026-11-13, "proceed A to D"): the head, each part of a pane
+  (`.rec-part`: its head inside the card at 15/600 with its count as a
+  `.tab-n`, its list the card's rows) and each rail block, 12px apart; a
+  part's add act is quiet (`.btn-quiet .btn-sm` with its glyph) unless it
+  is the record's next step; a rail fact's pen and ⋯ show on hover and
+  focus at a desk, always under a finger. Phones
   keep their solid head and one-line title. What holds words over other
   words (a menu, a popover, the finder, a sheet, a question) is solid
   `--raised`. Client pages keep their white.
@@ -143,7 +151,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.qnext-title`, `.lockcard-title`) |
 | Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
-| Money in a row | 13.5px tabular, its figure at 600 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
+| Money in a row | 13.5px tabular, its figure at 500 (never the browser's bold) | `.svc-rate`, `.svc-amt b` |
 | A row on a client page | 14px: a line, a figure, a total, a script's words, never the 16px reading size (2026-10-31; uxaudit `figsize`) | `.qs-quote`, `.cp-line`, `.vs-text` |
 | Control, small | 13 / 12.5px | |
 | Label | 12/600, sentence case, mute, **no tracking, never uppercase** | Every table header, band, fact label, step title, sidebar kicker |
@@ -229,7 +237,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
 | Counts and money | `.tallies` > `.tallygroup` > `.tally` > `.tally-cell` (`is-total`, `is-warn`); no cell alone on the last row: on a desk five cells read three over two and six three over three until all fit one row |
 | Completeness | `.ringline` > `.ring` + "2 of 4"; a bar (`.railbar-fill`) in ink while it fills, green (`is-done`) only once complete |
-| A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`): `.rec-id` identity, `.rectabs` panes, `.rec-rail` of `.railblock`s |
+| A record | Workspace `.rec` (`minmax(0,1.618fr) minmax(280px,1fr)`, rows `auto 1fr`) on the grey ground: `.rec-id` identity (a card), `.rectabs` panes, each part a `section.rec-part` card (its `.viewhead` inside, the count beside the title, the add act quiet), `.rec-rail` of `.railblock` cards; a part whose list is already cards (month groups, read groups, booking cards) keeps its head on the ground over them. A row keeps at most two buttons (Preview and its next step); the rest is its ⋯ |
 | A record with no artwork (a task) | `.rec-id-plain`: the number as a token (copy control) heading the record, no mark |
 | One record with steps | `.kcard` > `.kcard-head` (name, then summary, then the state beside the ⋯) + `.kstep` |
 | Rare or destructive acts | `.kmenu-btn` ⋯ + `.kmenu` drawn by `ADspaceMenu.items([[open],[change],[send],[mark],[lifecycle],[destroy]])`: fixed order, `hr.kmenu-sep` between groups (always before destroy), Remove/Void/Delete red and last, 13.5/400, one width, role menu/menuitem; ≤7 items; one item only for lifecycle or destroy (§5 Menus and action groups) |
