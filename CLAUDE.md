@@ -4132,7 +4132,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (trigger `creator_bills_fee`, backfilled); answered at `campaigns.pay` View
   alone (`creator_bills_list` `fee`, `standard_fee`; `creator_totals`
   `agreed`, `owed` (no paid bill) and `margin` (client rate less the fee in
-  one currency)), never to the creator's page or a client. Create bill (a
+  one currency, an admin's alone: `perf_is_admin()`,
+  `2026-11-13-creator-margin-admins.sql`)), never to the creator's page or a client. Create bill (a
   booking Posted or Completed with no bill, the creator linked, the account
   chosen; it asks the amount, the fee written in, and keeps it as the fee
   first) and Create n bills (those with a fee) (`bukku-sync` `createbill`, one at a time):
