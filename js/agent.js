@@ -153,6 +153,47 @@
       });
   }
 
+  /* A task asked for by its words (2026-11-13: "the xhs account renewal task"
+     found nothing, list_tasks had no words to search). As My Work's search:
+     every task the colleague may see, open or finished, by title, code,
+     description, brief or number; every word must match somewhere, and a
+     platform matches by any of its names. */
+  var ALIAS = [['xhs', 'rednote', 'xiaohongshu', '小红书', 'red note'], ['ig', 'instagram'], ['fb', 'facebook'],
+    ['tt', 'tiktok', 'tik tok'], ['yt', 'youtube']];
+  function namesOf(w) {
+    for (var i = 0; i < ALIAS.length; i++) if (ALIAS[i].indexOf(w) >= 0) return ALIAS[i];
+    return [w];
+  }
+  function findTasks(a) {
+    var words = clean(a.query).toLowerCase().replace(/["\\%*,()_]/g, ' ').split(/\s+/).filter(function (w) { return w.length > 1; });
+    if (!words.length) return Promise.resolve({ error: 'too-short' });
+    var num = /^#?(?:wt)?0*(\d{1,7})$/i.exec(words.join(''));
+    var lead = words.slice().sort(function (x, y) { return y.length - x.length; })[0];
+    var ors = [];
+    namesOf(lead).forEach(function (n) {
+      ['title', 'code', 'content_desc', 'description'].forEach(function (c) { ors.push(c + '.ilike."%' + n + '%"'); });
+    });
+    if (num) ors.push('task_no.eq.' + Number(num[1]));
+    return Promise.all([team(), loadStages()]).then(function () {
+      var q = db.from('ops_tasks').select(TASK_COLS + ', description').is('archived_at', null).or(ors.join(','));
+      if (a.client_id) q = q.eq('client_id', a.client_id);
+      return q.order('created_at', { ascending: false }).limit(200);
+    }).then(rows).then(function (list) {
+      var hits = list.filter(function (t) {
+        if (num && t.task_no === Number(num[1])) return true;
+        var text = [t.title, t.code, t.content_desc, t.description, t.clients && t.clients.name].join(' ').toLowerCase();
+        return words.every(function (w) { return namesOf(w).some(function (n) { return text.indexOf(n) >= 0; }); });
+      }).slice(0, 20);
+      return ownersOf(hits.map(function (x) { return x.id; })).then(function (o) {
+        return { tasks: hits.map(function (x) {
+          var r = taskRow(x, o);
+          if (x.cancelled_at) r.cancelled = true;
+          return r;
+        }), searched: a.query, shown: hits.length };
+      });
+    });
+  }
+
   var READ = {
     find_clients: function (a) {
       if (!may('clients')) return Promise.resolve(noAccess());
@@ -203,6 +244,7 @@
     },
     list_tasks: function (a) {
       if (!may('ops')) return Promise.resolve(noAccess());
+      if (clean(a.query || '').length >= 2) return findTasks(a);
       if (a.whose === 'everyone' && !may('ops.all')) return Promise.resolve({ error: 'no-access', why: 'Only your own tasks may be listed.' });
       var mine = a.whose === 'me' ? (me() || {}).id : a.whose === 'person' ? a.person_id : null;
       if (a.whose === 'person' && !a.person_id) return Promise.resolve({ error: 'person_id required' });
