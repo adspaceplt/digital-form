@@ -1844,7 +1844,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   `client_months`, `list_sets`, `list_campaigns`, `find_contacts`) makes the
   screens' own reads under their policies, asks `may()` first (no-access),
   and never sends a contact's email or number; an email or number typed into
-  a question is masked by the function. A client's name and its work go to
+  a question is masked by the function. `list_tasks` with a `query` finds a
+  task by its words as My Work's search does (every task the colleague may
+  see, open, finished or cancelled; title, code, description, brief or
+  number), every word matching and a platform by any of its names (xhs,
+  rednote, 小红书; IG; FB; `ALIAS`); the prompt tells Claude to search again
+  in fewer words before saying a task is not there (the user, 2026-11-13:
+  "find the xhs account renewal task" found nothing). A client's name and its work go to
   Claude (approved by the user for the assistant, 2026-11-13).
 - A change is a `propose_*` tool, drawn as a card of what will be written,
   from and to (`.ag-confirm`, its act Confirm, else the screen's own word:
