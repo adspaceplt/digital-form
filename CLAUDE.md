@@ -6908,7 +6908,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   2) prints Monthly Service Fee, One-off Items and Advertising Budget, each
   closing on its own total, the term's total a sentence in TERMS, the term
   row a discount or a surcharge (`ADspaceMoney.termLine`); an older one redraws
-  as kept. Build quote asks Payment terms (NET 7 unless chosen; 30 and longer
+  as kept. Build quote asks Payment terms (NET 7 unless chosen, the choices bare: the team decides; 30 and longer
   subject to ADspace's approval, `payLine`) and Include advertising budget (a
   row a platform, Monthly or One-off; the client's money, kept in the totals,
   never a service line or revenue; `quote_extras`). Its Advanced switch adds
