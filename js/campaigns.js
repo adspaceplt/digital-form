@@ -952,18 +952,20 @@
       fields: [
         { name: 'bill_kind', label: 'Billing as', choices: [['nric', 'Individual (NRIC)'], ['passport', 'Individual (Passport)'], ['brn', 'Company']], value: h.bill_kind || 'nric' },
         { name: 'id_no', label: 'NRIC, Passport or Business Registration No.', value: h.id_no || '', required: !held, note: held && !h.id_no ? blank + h.id_end + '.' : '' },
-        { name: 'legal_name', label: 'Legal name', value: h.legal_name || '', required: true },
+        /* The bill and the transfer go to the legal name, so it is the
+           account holder too (the user, 2026-11-13); creator_pay_check sets
+           it and opens every word on a capital. */
+        { name: 'legal_name', label: 'Legal name', value: h.legal_name || '', required: true, note: 'The bank account is held in this name.' },
         { name: 'tin', label: 'Tax Identification Number (TIN)', value: h.tin || '', required: false, note: 'Optional' },
         { name: 'address', label: 'Billing address', value: h.address || '', rows: 2, required: !held || !h.address },
         { name: 'how', label: 'Payment method', choices: PAY_HOW, value: h.currency ? h.currency + '|' + h.method : 'MYR|bank' },
         { name: 'bank', label: 'Bank', choices: [['', 'Not a bank transfer']].concat(PAY_BANKS.map(function (b) { return [b, b]; })), value: h.bank || '' },
         { name: 'account', label: 'Account no., DuitNow ID or PayNow ID', value: h.account || '', required: !held, note: held && !h.account ? blank + h.account_end + '.' : '' },
-        { name: 'payee', label: 'Account holder', value: h.payee || '', required: true },
         { name: 'email', label: 'Email', value: h.email || '', required: true },
         { name: 'whatsapp', label: 'WhatsApp', value: h.whatsapp || '', required: true }] }, function (v) {
       var how = String(v.how || 'MYR|bank').split('|');
       var vals = { bill_kind: v.bill_kind, id_no: v.id_no, legal_name: v.legal_name, tin: v.tin, address: v.address,
-        currency: how[0], method: how[1], bank: how[1] === 'bank' ? v.bank : '', account: v.account, payee: v.payee, email: v.email, whatsapp: v.whatsapp };
+        currency: how[0], method: how[1], bank: how[1] === 'bank' ? v.bank : '', account: v.account, payee: v.legal_name, email: v.email, whatsapp: v.whatsapp };
       return db.rpc('creator_pay_add', { p_creator: c.id, p_values: vals }).then(function (r) {
         var d = r.data || {};
         if (r.error) return /could not find|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : r.error.message;

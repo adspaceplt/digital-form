@@ -9737,6 +9737,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (k === 'passport' && !/^[A-Z0-9]{5,20}$/.test(id)) return { field: 'id_no' };
       if (k === 'nric') id = id.slice(0, 6) + '-' + id.slice(6, 8) + '-' + id.slice(8);
       if (nm.length < 2 || nm.length > 120) return { field: 'legal_name' };
+
+      nm = nm.split(' ').map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+      py = nm;
       if (tin && !/^[A-Z0-9]{5,20}$/.test(tin)) return { field: 'tin' };
       if (ad.length < 5 || ad.length > 300) return { field: 'address' };
       if (cu !== 'MYR' && cu !== 'SGD') return { field: 'currency' };
