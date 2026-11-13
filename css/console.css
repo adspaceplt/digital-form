@@ -5086,15 +5086,20 @@ svg.sec {
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock) {
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg) {
     background-color: var(--card); box-shadow: none;
     /* An outline drawn just inside the card, above what it holds: an inset
        shadow is painted under the rows, whose white ground hid the edge
        (the user, 2026-11-12: "border missing" on Clients). */
     outline: 1px solid var(--card-edge); outline-offset: -1px;
   }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part)
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .bookreg)
     :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups) { box-shadow: none; outline: 0; }
+  /* A register's rows are lines of one card, never cards of their own (the
+     user, 2026-11-13: each booking read as a card of its own). */
+  :root:not(.has-tabbar) .console .bookreg .kcard { border-radius: 0; margin: 0; border-width: 0 0 1px; border-color: var(--line-soft); }
+  :root:not(.has-tabbar) .console .bookreg .kcard:last-child { border-bottom: 0; }
+  :root:not(.has-tabbar) .console .bookreg .kcard-head { padding-block: 7px; }
   :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups):focus-visible {
     outline: 2px solid var(--action-ring); outline-offset: 2px;
   }
