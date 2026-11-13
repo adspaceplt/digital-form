@@ -972,8 +972,8 @@ screenshotted, and the push names any line it could not settle.
    section alone, to a reader who did not write them (CLAUDE.md §1).
 
 ## 7. Architecture
-- The Dashboard sits alone above the two chunks, with no label, drawn only for
-  a group that manages a section (`CLAUDE.md`).
+- The Dashboard sits alone above the two chunks, with no label, drawn for
+  every colleague (its Me tab; `CLAUDE.md`).
 - Analytics follows it, above the chunks, drawn only for `team.analytics`.
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:

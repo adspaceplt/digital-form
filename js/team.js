@@ -272,8 +272,10 @@
      allowed. No Access only hides the page; each card still asks Full
      Access on its own section. */
   var DASH = 'overview';
-  var DASH_DESC = { on: 'Shows the cards of each section the group has at Full Access.', none: 'The Dashboard is hidden.',
-    empty: 'On, but nothing is shown: the group has no section at Full Access.' };
+  /* Since the revamp (2026-11-13) every colleague has the Dashboard's Me
+     tab; this row decides the Team tabs alone. */
+  var DASH_DESC = { on: 'Shows the Team tabs with the cards of each section the group has at Full Access.', none: 'The Team tabs are hidden. Me is always shown.',
+    empty: 'On, but the Team tabs show nothing: the group has no section at Full Access.' };
   var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
     'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1, 'whatsapp.documents': 1 };
 
@@ -1071,7 +1073,7 @@
   function accessMoves(before, after) {
     before = before || {}; after = after || {};
     var name = function (k) {
-      if (k === DASH) return 'Dashboard';
+      if (k === DASH) return 'Team dashboard';
       var bits = k.split('.');
       var sec = SECTIONS.filter(function (x) { return x[0] === bits[0]; })[0];
       var part = bits[1] && (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
@@ -1114,7 +1116,7 @@
       .map(function (s) { return word(s, true); }).filter(Boolean);
     if (only.length) parts.push(part('Only:') + ' ' + only.join(', '));
     if (r.client_scope === 'own') parts.push(part('Own clients only'));
-    if (acc[DASH] === 'none') parts.push(part('Dashboard: No Access'));
+    if (acc[DASH] === 'none') parts.push(part('Team dashboard: No Access'));
     return parts.length ? parts.join(' · ') : part('No Access');
   }
 
@@ -1369,8 +1371,8 @@
   }
   $('grFlags').innerHTML =
     '<div class="permchunk permdash"><div class="permsec" data-sec="' + DASH + '">' +
-      '<span class="permsec-name">Dashboard</span>' +
-      '<select class="select select-sm" data-seg id="grDash" aria-label="Dashboard access">' +
+      '<span class="permsec-name">Team dashboard</span>' +
+      '<select class="select select-sm" data-seg id="grDash" aria-label="Team dashboard access">' +
         '<option value="none">No Access</option><option value="on">On</option></select>' +
       '<p class="permsec-desc" id="grDesc-' + DASH + '"></p></div></div>' +
     CHUNKS.map(function (c) {
@@ -1484,7 +1486,7 @@
     return LEVEL_WORD[v] || 'No Access';
   }
   function keyName(k) {
-    if (k === DASH) return 'Dashboard';
+    if (k === DASH) return 'Team dashboard';
     if (TOOL[k]) return partName(k);
     var bits = k.split('.'), sec = secOf(bits[0]);
     return bits[1] ? partName(k) + ' (' + (sec ? sec[1] : bits[0]) + ')' : (sec ? sec[1] : bits[0]);
@@ -1540,7 +1542,7 @@
     });
     var line = said.length ? 'This group has ' + listWords(said, ', and ') + '.' : 'This group has no access.';
     if (scope === 'own') line += ' Own clients only.';
-    if (acc[DASH] === 'none') line += ' The Dashboard is hidden.';
+    if (acc[DASH] === 'none') line += ' The Team dashboard is hidden.';
     /* What differs is counted once, against the preset, by the Custom note
        (2026-10-20, TEAM-8); the sentence names no count of its own. */
     if (tools) line += ' ' + tools + (tools === 1 ? ' admin tool is' : ' admin tools are') + ' on.';

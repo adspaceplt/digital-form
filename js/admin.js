@@ -1132,19 +1132,11 @@
       var an = window.ADspaceAnalytics;
       return an && an.allowed ? an.allowed() : may('team.analytics', 'work');
     }
-    if (name === 'overview') {
-      if (me && !(me.is_admin || me.role === 'admin') && (me.access || {}).overview === 'none') return false;
-      var ov = window.ADspaceOverview;
-      return ov && ov.any ? ov.any() : managesAny();
-    }
+    /* The Dashboard is every colleague's (the revamp, 2026-11-13): its Me
+       tab is their own work; the group's switch (`overview` No Access) now
+       hides only its Team tabs (js/overview.js `teamOk`). */
+    if (name === 'overview') return Boolean(me);
     return may(name, 'view');
-  }
-  function managesAny() {
-    if (!me) return false;
-    if (me.is_admin || me.role === 'admin') return true;
-    var keys = SECTIONS.slice();
-    Object.keys(PARTS).forEach(function (s) { PARTS[s].forEach(function (p) { keys.push(s + '.' + p); }); });
-    return keys.some(function (k) { return level(k) >= RANK.manage; });
   }
 
   /* Hide what the person may not use. Nothing here is the control; the
@@ -1789,7 +1781,7 @@
      is an explanation of the product rather than of the section. The user
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
-    overview:  'What needs attention in each section you manage.',
+    overview:  'Your own work today, and the figures of each section you manage.',
     analytics: 'Trends across sales and clients, what changed and what to expect next.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
     whatsapp:  'Every WhatsApp message and email the portal has sent, and the delivery status of each.',
@@ -1819,6 +1811,9 @@
       { at: '#anlPeriod', text: 'Every figure covers the period chosen here and compares it with the period of the same length before it.' },
       { at: '.anl-changed', text: 'The largest changes against the previous period, calculated from the figures.' }] },
     overview: { name: 'Dashboard', steps: [
+      { at: '#ovwToday .ovw-today-row', text: 'Everything that needs you today, late first. Press a row to open it.' },
+      { at: '#ovwAsk', text: 'Ask the Assistant about your clients and work.' },
+      { at: '#ovwPages', text: 'Me is your own work. Team holds the figures of the sections you manage.' },
       { at: '#ovwPeriod', text: 'Every figure covers the period chosen here.' },
       { at: '#ovwLead', text: 'The main figures, each compared with the previous period.' },
       { at: '#ovwAttention .ovw-att-row', text: 'Everything that needs attention, with late items first. A tab above shows one kind. Press a row to open it.' }] },

@@ -1205,7 +1205,7 @@
   }
   function loadWaiting() {
     var me = bridge.me && bridge.me();
-    if (!me || !me.id) { state.waiting = []; paintWaiting(); return; }
+    if (!me || !me.id) { state.waiting = []; paintWaiting(); return Promise.resolve(); }
     var seq = ++WAIT_SEQ, rows = [], name = me.name || '';
     var jobs = [];
     /* A refused or failed read is said, never drawn as nothing waiting
@@ -1348,7 +1348,7 @@
           return Promise.all(sub);
         }));
     }
-    Promise.all(jobs).then(function () {
+    return Promise.all(jobs).then(function () {
       if (seq !== WAIT_SEQ) return;
       var A = window.ADspaceAdmin, vic = function (r) { return Boolean(A && A.vic && A.vic(r.client)); };
       rows.sort(function (a, b) {
@@ -1361,6 +1361,57 @@
       state.waiting = rows;
       state.waitFail = failed;
       paintWaiting();
+    });
+  }
+  /* THE DASHBOARD'S ME TAB (2026-11-13; the user: the Dashboard for every
+     colleague, its Today list their own): the colleague's open tasks as My
+     Work reads them (late by its rule, the deadline's words), and what waits
+     on their decision, read through the same reads as Waiting for you. A
+     refused read is said, never drawn as nothing. */
+  function mine() {
+    var me = bridge.me && bridge.me();
+    if (!me || !me.id || !may('ops', 'view')) return Promise.resolve({ tasks: [], waiting: [], failed: [] });
+    var cat = state.catAt ? Promise.resolve() : new Promise(function (ok) { loadCatalogue(function () { state.catAt = Date.now(); ok(); }); });
+    var failed = [];
+    var tasks = cat.then(function () {
+      return readPages(function () {
+        return db.from('ops_task_assignees').select('task_id').eq('team_member_id', me.id)
+          .eq('responsibility', 'owner').is('ended_at', null).order('task_id');
+      });
+    }).then(function (r) {
+      if (r.error) { failed.push('Tasks'); return []; }
+      var ids = (r.data || []).map(function (a) { return a.task_id; }), parts = [];
+      for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
+      return Promise.all(parts.map(function (part) {
+        return db.from('ops_tasks').select('*, clients(name, stage, logo_url, slug)').in('id', part)
+          .is('archived_at', null).is('completed_at', null).is('cancelled_at', null);
+      })).then(function (rs) {
+        var out = [];
+        rs.forEach(function (x) { if (x.error) { if (failed.indexOf('Tasks') < 0) failed.push('Tasks'); } else out = out.concat(x.data || []); });
+        return nameClients(out).then(function () { return out; });
+      });
+    }).then(function (list) {
+      return list.map(function (t) {
+        var dl = deadlineOf(t), due = dueOf(t), n = due ? daysAway(due) : null, late = isLate(t);
+        var lateBy = late ? (dl && dl.over ? dl.words : t.current_final_due_at ? lateWord(dayOf(t.current_final_due_at)) : '') : '';
+        return { id: t.id, name: t.content_desc || t.title || t.code || 'Task', code: t.code || '',
+          client: (t.clients && t.clients.name) || '', clientId: t.client_id || null, stage: stageLabel(t),
+          due: due || null, days: n, late: late, lateWord: lateBy, urgent: urgentDelivery(t),
+          lateDays: late && t.current_final_due_at ? Math.max(0, Math.floor((Date.now() - dayOf(t.current_final_due_at).getTime()) / 86400000) + 1) : 0,
+          deadline: dl && !dl.over && dl.first ? dl.words : '', meetingAt: null };
+      });
+    });
+    var wait = loadWaiting().then(function () { return { rows: state.waiting || [], failed: state.waitFail || [] }; });
+    return Promise.all([tasks, wait]).then(function (r) {
+      return { tasks: r[0], waiting: r[1].rows, failed: failed.concat(r[1].failed) };
+    });
+  }
+  /* An extension decided from the Dashboard, as Waiting for you decides it. */
+  function decideDue(request, yes) {
+    return db.rpc('ops_decide_due_change', { p_request: request, p_approve: Boolean(yes), p_note: null }).then(function (r) {
+      if (r.error) throw r.error;
+      if (r.data && r.data.error) throw new Error(r.data.error);
+      return r.data;
     });
   }
   /* A report on a calendar month is named by the month alone, short
@@ -8886,7 +8937,11 @@
     clientWork: clientWork,
     /* The tasks a campaign or content set is named by, and their rows. */
     recordTasks: recordTasks,
-    recordTaskRows: recordTaskRows
+    recordTaskRows: recordTaskRows,
+    /* The Dashboard's Me tab (2026-11-13). */
+    mine: mine,
+    decideDue: decideDue,
+    open: function (id) { openDrawer(id); }
   };
   if (bridge.opsReady) bridge.opsReady();
   if (bridge.me && bridge.me()) signedIn();

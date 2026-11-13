@@ -4378,33 +4378,53 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADspaceOverview` and the access key stay `overview`. A
   record's first pane (a client, a campaign, the client portal) stays
   Overview.
-- The start page of a group one of whose cards is allowed
-  (`ADspaceOverview.any()`, asked by `sectionAllowed('overview')`): Full
-  Access on a section with no card (Short Links, Services, Team) is never
-  offered an empty page. `firstAllowed()` lists it first, then the rail's
-  order with My Work first, No access the floor (`?s=noaccess`: No access,
-  Please contact an admin., Open Handbook; 2026-11-11), so `/admin/` with no
-  `?s=` lands there, and every other page names itself (the Clients list
-  writes `s=clients`; a client's record reads as Clients from `client=`
-  alone). Anyone else is never offered the row and its address falls back.
-- A group may hide it (Team's group panel, Dashboard On / No Access; the
-  user, 2026-10-11, option A): `overview` in the access map, stored only
-  as `none` (On stores nothing, as every group stood before), read by
-  `sectionAllowed('overview')` for anyone not an admin, page-side alone
-  (no policy or function reads it; members copy the map by trigger). It
-  only hides the page; every card still asks Full Access on its section.
+- Every colleague's start page (the revamp, 2026-11-13; the user: "the
+  Dashboard for everyone", "proceed build fully"): `sectionAllowed('overview')`
+  answers any signed-in colleague, and `firstAllowed()` lists it first, No
+  access the floor (`?s=noaccess`; 2026-11-11), so `/admin/` with no `?s=`
+  lands there, and every other page names itself (the Clients list writes
+  `s=clients`; a client's record reads as Clients from `client=` alone).
+- The head greets the colleague on the Dashboard alone (`greet()`, the
+  user, 2026-11-13): Good morning from 4:00am to 11:59am, Good afternoon
+  from noon to 3:59pm, Good evening from 4pm to 8:59pm, Good night from
+  9pm to 3:59am, Malaysia's clock, by their whole name, in place of the
+  section's name; the date (`Fri, 13 Nov`) where the rail's group stands.
+- Me (`pg=` left out; the strip's first tab): the colleague's own work,
+  never anyone else's: four figures as v3 tiles (`#ovwMeLead`: My open
+  tasks, Late, Due today, Waiting for you, from `ADspaceOps.mine()`, the
+  tasks they own read as My Work reads them and Waiting for you's own
+  reads; a colleague without My Work who may see leads reads My leads,
+  Follow-ups late, Contacted and Won this month of the leads they sell),
+  the Assistant as one field (`#ovwAsk`, Ctrl + J, two suggested questions
+  from their figures; drawn where Ask is), then Today (`#ovwToday`: one
+  list, Late, Waiting on you, Due today, each row its act, Decline and
+  Approve on an extension, else Open; chips by kind where there are two
+  or more; their leads past follow-up and their published reports not
+  sent join it) beside Next 5 days (`#ovwWeek`: five working days, their
+  tasks by due date and the client meetings they lead) and My clients this
+  month (`#ovwMyClients`: the clients they are person in charge of whose
+  month is this month, done and late on one bar). No period: Me is always
+  now. The page reopens on the tab last used (`adspace-dash-page`), the
+  address winning; a tab not offered falls back to Me.
+- Team and Team detail (`pg=team`, `pg=detail`): the Summary and Detail
+  pages below, offered where the group's Team dashboard is On and one of
+  their cards is allowed (`teamOk()`: `ADspaceOverview.any()`), each card
+  still asking Full Access on its own section. Team's group panel names
+  the row Team dashboard (On / No Access): `overview` in the access map,
+  stored only as `none` (On stores nothing), page-side alone; No Access
+  hides the Team tabs, never Me.
 - Two pages, from the mockup the user approved (2026-10-12, task 47;
   `digital-form-tests` `mockups/dashboard/`) and then read as the company's
   director would (the user, the same day: "act as the company ceo"; the
-  second page "continuous instead of hiding"): Summary, then Detail, the
-  strip `#ovwPages` (the view strip, `pg=detail` in the address, Summary
-  left out) at the bar's left, a sideways swipe anywhere on the page
+  second page "continuous instead of hiding"): Summary, then Detail (Team
+  and Team detail since 2026-11-13), the strip `#ovwPages` (the view strip,
+  Me · Team · Team detail) at the bar's left, a sideways swipe anywhere on the page
   turning it as the strip does (`data-swipe="ovwPages"`; the user,
   2026-10-12); every turn slides (a still copy of the page left moving out
   as the new page comes in from the side moved toward, Detail from the
   right, `--t-slow`, the bar holding still, the copy clipped below it), and
   at each page's foot the way on
-  (`#ovwTurn`: Continue to Detail, Back to Summary). The bar's right holds
+  (`#ovwTurn`: Continue to Team detail, Back to Team). The bar's right holds
   the period (`#ovwPeriod`, a select of This month, Last month, This
   quarter, Last quarter, This year: five, so never a segment; `p=`, This
   month left out; each measured on the period before it the same days long,

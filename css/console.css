@@ -5525,3 +5525,81 @@ svg.sec {
   }
   .ag-acts > .btn { flex: 1 1 50%; }
 }
+
+/* THE DASHBOARD'S ME TAB (the revamp, 2026-11-13; the user: the Dashboard
+   for every colleague). The four figures as v3 tiles, the Assistant as one
+   field, then Today beside the next five days and the colleague's clients
+   on the record's proportion; one column on a narrow pane. */
+.ovw-ask { display: grid; gap: 8px; }
+.ovw-ask-box { display: flex; align-items: center; gap: 10px; min-height: var(--tap); padding: 0 8px 0 14px;
+  background: var(--card); border-radius: var(--radius); outline: 1px solid var(--card-edge); outline-offset: -1px; }
+.ovw-ask-box:focus-within { outline: 2px solid var(--action-ring); }
+.ovw-ask-ai { display: inline-flex; color: var(--action-ink); }
+.ovw-ask-ai svg { width: 15px; height: 15px; }
+.ovw-ask-field { flex: 1; min-width: 0; height: var(--ctl-h); border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--field-text); outline: 0; }
+.ovw-ask-field::placeholder { color: var(--ink-mute); }
+.ovw-ask-key { font: 500 11.5px var(--font); color: var(--ink-mute); padding: 2px 6px; border-radius: 5px; background: var(--tonal); }
+:root.has-tabbar .ovw-ask-key { display: none; }
+.ovw-ask-try { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-left: 4px; }
+.ovw-ask-q { border: 0; background: none; padding: 4px 0; font: inherit; font-size: 12.5px; color: var(--ink-soft); cursor: pointer; text-align: left; }
+@media (hover: hover) { .ovw-ask-q:hover { color: var(--ink); } }
+.is-narrow .ovw-ask-q + .ovw-ask-q { display: none; }
+.ovw-me-cols { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.ovw-me-cols.is-one, .is-narrow .ovw-me-cols { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .ovw-me-cols { grid-template-columns: minmax(0, 1fr); } }
+.ovw-me-main, .ovw-me-side { display: grid; gap: 12px; min-width: 0; }
+.ovw-today .chart-head, .ovw-week .chart-head, .ovw-mycl .chart-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.ovw-today-n { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+.ovw-today-chips { display: flex; gap: 6px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+.ovw-chip { flex: none; height: var(--ctl-h-sm); padding: 0 12px; border: 0; border-radius: 999px; background: var(--tonal);
+  color: var(--ink-soft); font: inherit; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.ovw-chip b { font-weight: 600; }
+.ovw-chip.is-on { background: var(--fill); color: var(--on-fill); }
+@media (hover: hover) { .ovw-chip:not(.is-on):hover { background: var(--tonal-hover); } }
+.ovw-today-h { margin: 14px 0 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.ovw-today-h.is-late { color: var(--err); }
+.ovw-today-row { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+  min-height: 60px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.ovw-today-h + .ovw-today-row { border-top: 0; }
+.ovw-today-tile { display: inline-flex; }
+.ovw-today-tile svg.sec { width: 15px; height: 15px; padding: 6.5px; }
+.ovw-today-what { display: grid; gap: 2px; min-width: 0; border: 0; background: none; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.ovw-today-what b { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovw-today-what small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.ovw-today-what small .is-late { color: var(--err); }
+.ovw-today-acts { display: flex; gap: 8px; justify-content: flex-end; }
+.ovw-today-acts .btn { flex: 0 0 auto; min-width: 88px; }
+.is-narrow .ovw-today-row { grid-template-columns: 28px minmax(0, 1fr); }
+.is-narrow .ovw-today-acts { grid-column: 2; justify-content: flex-start; }
+.ovw-today .msg { margin: 8px 0 0; }
+.ovw-days { display: grid; }
+.ovw-day { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 52px; padding: 8px 0; border-top: 1px solid var(--line-soft); }
+.ovw-day:first-child { border-top: 0; padding-top: 0; }
+.ovw-day-d { display: grid; justify-items: center; font-size: 11px; font-weight: 600; color: var(--ink-mute); line-height: 1.2; }
+.ovw-day-d b { font-size: 17px; font-weight: 500; color: var(--ink); }
+.ovw-day.is-today .ovw-day-d b { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; background: var(--fill); color: var(--on-fill); }
+.ovw-day-evs { display: grid; gap: 4px; min-width: 0; }
+.ovw-ev { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovw-ev::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-mute); }
+.ovw-ev.is-late { color: var(--err); }
+.ovw-ev.is-late::before { background: var(--dot-late); }
+.ovw-ev.is-meet::before { background: var(--pub); }
+.ovw-ev.is-none, .ovw-ev.is-more { color: var(--ink-mute); }
+.ovw-ev.is-none::before { display: none; }
+.ovw-mycl-list { display: grid; }
+.ovw-mycl-row { display: grid; gap: 6px; padding: 10px 0; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; width: 100%; }
+.ovw-mycl-row:first-child { border-top: 0; padding-top: 0; }
+.ovw-mycl-top { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.ovw-mycl-top b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ovw-mycl-top small { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; }
+.ovw-mycl-top .is-late { color: var(--err); }
+.ovw-mycl-bar { display: flex; height: 4px; border-radius: 2px; background: var(--line-soft); overflow: hidden; }
+.ovw-mycl-bar .is-done { background: var(--dot-ok); }
+.ovw-mycl-bar .is-late { background: var(--dot-late); }
+@media (hover: hover) { .ovw-mycl-row:hover b, .ovw-today-what:hover b { color: var(--action-ink); } }
+/* A figure of the colleague's own has no history to draw: its tile gives
+   back the trend's room. */
+#ovwMeLead .ovw-kpi-trend:empty { display: none; }
+.ovw-today .chart-title, .ovw-week .chart-title, .ovw-mycl .chart-title { margin-bottom: 0; }
+.ovw-today-chips + .ovw-today-list > .ovw-today-h:first-child { margin-top: 12px; }
+.ovw-week .ovw-days, .ovw-mycl .ovw-mycl-list { margin-top: 12px; }
