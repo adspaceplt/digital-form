@@ -10254,3 +10254,15 @@ edge, else the console head or a client page's bar) at `top: 100%`, re-homed on
 each request, so anything laid over the host draws over it. Every page-level
 z-index in `css/portal.css` became a named token on one scale (`--z-sticky` to
 `--z-picker`), values unchanged. `tests/loadbar.js` passes unchanged.
+
+### 2026-11-13 · Words stay inside their boxes as the window narrows
+The user: "now the text could flow out beyond a card, which is weird". Needs
+attention ran into the next row at 1180 (#1090), and nothing measured between
+1440 and 1024. `tests/fit.js` now sweeps every console route at 1440, 1280,
+1180, 1100, 1024, 960 and 900, with a long name on each list's first record,
+and fails on a line past its card or row, a line cut with no ellipsis, and two
+lines drawn over each other. Its first run found one fault: a client's name in
+the Clients list (and Content Review's, Reports', Video Scripts' rows) was cut
+bare at its column, since `.crm-c`'s ellipsis applies to the cell, not the name
+block inside it. The name now wraps under itself. Shown failing on the old
+stylesheet and passing on the new.

@@ -391,6 +391,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   the card and the page. The walk seeds a 120-character link on both client
   pages. An address that is a row's meta line under its name is one line
   ending in an ellipsis; the whole address is one press away.
+- Words never leave their box: a line is either whole inside its card or
+  row, wrapping under itself and the row growing, or cut with an ellipsis;
+  never cut bare at a column's edge or drawn over the next cell. A block
+  inside a one-line cell (`.crm-c`) wraps (a client's name), since the
+  cell's ellipsis never reaches it. `tests/fit.js` sweeps every console
+  route from 1440 down to 900.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The
