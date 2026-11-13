@@ -8187,7 +8187,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var W2 = { drafts: 'Report drafts', checks: 'Commentary checks', caption: 'Captions', script: 'Scripts',
         picture: 'Scene pictures', analysis: 'Brand analyses', checklist: 'Checklists', analytics: 'Analytics analyses', agent: 'Assistant', next: 'Next batch' };
       var per2 = sc2 === 'per_report';
-      if (per2) { if (dl != null && dl > 1) return { error: 'bad-limit' }; nm2 = 'One draft and one check a report a day'; }
+      if (per2) { if (dl != null && dl > 1) return { error: 'bad-limit' }; nm2 = 'One draft and one check per report per day'; }
       else if (W2[sc2]) { nm2 = W2[sc2]; def2 = AI_CAP_STD[sc2]; }
       else if (/^[^:]+:[a-z]+$/.test(sc2) && W2[sc2.split(':')[1]]) {
         var tm2 = (DB.team_members || []).filter(function (t) { return t.id === sc2.split(':')[0]; })[0];

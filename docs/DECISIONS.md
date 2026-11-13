@@ -10324,3 +10324,9 @@ The user, told that Edit stayed on the quotation row because the ⋯ was full at
 - 2026-11-13 · A booking's date was cut in a narrow pane, "12 Sept 20…" (the user: "it shouldn't cut off"). Measured: the summary (10 Sept 2026, 2:00pm) needs 135px, and between a 1100 and 1200 window the register is 486 to 534px, leaving it 50 to 98. A wrap is no answer (uxaudit refuses a summary that wraps or clips), so the register states its own tight line (`data-tight`, 575, read by `ADspaceState.fit`) and under it takes the phone's two-line row, the date whole under the step. `geom` read the tight row by the pane alone and still held the one-line row to 56 to 72px, which #1107 made 48; it reads the register's own class and 48 to 64 now.
 
 - 2026-11-13 · A Settings switch's Undo stood after its card's last row (the user: "if the card rows have 20 items once i make changes to one, i dont even see it"). It is a shaded line of the card under the row pressed, and reads Turned on. / Turned off. (it read "Automatic emails is on."). `tests/settings.js` holds it under its own row.
+### 2026-11-13 · The AI report rule says per
+The copy review of the builds since #1067 found the AI usage rule read
+"One draft and one check a report a day"; a label says per, never "a". It
+reads One draft and one check per report per day, on AI usage and in the
+history line `ai_draft_set_limit` files
+(`2026-11-13-ai-limit-per-report-words.sql`).
