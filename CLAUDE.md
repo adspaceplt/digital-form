@@ -597,9 +597,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   inside the gutters. The chosen tab is one fill (`.tabbar-thumb`) that
   slides to it and follows a finger dragged along the bar, letting go
   on a tab opening it ("allow the selected … button to slide around left
-  right"); a section More holds chooses More. My Work carries a red dot
-  while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
-  `paintWaiting`; read once on sign-in under the bar), never a profile
+  right"); a section More holds chooses More. The Dashboard carries a red
+  dot while Waiting for you holds anything (`ADspaceAdmin.waiting(n)`, from
+  `paintWaiting`; read once on sign-in, the rail's Dashboard row counting
+  it too; 2026-11-13), never a profile
   photo tab (`tests/tabbar.js`, `tests/waiting.js`). It sits low, 14px
   less than the home bar's inset above the edge (`--tabbar-bottom`; the
   user: "can go abit down"), and scrolling down draws it in to its glyphs
@@ -4385,33 +4386,59 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ADspaceOverview` and the access key stay `overview`. A
   record's first pane (a client, a campaign, the client portal) stays
   Overview.
-- The start page of a group one of whose cards is allowed
-  (`ADspaceOverview.any()`, asked by `sectionAllowed('overview')`): Full
-  Access on a section with no card (Short Links, Services, Team) is never
-  offered an empty page. `firstAllowed()` lists it first, then the rail's
-  order with My Work first, No access the floor (`?s=noaccess`: No access,
-  Please contact an admin., Open Handbook; 2026-11-11), so `/admin/` with no
-  `?s=` lands there, and every other page names itself (the Clients list
-  writes `s=clients`; a client's record reads as Clients from `client=`
-  alone). Anyone else is never offered the row and its address falls back.
-- A group may hide it (Team's group panel, Dashboard On / No Access; the
-  user, 2026-10-11, option A): `overview` in the access map, stored only
-  as `none` (On stores nothing, as every group stood before), read by
-  `sectionAllowed('overview')` for anyone not an admin, page-side alone
-  (no policy or function reads it; members copy the map by trigger). It
-  only hides the page; every card still asks Full Access on its section.
+- Every colleague's start page (the revamp, 2026-11-13; the user: "the
+  Dashboard for everyone", "proceed build fully"): `sectionAllowed('overview')`
+  answers any colleague holding a section, and `firstAllowed()` lists it first, No
+  access the floor (a colleague holding none) (`?s=noaccess`; 2026-11-11), so `/admin/` with no `?s=`
+  lands there, and every other page names itself (the Clients list writes
+  `s=clients`; a client's record reads as Clients from `client=` alone).
+- The head greets the colleague on the Dashboard alone (`greet()`, the
+  user, 2026-11-13): Good morning from 4:00am to 11:59am, Good afternoon
+  from noon to 3:59pm, Good evening from 4pm to 8:59pm, Good night from
+  9pm to 3:59am, Malaysia's clock, by their whole name, in place of the
+  section's name; the date (`Fri, 13 Nov`) where the rail's group stands.
+- Me (`pg=` left out; the strip's first tab): the colleague's own work,
+  never anyone else's: four figures as v3 tiles (`#ovwMeLead`: My open
+  tasks, Late, Due today, Waiting for you, from `ADspaceOps.mine()`, the
+  tasks they own read as My Work reads them and Waiting for you's own
+  reads; a colleague without My Work who may see leads reads My leads,
+  Follow-ups late, Contacted and Won this month of the leads they sell),
+  the Assistant as one field (`#ovwAsk`, Ctrl + J, two suggested questions
+  from their figures; drawn where Ask is), then Today (`#ovwToday`: one
+  list, Late, Waiting on you, Due today, each row its act, Decline and
+  Approve on an extension, else Open; chips by kind where there are two
+  or more; their leads past follow-up and their published reports not
+  sent join it) beside Next 5 days (`#ovwWeek`: five working days, their
+  tasks by due date and the client meetings they lead) and My clients this
+  month (`#ovwMyClients`: the clients they are person in charge of whose
+  month is this month, done and late on one bar). No period: Me is always
+  now. The page reopens on the tab last used (`adspace-dash-page`), the
+  address winning; a tab not offered falls back to Me.
+- Team (`pg=team`; an older `pg=detail` opens it): the Summary below,
+  offered where the group's Team dashboard is On and one of its cards is
+  allowed (`teamOk()`: `teamAny()`), each card
+  still asking Full Access on its own section. Team's group panel names
+  the row Team dashboard (On / No Access): `overview` in the access map,
+  stored only as `none` (On stores nothing), page-side alone; No Access
+  hides the Team tabs, never Me. Team (phase 2, after the user's Halo
+  references, 2026-11-13) reads the four figures, then People
+  (`#ovwPeople`: each colleague's open, late, delivered and on time from
+  `ops_report`, a row opening their record's Work) beside On time by
+  month, then Clients this month (`#ovwClientsMonth`: each client whose
+  content month is this month, its posts done of planned as a status, its
+  report and its meeting) beside Needs attention. Team detail's charts,
+  the Sales and Operations tiles and Active clients by month moved to
+  Analytics (phase 3, 2026-11-13); a tile with clients behind it (New
+  leads) opens Analytics on its card.
 - Two pages, from the mockup the user approved (2026-10-12, task 47;
   `digital-form-tests` `mockups/dashboard/`) and then read as the company's
   director would (the user, the same day: "act as the company ceo"; the
-  second page "continuous instead of hiding"): Summary, then Detail, the
-  strip `#ovwPages` (the view strip, `pg=detail` in the address, Summary
-  left out) at the bar's left, a sideways swipe anywhere on the page
+  second page "continuous instead of hiding"): the strip `#ovwPages` (the
+  view strip, Me · Team since phase 3, 2026-11-13) at the bar's left, a sideways swipe anywhere on the page
   turning it as the strip does (`data-swipe="ovwPages"`; the user,
   2026-10-12); every turn slides (a still copy of the page left moving out
   as the new page comes in from the side moved toward, Detail from the
-  right, `--t-slow`, the bar holding still, the copy clipped below it), and
-  at each page's foot the way on
-  (`#ovwTurn`: Continue to Detail, Back to Summary). The bar's right holds
+  right, `--t-slow`, the bar holding still, the copy clipped below it). The bar's right holds
   the period (`#ovwPeriod`, a select of This month, Last month, This
   quarter, Last quarter, This year: five, so never a segment; `p=`, This
   month left out; each measured on the period before it the same days long,
@@ -4423,9 +4450,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     tasks that reached client review plus `late_open`, the open work late
     by the late rule (`2026-10-19-on-time-counts-late-open-work.sql`),
     reading a dash where nothing was due; the on-time and posted rings are
-    gone, posting read in the trend), then Work by stage (`#ovwStages`,
-    `ops_report.running` in four bands), then Needs attention
-    (`#ovwAttention`) beside On time by month (`.ovw-pair`): one list of every source (late
+    gone, posting read in the trend), then Work by person beside On time
+    by month and Clients this month beside Needs attention
+    (`#ovwAttention`, `.ovw-pair`; Work by stage left with phase 2,
+    2026-11-13): one list of every source (late
     tasks, open work for paused and past clients, reports owed and in
     review, cold leads, restricted accounts, requests, sets waiting, no set
     this month, bookings past their date, the quality check, unsigned
@@ -4522,10 +4550,18 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Analytics (`js/analytics.js`, `?s=analytics`)
 - Trends over months, apart from the Dashboard's period (the user,
   2026-10-25; mockup `digital-form-tests` `mockups/analytics`): the rail
-  row after the Dashboard, for whoever holds the granted part
+  row after the Dashboard. Each chart follows its own section's access
+  (phase 3, 2026-11-13; the user: "Analytics follows each chart's section
+  access"): a tab is drawn where any of its cards is readable, the trends
+  at Full Access on Clients (and Leads) as before; Sales then holds Team
+  detail's Sales charts and the Won, Churned and committed value tiles
+  (`ADspaceOverview.forAnalytics`, New leads by source drawn once), and
+  Operations (`tab=ops`) Open tasks, On time, Delivered, Reports
+  published and the Operations charts, each card at its own access and on
+  Analytics' period. Only the AI analysis asks the granted part
   `team.analytics` (an admin's by itself; `2026-10-25-analytics-admin-tool.sql`
-  adds it to `team_roles_admin_guard`, so only an admin grants it), never
-  the start page, never a tab of the phone's bar (under More). The data is
+  adds it to `team_roles_admin_guard`, so only an admin grants it), with
+  both trends readable. Never the start page, never a tab of the phone's bar (under More). The data is
   read under each table's own policies; only an AI analysis is stored.
 - Tabs (`tab=`, Sales left out; the view strip, a swipe, the arrows), each
   drawn where its section is at Full Access: Sales (Clients and Leads),
@@ -4640,8 +4676,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Group by stay.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
-  - Waiting for you (`#workWaiting`, 2026-10-08): above the list on Open,
-    Assigned to me, with no search, one card of what waits on the reader's
+  - Waiting for you (`#workWaiting`, 2026-10-08; on the Dashboard's Me tab
+    since the revamp, 2026-11-13, My Work holding it no more): one card of
+    what waits on the reader's
     decision: an extension asked of them (Decline / Approve in the row,
     `ops_decide_due_change`), a report they review, a booking Submitted on a
     campaign they run, a client request Requested and a set with Changes
@@ -4712,10 +4749,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; in a gap the nearest column does. A card held at the board's edge
     scrolls it. A card never starts the browser's own drag, and a press on
     it selects no text (a stray selection cancelled the next drag).
-  - The capacity strip fills each person's bar from the `estimate_minutes`
-    of their open tasks due by the week's end, overdue included, against
-    `capacity_minutes_week` ("5h planned of 40h"); nobody logs hours. It is
-    drawn only while somebody shown has a capacity set.
+  - No capacity strip (removed with the revamp, 2026-11-13): the
+    Dashboard's Team tab names each person's open, late and delivered work.
 - The calendar shows every task on its due date (the stage tone) and its
   post date (`--pub`), with a Due / Post key. A task whose next date is
   its post date shows once. A day holds five chips (`CAL_SHOW`), each two
