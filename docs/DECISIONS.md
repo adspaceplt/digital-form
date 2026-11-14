@@ -10446,3 +10446,6 @@ clicked the tab by `team`, which is `summary`.
 
 ### 2026-11-14 · The iPhone status bar takes the root's colour
 The user saw the console's status bar grey over its white head on an iPhone. WebKit paints the area behind the status bar from the root element's background (the canvas); the console's root was transparent, so Safari took the grey page under the body. Under a coarse pointer the console's root is now `--chrome-solid`, as the client pages paint theirs `--card` since 2026-10-10. Not testable in the sandbox; the user confirms on the iPhone.
+
+### 2026-11-14 · A campaign row's amount under its date on a phone
+The user asked for the amount to stand under the date. The phone row read the client, Booked n of N and the amount on one meta line, which wrapped the amount onto a third line. The amount now takes the right column under the date (its track `minmax(110px, auto)`, so a five-figure amount never spills into the meta) and leaves the meta. `camp` now measures it there: one line, under the date, on its right edge.

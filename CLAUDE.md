@@ -1797,6 +1797,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     that holds any), a card a month made (MYT) under it, newest open; a row
     reads Updated where the state would repeat its tab, and Booked n of N
     (creators booked of its slots, never the slots alone; 2026-10-22, CMP-8);
+    on a phone the client and Booked n of N under the name, the amount under
+    the date at the right edge (the user, 2026-11-14);
   - the Creators List by fee band (Inactive shut);
   - Short Links Live, Namecards, Paused (Paused shut);
   - Documents by family;

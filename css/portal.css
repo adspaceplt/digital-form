@@ -4841,12 +4841,14 @@ body > .shell { width: 100%; }
      other list, measured against its worst case. "Open for selection" is the
      widest chip a campaign can draw. */
   .crm-row.camp-row {
-    grid-template-columns: minmax(0, 1fr) 110px;
-    grid-template-areas: "name stage" "meta stage";
+    grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+    grid-template-areas: "name stage" "meta amt";
   }
   .crm-row.camp-row .camp-c-client,
-  .crm-row.camp-row .camp-c-slots,
-  .crm-row.camp-row .svc-rate { display: none; }
+  .crm-row.camp-row .camp-c-slots { display: none; }
+  /* The amount stands under the date at the right edge, line for line with
+     the meta (the user, 2026-11-14). */
+  .crm-row.camp-row .svc-rate { display: block; grid-area: amt; align-self: start; text-align: right; white-space: nowrap; color: var(--ink-soft); }
   /* The meta line under the name starts where the name does. */
   .crm-row.camp-row .crm-c-meta { padding-left: 38px; }
   :is(.vs-c-name, .rp-name, .crm-c-name).cl-lead { gap: 10px; align-items: flex-start; }
