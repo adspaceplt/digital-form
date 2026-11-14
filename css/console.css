@@ -5609,8 +5609,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .ovw-ring.is-ok .r-time { stroke: var(--dot-ok); }
 .ovw-ring.is-wait .r-time { stroke: var(--dot-wait); }
 .ovw-ring.is-late .r-time { stroke: var(--dot-late); }
-.ovw-ring .r-in { fill: var(--sunk); stroke: none; }
-.ovw-ring .r-work { stroke: var(--ink-soft); stroke-width: 10.5; }
+.ovw-ring .r-in { stroke: var(--line-soft); stroke-width: 2.5; }
+.ovw-ring .r-work { stroke: var(--ink-soft); stroke-width: 2.5; stroke-linecap: round; }
+.ovw-ring .r-done { fill: none; stroke: var(--ink-soft); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
 .ovw-today-tile.has-ring { background: none; }
 .ovw-ev.has-ring::before { display: none; }
 .ovw-ev .ovw-ring { width: 16px; height: 16px; }

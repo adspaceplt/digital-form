@@ -1468,8 +1468,9 @@
   }
   // ---- Team: who and which client is at risk (the revamp, phase 2) -----------
   /* A task's ring (phase 4, the user, 2026-11-13): the outer line the time
-     used from its assignment to the end of its final date, the inner fill
-     its checklist done. Green while the work keeps up, amber once the time
+     used from its assignment to the end of its final date, the inner arc
+     its checklist done, a tick once all of it is (2026-11-14: the full
+     disc read as a blot). Green while the work keeps up, amber once the time
      runs more than 20 points ahead of the work (with no checklist, once 80%
      of the time is gone), red once late. Nothing is drawn with no date. */
   function ringOf(t) {
@@ -1484,8 +1485,10 @@
     return '<span class="ovw-ring is-' + tone + '" role="img" aria-label="' + esc(say) + '" title="' + esc(say) + '"><svg viewBox="0 0 36 36" aria-hidden="true">' +
       '<circle class="r-track" cx="18" cy="18" r="15.5"/>' +
       '<circle class="r-time" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="' + (used * 100).toFixed(1) + ' 100"/>' +
-      '<circle class="r-in" cx="18" cy="18" r="10.5"/>' +
-      (w ? '<circle class="r-work" cx="18" cy="18" r="5.25" pathLength="100" stroke-dasharray="' + (w * 100).toFixed(1) + ' 100"/>' : '') +
+      (w == null ? '' : w >= 1
+        ? '<path class="r-done" d="M12.5 18.5l3.6 3.6 7.4-7.6" transform="rotate(90 18 18)"/>'
+        : '<circle class="r-in" cx="18" cy="18" r="9"/>' +
+          (w > 0 ? '<circle class="r-work" cx="18" cy="18" r="9" pathLength="100" stroke-dasharray="' + (w * 100).toFixed(1) + ' 100"/>' : '')) +
       '</svg></span>';
   }
 
