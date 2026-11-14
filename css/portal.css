@@ -2488,9 +2488,12 @@ body.is-plain .topbar { background: var(--chrome); }
    sandbox. The console keeps its solid head. */
 @media (pointer: coarse) {
   :root[data-face="client"] { background: var(--card); }
+  /* Opaque under a finger, as the console's head (the user, 2026-11-14):
+     the iPhone's newer Safari read the glass over the grey page and drew
+     the status bar grey above a white bar on the creator's page. */
   :root[data-face="client"] .topbar {
-    background: var(--chrome);
-    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    background: var(--chrome-solid);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
   }
 }
 /* The page label is what gives way when the bar runs out of room, never the

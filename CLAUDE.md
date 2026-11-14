@@ -555,8 +555,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Never `user-scalable=no`.
 - Under a coarse pointer `.console-head` takes `--chrome-solid` with no
   backdrop filter, because Safari colours the status bar from an opaque bar.
-  A client page's `.topbar` keeps its glass there (2026-10-10), the root
-  painted `--card` so the status bar takes white, never the grey page. The console's root
+  A client page's `.topbar` is opaque there too (`--chrome-solid`;
+  its glass, kept 2026-10-10, read grey behind the status bar on 2026-11-14),
+  the root painted `--card` so the status bar takes white, never the grey page. The console's root
   is painted `--chrome-solid` under a finger too: WebKit colours the status
   bar from the root's background, never the head (2026-11-14). The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
