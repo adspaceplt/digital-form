@@ -5022,7 +5022,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The next step is the one blue primary, a hand-off (`btn-go`) or your
     own progress (`btn-primary`) alike (2026-10-07).
   - One next-step button, named for where it goes (`verbFor`: "Move to
-    Client review"); no stage move beside it.
+    Client review"), a paused task's (Waiting, On hold) Resume (the user,
+    2026-11-14); no stage move beside it.
   - Draft due and Post date are a content task's: an everyday task (a
     month's report task included) shows its Due date alone, and its post
     date never reaches the calendar (the user, 2026-10-11).
