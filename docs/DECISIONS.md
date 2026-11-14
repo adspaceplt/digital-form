@@ -10452,3 +10452,9 @@ The user asked for the amount to stand under the date. The phone row read the cl
 
 ### 2026-11-14 · A client page's bar opaque under a finger
 The user saw the creator page's status bar grey over its white bar on an iPhone, after the console was fixed. The client pages kept a translucent bar under a finger (2026-10-10, "a bit of glass feel") over a white root; the newer Safari samples the bar and the grey page through it. Under a coarse pointer the bar is now `--chrome-solid` with no backdrop filter, as the console's head is. Every client page (`data-face="client"`) takes it.
+
+### 2026-11-14 · Two bar families, fixed one at a time
+The user asked why every header did not share one rule. The portal has two: the console's `.console-head` in `css/console.css`, and every client page's `.topbar`, drawn by `js/chrome.js` and styled in `css/portal.css`. The status bar fix (#1131) went to the console alone because the client pages had kept their glass by a decision of 2026-10-10, which was not read again; the user then saw the creator page grey (#1133). CLAUDE.md now names both families and asks that a change to one be checked on the other in the same push.
+
+### 2026-11-14 · The namecard's Contact details whole on a phone
+The day's gate walk, read by eye, showed the namecard's pair reading "Contact deta…" at 390 under a finger: each half is 159px and the label at 14px with 18px either side ran 2px over. The pair now takes 12px either side; the 320 rule (10px, 13px type) was moved after it, since the new rule had overridden it and cut the label by 1px there. Measured whole at 320, 390 and 1280.

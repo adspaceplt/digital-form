@@ -561,6 +561,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   is painted `--chrome-solid` under a finger too: WebKit colours the status
   bar from the root's background, never the head (2026-11-14). The `theme-color` meta follows the console's own theme (the head script
   and `wearTheme()`); client pages are white.
+- The bar is two families: the console's `.console-head` (`css/console.css`)
+  and every client page's `.topbar` (`js/chrome.js`, `css/portal.css`); a
+  change to one is checked on the other in the same push (2026-11-14: the
+  status bar fixed on the console reached the client pages a release later).
 - The console is a PWA:
   - `admin/manifest.webmanifest`, with scope and start `/admin/`;
   - wordmark icons in `admin/icons/`.

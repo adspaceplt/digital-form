@@ -8776,9 +8776,6 @@ body.ncpage { background: var(--nc-ground); }
 .nc-cover-acts > .btn { min-width: 0; white-space: nowrap; }
 @media (max-width: 640px) { .nc-cover-acts { grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); } }
 .nc-cover-acts[hidden] { display: none; }
-/* A 320 phone's half holds Save contact's mark and words with room either
-   side only a little closer together. */
-@media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 7px; font: 500 var(--ctl-text) var(--font);
   letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
@@ -8793,8 +8790,13 @@ body.ncpage { background: var(--nc-ground); }
 .nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; width: min(100%, 326px); }
 .nc-ctl .nc-pill { min-width: 0; }
 .nc-ctl .nc-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.nc-ctl .nc-pill { height: 40px; background: var(--nc-card); }
+/* Each half is 159px at most: the side padding gives Contact details its
+   whole word at 14px under a finger (cut by 2px at 390, 2026-11-14). */
+.nc-ctl .nc-pill { height: 40px; padding: 0 12px; background: var(--nc-card); }
 .nc-ctl .nc-pill[aria-pressed="true"] { background: var(--nc-ink); color: var(--nc-card); }
+/* A 320 phone's half holds Save contact's mark and words with room either
+   side only a little closer together. */
+@media (max-width: 359px) { .nc-acts .nc-pill, .nc-ctl .nc-pill { gap: 6px; padding: 0 10px; font-size: 13px; } }
 @media (hover: hover) {
   .nc-pill:hover { filter: brightness(.96); }
   .nc-pill-ink:hover, .nc-ctl .nc-pill[aria-pressed="true"]:hover { filter: brightness(1.25); }
