@@ -4456,8 +4456,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   month is this month, done and late on one bar). Each of their tasks on
   Today and Next 5 days leads with its ring (phase 4, the user,
   2026-11-13: `ringOf`, the outer line the time used from its owner's
-  assignment to the end of its final date, the inner fill its checklist
-  done; amber once the time runs more than 20 points ahead of the work, or
+  assignment to the end of its final date, the inner arc its checklist
+  done, a tick once all of it is; amber once the time runs more than 20 points ahead of the work, or
   80% gone with no checklist, red once late; none with no final date). No
   period: Me is always now. The page reopens on the tab last used (`adspace-dash-page`), the
   address winning; a tab not offered falls back to Me.
