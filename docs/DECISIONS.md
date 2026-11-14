@@ -10449,3 +10449,6 @@ The user saw the console's status bar grey over its white head on an iPhone. Web
 
 ### 2026-11-14 · A campaign row's amount under its date on a phone
 The user asked for the amount to stand under the date. The phone row read the client, Booked n of N and the amount on one meta line, which wrapped the amount onto a third line. The amount now takes the right column under the date (its track `minmax(110px, auto)`, so a five-figure amount never spills into the meta) and leaves the meta. `camp` now measures it there: one line, under the date, on its right edge.
+
+### 2026-11-14 · A client page's bar opaque under a finger
+The user saw the creator page's status bar grey over its white bar on an iPhone, after the console was fixed. The client pages kept a translucent bar under a finger (2026-10-10, "a bit of glass feel") over a white root; the newer Safari samples the bar and the grey page through it. Under a coarse pointer the bar is now `--chrome-solid` with no backdrop filter, as the console's head is. Every client page (`data-face="client"`) takes it.
