@@ -2352,14 +2352,12 @@
       /* The tab above names the state, so the row says when the campaign
          last changed (2026-10-10), as a report row does. */
       '<span class="crm-c crm-c-stage camp-c-upd">' + esc(updWord(c.updated_at || c.created_at)) + '</span>' +
-      /* The one line the phone gets: the client, how many creators, and what
-         it is worth where that is known. It may wrap between its parts, never
-         inside one: `RM` on one line and `8,640.00` on the next is a value cut
-         in half (2026-09-28), so each part holds its own spaces. */
+      /* The one line the phone gets under the name: the client and how many
+         creators. The amount stands under the date at the right edge (the
+         user, 2026-11-14). It may wrap between its parts, never inside one. */
       '<span class="crm-c crm-c-meta">' +
         [cl.name ? esc(cl.name) : '',
-         esc(booked + ' booked').replace(/ /g, '\u00a0'),
-         amount ? esc(amount).replace(/ /g, '\u00a0') : '']
+         esc(booked + ' booked').replace(/ /g, '\u00a0')]
           .filter(Boolean).join('\u00a0\u00b7 ') + '</span>' +
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
     row.addEventListener('click', function () { openCampaign(c); });
