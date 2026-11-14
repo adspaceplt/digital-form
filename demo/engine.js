@@ -3338,7 +3338,8 @@ function cardSlugFree(name, self, email) {
     if (!(DB.creators || []).some(function (c) { return c.id === creator; })) return { error: 'not-found' };
     var pay = opsGranted('campaigns.pay', 'view'), bills = (DB.creator_bills || []).filter(function (b) { return b.creator_id === creator && !b.gone; });
     var link = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === creator; })[0];
-    var billOf = function (b) { return { number: b.number, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency }; };
+    var billOf = function (b) { return { number: b.number, status: b.status, date: b.bill_date, amount: pay ? b.amount : null, currency: b.currency,
+      paid_on: b.status === 'paid' ? (b.paid_on || (b.paid_seen_at ? String(b.paid_seen_at).slice(0, 10) : null)) : null }; };
     var jobs = (DB.campaign_options || []).filter(function (o) { return o.creator_id === creator && BOOKED_OUT.indexOf(o.state) < 0; }).map(function (o) {
       var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
       var b = bills.filter(function (x) { return x.option_id === o.id; }).sort(function (a, c) { return (c.status === 'processing') - (a.status === 'processing'); })[0];

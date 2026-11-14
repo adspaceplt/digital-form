@@ -1121,7 +1121,7 @@
       if (j.earlier_job) sub.push('<span class="cpay-part">Earlier job ID ' + esc(j.earlier_job) + '</span>');
       if (d.pay) sub.push('<span class="cpay-part">' + (j.fee ? 'Fee ' + esc(billMoney(j.fee.amount, j.fee.currency)) : 'Fee not set') + '</span>');
       var mk = ready.indexOf(j) > -1 ? '<button class="btn btn-sm cpay-mk" type="button" data-a="mkbill">Create bill</button>' : '';
-      var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
+      var when = b ? [b.paid_on ? esc(day(b.paid_on)) : '', b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ')
         : POSTED.indexOf(j.state) > -1 && j.pay_by ? 'Pay by ' + esc(day(j.pay_by)) : '';
       return '<div class="cpay-job" data-opt="' + esc(j.option) + '">' +
         '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(j.job || '') + '</span>' +
@@ -1156,7 +1156,7 @@
         var b = e.bill;
         var st = b ? '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>'
           : d.linked ? '<span class="chip-state is-warn">Not billed</span>' : '<span class="chip-state is-off">Not linked</span>';
-        var when = b ? [b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
+        var when = b ? [b.paid_on ? esc(day(b.paid_on)) : '', b.number ? esc(b.number) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') : '';
         return '<div class="cpay-job" data-past="' + esc(e.id) + '" data-ref="' + esc(e.ref) + '">' +
           '<div class="cpay-job-l"><span class="cpay-job-ref">' + esc(e.ref) + '</span></div>' +
           '<div class="cpay-job-r">' + st + (when ? '<span class="cpay-job-sub">' + when + '</span>' : '') + '</div>' +
@@ -1169,7 +1169,7 @@
         return '<div class="cpay-job"><div class="cpay-job-l"><span class="cpay-job-ref">' + esc(b.number || '') + '</span>' +
           '<span class="cpay-job-sub">' + esc(b.ref || '') + '</span></div><div class="cpay-job-r">' +
           '<span class="chip-state ' + JOB_STATE[b.status][1] + '">' + esc(JOB_STATE[b.status][0]) + '</span>' +
-          (b.amount != null ? '<span class="cpay-job-sub">' + esc(billMoney(b.amount, b.currency)) + '</span>' : '') + '</div>' +
+          (b.paid_on || b.amount != null ? '<span class="cpay-job-sub">' + [b.paid_on ? esc(day(b.paid_on)) : '', b.amount != null ? esc(billMoney(b.amount, b.currency)) : ''].filter(Boolean).join(' · ') + '</span>' : '') + '</div>' +
           (b.number ? payMenu(b.number, [bkItem(b.number)]) : work ? '<span class="iconbtn cpay-job-pen cpay-spacer" aria-hidden="true"></span>' : '') + '</div>';
       }).join('');
     }
