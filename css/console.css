@@ -5695,3 +5695,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .cpq-act .btn { flex: 1 1 100%; }
 .cpq-sheet-t { flex: 1 1 auto; min-width: 0; }
 .cpq-sheet-sub { margin: 2px 0 0; font-size: 12.5px; }
+/* WebKit colours the area behind an iPhone's status bar from the root's own
+   background (the canvas), not from the head: the console's root was
+   transparent, so Safari took the grey page and the status bar read grey
+   over the white head (the user, 2026-11-14). Under a finger the root is
+   painted the head's own colour, as the client pages paint theirs; the body
+   keeps the page's grey, so nothing on the screen changes but the band. */
+@media (pointer: coarse) {
+  :root:not([data-face="client"]) { background: var(--chrome-solid); }
+}
