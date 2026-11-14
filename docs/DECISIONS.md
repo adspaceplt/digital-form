@@ -10419,3 +10419,27 @@ details-to-review notices now open their row in the queue. A booking that
 reached Completed before the portal stamped posted days is never Ready to
 bill, so the queue does not fill with jobs paid before the portal.
 `demo.js` reads the function as a read (its name holds "queue").
+
+### 2026-11-14 · A paid bill reads its voucher's day
+
+The user: "The date still incorrect, i didnt make any payments these few
+days". Three bills (AB2609043, AB2609054, AB2609079) read Paid 10 and 12 Nov,
+the days the portal first read them paid. Bukku's bill holds its payment
+voucher in `linked_items` (`purchase_payment`, APV2609042 and APV2609048, 30
+Sept 2026), which `paidOn` reads, but the voucher day was added on 12 Nov
+and the night reads only creators with a booking not yet paid: these three
+were paid before, so no read ever asked for their voucher. The three were
+given Bukku's day by hand; `creator_bills_due` now also names a creator
+holding a paid bill with no voucher day; and `creator_bills_list` sends each
+paid bill's day, which the creator's Payment pane reads under Paid (it read
+none). The queue's Paid group is held to its period, so a bill paid 30 Sept
+leaves This month and last month. The shape was read through a short-lived
+read-only function, `bukku-peek`, answering the wake secret alone, retired
+the same hour (it answers 410; delete it from the dashboard).
+
+The overnight full gate of 2026-11-14 (d4b752f6, tests 743c00a): every suite
+passed but the two walks, both on the Dashboard's Me tab: Ask's suggested
+questions under the control height, its field ringed only on its box, and a
+Today row's Open without the chevron (#1129). uxaudit's walk reached no
+Team tab, so the Needs attention strip went unmeasured; the walk first
+clicked the tab by `team`, which is `summary`.
