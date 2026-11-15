@@ -169,6 +169,7 @@
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
         ? 'This feature is not available yet. Please contact an admin.' : (d.message || 'Not saved.');
     }
+    if (d.error === 'bad-month' && d.from) return RW_SAID['bad-month'];
     if (d.error === 'period-confirmed') return (d.word || 'Its period') + ' is confirmed. Reopen it under ' + (d.kind === 'quarter' ? 'Quarters' : 'Bonus and trip') + ' first.';
     if (d.error === 'window-open') return 'Queries are open until ' + timeWord(d.until) + '.';
     if (d.error === 'month-released') return (d.month || 'That month') + ' is shared. Revert it to draft to change its issues.';
@@ -572,7 +573,9 @@
     var F = window.ADspaceForm;
     /* A system account (2026-10-08) is never put on the review list. */
     var S = window.ADspaceAdmin;
-    var people = (st.month.people || []).filter(function (p) { return !(S && S.isSystem && S.isSystem(p.team_member_id)); }).sort(F.byStaff);
+    /* A colleague who has left is listed for a month they were reviewed in,
+       never offered for the list (2026-11-15). */
+    var people = (st.month.people || []).filter(function (p) { return p.active !== false && !(S && S.isSystem && S.isSystem(p.team_member_id)); }).sort(F.byStaff);
     $('prList').innerHTML = people.map(function (p) {
       return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.team_member_id) + '"' +
         (p.reviewed ? ' checked' : '') + '> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
@@ -3040,7 +3043,7 @@
   }
   function comAmount() {
     var n = amountIn($('rwMNet')), p = Number(String($('rwMPct').value).replace(/[%\s]/g, ''));
-    $('rwMAmount').textContent = n != null && !isNaN(n) && p > 0 ? 'Commission ' + rm(Math.round(n * p) / 100) : '';
+    $('rwMAmount').textContent = n != null && !isNaN(n) && p > 0 ? 'Commission ' + rm(Math.floor(Math.round(n * 100) * Math.round(p * 100) / 10000) / 100) : '';
   }
   $('rwMNet').addEventListener('input', comAmount);
   $('rwMPct').addEventListener('input', comAmount);
