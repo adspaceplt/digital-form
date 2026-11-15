@@ -18,20 +18,9 @@
   /* The wordmark's words: ours, or the demo's sample agency (js/demo.js). */
   function word() { return esc((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.agencyName) || 'ADspace'); }
 
-  /* A number as Malaysia and Singapore write it with the country code:
-     012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;
-     60187625233 → +60 18-762 5233; 07-123 4567 → +60 7-123 4567;
-     a Singapore eight → +65 8123 4567. Anything else keeps its digits. */
+  /* A number with its country code: ADspaceAPI's one reading. */
   function digits(raw) { return window.ADspaceAPI.waNumber(raw); }
-  function phone(raw) {
-    var d = digits(raw);
-    if (!d) return '';
-    var m;
-    if ((m = /^60(1[0-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
-    if ((m = /^60([3-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
-    if ((m = /^65(\d{4})(\d{4})$/.exec(d))) return '+65 ' + m[1] + ' ' + m[2];
-    return '+' + d;
-  }
+  function phone(raw) { return window.ADspaceAPI.phoneWord(raw); }
 
   /* An address stays on one line: set a half point smaller at a time until
      it fits, down to 12px, else it breaks before its @ at 12px, and a part

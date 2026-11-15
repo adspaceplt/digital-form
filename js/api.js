@@ -312,6 +312,20 @@
     if ((d.length === 9 || d.length === 10) && d.charAt(0) === '1') return '60' + d;
     return d;
   }
+  /* A number as Malaysia and Singapore write it with the country code:
+     012-345 6789 → +60 12-345 6789; 0112345 6789 → +60 11-2345 6789;
+     60187625233 → +60 18-762 5233; 07-123 4567 → +60 7-123 4567;
+     a Singapore eight → +65 8123 4567. Anything else keeps its digits.
+     The namecard's, here so the client portal needs no namecard script. */
+  function phoneWord(raw) {
+    const d = waNumber(raw);
+    if (!d) return '';
+    let m;
+    if ((m = /^60(1[0-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
+    if ((m = /^60([3-9])(\d{3,4})(\d{4})$/.exec(d))) return '+60 ' + m[1] + '-' + m[2] + ' ' + m[3];
+    if ((m = /^65(\d{4})(\d{4})$/.exec(d))) return '+65 ' + m[1] + ' ' + m[2];
+    return '+' + d;
+  }
 
   /* What an edge function refused, by its own code (2026-10-17): supabase-js
      puts a non-2xx answer in `r.error`, its body unread on
@@ -377,6 +391,7 @@
     fnRefusal,
     uploadAccept,
     waNumber,
+    phoneWord,
     movedKey,
     portalPass,
     configured,

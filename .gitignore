@@ -17,3 +17,7 @@ tests/*.pdf
 # `tests/` alone does not match it and the link showed up untracked.
 tests
 tests/
+1/
+undefined/
+shots/
+exports/
