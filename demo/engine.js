@@ -406,7 +406,6 @@
     perf_commissions: 'p_token',
     perf_company_set: 'p_payload p_token p_from',
     perf_decide: 'p_value p_dispute p_response p_token p_decision',
-    perf_deduction: 'p_late p_severity p_repeated',
     perf_delete: 'p_review p_reason p_confirm p_token',
     perf_dept_save: 'p_payload p_department p_token p_quarter',
     perf_dispute: 'p_review p_items',
@@ -414,7 +413,6 @@
     perf_flex: 'p_period p_token',
     perf_flex_calc: 'p_period',
     perf_gate_info: '',
-    perf_grade_of: 'p_score',
     perf_grade_word: 'p_grade',
     perf_guard_info: '',
     perf_guarded: 'p_member',
@@ -2799,7 +2797,7 @@ function cardSlugFree(name, self, email) {
               checkins: c && healthAgreed(t.id) ? DB.health_checkins.filter(function (k) { return k.team_member_id === t.id && (k.updated_at || k.created_at) >= c.agreed_at; })
                 .sort(function (x, y) { return x.half < y.half ? 1 : -1; }).slice(0, 12).map(healthCheckinJson) : [] };
           }),
-        talks: DB.health_talks.filter(function (k) { return k.status !== 'withdrawn'; }).slice()
+        talks: DB.health_talks.filter(function (k) { return k.status !== 'withdrawn' && healthAgreed(k.team_member_id); }).slice()
           .sort(function (x, y) { return (y.status === 'open') - (x.status === 'open') || (x.created_at < y.created_at ? 1 : -1); })
           .map(function (k) {
             return { id: k.id, from: who(k.team_member_id), from_id: k.team_member_id, with: who(k.with_id), with_id: k.with_id,
@@ -3692,7 +3690,7 @@ function cardSlugFree(name, self, email) {
     return { id: c.id, team_member_id: c.team_member_id, name: t.name, staff_code: t.staff_code || null,
       client_id: c.client_id || null, client: cl ? cl.name : null, client_code: cl ? cl.client_code || null : null,
       description: c.description, month: c.month, month_word: perfMonth(c.month), net_profit: c.net_profit, pct: c.pct,
-      amount: Math.round(c.net_profit * c.pct) / 100, state: stt, reason: why, created_at: c.created_at,
+      amount: Math.floor(Math.round(c.net_profit * 100) * Math.round(c.pct * 100) / 10000) / 100, state: stt, reason: why, created_at: c.created_at,
       created_by: by ? by.name : null, removed_at: c.removed_at || null, min: rwSet('commission_min', c.month) };
   }
   function rwHide(rows, me) {
@@ -4248,6 +4246,7 @@ function cardSlugFree(name, self, email) {
       r = rev(a.p_review);
       if (!r) return { error: 'not-found' };
       if (r.team_member_id !== m.id && perfCheck(a.p_token, 'view')) return { error: 'denied' };
+      if (r.team_member_id === m.id && guarded(m.id) && !fresh()) return { error: 'code-needed' };
       if (r.team_member_id === m.id && r.status === 'draft') return { error: 'not-found' };
       if (window.__refusePrint) return { error: 'denied' };
       perfLog(r.id, r.team_member_id, 'printed', { version: r.version || 1 });
@@ -4298,11 +4297,13 @@ function cardSlugFree(name, self, email) {
     if (err) return { error: err };
     if (name === 'perf_month') {
       var p = perfPeriod(a.p_period);
-      return { period: p, month: perfMonth(p), people: DB.team_members.filter(function (t) { return t.active && t.id !== m.id; })
+
+      var leftIn = function (t) { return DB.perf_reviews.some(function (x) { return x.team_member_id === t.id && x.period === p && x.status !== 'draft'; }); };
+      return { period: p, month: perfMonth(p), people: DB.team_members.filter(function (t) { return t.id !== m.id && (t.active || leftIn(t)); })
         .sort(function (x, y) { return x.name < y.name ? -1 : 1; }).map(function (t) {
           var pp = DB.perf_people.filter(function (x) { return x.team_member_id === t.id; })[0] || {};
           var rv = DB.perf_reviews.filter(function (x) { return x.team_member_id === t.id && x.period === p; })[0];
-          return { team_member_id: t.id, name: t.name, staff_code: t.staff_code || null, designation: t.designation || null,
+          return { team_member_id: t.id, name: t.name, staff_code: t.staff_code || null, active: t.active !== false, designation: t.designation || null,
             department: t.department || null, role_family: t.role_family || null, runs_ads: Boolean(pp.runs_ads),
             reviewed: perfReviewed(t), breaches: perfLive(t.id, p).length,
             review: rv ? { id: rv.id, status: rv.status, result: perfCalc(rv), dispute_until: rv.dispute_until || null,
@@ -4344,11 +4345,14 @@ function cardSlugFree(name, self, email) {
       if (own(a.p_member)) return own(a.p_member);
       var pe = perfPeriod(a.p_period);
       r = DB.perf_reviews.filter(function (x) { return x.team_member_id === a.p_member && x.period === pe; })[0];
+      if (!r && heldBy(pe)) return heldBy(pe);
       return perfJson(r || { team_member_id: a.p_member, period: pe, status: 'draft', notes: {}, version: 1, rev: 0 }, true);
     }
     if (name === 'perf_save') {
       if (own(a.p_member)) return own(a.p_member);
       var pd = perfPeriod(a.p_period), pl = a.p_payload || {};
+
+      if (pd < '2026-06-01' || pd > rwToday().slice(0, 7) + '-01') return { error: 'bad-month', from: '2026-06-01' };
       var sc = pl.scores || {}, rts = pl.rates || {};
       for (var k in sc) {
         if (!(k in PERF_MAX)) return { error: 'bad-score', key: k };
@@ -4364,6 +4368,7 @@ function cardSlugFree(name, self, email) {
         var evToday = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
         if (!/^\d{4}-\d{2}-\d{2}$/.test(pl.evaluated_on) || pl.evaluated_on < pd || pl.evaluated_on > evToday) return { error: 'bad-eval-date' };
       }
+      if (heldBy(pd)) return heldBy(pd);
       r = DB.perf_reviews.filter(function (x) { return x.team_member_id === a.p_member && x.period === pd; })[0];
       if (!r) {
         r = { id: opsId('pr'), team_member_id: a.p_member, period: pd, status: 'draft', scores: {}, rates: {}, notes: {},
@@ -4408,6 +4413,7 @@ function cardSlugFree(name, self, email) {
       if (name === 'perf_release') {
         if (a.p_rev != null && r.rev !== a.p_rev) return { error: 'stale', record: perfJson(r, true) };
         if (r.status !== 'draft') return { error: 'not-draft' };
+        if (heldBy(r.period)) return heldBy(r.period);
         if (!perfCalc(r).complete) return { error: 'incomplete' };
         var tm = DB.team_members.filter(function (x) { return x.id === r.team_member_id; })[0] || {};
         if (!r.serial && !String(tm.staff_code || '').trim()) return { error: 'no-staff-code' };

@@ -295,7 +295,7 @@
       go: 'Withdraw', tone: 'warn'
     }, function () {
       b.disabled = true;
-      mineCall('health_consent', { p_on: false }, function (d) {
+      mineCall('health_consent', { p_on: false, p_wording: (st.mine && st.mine.wording && st.mine.wording.version) || null }, function (d) {
         b.disabled = false;
         if (d.error) { msg('mineHealthMsg', said(d), 'err'); return; }
         msg('mineHealthMsg', '');

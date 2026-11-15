@@ -5346,10 +5346,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     carrying the form's address in `ops_notifications.link` (https only),
     which the bell and a push open in place of a console page.
   - The card (`engCard`) never repeats its heading: the month is named by the
-    card above it, whose state chip (`.eng-mark`) shows only while shut. The
-    meeting, link and message are `.eng-row`s (label, value, controls at the
-    right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
-    and the value runs full width beneath.
+    card above it, whose state chip (`.eng-mark`) shows only while shut. It
+    is a card of its own above the tasks (the cards' hairline, the large
+    corner; 2026-11-15, the user: "this is hard to read"): Manager, Planned,
+    Runs and Reports as cells, each label over its value, the state and ⋯
+    at the top right; on a narrow pane the state line first, then the facts
+    as rows. The invoice, meeting, link and message are `.eng-row`s (a 120px
+    label, 104 narrow, the value, the row's acts), the meeting changed by
+    its pen (`data-a="meet"`, Set meeting while none), the invoice's number
+    a `.linkbtn` in ink, Check again and Show quiet, the meeting in ink,
+    never green; the message to the client set off by the card's hairline.
 - New month never edits a month held: it offers only the months the client
   does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
   `exists` (2026-10-22, WRK-1), opening on this month, else the next one
@@ -5520,8 +5526,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   digits. The Magic Link template prints `{{ .Token }}`.
 - The review list is chosen (`perf_people.reviewed`, off by default; admins
   off unless added). The month lists the people on it plus anyone whose
-  review of that month has begun; the Review list sheet ticks colleagues code
-  first, A to Z (`perf_profile_set`, Work).
+  review of that month has begun, a colleague who has left included where
+  that review is not a draft (`active` false; 2026-11-15); the Review list
+  sheet ticks active colleagues code first, A to Z (`perf_profile_set`, Work).
 - Department and role standard (`role_family`) live on `team_members`.
   Performance reads them; `perf_profile_set` sets only its two ticks.
 - Departments (`2026-10-23-departments.sql`, its SQL Editor part
@@ -5566,7 +5573,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     downloaded it above.
   - The download is filed first (`perf_printed` answers the server's time,
     who, their address and the released / acknowledged / finalised steps); a
-    refused filing makes no file.
+    refused filing makes no file, and one's own record asks the fresh proof
+    first (`perf_mine_gate`).
   - The file prints Record of this document (step, name, email, time in MYT,
     Document ID, the verify line) and every foot names who downloaded it.
   - A downloaded record is listed under HR Letters (`perf_register`, both
@@ -5676,8 +5684,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     Leading (the user, 2026-10-05). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. A month inside a confirmed quarter or half is neither
-    reopened nor deleted (`period-confirmed`, naming it) until that period
-    is reopened. Quarters begin with Q3 2026.
+    begun, scored, shared, reopened nor deleted (`period-confirmed`, naming
+    it, `perf_period_held`; 2026-11-15) until that period is reopened; a
+    review is saved for June 2026 to the month in hand alone (`bad-month`).
+    Quarters begin with Q3 2026.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
     rewards: best to worst by average, `rank` shared by equal averages, a
     short quarter's months under its average (`2 of 3`), and the individual
@@ -5705,7 +5715,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     the chip names the reviews it waits on (`open_reviews`). Revenue and profit are
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
-  - Every share is rounded down to the cent and the remainder stated.
+  - Every share is rounded down to the cent and the remainder stated, a
+    commission too (`perf_commission_json`, 2026-11-15).
   - Every figure the rewards are worked out with is a setting
     (`2026-10-05-performance-reward-settings.sql`, `perf_settings`: both
     prizes, the department total, flexible hours' share and month, the pool
@@ -5780,9 +5791,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   line No colleague has agreed to check-ins.), Colleagues (every active
   colleague: this half's five answers, Checked in, or Not agreed /
   Withdrawn as a chip), each opening their history, and the last 90 days'
-  talks. `health_team()` sends a colleague's answers only while their
+  talks. `health_team(p_token)` sends a colleague's answers only while their
   agreement stands and only those saved since it was made
-  (`2026-10-18-health-answers-follow-the-agreement.sql`), and a talk's names, state and dates, never its note,
+  (`2026-10-18-health-answers-follow-the-agreement.sql`), and a talk's names, state and dates, only while its asker's agreement
+  stands (2026-11-15), never its note,
   which only the two colleagues in it read
   (`2026-10-18-health-talk-notes-stay-private.sql`). The
   answers never reach a review, the Activity record or a notification.
@@ -8482,7 +8494,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (H.264, AAC, upright, Rec. 709, fitted to 1080 × 1920 either way up at up
   to 60 fps, never enlarged). It reads and asks; it never deletes, copies or
   touches an original. `{ "all": true }` converts what came before, and
-  `{ "all": true, "redo": true }` remakes only copies over the cap.
+  `{ "all": true, "redo": true }` remakes only copies over the cap. One file
+  that cannot be read or asked for is its own `error: …` line, never the
+  run's (an upload trigger never fails); a walk stops 30 seconds before its
+  time and answers `next`, run again as `startAfter`, and leaves an upload
+  under 30 minutes old to its trigger; a size the file does not give is
+  asked of MediaConvert's probe, else fitted inside 1920 × 1920
+  (`FIT_NO_UPSCALE`); MediaConvert's role writes `content/*.web.mp4` alone
+  (2026-11-15, phase 2 audit).
 
 ## 3. Workflow and constraints
 
