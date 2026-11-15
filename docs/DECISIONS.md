@@ -10565,3 +10565,15 @@ The phase 2 audit (the user: "Ok fix all 21"), findings 8, 17 and 18. Creator Ca
 
 ### 2026-11-15 · The Rate Card PDF counts content pieces; a video gone before its copy asks for nothing
 The user, on the item left above: "content pieces". The internal Rate Card PDF's plan rows read "8 content pieces / month" (one: "content piece"), as the live card, `quote_price` and every client page already do (`js/ratecardpdf.js`; `ratecard` reads the plans page). The video converter's Lambda test with a key that was never there (`content/__check/missing.mp4`) ordered a MediaConvert job: the phase 2 fallback reads any file it cannot inspect as unread and asks for its copy, right for a damaged file, wrong for one that is gone. `convert` now asks S3 for the original first (`present`, HEAD): a 404 is `error: not found` and no job; any other refusal is thrown and recorded by the walk, so a copy is never ordered for a file S3 says is missing (`vconvert`).
+
+### 2026-11-15 · The day's full gate on 7585d8b
+Every suite, `ui`, uxaudit and matrix on main up to #1155 (tests 46b80c7):
+three problems, none in the portal. `pairs` and `vs` still asked for the
+ink before #1145 moved the neutrals to the brand's `#1a1a1a`; `sql` failed
+once in its Client ID setup and passed alone and in the re-run (1,324
+checks). Outside the gate's list, `pdfcases` and `pdfreal` still read the
+Letter of Offer's signing cell as a text field (a signature field since the
+execution block's change; `pdfreal` now holds that it is one), and the
+`head` diagnostic pressed Add creators before opening the Creators pane.
+`crm`, `analytics` and `tabbar` passed, so their logged defects are struck.
+

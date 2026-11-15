@@ -622,23 +622,6 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
   wide logo upload) fails now and then on main, then passes on a rerun
   (2026-11-08); its wait for the preview needs finding.
-
-
-- `crm`: the five term-adjustment checks ("ticking it bills the short term
-  rate" and the four after it) fail on main (2026-11-15): `editLine` opens the
-  first service row, which is now Launch video, not the Package B line it set.
-- `pdfcases`: crashes on main (2026-11-15): it fills the Letter of Offer's
-  `acceptance_authorised_signatory` as a text field, which is a signature
-  field since the execution block's change.
-
-- `head`: the campaign record's Add creators button (`#showAddOption`) is not
-  visible after its first card is opened, on main as well (2026-11-13).
-
-- `analytics`: "every Sales tile that compares says Better, Worse, Steady or
-  Above alert" fails on main (2026-11-12, before the revamp touched it).
-- `tabbar`: "a refused save is said in the sheet, which stays with the order"
-  (Arrange sections) fails on main (2026-11-12).
-
 - `work`: "a new meeting opens on the next free half hour" and "the time is
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
