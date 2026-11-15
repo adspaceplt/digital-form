@@ -182,7 +182,19 @@
      the Sales view says why clients leave as well as how many). Stored
      keys; the words are these. */
   var LEAVE = [['budget', 'Budget'], ['results', 'Results'], ['in_house', 'Moved in-house'],
-               ['closed', 'Business closed'], ['no_reply', 'No reply'], ['other', 'Other']];
+               ['closed', 'Business closed'], ['no_reply', 'No reply'], ['completed', 'Completed'],
+               ['other', 'Other']];
+  /* Completed is a one-time project finished as agreed (2026-11-15):
+     offered only for a move to Past of a client once Active (Active, or
+     Paused after Active), never for Paused or a lead, and never counted as
+     churn (js/sales.js). */
+  function wasActive(log) {
+    return (log || []).some(function (e) { return e && e.stage === 'active'; });
+  }
+  function leaveFor(stage, before, keep) {
+    var ok = stage === 'past' && wasActive(before);
+    return LEAVE.filter(function (o) { return o[0] !== 'completed' || ok || keep === 'completed'; });
+  }
   function leaveWord(k) {
     for (var i = 0; i < LEAVE.length; i++) if (LEAVE[i][0] === k) return LEAVE[i][1];
     return '';
@@ -2375,7 +2387,7 @@
           title: 'Reason for ' + word,
           go: 'Save',
           fields: [
-            { name: 'reason', label: 'Reason', choices: LEAVE, value: was.reason || '' },
+            { name: 'reason', label: 'Reason', choices: leaveFor(was.stage, list.slice(0, i), was.reason), value: was.reason || '' },
             { name: 'note', label: 'Note', required: false, placeholder: 'Optional', value: was.note || '' }
           ]
         }, function (v) {
@@ -2809,7 +2821,7 @@
         body: n ? n + (n === 1 ? ' task is' : ' tasks are') + ' still open. ' + (n === 1 ? 'It shows' : 'They show') + ' as urgent delivery in My Work.' : '',
         go: 'Move',
         fields: [
-          { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(LEAVE), need: 'Choose a reason.' },
+          { name: 'reason', label: 'Reason', choices: [['', 'Choose']].concat(leaveFor(to, logOf(c).concat([{ stage: c.stage }]))), need: 'Choose a reason.' },
           { name: 'note', label: 'Note', required: false, placeholder: 'Optional' }
         ]
       }, function (v) { then({ reason: v.reason, note: v.note || null }); });

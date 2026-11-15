@@ -351,7 +351,8 @@
   function leadsLost(f) {
     var out = {};
     f.lost.forEach(function (c) {
-      var mv = S().movesOf(c).filter(function (m) { return m.to === 'past'; });
+      /* A lead not proceeding goes to Paused or Past (2026-11-15). */
+      var mv = S().movesOf(c).filter(function (m) { return m.to === 'past' || m.to === 'paused'; });
       var k = (mv.length ? mv[mv.length - 1].reason : '') || '';
       out[k] = (out[k] || 0) + 1;
     });
@@ -735,6 +736,8 @@
         active: { at_start: f.activeStart, now: f.activeEnd, verdict: w(judge(f.activeEnd, f.activeStart, 'up', 2)) },
         joined: { now: f.won.length, before: fp.won.length, change_pct: chg(f.won.length, fp.won.length), verdict: w(judge(f.won.length, fp.won.length, 'up', 2)) },
         left: { now: f.churned.length, before: fp.churned.length, change_pct: chg(f.churned.length, fp.churned.length), verdict: w(judge(f.churned.length, fp.churned.length, 'down', 2)) },
+        /* One-time projects finished as agreed: never churn (2026-11-15). */
+        completed: { now: f.completed.length, before: fp.completed.length },
         churn_pct_a_quarter: { now: ch ? pc(ch.rate) : null, before: chp ? pc(chp.rate) : null, above_alert: !!(ch && ch.over) },
         why_paused_or_left: why,
         left_by_industry: count(f.churned, function (c) { return c.industry; }),
