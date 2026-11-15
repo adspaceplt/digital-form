@@ -818,8 +818,8 @@
             ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
             /* A one-time project finished as agreed is never churn (2026-11-15). */
-            ['Completed', String(f.completed.length), 'Left Active as Completed, never churn', true],
-            ['Churn rate', pct(f.churned.length, f.activeStart), 'Left Active of those active at the start', true]
+            ['Completed', String(f.completed.length), 'Active to Past, project finished', true],
+            ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
           ];
           if (val && f.money) {
             rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won', true]);
