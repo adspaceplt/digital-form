@@ -10477,3 +10477,6 @@ From the audit's read of the console's screens: the Billing sheet and the client
 ### 2026-11-15 · The audit's AI function fixes
 From the audit's read of the AI functions: a white-label brand's report draft read the commentary of another brand of the same partner, whose name went to the model unmasked, and the partner's own brand analysis; an Accounts Report's account words and an ad's audience reached the model without the client's name masked; a partner's brand analysis read its brands' reports as its own; and a request cut off by the function's own timeout, after the model had run, was marked failed and so never counted against the day's limit. Each is fixed in its function; the timeout now counts as incomplete.
 
+### 2026-11-15 · Dead CSS removed
+The audit's lean read found 23 classes no page, script or function draws any more (the capacity strip, the old Dashboard glance and meters, the Creators List's campaign rows, `.pchip`, `.plink-bare` and others): their 45 rules are gone from `css/portal.css` and `css/console.css`, about 3.8 KB, each class grepped across the pages, scripts, functions and suites first. A class inside a shared `:is()` list is taken out of the list alone, never the rule.
+
