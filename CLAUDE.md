@@ -8479,7 +8479,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (H.264, AAC, upright, Rec. 709, fitted to 1080 × 1920 either way up at up
   to 60 fps, never enlarged). It reads and asks; it never deletes, copies or
   touches an original. `{ "all": true }` converts what came before, and
-  `{ "all": true, "redo": true }` remakes only copies over the cap.
+  `{ "all": true, "redo": true }` remakes only copies over the cap. One file
+  that cannot be read or asked for is its own `error: …` line, never the
+  run's (an upload trigger never fails); a walk stops 30 seconds before its
+  time and answers `next`, run again as `startAfter`, and leaves an upload
+  under 30 minutes old to its trigger; a size the file does not give is
+  asked of MediaConvert's probe, else fitted inside 1920 × 1920
+  (`FIT_NO_UPSCALE`); MediaConvert's role writes `content/*.web.mp4` alone
+  (2026-11-15, phase 2 audit).
 
 ## 3. Workflow and constraints
 
