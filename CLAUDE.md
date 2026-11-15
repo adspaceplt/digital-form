@@ -1523,6 +1523,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `authenticated`. A helper restated later keeps its revoke, never the
   grant of its first definition (2026-10-18: three were reopened so;
   `tests/sql.js` reads each helper's last word in the schema).
+- No table or view in public grants anon anything (`2026-11-15-database-safeguards.sql`,
+  revoked on every pass, Supabase's default grants included; phase 2 audit
+  19): a signed-out page reads through functions alone, and a table made
+  later is revoked by the band's next run (`tests/sql.js`).
 - Function hygiene (`2026-10-07-function-hygiene.sql`, `functions_tidy()`,
   the owner's alone): every function in public names its search path
   (`public`), and anon runs a security definer function only where a public

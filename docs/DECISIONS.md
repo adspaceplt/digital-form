@@ -10541,3 +10541,17 @@ ship before the migration.
 
 ### 2026-11-15 · The video copy and the backups, phase 2 audit (findings 6, 7, 13 to 16)
 The phase 2 audit (the user: "Ok fix all 21") read the Workers. The video Lambda let one file decide the whole run: a truncated upload, or one deleted after its trigger, threw out of `inspect`, so in `{ "all": true }` every later video got no copy and the results were lost, and on an upload Lambda retried twice with nothing recorded (6). Each file now goes through `attempt` (its own `error: …` line), a file that cannot be read is asked for as an unread one, and an upload trigger never fails. The catch-up had no way to resume: the only "in progress" mark is the `.web.mp4`, which exists only once MediaConvert finishes, so a run that met its 5 minutes stopped with nothing to carry on from and a second run ordered the same jobs again (7). The walk (`walk`, logic.mjs, tested with no AWS) now stops 30 seconds before the time runs out and answers `next`, taken as `startAfter` on the next run, and leaves an original uploaded in the last 30 minutes to its own trigger; the README says to wait for a run's jobs before the next. Where nothing read the size (mkv, webm, mpg, an index past 64 MB) a 4K or 240 fps original got a full-size copy and a silent file was asked for sound (14): the function now asks MediaConvert's Probe API (2026-02) for the size, rotation, rate and sound tracks, and where the probe cannot answer the copy is fitted inside 1920 × 1920 with `FIT_NO_UPSCALE` (never enlarged, never padded); the rate cannot be capped without knowing it, so that last case keeps its rate and asks for sound, said in the README. MediaConvert's role wrote anywhere under `content/`, so a job set wrongly could overwrite an original; its write is now `content/*.web.mp4` alone (13). The links Worker's error page still drew the warm greys #1145 retired (15), now #1a1a1a, #e0e0e0, #666666. The backup README said nothing deletes a dump, when the `backups-expire` rule has expired each after 90 days since 2026-10-18 (16); it now says so, with versioning (2026-10-19) and the Object Lock limit.
+
+### 2026-11-15 · Database safeguards
+The phase 2 audit (findings 19 to 21). 46 public tables still held
+Supabase's default grants to anon, TRUNCATE included; row level security
+admitted no anon read on any of them, but nothing else stood behind it. No
+page signed out reads a table (every public page asks a function, and
+`js/api.js` reads none), so every table and view in public now keeps
+nothing for anon, revoked in a loop each time the band runs. Supabase's
+default privileges are left as they stand: a later table is caught at the
+band's next run, not at its creation. `client_touch_meet_prepare` and
+`client_touch_set_meet`, invoker functions outside `open_to_anon`, were
+executable by anon; now the team's alone. Six hot foreign keys had no index
+(a creator's bookings, a task's notices, a booking's bills, a campaign's,
+set's and template's tasks): indexed.
