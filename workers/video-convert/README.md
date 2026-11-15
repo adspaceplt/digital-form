@@ -132,8 +132,9 @@ Lambda → `adspace-video-convert` → Test → Create new event, name `all`, JS
 Test. The result lists each video and what was done: `job …` (a copy was
 asked for), `copy exists`, `already plays everywhere`, `recent: left to its
 upload trigger` (uploaded in the last 30 minutes, which its own upload
-covers), or `error: …` (that one file could not be read or asked for; the
-rest carry on). Run it again at any time; it never asks twice for a copy
+covers), `error: not found` (the original is no longer in the bucket, so no
+job is asked for), or `error: …` (that one file could not be read or asked
+for; the rest carry on). Run it again at any time; it never asks twice for a copy
 that exists.
 
 A copy is only seen once MediaConvert finishes it, so a job still running

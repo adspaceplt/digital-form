@@ -269,7 +269,7 @@
       }));
       row(cells('Content', function (p) {
         var parts = mixParts(p.spec.mix);
-        parts[0].t = p.spec.contents + ' contents / month';
+        parts[0].t = p.spec.contents + (Number(p.spec.contents) === 1 ? ' content piece / month' : ' content pieces / month');
         return L('', 0, { parts: parts, or: true, top: true });
       }));
       row([L('What’s Included', lw, { fill: head }), L('', wide, { b: lines(T[withAds ? 'plans_ads_included' : 'plans_included']) })]);
