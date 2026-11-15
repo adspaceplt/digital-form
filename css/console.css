@@ -629,7 +629,7 @@ button.appver {
    Every row is 8 from the next, as every label-beside-value list is. */
 .eng-facts { display: grid; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .eng-row {
-  display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; grid-template-areas: "lab val act";
+  display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; grid-template-areas: "lab val act";
   gap: 4px 16px; align-items: center; min-height: var(--ctl-h-sm); font-size: 13.5px;
 }
 .eng-row > .eng-lab { grid-area: lab; font-size: 13px; }
@@ -669,7 +669,7 @@ button.appver {
 /* The state and the ⋯ centre on the facts' first line, not on their own 44px
    target: the group takes that line's height and the target overflows it
    evenly (2026-09-28, they hung 12px below the line on a phone). */
-.is-tight .eng-ctl { justify-content: flex-end; height: calc(13px * 1.55); }
+.is-tight .eng-ctl { height: calc(13px * 1.55); }
 
 /* A checklist item is a statement that something was done, so the row is the
    label, when it was made, and one target that clears the control floor. */
@@ -5078,7 +5078,7 @@ svg.sec {
   :root:not(.has-tabbar) .console-title-info { width: 15px; height: 15px; }
   :root:not(.has-tabbar) .console-sub { display: block; }
   :root:not(.has-tabbar) .console-sub:not(:has(span:not(:empty):not([hidden]))) { display: none; }
-  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg) {
+  :root:not(.has-tabbar) .console :is(.panel, .softpanel, .stg-card, .ovcard, .chartcard, .kcard, .readgroups, .rec-part, .rec-rail > .railblock, .bookreg, .engcard) {
     background-color: var(--card); box-shadow: none;
     /* An outline drawn just inside the card, above what it holds: an inset
        shadow is painted under the rows, whose white ground hid the edge
@@ -5690,3 +5690,10 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 @media (pointer: coarse) {
   :root:not([data-face="client"]) { background: var(--chrome-solid); }
 }
+
+/* The month is a card of its own above its tasks, its edge the cards'
+   hairline at every width (2026-11-15). The invoice's number reads as its
+   reference, in ink, opening it in Bukku. */
+.console .engcard { outline: 1px solid var(--card-edge, var(--line)); outline-offset: -1px; }
+.eng-invno { font-variant-numeric: tabular-nums; }
+.eng-invrow .linkbtn.eng-invno { color: var(--ink); font-weight: 500; }
