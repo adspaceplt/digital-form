@@ -2862,6 +2862,7 @@ function cardSlugFree(name, self, email) {
                (m.id === t2.with_id && ((t2.status === 'open' && to === 'done') || (t2.status === 'done' && to === 'open')));
       if (!ok) return { error: 'bad-status' };
       if (m.id === t2.team_member_id && to === 'open' && !healthAgreed(m.id)) return { error: 'no-consent' };
+      if (m.id === t2.team_member_id && to === 'open' && DB.health_talks.some(function (k) { return k.id !== t2.id && k.team_member_id === t2.team_member_id && k.with_id === t2.with_id && k.status === 'open'; })) return { error: 'already-asked' };
       t2.status = to; t2.closed_at = to === 'open' ? null : nowIso; t2.closed_by = to === 'open' ? null : m.id;
       return mine();
     }
@@ -4393,7 +4394,7 @@ function cardSlugFree(name, self, email) {
         r.serial = r.serial || ('ADHR/' + String(tm.staff_code).toUpperCase() + '/PR' + r.period.slice(2, 4) + r.period.slice(5, 7));
         var tell = a.p_notify !== false;
         bump(r); perfLog(r.id, r.team_member_id, 'released', { version: r.version || 1, notified: tell });
-        if (tell) perfNotify(r.team_member_id, 'perf.released', 'Your ' + perfMonth(r.period) + ' performance review is ready.', 'perf.released.' + r.id + '.' + (r.version || 1));
+        if (tell) perfNotify(r.team_member_id, 'perf.released', 'Your ' + perfMonth(r.period) + ' performance review is ready.', 'perf.released.' + r.id + '.' + (r.version || 1) + '.' + r.rev);
         return perfJson(r, true);
       }
       if (name === 'perf_unrelease') {
@@ -7896,7 +7897,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (vr.status !== 'draft' && vr.status !== 'published') return { error: 'in-review', status: vr.status };
       var vs = JSON.parse(JSON.stringify(vv.snapshot || {})), vh = vs.report || {};
       var nv = vr.status === 'published' ? vr.version_no + 1 : vr.version_no;
-      Object.assign(vr, { status: 'draft', version_no: nv, return_note: null, submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null,
+      Object.assign(vr, { status: 'draft', version_no: nv, return_note: null, submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null, sent_on: null, sent_by: null,
         headline: vh.headline == null ? null : vh.headline, intro: vh.intro == null ? null : vh.intro, insights: vh.insights || {},
         rank_metric: vh.rank_metric || vr.rank_metric, first_month: vh.first_month == null ? vr.first_month : vh.first_month,
         ads_totals: vh.ads_totals || {}, updated_at: now });
@@ -8631,7 +8632,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'sm_report_revise') {
       if (!me || !smCan('work')) return { error: 'denied' };
       if (r.status !== 'published') return { error: 'not-published' };
-      Object.assign(r, { status: 'draft', version_no: r.version_no + 1, return_note: null, submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null });
+      Object.assign(r, { status: 'draft', version_no: r.version_no + 1, return_note: null, submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null, sent_on: null, sent_by: null });
       smPostsFollow(r, 'published');
       smLog(r, 'report.revised'); return { ok: true, status: 'draft', version_no: r.version_no };
     }
