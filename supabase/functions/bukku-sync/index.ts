@@ -757,20 +757,14 @@ async function billHolding(contact: number, ref: string): Promise<string | null>
   }
   return null;
 }
-/* The bill as Bukku's Create Bill takes it: on credit, the Job reference in
-   its reference no., one line at the fee on the chosen account, no tax, a
-   draft (read back once it is posted in Bukku). */
-export function billBody(p: any, item?: any): Record<string, unknown> {
-  const line: Record<string, unknown> = { account_id: Number((item && item.account_id) || p.account),
-    description: (String(p.ref) + ' · ' + String(p.description || '')).slice(0, 255), unit_price: Number(p.amount), quantity: 1 };
-  /* The item the creator's earlier bills were made on (2026-11-13, the user:
-     "check for previous job, item SKU i had it set"): its product and unit,
-     the description ours. */
-  if (item && item.product_id) {
-    line.product_id = Number(item.product_id);
-    if (item.product_unit_id) line.product_unit_id = Number(item.product_unit_id);
-  }
-  if (item && item.classification_code) line.classification_code = String(item.classification_code);
+/* The bill as Bukku's Create Bill takes it (2026-11-15, the user's example):
+   on credit, the Job reference in its reference no., one line of the KOC fee
+   item (found by its SKU) at the fee, on the account found by its code, with
+   the classification code set, no tax, a draft for the team to post. */
+export function billBody(p: any, item: any): Record<string, unknown> {
+  const line: Record<string, unknown> = { account_id: Number(item.account_id), product_id: Number(item.product_id),
+    description: billLine(p), unit_price: Number(p.amount), quantity: 1, classification_code: String(item.classification_code) };
+  if (item.product_unit_id) line.product_unit_id = Number(item.product_unit_id);
   const out: Record<string, unknown> = {
     payment_mode: 'credit', contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
     currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
@@ -783,32 +777,49 @@ export function billBody(p: any, item?: any): Record<string, unknown> {
   if (p.due) out.due_date = String(p.due);
   return out;
 }
-/* The line of an earlier creator bill that names an item: this creator's
-   newest bills first, then any creator's; five read at most. */
-export function itemOf(bill: any): any {
-  for (const l of ((bill && bill.form_items) || []) as any[])
-    if (l && l.product_id) return { product_id: l.product_id, product_unit_id: l.product_unit_id || null, account_id: l.account_id || null,
-      classification_code: l.classification_code || null };
-  return null;
+/* The line's words: KOC Fee - Client: {brand} ({campaign}) ({creator}). */
+export function billLine(p: any): string {
+  return ('KOC Fee - Client: ' + String(p.client_name || '') + ' (' + String(p.campaign || '') + ') (' + String(p.creator_name || '') + ')').slice(0, 255);
 }
-async function lastItem(contact: number): Promise<any> {
-  try { return await findItem(contact); } catch (_e) { return null; }
+/* The product of a SKU among Bukku's products, its base unit; archived left out. */
+export function productOf(raw: any, sku: string): any {
+  const list = Array.isArray(raw) ? raw : ((raw && (raw.products || raw.items || raw.data)) || []);
+  const k = String(sku || '').trim().toUpperCase();
+  const p = (list as any[]).find((x) => x && x.id && !x.is_archived && String(x.sku || '').trim().toUpperCase() === k);
+  if (!p) return null;
+  const units = (Array.isArray(p.units) ? p.units : []) as any[];
+  const u = units.find((x) => x && x.is_base) || units[0];
+  return { product_id: Number(p.id), product_unit_id: u && u.id ? Number(u.id) : null, has_units: units.length > 0 };
 }
-async function findItem(contact: number): Promise<any> {
-  const db = svcDb();
-  const mine = await db.from('creator_bills').select('bill_id').eq('contact_id', contact).eq('gone', false)
-    .order('bill_date', { ascending: false, nullsFirst: false }).limit(3);
-  const any = await db.from('creator_bills').select('bill_id').eq('gone', false)
-    .order('bill_date', { ascending: false, nullsFirst: false }).limit(5);
-  const ids = [...((mine.data || []) as any[]), ...((any.data || []) as any[])].map((r) => Number(r.bill_id))
-    .filter((v, i, a) => v > 0 && a.indexOf(v) === i).slice(0, 5);
-  for (const id of ids) {
-    try {
-      const it = itemOf(await bukku('GET', `/purchases/bills/${id}`).then((r: any) => (r && r.transaction) || null));
-      if (it) return it;
-    } catch (_e) { /* the next one */ }
+/* The account of a code in the chart of accounts, children included. */
+export function accountOf(raw: any, code: string): number | null {
+  const k = String(code || '').trim().toUpperCase();
+  let hit: number | null = null;
+  const walk = (list: any[]) => {
+    for (const a of list || []) {
+      if (!a || hit) continue;
+      if (a.id && !a.is_archived && String(a.code || '').trim().toUpperCase() === k) { hit = Number(a.id); return; }
+      if (Array.isArray(a.children)) walk(a.children);
+    }
+  };
+  walk(Array.isArray(raw) ? raw : ((raw && (raw.items || raw.data)) || []));
+  return hit;
+}
+/* The item a creator's bill is made on, from the Business settings the
+   database answered: the product by its SKU, the account by its code. */
+async function billItem(p: any): Promise<any> {
+  const r = await bukku('GET', `/products?search=${encodeURIComponent(String(p.sku))}&page=1&page_size=100`);
+  const prod = productOf(r, String(p.sku));
+  if (!prod) return { error: 'no-product', sku: String(p.sku) };
+  if (!prod.has_units) {
+    const d = await bukku('GET', `/products/${prod.product_id}`);
+    const again = productOf([(d && d.product) || {}], String(p.sku));
+    if (again) prod.product_unit_id = again.product_unit_id;
   }
-  return null;
+  const a = await bukku('POST', '/v2/lists', { lists: ['accounts'], params: {} });
+  const acc = accountOf(a && a.accounts, String(p.account_code));
+  if (!acc) return { error: 'no-bukku-account', code: String(p.account_code) };
+  return { product_id: prod.product_id, product_unit_id: prod.product_unit_id, account_id: acc, classification_code: String(p.class_code) };
 }
 /* A creator bill's page in Bukku: found by its number among the bills the
    caller reads on the creator's Payment pane, then on the creator's contact. */
@@ -1312,7 +1323,11 @@ Deno.serve(async (req) => {
       try {
         had = await billHolding(Number(p.contact_id), String(p.ref));
         if (!had) {
-          const item = await lastItem(Number(p.contact_id));
+          const item = await billItem(p);
+          if (item.error) {
+            await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+            return json(item, 200, origin);
+          }
           sent = true;
           const r = await bukku('POST', '/purchases/bills', billBody(p, item));
           made = String((r && r.transaction && r.transaction.number) || '') || 'Created';

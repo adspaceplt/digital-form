@@ -918,6 +918,10 @@
     'not-posted': 'Move the booking to Posted first, then create its bill.', 'no-fee': 'Enter the creator fee first.',
     'currency-changed': 'The creator is now paid in another currency. Set the fee again, then create the bill.',
     'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
+    /* The KOC fee item (2026-11-15): Business settings, found in Bukku by SKU and code. */
+    'no-item': 'Set the item SKU and classification code for creator bills in Settings, Money, Bukku.',
+    'no-product': 'Bukku holds no product with the item SKU set for creator bills. Check the SKU in Bukku, or in Settings, Money, Bukku.',
+    'no-bukku-account': 'Bukku holds no account with the code set for creator bills. Check the account in Bukku, or in Settings, Money, Bukku.',
     'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
     creating: 'This bill is already being created. Press Read from Bukku in a minute.',
     'not-confirmed': 'Bukku did not confirm the bill. Press Read from Bukku in a few minutes before you create it again.' };

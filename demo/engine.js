@@ -584,7 +584,7 @@
     creator_pay_decide: 'p_id p_ok p_note', creator_pay_add: 'p_creator p_values', creator_email_templates_get: '', creator_email_templates_save: 'p_rows',
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
-    bukku_bill_account_set: 'p_account p_name',
+    bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -4513,6 +4513,17 @@ function cardSlugFree(name, self, email) {
     return { error: 'db-missing' };
   }
 
+  function bkBillSet() {
+    var b = DB.bukku_settings || {};
+    return { bill_item_sku: b.bill_item_sku === undefined ? 'P995' : b.bill_item_sku,
+      bill_class_code: b.bill_class_code === undefined ? '037' : b.bill_class_code,
+      bill_account_code: b.bill_account_code === undefined ? '6000-03' : b.bill_account_code };
+  }
+
+  function bkAccounts() {
+    return window.__bukkuAccounts || [{ id: 100, code: '6000-03', name: 'Cost of Sales - Influencers', type: 'cost_of_sales' },
+      { id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' }, { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }];
+  }
   function opsMe() {
     var e = String((session && session.user && session.user.email) || '').toLowerCase();
 
@@ -10010,13 +10021,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         } else if (name === 'creator_bill_prep') {
           var pL = (DB.bukku_links || []).filter(function (l) { return l.kind === 'creator' && l.record_id === fO.creator_id; })[0];
           var pAcc = (DB.bukku_settings || {}).bill_account;
+
+          var pBs = bkBillSet();
           var pFx = fF && fF.currency === 'SGD' ? appSet('fx_sgd', appToday()) : 1;
           if (['posted', 'completed'].indexOf(fO.state) < 0) cfOut = { error: 'not-posted' };
           else if (!fF || !(Number(fF.amount) > 0)) cfOut = { error: 'no-fee' };
           else if ((fF.currency || 'MYR') !== cfCur(fO.creator_id)) cfOut = { error: 'currency-changed', currency: cfCur(fO.creator_id) };
           else if (!pL) cfOut = { error: 'not-linked' };
           else if (cfBilled(fO.id)) cfOut = { error: 'billed' };
-          else if (!pAcc) cfOut = { error: 'no-account' };
+          else if (!pBs.bill_account_code) cfOut = { error: 'no-account' };
+          else if (!pBs.bill_item_sku || !pBs.bill_class_code) cfOut = { error: 'no-item' };
           else if (!pFx) cfOut = { error: 'no-fx' };
           else if (cfClaimed(fO.id)) cfOut = { error: 'creating' };
           else {
@@ -10025,6 +10039,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
             var pM = (DB.campaigns || []).filter(function (m) { return m.id === fO.campaign_id; })[0] || {};
             cfOut = { ok: true, creator: fO.creator_id, contact_id: pL.contact_id, amount: Number(fF.amount), currency: fF.currency, fx: Number(pFx),
               ref: jobRefOf(fO), date: appToday(), due: fO.pay_by && fO.pay_by >= appToday() ? fO.pay_by : null, account: pAcc,
+              sku: pBs.bill_item_sku, class_code: pBs.bill_class_code, account_code: pBs.bill_account_code,
+              client_name: ((DB.clients || []).filter(function (k) { return k.id === pM.client_id; })[0] || {}).name || '',
+              campaign: pM.title || 'Creator campaign', creator_name: fC ? fC.name : '',
               description: ((pM.title || 'Creator campaign') + ' · ' + (fC ? fC.name : '')).slice(0, 200) };
           }
         } else {
@@ -13043,14 +13060,37 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!bkMe || !(opsAllowed('clients.billing', 'work') || opsAllowed('suppliers', 'work') || opsGranted('team.settings', 'work'))) return bkNo('denied');
         return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,
           field_creator: DB.bukku_settings.field_creator || null, bill_account: DB.bukku_settings.bill_account || null,
-          bill_account_name: DB.bukku_settings.bill_account_name || null });
+          bill_account_name: DB.bukku_settings.bill_account_name || null, bill_item_sku: bkBillSet().bill_item_sku || null,
+          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null });
+      }
+
+      if (name === 'bukku_bill_set') {
+        if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
+        var bsk = String(args.p_sku || '').trim(), bcl = String(args.p_class || '').trim(), bco = String(args.p_account_code || '').trim();
+        var bnm = String(args.p_name || '').trim().slice(0, 120) || null;
+        if (!/^[A-Za-z0-9._\/-]{1,40}$/.test(bsk)) return bkNo('bad-sku');
+        if (!/^[0-9]{3}$/.test(bcl)) return bkNo('bad-class');
+        if (!/^[A-Za-z0-9._\/-]{1,30}$/.test(bco) || (args.p_account != null && !(Number(args.p_account) > 0))) return bkNo('bad-account');
+        var bw = bkBillSet(), bsaid = [];
+        if (bw.bill_item_sku !== bsk) bsaid.push('Creator bill item SKU: ' + (bw.bill_item_sku || 'not set') + ' → ' + bsk);
+        if (bw.bill_class_code !== bcl) bsaid.push('Classification code: ' + (bw.bill_class_code || 'not set') + ' → ' + bcl);
+        if (bw.bill_account_code !== bco) bsaid.push('Creator bill account: ' + (DB.bukku_settings.bill_account_name || bw.bill_account_code || 'not set') + ' → ' + (bnm || bco));
+        if (!bsaid.length) return bkOk();
+        var bnew = { bill_item_sku: bsk, bill_class_code: bcl, bill_account_code: bco };
+        if (bw.bill_account_code !== bco) { bnew.bill_account = args.p_account != null ? Number(args.p_account) : (DB.bukku_settings.bill_account || null); bnew.bill_account_name = bnm || bco; }
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, bnew);
+        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'team.changed', subject: 'Bukku', detail: bsaid.join(' · '), created_at: new Date().toISOString() });
+        return bkOk();
       }
 
       if (name === 'bukku_bill_account_set') {
         if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
         if (args.p_account != null && !(Number(args.p_account) > 0)) return bkNo('bad-value');
         var baWas = DB.bukku_settings.bill_account_name || 'not set';
-        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { bill_account: args.p_account || null, bill_account_name: args.p_account ? (args.p_name || null) : null });
+        var baNm = args.p_account ? (args.p_name || null) : null;
+        var baCode = baNm && baNm.indexOf(' · ') > 0 ? baNm.split(' · ')[0].trim() : '';
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { bill_account: args.p_account || null, bill_account_name: baNm,
+          bill_account_code: /^[A-Za-z0-9._\/-]{1,30}$/.test(baCode) ? baCode : null });
         DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'team.changed', subject: 'Bukku', detail: 'Creator bill account: ' + baWas + ' → ' + (DB.bukku_settings.bill_account_name || 'not set'), created_at: new Date().toISOString() });
         return bkOk();
       }
@@ -15067,8 +15107,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (bkb.action === 'accounts') {
             return rpc('bukku_config', {}).then(function (r) {
               if (r.data && r.data.error) return { data: r.data, error: null };
-              return { data: { ok: true, accounts: window.__bukkuAccounts || [{ id: 610, code: '6100', name: 'Creator fees', type: 'cost_of_sales' },
-                { id: 620, code: '6200', name: 'Advertising', type: 'expenses' }] }, error: null };
+              return { data: { ok: true, accounts: bkAccounts() }, error: null };
             });
           }
           if (bkb.action === 'createbill') {
@@ -15077,13 +15116,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
               if (p.error) return { data: p, error: null };
               var fin = function (num) { return rpc('creator_bill_done', { p_option: bkb.option, p_number: num }); };
               if (window.__bukkuDown) return fin(null).then(function () { return { data: { error: 'bukku-unreachable' }, error: null }; });
+
+              var prod = (window.__bukkuProducts || [{ id: 77, sku: 'P995', name: 'KOC FEE' }]).filter(function (x) { return String(x.sku).toUpperCase() === String(p.sku).toUpperCase(); })[0];
+              if (!prod) return fin(null).then(function () { return { data: { error: 'no-product', sku: p.sku }, error: null }; });
+              var acc = bkAccounts().filter(function (x) { return x.code === p.account_code; })[0];
+              if (!acc) return fin(null).then(function () { return { data: { error: 'no-bukku-account', code: p.account_code }, error: null }; });
               window.__bukkuBills = window.__bukkuBills || [];
               var key = function (v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
               var had = window.__bukkuBills.filter(function (x) { return Number(x.contact_id) === Number(p.contact_id) && key([x.number2, x.description].join(' ')).indexOf(key(p.ref)) > -1; })[0];
               var made = null;
               if (!had) {
                 made = { id: 9000 + window.__bukkuBills.length, contact_id: p.contact_id, number: 'PI-' + String(900 + window.__bukkuBills.length).padStart(5, '0'),
-                  number2: p.ref, description: p.description, date: p.date, amount: p.amount, balance: p.amount, currency_code: p.currency, status: 'draft', account_id: p.account };
+                  number2: p.ref, description: p.description, date: p.date, amount: p.amount, balance: p.amount, currency_code: p.currency, status: 'draft', account_id: acc.id,
+                  product_id: prod.id, classification_code: p.class_code, line: 'KOC Fee - Client: ' + p.client_name + ' (' + p.campaign + ') (' + p.creator_name + ')' };
                 window.__bukkuBills.push(made);
               }
               var rows = window.__bukkuBills.filter(function (x) { return Number(x.contact_id) === Number(p.contact_id) && (!x.status || x.status === 'draft' || x.status === 'ready' || x.status === 'paid'); })
