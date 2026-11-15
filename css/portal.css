@@ -4330,23 +4330,12 @@ body > .shell { width: 100%; }
    clipped cell would make meaningless, while a shortened campaign name is
    still the campaign. */
 .cr-record-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.crcamp {
-  display: flex; align-items: center; gap: 12px; width: 100%;
-  min-height: var(--ctl-h); padding: 8px 10px; text-align: left;
-  background: none; border: 0; border-bottom: 1px solid var(--line-soft);
-  border-radius: var(--radius-ctl);
-  transition: background var(--t-fast) var(--ease-out);
-}
-.crcamp-name {
-  flex: 1 1 auto; min-width: 0; font-size: 13.5px; color: var(--ink);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-@media (hover: hover) { .crcamp:hover { background: var(--sunk); } }
+
 .cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* The Creators List's profile links are the same outlined chip (they were
    bare text until 2026-09-28: no text links); the handle rides in weight. */
-.plink-bare b { font-weight: 600; }
+
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
@@ -4804,7 +4793,7 @@ body > .shell { width: 100%; }
 .crm-head.cr-client-row, .crm-row.cr-client-row {
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 132px 18px;
 }
-.crm-c-sets .is-warn { color: var(--ink); font-weight: 600; }
+
 @media (max-width: 760px) {
   /* The sets line moves under the name and the access mark keeps its track,
      which is the two column record row every other list here takes. */
@@ -4818,7 +4807,7 @@ body > .shell { width: 100%; }
      name does, as the Clients list's meta line (2026-11-10). */
   .crm-row.cr-client-row .crm-c-name { gap: 10px; align-items: flex-start; overflow: visible; }
   .crm-row.cr-client-row .cl-mark { margin-bottom: -6px; }
-  .crm-row.cr-client-row .crm-c-sets { padding-left: 38px; }
+  
 }
 
 /* ---------- The campaign register ----------
@@ -5175,12 +5164,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 /* The brief, and the changes asked for, read as quoted matter rather than as
    more of the card: an inset ground and a rule down the side. */
-.booking-brief, .booking-pay, .booking-files, .booking-deliver {
+.booking-brief, .booking-files, .booking-deliver {
   margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
 }
 .booking-brief p { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin-top: 4px; }
 .booking-brief.is-warn p { color: var(--ink); }
-.booking-pay p { font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 10px; }
 
 /* What has been handed in, as thumbnails rather than a list of file names: a
    creator checking they sent the right cut should not have to read. */
@@ -5997,10 +5985,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* Who did a report's step, and to whom, on its own line under the date
    (2026-10-06), so two names never push the row past its card. */
 .rp-keydates .tl-lead { flex-wrap: wrap; row-gap: 2px; }
-.tl-who {
-  flex-basis: 100%; min-width: 0; font-size: 12.5px; color: var(--ink-mute);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+
 /* A dated row is read, so its date carries the ink the stage rows give the
    duration; the stage rows' own dates stay mute beside the stage. */
 .tl-date .tl-when { font-size: 13px; color: var(--ink); }
@@ -6912,11 +6897,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    a person can read their own week off, and a manager the team's. It is a
    planning figure beside the record of what was pressed, never a measure of
    anybody's attention. */
-.capstrip { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 24px; margin: 0 0 16px; padding: 12px 16px; background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); }
-.caprow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 12.5px; min-width: 0; }
-.caprow.is-over .caprow-fig { color: var(--ink); font-weight: 600; }
-.capbar i { display: block; height: 100%; background: var(--ink-soft); border-radius: 3px; }
-.caprow.is-over .capbar i { background: var(--warn); }
 
 /* The bell is the Activity record's shape (`.headlink`: the same glyph size,
    the same mute ink, the same 8px fill on hover and while open), never the
@@ -8417,7 +8397,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .set-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .set-row-top > b { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .set-row-sub .cr-changes { padding: 0; font-size: 12.5px; }
-.crm-c-sets .cr-changes { display: block; width: fit-content; margin-top: 2px; padding: 0; }
+
 .set-row-sub.is-warn { color: var(--ink); }
 .set-row.is-on { background: var(--line-soft); }
 @media (hover: hover) { .set-row:not(.is-on):hover { background: var(--sunk); } }
@@ -8450,10 +8430,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-pages { margin: 0; }
 /* Detail's groups under their label, and the way on at a page's foot: a
    forward move at its own width, at the right edge. */
-.ovw-page-h { margin: 12px 0 0; }
-.ovw-turn.btn { flex: 0 0 auto; }
-.ovw-turn .ovgo-chev { width: 15px; height: 15px; margin-left: 4px; }
-.ovw-turn .ovgo-chev.is-back { margin: 0 4px 0 0; transform: scaleX(-1); }
+
 /* Sales moves: a figure a line, its word over a mute line, the figure at the
    right edge. */
 .ovw-facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 24px; margin: 0; }
@@ -8464,11 +8441,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-facts dt { display: grid; gap: 2px; font-size: 13px; color: var(--ink); min-width: 0; }
 .ovw-facts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 .ovw-when > .select { flex: 0 0 auto; width: auto; min-width: 156px; }
-.ovw-glance.is-plain { grid-template-columns: minmax(0, 1fr); }
-.is-narrow .ovw-glance { grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.ovw-meter { display: grid; justify-items: center; min-width: 0; }
-.ovw-meter > .chartcard { width: 100%; padding: 0; background: none; box-shadow: none; }
-.ovw-meter .chart-data { display: none; }
+
 .chart-meter { position: relative; width: 170px; height: 170px; margin: 0 auto; }
 .cm-ring { width: 100%; height: 100%; }
 .cm-mid b { font-size: 26px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--ink); line-height: 1.1; }
@@ -9491,7 +9464,6 @@ body.is-maint { overflow: hidden; }
   .facts.vs-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-.wam-head b { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .wam-to b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wam-to small, .wam-tpl small, .wam-state small {
   font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -9783,8 +9755,6 @@ body.qs-page { background: var(--card); }
 .booking-fold > summary:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-ctl-sm); }
 .booking-fold-body { padding-top: 4px; }
 .booking.is-done .booking-rate { margin-top: 12px; }
-
-
 
 /* A supplier's details form (2026-10-18, js/supplierform.js): the
    authorisation the Jotform form carried, numbered a) to f) as it was. */

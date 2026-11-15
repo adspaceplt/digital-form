@@ -859,12 +859,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    and the month it was shot, and the whole row opens it — the shape every
    other list of records in this console has, so there is nothing new to
    learn and nothing nested inside the control. */
-.crcamps { display: flex; flex-direction: column; }
-.crcamp:last-child { border-bottom: 0; }
-.crcamp-when {
-  flex: 0 0 auto; font-size: 12px; color: var(--ink-mute);
-  font-variant-numeric: tabular-nums;
-}
+
 .svc-cat:first-child { padding-top: 12px; }
 /* How much of a group is filled: a ring and the count. */
 .ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -995,8 +990,7 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 
 .routenote code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
 
-.crm-c-sets { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-@media (max-width: 760px) {.crm-row.cr-client-row .crm-c-sets { grid-area: sets; font-size: 12.5px; }
+@media (max-width: 760px) {
   /* Right edge, like every other last column on a phone: start justified in
      a 120px track the access mark stopped short of the padding and the list
      lost its second margin. */
@@ -1562,9 +1556,7 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 /* A month with no work: the grid says it at a desk; on a phone, where only
    days with work are listed, the line does. */
 .cal-none { display: none; }
-.caprow-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.caprow-fig { color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.capbar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+
 /* THE BELL. A control in the bar like the account, a count that is the unread
    rows and nothing else, and a menu that names the task and the change. */
 .notif { position: relative; flex: 0 0 auto; }
@@ -2168,7 +2160,6 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .rh-pick { display: flex; align-items: center; }
 .is-narrow .rh-row > .rh-pick { grid-area: pick; align-self: start; padding-top: 2px; }
 
-
 @media (max-width: 860px) {.console-head { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
   }
 .pullmark.is-busy svg { animation: pullturn .8s linear infinite; }
@@ -2543,19 +2534,13 @@ button.chip-vic[aria-expanded="true"]::before { box-shadow: inset 0 0 0 1px var(
 .ovw-when { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .is-narrow .ovw-bar { justify-content: flex-start; }
 .is-narrow .ovw-pages { flex: 1 1 100%; }
-.ovw > .ovw-page-h:nth-child(2) { margin-top: 0; }
-.ovw-foot { display: flex; justify-content: flex-end; }
+
 .is-narrow .ovw-facts > div:nth-child(2) { border-top: 1px solid var(--line-soft); padding-top: 8px; }
 .ovw-facts dt small { font-size: 12px; color: var(--ink-mute); }
 .ovw-span { font-size: 12px; color: var(--ink-mute); }
 /* The glance: the two rings (delivered and posted on time); what needs
    acting on is the list straight under it (2026-10-22, OVW-M1). */
-.ovw-glance { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 24px; align-items: center; }
-.ovw-meters { display: grid; grid-template-columns: repeat(2, 170px); gap: 16px; justify-content: center; }
-.is-narrow .ovw-meters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.is-narrow .ovw-meters .chart-meter { width: min(150px, 100%); height: auto; aspect-ratio: 1; }
-.is-narrow .ovw-meters .cm-mid b { font-size: 22px; }
-.is-narrow .ovw-meters .cm-mid small { font-size: 11px; max-width: 64%; justify-self: center; line-height: 1.25; }
+
 .ovw-srcs-host:not(:empty) { margin: 0 0 12px; }
 /* A strip inside a card runs the card's width, its tabs sharing what is spare. */
 .tabrow.ovw-srcs { width: 100%; }
@@ -3582,7 +3567,7 @@ button.vs-row {
    status over when on the right. Templates (Full Access): a purpose over
    its template, its switch, Edit.
    ========================================================================= */
-.wam-head { background: var(--card); padding: 12px 16px; }
+
 .wam-row, .crm-head.wam-row {
   display: grid; align-items: center; gap: 0 12px;
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px var(--state-w);
@@ -4197,8 +4182,7 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 /* Supplier emails (2026-10-18): who each went to under its subject; the
    template fields as small buttons under the body. */
 .sup-mail-meta { display: block; font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
-.sup-fields { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.sup-fields .btn { flex: 0 0 auto; min-width: 0; }
+
 .sup-attach { margin-top: 12px; font-size: 13px; }
 /* Send by email (2026-10-31): the attachment named at the left, Preview PDF
    at the right edge, on one line with the message's fields above it. */
@@ -4446,7 +4430,6 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .doc-preview-row { display: flex; justify-content: flex-start; margin-top: 16px; }
 .doc-preview-row .btn { flex: 0 0 auto; }
 
-
 /* Creator Campaigns, the second audit (2026-10-22). The invoice fold's
    chevron is every fold's, turned as it opens (CMP-15); its actions take a
    class, never a style (CMP-17), equal halves on a phone. */
@@ -4681,7 +4664,6 @@ span.inv-amt { font-weight: 600; }
 .is-narrow .od-log .r > :last-child { grid-column: 2; grid-row: 1; justify-self: end; }
 .is-narrow .od-log .c { grid-column: 1 / -1; grid-row: 2; }
 .is-narrow .od-log .b { grid-column: 1 / -1; grid-row: 3; color: var(--ink-mute); }
-
 
 /* QUOTATION SIGNING (2026-10-31): Check and submit, Review and Mark signed.
    What was signed reads as facts, each company value with its pen while it
@@ -5207,7 +5189,7 @@ svg.sec {
    elegant"); bold stays for headings and a total. */
 .console :is(.crm-c-name, .task-top > b, .crow-name b, .svc-name b, .group-name b, .rp-name b,
   .ovw-att-what b, .wfy-what b, .init-name b, .ovname, .ac-name, .rl-what,
-  .caprow-name, .bookreg-fold-name, .crr-bk-name b, .qt-gonename b, .ck-item-name b) { font-weight: 500; }
+  .bookreg-fold-name, .crr-bk-name b, .qt-gonename b, .ck-item-name b) { font-weight: 500; }
 
 /* v3, phase 2 (the user, 2026-11-12, "ok yes all"): My Work's board and
    rows carry what a card in the references carries: the client's logo, the
@@ -5341,7 +5323,7 @@ svg.sec {
 .cr-latest-state small { font-size: 12px; color: var(--ink-mute); margin-left: auto; }
 .cr-card-sets { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-soft);
   border-top: 1px solid var(--line-soft); padding-top: 10px; }
-.cr-group-cards .crm-group-body { padding: 0; }
+
 /* v3's filter pills at a desk: every filter its label and value; one left
    at its default reads its value in the soft ink, one set reads it in ink
    on the deeper tonal step. Its choices open as a menu under it. */
