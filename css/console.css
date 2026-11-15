@@ -1959,8 +1959,8 @@ button.team-row { width: 100%; font: inherit; color: inherit; text-align: left; 
 .nb-paper table { width: 100%; border-collapse: collapse; font-size: 11px; line-height: 1.4; }
 .nb-paper th, .nb-paper td { border: 1px solid #f2f2f2; padding: 4px 5px; text-align: left; vertical-align: top; font-weight: 400; overflow-wrap: break-word; }
 .nb-paper th { background: #f2f2f2; }
-.nb-paper-none { font-size: 11.5px; color: #6b6760; margin: 0; }
-.nb-paper-f { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #6b6760; }
+.nb-paper-none { font-size: 11.5px; color: #666666; margin: 0; }
+.nb-paper-f { margin-top: auto; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #666666; }
 .is-narrow .nb-side { display: none; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
@@ -3496,11 +3496,11 @@ button.vs-row {
    box's own colours, light in both themes as the post mockups are, and its
    camera's move played once as the scene is shown. */
 .vs-pic-box:has(> .vf) { background: #ffffff; }
-.vf .vf-ink { fill: none; stroke: #1b1a17; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.vf .vf-ink { fill: none; stroke: #1a1a1a; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .vf .vf-light { fill: none; stroke: #8e8e8e; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
 .vf .vf-fill { fill: #e6e6e6; stroke: none; }
-.vf .vf-paper { fill: #ffffff; stroke: #1b1a17; stroke-width: 1.6; stroke-linejoin: round; }
-.vf .vf-edge { fill: none; stroke: #1b1a17; stroke-width: 1.2; }
+.vf .vf-paper { fill: #ffffff; stroke: #1a1a1a; stroke-width: 1.6; stroke-linejoin: round; }
+.vf .vf-edge { fill: none; stroke: #1a1a1a; stroke-width: 1.2; }
 .vf-shot { transform-box: view-box; transform-origin: 50% 50%; animation: 4s var(--ease) 1 both; }
 .vf-shot.vf-push { animation-name: vf-push; }
 .vf-shot.vf-pull { animation-name: vf-pull; }
@@ -4682,8 +4682,8 @@ span.inv-amt { font-weight: 600; }
 .qsg-facts .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .qsg-sig { display: block; width: min(280px, 100%); height: 88px; padding: 8px 12px; background: #fff; border-radius: var(--radius-sm); }
 .qsg-sig-svg { display: block; width: 100%; height: 100%; }
-.qsg-sig-svg path { fill: none; stroke: #1b1a17; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
-.qsg-sig.is-typed { display: flex; align-items: center; height: auto; min-height: 56px; color: #1b1a17; font-family: var(--font-head); font-size: 22px; font-style: italic; }
+.qsg-sig-svg path { fill: none; stroke: #1a1a1a; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.qsg-sig.is-typed { display: flex; align-items: center; height: auto; min-height: 56px; color: #1a1a1a; font-family: var(--font-head); font-size: 22px; font-style: italic; }
 .qsg-card .qsg-pdf { align-self: flex-start; margin-top: 12px; }
 .qsg-card .qsg-back { margin: 0 0 12px; }
 .qsg-card #qsgReviewer { width: 100%; }
@@ -4921,7 +4921,7 @@ body.hb-gate #tabBar { display: none; }
    tab bar, search's groups, Waiting for you, Engagements, the bell,
    Arrange sections) carries its class, so takes the tile with it. */
 :root {
-  --sec-home: #3b3935; --sec-home-bg: #efeeec;
+  --sec-home: #3a3a3a; --sec-home-bg: #efefef;
   --sec-work: #2f62d6; --sec-work-bg: #e8effc;
   --sec-clients: #0c7f72; --sec-clients-bg: #e2f3f0;
   --sec-review: #7444d0; --sec-review-bg: #efe9fb;
@@ -4929,10 +4929,10 @@ body.hb-gate #tabBar { display: none; }
   --sec-campaigns: #b8336f; --sec-campaigns-bg: #fbe8f0;
   --sec-reports: #1d7a47; --sec-reports-bg: #e4f3ea;
   --sec-messages: #0b6ea9; --sec-messages-bg: #e1f0f9;
-  --sec-int: #5f5b55; --sec-int-bg: #efeeec;
+  --sec-int: #515151; --sec-int-bg: #efefef;
 }
 :root[data-theme="dark"] {
-  --sec-home: #d6d1cb; --sec-home-bg: #2e2c2a;
+  --sec-home: #d4d4d4; --sec-home-bg: #2d2d2d;
   --sec-work: #8ab0f5; --sec-work-bg: #1d2a44;
   --sec-clients: #5fcdbc; --sec-clients-bg: #14302c;
   --sec-review: #b9a0f0; --sec-review-bg: #2a2142;
@@ -4940,7 +4940,7 @@ body.hb-gate #tabBar { display: none; }
   --sec-campaigns: #f09ac0; --sec-campaigns-bg: #3a1d2a;
   --sec-reports: #7fd0a2; --sec-reports-bg: #173023;
   --sec-messages: #7cc4ef; --sec-messages-bg: #132c3c;
-  --sec-int: #c2bdb6; --sec-int-bg: #2e2c2a;
+  --sec-int: #bfbfbf; --sec-int-bg: #2d2d2d;
 }
 svg.sec-home { --sec: var(--sec-home); --sec-bg: var(--sec-home-bg); }
 svg.sec-work { --sec: var(--sec-work); --sec-bg: var(--sec-work-bg); }
@@ -5017,7 +5017,7 @@ svg.sec {
    "instead of our brand color monochrome palette"); the hairline a neutral
    grey, never a warm one. */
 :root { --frame: #f5f5f5; --card-edge: #e8e8e8; --part-edge: rgba(26, 26, 26, .11); }
-:root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(242, 239, 236, .12); }
+:root[data-theme="dark"] { --frame: #121212; --card-edge: #2e2e2e; --part-edge: rgba(240, 240, 240, .12); }
 .console-headline { display: flex; flex-direction: column; justify-content: center; min-width: 0; flex: 0 1 auto; }
 .console-sub { display: none; margin: 0; font-family: var(--font-head); font-size: 13.6px; line-height: 20px; color: var(--ink-soft);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

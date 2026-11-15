@@ -82,7 +82,7 @@
       var w = Math.ceil(x.measureText(NAME).width) + 8;
       c.width = w; c.height = 84;
       x.font = '600 64px Georgia, "Times New Roman", serif';
-      x.fillStyle = '#1b1a17'; x.textBaseline = 'middle';
+      x.fillStyle = '#1a1a1a'; x.textBaseline = 'middle';
       x.fillText(NAME, 4, 44);
       return c.toDataURL('image/png');
     } catch (e) { return ''; }

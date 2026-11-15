@@ -72,7 +72,7 @@
     /* The scene's number, a small pill at the top left. */
     g.font = '600 ' + Math.round(24 * u) + 'px ' + FACE;
     var tag = 'Scene ' + sc.n, tw = g.measureText(tag).width;
-    g.fillStyle = 'rgba(27,26,23,.78)';
+    g.fillStyle = 'rgba(26,26,26,.78)';
     roundRect(g, 24 * u, 24 * u, tw + 28 * u, 40 * u, 20 * u);
     g.fillStyle = '#ffffff';
     g.textBaseline = 'middle';
@@ -85,7 +85,7 @@
         var bh = ls.length * lh + 32 * u, by = H - bh - 56 * u;
         g.fillStyle = 'rgba(255,255,255,.94)';
         roundRect(g, 40 * u, by, W - 80 * u, bh, 18 * u);
-        g.fillStyle = '#1b1a17';
+        g.fillStyle = '#1a1a1a';
         g.textAlign = 'center';
         ls.forEach(function (l, i) { g.fillText(l, W / 2, by + 16 * u + lh * i + lh / 2); });
         g.textAlign = 'left';
