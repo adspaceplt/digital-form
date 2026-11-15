@@ -117120,7 +117120,7 @@ begin
   end if;
   select * into b from public.bukku_settings where id = 1 for update;
   if b.bill_item_sku is distinct from v_sku then
-    v_said := v_said || ('Creator bill item SKU: ' || coalesce(b.bill_item_sku, 'not set') || ' → ' || v_sku);
+    v_said := v_said || ('Creator bill SKU: ' || coalesce(b.bill_item_sku, 'not set') || ' → ' || v_sku);
   end if;
   if b.bill_class_code is distinct from v_class then
     v_said := v_said || ('Classification code: ' || coalesce(b.bill_class_code, 'not set') || ' → ' || v_class);

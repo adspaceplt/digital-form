@@ -461,7 +461,8 @@
       var on = F.filter(function (x) { return x[1]; }).map(function (x) { return x[0]; });
       var off = F.filter(function (x) { return !x[1]; }).map(function (x) { return x[0] + ' not set'; });
       /* The creator bill's item and account (2026-11-15): Business settings. */
-      var acct = [d.bill_item_sku ? 'Creator bill item ' + d.bill_item_sku : 'Creator bill item not set',
+      var acct = [d.bill_item_sku ? 'Creator bill SKU ' + d.bill_item_sku : 'Creator bill SKU not set',
+        d.bill_class_code ? 'Classification code ' + d.bill_class_code : 'Classification code not set',
         d.bill_account_code ? 'Creator bill account ' + d.bill_account_code : 'Creator bill account not set'];
       if (!on.length) return ['Not set'].concat(acct).map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
@@ -492,8 +493,7 @@
           { name: 'supplier', label: 'Supplier ID field', choices: choices, value: c.field_supplier ? String(c.field_supplier) : '', required: false },
           { name: 'creator', label: 'Creator ID field', choices: choices, value: c.field_creator ? String(c.field_creator) : '', required: false,
             note: 'If not set, the Creator ID goes in the Supplier ID field.' },
-          { name: 'sku', head: 'Creator bills', label: 'Item SKU', value: c.bill_item_sku || '', placeholder: 'P995', required: true,
-            note: 'The Bukku product each creator bill is made on.' },
+          { name: 'sku', head: 'Creator bills', label: 'Item SKU', value: c.bill_item_sku || '', placeholder: 'P995', required: true },
           { name: 'cls', label: 'Classification code', value: c.bill_class_code || '', placeholder: '037', required: true },
           { name: 'account', label: 'Account', choices: acctChoices, value: c.bill_account_code || '', required: true }
         ],

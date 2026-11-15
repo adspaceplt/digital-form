@@ -13072,7 +13072,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!/^[0-9]{3}$/.test(bcl)) return bkNo('bad-class');
         if (!/^[A-Za-z0-9._\/-]{1,30}$/.test(bco) || (args.p_account != null && !(Number(args.p_account) > 0))) return bkNo('bad-account');
         var bw = bkBillSet(), bsaid = [];
-        if (bw.bill_item_sku !== bsk) bsaid.push('Creator bill item SKU: ' + (bw.bill_item_sku || 'not set') + ' → ' + bsk);
+        if (bw.bill_item_sku !== bsk) bsaid.push('Creator bill SKU: ' + (bw.bill_item_sku || 'not set') + ' → ' + bsk);
         if (bw.bill_class_code !== bcl) bsaid.push('Classification code: ' + (bw.bill_class_code || 'not set') + ' → ' + bcl);
         if (bw.bill_account_code !== bco) bsaid.push('Creator bill account: ' + (DB.bukku_settings.bill_account_name || bw.bill_account_code || 'not set') + ' → ' + (bnm || bco));
         if (!bsaid.length) return bkOk();
