@@ -752,7 +752,7 @@
   /* Clients who moved: each kind of move with its words, in the order a
      sale runs. */
   var MOVED = [['won', 'Won'], ['newLeads', 'New leads'], ['lost', 'Lost leads'], ['churned', 'Churned'],
-               ['paused', 'Paused'], ['resumed', 'Resumed'], ['winback', 'Win-backs']];
+               ['completed', 'Completed'], ['paused', 'Paused'], ['resumed', 'Resumed'], ['winback', 'Win-backs']];
   var MOVED_SHOWN = 5;
   /* A client in a card's table: its name over its Client ID, opening its record. */
   /* The chevron of every Show N more on the Dashboard. */
@@ -811,13 +811,15 @@
           var pct = function (a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; };
           var decided = f.won.length + f.lost.length;
           var rowsOf = [
-            ['Lost leads', String(f.lost.length), 'Past before ever Active'],
+            ['Lost leads', String(f.lost.length), 'Paused or Past before ever Active'],
             ['Paused', String(f.paused.length), f.pausedNow.length + ' paused now'],
             ['Resumed', String(f.resumed.length), 'Paused back to Active'],
             ['Win-backs', String(f.winback.length), 'Past back to Active'],
             ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
-            ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
+            /* A one-time project finished as agreed is never churn (2026-11-15). */
+            ['Completed', String(f.completed.length), 'Left Active as Completed, never churn', true],
+            ['Churn rate', pct(f.churned.length, f.activeStart), 'Left Active of those active at the start', true]
           ];
           if (val && f.money) {
             rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won', true]);

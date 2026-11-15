@@ -1487,6 +1487,14 @@
               (pending.stage === 'paused' || pending.stage === 'past') && !('stage_log' in pending) &&
               !String(pending.stage_reason || '').trim()) blocked = 'stage-reason';
 
+          if (table === 'clients' && pending && ('stage_reason' in pending || 'stage' in pending)) {
+            var srWhy = 'stage_reason' in pending ? pending.stage_reason : r.stage_reason;
+            var srAt = 'stage' in pending ? pending.stage : r.stage;
+            if (srWhy && (['budget', 'results', 'in_house', 'closed', 'no_reply', 'other', 'completed'].indexOf(srWhy) < 0 ||
+                (srWhy === 'completed' && srAt !== 'past')))
+              blocked = 'new row for relation "clients" violates check constraint "clients_stage_reason"';
+          }
+
           if (table === 'clients' && pending && ('stage' in pending || 'client_code' in pending)) {
             var acStage = 'stage' in pending ? pending.stage : r.stage;
             var acCode = 'client_code' in pending ? pending.client_code : r.client_code;

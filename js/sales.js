@@ -10,16 +10,21 @@
  * stored by it.
  *
  * Words: Won is a lead's first move to Active; Lost is a lead moved to Past
- * without ever being Active; Churned is a client moved to Past; Paused is
- * at risk, counted on its own; Resumed is Paused back to Active; a Win-back
- * is Past back to Active.
+ * or Paused without ever being Active; Churned is a client's first move out
+ * of Active (Completed, a one-time project finished, is counted apart and
+ * never churn); Paused counts moves into Paused; Resumed is Paused back to
+ * Active; a Win-back is Past back to Active (eventsOf below).
  */
 (function () {
   'use strict';
   var MON = window.ADspaceMoney;
   var LEADS = { lead: 1, contacted: 1, proposal: 1 };
   var REASONS = [['budget', 'Budget'], ['results', 'Results'], ['in_house', 'Moved in-house'],
-                 ['closed', 'Business closed'], ['no_reply', 'No reply'], ['other', 'Other']];
+                 ['closed', 'Business closed'], ['no_reply', 'No reply'], ['completed', 'Completed'],
+                 ['other', 'Other']];
+  /* A one-time project finished as agreed leaves for Past as Completed:
+     never churn, which reads as a client lost (2026-11-15). */
+  var DONE = 'completed';
   function reasonWord(k) {
     for (var i = 0; i < REASONS.length; i++) if (REASONS[i][0] === k) return REASONS[i][1];
     return k ? 'Other' : 'Not given';
@@ -36,6 +41,50 @@
       return { from: i ? log[i - 1].stage : null, to: e.stage, at: e.at, reason: e.reason || '' };
     });
   }
+  /* What a client's history counts, each once (the user, 2026-11-15): an
+     Active client whose engagement ends goes to Paused for a holding period,
+     then perhaps Past, and a lead that does not proceed goes to Paused while
+     someone follows it up. So a client is counted once, at its first move out
+     of Active (into Paused or Past): Churned, or Completed where that move,
+     or the Paused to Past move after it, is a one-time project finished as
+     agreed (`completed`); the later Paused to Past counts nothing again. A
+     lead never Active is Lost once, at its first move into Paused or Past.
+     Back to Active: a former Active client is Resumed (from Paused) or a
+     Win-back (from Past); a lead's first Active is Won, Lost before or not. */
+  var LEAVES = { churned: 1, completed: 1, lost: 1 };
+  function eventsOf(c) {
+    var out = [], everActive = false, leave = null, lostOnce = false;
+    movesOf(c).forEach(function (m) {
+      var into = m.to, was = m.from;
+      if (into === 'active') {
+        if (!everActive) out.push({ kind: 'won', at: m.at });
+        else if (was === 'paused') out.push({ kind: 'resumed', at: m.at });
+        else if (was === 'past') out.push({ kind: 'winback', at: m.at });
+        everActive = true; leave = null;
+        return;
+      }
+      if (into !== 'paused' && into !== 'past') return;
+      if (everActive) {
+        if (was === 'active' || (!leave && was !== 'paused' && was !== 'past')) {
+          leave = { kind: m.reason === DONE ? 'completed' : 'churned', at: m.at };
+          out.push(leave);
+        } else if (leave && into === 'past' && m.reason === DONE) leave.kind = 'completed';
+      } else if (!lostOnce) {
+        lostOnce = true;
+        out.push({ kind: 'lost', at: m.at });
+      }
+    });
+    return out;
+  }
+  /* The client's last move inside a window: a leaving is counted only while
+     that move leaves it out of Active (a move corrected back the same period
+     counts nothing; 2026-10-20, the Dashboard audit). */
+  function lastIn(mv, r) {
+    var l = null;
+    mv.forEach(function (m) { if (within(m.at, r)) l = m; });
+    return l;
+  }
+  function counted(e, last) { return !last || last.to !== 'active' || new Date(last.at) < new Date(e.at); }
   function stageAt(c, t) {
     var st = null;
     movesOf(c).forEach(function (m) { if (new Date(m.at).getTime() <= t) st = m.to; });
@@ -48,18 +97,18 @@
   function figures(clients, lines, r) {
     var f = {
       pipeline: { lead: [], contacted: [], proposal: [] },
-      newLeads: [], won: [], lost: [], churned: [], paused: [], resumed: [], winback: [],
+      newLeads: [], won: [], lost: [], churned: [], completed: [], paused: [], resumed: [], winback: [],
       pausedNow: [], activeNow: [], toWin: [], bySource: {}, byPerson: {}, reasons: {}, months: [],
       /* When each client made the move it is counted for (the Dashboard's
          Clients who moved, 2026-11-12), by kind and client id. */
-      at: { newLeads: {}, won: {}, lost: {}, churned: {}, paused: {}, resumed: {}, winback: {} }
+      at: { newLeads: {}, won: {}, lost: {}, churned: {}, completed: {}, paused: {}, resumed: {}, winback: {} }
     };
     var person = function (c) {
       var k = c.owner || 'No person in charge';
       return f.byPerson[k] || (f.byPerson[k] = { name: k, newLeads: [], won: [], lost: [], churned: [] });
     };
     clients.forEach(function (c) {
-      var mv = movesOf(c), first = mv[0], everActive = false, lostIn = false, churnIn = false, lastIn = null;
+      var mv = movesOf(c), first = mv[0];
       if (LEADS[c.stage]) {
         f.pipeline[c.stage].push(c);
       }
@@ -70,22 +119,10 @@
         var src = c.source || 'Not recorded';
         (f.bySource[src] = f.bySource[src] || []).push(c);
       }
+      var everActive = false;
       mv.forEach(function (m) {
-        var into = m.to, was = m.from;
-        var inside = within(m.at, r);
-        if (inside) lastIn = m;
-        if (into === 'active') {
-          /* A client keyed in already Active is won the day it was keyed. */
-          var firstWin = !everActive && (was === null || LEADS[was]);
-          if (inside && firstWin) {
-            f.won.push(c); person(c).won.push(c); f.at.won[c.id] = m.at;
-            f.toWin.push(Math.max(0, Math.round((new Date(m.at) - new Date(first.at)) / 86400000)));
-          }
-          if (inside && was === 'paused') { f.resumed.push(c); f.at.resumed[c.id] = m.at; }
-          if (inside && was === 'past') { f.winback.push(c); f.at.winback[c.id] = m.at; }
-          everActive = true;
-        }
-        if (into === 'past' && inside) { if (everActive) churnIn = true; else lostIn = true; }
+        var into = m.to, inside = within(m.at, r);
+        if (into === 'active') everActive = true;
         if (into === 'paused' && inside) { f.paused.push(c); f.at.paused[c.id] = m.at; }
         if ((into === 'paused' || into === 'past') && inside && everActive) {
           var k = m.reason || '';
@@ -93,13 +130,17 @@
           row[into].push(c);
         }
       });
-      /* Lost or churned once a client in a period, and only while the
-         period's last move leaves it in Past: a Past corrected back the same
-         month counts nothing (2026-10-20, the Dashboard audit). */
-      if (lastIn && lastIn.to === 'past') {
-        if (churnIn) { f.churned.push(c); person(c).churned.push(c); f.at.churned[c.id] = lastIn.at; }
-        else if (lostIn) { f.lost.push(c); person(c).lost.push(c); f.at.lost[c.id] = lastIn.at; }
-      }
+      var seen = {}, ev = eventsOf(c), last = lastIn(mv, r);
+      ev.forEach(function (e) {
+        if (!within(e.at, r) || seen[e.kind]) return;
+        if (e.kind === 'won') {
+          f.toWin.push(Math.max(0, Math.round((new Date(e.at) - new Date(first.at)) / 86400000)));
+        }
+        if (LEAVES[e.kind] && !counted(e, last)) return;
+        seen[e.kind] = true;
+        f[e.kind].push(c); f.at[e.kind][c.id] = e.at;
+        if (e.kind === 'won' || e.kind === 'lost' || e.kind === 'churned') person(c)[e.kind].push(c);
+      });
     });
     /* Active clients at each month's end inside the period (the last at
        now), and the net change over the period. */
@@ -113,7 +154,8 @@
         active: clients.filter(function (c) { return stageAt(c, at) === 'active'; }).length,
         newLeads: f.newLeads.filter(function (c) { var t = new Date(movesOf(c)[0].at); return t >= cur && t < end; }).length,
         won: wonIn(clients, cur, end),
-        churned: churnIn(clients, cur, end)
+        churned: churnIn(clients, cur, end),
+        completed: figures.count(clients, { from: cur, to: end }, 'completed')
       });
       cur = end; curKey = CK.addMonths(curKey, 1);
     }
@@ -144,17 +186,8 @@
   figures.count = function (clients, r, kind) {
     var n = 0;
     clients.forEach(function (c) {
-      var everActive = false, churnIn = false, lastIn = null;
-      movesOf(c).forEach(function (m) {
-        var inside = within(m.at, r);
-        if (inside) lastIn = m;
-        if (m.to === 'active') {
-          if (kind === 'won' && inside && !everActive && (m.from === null || LEADS[m.from])) n++;
-          everActive = true;
-        }
-        if (m.to === 'past' && inside && everActive) churnIn = true;
-      });
-      if (kind === 'churned' && churnIn && lastIn && lastIn.to === 'past') n++;
+      var last = lastIn(movesOf(c), r);
+      if (eventsOf(c).some(function (e) { return e.kind === kind && within(e.at, r) && (!LEAVES[e.kind] || counted(e, last)); })) n++;
     });
     return n;
   };
