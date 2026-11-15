@@ -6794,7 +6794,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   advertising for the budget asked as one line, beside a plan Additional
   advertising budget coverage from its cover to the budget; past the largest,
   on request), one-off items
-  apart; the term's percentage on the monthly subtotal, SST on the rest at
+  apart; each monthly line takes the term percentage of its own months'
+  band on its own subtotal, never more months than the term (`over-term`;
+  `quote_line_pcts`, `totals.term_rows` a row a percentage beside the
+  quotation's own `terms`; the user, 2026-11-15: "per line percentage"),
+  priced on the Rate Card version Build quote's Rate Card version names
+  (`p_sel.card`, `bad-card`; `rate_card_at`), else the one live on the
+  quotation's Date, and the S$ rate in force on that Date, SST on the rest at
   the rate in force on the day it is priced (MYT), none for a client whose
   `sst_applies` is false (`quote_tax_snap`; a preview names its client in
   `p_sel.client`, never kept; `2026-10-15-quotation-tax-day.sql`). A
@@ -7090,9 +7096,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   own terms, ten at most. A Rate Card one-off item may be quoted Monthly (a
   number in its Months bills it monthly, empty or 0 keeps it one-off, as a
   custom line's and an advertising row's Months read alike, no Frequency
-  selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, the term's
-  percentage from `term_pct_if` where nothing else ran by the month). Every
-  Months runs 1 to 36; a term's percentage is `quote_term_pct`'s alone; a
+  selection; the user, 2026-11-12; `quote_adjust` edit `basis`, `was_once`, its
+  percentage its own months' band). Every
+  Months runs 1 to 36 and no more than the term; a term's percentage is `quote_term_pct`'s alone; a
   renewal starts the day after its line's period ends and every period's
   last day is `ADspaceClock.periodEnd`. On /quote/ a sectioned quotation
   keeps the monthly and one-off totals apart, lists the advertising budget a

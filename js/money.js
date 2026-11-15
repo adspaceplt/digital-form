@@ -326,7 +326,12 @@
     var r = [], o = t.once || {};
     if (t.month) {
       r.push(['monthSub', t.month.subtotal]);
-      if (Number(t.term_pct)) r.push(['term', t.month.term]);
+      /* Each line its own term percentage (2026-11-15): a row a percentage,
+         its words the fourth item (termLine), where the totals list them;
+         a quotation made before reads its one row as it did. */
+      if (Array.isArray(t.term_rows)) {
+        t.term_rows.forEach(function (x) { if (Number(x.amount)) r.push(['term', x.amount, 0, termLine(x.months, x.pct), x]); });
+      } else if (Number(t.term_pct)) r.push(['term', t.month.term]);
       if (own) {
         if (t.once) r.push(['onceSub', o.subtotal]);
         if (on) r.push(['firstExcl', add(t.month.excl, o.subtotal)]);
