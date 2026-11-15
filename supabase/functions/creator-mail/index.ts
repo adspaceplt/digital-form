@@ -173,8 +173,10 @@ async function sheetRows(db: any, began: number): Promise<{ added: number; faile
   if (head && !cols.some(Boolean)) why = 'no header in the sheet names a value';
   for (const r of rows) {
     if (!head || why) {
-      // The sheet could not be read: a try is spent; saving the setting gives every try back.
-      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: false, p_error: why || 'sheet not read' });
+      /* The sheet could not be read, so nothing was added: back to the queue
+         with its try given back (a short Google outage spends no try; audit
+         2026-11-15). */
+      await db.rpc('creator_sheet_release', { p_id: r.id, p_error: why || 'sheet not read' });
       failed++; continue;
     }
     if (Date.now() - began > BUDGET) {
@@ -183,16 +185,28 @@ async function sheetRows(db: any, began: number): Promise<{ added: number; faile
       continue;
     }
     const line = cols.map((k) => (k ? String((r.values || {})[k] ?? '') : ''));
+    let asked = false;
     try {
       const q = "'" + head.tab.replace(/'/g, "''") + "'";
       const res = await fetch(SHEETS + encodeURIComponent(sh.spreadsheet_id) + '/values/' + encodeURIComponent(q + '!A1') +
         ':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS', { method: 'POST', signal: AbortSignal.timeout(GOOGLE_WAIT),
         headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ values: [line] }) });
+      asked = true;
+      if (res.status >= 500) throw new Error('Not confirmed. Check the sheet before adding the row again. (Google ' + res.status + ')');
       if (!res.ok) throw new Error('google ' + res.status + ' ' + (await res.text()).slice(0, 200));
-      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: true, p_error: null });
+      const d = await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: true, p_error: null });
+      /* Added but not closed: the run stops, the row left at Sending, which
+         the sweep marks not confirmed, never added again. */
+      if (d.error) { console.error('creator-mail: sheet done', String(d.error.message)); break; }
       added++;
     } catch (e) {
-      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: false, p_error: String((e as Error).message || e).slice(0, 400) });
+      /* A request that may have reached Google (a timeout, a 5xx) is not
+         confirmed and never sent again by itself: the bank details are never
+         added twice (audit 2026-11-15). */
+      const msg = String((e as Error).message || e);
+      const unsure = !msg.startsWith('google 4') && (asked || /abort|timeout|time out/i.test(msg) || msg.startsWith('Not confirmed'));
+      await db.rpc('creator_sheet_done', { p_id: r.id, p_ok: false,
+        p_error: (unsure && !msg.startsWith('Not confirmed') ? 'Not confirmed. Check the sheet before adding the row again. (' + msg + ')' : msg).slice(0, 400) });
       failed++;
     }
   }
