@@ -320,6 +320,12 @@ Deno.serve(async (req) => {
        outage failed every message waiting (2026-10-18). The next wake, five
        minutes on, tries again, and such a try is not counted, so an outage
        of any length fails nothing. */
+    /* A row Meta refused goes back to the queue with tries left, and the
+       same drain claimed it again at once, so all three tries went in about
+       a second. A row already tried in this run is put back untouched (its
+       claim given back as not sent, the try not counted) and the drain
+       stops, so the next try waits for the next wake (audit 2026-11-15). */
+    const tried = new Set<string>();
     let sent = 0, failed = 0, held = false;
     const started = Date.now();
     for (let n = 0; n < 40 && !held && Date.now() - started < DRAIN_BUDGET_MS; n++) {
@@ -327,6 +333,13 @@ Deno.serve(async (req) => {
       const rows = (got.data || []) as Record<string, any>[];
       if (got.error || !rows.length) break;
       for (const r of rows) {
+        if (tried.has(String(r.id))) {
+          await svc.rpc('wa_done', { p_id: r.id, p_ok: false, p_wa_id: null,
+            p_error: ('not sent: ' + (r.error || 'waits for the next wake')).slice(0, 480) });
+          held = true;
+          continue;
+        }
+        tried.add(String(r.id));
         const out = await sendTemplate(r.to_number, r.template, r.lang, (r.params || []) as string[], undefined, r.button || undefined);
         /* Meta's throughput limit (130429) sent nothing either: it is filed
            as not sent, which wa_done neither counts as a try nor fails, and

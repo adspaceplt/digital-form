@@ -3833,6 +3833,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     page reads Confirmed by {name}. Revert out of Scheduled is
     `campaign_revert_approval` (the approval kept, undone). The card names
     who approved (`.kapproved`).
+  - A booking reaches Scheduled from Submitted, Reviewing or Changes
+    requested only while its latest decision not taken back is an approval
+    (trigger `campaign_options_approval_gate`, `needs-approval`; audit
+    2026-11-15); a move back from Posted or Completed is untouched.
   - The card shows the open request (Changes requested, who, when, the note)
     and, once the creator hands in again, what it answered (Asked for;
     `requestHtml`). A team round from before the record is `drop_reason`.
@@ -4511,7 +4515,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Summary, in this order (the revamp, 2026-11-12, "go as recommended",
     replacing the order of 2026-10-22): four figures lead (`#ovwLead`:
     Delivered, On time, New leads, Oldest late; On time is met over the
-    tasks that reached client review plus `late_open`, the open work late
+    tasks that first reached client review in the period (a return after a
+    revision never counted again; audit 2026-11-15) plus `late_open`, the open work late
     by the late rule (`2026-10-19-on-time-counts-late-open-work.sql`),
     reading a dash where nothing was due; the on-time and posted rings are
     gone, posting read in the trend), then Work by person beside On time
@@ -4845,7 +4850,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Stage gates are data. Ready needs an owner and a date. Client review needs
     a draft link or a note. Delivered needs a final link. Done needs a
     delivery or a stated reason.
-  - A second press of create, revise or generate is the same act (retry safe).
+  - A second press of create, revise or generate is the same act (retry safe),
+    two at once included: the key is locked before it is looked up
+    (`ops_create_task`, `video_script_new`; audit 2026-11-15).
 - `forwardOf()` reads the forward move off the workflow: the nearest stage
   ahead by `position`, skipping side lanes by `stage_group`. Never a
   hand-written list.
@@ -6941,7 +6948,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   or typed and the authority tick, then a six-digit code emailed by
   `quote-request` `sign` (the sign-in email's words and shaded code box,
   never the code in its subject; `quote_sign_code`, the service role's alone,
-  kept hashed, 15 minutes, five tries, five an hour; Turnstile) and
+  kept hashed, 15 minutes, five tries, five an hour a quotation and ten an
+  hour from one address, its `request_ip()` relayed by quote-request and
+  let go an hour on (`caller_ip`; audit 2026-11-15); Turnstile) and
   entered in six boxes (`quote_sign_finish`, anon), which keeps the
   signature with its record (time, email, `request_ip()`,
   `request_country()`, device, fingerprint) and tells who prepared it and
@@ -8255,7 +8264,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Instagram, Facebook, TikTok, rednote), saying so in its bar; the client
   pages' guides it marks met are listed (`adspace-demo-guides`) and offered
   again on Exit demo (2026-10-29). Settings, Portal: Demo
-  access (`team.settings`): On / Off and a PIN, 4 to 8 digits, kept as a
+  access (`team.settings`): On / Off and a PIN, a new one 6 to 8 digits
+  (one of 4 or 5 set before keeps opening; audit 2026-11-15), kept as a
   bcrypt hash (`demo_state`, `demo_set`: `bad-pin`, `no-pin`; a new PIN
   clears the demo's wrong tries and locks), filed
   `team.changed` under Demo access, never the PIN.

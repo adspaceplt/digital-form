@@ -1172,9 +1172,12 @@
     return list.some(function (t) { return ['late', 'leads'].indexOf(t.key) < 0 && t.can(); }) ||
       Boolean(g && g[1].some(function (row) { return row.some(function (c) { return c.can(); }); }));
   }
-  function forAnalytics(box, name, spec, skip) {
+  function forAnalytics(box, name, spec, skip, clients) {
     period = spec;
     memo = {};
+    /* Analytics hands over the clients it already read (the Dashboard's
+       columns among them), so one visit reads every client once (audit 2026-11-15). */
+    if (Array.isArray(clients)) memo.clients = Promise.resolve(clients);
     tiles(box, name);
     Array.prototype.forEach.call(box.querySelectorAll('[id^="ovw"]'), function (n) { n.removeAttribute('id'); });
     var g = groupOf(name);
