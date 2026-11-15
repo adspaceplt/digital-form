@@ -68,11 +68,23 @@ async function exists(Bucket, Key) {
   catch (e) { return null; }
 }
 
+/* Null where S3 answers the original is not there (deleted since its
+   upload, or a key that never was); any other refusal is thrown, so the
+   walk records it. Nothing is asked of MediaConvert for a file that is gone. */
+async function present(Bucket, Key) {
+  try { const h = await s3.send(new HeadObjectCommand({ Bucket, Key })); return h.ContentLength || 0; }
+  catch (e) {
+    if (e && (e.name === 'NotFound' || e.name === 'NoSuchKey' || (e.$metadata && e.$metadata.httpStatusCode === 404))) return null;
+    throw e;
+  }
+}
+
 /* With `redo`, a copy made before the cap is asked for again where it is
    over it; MediaConvert writes the new copy under the same name. The
    original is never touched. */
 async function convert(Bucket, Key, size, redo) {
   if (!isCandidate(Key)) return 'not a video';
+  if (await present(Bucket, Key) === null) return 'error: not found';
   const had = await exists(Bucket, webKey(Key));
   if (had !== null) {
     if (!redo) return 'copy exists';
