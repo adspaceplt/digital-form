@@ -5780,8 +5780,8 @@
     'not-scheduled': 'There is no approval to take back.',
     'note-required': 'Enter the changes.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
-    'qc-required': 'Release to client needs the quality check completed.',
-    'needs-approval': 'Scheduled needs the client\u2019s approval. Use Confirm internally where the client approved by message.'
+    'qc-required': 'Complete the quality check, then release to the client.',
+    'needs-approval': 'The booking moves to Scheduled only once the client approves. Use Confirm internally where the client approved by message.'
   };
   function reviewSaid(code) {
     var c = String(code || '');
@@ -6134,7 +6134,7 @@
     denied: 'You do not have permission to release this.',
     'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Nothing handed in for this booking.',
-    'qc-required': 'Release to client needs the quality check completed.'
+    'qc-required': 'Complete the quality check, then release to the client.'
   };
 
   function advanceOption(o, to, fields) {

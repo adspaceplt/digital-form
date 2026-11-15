@@ -299,7 +299,7 @@ begin
     select jsonb_agg(x order by x ->> 'name') as j from (
       select jsonb_build_object(
                'team_member_id', d.owner_id,
-               'name', coalesce(tm.name, 'Nobody'),
+               'name', coalesce(tm.name, 'Unassigned'),
                'completed', count(*),
                'on_time', count(*) filter (where (d.due is null
                                                  or (coalesce(d.review_at, d.met_at, d.ended) at time zone 'Asia/Kuala_Lumpur')::date
@@ -322,7 +322,7 @@ begin
     select jsonb_agg(x order by (x ->> 'open')::int desc, x ->> 'name') as j from (
       select jsonb_build_object(
                'team_member_id', o.owner_id,
-               'name', coalesce(tm.name, 'No task owner'),
+               'name', coalesce(tm.name, 'Unassigned'),
                'open', count(*),
                'late', count(*) filter (where o.is_late)) as x
         from (select l.id,
@@ -772,7 +772,7 @@ begin
      and coalesce((select r.decision from public.option_reviews r
                     where r.option_id = new.id and r.undone_at is null
                     order by r.created_at desc, r.id desc limit 1), '') <> 'approved' then
-    raise exception 'needs-approval: Scheduled needs the client''s approval'
+    raise exception 'needs-approval: the booking moves to Scheduled only once the client approves'
       using errcode = '23514', hint = 'needs-approval';
   end if;
   return new;

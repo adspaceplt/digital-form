@@ -6766,7 +6766,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var id = own && own.team_member_id;
         var m2 = id && DB.team_members.filter(function (x) { return x.id === id; })[0];
         var k = id || 'none';
-        if (!perBy[k]) perBy[k] = { team_member_id: id || null, name: (m2 && m2.name) || 'Nobody',
+        if (!perBy[k]) perBy[k] = { team_member_id: id || null, name: (m2 && m2.name) || 'Unassigned',
                                     completed: 0, on_time: 0, mins: [] };
         perBy[k].completed += 1;
         var end = t.completed_at;
@@ -6811,7 +6811,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                    var id = own ? own.team_member_id : null;
                    var k = id || 'none';
                    var tm = id && DB.team_members.filter(function (m3) { return m3.id === id; })[0];
-                   if (!by[k]) by[k] = { team_member_id: id, name: (tm && tm.name) || 'No task owner', open: 0, late: 0 };
+                   if (!by[k]) by[k] = { team_member_id: id, name: (tm && tm.name) || 'Unassigned', open: 0, late: 0 };
                    by[k].open += 1;
                    if (lateSet[t.id]) by[k].late += 1;
                  });
