@@ -3394,7 +3394,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and files `client.billing` naming the fields (Read from Bukku by Bukku,
   Saved to Bukku, Took Bukku's details); every held link is read again at
   00:30 MYT (pg_cron `bukku-read-nightly`, the wake secret, 100 seconds a
-  run, the oldest read first). An entity is the same inside its fold.
+  run: creators' bills first to 35 seconds, months' invoices to 60, then the
+  links, the oldest read first, in what is left; the run writes its beat,
+  `job_beat('bukku-nightly')`, which `jobs_watch` reads; audit 2026-11-15). An entity is the same inside its fold.
   Suppliers keep Send to Bukku as before. Creators brought in from the
   AP01 form are matched to their Bukku contacts by `bukku-sync`
   `match-creators` (the wake secret alone, read only: ID number, else one
@@ -4203,10 +4205,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   each value once; a header naming none left empty), the numbers whole;
   claimed and closed by the service role (`creator_sheet_claim`,
   `_done`), a row refused tried again at the next wake, five tries (one
-  left at Sending ten minutes failed by `mail_sweep`; one never tried, its
-  run out of time, put back with its try given back, `creator_sheet_release`;
-  every refused row queued afresh when the sheet's setting is saved; Google
-  asked with a 20-second limit); nothing
+  never tried, its run out of time or the sheet unread, put back with its
+  try given back, `creator_sheet_release`; one Google may have taken, an
+  append that timed out or met a 5xx or a row left at Sending ten minutes,
+  failed Not confirmed and never tried again by itself nor queued afresh,
+  so the bank details are never added twice (audit 2026-11-15); every other
+  refused row queued afresh when the sheet's setting is saved; Google asked
+  with a 20-second limit); nothing
   claimed while `GOOGLE_SHEETS_REFRESH_TOKEN` is unset
   (`docs/GOOGLE-SHEETS-SETUP.md`). Settings, Clients: Creator payments sheet
   (`team.settings`; `creator_sheet_get`, `creator_sheet_set`: a Sheets link
@@ -8417,7 +8422,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (none active: Team Full Access) once a day (kind `jobs.failed`) of the
   scheduled runs that failed since its own last successful run (24 hours
   to seven days, a failed check of its own named first), by job, of an S3
-  report filed as failed or not arrived in 26 hours, and of each repeat rule
+  report filed as failed or not arrived in 26 hours, of a nightly Bukku read
+  that failed or wrote no beat in 26 hours (`job_beats`, RLS on, no policy,
+  no grant), of creator emails failed or not confirmed, and of each repeat rule
   that could not make its task, named (client, rule or task, its number;
   five, then a count), the notice opening the first one's task; the morning
   run keeps a rule nobody active can make, or whose task its colleague

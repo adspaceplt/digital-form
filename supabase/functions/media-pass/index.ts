@@ -51,6 +51,10 @@ const CDN = 'https://mycdn.adspace.me';
    drafts (docs/S3-STORAGE.md). A colleague's pass is the whole of content/.
    A file name is no longer the only boundary between two clients. */
 const MAX_FOLDERS = 40;
+/* Bookings that hold no drafts take no folder, and the newest come first,
+   so a campaign of forty creators or a creator of forty bookings never
+   loses a live booking's folder to the cap (audit 2026-11-15). */
+const NO_DRAFTS = '(option,shortlisted,backup,withdrawn,replaced)';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /* The caller's own address, passed on when this function asks for the
@@ -166,7 +170,8 @@ Deno.serve(async (req) => {
     if (camp) {
       clientFolder(camp.client_id);
       const { data: o } = await admin.from('campaign_options').select('id')
-        .eq('campaign_id', camp.id).neq('state', 'replaced').limit(MAX_FOLDERS);
+        .eq('campaign_id', camp.id).not('state', 'in', NO_DRAFTS)
+        .order('created_at', { ascending: false }).limit(MAX_FOLDERS - 1);
       (o || []).forEach((r: { id: string }) => optionFolder(r.id));
     }
   } else if (body.creator) {
@@ -179,7 +184,8 @@ Deno.serve(async (req) => {
     const who = (cr || [])[0];
     if (who) {
       const { data: o } = await admin.from('campaign_options').select('id')
-        .eq('creator_id', who.id).limit(MAX_FOLDERS);
+        .eq('creator_id', who.id).not('state', 'in', NO_DRAFTS)
+        .order('created_at', { ascending: false }).limit(MAX_FOLDERS - 1);
       (o || []).forEach((r: { id: string }) => optionFolder(r.id));
     }
   } else {

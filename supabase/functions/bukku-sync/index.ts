@@ -534,19 +534,56 @@ async function billingAction(action: string, kind: string, id: string, body: Rec
     differs: t.held ? [] : ch.map((f) => ({ field: f, portal: portal[f] ?? null, bukku: (vals as any)[f] ?? null })) }, 200, origin);
 }
 
-/* Every held link read again (pg_cron at 00:30 MYT), the oldest read
-   first, until 100 seconds have gone; the rest wait for the next night. */
+/* The nightly run (pg_cron at 00:30 MYT), 100 seconds in all. Creators'
+   bills and the months' invoices go first, each with its share of the time,
+   then every held link is read again, the oldest first, in what is left:
+   at a few hundred links the reads took the whole run and the bills and
+   invoices none (audit 2026-11-15). The run writes a beat when it ends
+   (`job_beat`), which the admins' morning check reads. */
 async function nightly(req: Request, origin: string | null): Promise<Response> {
   const svc = svcDb();
   const ok = await svc.rpc('wake_secret_ok', { p_given: req.headers.get('x-adspace-wake') || '' });
   if (ok.error || ok.data !== true) return json({ error: 'unauthorised' }, 401, origin);
+  const began = Date.now(), until = began + 100000;
+  let stop = '';
+  const halt = (e: unknown) => {
+    if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) {
+      stop = e.code === 'bukku-token' ? "Bukku refused the portal's connection" : 'Bukku did not answer';
+    }
+    return !!stop;
+  };
+  /* Creators' bills (2026-11-09): each creator with a booking posted and not
+     yet read Paid, in the first 35 seconds. */
+  let bills = 0;
+  const due = await svc.rpc('creator_bills_due');
+  for (const d of ((due.data || []) as any[])) {
+    if (stop || Date.now() > began + 35000) break;
+    try { const r = await creatorBills(String(d.creator), Number(d.contact)); if (!r.error) bills++; }
+    catch (e) {
+      console.error('bukku-sync: nightly bills', d.creator, String((e as Error).message || e));
+      if (halt(e)) break;
+    }
+  }
+  /* Months not yet matched to their invoice (2026-11-10), up to 60 seconds. */
+  let months = 0;
+  const mdue = stop ? { data: [], error: null } : await svc.rpc('ops_month_invoices_due');
+  for (const m of ((mdue.data || []) as any[])) {
+    if (stop || Date.now() > began + 60000) break;
+    try {
+      const found = await monthInvoices((m.contacts || []).map(Number), String(m.from), String(m.to));
+      const t = await svc.rpc('ops_month_invoice_take', { p_engagement: m.engagement, p_invoices: found });
+      if (!t.error) months++;
+    } catch (e) {
+      console.error('bukku-sync: nightly month', m.engagement, String((e as Error).message || e));
+      if (halt(e)) break;
+    }
+  }
+  /* Every held link read again, the oldest first, in the time left. */
   const list = await svc.rpc('bukku_held_links');
-  if (list.error) return json({ error: 'needs-update' }, 200, origin);
   const rows = (list.data || []) as any[];
-  const until = Date.now() + 100000;
   let read = 0, failed = 0;
   for (const l of rows) {
-    if (Date.now() > until) break;
+    if (stop || Date.now() > until) break;
     try {
       const cur = await contactOf(Number(l.contact_id));
       if (!cur) { failed++; continue; }
@@ -556,36 +593,12 @@ async function nightly(req: Request, origin: string | null): Promise<Response> {
     } catch (e) {
       failed++;
       console.error('bukku-sync: nightly', l.kind, l.id, String((e as Error).message || e));
-      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
+      if (halt(e)) break;
     }
   }
-  /* Creators' bills (2026-11-09): each creator with a booking posted and not
-     yet read Paid, in the time left. */
-  let bills = 0;
-  const due = Date.now() < until ? await svc.rpc('creator_bills_due') : { data: [], error: null };
-  for (const d of ((due.data || []) as any[])) {
-    if (Date.now() > until) break;
-    try { const r = await creatorBills(String(d.creator), Number(d.contact)); if (!r.error) bills++; }
-    catch (e) {
-      console.error('bukku-sync: nightly bills', d.creator, String((e as Error).message || e));
-      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
-    }
-  }
-  /* Completed months not yet matched to their invoice (2026-11-10), in the
-     time left. */
-  let months = 0;
-  const mdue = Date.now() < until ? await svc.rpc('ops_month_invoices_due') : { data: [], error: null };
-  for (const m of ((mdue.data || []) as any[])) {
-    if (Date.now() > until) break;
-    try {
-      const found = await monthInvoices((m.contacts || []).map(Number), String(m.from), String(m.to));
-      const t = await svc.rpc('ops_month_invoice_take', { p_engagement: m.engagement, p_invoices: found });
-      if (!t.error) months++;
-    } catch (e) {
-      console.error('bukku-sync: nightly month', m.engagement, String((e as Error).message || e));
-      if (e instanceof BukkuError && (e.code === 'bukku-token' || e.code === 'bukku-unreachable')) break;
-    }
-  }
+  const bad = stop || (list.error || due.error || mdue.error ? 'the database did not answer' : '');
+  await svc.rpc('job_beat', { p_job: 'bukku-nightly', p_ok: !bad, p_detail: bad || null });
+  if (list.error) return json({ error: 'needs-update' }, 200, origin);
   return json({ ok: true, read, failed, left: rows.length - read - failed, bills, months }, 200, origin);
 }
 
@@ -1295,16 +1308,25 @@ Deno.serve(async (req) => {
       if (prep.error) return json({ error: 'needs-update' }, 200, origin);
       const p = prep.data || {};
       if (p.error) return json({ error: p.error }, 200, origin);
-      let made: string | null = null, had: string | null = null, madeId = 0;
+      let made: string | null = null, had: string | null = null, madeId = 0, sent = false;
       try {
         had = await billHolding(Number(p.contact_id), String(p.ref));
         if (!had) {
-          const r = await bukku('POST', '/purchases/bills', billBody(p, await lastItem(Number(p.contact_id))));
+          const item = await lastItem(Number(p.contact_id));
+          sent = true;
+          const r = await bukku('POST', '/purchases/bills', billBody(p, item));
           made = String((r && r.transaction && r.transaction.number) || '') || 'Created';
           madeId = Number((r && r.transaction && r.transaction.id) || 0);
         }
       } catch (e) {
-        await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+        /* The hold is let go only where no bill can have been made: before
+           the bill was sent, or Bukku refusing it outright (a 4xx). A bill
+           sent that timed out, or met a 5xx, may stand in Bukku: the hold
+           keeps its ten minutes, so a second press makes no second bill
+           (audit 2026-11-15). */
+        const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
+        if (!sent || refused) await db.rpc('creator_bill_done', { p_option: oid, p_number: null });
+        else return json({ error: 'not-confirmed' }, 200, origin);
         throw e;
       }
       await creatorBills(String(p.creator), Number(p.contact_id), madeId > 0 ? { id: madeId, option: oid } : undefined);

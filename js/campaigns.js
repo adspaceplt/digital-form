@@ -919,7 +919,8 @@
     'currency-changed': 'The creator is now paid in another currency. Set the fee again, then create the bill.',
     'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
     'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
-    creating: 'This bill is already being created. Press Read from Bukku in a minute.' };
+    creating: 'This bill is already being created. Press Read from Bukku in a minute.',
+    'not-confirmed': 'Bukku did not confirm the bill. Press Read from Bukku in a few minutes before you create it again.' };
   var payJobs = null;
   var PAY_SAID = { denied: 'You do not have permission to decide payment details. Please ask an admin.',
     'not-found': 'These details no longer exist.', decided: 'These details were approved or declined by someone else. The latest version is now shown.',
