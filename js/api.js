@@ -239,8 +239,19 @@
       (rows || []).forEach((r) => { out[r.id] = r; });
       return out;
     };
-    return client.rpc('client_billing', { p_ids: ids || null })
-      .then((r) => (r.error ? {} : keyed(r.data))).catch(() => ({}));
+    /* Every client is read a thousand at a time in id order, and named ids
+       five hundred a request: one unpaged answer stopped at PostgREST's
+       1,000 rows and left the rest without billing (audit 2026-11-15). */
+    const read = (r) => (r.error && !(r.error.code === 'too-many' && r.data) ? {} : keyed(r.data));
+    if (!ids) {
+      return readPages(() => client.rpc('client_billing', { p_ids: null }).order('id'))
+        .then(read).catch(() => ({}));
+    }
+    const parts = [];
+    for (let i = 0; i < ids.length; i += 500) parts.push(ids.slice(i, i + 500));
+    return Promise.all(parts.map((part) => client.rpc('client_billing', { p_ids: part })
+      .then(read).catch(() => ({}))))
+      .then((all) => Object.assign.apply(null, [{}].concat(all)));
   }
   /* Lays billing onto client rows in place. Only the keys the answer holds
      are written, so a person Billing refuses keeps none. */

@@ -290,7 +290,10 @@
         headRow(); drawLines(monthly, true);
         y -= 6; rule(y); y -= 8;
         var mr = [[sstOn ? 'Subtotal excl. SST' : 'Subtotal', amt(t.month.subtotal, q)]];
-        if (Number(t.term_pct)) mr.push([MONY.termLine(t.term, t.term_pct).replace(/^./, function (c) { return c.toUpperCase(); }), amt(t.month.term, q)]);
+        /* A row a term percentage where the lines differ (2026-11-15). */
+        var cap = function (x) { return x.replace(/^./, function (c) { return c.toUpperCase(); }); };
+        if (Array.isArray(t.term_rows)) t.term_rows.forEach(function (x) { if (Number(x.amount)) mr.push([cap(MONY.termLine(x.months, x.pct)), amt(x.amount, q)]); });
+        else if (Number(t.term_pct)) mr.push([cap(MONY.termLine(t.term, t.term_pct)), amt(t.month.term, q)]);
         mr.push([taxed.word, amt(t.month.sst, q)], [mWord, amt(t.month.incl, q), 1]);
         sums(mr);
         nearOf(mWord, Number(t.month.incl), bolds > 1);
@@ -396,7 +399,7 @@
     var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
       sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
       term: window.ADspaceMoney.termLine(t.term, t.term_pct) };
-    var tot = window.ADspaceMoney.quoteRows(t, q.lines, sstOn).map(function (x) { return [WORD[x[0]], amt(x[1], q), x[2]]; });
+    var tot = window.ADspaceMoney.quoteRows(t, q.lines, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], amt(x[1], q), x[2]]; });
     var TW = 255, tx = R - TW;
     room(tot.length * 17 + 12);
     tot.forEach(function (r) {

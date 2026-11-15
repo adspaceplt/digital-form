@@ -177,6 +177,27 @@ function clean(messages: any): any[] | null {
   return out;
 }
 
+/* The words a conversation holds in all, its tool results and the
+   assistant's own blocks included: each step may carry up to 400 KB and a
+   question twelve steps, so the whole is held to a size before Claude is
+   asked (audit 2026-11-15). */
+const MAX_CHARS = 120000;
+// deno-lint-ignore no-explicit-any
+function sizeOf(messages: any[]): number {
+  let n = 0;
+  for (const m of messages) {
+    if (typeof m.content === 'string') { n += m.content.length; continue; }
+    for (const b of m.content) {
+      if (typeof b.text === 'string') n += b.text.length;
+      if (typeof b.thinking === 'string') n += b.thinking.length;
+      if (typeof b.data === 'string') n += b.data.length;
+      if (typeof b.content === 'string') n += b.content.length;
+      if (b.input != null) n += JSON.stringify(b.input).length;
+    }
+  }
+  return n;
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
@@ -189,7 +210,7 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown> = {};
   try { body = JSON.parse(raw); } catch { return json({ error: 'bad-request' }, 400, origin); }
   const messages = clean(body.messages);
-  if (!messages) return json({ error: 'bad-request' }, 400, origin);
+  if (!messages || sizeOf(messages) > MAX_CHARS) return json({ error: 'bad-request' }, 400, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } });

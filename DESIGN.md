@@ -47,18 +47,18 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--ink` | `#1b1a17` | `#f2efec` | Text |
-| `--ink-soft` | `#524e47` | `#cdc8c3` | Secondary text, default button text |
-| `--ink-mute` | `#6b6760` | `#ada8a3` | Labels, hints, quiet buttons (4.5:1 on every ground) |
-| `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
+| `--ink` | `#1a1a1a` | `#f0f0f0` | Text (the brand's monochrome, neutral in both themes; 2026-11-15) |
+| `--ink-soft` | `#515151` | `#c9c9c9` | Secondary text, default button text |
+| `--ink-mute` | `#666666` | `#a9a9a9` | Labels, hints, quiet buttons (4.5:1 on every ground) |
+| `--line` | `#e0e0e0` | `#3c3c3c` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
 | `--line-ctl` | `#8e8e8e` | `#858585` | A control's drawn edge (a radio, a tick's ring): the lightest neutral that holds 3:1 on every ground |
-| `--field` | `#f0f0f0` | `#323231` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground and the control's edge (`--line-ctl`, 3:1) through `--field` / `--select-ground` / `--field-edge`, set on the one list of grey cards in `css/portal.css` (the user, 2026-10-31, option A); a placeholder is `--ink-mute` at full strength |
+| `--field` | `#f0f0f0` | `#323232` | A box typed into: filled, no outline (the user, 2026-10-31, option B); white with the blue edge and ring while typed in; on a grey card (`--sunk`) it takes the white ground and the control's edge (`--line-ctl`, 3:1) through `--field` / `--select-ground` / `--field-edge`, set on the one list of grey cards in `css/portal.css` (the user, 2026-10-31, option A); a placeholder is `--ink-mute` at full strength |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Buttons and fields are filled, never outlined; the contact chip, menus, sheets, file tiles, and the floating tab bar and More keep their edges. `uxaudit` `outline` |
-| `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button, never the Undo bar |
+| `--fill` / `--on-fill` | `#1a1a1a` / `#fff` | `#f0f0f0` / `#1a1a1a` | The ink surface: a selected `.acttab`, progress, the bell's unread count. Never a button, never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
 | `--action` / `--on-action` | `#0071e3` / `#fff` | `#0071e3` / `#fff` | **Blue: the one primary action of a view** (Add, Create and Save as much as Publish, Release, Submit and Approve; the user, 2026-10-07), as apple.com draws every primary; never a status. White on it 4.70:1 |
 | `--action-hover` / `--action-pressed` | `#0068d1` / `#005bb8` | the same | Its steps, each darker so the label keeps AA (Apple's lighter hover is 4.32:1). `#007AFF` (4.02:1) is refused |
@@ -106,8 +106,10 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   row carries no colour: the row says nothing, and the exception is a neutral
   chip beside the name with the row faded (Inactive, Paused). Green marks a
   milestone only a minority have reached.
-- Grounds are neutral and the warmth is in the marks. Dark keeps its ink and
-  borders on light's own hue axis.
+- Grounds, ink and borders are neutral greys on the brand's monochrome
+  (`#f5f5f5`, `#ffffff`, `#515151`, `#a1a1a1`, `#1a1a1a`; the user,
+  2026-11-15: "move to my palette"); `#a1a1a1` is never words (2.6:1), only
+  the contact chip's edge and an email's fine print.
   - Never set a filled surface to `--page`.
   - A new dark value keeps the luminance of the one it replaces.
 

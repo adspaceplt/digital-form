@@ -88,7 +88,19 @@ Deno.serve(async (req) => {
       console.error('quote-request: RESEND_API_KEY is not set; no signing code can be sent');
       return json({ error: 'failed' }, 200, origin);
     }
-    const r = await admin.rpc('quote_sign_code', { p_key: body.key, p_payload: body.payload });
+    /* The caller's own address rides beside the relay secret, the only way
+       request_ip() takes it: ten codes an hour from one address are counted
+       against the person asking, never against this function's own address,
+       which every caller shares (audit 2026-11-15). */
+    const relay: Record<string, string> = {};
+    if (ip && /^[0-9A-Fa-f.:]{3,45}$/.test(ip)) {
+      const { data: rs } = await admin.from('app_secrets').select('value').eq('key', 'ip_relay_secret').maybeSingle();
+      if (rs && rs.value) { relay['x-adspace-ip'] = ip; relay['x-adspace-relay'] = String(rs.value); }
+    }
+    const signer = Object.keys(relay).length
+      ? createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { global: { headers: relay } })
+      : admin;
+    const r = await signer.rpc('quote_sign_code', { p_key: body.key, p_payload: body.payload });
     if (r.error) {
       console.error('quote-request: quote_sign_code failed', r.error.message);
       return json({ error: 'failed' }, 200, origin);

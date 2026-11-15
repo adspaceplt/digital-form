@@ -566,7 +566,7 @@
     announcement_end: 'p_id p_on',
     announcement_delete: 'p_id',
     team_notice_send: 'p_title p_body p_to',
-    rate_card_current: '',
+    rate_card_current: '', rate_card_at: 'p_version',
     quote_preview: 'p_sel',
     tax_codes_list: '', tax_codes_save: 'p_rows p_replace', tax_codes_delete: 'p_codes',
     quotation_create: 'p_client p_sel p_idem',
@@ -1462,6 +1462,13 @@
           if (String(r[f]) !== String(v)) return;
           if (table === 'campaign_options' && pending && pending.state === 'reviewing' &&
               r.state !== 'reviewing' && !qcOk(r)) { blocked = 'qc-required'; }
+
+          if (table === 'campaign_options' && pending && pending.state === 'scheduled' &&
+              ['submitted', 'reviewing', 'changes'].indexOf(r.state) > -1) {
+            var lastRv = DB.option_reviews.filter(function (x) { return x.option_id === r.id && !x.undone_at; })
+              .sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); })[0];
+            if (!lastRv || lastRv.decision !== 'approved') blocked = 'needs-approval';
+          }
           if (table === 'sm_reports' && pending && ['status', 'version_no', 'submitted_by', 'confirmed_by', 'reviewer_id'].some(function (k) { return k in pending; })) blocked = 'sm-status-by-function';
           else if (table === 'sm_reports' && r.status !== 'draft') blocked = 'sm-not-draft';
           if ((table === 'sm_report_posts' || table === 'sm_report_platforms' || table === 'sm_report_ads') && !smDraft(r.report_id)) blocked = 'sm-not-draft';
@@ -6720,11 +6727,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var hit = byTask[tid].filter(function (e) {
           if (e.event_type !== 'stage_changed') return false;
           var w = opsStage(t.workflow_id, e.to_value.stage_key);
-          if (!w || w.stage_group !== 'client_review') return false;
-          var at = new Date(e.created_at).getTime();
-          return at >= from && at < to;
+          return !!w && w.stage_group === 'client_review';
         }).sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })[0];
-        if (hit) reached.push({ id: t.id, at: hit.created_at, due: t.current_final_due_at, by: prioBy(t),
+
+        var hitAt = hit ? new Date(hit.created_at).getTime() : null;
+        if (hit && hitAt >= from && hitAt < to) reached.push({ id: t.id, at: hit.created_at, due: t.current_final_due_at, by: prioBy(t),
           replanned: t.original_final_due_at !== t.current_final_due_at });
       });
 
@@ -6770,7 +6777,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var id = own && own.team_member_id;
         var m2 = id && DB.team_members.filter(function (x) { return x.id === id; })[0];
         var k = id || 'none';
-        if (!perBy[k]) perBy[k] = { team_member_id: id || null, name: (m2 && m2.name) || 'Nobody',
+        if (!perBy[k]) perBy[k] = { team_member_id: id || null, name: (m2 && m2.name) || 'Unassigned',
                                     completed: 0, on_time: 0, mins: [] };
         perBy[k].completed += 1;
         var end = t.completed_at;
@@ -6815,7 +6822,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                    var id = own ? own.team_member_id : null;
                    var k = id || 'none';
                    var tm = id && DB.team_members.filter(function (m3) { return m3.id === id; })[0];
-                   if (!by[k]) by[k] = { team_member_id: id, name: (tm && tm.name) || 'No task owner', open: 0, late: 0 };
+                   if (!by[k]) by[k] = { team_member_id: id, name: (tm && tm.name) || 'Unassigned', open: 0, late: 0 };
                    by[k].open += 1;
                    if (lateSet[t.id]) by[k].late += 1;
                  });
@@ -11091,6 +11098,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(String(qtSelDay)) || qtSelDay < '2023-08-14' || qtSelDay > qtToday) return qtOk({ error: 'bad-date' });
           if (qtSelDay !== qtToday) { qtNow = new Date(Date.parse(qtSelDay + 'T00:00:00Z') + (qtNow.getTime() + 8 * 3600e3) % 864e5 - 8 * 3600e3); qtToday = qtSelDay; }
         }
+
+        var qtVs = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); });
+        if (args.p_sel.card) {
+          qtCard = qtVs.filter(function (v) { return String(v.version) === String(args.p_sel.card); })[0];
+          if (!qtCard) return qtOk({ error: 'bad-card' });
+        } else {
+          var qtEnd = new Date(Date.parse(qtToday + 'T00:00:00Z') + 864e5 - 8 * 3600e3).toISOString();
+          qtCard = qtVs.filter(function (v) { return String(v.published_at) < qtEnd; })[0] || qtVs[qtVs.length - 1];
+        }
       }
 
       var qtReplyBy = function () {
@@ -11219,7 +11235,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!lines.length && !req.length) return { error: 'empty' };
         var r2 = function (n) { return Math.round(n * 100) / 100; };
 
-        var adjusted = 0, editBad = null, taxBad = null;
+        var adjusted = 0, editBad = null, taxBad = null, overTerm = null;
         rates = rates && typeof rates === 'object' ? rates : null;
         lines.forEach(function (l) {
           l.key = l.kind + '|' + (l.slug || '') + '|' + l.label;
@@ -11246,6 +11262,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if ('rate' in e && Number(e.rate) !== Number(l.rate)) { l.list_rate = Number(l.rate); l.rate = Number(e.rate); hit = true; }
           if ('months' in e && Number(e.months) !== l.months) { l.months = Number(e.months); hit = true; }
 
+          if ('months' in e && Number(e.months) > term) { overTerm = l.label; return; }
+
           if ('detail' in e) {
             var dn = e.detail.map(function (x) { return x.trim(); });
             if (JSON.stringify(dn) !== JSON.stringify(l.detail || [])) { l.list_detail = l.detail || []; l.detail = dn; hit = true; }
@@ -11253,6 +11271,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (hit || swHit) adjusted++;
         });
         if (editBad) return { error: 'bad-edit', line: editBad };
+        if (overTerm) return { error: 'over-term', line: overTerm, term: term };
         if (taxBad) return { error: 'bad-tax', line: taxBad };
 
         var hasPlan = lines.some(function (l) { return l.kind === 'plan'; });
@@ -11268,35 +11287,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (month && term === 1) return { error: 'bad-term' };
         var pct = !month ? 0 : qtTermPct(set, term);
         pct = Number(pct || 0);
-        var sst = Number(set.sst_pct || 0), off = r2(sub * pct / 100), excl = r2(sub + off);
+        var sst = Number(set.sst_pct || 0);
 
-        var byR = {};
-        lines.forEach(function (l) { var r = l.sst != null ? l.sst : sst, b = byR[r] || (byR[r] = { r: r, m: 0, o: 0 }); if (l.basis === 'month') b.m += l.amount; else b.o += l.amount; });
-        var tx = r2(Object.keys(byR).reduce(function (a, k) { var b = byR[k]; return a + r2((b.m + r2(b.m * pct / 100)) * b.r / 100); }, 0));
-        var otx = r2(Object.keys(byR).reduce(function (a, k) { return a + r2(byR[k].o * byR[k].r / 100); }, 0));
+        lines.forEach(function (l) { if (l.basis === 'month') l.pct = Number(qtTermPct(set, l.months || term) || 0); else delete l.pct; });
+        var qt = qtTotals(lines, term, pct, sst);
+        var bands = {};
+        ['term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24'].forEach(function (k) { if (k in set) bands[k] = set[k]; });
         return { lines: lines, on_request: req, extra_rates: hints, adjusted: adjusted, totals: { term: term, term_pct: pct, sst_pct: sst, budget: Math.max(budget, 0),
-          month: month ? { subtotal: r2(sub), term: off, excl: excl, sst: tx, incl: r2(excl + tx) } : null,
-          once: once > 0 ? { subtotal: r2(once), sst: otx, incl: r2(once + otx) } : null,
-          commitment: r2((!month ? 0 : lines.every(function (l) { return l.basis !== 'month' || l.months === term; }) ? (excl + tx) * term :
-            lines.reduce(function (n, l) { return n + (l.basis === 'month' ? l.amount * l.months : 0); }, 0) * (1 + pct / 100) * (1 + sst / 100)) + once + otx) } };
+          bands: bands, month: qt.month, once: qt.once, commitment: qt.commitment, term_rows: qt.term_rows } };
       };
 
       var qtR2 = function (v) { var a = Math.round(Math.abs(v) * 100 + 1e-7) / 100; return v < 0 ? -a : a; };
+
       var qtTotals = function (lines, term, pct, sst) {
-        var g = {}, sub = 0, span = 0, once = 0, month = false, even = true;
+        var g = {}, sub = 0, once = 0, month = false, even = true;
         lines.forEach(function (e) {
           var m = e.basis === 'month', v = Number(e.qty || 0) * Number(e.rate || 0), mo = Math.max(1, Number(e.months || term || 1));
-          var r = e.sst != null ? Number(e.sst) : sst, b = g[r] || (g[r] = { r: r, sub: 0, span: 0, once: 0 });
-          if (m) { sub += v; span += qtR2(v) * mo; b.sub += v; b.span += qtR2(v) * mo; month = true; if (mo !== term) even = false; }
+          var r = e.sst != null ? Number(e.sst) : sst, p = m ? (e.pct != null ? Number(e.pct) : Number(pct || 0)) : 0;
+          var b = g[r + '|' + p] || (g[r + '|' + p] = { r: r, p: p, sub: 0, span: 0, once: 0, lo: null, hi: null });
+          if (m) { sub += v; b.sub += v; b.span += qtR2(v) * mo; month = true; if (mo !== term) even = false;
+                   b.lo = b.lo == null ? mo : Math.min(b.lo, mo); b.hi = b.hi == null ? mo : Math.max(b.hi, mo); }
           else { once += v; b.once += v; }
         });
-        var tx = 0, otx = 0, spanIncl = 0;
-        Object.keys(g).forEach(function (k) { var b = g[k];
-          tx += qtR2((b.sub + qtR2(b.sub * pct / 100)) * b.r / 100); otx += qtR2(b.once * b.r / 100);
-          spanIncl += qtR2(b.span * (1 + pct / 100) * (1 + b.r / 100)); });
-        var off = qtR2(sub * pct / 100);
+        var byR = {}, off = 0, spanIncl = 0, byP = {};
+        Object.keys(g).forEach(function (k) { var b = g[k], goff = qtR2(b.sub * b.p / 100);
+          off += goff; spanIncl += qtR2(b.span * (1 + b.p / 100) * (1 + b.r / 100));
+          var R = byR[b.r] || (byR[b.r] = { m: 0, o: 0 }); R.m += b.sub + goff; R.o += b.once;
+          if (b.sub > 0 && b.p !== 0) { var P = byP[b.p] || (byP[b.p] = { pct: b.p, amount: 0, lo: b.lo, hi: b.hi });
+            P.amount = qtR2(P.amount + goff); P.lo = Math.min(P.lo, b.lo); P.hi = Math.max(P.hi, b.hi); } });
+        var tx = 0, otx = 0;
+        Object.keys(byR).forEach(function (r) { tx += qtR2(byR[r].m * Number(r) / 100); otx += qtR2(byR[r].o * Number(r) / 100); });
+        off = qtR2(off);
+        var terms = Object.keys(byP).map(function (k) { var P = byP[k]; return { pct: P.pct, amount: P.amount, months: P.lo === P.hi ? P.lo : null }; })
+          .sort(function (a, b) { return a.pct - b.pct; });
         return { month: month ? { subtotal: qtR2(sub), term: off, excl: qtR2(sub + off), sst: qtR2(tx), incl: qtR2(sub + off + tx) } : null,
-          once: once > 0 ? { subtotal: qtR2(once), sst: qtR2(otx), incl: qtR2(once + otx) } : null,
+          once: once > 0 ? { subtotal: qtR2(once), sst: qtR2(otx), incl: qtR2(once + otx) } : null, term_rows: terms,
           commitment: qtR2((!month ? 0 : even ? (sub + off + tx) * term : spanIncl) + once + otx) };
       };
       var qtDay = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !isNaN(Date.parse(v + 'T00:00:00Z')); };
@@ -11321,7 +11346,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 r.detail.some(function (d) { return typeof d !== 'string' || d.length > 300; }))) ||
                 (r.renews && !/^[0-9a-f-]{36}$/.test(String(r.renews)) && !/^cs/.test(String(r.renews)))) return { error: 'bad-custom', line: lab || String(i + 1) };
             var mo = 1;
-            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-custom', line: lab }; mo = Number(r.months); }
+            if (r.basis === 'month') { if (!/^\d{1,2}$/.test(String(r.months)) || r.months < 1 || r.months > 36) return { error: 'bad-custom', line: lab }; mo = Number(r.months);
+              if (mo > Number((pr.totals || {}).term || 1)) return { error: 'over-term', line: lab, term: Number((pr.totals || {}).term || 1) }; }
             if (r.start && !qtDay(r.start)) return { error: 'bad-custom', line: lab };
             var cl = { kind: 'custom', key: 'custom|' + (i + 1) + '|' + lab, label: lab, detail: r.detail || [], qty: Number(r.qty), rate: Number(r.rate),
               basis: r.basis, months: mo, amount: qtR2(Number(r.qty) * Number(r.rate)) };
@@ -11331,8 +11357,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
           }
         }
         if (!any) return pr;
-        var t = pr.totals || {}, tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
-        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment }) });
+        var t = pr.totals || {};
+
+        var cset = t.bands || ((qtCard && qtCard.snapshot && qtCard.snapshot.settings) || {});
+        lines.forEach(function (l) { if (l.basis === 'month') l.pct = Number(qtTermPct(cset, l.months || t.term || 1) || 0); });
+        var tt = qtTotals(lines, Number(t.term || 1), Number(t.term_pct || 0), Number(t.sst_pct || 0));
+        return Object.assign({}, pr, { lines: lines, totals: Object.assign({}, t, { month: tt.month, once: tt.once, commitment: tt.commitment, term_rows: tt.term_rows }) });
       };
       var qtClientExtras = function (cid, lines, sel) {
         for (var i = 0; i < lines.length; i++) {
@@ -11547,8 +11577,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.quote_sign_codes = DB.quote_sign_codes || [];
         var hour = qtNow.getTime() - 3600e3;
         if (DB.quote_sign_codes.filter(function (r) { return r.quotation_id === sco.q.id && new Date(r.created_at).getTime() > hour; }).length >= 5) return qtOk({ error: 'too-many' });
+
+        var scIp = window.__callerIp || null;
+        if (scIp && DB.quote_sign_codes.filter(function (r) { return r.caller_ip === scIp && new Date(r.created_at).getTime() > hour; }).length >= 10) return qtOk({ error: 'too-many' });
         var code = String(100000 + Math.floor(Math.random() * 900000));
-        DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null,
+        DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null, caller_ip: scIp,
           created_at: qtNow.toISOString(), expires_at: new Date(qtNow.getTime() + 15 * 60e3).toISOString(),
           payload: { company: c1.company, contact: c2.contact, signer: c3.signer, signature: c3.signature } });
         window.__signCode = code;
@@ -11849,7 +11882,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
         var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
-        if (!qp.error) qp.version = qtCard.version;
+        if (!qp.error) { qp.version = qtCard.version; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
         return qtOk(JSON.parse(JSON.stringify(qp)));
       }
 
@@ -12090,6 +12123,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var rcLast = function () {
         return DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); })[0] || null;
       };
+
+      if (name === 'rate_card_at') {
+        var rcV0 = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); });
+        var rcA = args.p_version ? rcV0.filter(function (v) { return String(v.version) === String(args.p_version); })[0] : rcV0[0];
+        if (!rcA || !rcMe || !(opsAllowed('services', 'view') || opsAllowed('clients.services', 'view') || opsAllowed('clients.quotes', 'view'))) return rcOk(null);
+        return rcOk(JSON.parse(JSON.stringify({ id: rcA.id, version: rcA.version, valid_until: rcA.valid_until, published_at: rcA.published_at,
+          published_by: rcA.published_by, snapshot: rcA.snapshot, versions: rcV0.map(function (v) { return { version: v.version, published_at: v.published_at }; }) })));
+      }
       if (name === 'rate_card_current') {
         var rcL = rcLast();
         return rcOk(rcL && rcMe && (opsAllowed('services', 'view') || opsAllowed('clients.services', 'view') || opsAllowed('clients.quotes', 'view')) ? JSON.parse(JSON.stringify({ id: rcL.id, version: rcL.version, valid_until: rcL.valid_until,
@@ -12210,7 +12251,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
       if (name === 'demo_state') return Promise.resolve({ data: dmState(), error: null });
       var dmNew = String(args.p_pin || '').trim();
-      if (dmNew && !/^[0-9]{4,8}$/.test(dmNew)) return Promise.resolve({ data: { error: 'bad-pin' }, error: null });
+      if (dmNew && !/^[0-9]{6,8}$/.test(dmNew)) return Promise.resolve({ data: { error: 'bad-pin' }, error: null });
       if (args.p_on && !dmNew && !DB.__demoPin) return Promise.resolve({ data: { error: 'no-pin' }, error: null });
       var dmWas = !!(dmF() && dmF().on_now), dmBits = [];
       if (dmNew) { DB.__demoPin = dmNew; dmBits.push('PIN changed'); }
