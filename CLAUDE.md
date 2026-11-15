@@ -1261,6 +1261,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`). `data-view` marks a view kept in the card (`#workGroup`,
     `#regSort`): never counted by the badge, never reset by Clear.
+  - A bar's primary whose words a page writes later (Create n bills) writes
+    them into its `.btn-word` and its name, never its `textContent`, which
+    takes the phone's glyph away (2026-11-15).
   - A second action goes behind `.cmd-more` beside a primary; a bar of plain
     actions keeps its first and puts the rest there once it has three (the
     Performance Months bar); a button marked `data-rare` (with its `data-g`)

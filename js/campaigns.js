@@ -1512,7 +1512,20 @@
     $('cpqCount').textContent = shown === all ? all + (all === 1 ? ' item' : ' items') : shown + ' of ' + all;
     var read = $('cpqRead'); if (read) read.hidden = !work;
     var feed = ready.filter(function (j) { return cpqBillable(j) && j.fee && Number(j.fee.amount) > 0; });
-    var many = $('cpqBills'); if (many) { many.hidden = feed.length < 2; many.textContent = 'Create ' + feed.length + ' bills'; }
+    var many = $('cpqBills');
+    if (many) {
+      /* The bar's primary: on a phone it draws its glyph alone (`.btn-word`
+         hidden), so the count goes into its word and its name, never over
+         the glyph (2026-11-15: the words stood squeezed in a 32px box). */
+      var mw = 'Create ' + feed.length + ' bills', ws = many.querySelector('.btn-word');
+      many.hidden = feed.length < 2;
+      if (!ws) {
+        Array.prototype.slice.call(many.childNodes).forEach(function (n) { if (n.nodeType === 3) many.removeChild(n); });
+        ws = document.createElement('span'); ws.className = 'btn-word'; many.appendChild(ws);
+      }
+      ws.textContent = mw;
+      many.setAttribute('aria-label', mw);
+    }
     host.innerHTML = '';
     if (work && d.pay && d.bill_account === false && g.ready.length) {
       var w = document.createElement('p'); w.className = 'msg warn cpq-acct'; w.textContent = JOB_SAID['no-account']; host.appendChild(w);
@@ -1541,7 +1554,7 @@
       if (!list.length) return;
       host.appendChild(GRP.section({ route: 'creator-payments', key: key, name: name, count: list.length, marks: marks || '',
         shut: key === 'paid' && GRP.shut('creator-payments', 'paid', false, false),
-        table: function () { var t = document.createElement('div'); t.className = 'cpq-list'; t.innerHTML = rows; return t; } }));
+        table: function () { var t = document.createElement('div'); t.className = 'cpq-list crm-table softpanel'; t.innerHTML = rows; return t; } }));
     };
     section('review', 'Details to review', rv, rv.map(function (r) {
       return '<div class="cpq-row" data-req="' + esc(r.id) + '" data-creator="' + esc(r.creator) + '">' +

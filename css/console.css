@@ -5658,6 +5658,8 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    who and the Job reference over the campaign and client at the left, the
    amount over its date at the right, the act last; on a narrow pane the act
    takes the row under them. */
+/* The list is a directory's card (`.crm-table.softpanel`), as every other
+   directory's: its rows on white, never on the grey page (2026-11-15). */
 .cpq-list { display: grid; }
 .cpq-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 128px; gap: 4px 16px; align-items: start; padding: 10px 15px; border-top: 1px solid var(--line-soft); transition: box-shadow var(--t); }
 .cpq-row:first-child { border-top: 0; }
