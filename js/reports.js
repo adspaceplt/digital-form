@@ -6115,7 +6115,7 @@
     if (want) { openReport(want, true); return; }
     showList();
     UI.skeleton(list, 4);
-    db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on, on_request').order('period_start', { ascending: false }).then(function (r) {
+    hubRead().then(function (r) {
       if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
       hub.rows = r.data || [];
       Promise.all([clientsReady, loadNames()]).then(paintHub);
@@ -6309,10 +6309,19 @@
     $('rhBulkSent').hidden = !n || hub.tab !== 'published' || !may('work');
     $('rhBulkPublish').hidden = !n || hub.tab !== 'confirmed' || !may('manage');
   }
+  /* The list read whole, a thousand at a time: a read answers 1,000 rows
+     at most, and the reports past it were left out without a word. Ordered
+     to the id too, so a page boundary never repeats or drops a row (audit
+     2026-11-15; as js/scripts.js reads). */
+  function hubRead() {
+    return window.ADspaceAPI.readPages(function () {
+      return db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on, on_request')
+        .order('period_start', { ascending: false }).order('id');
+    });
+  }
   /* Read the list again after an act, keeping the ticks that still stand. */
   function rereadHub() {
-    return db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at, reviewer_id, brand_id, brand_name, sent_on, on_request')
-      .order('period_start', { ascending: false }).then(function (r) {
+    return hubRead().then(function (r) {
         if (!r.error) hub.rows = r.data || [];
         paintHub();
       });

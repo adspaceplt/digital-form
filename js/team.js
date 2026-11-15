@@ -1034,7 +1034,11 @@
           if (r && r.refused) return REMOVE_SAID[r.refused] || r.refused;
           if (r && r.held) return 'Some work could not be handed over, so ' + m.name + ' was not removed. Choose again, or keep it with them.';
           var d = (r && r.data) || {};
-          if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.' : String(r.error.message || r.error);
+          /* A guard trigger's refusal ('admin-only', 'super-only') comes as
+             the error's message: said in words, never the code (audit
+             2026-11-15). */
+          if (r.error) return /does not exist|schema cache/i.test(r.error.message || '') ? 'This feature is not available yet. Please contact an admin.'
+            : REMOVE_SAID[r.error.message] || REMOVE_SAID[r.error.hint] || String(r.error.message || r.error);
           if (d.error) return REMOVE_SAID[d.error] || d.error;
           /* Work left with them is said, with the way to hand it over
              (TEAM-3, 2026-10-14): a removed colleague signs in no more. */

@@ -633,6 +633,17 @@
           UI.failLine(box, 'Your tasks', r[0].error.message, load);
           return;
         }
+        /* A failed read of finished, cancelled or searched work is no
+           empty list: it fails the list as the open work's does. Past the
+           cap (`too-many`) the rows read are kept (audit 2026-11-15). */
+        for (var k = 1; k < 4; k++) {
+          var ek = r[k] && r[k].error;
+          if (ek && ek.code !== 'too-many') {
+            state.err = ek;
+            UI.failLine(box, 'Your tasks', ek.message, load);
+            return;
+          }
+        }
         /* One row can only be in one of the three, but a merge that trusted
            that would be a merge nobody had checked. */
         var seen = {};
@@ -672,7 +683,8 @@
   }
 
   // Every row of a read, a thousand at a time (`ADspaceAPI.readPages`).
-  function readPages(make) { return window.ADspaceAPI.readPages(make, 20000); }
+  /* The cap a caller names is kept (the search asks 5000; audit 2026-11-15). */
+  function readPages(make, cap) { return window.ADspaceAPI.readPages(make, cap || 20000); }
 
   /* After a press on one task, that task alone is read again with who holds
      it, and the list repainted from it (2026-10-22, WRK-3). A refused read
@@ -710,7 +722,9 @@
     var q = state.find, seq = ++findSeq;
     if (!q || !state.tasks) { if (!state.tasks) load(); return; }
     findAny(function () { return db.from('ops_tasks').select('*, clients(name, stage, logo_url)').is('archived_at', null); }, q).then(function (r) {
-      if (seq !== findSeq || r.error) return;
+      if (seq !== findSeq) return;
+      /* A refused search is said, never drawn as No matches (audit 2026-11-15). */
+      if (r.error) { UI.failLine($('workQueue'), 'Your tasks', r.error.message, searchOnly); return; }
       var have = {};
       state.tasks.forEach(function (t) { have[t.id] = 1; });
       var fresh = (r.data || []).filter(function (t) { return !have[t.id]; });
@@ -725,7 +739,9 @@
         state.tasks = state.tasks.concat(fresh);
         paint();
       });
-    }).catch(function () {});
+    }).catch(function (e) {
+      if (seq === findSeq) UI.failLine($('workQueue'), 'Your tasks', (e && e.message) || String(e), searchOnly);
+    });
   }
 
   /* Who is on the tasks read, and in what capacity: the live assignee rows of
@@ -740,12 +756,14 @@
      moment after a save that had worked. */
   /* What a row and a board card show beside the name (v3, 2026-11-12):
      each open task's checklist (ticked of all) and its remarks still
-     standing, read for the tasks read in one request a kind a 150, never
+     standing, read for the tasks read in one request a kind a 50, never
      one a task. A refused read leaves the marks off; it never fails the
-     list. */
+     list. Parts of 50, not 150: a read answers 1,000 rows at most, and
+     150 tasks' checklists passed it, leaving the bars short without a
+     word (audit 2026-11-15). */
   function readExtras(tasks) {
     var ids = tasks.filter(function (t) { return !isFinished(t); }).map(function (t) { return t.id; }), parts = [], out = {};
-    for (var i = 0; i < ids.length; i += 150) parts.push(ids.slice(i, i + 150));
+    for (var i = 0; i < ids.length; i += 50) parts.push(ids.slice(i, i + 50));
     function slot(id) { return out[id] || (out[id] = { done: 0, of: 0, rem: 0 }); }
     return Promise.all(parts.map(function (part) {
       return Promise.all([
@@ -968,8 +986,10 @@
     if (takeable(t)) return 'open';
     var dl = deadlineOf(t), p = plainOf(t);
     var n = dl && dl.first ? daysAway(dl.by) : daysAway(dueOf(t));
-    if (dl && dl.over) return 'overdue';
-    if (n !== null && n < 0) return 'overdue';
+    /* Overdue is the late rule itself, as the row's red date and the
+       Dashboard read it: a task past its date but already at client review
+       is not late, and falls through to its stage (audit 2026-11-15). */
+    if (isLate(t)) return 'overdue';
     if (n === 0) return 'today';
     if (p === 'waiting') return 'waiting';
     if (p === 'doing') return 'doing';
@@ -1248,8 +1268,17 @@
     var d = Math.floor(h / 24);
     return d + (d === 1 ? ' day' : ' days');
   }
+  /* Days late on Malaysia's calendar: the days from the due day to today.
+     Given the start of the due day, the old reading (whole 24 hours plus
+     one) said "2 days late" of a task due 14 Nov at 10am on the 15th; the
+     report's due moment (23:59 of its day) reads the same either way
+     (audit 2026-11-15). */
+  function lateDaysOf(due) {
+    var my = function (t) { return Math.floor((t + 8 * 3600e3) / 86400000); };
+    return my(Date.now()) - my(due.getTime());
+  }
   function lateWord(due) {
-    var d = Math.floor((Date.now() - due.getTime()) / 86400000) + 1;
+    var d = Math.max(1, lateDaysOf(due));
     return d + (d === 1 ? ' day late' : ' days late');
   }
   function settled(p) {
@@ -1452,7 +1481,7 @@
         return { id: t.id, name: t.content_desc || t.title || t.code || 'Task', code: t.code || '',
           client: (t.clients && t.clients.name) || '', clientId: t.client_id || null, stage: stageLabel(t),
           due: due || null, days: n, late: late, lateWord: lateBy, urgent: urgentDelivery(t),
-          lateDays: late && t.current_final_due_at ? Math.max(0, Math.floor((Date.now() - dayOf(t.current_final_due_at).getTime()) / 86400000) + 1) : 0,
+          lateDays: late && t.current_final_due_at ? Math.max(0, lateDaysOf(dayOf(t.current_final_due_at))) : 0,
           deadline: dl && !dl.over && dl.first ? dl.words : '', meetingAt: null,
           /* Time used from the assignment to the final date, and the
              checklist done (the Dashboard's ring, phase 4). */
