@@ -645,7 +645,7 @@
     }
     return null;
   }
-  var CLOSED_FNS = { ops_change_due_date: true };
+  var CLOSED_FNS = { ops_change_due_date: true, submit_review: true };
   function callRefusal(name, args) {
     var have = LIVE_FNS[name];
     var bad = have == null;
@@ -9784,10 +9784,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       persist();
       return { ok: true, changed: true, change: chId, profiles: after };
     }
+
     function creatorBy(code) {
-      return DB.creators.filter(function (c) {
-        return c.access_code && c.access_code === String(code || '').toUpperCase();
-      })[0];
+      var t = creatorTry(code);
+      return t.id ? DB.creators.filter(function (c) { return c.id === t.id; })[0] : undefined;
     }
 
     function creatorTry(code) {
@@ -10004,6 +10004,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var pFx = fF && fF.currency === 'SGD' ? appSet('fx_sgd', appToday()) : 1;
           if (['posted', 'completed'].indexOf(fO.state) < 0) cfOut = { error: 'not-posted' };
           else if (!fF || !(Number(fF.amount) > 0)) cfOut = { error: 'no-fee' };
+          else if ((fF.currency || 'MYR') !== cfCur(fO.creator_id)) cfOut = { error: 'currency-changed', currency: cfCur(fO.creator_id) };
           else if (!pL) cfOut = { error: 'not-linked' };
           else if (cfBilled(fO.id)) cfOut = { error: 'billed' };
           else if (!pAcc) cfOut = { error: 'no-account' };
@@ -10441,7 +10442,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
                                   created_at: cur.created_at, by_team: cur.source === 'team', suggested: sug(cur),
                                   suggested_caption: cur.suggested_caption == null ? null : cur.suggested_caption,
                                   suggested_caption_zh: cur.suggested_caption_zh == null ? null : cur.suggested_caption_zh } : null,
-                  asked: was ? { note: was.note || null, reviewer: was.reviewer || null, created_at: was.created_at, suggested: sug(was) } : null };
+                  asked: was ? { note: was.note || null, reviewer: was.source === 'team' ? null : (was.reviewer || null), by_team: was.source === 'team', created_at: was.created_at, suggested: sug(was) } : null };
               }) };
         }) }, error: null });
     }

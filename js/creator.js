@@ -1733,6 +1733,7 @@
           var d = r.data || {};
           if (d.error === 'empty') { finish(t().needFiles, 'err'); return; }
           if (d.error === 'too-long') { finish(t().tooLong, 'err'); return; }
+          if (d.error === 'locked') { finish(W.lockedLine(t(), d.minutes), 'err'); return; }
           if (r.error || d.error) { finish(t().failText, 'err'); return; }
           delete drafts[b.id]; draftsKeep();
           finish();
