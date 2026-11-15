@@ -2047,7 +2047,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   is re-read (`refreshClient`). The move is tagged `client.stage`.
 - Paused and Past say why (`2026-10-04-client-leave-reason.sql`): the stage
   select asks first (`askLeave`: Reason, required, of Budget, Results, Moved
-  in-house, Business closed, No reply, Other; an optional note; the client's
+  in-house, Business closed, No reply, Completed, Other, Completed offered
+  only for a move to Past of a client once Active and held so by
+  `clients_stage_reason` (`2026-11-15-completed-reason.sql`, a one-time
+  project finished as agreed); an optional note; the client's
   open tasks counted by `client_open_tasks`, "3 tasks are still open. They
   show as urgent delivery in My Work."), the select holding its stage until
   the answer. `clients.stage_reason` / `stage_note` ride the update and the
@@ -2066,10 +2069,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceSales.figures`, `reasonWord`, and `judge`, the one Better, Worse
   or Steady the Dashboard's tiles and Analytics both read; 2026-11-12), read by the Dashboard from each
   client's `stage_log`, `stage_reason`, `source` and `owner`: Won is a
-  lead's first move to Active (or a client keyed in Active), Lost a lead to
-  Past never Active, Churned Active to Past (Lost and Churned once a client
-  in a period, only where the period's last move leaves it in Past),
-  Resumed Paused back to Active, a Win-back Past back to Active; Committed
+  lead's first move to Active (or a client keyed in Active, or a lost lead
+  later Active), each from `eventsOf` and counted once (the user,
+  2026-11-15: an ended engagement waits in Paused before Past): Churned a
+  client's first move out of Active into Paused or Past, Completed in its
+  place where that move or the Paused to Past after it is Completed (never
+  churn), the later Paused to Past counting nothing; Lost a lead never
+  Active at its first move into Paused or Past; a leaving counted in a
+  period only where its last move there leaves the client out of Active;
+  Paused every move into Paused; Resumed Paused back to Active, a Win-back
+  Past back to Active (a former Active client); Committed
   monthly value a month of each confirmed monthly line (a term over one
   month, started by today) by market, never added across currencies.
 - The follow-up limits (`staleH(c)`, settings `lead_followup_hours` 48 and
@@ -4668,8 +4677,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   churn, days to win and clients lost down; a move under the Business
   setting `analytics_change_pct`, 10, or of under 2 in a count, is
   Steady), the dot and its word in ink (`.anl-verdict`), a finding's arrow
-  in `--ok` / `--err`. Churn a quarter (clients lost over those active at
-  the start, `churnOf`) above `analytics_churn_pct` (10) reads Above alert
+  in `--ok` / `--err`. Churn a quarter (clients churned over those active at
+  the start, `churnOf`, Completed never among them) above `analytics_churn_pct` (10) reads Above alert
   on Clients lost and leads What changed (Churn above the alert; More
   clients left than joined; an industry most leavers came from), Sales'
   What changed taking the client findings that are Worse. Each trend
