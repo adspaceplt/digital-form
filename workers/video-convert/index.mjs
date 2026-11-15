@@ -19,12 +19,19 @@
  * Invoked by hand with { "all": true } it walks content/ once and asks for
  * every copy still missing (the videos uploaded before it existed); with
  * { "all": true, "redo": true } it also asks again for any copy over the
- * cap (1080 × 1920, 60 fps; see logic.mjs).
+ * cap (1080 × 1920, 60 fps; see logic.mjs). Either walk stops 30 seconds
+ * before Lambda's time runs out and answers `next`, the last key reached;
+ * run it again with { "all": true, "startAfter": next } to carry on. A video
+ * uploaded in the last 30 minutes is left to its own upload trigger. One
+ * file that cannot be read or asked for is recorded as `error: …` and the
+ * rest go on; an upload trigger never fails, so Lambda never retries it.
  */
 import { S3Client, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { MediaConvertClient, CreateJobCommand } from '@aws-sdk/client-mediaconvert';
+import * as MC from '@aws-sdk/client-mediaconvert';
 
-import { PREFIX, ISO_BMFF, UNREAD, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc } from './logic.mjs';
+import { PREFIX, ISO_BMFF, UNREAD, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc,
+  fromProbe, hasAudioOf, attempt, walk } from './logic.mjs';
+const { MediaConvertClient, CreateJobCommand } = MC;
 
 const s3 = new S3Client({});
 const mc = new MediaConvertClient({});
@@ -72,32 +79,50 @@ async function convert(Bucket, Key, size, redo) {
     if (!overCap((await inspect(Bucket, webKey(Key), had)).video)) return 'copy exists';
   }
   const ext = (Key.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
-  const info = ISO_BMFF.test(Key) ? await inspect(Bucket, Key, size) : UNREAD;
+  /* A damaged or truncated file, or one gone since its trigger, is not read:
+     the copy is still asked for as for a file never read. */
+  let info = UNREAD;
+  if (ISO_BMFF.test(Key)) {
+    try { info = await inspect(Bucket, Key, size); }
+    catch (e) { console.warn('not read, asked as unread: ' + Key + ': ' + (e && e.message)); info = UNREAD; }
+  }
+  if (!info.video) {
+    const p = await probe(Bucket, Key);
+    if (p) info = Object.assign({}, info, p);
+  }
   if (had === null && alreadyWeb(ext, info)) return 'already plays everywhere';
-  const hasAudio = info.codecs.some((c) => /^(mp4a|ac-3|ec-3|lpcm|sowt|twos|alac)$/.test(c)) || !info.codecs.length;
-  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudio, info.video)));
+  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudioOf(info), info.video)));
   return (had === null ? 'job ' : 'redo job ') + (r.Job && r.Job.Id);
 }
 
-export const handler = async (event) => {
-  const done = [];
+/* MediaConvert's probe, for a size and rate the file itself did not give.
+   Null where the SDK has no probe, the role may not ask, or it fails: the
+   job then fits the copy inside the cap's square (logic.mjs, jobFor). */
+async function probe(Bucket, Key) {
+  if (!MC.ProbeCommand) return null;
+  try { return fromProbe(await mc.send(new MC.ProbeCommand({ InputFiles: [{ FileUrl: `s3://${Bucket}/${Key}` }] }))); }
+  catch (e) { console.warn('probe failed: ' + Key + ': ' + (e && e.message)); return null; }
+}
+
+export const handler = async (event, context) => {
+  let done = [], next = null;
   if (event && event.all) {
     const Bucket = event.bucket || 'myadspace';
-    let token;
-    do {
-      const page = await s3.send(new ListObjectsV2Command({ Bucket, Prefix: PREFIX, ContinuationToken: token }));
-      for (const o of page.Contents || []) {
-        if (isCandidate(o.Key)) done.push([o.Key, await convert(Bucket, o.Key, o.Size, !!event.redo)]);
-      }
-      token = page.IsTruncated ? page.NextContinuationToken : undefined;
-    } while (token);
+    const remaining = () => (context && context.getRemainingTimeInMillis ? context.getRemainingTimeInMillis() : Infinity);
+    const r = await walk({
+      startAfter: event.startAfter, now: Date.now(), remaining,
+      list: (StartAfter, ContinuationToken) => s3.send(new ListObjectsV2Command({ Bucket, Prefix: PREFIX, StartAfter, ContinuationToken })),
+      convert: (Key, size) => convert(Bucket, Key, size, !!event.redo)
+    });
+    done = r.done; next = r.next;
   } else {
     for (const rec of (event && event.Records) || []) {
       const Bucket = rec.s3.bucket.name;
       const Key = decodeURIComponent(String(rec.s3.object.key).replace(/\+/g, ' '));
-      done.push([Key, await convert(Bucket, Key, rec.s3.object.size)]);
+      done.push([Key, await attempt(() => convert(Bucket, Key, rec.s3.object.size))]);
     }
   }
-  done.forEach(([k, what]) => console.log(what + ': ' + k));
-  return { done: done.length, results: done };
+  done.forEach(([k, what]) => (/^error: /.test(what) ? console.error : console.log)(what + ': ' + k));
+  if (next) console.log('Stopped before the time ran out. Run again with { "all": true, "startAfter": "' + next + '" }.');
+  return next ? { done: done.length, results: done, next } : { done: done.length, results: done };
 };

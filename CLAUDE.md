@@ -5337,10 +5337,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     carrying the form's address in `ops_notifications.link` (https only),
     which the bell and a push open in place of a console page.
   - The card (`engCard`) never repeats its heading: the month is named by the
-    card above it, whose state chip (`.eng-mark`) shows only while shut. The
-    meeting, link and message are `.eng-row`s (label, value, controls at the
-    right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
-    and the value runs full width beneath.
+    card above it, whose state chip (`.eng-mark`) shows only while shut. It
+    is a card of its own above the tasks (the cards' hairline, the large
+    corner; 2026-11-15, the user: "this is hard to read"): Manager, Planned,
+    Runs and Reports as cells, each label over its value, the state and ⋯
+    at the top right; on a narrow pane the state line first, then the facts
+    as rows. The invoice, meeting, link and message are `.eng-row`s (a 120px
+    label, 104 narrow, the value, the row's acts), the meeting changed by
+    its pen (`data-a="meet"`, Set meeting while none), the invoice's number
+    a `.linkbtn` in ink, Check again and Show quiet, the meeting in ink,
+    never green; the message to the client set off by the card's hairline.
 - New month never edits a month held: it offers only the months the client
   does not hold and sends `new: true`, which `ops_engagement_upsert` refuses
   `exists` (2026-10-22, WRK-1), opening on this month, else the next one
@@ -8479,7 +8485,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (H.264, AAC, upright, Rec. 709, fitted to 1080 × 1920 either way up at up
   to 60 fps, never enlarged). It reads and asks; it never deletes, copies or
   touches an original. `{ "all": true }` converts what came before, and
-  `{ "all": true, "redo": true }` remakes only copies over the cap.
+  `{ "all": true, "redo": true }` remakes only copies over the cap. One file
+  that cannot be read or asked for is its own `error: …` line, never the
+  run's (an upload trigger never fails); a walk stops 30 seconds before its
+  time and answers `next`, run again as `startAfter`, and leaves an upload
+  under 30 minutes old to its trigger; a size the file does not give is
+  asked of MediaConvert's probe, else fitted inside 1920 × 1920
+  (`FIT_NO_UPSCALE`); MediaConvert's role writes `content/*.web.mp4` alone
+  (2026-11-15, phase 2 audit).
 
 ## 3. Workflow and constraints
 

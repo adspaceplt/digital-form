@@ -4223,32 +4223,36 @@ body > .shell { width: 100%; }
 
 /* The engagement is the month's own record, so it sits in the month's card
    above the tasks as a bounded block with the same edge the tables carry. */
-.engcard { border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card); padding: 16px 18px; margin: 0 0 12px; }
+.engcard { border: 1px solid var(--card-line); border-radius: var(--radius-lg); background: var(--card); padding: 18px 20px; margin: 0 0 12px; }
 .is-narrow .engcard { padding: 14px; }
 .eng-who { min-width: 0; }
 /* The head's facts are rows on the card's grid (label track, value), the
    state and ⋯ beside the first of them; a tight card keeps each on one line,
    where the rows below stack (ux-audit WORK-7, 2026-10-15). */
-.eng-meta { display: grid; gap: 8px; min-width: 0; }
-.eng-meta > .eng-row { grid-template-columns: 150px minmax(0, 1fr); grid-template-areas: "lab val"; }
-.is-narrow .eng-meta > .eng-row { grid-template-columns: 104px minmax(0, 1fr); }
-/* A tight card gives its facts the card's width, one label track for all,
-   the state and ⋯ beside the first fact alone, so a date or a report's name
-   keeps its line (2026-11-02, the month's Runs and Reports). */
+/* The month's own facts (Manager, Planned, Runs, Reports) read as cells,
+   each label over its value, four across and two in a narrow card, so a
+   value sits under its own label rather than across the card from it
+   (2026-11-15, the user: the card was hard to read). The state and ⋯ keep
+   the card's top right. */
+.eng-meta { display: grid; grid-template-columns: repeat(4, minmax(0, max-content)); gap: 12px 40px; min-width: 0; }
+.eng-meta > .eng-row { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "lab" "val"; gap: 2px; min-height: 0; align-items: start; }
+/* A narrow card opens on its state (the dot and word at the left, the ⋯ at
+   the right edge), then its facts as label-beside-value rows on the same
+   104px track as the meeting's, so nothing squeezes beside the state. */
+.is-narrow .eng-head { grid-template-columns: minmax(0, 1fr); }
+.is-narrow .eng-head > .eng-ctl { order: -1; justify-content: space-between; }
+.is-narrow .eng-meta { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.is-narrow .eng-meta > .eng-row { grid-template-columns: 104px minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; align-items: baseline; }
+.eng-row .tdate { text-align: left; }
 .is-tight .eng-head { gap: 8px 12px; }
-.is-tight .eng-who, .is-tight .eng-meta { display: contents; }
-.is-tight .eng-meta > .eng-row { grid-column: 1 / -1; grid-template-columns: 64px minmax(0, 1fr); grid-template-areas: "lab val"; gap: 12px; }
-.is-tight .eng-meta > .eng-row:first-child { grid-column: 1; grid-row: 1; }
-.is-tight .eng-head > .eng-ctl { grid-column: 2; grid-row: 1; }
 .eng-row > .eng-val { grid-area: val; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
-.eng-meetword.is-held { color: var(--ok); }
 /* The meeting's link is the contact chip, cut to the cell with an ellipsis. */
 .eng-meetlink .plink { max-width: 100%; }
 .plink-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.is-narrow .eng-row { grid-template-columns: 104px minmax(0, 1fr) auto; gap: 4px 12px; }
+.is-narrow .eng-facts > .eng-row, .is-narrow .eng-meetmsg > .eng-row { grid-template-columns: 104px minmax(0, 1fr) auto; gap: 4px 12px; }
 /* A narrow card puts the label and the controls on the first line and the
    value under them at the full width, so a button never stands alone. */
-.is-tight .eng-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lab act" "val val"; }
+.is-tight .eng-meetmsg > .eng-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lab act" "val val"; }
 .eng-meetwarn { margin: 8px 0 0; }
 /* The message to the client is the section's client-facing act, so it is
    set off from the meeting's own facts by the card's hairline, 12 on each
