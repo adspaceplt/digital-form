@@ -41,14 +41,21 @@ IAM → Roles → Create role.
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Action": ["s3:GetObject"],
       "Resource": "arn:aws:s3:::myadspace/content/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject"],
+      "Resource": "arn:aws:s3:::myadspace/content/*.web.mp4"
     }
   ]
 }
 ```
 
-   Name it `read-and-write-content`. Save.
+   Name it `read-content-write-copies`. Save. MediaConvert reads any file
+   under `content/` and writes only the `.web.mp4` copies, so a job set up
+   wrongly can never write over an original.
 4. Copy the role's **ARN** (`arn:aws:iam::<account>:role/adspace-mediaconvert`).
 
 ## 2. The function
@@ -84,7 +91,7 @@ Lambda → Create function.
     },
     {
       "Effect": "Allow",
-      "Action": ["mediaconvert:CreateJob"],
+      "Action": ["mediaconvert:CreateJob", "mediaconvert:Probe"],
       "Resource": "*"
     },
     {
@@ -123,8 +130,25 @@ Lambda → `adspace-video-convert` → Test → Create new event, name `all`, JS
 ```
 
 Test. The result lists each video and what was done: `job …` (a copy was
-asked for), `copy exists`, or `already plays everywhere`. Run it again at any
-time; it never asks twice for a copy that exists.
+asked for), `copy exists`, `already plays everywhere`, `recent: left to its
+upload trigger` (uploaded in the last 30 minutes, which its own upload
+covers), or `error: …` (that one file could not be read or asked for; the
+rest carry on). Run it again at any time; it never asks twice for a copy
+that exists.
+
+A copy is only seen once MediaConvert finishes it, so a job still running
+is asked for again by a run made meanwhile. Wait for the jobs of one run to
+finish (MediaConvert → Jobs) before starting the next.
+
+The walk stops 30 seconds before the function's 5 minutes run out. When it
+does, the result ends with `"next": "content/…"`, the last file it reached.
+Carry on from there with another Test event:
+
+```json
+{ "all": true, "startAfter": "content/…" }
+```
+
+Repeat with each new `next` until a result holds none.
 
 ## Size of the copy
 
@@ -140,7 +164,17 @@ To remake copies made before this cap, use a Test event named `redo`:
 ```
 
 It asks again only for copies over the cap (`redo job …`); every other line
-reads `copy exists`. The new copy replaces the old one under the same name;
+reads `copy exists`. It stops and carries on as `{ "all": true }` does
+(`startAfter`, with `"redo": true` kept).
+
+The size and rate are read from the file itself (MOV, MP4, M4V). Where they
+cannot be (MKV, WebM, MPEG, or a phone file whose index is over 64 MB), the
+function asks MediaConvert's probe (`mediaconvert:Probe`), which also says
+whether the video has sound. Where the probe cannot answer either, the copy
+is fitted inside 1920 × 1920 and never enlarged: a 4K clip either way up
+comes down to 1920 on its long side, but its frame rate is kept as it is,
+and sound is asked for; a video with no sound track then fails its job,
+named in MediaConvert → Jobs, and keeps playing as its original. The new copy replaces the old one under the same name;
 the original is never touched.
 
 CloudFront keeps serving the old copy for up to a day. To serve the new one

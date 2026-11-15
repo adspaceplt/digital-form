@@ -111,6 +111,13 @@ export function jobFor(bucket, key, hasAudio, video) {
     }
   };
   if (size) { output.VideoDescription.Width = size.w; output.VideoDescription.Height = size.h; }
+  /* A size neither the file nor MediaConvert's probe could tell (an mkv or
+     webm, an index past 64 MB, a probe that failed): the copy is fitted
+     inside a square of the cap's long side, never enlarged and never
+     padded, so a 4K clip either way up comes down to 1920 on its long side. */
+  if (!video) {
+    Object.assign(output.VideoDescription, { Width: CAP.long, Height: CAP.long, ScalingBehavior: 'FIT_NO_UPSCALE' });
+  }
   if (fast) {
     Object.assign(output.VideoDescription.CodecSettings.H264Settings, {
       FramerateControl: 'SPECIFIED', FramerateNumerator: CAP.fps, FramerateDenominator: 1,
@@ -140,5 +147,65 @@ export function jobFor(bucket, key, hasAudio, video) {
     },
     UserMetadata: { source: key }
   };
+}
+
+/* What MediaConvert's probe says of a file (the Probe API, 2026-02): the
+   picture as it is shown (turned by its rotation), its rate, and whether it
+   has sound. Read in either case, as the SDK and the JSON name them; null
+   where the probe found no video track. */
+const g = (o, k) => (o ? (o[k] !== undefined ? o[k] : o[k.charAt(0).toLowerCase() + k.slice(1)]) : undefined);
+export function fromProbe(res) {
+  const r = (g(res, 'ProbeResults') || [])[0];
+  const tracks = g(g(r, 'Container'), 'Tracks') || [];
+  const kind = (t) => String(g(t, 'TrackType') || '').toLowerCase();
+  const vt = tracks.find((t) => kind(t) === 'video');
+  if (!vt) return null;
+  const vp = g(vt, 'VideoProperties') || {};
+  let w = Number(g(vp, 'Width')) || 0, h = Number(g(vp, 'Height')) || 0;
+  if ([90, 270].includes(Math.abs(Number(g(vp, 'Rotation')) || 0) % 360)) { const t = w; w = h; h = t; }
+  const fr = g(vp, 'FrameRate') || {};
+  const num = Number(g(fr, 'Numerator')) || 0, den = Number(g(fr, 'Denominator')) || 1;
+  const fps = num ? Math.round((num / den) * 100) / 100 : 0;
+  return { video: w && h ? { w, h, fps } : null, audio: tracks.some((t) => kind(t) === 'audio') };
+}
+/* Whether the copy is asked for sound: the probe's word where it answered,
+   else the codecs read from the file, else (nothing read) yes. */
+export const hasAudioOf = (info) => (typeof info.audio === 'boolean' ? info.audio :
+  info.codecs.some((c) => /^(mp4a|ac-3|ec-3|lpcm|sowt|twos|alac)$/.test(c)) || !info.codecs.length);
+
+/* One file's outcome, never the run's: a damaged upload, or one deleted after
+   its trigger, is recorded as an error and the walk goes on. */
+export async function attempt(fn) {
+  try { return await fn(); }
+  catch (e) { return 'error: ' + ((e && (e.message || e.name)) || String(e)); }
+}
+
+/* The catch-up walk over content/ ({ "all": true }). It stops STOP_MS before
+   Lambda's time runs out and answers the last key it reached as `next`, which
+   the next run takes as `startAfter`. An original uploaded in the last
+   RECENT_MS is left to its own upload trigger, so no job is asked twice. */
+export const RECENT_MS = 30 * 60 * 1000;
+export const STOP_MS = 30 * 1000;
+export async function walk({ list, convert, startAfter, now, remaining }) {
+  const done = []; let token; let last = startAfter || null;
+  try {
+    do {
+      const page = await list(token ? undefined : (startAfter || undefined), token);
+      for (const o of page.Contents || []) {
+        if (remaining() < STOP_MS) return { done, next: last };
+        if (isCandidate(o.Key)) {
+          const at = o.LastModified ? new Date(o.LastModified).getTime() : 0;
+          done.push([o.Key, at && now - at < RECENT_MS ? 'recent: left to its upload trigger'
+            : await attempt(() => convert(o.Key, o.Size))]);
+        }
+        last = o.Key;
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+  } catch (e) {
+    done.push(['(list)', 'error: ' + ((e && e.message) || String(e))]);
+    return { done, next: last };
+  }
+  return { done, next: null };
 }
 
