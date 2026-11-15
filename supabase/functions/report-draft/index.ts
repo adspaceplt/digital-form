@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
   if (may.error || may.data !== true) return json({ error: 'denied' }, 200, origin);
 
   const rep = await db.from('sm_reports')
-    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id, intro, insights, brand_name')
+    .select('id, kind, status, period_start, period_end, first_month, ads_totals, client_id, intro, insights, brand_name, brand_id')
     .eq('id', id).maybeSingle();
   if (rep.error || !rep.data) return json({ error: 'not-found' }, 200, origin);
   const r = rep.data as Record<string, unknown>;
@@ -567,6 +567,17 @@ Deno.serve(async (req) => {
   const forName = bname || cname;
   const mask = (s: string) => [bname, cname].filter((n) => n.length > 1).reduce((t, n) =>
     t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '{brand}'), s);
+  /* No contact detail leaves (audit 2026-11-15): an email address or a
+     phone number the team typed into an account's words, an audience or a
+     caption is masked, as brand-analysis masks it. */
+  const scrub = (s: string) => s
+    .replace(/[\w.+-]+@[\w-]+(\.[\w-]+)+/g, '[email]')
+    .replace(/\+?\(?\d[\d\s().-]{6,}\d/g, (m) => (m.replace(/\D/g, '').length >= 9 ? '[number]' : m));
+  const hide = (s: string) => scrub(mask(s));
+  /* A white-label brand's report (audit 2026-11-15) reads only that brand's
+     earlier commentary, and the client's own reads only the client's own:
+     another brand's words would carry its name unmasked. */
+  const brandId = r.brand_id ? String(r.brand_id) : null;
 
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
   const targets: { platforms: string[]; posts: string[] } = { platforms: [], posts: [] };
@@ -575,7 +586,10 @@ Deno.serve(async (req) => {
   /* The client's latest confirmed brand analysis (2026-10-10): its
      positioning, audiences and pillars, masked as the rest; none where no
      analysis is confirmed or the database is older. */
-  const ba = await db.rpc('brand_analysis_brief', { p_client: r.client_id as string });
+  /* A white-label brand's report takes none (audit 2026-11-15): the
+     analysis is the partner's own brand, never the brand the report covers. */
+  const ba = brandId ? { error: null, data: null }
+    : await db.rpc('brand_analysis_brief', { p_client: r.client_id as string });
   // deno-lint-ignore no-explicit-any
   const maskDeep = (v: any): any => typeof v === 'string' ? mask(v).slice(0, 800)
     : Array.isArray(v) ? v.slice(0, 6).map(maskDeep)
@@ -585,9 +599,10 @@ Deno.serve(async (req) => {
 
   /* Last period's commentary, so this month follows up on what was said. */
   const keys = FIELDS[kind].map(([k]) => k);
-  const prev = check ? { error: null, data: null } : await db.from('sm_reports')
+  const prevQ = db.from('sm_reports')
     .select('period_start, period_end, intro, insights')
-    .eq('client_id', r.client_id as string).eq('kind', r.kind as string)
+    .eq('client_id', r.client_id as string).eq('kind', r.kind as string);
+  const prev = check ? { error: null, data: null } : await (brandId ? prevQ.eq('brand_id', brandId) : prevQ.is('brand_id', null))
     .neq('status', 'draft').lt('period_end', r.period_start as string)
     .order('period_end', { ascending: false }).limit(1).maybeSingle();
   if (!prev.error && prev.data) {
@@ -686,7 +701,8 @@ Deno.serve(async (req) => {
     };
     data.ads = adRows.map((a) => ({
       ...rankAd(a), ...roasRank(a), ...(next ? { ref: a.id } : {}),
-      ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label, audience: a.audience,
+      ad: mask(adName(a.name)), platform: a.platform === 'tiktok' ? 'TikTok' : 'Meta', objective: a.objective, result: a.result_label,
+      audience: typeof a.audience === 'string' ? hide(a.audience) : a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),
       ctr_pct: num(a.ctr), cost_per_result: num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? Math.round(num(a.spend)! / num(a.results)! * 100) / 100 : null),
@@ -701,15 +717,19 @@ Deno.serve(async (req) => {
       .eq('report_id', id).order('position', { ascending: true });
     if (pf.error || ps.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ps.data || []).length) return json({ error: 'no-posts' }, 200, origin);
-    /* An account's figures without its handle or notes. */
+    /* An account's figures without its handle or notes. Its words (summary,
+       worked, improve, actions, the metric notes the PDF prints, its group
+       and platform name) are masked as a post's are; growth_reason, the
+       team's own reason for overriding the follower growth, never leaves
+       (audit 2026-11-15). */
     data.accounts = (pf.data as Record<string, unknown>[]).map((p) => {
       const out: Record<string, unknown> = {};
       Object.keys(p).forEach((k) => {
-        if (/^(id|report_id|handle|account_name|name|url|notes?|reason|created_at|position)$/.test(k)) return;
-        if (p[k] !== null && p[k] !== '') out[k] = p[k];
+        if (/^(id|report_id|handle|account_name|name|url|notes?|reason|growth_reason|created_at|position)$/.test(k)) return;
+        if (p[k] !== null && p[k] !== '') out[k] = typeof p[k] === 'string' ? hide(p[k] as string) : p[k];
       });
       out.ref = p.id;
-      out.platform = p.group_label || p.platform;
+      out.platform = p.group_label ? hide(String(p.group_label)) : p.platform;
       return out;
     });
     /* Each post's place on its own platform by views and by engagements,
@@ -729,7 +749,7 @@ Deno.serve(async (req) => {
       };
       Object.keys(p).forEach((k) => {
         if (k === 'id' || p[k] === null || p[k] === '') return;
-        const v = typeof p[k] === 'string' ? mask(p[k] as string) : p[k];
+        const v = typeof p[k] === 'string' ? hide(p[k] as string) : p[k];
         out[k === 'platform_id' ? 'account_ref' : k] = k === 'caption' ? String(v).slice(0, 800) : v;
       });
       out.ref = p.id;

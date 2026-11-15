@@ -222,6 +222,14 @@ Deno.serve(async (req) => {
         const st = Number((e as { status?: number })?.status || 0);
         console.error('script-pictures: no answer', st, String((e as Error)?.message || e).slice(0, 300));
         refused = st === 401 || st === 403 ? 'ai-key' : st === 404 ? 'ai-model' : st === 429 || st === 529 ? 'ai-busy' : refused;
+        /* Our own timeout cut off a request the model was already running
+           (audit 2026-11-15): it is counted as incomplete, never failed, so
+           a long run cannot be pressed again without limit. One token marks
+           it (ai_draft_tokens turns a row with input incomplete; a row
+           already holding its tokens keeps them); a refusal (a status) or a
+           request that never left stays failed. */
+        const nm = String((e as Error)?.name || ''), m = String((e as Error)?.message || '');
+        if (!st && (nm === 'APIConnectionTimeoutError' || /timed? ?out/i.test(m))) await kept(press, 1, 0);
         await done(press, false);
       }
     };

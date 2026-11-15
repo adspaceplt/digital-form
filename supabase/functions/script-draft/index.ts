@@ -506,11 +506,17 @@ Deno.serve(async (req) => {
     } catch (e) {
       /* The API's own type and message go to the function's log (never the
          key), so a refusal can be named. */
-      const err = e as { status?: number; message?: string; error?: { error?: { type?: string; message?: string } } };
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { type?: string; message?: string } } };
       const status = err.status;
       const type = err.error?.error?.type || '';
       const msg = err.error?.error?.message || err.message || '';
       console.error('script-draft: Claude API refused', status, type, msg);
+      /* Our own timeout cut off a request the model was already running
+         (audit 2026-11-15): it is counted as incomplete, never failed, so a
+         long run cannot be pressed again without limit. One token marks it
+         (ai_draft_done reads a row with input as incomplete); a refusal (a
+         status) or a request that never left stays failed. */
+      if (!status && (err.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(msg)) && !use.input) use.input = 1;
       await keepTokens(db, pressId, use);
       await done(false);
       const code = status === 401 || status === 403 ? 'ai-key'
