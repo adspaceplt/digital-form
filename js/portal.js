@@ -236,7 +236,7 @@
   }
   function mkt() { return MON.curOf(feed && feed.client); }
   /* A number as every page writes it (js/namecard.js: +60 19-888 7777). */
-  function phoneWord(raw) { var C = window.ADspaceCard; return (C && C.phone && C.phone(raw)) || String(raw || ''); }
+  function phoneWord(raw) { return API.phoneWord(raw) || String(raw || ''); }
   function glyph(n) { return window.ADspaceIcons ? window.ADspaceIcons.svg(n) : ''; }
   function money2(n) { return MON.money2(n, mkt()); }
   function chip(word, tone) { return '<span class="chip-state' + (tone ? ' ' + tone : '') + '">' + esc(word) + '</span>'; }
@@ -524,7 +524,13 @@
   // ---- Load ------------------------------------------------------------------
   var feed = null;
   var wanted = null;   // the client chosen from the select, when there are several
+  var loads = 0;       // each load numbered: an answer for an earlier one is dropped
+  /* A section's answer for a company no longer on screen (a switch while it
+     was on its way) is dropped, never drawn under another company (audit
+     2026-11-15). */
+  function stale(c) { return !feed || !feed.client || !c || feed.client.id !== c.id; }
   function load() {
+    var mine = ++loads;
     /* SST and the term percentages are settings (js/money.js): read beside the portal. */
     var rates = MON && MON.load ? MON.load() : Promise.resolve();
     /* The media pass (js/media.js, 2026-10-08): a logo or a report file kept
@@ -533,6 +539,7 @@
     var media = window.ADspaceMedia && window.ADspaceMedia.pass ? window.ADspaceMedia.pass({}) : Promise.resolve();
     db.rpc('get_portal', { p_client: wanted })
       .then(function (r) { return Promise.all([rates, media]).then(function () { return r; }, function () { return r; }); }).then(function (r) {
+      if (mine !== loads) return;
       if (r.error) { showState('fail', r.error.message); return; }
       var d = r.data || {};
       if (d.error === 'no-access' || d.error === 'not-signed-in') { showState('none'); return; }
@@ -577,6 +584,7 @@
     var wrap = $('repWrap'), box = $('repBox');
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_reports', { p_client: c.id }).then(function (r) {
+      if (stale(c)) return;
       if (refused(r)) { tabShown('reports', false); failCard('ovRep', 'ovRepBox', 'ovRepGo'); return; }
       var list = (!r.error && r.data && r.data.reports) || [];
       tabShown('reports', list.length > 0);
@@ -640,6 +648,7 @@
     }
     if (!c.id) return;
     db.rpc('portal_work', { p_client: c.id }).then(function (r) {
+      if (stale(c)) return;
       var d = (!r.error && r.data && !r.data.error) ? r.data : {};
       var rv = d.review, sets = (rv && rv.sets) || [];
       var waiting = sets.reduce(function (n, x) { return n + (x.waiting || 0); }, 0);
@@ -773,6 +782,7 @@
     var wrap = $('meetWrap'), box = $('meetBox');
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_meetings', { p_client: c.id }).then(function (r) {
+      if (stale(c)) return;
       if (refused(r)) { tabShown('meetings', false); failCard('ovMeet', 'ovMeetBox', 'ovMeetGo'); return; }
       var list = (!r.error && r.data && r.data.meetings) || [];
       tabShown('meetings', list.length > 0);
@@ -1222,7 +1232,7 @@
     paintRequest();
     /* An unsent note is kept when the dialog is left and comes back when it
        opens again; sending it is what clears it (audit F8, 2026-10-10). */
-    $('reqNote').value = reqDraft;
+    $('reqNote').value = reqDraft[feed.client.id] || '';
     $('reqGo').textContent = w.send;
     $('reqCancel').textContent = w.close;
     $('reqClose').setAttribute('aria-label', w.closeMark);
@@ -1231,10 +1241,10 @@
        that opened it, and a press outside never closes it over typed text. */
     var opener = document.activeElement;
     if (window.ADspaceSheet) {
-      window.ADspaceSheet.show($('reqSheet'), { opener: opener, onClose: function () { reqDraft = $('reqNote').value; req = null; } });
+      window.ADspaceSheet.show($('reqSheet'), { opener: opener, onClose: function () { if (feed && feed.client) reqDraft[feed.client.id] = $('reqNote').value; req = null; } });
     } else { $('reqSheet').hidden = false; }
   }
-  var reqDraft = '';
+  var reqDraft = {};   // an unsent note a company, never carried to another (audit 2026-11-15)
   var reqKey = null, reqFor = null;
   function keyOf() {
     var a = new Uint8Array(16);
@@ -1292,7 +1302,7 @@
         var d = r.data || {};
         if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : d.error === 'too-long' ? t().tooLong : t().notSent, 'err'); return; }
         reqKey = null; reqFor = null;
-        $('reqNote').value = ''; reqDraft = '';
+        $('reqNote').value = ''; delete reqDraft[feed.client.id];
         shutRequest();
         showPane('services', true);
         msg('rqMsg', t().sent, 'ok');

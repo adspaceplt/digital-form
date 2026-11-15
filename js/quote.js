@@ -1163,7 +1163,11 @@
     if (!checkDetails()) return;
     var btn = root().querySelector('[data-a="next"]');
     btn.disabled = true; btn.textContent = t().making;
-    if (!S.idem) { S.idem = key8(); keep(); }
+    /* One key a selection and email: a press again after a lost reply is
+       the same request, but a changed selection is a new one, never answered
+       with the quotation made for the old (audit 2026-11-15). */
+    var fp = JSON.stringify(selection()) + '|' + String(S.contact.email || '').toLowerCase();
+    if (!S.idem || S.idemFor !== fp) { S.idem = key8(); S.idemFor = fp; keep(); }
     var body = { sel: selection(), idem: S.idem,
       contact: { salutation: S.contact.salutation || '', name: S.contact.name, email: S.contact.email, whatsapp: waDigits(S.contact.whatsapp), brand: S.contact.brand,
         industry: S.contact.industry || null, commence: S.contact.commence, consent: true, lang: lang } };

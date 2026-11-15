@@ -1372,18 +1372,31 @@
   }
 
   // ---- Save (fire and forget, the client never waits on it) ---------------
-  var saveTimer = null;
+  /* One save at a time, the latest picks sent last: two saves on their
+     way at once could land in either order and keep the older picks. A
+     refusal is read: a selection closed or full meanwhile is read again,
+     so the page never shows picks that were not kept (audit 2026-11-15). */
+  var saveTimer = null, saving = false, saveAgain = false;
   function save() {
     clearTimeout(saveTimer);
-    saveTimer = setTimeout(function () {
-      var sel = [], bak = [];
-      Object.keys(chosen).forEach(function (id) {
-        (chosen[id] === 'selected' ? sel : bak).push(id);
-      });
-      db.rpc('save_selection', {
-        p_token: TOKEN, p_selected: sel, p_backup: bak, p_passcode: passcode
-      }).then(function () {}, function () {});
-    }, 500);
+    saveTimer = setTimeout(sendSave, 500);
+  }
+  function sendSave() {
+    if (saving) { saveAgain = true; return; }
+    saving = true;
+    var sel = [], bak = [];
+    Object.keys(chosen).forEach(function (id) {
+      (chosen[id] === 'selected' ? sel : bak).push(id);
+    });
+    db.rpc('save_selection', {
+      p_token: TOKEN, p_selected: sel, p_backup: bak, p_passcode: passcode
+    }).then(function (r) {
+      var e = r && r.data && r.data.error;
+      if (e === 'closed' || e === 'locked' || e === 'over-slots') load();
+    }).catch(function () {}).then(function () {
+      saving = false;
+      if (saveAgain) { saveAgain = false; sendSave(); }
+    });
   }
 
   // ---- Confirm ------------------------------------------------------------
