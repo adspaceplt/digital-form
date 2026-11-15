@@ -212,7 +212,9 @@
           if (!d.error) keepToken(args.p_token);
         }
         back(d);
-      }, function (e) { back({ error: 'db', message: String((e && e.message) || e) }); });
+      /* .then(ok).catch(bad): a throw inside the answer's own handling is
+         caught too; `back` answers once (audit 2026-11-15). */
+      }).catch(function (e) { back({ error: 'db', message: String((e && e.message) || e) }); });
     } catch (e) { back({ error: 'db', message: String((e && e.message) || e) }); }
   }
 

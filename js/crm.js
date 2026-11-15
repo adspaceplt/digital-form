@@ -1163,9 +1163,21 @@
 
     if (state.editing) {
       var id = state.editing.id;
-      db.from('clients').update(patch).eq('id', id).select('id').then(function (r) {
+      /* Only what moved goes, over the row as read, so a newer Reassign or
+         rename by a colleague is never put back (audit 2026-11-15). */
+      patch = onlyChanged(patch, state.editing);
+      if (!Object.keys(patch).length) { shutForm(); return; }
+      db.from('clients').update(patch).eq('id', id).eq('updated_at', state.editing.updated_at).select('id').then(function (r) {
         if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
-        if (!(r.data || []).length) { msg('crmMsg', 'Not saved. The database refused the request.', 'err'); return; }
+        if (!(r.data || []).length) {
+          staleClient(id, function (found) {
+            var fresh = state.clients.filter(function (x) { return x.id === id; })[0];
+            if (!found || !fresh) { msg('crmMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            openForm(fresh);
+            msg('crmMsg', STALE_LINE, 'err');
+          });
+          return;
+        }
         var moved = changed(state.editing, patch, [
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
           ['owner', 'Person in charge'], ['sales_by', 'Sales by', salesByName], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
@@ -2290,6 +2302,37 @@
       }
       msg('crmSinceMsg', 'Not saved. This record was changed by someone else. The latest version is now shown.', 'err');
     }).catch(function () { msg('crmSinceMsg', 'Not saved. Please try again.', 'err'); });
+  }
+  /* A sheet's save written only over the row as read (`clients_touch`
+     stamps updated_at) found it moved: the client is read again whole and
+     the record drawn from it, then `then` reopens the sheet on the latest
+     version (audit 2026-11-15: a Billing or Edit save sent every field and
+     put back a colleague's newer finance email or Reassign). */
+  var STALE_LINE = 'Not saved. This record was changed by someone else. The latest version is now shown.';
+  function staleClient(id, then) {
+    db.from('clients').select(API.CLIENT_COLS).eq('id', id).maybeSingle().then(function (r) {
+      return r.data ? API.withBilling([r.data]).then(function () { return r; }) : r;
+    }).then(function (r) {
+      var mine = state.clients.filter(function (x) { return x.id === id; })[0];
+      if (r.data) {
+        if (mine) Object.assign(mine, r.data);
+        if (state.client && state.client.id === id) {
+          if (state.client !== mine) Object.assign(state.client, r.data);
+          openClient(state.client);
+        }
+      }
+      then(Boolean(r.data));
+    }).catch(function () { then(false); });
+  }
+  /* Only the fields that moved from the row the sheet opened on are sent,
+     so a save never writes back a value another colleague changed since
+     (audit 2026-11-15). Empty and null read alike. */
+  function onlyChanged(patch, was) {
+    var out = {};
+    Object.keys(patch).forEach(function (k) {
+      if (String(patch[k] == null ? '' : patch[k]) !== String(was[k] == null ? '' : was[k])) out[k] = patch[k];
+    });
+    return out;
   }
   function saveDates(c, list, created, what, extra, then) {
     var days = list.map(function (x) { return dayOf(x.at); });
@@ -4598,13 +4641,32 @@
       return;
     }
     $('crmBillSave').disabled = true;
-    Promise.resolve(toBukku ? bkWrite('client', state.client.id, patch, was) : db.from('clients').update(patch).eq('id', state.client.id).select('id')).catch(function (x) {
+    /* The portal's own write sends only what moved and only over the row as
+       read; Bukku's path keeps its own (audit 2026-11-15). */
+    if (!toBukku) patch = onlyChanged(patch, was);
+    var nothing = !toBukku && !Object.keys(patch).length;
+    Promise.resolve(toBukku ? bkWrite('client', state.client.id, patch, was)
+      : nothing ? { data: [{ id: cid, updated_at: state.client.updated_at }] }
+      : db.from('clients').update(patch).eq('id', cid).eq('updated_at', state.client.updated_at).select('id, updated_at')).catch(function (x) {
       return { error: { message: (x && x.message) || String(x) } };
     }).then(function (r) {
       $('crmBillSave').disabled = false;
       /* A BRN another entity holds (`clients_entity_sync`, 2026-11-04). */
       if (r.error) { msg('crmBillMsg', r.error.hint === 'brn-taken' ? ENT_SAID['brn-taken'] : r.error.message, 'err'); return; }
+      if (!toBukku && !(r.data || []).length) {
+        /* Moved since it was read (or refused, which reads alike): the
+           sheet opens again on the latest version, the move still asked. */
+        var keepActive = state.toActive, keepLetter = state.toLetter;
+        staleClient(cid, function (found) {
+          if (!found || !state.client || state.client.id !== cid) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          openBilling();
+          state.toActive = keepActive; state.toLetter = keepLetter;
+          msg('crmBillMsg', STALE_LINE, 'err');
+        });
+        return;
+      }
       if (!(r.data || []).length) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      if (!toBukku && r.data[0].updated_at) state.client.updated_at = r.data[0].updated_at;
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
       var still = billingMissing(state.client);
       /* Billing is its own part, so the record names what changed and never
@@ -4748,9 +4810,16 @@
       if (!r.error && (r.data || []).length) {
         c.bill_contact_id = id;
         log('client.billing', c.name, 'Billing contact · from the details form');
+      } else {
+        /* A refused or failed write was silent, the contact read as the
+           billing contact when it was not (audit 2026-11-15). */
+        msg('crmBillNote', 'Contact saved. The billing contact was not changed. Choose it in Edit on Billing.', 'warn');
       }
       loadContacts();
-    }).catch(function () { loadContacts(); });
+    }).catch(function (x) {
+      msg('crmBillNote', 'Contact saved. The billing contact was not changed. Choose it in Edit on Billing.', 'warn');
+      loadContacts();
+    });
   }
   /* New email from a client's record: Messages at Work and the Contacts
      part read, as `email_new_begin` asks. */
@@ -5511,12 +5580,14 @@
         var moved = !gone && (new Date(row.meet_at).getTime() !== before || row.meet_minutes !== was.meet_minutes);
         if (gone || moved) meetAsk({ id: was.id }, gone ? 'delete' : 'create', function () { loadTouches(); });
       }
-      log(editingTouch ? 'client.touch_edited' : 'client.touch', state.client.name,
+      log(was ? 'client.touch_edited' : 'client.touch', state.client.name,
           KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
       shutTouch();
       loadTouches();
-      // The first call or visit is what makes a lead contacted.
-      if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
+      // The first call or visit is what makes a lead contacted. Read from
+      // `was`, since shutTouch() above has already let go of editingTouch:
+      // an old entry edited never moves the lead (audit 2026-11-15).
+      if (!was && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
           if (q.error || !(q.data || []).length) { msg('crmWorkMsg', 'Logged. The stage was not moved to Contacted: the database refused the request.', 'warn'); return; }
           var spent = daysSince(state.client.stage_since) === 0 ? 'the same day' : 'after ' + (ageWord(state.client) || 'no time');
@@ -6270,7 +6341,12 @@
           loadServices();
         };
         if (v === was) { done(); return; }
-        return db.from('clients').update({ deal_value: v }).eq('id', cl.id).then(done);
+        /* A refused update answers 204 with no row: the figure is kept as
+           read and only the lines are read again (audit 2026-11-15). */
+        return db.from('clients').update({ deal_value: v }).eq('id', cl.id).select('id').then(function (q) {
+          if (!q.error && (q.data || []).length) { done(); return; }
+          if (state.client === cl) loadServices();
+        });
       }).catch(function () { if (state.client === cl) loadServices(); });
   }
 

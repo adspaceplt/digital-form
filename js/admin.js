@@ -2569,13 +2569,6 @@
       return out;
     });
   }
-  function readChangesFor(batchIds) {
-    return setCounts(batchIds).then(function (by) {
-      var out = {};
-      Object.keys(by).forEach(function (id) { if (by[id].n_changes) out[id] = by[id].n_changes; });
-      return out;
-    });
-  }
   function changesChip(n) {
     return n ? '<span class="chip-state is-danger cr-changes">' + n + (n === 1 ? ' change requested' : ' changes requested') + '</span>' : '';
   }
