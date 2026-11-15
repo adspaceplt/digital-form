@@ -1462,6 +1462,13 @@
           if (String(r[f]) !== String(v)) return;
           if (table === 'campaign_options' && pending && pending.state === 'reviewing' &&
               r.state !== 'reviewing' && !qcOk(r)) { blocked = 'qc-required'; }
+
+          if (table === 'campaign_options' && pending && pending.state === 'scheduled' &&
+              ['submitted', 'reviewing', 'changes'].indexOf(r.state) > -1) {
+            var lastRv = DB.option_reviews.filter(function (x) { return x.option_id === r.id && !x.undone_at; })
+              .sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); })[0];
+            if (!lastRv || lastRv.decision !== 'approved') blocked = 'needs-approval';
+          }
           if (table === 'sm_reports' && pending && ['status', 'version_no', 'submitted_by', 'confirmed_by', 'reviewer_id'].some(function (k) { return k in pending; })) blocked = 'sm-status-by-function';
           else if (table === 'sm_reports' && r.status !== 'draft') blocked = 'sm-not-draft';
           if ((table === 'sm_report_posts' || table === 'sm_report_platforms' || table === 'sm_report_ads') && !smDraft(r.report_id)) blocked = 'sm-not-draft';
@@ -6709,11 +6716,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var hit = byTask[tid].filter(function (e) {
           if (e.event_type !== 'stage_changed') return false;
           var w = opsStage(t.workflow_id, e.to_value.stage_key);
-          if (!w || w.stage_group !== 'client_review') return false;
-          var at = new Date(e.created_at).getTime();
-          return at >= from && at < to;
+          return !!w && w.stage_group === 'client_review';
         }).sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); })[0];
-        if (hit) reached.push({ id: t.id, at: hit.created_at, due: t.current_final_due_at, by: prioBy(t),
+
+        var hitAt = hit ? new Date(hit.created_at).getTime() : null;
+        if (hit && hitAt >= from && hitAt < to) reached.push({ id: t.id, at: hit.created_at, due: t.current_final_due_at, by: prioBy(t),
           replanned: t.original_final_due_at !== t.current_final_due_at });
       });
 
@@ -11530,8 +11537,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         DB.quote_sign_codes = DB.quote_sign_codes || [];
         var hour = qtNow.getTime() - 3600e3;
         if (DB.quote_sign_codes.filter(function (r) { return r.quotation_id === sco.q.id && new Date(r.created_at).getTime() > hour; }).length >= 5) return qtOk({ error: 'too-many' });
+
+        var scIp = window.__callerIp || null;
+        if (scIp && DB.quote_sign_codes.filter(function (r) { return r.caller_ip === scIp && new Date(r.created_at).getTime() > hour; }).length >= 10) return qtOk({ error: 'too-many' });
         var code = String(100000 + Math.floor(Math.random() * 900000));
-        DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null,
+        DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null, caller_ip: scIp,
           created_at: qtNow.toISOString(), expires_at: new Date(qtNow.getTime() + 15 * 60e3).toISOString(),
           payload: { company: c1.company, contact: c2.contact, signer: c3.signer, signature: c3.signature } });
         window.__signCode = code;
@@ -12193,7 +12203,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!opsGranted('team.settings', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
       if (name === 'demo_state') return Promise.resolve({ data: dmState(), error: null });
       var dmNew = String(args.p_pin || '').trim();
-      if (dmNew && !/^[0-9]{4,8}$/.test(dmNew)) return Promise.resolve({ data: { error: 'bad-pin' }, error: null });
+      if (dmNew && !/^[0-9]{6,8}$/.test(dmNew)) return Promise.resolve({ data: { error: 'bad-pin' }, error: null });
       if (args.p_on && !dmNew && !DB.__demoPin) return Promise.resolve({ data: { error: 'no-pin' }, error: null });
       var dmWas = !!(dmF() && dmF().on_now), dmBits = [];
       if (dmNew) { DB.__demoPin = dmNew; dmBits.push('PIN changed'); }

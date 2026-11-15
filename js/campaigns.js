@@ -5780,12 +5780,14 @@
     'not-scheduled': 'There is no approval to take back.',
     'note-required': 'Enter the changes.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
-    'qc-required': 'Release to client needs the quality check completed.'
+    'qc-required': 'Release to client needs the quality check completed.',
+    'needs-approval': 'Scheduled needs the client\u2019s approval. Use Confirm internally where the client approved by message.'
   };
   function reviewSaid(code) {
     var c = String(code || '');
     if (SAID_REVIEW[c]) return SAID_REVIEW[c];
     if (/qc-required/.test(c)) return SAID_REVIEW['qc-required'];
+    if (/needs-approval/.test(c)) return SAID_REVIEW['needs-approval'];
     if (/Could not find the function|PGRST202|schema cache/i.test(c)) return 'This feature is not available yet. Please contact an admin.';
     return c;
   }
@@ -6140,7 +6142,7 @@
     // Leaving `changes` ends that round, so whose it was goes with it.
     if (o.state === 'changes') patch.changes_by = null;
     db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
-      if (r.error) { cardSay(o, r.error.message, 'err'); return; }
+      if (r.error) { cardSay(o, reviewSaid(r.error.message), 'err'); return; }
       if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
       if (to !== 'posted') { loadOptions(); return; }

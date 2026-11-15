@@ -628,9 +628,9 @@
   }
 
   /* ---- Demo access (2026-10-27) ----------------------------------------
-     One sheet: On or Off, and a new PIN (4 to 8 digits; empty keeps the
+     One sheet: On or Off, and a new PIN (6 to 8 digits, 2026-11-15; one of 4 or 5 set before still opens; empty keeps the
      one held). The PIN is never read back: the database keeps its hash. */
-  var DEMO_SAID = { denied: window.ADspaceWords.line.noSettings, 'bad-pin': 'Enter a PIN of 4 to 8 digits.',
+  var DEMO_SAID = { denied: window.ADspaceWords.line.noSettings, 'bad-pin': 'Enter a PIN of 6 to 8 digits.',
     'no-pin': 'Set a PIN before turning demo access on.' };
   function openDemo() {
     db.rpc('demo_state').then(function (r) {
@@ -639,12 +639,12 @@
       window.ADspaceConfirm.ask({
         title: 'Demo access', go: 'Save', wait: true,
         fields: [{ name: 'on', label: 'Demo access', seg: true, value: d.on ? 'on' : 'off', choices: [['on', 'On'], ['off', 'Off']] },
-          { name: 'pin', label: d.pin_set ? 'New PIN' : 'PIN', type: 'tel', required: !d.pin_set, placeholder: '4 to 8 digits', value: '',
+          { name: 'pin', label: d.pin_set ? 'New PIN' : 'PIN', type: 'tel', required: !d.pin_set, placeholder: '6 to 8 digits', value: '',
             note: d.pin_set ? 'Leave blank to keep the current PIN. Enter it in the sign-in email field to open the console with sample data.'
               : 'Enter it in the sign-in email field to open the console with sample data.' }],
         check: function (v) {
           var pin = String(v.pin || '').trim();
-          if (pin && !/^[0-9]{4,8}$/.test(pin)) return DEMO_SAID['bad-pin'];
+          if (pin && !/^[0-9]{6,8}$/.test(pin)) return DEMO_SAID['bad-pin'];
           if (v.on === 'on' && !pin && !d.pin_set) return DEMO_SAID['no-pin'];
           return '';
         }
