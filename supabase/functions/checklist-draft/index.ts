@@ -276,10 +276,16 @@ Deno.serve(async (req) => {
       // deno-lint-ignore no-explicit-any
       for (const b of res.content as any[]) if (b.type === 'tool_use' && b.name === 'submit_checklist') answer = b.input;
     } catch (e) {
-      const err = e as { status?: number; message?: string; error?: { error?: { message?: string } } };
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { message?: string } } };
       const msg = err.error?.error?.message || err.message || '';
       console.error('checklist-draft: Claude API refused', err.status, msg);
-      await db.rpc('ai_draft_tokens', { p_id: pressId, p_in: input, p_out: output, p_model: usedModel }).then(() => null, () => null);
+      /* Our own timeout cut off a request the model was already running
+         (audit 2026-11-15): it is counted as incomplete, never failed, so a
+         long run cannot be pressed again without limit. One token marks it
+         (ai_draft_tokens turns a failed row with input into incomplete);
+         a refusal (a status) or a request that never left stays failed. */
+      const timedOut = !err.status && (err.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(msg));
+      await db.rpc('ai_draft_tokens', { p_id: pressId, p_in: timedOut ? Math.max(1, input) : input, p_out: output, p_model: usedModel }).then(() => null, () => null);
       await done(false);
       return { error: err.status === 401 || err.status === 403 ? 'ai-key' : err.status === 429 || err.status === 529 ? 'ai-busy'
         : /credit balance/i.test(msg) ? 'ai-credit' : err.status === 404 ? 'ai-model' : /timed? ?out/i.test(msg) ? 'ai-slow' : 'ai-failed' };

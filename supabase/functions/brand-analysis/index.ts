@@ -359,8 +359,10 @@ Deno.serve(async (req) => {
     const services = svc.error ? [] : (svc.data || []).filter((x: Record<string, unknown>) => x.state !== 'enquired')
       .map((x: Record<string, unknown>) => text(x.label, 120) + ' · ' + String(x.state || ''));
 
+    /* The client's own reports alone (audit 2026-11-15): a white-label
+       partner's brands' reports are other brands' work, never this one's. */
     const rp = await db.from('sm_reports').select('id, kind, period_start, period_end, intro, insights, ads_totals')
-      .eq('client_id', clientId).eq('status', 'published').order('period_end', { ascending: false }).limit(6);
+      .eq('client_id', clientId).is('brand_id', null).eq('status', 'published').order('period_end', { ascending: false }).limit(6);
     const reps = rp.error ? [] : (rp.data || []) as Record<string, unknown>[];
     basis.reports = rp.error ? 'not-read' : reps.length;
     const ids = reps.map((r) => String(r.id));

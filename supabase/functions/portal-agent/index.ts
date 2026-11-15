@@ -232,9 +232,17 @@ Deno.serve(async (req) => {
       output = u.output_tokens || 0;
       usedModel = res.model || usedModel;
     } catch (e) {
-      const err = e as { status?: number; message?: string; error?: { error?: { message?: string } } };
+      const err = e as { status?: number; name?: string; message?: string; error?: { error?: { message?: string } } };
       const msg = err.error?.error?.message || err.message || '';
       console.error('portal-agent: Claude API refused', err.status, msg);
+      /* Our own timeout cut off a request the model was already running
+         (audit 2026-11-15): it is counted as incomplete, never failed, so a
+         long run cannot be asked again without limit. One token marks it
+         (ai_draft_done reads a row with input as incomplete); a refusal (a
+         status) or a request that never left stays failed. */
+      if (!err.status && (err.name === 'APIConnectionTimeoutError' || /timed? ?out/i.test(msg))) {
+        await db.rpc('ai_agent_tokens', { p_press: pressId, p_in: 1, p_out: 0, p_model: usedModel }).then(() => null, () => null);
+      }
       await done(false);
       return { error: err.status === 401 || err.status === 403 ? 'ai-key' : err.status === 429 || err.status === 529 ? 'ai-busy'
         : /credit balance/i.test(msg) ? 'ai-credit' : err.status === 404 ? 'ai-model' : /timed? ?out/i.test(msg) ? 'ai-slow' : 'ai-failed' };
