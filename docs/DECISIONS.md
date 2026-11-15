@@ -10504,3 +10504,15 @@ line edits.
 
 ### 2026-11-15 · The audit's open items: reads, senders, on time, double presses, signing codes, the demo PIN, Scheduled
 From the whole-portal audit, approved by the user. Reads: Analytics read every client once for its own figures and again for the Dashboard's charts it borrows (`forAnalytics` now takes the rows read); a campaign's booking results were read one booking at a time (one read for the whole list now); `clientBilling` sent every id in one request past PostgREST's URL limit (paged and chunked). Senders: `wa-send`'s drain could claim a row it had already tried in the same run (it now hands it back through `wa_done`); `portal-agent` took a conversation of any length (over 120,000 characters is `bad-request`). Database (`2026-11-15-audit-fixes-third.sql`): On time read a task's first entry into client review inside the period, so a task back in review after a revision was counted again, late, in that later period (`ops_report_of` now takes the first entry ever and counts it in its own period; `perf_ops_rate` already did); `ops_create_task` and `video_script_new` looked up the press's key before any lock, so two presses at once could make two rows (the key is now locked first); `quote_sign_code` held five codes an hour a quotation but nothing across quotations, so one address could have codes emailed to any number of addresses (ten an hour from one address now, the address relayed by quote-request through `x-adspace-ip` and let go an hour on); a demo PIN of four digits was a small space to guess (a new PIN is 6 to 8 digits; one held keeps opening); a page could write a booking from Client review straight to Scheduled with no approval on the record (trigger `campaign_options_approval_gate`, `needs-approval`, said on the card).
+
+### 2026-11-15 · The month's card reads at a glance
+The user sent the Months view (AC158 · Hanne Nature) and said it was hard
+to read. The month's facts stood loose on the sheet with no card, a 150px
+label column put each value far from its label, the state sat on the
+Manager row as if it described the manager, the meeting read in green (a
+status colour, for a fact), the invoice number wore the outlined contact
+chip, and four tonal buttons stood down the right edge. Now: the month is a
+card; Manager, Planned, Runs and Reports are cells, label over value; the
+state and ⋯ take the top right (a phone's own line first); the meeting is
+changed by its pen; Check again and Show are quiet; the number is in ink.
+`tests/phone.js` now holds the state and ⋯ on one line above the facts.
