@@ -10507,3 +10507,22 @@ From the whole-portal audit, approved by the user. Reads: Analytics read every c
 
 ### 2026-11-15 · Creator bills on the KOC fee item
 The user set how every creator bill the portal makes in Bukku must read, from a bill the team made by hand: the KOC FEE product (SKU P995), the line "KOC Fee - Client: {brand} ({campaign}) ({creator})", the bill's description "{campaign} · {creator}", classification code 037 (Self-billed, monetary payment to agents, dealers or distributors), account 6000-03 (Influencers) and the Job reference as before. Until then the line copied the item, unit and classification of the creator's last bill, so a creator's first bill, or one after a bill made on another item, went out on the wrong item or with no classification. "Dont hardcode anything": the SKU, the classification code and the account's code are Business settings on `bukku_settings` (seeded once, edited in Settings, Money, Bukku through `bukku_bill_set`), and bukku-sync finds the product by its SKU and the account by its code at the press, refusing in words where Bukku holds neither (`no-product`, `no-bukku-account`), before anything is sent. The words of the line and description are fixed in the function, as the user allowed. Found while building: the new client variable in `creator_bill_prep` was first named `k`, which the function's own `creator_bill_claims k` alias shadowed at run time (`record "k" has no field "option_id"`); the Postgres suite caught it before anything was applied.
+
+### 2026-11-15 · Performance and Health hold to their rules
+The phase 2 audit (the user: "Ok fix all 21"), verified live. Q3 2026 was
+confirmed (`perf_rewards`), yet `perf_open`, `perf_save` and `perf_release`
+read nothing of it: a new review could be begun, scored and shared inside a
+paid quarter, though `perf_reopen` and `perf_delete` already refused
+`period-confirmed`. One helper, `perf_period_held`, now answers that refusal
+for all five. `perf_save` took any month (`bad-month` outside June 2026 to
+the month in hand); `perf_printed` skipped the fresh proof on one's own
+record; `perf_month` listed active colleagues alone while the Confirm gates
+count a leaver's shared month; a commission rounded half up where every
+other share rounds down (the user approved rounding it down); Team: Health
+listed the talks of a colleague who had withdrawn agreement (now, as their
+answers, only while the asker's agreement stands). The old overloads
+`health_checkin_save(jsonb, text)` (no stale-half check), `health_consent(boolean)`
+and `health_team()` were still granted, and `perf_deduction`,
+`perf_deduction_at`, `perf_deduction_vic_at` and `perf_grade_of` were called
+by nothing: all dropped. Withdraw now sends the wording shown, so the pages
+ship before the migration.
