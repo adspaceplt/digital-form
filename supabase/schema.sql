@@ -119098,3 +119098,37 @@ drop function if exists public.perf_grade_of(numeric);
 -- END OF PERFORMANCE AND HEALTH HOLD TO THEIR RULES ---------------------------
 
 select public.functions_tidy();
+
+-- DATABASE SAFEGUARDS ---------------------------------------------------------
+
+/* No page signed out reads a table: every public page asks a function. A
+   table keeps nothing for anon, Supabase's default grants included, on every
+   run (views as tables). */
+do $$
+declare t record;
+begin
+  for t in select c.relname from pg_class c
+            where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p', 'v', 'm', 'f')
+  loop
+    execute format('revoke all on public.%I from anon', t.relname);
+  end loop;
+end $$;
+
+/* Two invoker functions of a client's Calls and visits meeting are the
+   team's alone (meet-create asks them as the caller). */
+revoke execute on function public.client_touch_meet_prepare(uuid) from public, anon;
+revoke execute on function public.client_touch_set_meet(uuid, text, text) from public, anon;
+grant execute on function public.client_touch_meet_prepare(uuid) to authenticated;
+grant execute on function public.client_touch_set_meet(uuid, text, text) to authenticated;
+
+/* Indexes on the foreign keys the pages and the deletes read most. */
+create index if not exists campaign_options_creator_idx on public.campaign_options (creator_id);
+create index if not exists ops_notifications_task_idx on public.ops_notifications (task_id) where task_id is not null;
+create index if not exists creator_bills_option_idx on public.creator_bills (option_id) where option_id is not null;
+create index if not exists ops_tasks_campaign_idx on public.ops_tasks (campaign_id) where campaign_id is not null;
+create index if not exists ops_tasks_batch_idx on public.ops_tasks (batch_id) where batch_id is not null;
+create index if not exists ops_tasks_template_idx on public.ops_tasks (template_id) where template_id is not null;
+
+-- END OF DATABASE SAFEGUARDS --------------------------------------------------
+
+select public.functions_tidy();
