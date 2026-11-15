@@ -73,6 +73,11 @@ this repository), and dashboard settings.
 
 ## How long backups are kept
 
-Each file is a few megabytes. Nothing deletes them. An S3 lifecycle rule on
-`private/backups/db/` alone may expire them after a period the owner
-chooses; never on `content/` or the rest of `private/`.
+Each file is a few megabytes. The backup itself deletes nothing. Since
+2026-10-18 the S3 lifecycle rule `backups-expire`, on `private/backups/db/`
+alone, expires each dump 90 days after it is made (PDPA: a dump keeps the
+personal data the database has since cleared); no rule ever reaches
+`content/` or the rest of `private/`. Bucket versioning is on since
+2026-10-19, so a dump overwritten or removed within those 90 days is kept as
+an earlier version. An Object Lock added later must hold a dump for less
+than 90 days, or the rule cannot expire it.

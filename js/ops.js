@@ -7020,10 +7020,15 @@
       /* "Meeting": the card is the content month already, and the longer
          label wrapped to two lines beside two buttons on a phone. */
       '<div class="eng-row eng-meet"><span class="eng-lab">Meeting</span>' +
-        '<span class="eng-val eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
-        (can ? '<span class="eng-meetacts">' +
+        /* The meeting is changed where it is read, its pen beside it, as
+           Runs and Reports are (2026-11-15, the user: the card was hard to
+           read with Change at the far edge). */
+        '<span class="eng-val eng-meetword">' + (can && (e.meeting_at || e.meeting_na)
+          ? '<button class="tdate" type="button" data-a="meet" aria-label="' + esc('Meeting, ' + meetingWord(e) + '. Change') + '">' + esc(meetingWord(e)) + PEN_SVG + '</button>'
+          : esc(meetingWord(e))) + '</span>' +
+        (can && (bookable || !(e.meeting_at || e.meeting_na)) ? '<span class="eng-meetacts">' +
           (bookable ? '<button class="btn btn-sm" data-a="book" type="button">Create Google Meet</button>' : '') +
-          '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' +
+          (e.meeting_at || e.meeting_na ? '' : '<button class="btn btn-sm" data-a="meet" type="button">Set meeting</button>') +
         '</span>' : '') +
       '</div>' +
       (set && e.meeting_link
@@ -7040,7 +7045,7 @@
       (set
         ? '<div class="eng-meetmsg"><div class="eng-row eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
             '<span class="eng-meetacts">' +
-              '<button class="btn btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
+              '<button class="btn btn-quiet btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
               '<button class="btn btn-sm" data-a="msgcopy" type="button"><span>Copy</span></button>' +
             '</span></div>' +
             '<pre class="eng-meetmsg-text" hidden>' + esc(clientMessage(e)) + '</pre></div>'
@@ -7644,10 +7649,10 @@
     else if (!x) val = '<span class="mute">Not checked</span>';
     else if (x.state === 'none') val = '<span class="chip-state is-warn">Not invoiced</span><small class="eng-inv-when">Checked ' + esc(niceDate(x.checked_at)) + '</small>';
     else val = (x.invoices || []).map(function (v) {
-      return '<span class="eng-inv">' + (v.link ? '<a class="plink" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(v.number) + '</a>' : esc(v.number)) +
+      return '<span class="eng-inv">' + (v.link ? '<a class="linkbtn eng-invno" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(v.number) + '</a>' : '<span class="eng-invno">' + esc(v.number) + '</span>') +
         ' · ' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span>';
     }).join('');
-    var act = I.linked && !I.failed ? '<span class="eng-meetacts"><button class="btn btn-sm" data-a="invcheck" type="button">' + (x ? 'Check again' : 'Check Bukku') + '</button></span>' : '';
+    var act = I.linked && !I.failed ? '<span class="eng-meetacts"><button class="btn btn-quiet btn-sm" data-a="invcheck" type="button">' + (x ? 'Check again' : 'Check Bukku') + '</button></span>' : '';
     return '<div class="eng-row eng-invrow"><span class="eng-lab">Invoice</span><span class="eng-val">' + val + '</span>' + act + '</div>';
   }
   /* Deleting a month: ops Manage, a reason, and the tasks it held stay. */

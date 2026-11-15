@@ -242,12 +242,12 @@ function page(kind) {
   html, body { height: 100%; }
   body {
     margin: 0; display: flex; flex-direction: column; background: #fff;
-    color: #1b1a17;
+    color: #1a1a1a;
     font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   .bar {
     height: var(--head-h); flex: 0 0 auto; display: flex; align-items: center;
-    padding: 0 24px; border-bottom: 1px solid #e2dfd8;
+    padding: 0 24px; border-bottom: 1px solid #e0e0e0;
   }
   .bar img { height: 26px; width: auto; display: block;
     object-fit: contain; object-position: left center; }
@@ -258,7 +258,7 @@ function page(kind) {
   }
   .panel { max-width: 420px; width: 100%; text-align: center; }
   h1 { margin: 0 0 8px; font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; }
-  p { margin: 0; color: #6b6760; font-size: 15px; }
+  p { margin: 0; color: #666666; font-size: 15px; }
   @media (max-width: 640px) {
     :root { --head-h: 56px; }
     .bar { padding: 0 16px; }
