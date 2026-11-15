@@ -3060,6 +3060,7 @@
           }, function () {});
         var ids = state.options.map(function (o) { return o.id; });
         state.files = {};
+        state.postsFor = []; state.posts = {}; state.postsErr = null;
         if (!ids.length) { paintOptions(); return; }
         db.from('campaign_deliverables').select('*').is('removed_at', null)
           .in('option_id', ids).order('uploaded_at')
@@ -3067,7 +3068,7 @@
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
-            loadQc(ids, function () { loadReviews(ids, paintOptions); });
+            loadQc(ids, function () { loadReviews(ids, function () { loadPosts(paintOptions); }); });
           }, paintOptions);
       });
   }
@@ -3085,6 +3086,26 @@
         });
       }).catch(function () {}).then(then);
   }
+  /* Every posted booking's results in one request a load, never one a
+     card: each card and the roll-up paint from this map, and a card's own
+     Save reads it again through loadOptions (audit 2026-11-15). A refused
+     read is kept as such, so a card says it and offers Try again. */
+  function loadPosts(then) {
+    state.posts = {}; state.postsErr = null;
+    var ids = state.options.filter(function (o) {
+      return PIPELINE.indexOf(o.state) >= PIPELINE.indexOf('posted');
+    }).map(function (o) { return o.id; });
+    state.postsFor = ids;
+    if (!ids.length) { then(); return; }
+    db.from('option_posts').select('*').in('option_id', ids).then(function (r) {
+      if (r.error) { state.postsErr = r.error.message; return; }
+      (r.data || []).forEach(function (p) {
+        (state.posts[p.option_id] || (state.posts[p.option_id] = [])).push(p);
+      });
+    }).catch(function (e) { state.postsErr = (e && e.message) || 'The results could not be loaded.'; }).then(then);
+  }
+  function postsHeld(id) { return (state.postsFor || []).indexOf(id) >= 0; }
+
   /* The newest request for changes not taken back. */
   function lastRequest(o) {
     var rs = ((state.reviews || {})[o.id] || []).filter(function (r) {
@@ -6153,16 +6174,21 @@
     }).catch(function () { then(); });
   }
 
-  function paintPosts(box, o) {
+  function paintPosts(box, o, fresh) {
     if (PIPELINE.indexOf(o.state) < PIPELINE.indexOf('posted')) { box.innerHTML = ''; return; }
     var head = '<div class="kstep-title">Results</div>';
     box.className = 'kstep kstep-results';
     box.innerHTML = head + '<div class="empty">Loading…</div>';
-    db.from('option_posts').select('*').eq('option_id', o.id).then(function (r) {
+    /* Painted from loadOptions' one read where it holds this booking; read
+       alone only on Try again or for a booking it did not cover (audit 2026-11-15). */
+    var read = !fresh && postsHeld(o.id)
+      ? Promise.resolve(state.postsErr ? { error: { message: state.postsErr } } : { data: (state.posts[o.id] || []).slice() })
+      : db.from('option_posts').select('*').eq('option_id', o.id);
+    read.then(function (r) {
       /* A refused read is never drawn as no placements (2026-10-22, CMP-5). */
       if (r.error) {
         box.innerHTML = head + '<div></div>';
-        UI.failLine(box.lastChild, 'Results', r.error.message, function () { paintPosts(box, o); });
+        UI.failLine(box.lastChild, 'Results', r.error.message, function () { paintPosts(box, o, true); });
         return;
       }
       var rows = r.data || [];
@@ -6336,7 +6362,12 @@
       return PIPELINE.indexOf(o.state) >= PIPELINE.indexOf('posted');
     });
     if (!posted.length) { $('rollup').hidden = true; return; }
-    db.from('option_posts').select('*').then(function (r) {
+    /* From loadOptions' one read of these bookings, never every booking's
+       results in the database (audit 2026-11-15). */
+    var held = !state.postsErr && posted.every(function (o) { return postsHeld(o.id); });
+    var read = held ? Promise.resolve({ data: posted.reduce(function (a, o) { return a.concat(state.posts[o.id] || []); }, []) })
+      : db.from('option_posts').select('*').in('option_id', posted.map(function (o) { return o.id; }));
+    read.then(function (r) {
       var mine = {};
       posted.forEach(function (o) { mine[o.id] = true; });
       var rows = (r.data || []).filter(function (p) { return mine[p.option_id]; });

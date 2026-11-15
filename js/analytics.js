@@ -198,7 +198,10 @@
   function clients() {
     return once('clients', function () {
       return API.readPages(function () {
-        return db.from('clients').select('id, name, slug, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, industry, bill_sgd').order('id');
+        /* The Dashboard's own columns too, so the Operations and Sales cards
+           it draws here read this list, never every client again (audit 2026-11-15). */
+        return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, industry, bill_sgd, ' +
+          'restricted_platform, restricted_since, restricted_note').order('id');
       }).then(rows).then(function (l) { return l || []; });
     });
   }
@@ -1034,7 +1037,7 @@
           O().forAnalytics(page, tab === 'sales' ? 'Sales' : 'Operations', {
             from: r.from, to: r.to, prev: prevOf(period), prevName: prevWord(period),
             name: period === 'year' ? 'this year' : period === 'lastyear' ? 'last year' : 'in the ' + word.toLowerCase() },
-            cl && tab === 'sales' ? ['sources'] : []);
+            cl && tab === 'sales' ? ['sources'] : [], cl);
         }
         /* A Dashboard tile pressed for its clients lands on its card. */
         var want = null;
