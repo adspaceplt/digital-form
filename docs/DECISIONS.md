@@ -10480,3 +10480,6 @@ From the audit's read of the AI functions: a white-label brand's report draft re
 ### 2026-11-15 · Dead CSS removed
 The audit's lean read found 23 classes no page, script or function draws any more (the capacity strip, the old Dashboard glance and meters, the Creators List's campaign rows, `.pchip`, `.plink-bare` and others): their 45 rules are gone from `css/portal.css` and `css/console.css`, about 3.8 KB, each class grepped across the pages, scripts, functions and suites first. A class inside a shared `:is()` list is taken out of the list alone, never the rule.
 
+### 2026-11-15 · Slots hold every booking
+The audit found Reinstate wrote a withdrawn creator straight back to Confirmed, so a campaign of three slots could hold four bookings: only the confirm functions and the campaign's own slot floor held the count. Trigger `campaign_options_slots_hold` now refuses a booking moved in from outside the booked states while every slot is booked (`over-slots`), whoever writes it, and the card says "Every slot is booked. Add a slot or withdraw a creator first."
+

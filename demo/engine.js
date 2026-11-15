@@ -1309,6 +1309,14 @@
           rows = []; api.__err = { code: '23514', message: 'passcode-short', hint: 'An access code needs at least 6 characters.' }; return api;
         }
 
+        if (table === 'campaign_options' && pending && STUB_BOOKED.indexOf(pending.state) >= 0 && inHit.some(function (r) {
+              if (STUB_BOOKED.indexOf(r.state) >= 0) return false;
+              var cm = (DB.campaigns || []).filter(function (c) { return c.id === r.campaign_id; })[0];
+              return cm && cm.slots != null && stubBooked(cm.id) >= Number(cm.slots);
+            })) {
+          rows = []; api.__err = { code: '23514', message: 'over-slots: every slot is booked', hint: 'over-slots' }; return api;
+        }
+
         if (table === 'campaigns' && pending && 'slots' in pending && inHit.some(function (r) { return Number(pending.slots || 0) < stubBooked(r.id); })) {
           rows = []; api.__err = { code: '23514', message: 'slots-booked: creators are booked', hint: 'slots-booked' }; return api;
         }
@@ -8763,9 +8771,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
     return !!campaign && ((DB.clients || []).filter(function (x) { return x.id === campaign.client_id; })[0] || {}).stage === 'past';
   }
 
+  var STUB_BOOKED = ['confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
   function stubBooked(campaignId) {
-    var B = ['confirmed', 'pending_visit', 'pending_draft', 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
-    return (DB.campaign_options || []).filter(function (o) { return o.campaign_id === campaignId && B.indexOf(o.state) > -1; }).length;
+    return (DB.campaign_options || []).filter(function (o) { return o.campaign_id === campaignId && STUB_BOOKED.indexOf(o.state) > -1; }).length;
   }
   function rpcInner(name, args) {
     var unknown = callRefusal(name, args);
