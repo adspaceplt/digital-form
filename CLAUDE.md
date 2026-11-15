@@ -3632,9 +3632,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   review the latest version.", with Refresh; a request for changes so
   refused is kept in the tab and reopened after it, its caption edit only
   where the caption stands; 2026-10-27, RVP-3) and keeps what was decided on in
-  `reviews.seen`; `ADspaceAPI.submitReview` sends a decision with its
-  version through `submit_review_seen` alone, a refusal never sent again
-  without it (2026-10-22, BE-13).
+  `reviews.seen`; `ADspaceAPI.submitReview` sends every decision through
+  `submit_review_seen` alone (one with no version is refused `changed`),
+  and `submit_review` is internal, closed to every browser (audit
+  2026-11-15). A revision's `asked` names no colleague: a team request
+  reads `by_team`.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
@@ -4298,8 +4300,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-27-creator-codes-counted.sql`): five within 15 minutes lock it
     out, the right code included, for 15 minutes, then an hour, then a day;
     a right code resets nothing; no count across addresses. `get_creator`,
-    `creator_set_profiles`, `push_subscribe` and the creator branch of
-    `share_link_preview` all ask it; the page says `locked` as a link's lock
+    `creator_set_profiles`, `push_subscribe`, the creator branch of
+    `share_link_preview` and every creator write (`creator_submit`,
+    `creator_add_file`, `creator_remove_file`, `creator_rate`,
+    `creator_may_upload`, `creator_post_save`; audit 2026-11-15) ask it; the page says `locked` as a link's lock
     is said (`W.lockedLine`).
   - `get_creator` sends the creator's own booking only.
     - Never the client's stage, commercial state, amount, other creators or

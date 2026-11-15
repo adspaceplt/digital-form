@@ -176,14 +176,11 @@
        changed after the page opened is refused `changed`, and what was
        decided on is kept with the decision. Any refusal is the refusal: it
        is never sent again without the version (2026-10-22, BE-13). */
-    if (payload.version != null) {
-      const seen = await client.rpc('submit_review_seen', Object.assign({ p_version: payload.version }, args));
-      if (seen.error) throw seen.error;
-      return seen.data;
-    }
-    const { data, error } = await client.rpc('submit_review', args);
-    if (error) throw error;
-    return data;
+    /* submit_review is internal since the audit of 2026-11-15: a decision
+       with no version is refused `changed`, asking for a refresh. */
+    const seen = await client.rpc('submit_review_seen', Object.assign({ p_version: payload.version == null ? null : payload.version }, args));
+    if (seen.error) throw seen.error;
+    return seen.data;
   }
 
   /* An edge function call with the reason for a failure read out. On a

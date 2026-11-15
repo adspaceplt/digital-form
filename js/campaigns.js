@@ -916,6 +916,7 @@
     /* CREATOR FEES (2026-11-13) */
     'bad-amount': 'Enter the fee as an amount, for example 1200.', billed: 'This booking already has a bill in Bukku. Change the bill in Bukku, then Read from Bukku.',
     'not-posted': 'Move the booking to Posted first, then create its bill.', 'no-fee': 'Enter the creator fee first.',
+    'currency-changed': 'The creator is now paid in another currency. Set the fee again, then create the bill.',
     'no-account': 'Choose the Bukku account for creator bills in Settings, Money, Bukku.',
     'no-fx': 'Set the S$ exchange rate in Settings, Money, Tax and terms first.',
     creating: 'This bill is already being created. Press Read from Bukku in a minute.' };
