@@ -106,10 +106,10 @@
   var PATH = /^[MmLlHhVvCcSsQqTtAaZz0-9 .,eE+-]{2,4000}$/;
   var INK = 'stroke-linecap="round" stroke-linejoin="round"';
   var PRINT = {
-    ink: 'fill="none" stroke="#1b1a17" stroke-width="1.6" ' + INK,
+    ink: 'fill="none" stroke="#1a1a1a" stroke-width="1.6" ' + INK,
     light: 'fill="none" stroke="#8e8e8e" stroke-width="1" ' + INK,
     fill: 'fill="#e6e6e6" stroke="none"',
-    paper: 'fill="#ffffff" stroke="#1b1a17" stroke-width="1.6" ' + INK
+    paper: 'fill="#ffffff" stroke="#1a1a1a" stroke-width="1.6" ' + INK
   };
   var MOVE = { 'push in': 'push', 'pull out': 'pull', 'pan left': 'panl', 'pan right': 'panr', 'tilt up': 'tiltu', 'tilt down': 'tiltd' };
   function plain(v) { return String(v || '').replace(/["'<>&]/g, ''); }

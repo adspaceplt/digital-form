@@ -24,14 +24,14 @@
   --z-tabscrim: 43; --z-tabmore: 44; --z-tabbar: 45; --z-menu: 50;
   --z-drawer-scrim: 55; --z-drawer: 60; --z-pull: 70; --z-sheet-side: 85;
   --z-sheet: 90; --z-guide-sheet: 92; --z-pop-sheet: 93; --z-ask: 95; --z-picker: 96;
-  --ink:        #1b1a17;
-  --ink-soft:   #524e47;
-  --ink-mute:   #6b6760;
+  --ink:        #1a1a1a;
+  --ink-soft:   #515151;
+  --ink-mute:   #666666;
   --line-ctl:   #8e8e8e;   /* control boundaries: 3:1 on every page background */
   /* The contact chip's outline, lighter than a field's (the user,
      2026-09-28): its words identify it, so its edge need not hold 3:1. */
   --line-chip:  #a1a1a1;
-  --line:       #e2dfd8;
+  --line:       #e0e0e0;
   /* The outline of a bounded card (a directory table, a record's head and
      Overview, a form panel, the booking register, the Team card): one
      token, so every card is the same card. Nothing nests a card in a card
@@ -46,7 +46,7 @@
   --sunk:       #f9f9f9;
   /* The solid ink surface (primary button, selected tab, progress, undo bar)
      and the text that sits on it. */
-  --fill:       #1b1a17;
+  --fill:       #1a1a1a;
   --on-fill:    #ffffff;
   --accent:     #1f7a4d;
   --ok:         #1f7a4d;
@@ -122,9 +122,9 @@
      the same token reads on the white card and on the off-white page. A
      field is filled too (--field, below; 2026-10-31), told from a button by
      its label and turning white while typed in. */
-  --tonal:        rgba(27,26,23,.065);
-  --tonal-hover:  rgba(27,26,23,.105);
-  --tonal-press:  rgba(27,26,23,.15);
+  --tonal:        rgba(26,26,26,.065);
+  --tonal-hover:  rgba(26,26,26,.105);
+  --tonal-press:  rgba(26,26,26,.15);
   /* A box typed into is filled, never outlined (the user, 2026-10-31,
      option B): the tonal shade made opaque, so autofill and a field on a
      shaded block read the same; it turns white while typed in. */
@@ -209,7 +209,7 @@
    choice is this browser's alone.
 
    Only the colours move; every size, space and shape above is the same screen.
-   The ramp is the light one turned over and kept warm, and the fills swap with
+   The ramp is the light one turned over, neutral as light is, and the fills swap with
    their text, so the primary button stays the highest contrast thing in the
    view rather than vanishing. Depth cannot come from a grey shadow on a dark
    ground, so the shadows go black and the surfaces step instead. */
@@ -222,25 +222,24 @@
    against another dark application. `--page` and `--card` are the two largest
    surfaces and are what the eye calls "the colour of the app", so they are
    exactly neutral, as `#f5f5f5` and white are in light; `--sunk` and
-   `--line-soft` already were. The ink ramp and the borders keep their warmth
-   and keep it at 42. Every value holds the luminance it replaced, so every
-   documented contrast pair is preserved (`--ink` on `--page` 15.60 to 15.65,
-   `--line-ctl` on `--card` 4.39 to 4.46), and `uxaudit` measures all of them
-   on the real page in this theme. */
+   `--line-soft` already were. Since 2026-11-15 the ink ramp and the borders
+   are neutral too, on the brand's monochrome (#1a1a1a, #515151, #f5f5f5;
+   the user: "move to my palette"), each holding the luminance it replaced,
+   so every documented contrast pair holds or rises. */
 :root[data-theme="dark"] {
-    --ink:        #f2efec;
-    --ink-soft:   #cdc8c3;
-    --ink-mute:   #ada8a3;
+    --ink:        #f0f0f0;
+    --ink-soft:   #c9c9c9;
+    --ink-mute:   #a9a9a9;
     --line-ctl:   #858585;
     --line-chip:  #5f5f5f;
-    --line:       #3e3b38;
+    --line:       #3c3c3c;
     --card-line:  transparent;
     --line-soft:  #2e2e2e;
     --page:       #171717;
     --card:       #1f1f1f;
     --sunk:       #272727;
-    --fill:       #f2efec;
-    --on-fill:    #1c1a19;
+    --fill:       #f0f0f0;
+    --on-fill:    #1a1a1a;
     /* One value per semantic colour, doing both jobs: legible as text on every
        dark surface and deep enough to carry dark text when it is a fill. A
        paler mint passed the same checks and read as a highlighter pen next to
@@ -281,11 +280,11 @@
     --dot-off:        #636366;
     --dot-soon:       #ffd60a;
     --soon-bg:        #2b2614;
-    --tonal:        rgba(242,239,236,.09);
-    --tonal-hover:  rgba(242,239,236,.135);
-    --tonal-press:  rgba(242,239,236,.18);
-    --field:        #323231;
-    --seg-on:       #57544f;   /* lifted 2026-10-16: #3a3938 matched the track on a shaded block */
+    --tonal:        rgba(240,240,240,.09);
+    --tonal-hover:  rgba(240,240,240,.135);
+    --tonal-press:  rgba(240,240,240,.18);
+    --field:        #323232;
+    --seg-on:       #555555;   /* lifted 2026-10-16: #3a3938 matched the track on a shaded block */
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(23,23,23,.72);
@@ -507,10 +506,10 @@ a { color: inherit; }
   .input[type="date"], .input[type="time"], .input[type="month"] {
     padding-left: 38px; background-repeat: no-repeat;
     background-position: left 12px center; background-size: 16px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
   }
   .input[type="time"] {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
   }
   /* A finger opens the picker by tapping the field, so a second mark on the
      right is not a route in, and in a 122px time track it clipped the value. */
@@ -6201,7 +6200,7 @@ textarea.input.askfield { margin-top: -3px; margin-bottom: -3px; vertical-align:
    picker itself is one hidden native field laid under the box it serves. */
 .input.dmy {
   padding-right: 38px; background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666666' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
   font-variant-numeric: tabular-nums;
 }
 :root[data-theme="dark"] .input.dmy {

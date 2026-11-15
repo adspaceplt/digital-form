@@ -598,7 +598,9 @@
        items into a first month: each closes on its own total, as its PDF
        prints it, then the advertising budget for the term. */
     var r = window.ADspaceMoney.quoteRows(tt, tt.layout === 2 ? [] : Q && Q.lines, on).map(function (x) {
-      var label = x[0] === 'term' ? f(tt.term_pct < 0 ? w.commit : w.termAdj, { n: tt.term, p: Math.abs(tt.term_pct) }) : WORD[x[0]];
+      /* a row a term percentage where the lines differ (2026-11-15) */
+      var tp = x[4] ? x[4].pct : tt.term_pct, tn = x[4] ? (x[4].months || tt.term) : tt.term;
+      var label = x[0] === 'term' ? f(tp < 0 ? w.commit : w.termAdj, { n: tn, p: Math.abs(tp) }) : WORD[x[0]];
       return x[2] ? [label, qc() + ' ' + n2(x[1]), 1] : [label, n2(x[1])];
     });
     if (adsOf(tt).length) r.push([w.adsT, qc() + ' ' + n2(tt.ads_total), 1]);

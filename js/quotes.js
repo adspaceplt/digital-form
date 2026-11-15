@@ -29,6 +29,8 @@
     'bad-once': 'Enter whole numbers for one-off items.', 'not-found': 'This quotation is no longer available.',
     'not-proceeding': 'This quotation is cancelled. Restore it first.', 'bad-budget': 'Choose an advertising budget.',
     'bad-edit': 'Enter a whole quantity from 1, a rate of up to two decimals and 1 to 36 months.',
+    'over-term': 'A line cannot run longer than the term. Set its months to the term or fewer.',
+    'bad-card': 'That Rate Card version is no longer available. Choose another.',
     'bad-tax': 'That tax code is no longer offered. Choose another.',
     'bad-date': window.ADspaceWords.line.docDate,
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
@@ -1052,8 +1054,10 @@
 
   // ---- Build quote --------------------------------------------------------
   var B = null;   // the sheet's state while open
-  function card(ctx, done) {
-    ctx.db.rpc('rate_card_current').then(function (r) {
+  /* The Rate Card version named (2026-11-15, the user: "choose which rate
+     card"), else the newest, with every version for the choice. */
+  function card(ctx, done, version) {
+    ctx.db.rpc('rate_card_at', { p_version: version || null }).then(function (r) {
       if (r.error || !r.data) { done(null, r.error || 'no-card'); return; }
       done(r.data);
     }).catch(function (e) { done(null, e); });
@@ -1104,7 +1108,7 @@
     /* The quotation's own date (2026-11-12, the user: a quotation may be
        backdated): today until changed; its reference takes the date's
        month, and it is priced and valid from it. */
-    $('qbDate').value = window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
+    $('qbDate').value = /^\d{4}-\d{2}-\d{2}$/.test(String(sel.date || '')) ? sel.date : window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
     adsLoad(sel);
     advLoad(sel);
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
@@ -1113,6 +1117,18 @@
     card(ctx, function (c, err) {
       if (!c) { ctx.msg('qtMsg', said(err) || 'No Rate Card version is live.', 'err'); B = null; return; }
       B.card = c;
+      /* The version priced on (2026-11-15): the one chosen, else the one
+         live on the quotation's Date, which follows the Date until chosen. */
+      B.versions = c.versions || [];
+      B.cardPicked = Boolean(sel.cardPicked);
+      $('qbCard').innerHTML = B.versions.map(function (v, i) {
+        return '<option value="' + esc(v.version) + '">v.' + esc(v.version) + ' · ' + (i === 0 ? 'Live' : esc(window.ADspaceClock.date(v.published_at))) + '</option>';
+      }).join('') || '<option value="' + esc(c.version) + '">v.' + esc(c.version) + '</option>';
+      $('qbCard').value = c.version;
+      if (!sel.card && !B.cardPicked) {
+        var on = cardOn(qbDay());
+        if (on && on !== c.version) { var s0 = Object.assign({}, sel, { card: on }); build(ctx, s0, opener, revises, editing); return; }
+      }
       $('qbFor').textContent += ' · priced from v.' + c.version;
       var chosen = planOf();
       $('qbAds').value = chosen && chosen.spec.ads ? 'ads' : 'none';
@@ -1159,7 +1175,7 @@
       $('qbOnceMore').open = Boolean((sel.once || []).length);
       stepQtys(true);
       sync();
-      window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
+      if ($('qbBox').hidden) window.ADspaceSheet.show($('qbBox'), { opener: opener || null, onClose: function () { B = null; } });
       preview();
     });
   }
@@ -1521,12 +1537,26 @@
     if (ent) out.bill_to = { entity_id: ent.id, legal_name: ent.legal_name, company_no: ent.company_no, billing_address: ent.billing_address };
     return out;
   }
+  /* The version live on a day: the newest published by its end (MYT). */
+  function cardOn(day) {
+    var end = Date.parse(day + 'T23:59:59+08:00');
+    var hit = (B && B.versions || []).filter(function (v) { return Date.parse(v.published_at) <= end; })[0];
+    return hit ? hit.version : ((B && B.versions || []).slice(-1)[0] || {}).version;
+  }
+  /* Build quote drawn again on another version, what is chosen kept. */
+  function rebuildOn(version, picked) {
+    if (!B) return;
+    var s = selection();
+    s.card = version; s.cardPicked = picked;
+    if (B.entity) s.entity = B.entity;
+    build(B.ctx, s, B.opener, B.revises, B.editing);
+  }
   function qbDay() {
     var v = $('qbDate') ? $('qbDate').value : '';
     return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : window.ADspaceClock.today();
   }
   function selection() {
-    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6, date: qbDay(),
+    var sel = { plan: B.plan, term: Number($('qbTerm').value) || 6, date: qbDay(), card: B.card ? B.card.version : null,
       platforms: [], langs: [], translate: $('qbTranslate').checked, budget: Number($('qbBudget').value) || 0, once: [] };
     if (sel.plan) sel.mix = Number($('qbMix').value) || 0;
     Array.prototype.forEach.call(document.querySelectorAll('#qbPlats input'), function (i) { if (i.checked) sel.platforms.push(i.value); });
@@ -1621,6 +1651,7 @@
        its cells stand over the lines' (2026-10-31). */
     var hasTax = (B && B.codes || []).some(function (c) { return c.active; });
     var hasPlan = rows.some(function (l) { return l.kind === 'plan'; });
+    var mixedPct = (t.term_rows || []).length > 1;
     var out = '<div class="crm-table qb-table"><div class="crm-head svc-row qb-row"><span class="qb-name">Line</span>' + (hasTax ? '<span class="qb-taxc"></span>' : '') + '<span class="svc-rate qb-qty">Qty</span>' +
       '<span class="svc-rate qb-rate">Rate (' + CUR + ')</span><span class="svc-rate qb-mo">Months</span><span class="svc-rate qb-amt">Subtotal (' + CUR + ')</span></div>' +
       rows.map(function (l) {
@@ -1628,6 +1659,9 @@
            quoted off the card names the card's rate under it. */
         var sub = [];
         if (l.list_rate != null) sub.push('Rate Card ' + CUR + ' ' + rm(l.list_rate));
+        /* Each line its own term percentage (2026-11-15), said where the
+           lines differ. */
+        if (l.basis === 'month' && mixedPct && l.pct != null) sub.push(Number(l.pct) ? MON.termLine(l.months, l.pct).replace(/^./, function (c) { return c.toUpperCase(); }) : 'No term adjustment');
         /* The line's tax code (2026-10-22): the client's SST, or one the team
            bills with, chosen where it is read; drawn while any is offered.
            The client's own reads as the rate alone (SST 8%), the codes by
@@ -1697,7 +1731,7 @@
     var WORD = { monthSub: 'Monthly subtotal', onceSub: 'One-off subtotal', firstExcl: 'First month excl. SST', monthExcl: 'Monthly excl. SST',
       sst: taxed.word, first: 'First month' + incl, monthly: 'Monthly' + incl, oneOff: sstOn ? 'One-off incl. SST' : 'One-off total',
       term: MON.termLine(t.term, t.term_pct) };
-    var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
+    var tot = MON.quoteRows(t, rows, sstOn).map(function (x) { return [x[3] ? x[3].replace(/^./, function (c) { return c.toUpperCase(); }) : WORD[x[0]], (x[2] ? CUR + ' ' : '') + acct(x[1]), x[2]]; });
     out += '<dl class="qb-tot">' + tot.map(function (x) {
       return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>';
     }).join('') + '</dl>';
@@ -1755,6 +1789,13 @@
       $(id).addEventListener('input', on);
     });
     $('qbDate').addEventListener('change', termOptions);
+    /* A date on another version's days takes that version, until one is chosen. */
+    $('qbDate').addEventListener('change', function () {
+      if (!B || B.cardPicked || !B.card) return;
+      var v = cardOn(qbDay());
+      if (v && v !== B.card.version) rebuildOn(v, false);
+    });
+    $('qbCard').addEventListener('change', function () { if (B && B.card && this.value !== B.card.version) rebuildOn(this.value, true); });
     $('qbPay').addEventListener('change', on);
     $('qbValid').addEventListener('change', on);
     $('qbAdOn').addEventListener('change', function () {

@@ -10484,5 +10484,23 @@ The audit's lean read found 23 classes no page, script or function draws any mor
 The audit found Reinstate wrote a withdrawn creator straight back to Confirmed, so a campaign of three slots could hold four bookings: only the confirm functions and the campaign's own slot floor held the count. Trigger `campaign_options_slots_hold` now refuses a booking moved in from outside the booked states while every slot is booked (`over-slots`), whoever writes it, and the card says "Every slot is booked. Add a slot or withdraw a creator first."
 
 
+### 2026-11-15 · Neutral palette on the brand's monochrome
+The user: "move to my palette; but if readability is a concern then needs to match changes u suggest … usually i use #f5f5f5 with #515151". The ink ramp and the borders had kept a warm hue (`--ink #1b1a17`, `--ink-soft #524e47`, `--ink-mute #6b6760`, `--line #e2dfd8`; dark `#f2efec`, `#cdc8c3`, `#ada8a3`, `#3e3b38`) against neutral grounds. They are now neutral greys on the brand's monochrome: light `--ink #1a1a1a`, `--ink-soft #515151`, `--ink-mute #666666`, `--line #e0e0e0`, `--fill #1a1a1a`, the tonal fills off `#1a1a1a`; dark `#f0f0f0`, `#c9c9c9`, `#a9a9a9`, `#3c3c3c`, `--on-fill #1a1a1a`, `--field #323232`, `--seg-on #555555`; Internal's and the Dashboard's graphite section marks neutral too. Each value holds the luminance it replaced, so every contrast pair holds or rises (measured: `--ink-mute` on the darkest light ground it meets, `--field` #f0f0f0, 4.93 → 5.04; on `--line-soft` 4.76 → 4.86). `#a1a1a1` was not used for words (2.58:1 on white); it stays the contact chip's edge and an email's fine print. `#cfd0d4` was weighed for `--line` and not taken: `--line` is every table rule and the foot's rule, and 1.54:1 drew a row grid heavier than the hairlines the console keeps. PDFs, emails and the links Worker keep their own inks (the Worker would need its own deploy).
+
+### 2026-11-15 · Each quotation line takes its own term percentage
+The user, 2026-11-15 ("1 per line percentage"): a monthly line running
+months other than the term took the term's percentage (Translation for 6
+months on a 12-month quotation took the 12-month discount). Each monthly
+line now takes the band of its own months, on its own subtotal; a line
+runs no longer than the term (`over-term`). The totals answer one row a
+percentage (`term_rows`). First built as `totals.terms`, which the
+quotation already used for its own special terms: the PDF dropped the
+discount row and a save would have overwritten the terms; found by the
+quotes suite's PDF check before release and renamed. A quotation is now
+priced on the Rate Card version chosen under Term in Build quote (the
+user: "issue based on which rate card"), else the one live on its Date,
+and the S$ rate in force on its Date. A website quotation's Edit takes no
+line edits.
+
 ### 2026-11-15 · The audit's open items: reads, senders, on time, double presses, signing codes, the demo PIN, Scheduled
 From the whole-portal audit, approved by the user. Reads: Analytics read every client once for its own figures and again for the Dashboard's charts it borrows (`forAnalytics` now takes the rows read); a campaign's booking results were read one booking at a time (one read for the whole list now); `clientBilling` sent every id in one request past PostgREST's URL limit (paged and chunked). Senders: `wa-send`'s drain could claim a row it had already tried in the same run (it now hands it back through `wa_done`); `portal-agent` took a conversation of any length (over 120,000 characters is `bad-request`). Database (`2026-11-15-audit-fixes-third.sql`): On time read a task's first entry into client review inside the period, so a task back in review after a revision was counted again, late, in that later period (`ops_report_of` now takes the first entry ever and counts it in its own period; `perf_ops_rate` already did); `ops_create_task` and `video_script_new` looked up the press's key before any lock, so two presses at once could make two rows (the key is now locked first); `quote_sign_code` held five codes an hour a quotation but nothing across quotations, so one address could have codes emailed to any number of addresses (ten an hour from one address now, the address relayed by quote-request through `x-adspace-ip` and let go an hour on); a demo PIN of four digits was a small space to guess (a new PIN is 6 to 8 digits; one held keeps opening); a page could write a booking from Client review straight to Scheduled with no approval on the record (trigger `campaign_options_approval_gate`, `needs-approval`, said on the card).
