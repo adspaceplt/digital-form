@@ -3984,7 +3984,7 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-pick.is-bare > :not([hidden]) { grid-column: 1 / -1; }
 .qb-pick.is-bare #qbPlats { grid-template-columns: repeat(4, max-content); }
 .qb-three.is-bare { grid-template-columns: minmax(0, 1fr); }
-.qb-three.is-bare .qb-money { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.qb-three.is-bare .qb-money { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .qb-once { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; padding-top: 4px; }
 .qb-once .qb-stepname { min-width: 0; }
 .qb-once-h { grid-column: 1 / -1; margin: 8px 0 8px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
