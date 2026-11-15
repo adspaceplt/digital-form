@@ -4813,12 +4813,11 @@
       } else {
         /* A refused or failed write was silent, the contact read as the
            billing contact when it was not (audit 2026-11-15). */
-        msg('crmBillNote', 'Contact saved. The billing contact was not changed: ' +
-          (r.error ? r.error.message : 'the database refused the request.'), 'warn');
+        msg('crmBillNote', 'Contact saved. The billing contact was not changed. Choose it in Edit on Billing.', 'warn');
       }
       loadContacts();
     }).catch(function (x) {
-      msg('crmBillNote', 'Contact saved. The billing contact was not changed: ' + ((x && x.message) || String(x)), 'warn');
+      msg('crmBillNote', 'Contact saved. The billing contact was not changed. Choose it in Edit on Billing.', 'warn');
       loadContacts();
     });
   }
