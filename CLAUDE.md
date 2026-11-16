@@ -1598,8 +1598,32 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Access is a level per section, **none < view < work < manage**, in
   `team_roles.access` / `team_members.access`. `allowed(section, level)` is
   every policy's predicate.
-  - The page names them No Access, View, Manage, Full Access (`LEVELS` in
-    `js/team.js`); the stored keys never move.
+  - The page names them Off, View, Edit, Full control (`LEVELS` in
+    `js/team.js`; the access restructure, 2026-11-17); the stored keys
+    never move.
+  - One rule, top to bottom (`2026-11-17-group-switches.sql`, plan version
+    4): a portal switch (Business settings `ai_on`, `email_on`,
+    `whatsapp_on`, set by `portal_switch_set` at `team.settings`, on from
+    the start), then the group's switches (`team_roles.ai_on`, `email_on`,
+    `whatsapp_on`, `sensitive_on`, copied onto each colleague by
+    `team_role_defaults`, an admin holding all; Use AI, Send email, Send
+    WhatsApp, Sensitive details, with Clients they see and Reports to
+    (`reports_to`, never round to itself, `reports-loop`) under For the
+    whole group), then the section, then a tab, which never exceeds its
+    section in `allowed()` and the page's `level()` alike (a granted part
+    aside). AI off answers `ai_cap` 0; a send off refuses `send-off`
+    (`send_ok`, `send_ok_of`, `wa_may_send`, each email's prepare or begin,
+    a quotation sent on WhatsApp; an automatic send asks the portal's switch
+    in `auto_send_on`, the narrower Automatic emails, Automatic WhatsApp and
+    Send by email standing under it); Sensitive details shuts client
+    billing, creator payment details and supplier bank details, the two
+    payment parts following their section. The page asks `may('use.ai')`,
+    `may('send.email')`, `may('send.whatsapp')`; `:root.no-ai` hides every
+    button carrying the AI mark (`svg.ai-mark`) and the Assistant. The five
+    WhatsApp parts and the billing and payment parts are no longer offered.
+    `access_keys` (RLS on, no policy, no grant) lists every key and its
+    tier; `tests/access.js` holds the granted list equal in the migration,
+    `js/team.js`, `js/admin.js` and the stand-in.
   - Select is view, insert and update are work, delete is manage, each a
     policy of its own: never one `for all` policy, since Postgres checks a
     delete against USING alone (one reading at View let View delete;

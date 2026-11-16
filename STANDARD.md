@@ -619,6 +619,14 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- `crm`: "the percentage is prefilled from the rate card" and eight checks
+  after it fail on main since the quotation terms by commitment (#1171)
+  moved the term bands (found 2026-11-17 by the group switches release).
+- `mailfn`: "every browser-called function takes its CORS from
+  _shared/cors.ts (21)" fails on main (found 2026-11-17, same release).
+- `hiringsql`: "the schema's anon list names careers_read" reads the anon
+  list before /verify/'s sealed file (#1173) added `verify_file` after it
+  (found 2026-11-17, same release).
 - `menus`: Team's bar ⋯ holds "Download for AutoCount" (personnel records,
   #1166 or after), a word `tests/menus.js` and `groupOf` do not place
   (found 2026-11-17 by the seal release, which does not touch Team).

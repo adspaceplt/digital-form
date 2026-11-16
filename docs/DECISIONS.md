@@ -10745,3 +10745,20 @@ found while mapping the live access were released ahead of the restructure.
    A rename is carried by id. The four-argument rule and the unused
    three-argument `client_row_seen` are dropped in the SQL Editor part, so a
    later restatement cannot fall back to a name.
+
+## 2026-11-17 · Group switches and portal switches: the access restructure, release 1
+
+The user approved plan version 4 ("approved, go ahead and build all steps").
+Access was a level a section with parts copied five ways: own or all
+clients per section, AI per section, five WhatsApp parts, billing and
+payment parts. It is now one rule top to bottom: the portal's switch, the
+group's switch, the section, then a tab capped at its section. The level
+words became Off, View, Edit, Full control. The plan said to fold the
+Automatic emails, Automatic WhatsApp and Send by email switches into the
+new portal switches; live, Automatic WhatsApp and Send by email were off,
+so folding them would have started sends nobody asked for. They stay as
+narrower switches under the portal's. The backfill set section 4 of the
+plan: Sensitive details on only where a group read billing or payments
+already, Members' Content sets taken back to Edit. Delete requests at Edit
+(step 5) and the clean-up of the old parts (step 6) follow as their own
+releases.

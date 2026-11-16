@@ -35,6 +35,7 @@
   var TERMS = ['NET 7', 'NET 14', 'NET 30', 'NET 45', 'NET 60'];
   var STATE = { pending: ['Pending', 'is-warn'], active: ['Active', 'is-ok'], inactive: ['Inactive', 'is-off'] };
   var SAID = {
+    'send-off': window.ADspaceWords.line.emailSendOff,
     'denied': 'You do not have permission to do this.', 'not-found': 'This supplier no longer exists.',
     'bad-code': 'Enter a Supplier ID of 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
     'bad-name': 'Enter a name of 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
@@ -416,7 +417,7 @@
             '<button class="btn btn-sm" type="button" data-s="add">Add existing document</button></span>' : '') + '</div>' +
           '<div id="supLetterList"><p class="muted">Loading.</p></div></section>',
       emails: '<section class="readgroup" id="supEmails"><div class="readgroup-head"><h4 class="fsec-h">Emails</h4>' +
-          (work && s.email ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
+          (work && s.email && may('send.email', 'work') ? '<button class="btn btn-sm" type="button" data-s="mail">Send email</button>' : '') + '</div>' +
           '<div id="supEmailList"><p class="muted">Loading.</p></div></section>'
     };
     /* A Pending supplier holding no details has nothing a document or an
@@ -625,7 +626,7 @@
     });
   }
   function offerMail(s) {
-    if (!s.email || !may('suppliers', 'work')) return;
+    if (!s.email || !may('suppliers', 'work') || !may('send.email', 'work')) return;
     window.ADspaceConfirm.ask({ title: 'Send the approval email?', go: 'Send email', cancel: 'Not now',
       body: (s.contact_name || nameOf(s)) + ' will be told by email that the registration is approved.' }, function () { openMail('approved', null, true); });
   }

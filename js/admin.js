@@ -1073,7 +1073,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1, 'team.hiring': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1084,11 +1084,32 @@
        permission to survive it — which is exactly how this one hid. */
     if (!key) return 0;
     if (!me) return 0;
+    /* The switches (GROUP SWITCHES, 2026-11-17): `use.ai`, `send.email`
+       and `send.whatsapp` answer Full Access where the portal's switch and
+       the group's are both on, else nothing; an admin holds the group's. */
+    var sw = SWITCH_KEY[key];
+    if (sw) return portalOn(sw) && (me.is_admin || me.role === 'admin' || Boolean(me[sw])) ? 3 : 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
+    /* Client billing, creator payments and supplier bank details answer
+       only where Sensitive details is on; the two payment parts follow
+       their section. */
+    if (SENSITIVE[key] && !me.sensitive_on) return 0;
     var lv = acc[key];
-    if (lv == null && key.indexOf('.') > 0 && !OPS_GRANTED[key]) lv = acc[key.split('.')[0]];
+    if (key.indexOf('.') > 0 && !OPS_GRANTED[key]) {
+      var sec = acc[key.split('.')[0]];
+      /* A tab never exceeds its section (the one rule, 2026-11-17). */
+      if (lv == null || SENSITIVE[key] === 2 || (RANK[lv] || 0) > (RANK[sec] || 0)) lv = sec;
+    }
     return RANK[lv] || 0;
+  }
+  var SWITCH_KEY = { 'use.ai': 'ai_on', 'send.email': 'email_on', 'send.whatsapp': 'whatsapp_on' };
+  var SENSITIVE = { 'clients.billing': 1, 'campaigns.pay': 2, 'suppliers.pay': 2 };
+  /* The portal's switch (Business settings), on unless set off. */
+  function portalOn(key) {
+    var M = window.ADspaceMoney;
+    var v = M && M.setting ? M.setting(key, window.ADspaceClock ? window.ADspaceClock.today() : undefined) : null;
+    return v == null || Number(v) === 1;
   }
   /* `may('clients')` still reads as it always did and still means the
      everyday level, so nothing that asked the old question has changed its
@@ -1188,6 +1209,9 @@
       document.body.classList.toggle('no-work-' + cls, !may(k, 'work'));
       document.body.classList.toggle('no-view-' + cls, !may(k, 'view'));
     });
+    /* No AI for this colleague: every Write with AI, the Assistant and
+       Draw with AI step away (GROUP SWITCHES, 2026-11-17). */
+    document.documentElement.classList.toggle('no-ai', !may('use.ai', 'work'));
     /* ===== Console search (js/search.js): drawn once the ladder is known. */
     if (window.ADspaceSearch) window.ADspaceSearch.access();
   }

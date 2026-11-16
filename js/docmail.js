@@ -33,6 +33,7 @@
   var API = window.ADspaceAPI;
   var KIND = { quotation: 'Quotation', offer: 'Letter of Offer', letter: 'Client letter' };
   var SAID = {
+    'send-off': window.ADspaceWords.line.emailSendOff,
     denied: 'You do not have permission to send this document. Please ask an admin.',
     'not-found': 'This document no longer exists.',
     'void-quotation': 'A cancelled quotation cannot be sent. Restore it first.',
@@ -69,7 +70,9 @@
     return Boolean(M && M.setting && Number(M.setting('client_email_on', window.ADspaceClock.today())) === 1);
   }
   function may(kind) {
-    if (!on()) return false;
+    /* The portal's Email switch and the group's Send email (GROUP
+       SWITCHES, 2026-11-17), then Send by email itself. */
+    if (!on() || !mayAt('send.email', 'work')) return false;
     if (kind === 'quotation') return mayAt('clients.quotes', 'work');
     if (kind === 'offer') return mayAt('clients.documents', 'work');
     if (kind === 'letter') return mayAt('clients.documents', 'work') || mayAt('register.documents', 'work');

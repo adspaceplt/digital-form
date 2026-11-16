@@ -22,6 +22,7 @@
   var wholeDays = function (h) { return String(h).replace(/\b(\d{1,2}) ([A-Z][a-z]{2,3}) (\d{4})\b/g, '$1\u00a0$2\u00a0$3'); };
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var SAID = {
+    'send-off': window.ADspaceWords.line.whatsappSendOff,
     denied: 'You do not have permission to change quotations. Please ask an admin.', 'client-scope': 'This client is outside your access.',
     'no-card': 'No Rate Card version is live. Publish one in Services.', 'bad-plan': 'That plan is not on the live Rate Card.',
     'no-platform': 'Choose at least one platform.',
@@ -55,7 +56,7 @@
     'not-signed': 'This quotation has not been signed.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
     'in-review': 'This quotation is already with its reviewer. Refresh the page.',
-    'bad-reviewer': 'Choose a reviewer with Full Access to quotations.', own: 'Choose a reviewer other than yourself.',
+    'bad-reviewer': 'Choose a reviewer with Full control of quotations.', own: 'Choose a reviewer other than yourself.',
     'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
     'not-reviewer': 'Only the chosen reviewer or an admin can approve this quotation.',
     'note-required': 'Enter the corrections.',
@@ -366,7 +367,9 @@
     if (g) g.addEventListener('click', function () { showRemoved = !showRemoved; paint(host, ctx, rows); });
     if (host.querySelector('[data-wa-ready]') && WA()) {
       WA().on('quote_ready').then(function (yes) {
-        if (!yes) return;
+        /* Sending also asks Send WhatsApp (GROUP SWITCHES, 2026-11-17). */
+        var A = window.ADspaceAdmin;
+        if (!yes || !(A && A.may && A.may('send.whatsapp', 'work'))) return;
         Array.prototype.forEach.call(host.querySelectorAll('[data-wa-ready]'), function (it) { it.hidden = false; });
         if (ctx.painted) ctx.painted();
       });
@@ -898,7 +901,7 @@
       var d = r.data || {};
       if (r.error || d.error) { sheetMsg('qsgCheckMsg', said(r.error || d.error), 'err'); return; }
       var list = d.reviewers || [];
-      if (!list.length) { sheetMsg('qsgCheckMsg', 'No colleague can review it. A reviewer needs Clients: Quotations at Full Access.', 'err'); return; }
+      if (!list.length) { sheetMsg('qsgCheckMsg', 'No colleague can review it. A reviewer needs Clients: Quotations at Full control.', 'err'); return; }
       sel.innerHTML = '<option value="">Choose a colleague</option>' + list.map(function (m) {
         return '<option value="' + esc(m.id) + '"' + (m.last ? ' selected' : '') + '>' + esc((m.code ? m.code + ' · ' : '') + m.name) + '</option>';
       }).join('');

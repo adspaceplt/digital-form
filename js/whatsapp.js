@@ -64,6 +64,7 @@
   var SECRET = { WHATSAPP_PHONE_ID: 'Phone number ID', WHATSAPP_TOKEN: 'token', WHATSAPP_WABA_ID: 'Business Account ID' };
 
   var SAID = {
+    'send-off': window.ADspaceWords.line.whatsappSendOff,
     denied: 'You do not have permission to do this in WhatsApp. Please ask an admin.',
     'bad-name': 'Choose a template approved by Meta.',
     'bad-lang': 'Choose a template approved by Meta.',
@@ -189,14 +190,17 @@
   }
 
   /* ---- Who may send ------------------------------------------------------- */
+  /* A send asks the portal's WhatsApp switch and the group's Send WhatsApp
+     (GROUP SWITCHES, 2026-11-17), then the record it is about, as
+     `wa_may_send` does; the five WhatsApp parts are no longer read. */
   function maySend(purpose) {
-    if (!may('whatsapp', 'work')) return false;
+    if (!may('send.whatsapp', 'work')) return false;
     if (purpose === 'message') return may('clients.contacts', 'view') || may('campaigns.creators', 'view');
     /* An approval reminder reads the set or the booking it names. */
-    if (purpose === 'approval') return may(PART.approval, 'work') && (may('review.sets', 'view') || may('campaigns.campaigns', 'view'));
+    if (purpose === 'approval') return may('review.sets', 'view') || may('campaigns.campaigns', 'view');
     /* A representative is named to a lead: the lead read. */
     if (purpose === 'representative') return may('clients.leads', 'view');
-    return Boolean(PART[purpose]) && may(PART[purpose], 'work') && may(RECORD[purpose], 'view');
+    return Boolean(RECORD[purpose]) && may(RECORD[purpose], 'view');
   }
 
   /* Which purposes have a template on, read once a page. */
@@ -304,7 +308,7 @@
   function enter() {
     wire();
     $('waNew').hidden = !maySend('message');
-    $('emlNew').hidden = !may('whatsapp', 'work');
+    $('emlNew').hidden = !may('whatsapp', 'work') || !may('send.email', 'work');
     st.tab = /(?:^|[?&])tab=email(?:&|$)/.test(location.search) ? 'email' : 'wa';
     tab(st.tab, true);
   }
@@ -1310,6 +1314,7 @@
      database holds to the record's own addresses and files first. */
   var ne = { parties: null, tpls: [], opts: [], file: null, key: '', busy: false, wired: false, lastTpl: null, seq: 0 };
   var NE_SAID = {
+    'send-off': window.ADspaceWords.line.emailSendOff,
     'bad-recipient': 'That address is no longer listed for this client or supplier. Choose another address.',
     'bad-copy': 'Copy up to five addresses, none the same as the recipient.',
     'bad-email': 'Enter a valid email address.',
