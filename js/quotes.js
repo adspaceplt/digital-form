@@ -1204,7 +1204,7 @@
     if (!QI) return;
     var me = QI, ctx = me.ctx;
     window.ADspaceConfirm.ask({ title: 'Bill the advertising budget to', go: 'Find', wait: true,
-      fields: [{ name: 'q', label: 'Bukku contact', placeholder: 'Name or registration number', required: false,
+      fields: [{ name: 'q', label: 'Bukku contact', placeholder: 'Name or Business Registration No.', required: false,
         note: 'Leave empty to bill the client\'s own contact.' }] }, function (v) {
       var term = String(v.q || '').trim();
       if (!term) {
