@@ -69,20 +69,47 @@
     if (!docs) return Promise.reject(new Error('The PDF tools are not loaded.'));
     var to = opts.to || {};
     var cjk = /[　-鿿＀-￯]/.test(String(q.brand || '') + String(opts.attention || '') + String(to.name || '') + String(to.address || ''));
+    /* The sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17): opts.seal holds
+       the record (`quotation_record`) and the verify address. The signed
+       pages are drawn and hashed first; the Record of this Document is then
+       appended, printing that hash, and the whole file is hashed too. The
+       blob carries both (`seal.sha`, `seal.pagesSha`). */
+    var seal = opts.seal || null, S = window.ADspaceSeal, got, info, signedN;
+    if (seal && !S) return Promise.reject(new Error('The seal tools are not loaded.'));
     return docs.lib().then(function (PDF) {
       var pdf;
       return PDF.PDFDocument.create().then(function (doc) {
         pdf = doc;
         return Promise.all([docs.embedFonts(pdf, PDF, { cjk: cjk }), docs.embedLogo(pdf)]);
-      }).then(function (got) {
+      }).then(function (g) {
+        got = g;
+        if (seal) {
+          var co = seal.record.company || (opts.to && opts.to.name) || q.brand;
+          info = { ref: q.ref, docId: seal.record.id, verifyUrl: seal.verifyUrl, rows: S.rows(seal.record),
+            sub: 'Quotation ' + q.ref + ', accepted by ' + co + ' and confirmed by ADSPACE PLT.' };
+          opts.extraPages = S.pagesFor(PDF, got[0], info);
+        }
         var form = layout(pdf, PDF, got[0], got[1], q, opts);
+        signedN = pdf.getPageCount();
         return docs.formFields(pdf, PDF, form.page, form.boxes);
       }).then(function () {
         /* The reference in the file's title: a send by WhatsApp or email is
            checked against it (`_shared/pdfref.ts`). */
         docs.meta(pdf, 'ADspace Quotation ' + q.ref, 'Quotation');
-        return pdf.save();
-      }).then(function (bytes) { return new Blob([bytes], { type: 'application/pdf' }); });
+        if (!seal) return pdf.save();
+        return pdf.save().then(S.sha256).then(function (pagesSha) {
+          info.pagesSha = pagesSha; info.signedPages = signedN; info.total = signedN + opts.extraPages;
+          S.addRecord(pdf, PDF, got[0], got[1], info);
+          return pdf.save().then(function (bytes) {
+            return S.sha256(bytes).then(function (sha) { return { bytes: bytes, sha: sha, pagesSha: pagesSha }; });
+          });
+        });
+      }).then(function (out) {
+        if (!seal) return new Blob([out], { type: 'application/pdf' });
+        var blob = new Blob([out.bytes], { type: 'application/pdf' });
+        blob.seal = { sha: out.sha, pagesSha: out.pagesSha };
+        return blob;
+      });
     });
   }
 
@@ -552,7 +579,7 @@
     }
 
     // The foot on every page; a preview is a draft over every page.
-    docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL');
+    docs.letterFoot(pn, pages, q.ref, 'PRIVATE & CONFIDENTIAL', opts.extraPages ? pages.length + opts.extraPages : 0);
     if (opts.draft) pages.forEach(function (pg) { docs.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', fonts.font); });
     return { page: formPage, boxes: boxes };
   }

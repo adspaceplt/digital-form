@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -596,6 +596,8 @@
     quote_website_read: 'p_key',
     quote_sign_code: 'p_key p_payload',
     quote_sign_finish: 'p_key p_code',
+    quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
+    quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
     quotation_submit: 'p_id p_reviewer p_company',
@@ -738,6 +740,11 @@
 
   window.__rpc = function (name, args) { return rpc(name, args); };
   var seq = Number(sessionStorage.getItem('__stubseq') || 0);
+
+  function sealDevice(p) {
+    var v = String(p == null ? '' : p).replace(/[\u0000-\u001f\u007f<>"`\\]/g, '').replace(/\s+/g, ' ').trim().slice(0, 200);
+    return v || null;
+  }
   function nid(p) {
     seq++;
     try { sessionStorage.setItem('__stubseq', String(seq)); } catch (e) {}
@@ -11063,7 +11070,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_)/.test(name)) {
+    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -11611,7 +11618,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var code = String(100000 + Math.floor(Math.random() * 900000));
         DB.quote_sign_codes.push({ id: nid('sc'), quotation_id: sco.q.id, code: code, email: c2.contact.email, tries: 0, used_at: null, caller_ip: scIp,
           created_at: qtNow.toISOString(), expires_at: new Date(qtNow.getTime() + 15 * 60e3).toISOString(),
-          payload: { company: c1.company, contact: c2.contact, signer: c3.signer, signature: c3.signature } });
+          payload: { company: c1.company, contact: c2.contact, signer: c3.signer, signature: c3.signature, device: sealDevice(pl.device) } });
+
+        DB.signing_steps = DB.signing_steps || [];
+        DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: sco.q.id, step: 'code', at: qtNow.toISOString(), email: c2.contact.email,
+          in_contacts: (DB.client_contacts || []).some(function (k) { return k.client_id === sco.q.client_id && !k.archived_at &&
+            String(k.email || '').trim().toLowerCase() === String(c2.contact.email || '').trim().toLowerCase(); }) ||
+            String((sco.q.contact || {}).email || '').trim().toLowerCase() === String(c2.contact.email || '').trim().toLowerCase(),
+          ip: scIp, country: null, device: sealDevice(pl.device) });
         window.__signCode = code;
         return qtOk({ ok: true, id: DB.quote_sign_codes[DB.quote_sign_codes.length - 1].id, code: code, email: c2.contact.email, ref: sco.q.ref, name: (c2.contact.salutation ? c2.contact.salutation + ' ' : '') + c2.contact.name });
       }
@@ -11631,12 +11645,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var fp = (function (str) { var h = 2166136261; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return ('00000000' + h.toString(16)).slice(-8); })(
           sq.ref + JSON.stringify(sq.lines) + JSON.stringify(sq.totals) + JSON.stringify(sfr.payload) + at);
         sq.signed_at = at;
-        sq.signed = Object.assign({ via: 'online' }, JSON.parse(JSON.stringify(sfr.payload)),
+        var sfPay = JSON.parse(JSON.stringify(sfr.payload)), sfDev = sfPay.device || null;
+        delete sfPay.device;
+        sq.signed = Object.assign({ via: 'online' }, sfPay,
           { record: { at: at, email: sfr.email,
             in_contacts: (DB.client_contacts || []).some(function (k) { return k.client_id === sq.client_id && !k.archived_at &&
               String(k.email || '').trim().toLowerCase() === String(sfr.email || '').trim().toLowerCase(); }) ||
               String((sq.contact || {}).email || '').trim().toLowerCase() === String(sfr.email || '').trim().toLowerCase(),
-            ip: window.__signIp || '203.0.113.24', country: 'MY', agent: navigator.userAgent.slice(0, 300), fingerprint: fp } });
+            ip: window.__signIp || '203.0.113.24', country: 'MY', agent: navigator.userAgent.slice(0, 300), device: sfDev, fingerprint: fp } });
         sq.returned_at = null; sq.return_note = null;
         var sc = DB.clients.filter(function (c) { return c.id === sq.client_id; })[0];
         DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: sq.brand,
@@ -11645,6 +11661,77 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!who.length) qtTell(sq.client_id, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id + ':' + at);
         else qsNotify(who, 'quote.signed', 'Quotation signed · ' + sq.brand, sq.ref + ' · ' + sfr.payload.signer.name + ' for ' + sfr.payload.company.legal_name + ' · check and submit', sq.id, sq.client_id);
         return qtOk({ ok: true, at: at });
+      }
+
+      var sealOf = function (key) { var w0 = qsByKey(key); return w0 ? qsShown(w0) : null; };
+      if (name === 'quote_opened') {
+        if (!/^[a-z0-9]{8}$/.test(String(args.p_key || ''))) return qtOk({ error: 'not-found' });
+        if (qtMe) return qtOk({ ok: true, kept: false });
+        var oq = sealOf(args.p_key);
+        if (!oq) return qtOk({ error: 'not-found' });
+        if (oq.source === 'website' && !oq.released_at) return qtOk({ ok: true, kept: false });
+        DB.signing_steps = DB.signing_steps || [];
+        var oip = window.__callerIp || '203.0.113.24', odev = sealDevice(args.p_device);
+        var six = qtNow.getTime() - 6 * 3600e3;
+        var mine = DB.signing_steps.filter(function (x) { return x.doc_kind === 'quotation' && x.doc_id === oq.id && x.step === 'opened'; });
+        if (mine.some(function (x) { return Date.parse(x.at) > six && x.ip === oip && x.device === odev; }) || mine.length >= 100) return qtOk({ ok: true, kept: false });
+        DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: oq.id, step: 'opened', at: qtNow.toISOString(), email: null, in_contacts: null,
+          ip: oip, country: window.__country || 'MY', device: odev });
+        return qtOk({ ok: true, kept: true });
+      }
+      if (name === 'quote_seal_state' || name === 'quote_seal_key') {
+        if (name === 'quote_seal_key') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_seal_key' } });
+        var ssq = /^[a-z0-9]{8}$/.test(String(args.p_key || '')) && sealOf(args.p_key);
+        if (!ssq) return qtOk({ error: 'not-found' });
+        if (!ssq.reviewed_at) return qtOk({ confirmed: false });
+        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key });
+      }
+      if (name === 'quotation_record' || name === 'quotation_seal_key') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'view')) return qtOk({ error: 'denied' });
+        var rq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var rc = rq && DB.clients.filter(function (c) { return c.id === rq.client_id; })[0];
+        if (!rq || (rc && !scopeRowOk(rc.stage, rc.owner, 'view', rc.sales_by))) return qtOk({ error: 'not-found' });
+        if (name === 'quotation_seal_key') return qtOk(rq.seal_key ? { key: rq.seal_key, client: rq.client_id } : { error: 'not-kept' });
+        var sg = rq.signed || null, steps = [{ step: 'issued', at: rq.issued_at, by: rq.source === 'website' ? null : rq.made_by, team: rq.source !== 'website', note: 'Rate Card v.' + rq.version }];
+        if (rq.source === 'website' && rq.released_at) steps.push({ step: 'sent', at: rq.released_at, by: rq.released_by, team: true, via: 'link' });
+        (DB.wa_outbox || []).forEach(function (w) {
+          if (w.ref_kind === 'quotation' && w.ref_id === rq.id && w.state !== 'failed') steps.push({ step: 'sent', at: w.created_at, by: w.created_by || 'ADspace', team: true, via: 'whatsapp', to: w.to_name,
+            state: w.read_at ? 'read' : w.delivered_at ? 'delivered' : w.state });
+        });
+        (DB.client_emails || []).forEach(function (e) {
+          var by = e.sent_by && DB.team_members.filter(function (m) { return m.id === e.sent_by; })[0];
+          if (e.kind === 'quotation' && e.ref_id === rq.id && e.status !== 'failed') steps.push({ step: 'sent', at: e.created_at, by: by ? by.name : 'ADspace', team: true, via: 'email', to: e.to_email, state: e.status });
+        });
+        (DB.signing_steps || []).forEach(function (g) {
+          if (g.doc_kind === 'quotation' && g.doc_id === rq.id) steps.push({ step: g.step, at: g.at, team: false, email: g.email, in_contacts: g.in_contacts, ip: g.ip, country: g.country, device: g.device });
+        });
+        if (rq.signed_at && sg) {
+          var srec = sg.record || {};
+          steps.push({ step: 'signed', at: rq.signed_at, team: false, by: (sg.signer || {}).name, role: (sg.signer || {}).designation, via: sg.via || 'online',
+            company: (sg.company || {}).legal_name, email: srec.email || null, in_contacts: srec.in_contacts == null ? null : !!srec.in_contacts,
+            ip: srec.ip || null, country: srec.country || null, device: srec.device || srec.agent || null, entered_by: sg.via === 'paper' ? srec.by : null });
+        }
+        if (rq.submitted_at) steps.push({ step: 'submitted', at: rq.submitted_at, team: true, by: rq.submitted_by, to: rq.reviewer_name });
+        if (rq.returned_at) steps.push({ step: 'returned', at: rq.returned_at, team: true, by: rq.returned_by, note: rq.return_note });
+        if (rq.reviewed_at) steps.push({ step: 'confirmed', at: rq.reviewed_at, team: true, by: rq.reviewed_by, role: rq.reviewed_role });
+        if (rq.sealed_at) steps.push({ step: 'sealed', at: rq.sealed_at, team: true, by: rq.sealed_by, note: rq.seal_sha });
+        steps.sort(function (a, b) { return (Date.parse(a.at) - Date.parse(b.at)) || String(a.step).localeCompare(String(b.step)); });
+        return qtOk({ id: rq.id, ref: rq.ref, brand: rq.brand, company: sg && sg.company ? sg.company.legal_name : null,
+          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at,
+          seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
+      }
+      if (name === 'quotation_seal') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'work')) return qtOk({ error: 'denied' });
+        var lq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var lc = lq && DB.clients.filter(function (c) { return c.id === lq.client_id; })[0];
+        if (!lq || (lc && !scopeRowOk(lc.stage, lc.owner, 'work', lc.sales_by))) return qtOk({ error: 'not-found' });
+        if (!lq.reviewed_at) return qtOk({ error: 'not-reviewed' });
+        if (lq.seal_key) return qtOk({ ok: true, kept: true, sha: lq.seal_sha });
+        if (!new RegExp('^private/' + lq.client_id + '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.pdf$').test(String(args.p_key || ''))) return qtOk({ error: 'bad-key' });
+        if (!/^[0-9a-f]{64}$/.test(String(args.p_sha || '')) || !/^[0-9a-f]{64}$/.test(String(args.p_pages_sha || ''))) return qtOk({ error: 'bad-sha' });
+        Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
+        qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
+        return qtOk({ ok: true, sha: args.p_sha });
       }
       if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
@@ -15045,6 +15132,29 @@ function opsCodeRange(cid, period, ty, src, seq) {
       functions: { invoke: function fnInvoke(name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
 
+        if (name === 'sign-download' && opts && opts.body && (opts.body.quotation || opts.body.quoteKey)) {
+          var sErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
+          var sAsk = opts.body.quotation ? rpc('quotation_seal_key', { p_id: opts.body.quotation })
+            : Promise.resolve((function () {
+
+                var k0 = String(opts.body.quoteKey || '');
+                var w0 = /^[a-z0-9]{8}$/.test(k0) && (DB.quotations || []).filter(function (q) { return q.access_key === k0 && !q.removed_at; })[0];
+                var n0 = 0, nx0;
+                while (w0 && n0++ < 20 && (nx0 = DB.quotations.filter(function (q) { return q.replaces === w0.id && !q.removed_at; })
+                  .sort(function (a, b) { return a.issued_at < b.issued_at ? 1 : -1; })[0])) w0 = nx0;
+                if (!w0) return { data: { error: 'not-found' }, error: null };
+                return { data: w0.reviewed_at && w0.seal_key ? { key: w0.seal_key, client: w0.client_id } : { error: 'not-kept' }, error: null };
+              })());
+          return sAsk.then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return sErr(d.error === 'not-kept' ? 404 : 403);
+            if (!/^private\/[0-9a-z-]+\/[0-9a-f-]{36}\.pdf$/.test(String(d.key || '')) || String(d.key).indexOf('private/' + d.client + '/') !== 0) return sErr(400);
+            return fetch('https://s3.test/get/' + d.key).then(function (res) {
+              if (!res.ok) return sErr(404);
+              return res.blob().then(function (b) { return { data: b, error: null }; });
+            }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
+          });
+        }
         if (name === 'sign-download' && opts && opts.body && opts.body.reportVersion) {
           var fnErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
           return rpc('sm_report_file_key', { p_version: opts.body.reportVersion }).then(function (r) {
@@ -16171,13 +16281,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
             report: ['versionId', function (id) {
               var v = (DB.sm_report_versions || []).filter(function (r) { return r.id === id; })[0];
               var rp = v && (DB.sm_reports || []).filter(function (r) { return r.id === v.report_id; })[0]; return rp && rp.client_id; }, ['reports']],
-            script: ['scriptId', function (id) { var x = (DB.video_scripts || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['scripts']]
+            script: ['scriptId', function (id) { var x = (DB.video_scripts || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['scripts']],
+            seal: ['quotationId', function (id) { var x = (DB.quotations || []).filter(function (r) { return r.id === id; })[0]; return x && x.client_id; }, ['clients.quotes']]
           }[bd.purpose];
           if (!upFor) return upRefuse('Reload the page to upload.');
           if (!bd.clientId || upFor[1](bd[upFor[0]]) !== bd.clientId) return upRefuse('bad_parent');
           if (!upFor[2].some(function (k) { return opsAllowed(k, 'work'); })) return upRefuse('not_allowed');
-          if (bd.purpose === 'report' && bd.private !== true) return upRefuse('bad_private');
-          if (bd.private === true && ['invoice', 'report'].indexOf(bd.purpose) < 0) return upRefuse('bad_private');
+          if ((bd.purpose === 'report' || bd.purpose === 'seal') && bd.private !== true) return upRefuse('bad_private');
+          if (bd.private === true && ['invoice', 'report', 'seal'].indexOf(bd.purpose) < 0) return upRefuse('bad_private');
         }
 
         if (bd.private === true) {
