@@ -56,7 +56,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       heading: 'Your verification code',
       body: 'Dear ' + m.name + ',\n\n' +
         'Please enter the code below on your application page to open your ' + title + ' ' + m.ref + '. The code expires in 15 minutes.\n\n{invoices}\n\n' +
-        'If you did not ask for this code, please ignore this email.\n\nADspace',
+        'If you did not request this code, please ignore this email.\n\nADspace',
       block: '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
         '<td style="background:#f5f5f5;border-radius:10px;padding:14px 22px;font-family:' + FONT + ';font-size:26px;font-weight:600;' +
         'letter-spacing:6px;color:#1a1a1a;text-align:center;" x-apple-data-detectors="false">' + esc(m.code) + '</td></tr></table>'
@@ -67,7 +67,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: title + ': ' + m.ref,
       heading: 'Your ' + title,
       body: 'Dear ' + m.name + ',\n\n' +
-        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been returned to you and is ready for your signature again.'
+        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been returned to you ' + (m.doc === 'contract' ? 'for your signature again.' : 'for your reply again.')
           : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
         'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
         'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + 'Yours sincerely,\n' + m.sender + '\nADspace',

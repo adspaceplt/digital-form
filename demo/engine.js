@@ -14194,7 +14194,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           record: { at: hNowIso, email: av.email, ip: '203.0.113.7', country: 'MY', device: ap.device || null, fingerprint: 'A1B2C3D4E5F60718' } };
         DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document',
           detail: ad.serial + (ad.kind === 'offer' ? ' accepted' : ' signed') + ' on the candidate page', created_at: hNowIso });
-        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', ad.serial + '. Confirm it on the candidate\'s record.');
+        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', ad.serial + '. Open the candidate to confirm it.');
         return hOk({});
       }
       var hMe = opsMe();

@@ -474,19 +474,19 @@
     signed: ['Signed', 'is-warn'], confirmed: ['Confirmed', 'is-ok'], void: ['Void', 'is-off'] };
   var EMP_TYPE = { permanent: 'Permanent', contract: 'Contract', intern: 'Internship', part_time: 'Part-time' };
   var DOC_SAID = {
-    'not-offer': 'Decide Proceed on the Scores tab first.', 'offer-first': 'Confirm the Employment Offer first.',
+    'not-offer': 'Choose Proceed on the Scores tab first.', 'offer-first': 'Confirm the Employment Offer first.',
     'exists': 'This candidate already has one. Open it below.', 'not-draft': 'This document has been sent and can no longer be edited.',
     'no-pay': 'Set the salary first.', 'bad-type': 'Choose the employment type.', 'bad-probation': 'Enter a probation of 0 to 12 months.',
     'bad-reply': 'Enter 1 to 14 days to reply.', 'bad-start': 'Enter the commencement date.', 'bad-end': 'Enter an end date after the commencement date.',
     'bad-scope': 'Enter the scope.', 'bad-duties': 'Enter the nature of works.', 'bad-basic': 'Enter the basic salary.',
     'bad-probation-pay': 'Enter the salary during probation, or leave it empty.', 'code-needed': 'Enter the master code again.',
-    'wrong-code': 'The master code is incorrect.', 'locked': 'Too many tries. Please try again in 15 minutes.',
+    'wrong-code': 'The master code is incorrect.', 'locked': 'Too many attempts. Please try again in 15 minutes.',
     'no-code': 'The master code is not set up yet. Please contact an admin.', 'not-sent': 'This document is not on the candidate\'s page.',
     'not-signed': 'This document has not been signed.', 'bad-note': 'Enter a reason.', 'bad-date': 'Choose a date from the day it was sent to today.',
-    'bad-file': 'Upload the signed copy as a PDF.', 'bad-stamp': 'Enter the stamp certificate number as printed.', 'bad-state': 'This cannot be done in its present state.',
+    'bad-file': 'Upload the signed copy as a PDF.', 'bad-stamp': 'Enter the stamp certificate number as printed.', 'bad-state': 'This document has changed. Refresh the page.',
     'bad-serial': 'Type the reference exactly as shown.', 'expired': 'The days to reply have passed. Replace the document instead.',
     'replaced': 'The document it replaces can no longer be replaced.', 'gone': 'This document no longer exists.', 'not-confirmed': 'Confirm the document first.',
-    'bad-sha': 'The sealed copy could not be kept. Please try again.'
+    'bad-sha': 'The sealed copy could not be saved. Please try again.'
   };
   function docSaid(r) { var k = r && r.data && r.data.error; return DOC_SAID[k] || said(r); }
   function docOf(b) { var id = b.getAttribute('data-id'); return (state.docs || []).filter(function (d) { return d.id === id; })[0] || {}; }
@@ -498,7 +498,7 @@
     var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Offer and contract</h4>' +
       (newOffer ? '<button class="btn btn-sm" type="button" data-h="docnew" data-kind="offer">New offer</button>' : '') +
       (newContract ? '<button class="btn btn-sm" type="button" data-h="docnew" data-kind="contract">New contract</button>' : '') + '</div>';
-    if (!state.docs.length) return head + '<p class="emptyline">' + (c.stage === 'offer' ? 'No documents.' : 'Decide Proceed on the Scores tab first.') + '</p></section>';
+    if (!state.docs.length) return head + '<p class="emptyline">' + (c.stage === 'offer' ? 'No documents.' : 'Choose Proceed on the Scores tab first.') + '</p></section>';
     return head + '<div class="hir-ivs">' + state.docs.map(function (d) { return docCard(d, can); }).join('') + '</div></section>';
   }
   function docCard(d, can) {
@@ -574,7 +574,7 @@
     if (k === 'offer') f.push({ name: 'scope', label: 'Scope', value: t.scope || '', required: true });
     else {
       f.push({ name: 'duties', label: 'Nature of works', rows: 3, value: t.duties || '', required: true });
-      f.push({ name: 'place', label: 'Place of employment', value: t.place || '', required: false, note: 'Leave empty for our registered office.' });
+      f.push({ name: 'place', label: 'Place of employment', value: t.place || '', required: false, note: 'Leave empty for the registered office.' });
     }
     window.ADspaceConfirm.ask({ title: (d ? 'Edit ' : 'New ') + (k === 'offer' ? 'offer' : 'contract'), go: d ? 'Save' : 'Create', wait: true, fields: f,
       check: function (v) {
@@ -602,12 +602,12 @@
     if (unlockTok && Date.now() - unlockAt < 14 * 60000) return Promise.resolve(unlockTok);
     return new Promise(function (resolve) {
       window.ADspaceConfirm.ask({ title: 'Enter the master code', go: 'Unlock', wait: true,
-        body: 'The salary is shown only after the master code.',
+        body: 'Enter the master code to see the salary.',
         field: { name: 'code', label: 'Master code', type: 'password', required: true } },
       function (v) {
         return rpc('hiring_unlock', { p_code: v.code }).then(function (r) {
           var x = r.data || {};
-          if (r.error || x.error) return x.error === 'wrong-code' ? 'The master code is incorrect. ' + x.left + ' tries left.' : docSaid(r);
+          if (r.error || x.error) return x.error === 'wrong-code' ? 'The master code is incorrect. ' + x.left + ' attempts left.' : docSaid(r);
           unlockTok = x.token; unlockAt = Date.now();
           setTimeout(function () { resolve(unlockTok); }, 0);
           return '';
@@ -632,7 +632,7 @@
       return payOf(d, tok).then(function (p) {
         var prob = Number((d.terms || {}).probation_months) || 0;
         var f = [{ name: 'basic', label: 'Basic salary per month (RM)', type: 'number', value: p.basic == null ? '' : p.basic, required: true }];
-        if (prob) f.push({ name: 'probation', label: 'During probation per month (RM)', type: 'number', value: p.probation == null ? '' : p.probation, required: false, note: 'Leave empty where it is the same.' });
+        if (prob) f.push({ name: 'probation', label: 'During probation per month (RM)', type: 'number', value: p.probation == null ? '' : p.probation, required: false, note: 'Leave empty if it is the same as the basic salary.' });
         window.ADspaceConfirm.ask({ title: 'Salary', go: 'Save', wait: true, fields: f,
           check: function (v) { return Number(v.basic) > 0 ? '' : DOC_SAID['bad-basic']; } },
         function (v) {
@@ -668,7 +668,7 @@
   function docSend(d, b) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Send ' + DOC_WORD[d.kind] + '?', go: 'Send', wait: true,
-      body: c.name + ' will be emailed to read it on their page, behind a code sent to ' + c.email + '. The email holds no salary.' },
+      body: 'ADspace will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.' },
     function () {
       return rpc('hiring_doc_send', { p_doc: d.id }).then(function (r) {
         var x = r.data || {};
@@ -711,7 +711,7 @@
   function docMark(d) {
     var c = state.rec, today = window.ADspaceClock.today();
     window.ADspaceConfirm.ask({ title: 'Mark signed', go: 'Choose the signed copy', wait: true,
-      body: 'Upload the signed copy as a PDF. It is kept in the candidate\'s private folder.',
+      body: 'Upload the signed copy as a PDF.',
       fields: [{ name: 'route', label: 'Signed', choices: [['scan', 'By scan'], ['paper', 'On paper']], seg: true, value: 'scan' },
         { name: 'on', label: 'Date signed', type: 'date', value: today, required: true }],
       check: function (v) { return !v.on || v.on > today || v.on < window.ADspaceClock.day(d.sent_at) ? DOC_SAID['bad-date'] : ''; } },
@@ -742,7 +742,7 @@
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
       body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
-      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it where the document was stamped.' }] },
+      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it if the document was stamped.' }] },
     function (v) {
       return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
@@ -771,7 +771,7 @@
     }).then(function (blob) {
       var path = c.id + '/sealed-' + d.id + '.pdf';
       return db.storage.from(BUCKET).upload(path, blob, { contentType: 'application/pdf', upsert: false }).then(function (x) {
-        if (x.error && !/exists|Duplicate/i.test(x.error.message || '')) throw new Error('The sealed copy was not kept. Please try again.');
+        if (x.error && !/exists|Duplicate/i.test(x.error.message || '')) throw new Error('The sealed copy could not be saved. Please try again.');
         return rpc('hiring_doc_seal', { p_doc: d.id, p_path: path, p_sha: blob.seal.sha, p_pages_sha: blob.seal.pagesSha });
       }).then(function (r) {
         if (r.error || (r.data || {}).error) throw new Error(docSaid(r));
@@ -805,7 +805,7 @@
   function docReplace(d) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Replace ' + DOC_WORD[d.kind] + '?', go: 'Replace', wait: true,
-      body: 'A new draft is made from its terms. When it is sent it keeps ' + d.serial + ' and this one becomes void. Set the salary again before sending.' },
+      body: 'A new draft will be created from these terms. Once sent, it takes ' + d.serial + ' and this document becomes void. Set the salary again before sending.' },
     function () {
       return rpc('hiring_doc_replace', { p_doc: d.id }).then(function (r) {
         if (r.error || (r.data || {}).error) return docSaid(r);
@@ -817,7 +817,7 @@
   function docVoid(d) {
     var c = state.rec;
     window.ADspaceConfirm.ask({ title: 'Void ' + d.serial + '?', go: 'Void', tone: 'danger', wait: true,
-      body: 'It leaves the candidate\'s page. A signed or sealed copy is kept.',
+      body: 'It will be removed from the candidate\'s page. A signed or sealed copy is kept.',
       field: { name: 'note', label: 'Reason', required: true } },
     function (v) {
       return rpc('hiring_doc_void', { p_doc: d.id, p_note: String(v.note || '').trim() }).then(function (r) {

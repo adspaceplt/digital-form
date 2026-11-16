@@ -877,7 +877,7 @@ begin
   insert into public.hiring_events (candidate_id, actor, action, detail)
   values (d.candidate_id, 'Candidate page', 'candidate.document', d.serial || case d.kind when 'offer' then ' accepted' else ' signed' end || ' on the candidate page');
   perform public.hiring_tell(d.candidate_id, 'hiring.signed', case d.kind when 'offer' then 'A candidate accepted an offer' else 'A candidate signed a contract' end,
-    d.serial || '. Confirm it on the candidate''s record.');
+    d.serial || '. Open the candidate to confirm it.');
   return jsonb_build_object('ok', true);
 end $$;
 revoke all on function public.careers_doc_answer(text, uuid, text, text, jsonb) from public;

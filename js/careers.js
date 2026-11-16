@@ -117,7 +117,7 @@
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
     'bad-id': 'Enter your NRIC Number (for example 900101-01-1234) or Passport Number.',
     'bad-signature': 'Please sign in the box.', expired: 'The time to reply has passed. Please contact ADspace.',
-    answered: 'This document has already been answered.', 'too-long': 'Shorten the reason to 500 characters.',
+    answered: 'You have already replied to this document. Refresh the page to see it.', 'too-long': 'Shorten the reason to 500 characters.',
     'mail-not-set-up': 'The code could not be sent. Please contact ADspace.', 'not-sent': 'The code could not be sent. Please try again.'
   };
   var VIEW = 'adspace-careers-view:';
@@ -258,7 +258,7 @@
         if (r.error) throw r.error;
         if (x.error) { docSay(DOCSAID[x.error] || W.notSentAdspace); return; }
         keepView(id, x.view); openDoc.data = x; openDoc.step = 'caution'; docBody();
-      }).catch(function () { btn.disabled = false; docSay(W.notSentAdspace || 'Not sent. Please try again.'); });
+      }).catch(function () { btn.disabled = false; docSay('The document could not be opened. Please try again, or contact ADspace.'); });
       return;
     }
     if (a === 'pdf') {
@@ -318,7 +318,7 @@
     if (!l.length) return '';
     if (l.some(function (x) { return x.state === 'sent'; })) return 'Awaiting your reply';
     if (l.some(function (x) { return x.state === 'signed'; })) return 'Awaiting ADspace confirmation';
-    return 'Offer in progress';
+    return l.some(function (x) { return x.kind === 'contract' && x.state === 'confirmed'; }) ? 'Offer accepted' : 'Awaiting ADspace confirmation';
   }
   function paint(d) {
     var i = d.interview, dec = decision(d);
