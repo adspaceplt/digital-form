@@ -416,10 +416,10 @@
       pages.forEach(function (pg, i) {
         pn.page = pg;
         pn.footMark(i, n, FZ);
-        text(doc.serial, M, 30, FZ, font, mute);
+        text(doc.serial, M, M, FZ, font, mute);
         var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
         var x = Math.min(Math.max(W / 2 - sentW / 2, refEnd + 12), pageStart - 12 - sentW);
-        text(footWord, x, 30, FZ, font, mute);
+        text(footWord, x, M, FZ, font, mute);
         if (doc.draft) DOCS.watermark(pg, 'DRAFT (INTERNAL USE ONLY)', font);
       });
       /* The reference in the file's title, which supplier-mail checks. */

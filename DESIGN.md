@@ -181,7 +181,7 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
   - heavier lines in Slate Regular (`fontBold`), headings in Slate Medium
     (`fontMed`);
   - registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt;
-  - margins 33.3pt (W ÷ φ⁶, the Social Media Report's; the user, 2026-11-16: 54pt read as wide white sides on paper), the type unchanged;
+  - margins 33.3pt on all four sides (W ÷ φ⁶, the Social Media Report's; the user, 2026-11-16: 54pt read as wide white sides on paper): the wordmark's capitals and the monogram start 33.3pt down, a continuation page's hairline sits there, the foot's baseline 33.3pt up; the type unchanged;
   - the monogram 21pt, top right of the letterhead only.
   - Config holds file paths, never font names.
 - Letter tables: Description, Rate, Amount only. Quantity rides in the rate
