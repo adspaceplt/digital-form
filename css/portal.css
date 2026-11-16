@@ -9836,3 +9836,10 @@ body.qs-page { background: var(--card); }
 .cr-facts > div { grid-template-columns: 120px minmax(0, 1fr); }
 .cr-facts dd { font-size: 14px; }
 .cr-next { margin: 0; font-size: 14px; color: var(--ink-soft); }
+/* A candidate's interview on their own page (2026-11-17, release H2 step B):
+   the times as /quote/'s choice cards, the confirmed one as facts. */
+.cr-iv { gap: 12px; padding-top: 8px; }
+.cr-picks { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.cr-note { margin: 0; padding: 12px 14px; border-radius: var(--radius); background: var(--sunk); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cr-facts dd.is-pre { white-space: pre-line; }
+.cr-iv > .qs-foot { margin: 0; max-width: none; padding-top: 8px; }

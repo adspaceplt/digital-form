@@ -38,7 +38,18 @@
     'bad-source': 'Choose a source.', 'bad-cv': 'Enter a web address that starts with https://.', 'too-long': 'Shorten the note to 2,000 characters.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'bad-role': 'Choose Owner or Interviewer.', 'bad-colleague': 'Choose an active colleague.', 'not-removed': 'Remove the candidate first.',
-    'bad-request': 'Please refresh the page and try again.'
+    'bad-request': 'Please refresh the page and try again.',
+    'bad-slots': 'Enter one to three times.', 'slot-past': 'Choose a time at least an hour from now.',
+    'slot-far': 'Choose times within the next 60 days.', 'bad-minutes': 'Choose the length.', 'bad-mode': 'Choose Google Meet or At the office.',
+    'closed': 'This candidate is no longer in hiring.', 'not-picked': 'The candidate has not chosen a time yet.',
+    'not-confirmed': 'Approve the interview first.', 'no-meet': 'Create the Google Meet first.',
+    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.', 'not-sent': 'The email was not sent. Please try again.',
+    'unknown': 'The email may not have been sent. Check with the candidate before sending it again.',
+    'slot-taken': 'Another online meeting is booked at this time. Send the candidate new times.',
+    'meet-not-set-up': 'Google Meet is not set up yet. Please contact an admin.',
+    'google-token': 'Google Meet is not available at the moment. Please contact an admin.',
+    'google-refused': 'Google Meet is not available at the moment. Please try again.',
+    'meet-pending': 'Google is still creating the Meet. Press Create Google Meet again in a moment.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -59,7 +70,7 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 
   var state = { rows: null, admin: false, find: '', open: null, rec: null, pane: 'overview', wired: false, editing: null, deleting: false, team: null };
-  var PANES = [['overview', 'Overview'], ['people', 'People'], ['activity', 'Activity']];
+  var PANES = [['overview', 'Overview'], ['interview', 'Interview'], ['people', 'People'], ['activity', 'Activity']];
   function paneOk(k) { return PANES.some(function (x) { return x[0] === k; }); }
   /* Team's tab (`tab=hiring`): a candidate rides as `candidate=`, its pane as
      `ctab=` (Overview left out), as a colleague's does as `member=` and `mtab=`. */
@@ -177,7 +188,14 @@
         return;
       }
       state.rec = d.candidate; state.role = d.role; state.people = d.people || []; state.events = d.events || [];
-      paintRec();
+      /* The candidate's interviews, read beside the record; a refused read is
+         said in its pane alone. */
+      return rpc('hiring_interviews_of', { p_id: id }).then(function (q) {
+        if (state.open !== id) return;
+        var e = q.data || {};
+        state.interviews = q.error || e.error ? null : (e.rows || []);
+        paintRec();
+      });
     });
   }
   function linkOf(key) { return location.origin + '/careers/?k=' + key; }
@@ -208,6 +226,7 @@
             '<button class="btn btn-icon" type="button" data-h="copy">' + COPY + '<span>Copy link</span></button>' +
             '<a class="btn btn-icon" href="' + esc(url) + '" target="_blank" rel="noopener">Preview ' + OUT + '</a>' +
             '</div></div>' : '') + '</section>' : ''),
+      interview: interviewPane(c, keeps && !removed && c.stage !== 'hired' && c.stage !== 'closed'),
       people: '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">People</h4>' +
           (role === 'admin' && !removed ? '<button class="btn btn-sm" type="button" data-h="addperson">Add colleague</button>' : '') + '</div>' +
           (state.people.length ? '<div class="hir-people">' + state.people.map(personRow).join('') + '</div>' : '<p class="emptyline">No colleagues.</p>') + '</section>',
@@ -248,7 +267,168 @@
         '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="unperson" data-id="' + esc(p.id) + '" role="menuitem">Remove</button></div></span>' : '') +
       '</div>';
   }
-  var WORD = { 'candidate.added': 'Candidate added', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
+  /* ---- Interviews ---------------------------------------------------------
+     An invitation of up to three times, all within the window setting (3
+     days); the candidate chooses one on their page, or asks for others; the
+     part or the Owner approves, a Google Meet booked on the shared calendar
+     where it is online, and the candidate is emailed each step (HR-SPEC.md
+     decision 2). */
+  var IV_STATE = { invited: ['Waiting for the candidate', 'is-warn'], picked: ['Time chosen', 'is-warn'], none: ['Other times asked for', 'is-danger'],
+    confirmed: ['Confirmed', 'is-ok'], cancelled: ['Cancelled', 'is-off'] };
+  var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
+  function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
+  function interviewPane(c, can) {
+    if (state.interviews == null) return '<section class="readgroup"><p class="emptyline">The interviews could not be loaded.</p></section>';
+    var open = state.interviews.filter(function (i) { return i.state !== 'cancelled'; })[0];
+    var invite = can && (!open || open.state === 'none' || open.state === 'confirmed');
+    return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
+      (invite ? '<button class="btn btn-sm' + (open ? ' btn-quiet' : '') + '" type="button" data-h="invite">' + (open ? 'Send new times' : 'Invite') + '</button>' : '') + '</div>' +
+      (state.interviews.length ? '<div class="hir-ivs">' + state.interviews.map(function (i) { return ivCard(i, can); }).join('') + '</div>'
+        : '<p class="emptyline">No interviews.</p>') + '</section>';
+  }
+  function ivCard(i, can) {
+    var st = IV_STATE[i.state] || IV_STATE.invited, live = can && i.state !== 'cancelled';
+    var times = (i.slots || []).map(function (t, n) {
+      var chosen = i.picked === n + 1;
+      return '<li' + (chosen ? ' class="is-on"' : '') + '><span class="nb">' + esc(when(t)) + '</span>' + (chosen ? ' <span class="chip">Chosen</span>' : '') + '</li>';
+    }).join('');
+    var mail = function (k, label) { var v = i[k + '_mail']; return v ? fact(label, esc(MAIL[v] || v) + ' · ' + esc(when(i[k + '_mail_at'])), v === 'sent' ? '' : 'is-warn') : ''; };
+    var acts = '';
+    if (live && i.state === 'picked') acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivapprove" data-id="' + esc(i.id) + '">Approve</button>';
+    if (live && i.state === 'confirmed' && i.mode === 'online' && !i.meeting_link) acts += '<button class="btn btn-sm btn-go" type="button" data-h="ivmeet" data-id="' + esc(i.id) + '">Create Google Meet</button>';
+    if (live && i.state === 'confirmed' && (i.meeting_link || i.mode === 'office') && i.confirm_mail !== 'sent')
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="confirm" data-id="' + esc(i.id) + '">Email confirmation</button>';
+    if (live && i.state === 'invited' && i.invite_mail !== 'sent')
+      acts += '<button class="btn btn-sm" type="button" data-h="ivmail" data-kind="invite" data-id="' + esc(i.id) + '">Email invitation</button>';
+    var menu = live ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for interview ' + i.round + '" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" hidden><button class="kmenu-item" data-g="5" type="button" data-h="ivcancel" data-id="' + esc(i.id) + '" role="menuitem">Cancel</button></div></span>' : '';
+    return '<div class="hir-iv' + (i.state === 'cancelled' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>Interview ' + esc(i.round) + '</b>' +
+        '<span class="hir-iv-ctl"><span class="chip-state ' + st[1] + '">' + esc(st[0]) + '</span>' + menu + '</span></div>' +
+      '<dl class="ovfacts">' +
+        fact(i.picked ? 'Times offered' : 'Times', '<ul class="hir-times">' + times + '</ul>') +
+        fact('Length', esc(i.minutes) + ' minutes') +
+        fact('Where', i.mode === 'online' ? (i.meeting_link ? '<a class="plink" href="' + esc(i.meeting_link) + '" target="_blank" rel="noopener"><span>Google Meet</span></a>' : 'Google Meet') : 'At the office') +
+        (i.note ? fact('Note to the candidate', esc(i.note), 'is-pre') : '') +
+        (i.candidate_note ? fact('Candidate\'s note', esc(i.candidate_note), 'is-pre') : '') +
+        fact('Invited by', esc([i.invited_by, when(i.invited_at)].filter(Boolean).join(' · '))) +
+        (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
+        mail('invite', 'Invitation') + mail('confirm', 'Confirmation') +
+      '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
+  }
+  function fnCall(name, body) {
+    return db.functions.invoke(name, { body: body }).then(function (r) {
+      if (r.error) return { error: 'not-sent' };
+      return r.data || {};
+    }).catch(function () { return { error: 'not-sent' }; });
+  }
+  function sendMail(id, kind) {
+    return fnCall('hiring-mail', { interviewId: id, kind: kind }).then(function (d) {
+      if (d.error) { msg('hirRecMsg', SAID[d.error] || said({ data: d }), d.error === 'unknown' ? 'warn' : 'err'); return false; }
+      return true;
+    });
+  }
+  function busyLine() {
+    /* The online meetings already on the shared calendar over the next two
+       weeks, named first so the times keyed avoid them. */
+    var C = window.ADspaceClock, from = new Date(), to = new Date(Date.now() + 14 * 86400000);
+    return fnCall('meet-create', { action: 'busy', from: from.toISOString(), to: to.toISOString() }).then(function (d) {
+      if (d.error || !d.busy) return 'The shared calendar could not be read. Check it before choosing times.';
+      if (!d.busy.length) return 'No online meetings are booked in the next two weeks.';
+      return 'Online meetings already booked: ' + d.busy.slice(0, 12).map(function (b) {
+        return C.date(b.start) + ', ' + C.clock(b.start) + (b.end ? ' to ' + C.clock(b.end) : '');
+      }).join('; ') + (d.busy.length > 12 ? '; and ' + (d.busy.length - 12) + ' more.' : '.');
+    });
+  }
+  function invite(btn) {
+    var c = state.rec, C = window.ADspaceClock, today = C.today(), key = newKey();
+    if (btn) btn.disabled = true;
+    busyLine().then(function (line) {
+      if (btn) btn.disabled = false;
+      var f = [];
+      [1, 2, 3].forEach(function (n) {
+        f.push({ name: 'd' + n, label: 'Time ' + n + ' date', type: 'date', min: today, half: true, required: n === 1, hint: n === 1 ? '' : 'Optional', head: n === 1 ? 'Times' : '' });
+        f.push({ name: 't' + n, label: 'Time ' + n, type: 'time', half: true, required: n === 1, hint: n === 1 ? '' : 'Optional' });
+      });
+      f[0].note = line;
+      f.push({ name: 'minutes', label: 'Length', choices: [['30', '30 minutes'], ['45', '45 minutes'], ['60', '60 minutes'], ['90', '90 minutes']], seg: true, value: '45', head: 'Interview' });
+      f.push({ name: 'mode', label: 'Where', choices: [['online', 'Google Meet'], ['office', 'At the office']], seg: true, value: 'online' });
+      f.push({ name: 'note', label: 'Note to the candidate', rows: 2, required: false, placeholder: 'Optional' });
+      var slots = function (v) {
+        var out = [];
+        [1, 2, 3].forEach(function (n) { if (v['d' + n] && v['t' + n]) out.push(C.at(v['d' + n], v['t' + n])); });
+        return out;
+      };
+      window.ADspaceConfirm.ask({ title: 'Invite ' + c.name, go: 'Send invitation', wait: true, fields: f,
+        body: 'The candidate chooses one of these times on their page.',
+        check: function (v) {
+          var s = slots(v);
+          if (!s.length) return SAID['bad-slots'];
+          if ([2, 3].some(function (n) { return Boolean(v['d' + n]) !== Boolean(v['t' + n]); })) return 'Enter both the date and the time of each time.';
+          if (s.some(function (t) { return t.getTime() < Date.now() + 3600000; })) return SAID['slot-past'];
+          if (String(v.note || '').trim().length > 500) return 'Shorten the note to 500 characters.';
+          return '';
+        } },
+      function (v) {
+        return rpc('hiring_invite', { p_id: c.id, p_slots: slots(v).map(function (t) { return t.toISOString(); }), p_minutes: Number(v.minutes),
+          p_mode: v.mode, p_note: String(v.note || '').trim() || null, p_idem: key }).then(function (r) {
+          var d = r.data || {};
+          if (d.error === 'slot-window') return 'Choose times within ' + d.days + ' days of each other.';
+          if (r.error || d.error) return said(r);
+          state.pane = 'interview';
+          sendMail(d.id, 'invite').then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Invitation sent.', 'ok'); }); });
+          return '';
+        });
+      });
+    });
+  }
+  function approve(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
+    if (!i) return;
+    var t = i.slots[i.picked - 1];
+    window.ADspaceConfirm.ask({ title: 'Approve interview?', go: 'Approve', wait: true,
+      body: when(t) + ', ' + i.minutes + ' minutes, ' + (i.mode === 'online' ? 'by Google Meet. A Google Meet is created on the shared calendar' : 'at the office. ' + c.name + ' is emailed the confirmation') +
+        (i.mode === 'online' ? ', and ' + c.name + ' is emailed the confirmation.' : '.') },
+    function () {
+      return rpc('hiring_interview_approve', { p_interview: id }).then(function (r) {
+        if (r.error || (r.data || {}).error) return said(r);
+        meetThenMail(id, i.mode);
+        return '';
+      });
+    });
+  }
+  function meetThenMail(id, mode) {
+    var c = state.rec;
+    var step = mode === 'online' ? fnCall('meet-create', { interviewId: id, action: 'create' }) : Promise.resolve({});
+    step.then(function (m) {
+      if (m.error) {
+        openRec(c.id).then(function () {
+          msg('hirRecMsg', m.error === 'slot-taken' && m.start ? 'Another online meeting is booked from ' + window.ADspaceClock.clock(m.start) +
+            (m.end ? ' to ' + window.ADspaceClock.clock(m.end) : '') + '. Cancel this interview and send the candidate new times.' : (SAID[m.error] || SAID['google-refused']), 'err');
+        });
+        return;
+      }
+      sendMail(id, 'confirm').then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Confirmation sent.', 'ok'); }); });
+    });
+  }
+  function cancelIv(id) {
+    var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
+    if (!i) return;
+    window.ADspaceConfirm.ask({ title: 'Cancel interview?', go: 'Cancel interview', tone: 'warn', wait: true,
+      body: (i.meeting_link ? 'Its Google Meet is taken off the shared calendar. ' : '') + 'The candidate is not emailed; tell them, or send new times.' },
+    function () {
+      var off = i.meeting_link ? fnCall('meet-create', { interviewId: id, action: 'delete' }) : Promise.resolve({});
+      return off.then(function (m) {
+        if (m.error) return SAID[m.error] || SAID['google-refused'];
+        return rpc('hiring_interview_cancel', { p_interview: id }).then(function (r) {
+          if (r.error || (r.data || {}).error) return said(r);
+          openRec(c.id); return '';
+        });
+      });
+    });
+  }
+
+  var WORD = { 'candidate.added': 'Candidate added', 'candidate.invited': 'Invitation sent', 'candidate.interview': 'Interview',
+    'candidate.email': 'Email', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
     'candidate.link': 'Link changed', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored' };
   function paintLog() {
     var host = $('hirLog');
@@ -333,6 +513,16 @@
       });
     });
     on('addperson', addPerson);
+    on('invite', invite);
+    on('ivapprove', function (b) { approve(b.getAttribute('data-id')); });
+    on('ivmeet', function (b) { b.disabled = true; meetThenMail(b.getAttribute('data-id'), 'online'); });
+    on('ivmail', function (b) {
+      b.disabled = true;
+      sendMail(b.getAttribute('data-id'), b.getAttribute('data-kind')).then(function (ok) {
+        openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); });
+      });
+    });
+    on('ivcancel', function (b) { cancelIv(b.getAttribute('data-id')); });
     on('role', function (b) {
       var p = state.people.filter(function (x) { return x.id === b.getAttribute('data-id'); })[0];
       if (!p) return;
