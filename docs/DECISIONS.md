@@ -10601,6 +10601,24 @@ day the Ads step's head tick ticked one ad: each row's change recounted the
 head tick, which read part-ticked after the first and stopped the loop (the
 Posts step had been fixed so before). `adsreport` holds both.
 
+### 2026-11-16 · Hiring, release H2 step A: candidates, their colleagues and their own page
+The user approved Hiring and People (HR-SPEC.md in the tests repository,
+decisions 1 to 13) and asked for it in parallel sessions; this is step A of
+release H2. Who hires is a granted part, `team.hiring`, an admin tool; on a
+candidate an admin adds colleagues as Owner or Interviews, and such a
+colleague sees that candidate alone, so the rail asks `hiring_mine()` beside
+`me()`. A candidate's details stay off the Activity record: its history is
+`hiring_events`, read only by the people on it, because the Activity record
+is read by groups who hold no part in hiring (PDPA). The CV file is kept in
+a private Supabase Storage bucket (`hiring`, 20 MB, PDF or Word), as the
+Handbook's files are, never on the CDN. The candidate's page `/careers/?k=`
+reads their name, the position and where it stands; it loads no
+maintenance.js, so a candidate's link stays up as a namecard's does. The
+30-day link (decision 13) holds its figure in `careers_read` until step C
+saves `hiring_link_days` with its Settings row: `app_settings_set` is
+restated by several sessions and is held by the connector. `team_roles_admin_guard`
+holds `team.personnel` too, so the Personnel release's restatement and this
+one agree whichever merges first.
 ### 2026-11-16 · A quotation's lines of the team's own
 The user: the quotation is "too tightly controlled"; a client's own
 requirements need a line named, a title and an order of the team's own.

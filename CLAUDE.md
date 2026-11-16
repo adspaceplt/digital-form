@@ -9,7 +9,8 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 selection), `creator/` (a creator's own page), `review/` (content review),
 `script/` (a client's video scripts), `verify/` (public reference check), `card/` (a colleague's namecard), `quote/`
 (a prospect's own quotation), `details/` (a client's billing details form),
-`supplier/` (a supplier's details form; `supplier-details/` forwards to it), `/` and
+`supplier/` (a supplier's details form; `supplier-details/` forwards to it),
+`careers/` (a candidate's own page), `/` and
 `404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
@@ -302,6 +303,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
+| `hiring.js`, `careers.js`, `careers/`, the HIRING section | hiring, hiringsql, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -514,7 +516,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
   `img/apple-touch-icon.png` and `img/icon-512.png`. A link sent to a
   client or a creator (`review/`, `creators/`, `creator/`, `script/`,
-  `client/`, `verify/`, `quote/`, `details/`, `supplier/`) names no share image, so WhatsApp reads it as its
+  `client/`, `verify/`, `quote/`, `details/`, `supplier/`, `careers/`) names no share image, so WhatsApp reads it as its
   title and address as it does a Google Drive link (`twitter:card` summary;
   the user, 2026-10-12, `tests/seo.js`); the console and the namecard keep
   `img/share-1200.png` (1200×630, `summary_large_image`): the wordmark in
@@ -766,9 +768,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     → Temporarily unavailable · until … · note", Malaysia time);
     `page_states_all()` reads them for Settings. `maintenance_state` and
     `maintenance_set`, for a page served before, read and set every page.
-  - Every portal page loads it after `api.js` but `/`, the 404 and `/card/`,
-    so the front door, short links and every colleague's namecard (a
-    printed QR's page) stay up; a page reads its own row by its address. A
+  - Every portal page loads it after `api.js` but `/`, the 404, `/card/` and `/careers/`,
+    so the front door, short links, every colleague's namecard (a
+    printed QR's page) and a candidate's page stay up; a page reads its own row by its address. A
     client page covers itself under its own bar (`.maint-cover`, z-index 39;
     the rest `inert`): Upgrade in progress / 系统升级中 (`W.maintTitle`;
     `maintText` The portal will be available again shortly. / 系统将稍后恢复使用。;
@@ -3295,6 +3297,41 @@ Each line is a rule that broke once. Its reason is in the archive.
   under the description (the user, 2026-10-23: it read as the item's). The quotation website keeps the client's
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
+
+### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`)
+- Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
+  step A built. Hiring is in the Internal chunk before Team, drawn at the
+  granted part `team.hiring` (an admin tool, an admin's by itself, held by
+  `team_roles_admin_guard` with `team.personnel`) or for a colleague holding
+  a place on a live candidate (`hiring_mine()`, read beside `me()`).
+- A candidate (`hiring_candidates`, `hiring_people`, `hiring_events`; RLS on,
+  no policy, no grant) is added at the part alone (`hiring_add(p_values,
+  p_idem)`: name, email, phone, position, source, CV link; one live candidate
+  an email, `taken` naming it; the same key twice one candidate), its adder
+  its Owner. On a candidate the part adds colleagues as Owner (decides and
+  sends) or Interviewer (sees it and scores; stored `interviews`; `hiring_person_set`, told in the
+  bell with no candidate's name, `hiring_person_remove` with Undo where it
+  happened); a colleague on it sees that candidate alone (`hiring_role`).
+  Edit (`hiring_save`, over the row as read, `stale`) and the link
+  (`hiring_link`, Reset link) are the part's or the Owner's; an Interviewer
+  reads no link.
+- The list is a card a stage (New first, Removed last and shut); a record
+  is Overview (Details, the CV, Candidate page with Copy link and Preview),
+  People and Activity (`hiring_events`, never the Activity record: a
+  candidate's details reach only the people on it).
+- A CV is a link (https) or a file in the private Storage bucket `hiring`
+  (20 MB, PDF or Word, `{candidate id}/{time}-{name}`), read by anyone on the
+  candidate through a 60-second signed link opened at the press, added and
+  removed by the part or the Owner (`hiring_file_ok`).
+- Remove (the part) hides a candidate from everyone else and its page, Undo
+  where it happened, Restore in its ⋯; Delete once removed, the name typed
+  back, takes its people, history and CV file.
+- `/careers/?k=` (`careers_read`, anon): Your application, the candidate
+  greeted by their whole name, the position, the day received and Application
+  received; never a colleague, a note or an email; English alone. The link
+  ends 30 days after the last step (`hiring_link_days`, saved in step C).
+- No candidate data goes to an AI service, ever (decision 10's rule for
+  salary covers every candidate field).
 
 ### Bukku (`js/bukku.js`, `bukku-sync`, `2026-10-18-bukku-contacts.sql`, `docs/BUKKU-SETUP.md`)
 - Phase 1 (the user, 2026-10-18: quotations, invoices and purchase orders

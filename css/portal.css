@@ -9819,3 +9819,11 @@ body.qs-page { background: var(--card); }
   font-size: 16px; cursor: text;
 }
 @media (max-width: 400px) { .otp-cells { gap: 6px; } }
+
+/* A candidate's own page (2026-11-16, js/careers.js): the title over its
+   lead, the facts on a shaded card, then what happens next, 16px apart. */
+.cr-page { display: grid; gap: 16px; }
+.cr-facts { padding: 16px 18px; border-radius: var(--radius); background: var(--sunk); }
+.cr-facts > div { grid-template-columns: 120px minmax(0, 1fr); }
+.cr-facts dd { font-size: 14px; }
+.cr-next { margin: 0; font-size: 14px; color: var(--ink-soft); }
