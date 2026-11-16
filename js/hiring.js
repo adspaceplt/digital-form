@@ -657,7 +657,7 @@
       return window.ADspaceHrDocs.bytes(docInfo(d), p, { draft: d.state === 'draft' });
     }).then(function (bytes) {
       return window.ADspaceDocs.save(new Blob([bytes], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), tab);
-    }).catch(function (e) { if (tab && tab.close) try { tab.close(); } catch (x) {} msg('hirRecMsg', e && e.message ? e.message : 'The document could not be drawn. Please try again.', 'err'); });
+    }).catch(function (e) { if (tab && tab.close) try { tab.close(); } catch (x) {} msg('hirRecMsg', e && e.message ? e.message : 'The document could not be generated. Please try again.', 'err'); });
   }
   function docMail(d) {
     return fnCall('hiring-mail', { docId: d.id, kind: 'doc' }).then(function (x) {

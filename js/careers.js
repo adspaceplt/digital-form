@@ -115,7 +115,7 @@
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
-    'bad-id': 'Enter your NRIC number (for example 900101-01-1234) or passport number.',
+    'bad-id': 'Enter your NRIC Number (for example 900101-01-1234) or Passport Number.',
     'bad-signature': 'Please sign in the box.', expired: 'The time to reply has passed. Please contact ADspace.',
     answered: 'This document has already been answered.', 'too-long': 'Shorten the reason to 500 characters.',
     'mail-not-set-up': 'The code could not be sent. Please contact ADspace.', 'not-sent': 'The code could not be sent. Please try again.'
@@ -269,7 +269,7 @@
         d.pay).then(function (b) {
         btn.disabled = false;
         return window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), window.ADspaceDocs.tabFor && window.ADspaceDocs.tabFor());
-      }).catch(function () { btn.disabled = false; docSay('The document could not be drawn. Please try again.'); });
+      }).catch(function () { btn.disabled = false; docSay('The document could not be generated. Please try again.'); });
       return;
     }
     if (a === 'decline' && $('crDeclineBox').hidden) { $('crDeclineBox').hidden = false; btn.textContent = 'Decline offer'; return; }

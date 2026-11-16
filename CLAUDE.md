@@ -304,7 +304,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `careers/`, the HIRING, HIRING INTERVIEWS and HIRING OUTCOMES sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `hrdocs.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES and HIRING OFFERS AND CONTRACTS sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -3353,9 +3353,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - /verify/ answers a sealed quotation with its Document ID and checks a
   file against the whole file's SHA-256 (Documents, `/verify/`).
 
-### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
+### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
-  steps A to C built. Hiring is Team's tab, never a rail section (the user,
+  steps A to D built. Hiring is Team's tab, never a rail section (the user,
   2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
   opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
   away) with Back to the list, an older `?s=hiring` address opening it.
@@ -3432,6 +3432,48 @@ Each line is a rule that broke once. Its reason is in the archive.
   days, and a closed or removed candidate after `hiring_keep_months` (12),
   PDPA 2010; their CV files wait in `hiring_files_gone` for the part's
   console to take out of Storage once a visit.
+- Offer and contract (step D, decisions 4, 5, 10, 14): the record's Offer
+  tab (the part and the Owner alone) drafts the Employment Offer once the
+  candidate is to proceed, and the Employment Contract once an offer is
+  confirmed, one live of each (`hiring_doc_save`: position, employment
+  type, commencement, an end for a contract or internship, probation
+  months, days to reply prefilled 3 and 7, the offer's scope, the
+  contract's nature of works and place). The salary is `hiring_doc_pay`'s
+  alone (RLS on, no policy, no grant), set and read only by the part
+  behind the master code (`hiring_unlock`, the Performance unlock's token,
+  15 minutes) and the caution step (Sensitive information follows /
+  Proceed with caution., Continue); the record reads it Set, never a
+  figure, and no list, notice, email, history or search holds it. Send
+  numbers it (`ADHR/OFR{YYMM}{NNN}`, `ADHR/EMP{YYMM}{NNN}`, under the
+  kind's lock) and emails the candidate (`hiring-mail` `doc`: the
+  reference and the day to reply, never the terms). The candidate's page
+  lists each by its reference; Read asks a six-digit code emailed to the
+  candidate (`hiring-mail` `code`, no sign-in; `hiring_doc_code`, the
+  service role's, hashed, 15 minutes, five an hour, the address
+  Cloudflare saw), then the caution step, then the terms and salary for
+  30 minutes (`careers_doc_open`, a view token hashed); an offer is
+  accepted (name typed, the confirmation ticked) or declined (a reason
+  optional), a contract signed (name, NRIC or passport number, a
+  signature drawn in a 300 by 100 box), the code's email, address,
+  country, device and the document's fingerprint kept
+  (`careers_doc_answer`), the Owners told. Signed outside the page: Mark
+  signed (by scan or on paper, the PDF in the candidate's private folder,
+  `hiring_doc_mark`); Send back with a reason keeps the signing in its
+  history; Withdraw / Restore while the days run; Replace drafts a copy
+  that takes the reference on Send, the earlier one void; Void (the
+  part, a reason); Delete a draft, or a void one with its reference typed
+  back. Confirm (countersign) is the part's (`hiring_doc_confirm`, a stamp
+  certificate number optional), and the confirmed copy is drawn once
+  behind the master code with its Record of this Document
+  (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
+  `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
+  (`hiring_doc_seal`), never drawn again. The PDF (`js/hrdocs.js`) is the
+  user's templates word for word, their typos put right (SOCSO, your,
+  absent), the salary in words and figures, the intern and part-time
+  paragraphs only for those types, no NRIC in the greeting. Its
+  documents' files are queued for the console to take out of Storage when
+  it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
+  HR document's reference yet (step E).
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 

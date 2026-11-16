@@ -10745,3 +10745,22 @@ found while mapping the live access were released ahead of the restructure.
    A rename is carried by id. The four-argument rule and the unused
    three-argument `client_row_seen` are dropped in the SQL Editor part, so a
    later restatement cannot fall back to a name.
+
+2026-11-17 — Hiring step D: offers and contracts (release H2). The part or a
+   candidate's Owner drafts the Employment Offer, then the Employment
+   Contract once the offer is confirmed; the salary is stored apart
+   (`hiring_doc_pay`) and set, read and drawn only by the part behind the
+   master code and a caution step, never shown as a figure on the record,
+   in a notice, an email or the history (HR-SPEC.md decision 10). The
+   candidate reads a document on their page behind a six-digit code emailed
+   to them (no account, decision 1) and the same caution step, then accepts,
+   declines or signs it with a drawn signature, the code's email, address
+   and device kept (decision 14). The part confirms; the confirmed copy is
+   sealed once with its Record of this Document and SHA-256, as a quotation
+   is (decision 15), stored in the private `hiring` bucket. Found while
+   building: an `if` condition holding `case … then … end then` does not
+   parse in PL/pgSQL (the case's own THEN ends the condition); the case is
+   parenthesised. A question's field is required unless marked
+   `required: false`, so an optional stamp number held Confirm back until
+   it was marked. Deferred to step E: /verify/ answering an HR document's
+   reference and file, Documents' HR Letters listing them.
