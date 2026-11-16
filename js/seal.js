@@ -147,7 +147,7 @@
     var sh = document.getElementById('sealSheet');
     if (!sh) return;
     var body = document.getElementById('sealBody'), msg = document.getElementById('sealMsg');
-    document.getElementById('sealTitle').textContent = o.title || 'Record';
+    document.getElementById('sealTitle').textContent = o.title || 'Record of this Document';
     document.getElementById('sealFor').textContent = o.sub || '';
     msg.textContent = ''; msg.className = 'msg';
     var x = document.getElementById('sealClose');
@@ -171,8 +171,8 @@
         }
       }).catch(function () {
         if (openNow !== mine) return;
-        if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(body, 'The record', '', paint);
-        else body.textContent = 'The record could not be loaded.';
+        if (window.ADspaceState && window.ADspaceState.failLine) window.ADspaceState.failLine(body, 'Record of this Document', '', paint);
+        else body.textContent = 'Unable to load. Refresh the page.';
       });
     };
     paint();

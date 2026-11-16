@@ -620,7 +620,7 @@
       return;
     }
     if (a === 'record') {
-      window.ADspaceSeal.open({ title: 'Record', sub: 'Quotation ' + q.ref, opener: btn, verifyUrl: verifyUrl(q),
+      window.ADspaceSeal.open({ title: 'Record of this Document', sub: 'Quotation ' + q.ref, opener: btn, verifyUrl: verifyUrl(q),
         load: function () {
           return ctx.db.rpc('quotation_record', { p_id: q.id }).then(function (r) {
             if (r.error) throw r.error;
