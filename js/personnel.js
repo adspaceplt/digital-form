@@ -190,23 +190,23 @@
     denied: 'You do not have permission to open employee records. Please ask an admin.',
     'not-found': 'This colleague no longer exists.',
     'not-team': 'Only a team member can open this.',
-    'bad-field': 'Check this field.',
+    'bad-field': 'Enter a valid value.',
     incomplete: 'Fill in every required field.',
     'no-consent': 'Tick the consent to submit.',
     'bad-name': 'Type your full name to sign the declaration.',
     stale: 'Not saved. This record was changed by someone else. The latest version is now shown.',
     erased: 'This colleague\'s details were erased.',
-    inactive: 'Only an active colleague can be asked.',
+    inactive: 'An employee record can be requested only from an active colleague.',
     own: 'Fill in your own record from My records.',
     'bad-status': 'Choose an employee status.', 'bad-type': 'Choose an employee type.',
     'bad-probation': 'Enter a probation of 0 to 12 months.', 'bad-date': 'Choose a join date from 14 Aug 2023.',
-    'bad-end': 'The end of contract must be after the join date.', 'bad-superior': 'Choose another colleague.',
+    'bad-end': 'The end of contract must be after the join date.', 'bad-superior': 'A colleague cannot report to themselves. Choose another colleague.',
     'bad-amount': 'Enter an amount of RM 0 or more.',
-    'bad-kind': 'Choose a file to add.', 'bad-key': 'The file could not be saved. Try again.', 'not-kept': 'No file is held.',
+    'bad-kind': 'Choose a file to add.', 'bad-key': 'The file could not be saved. Try again.', 'not-kept': 'No file has been added.',
     'code-needed': 'Enter the master code.', 'no-code': 'The master code is not set. Please contact an admin.',
-    'wrong-code': 'The master code is not correct.', locked: 'Too many tries. Try again in 15 minutes.',
-    'bad-value': 'Choose a value from the list.', 'bad-code': 'Enter 2 to 10 capital letters or digits.',
-    taken: 'Another department holds this code.'
+    'wrong-code': 'The master code is incorrect. Enter it again.', locked: 'Too many attempts. Try again in 15 minutes.',
+    'bad-value': 'Choose a value from the list.', 'bad-code': 'Enter an AutoCount code of 2 to 10 letters or digits.',
+    taken: 'This AutoCount code is already used by another department.'
   };
   function said(d) {
     if (!d || !d.error) return '';
@@ -214,7 +214,7 @@
       return /Could not find the function|schema cache|PGRST202/i.test(d.message || '')
         ? window.ADspaceWords.line.notYet : 'Not saved. Please try again.';
     }
-    if (d.error === 'wrong-code' && d.left) return SAID['wrong-code'] + ' ' + d.left + (d.left === 1 ? ' try' : ' tries') + ' left.';
+    if (d.error === 'wrong-code' && d.left) return SAID['wrong-code'] + ' ' + d.left + (d.left === 1 ? ' attempt' : ' attempts') + ' left.';
     return SAID[d.error] || 'Not saved. Please try again.';
   }
   function call(fn, args, then) {
@@ -245,6 +245,12 @@
   }
   function field(k) { return FIELDS.filter(function (f) { return f[1] === k; })[0]; }
   function labelOf(k) { var f = field(k); return f ? f[2] : k; }
+  /* A label inside a sentence: its first letter lower, but an official
+     term keeps its capitals (Full Name as per NRIC, NRIC Number). */
+  function lowerFirst(l) {
+    var w = String(l).split(' ');
+    return /^[A-Z]{2}/.test(l) || (w[1] && /^[A-Z]/.test(w[1])) ? l : l.charAt(0).toLowerCase() + l.slice(1);
+  }
   function valueWord(f, v) {
     if (v === undefined || v === null || v === '') return '';
     var kind = f[3];
@@ -268,7 +274,7 @@
       var inner = rows.length ? '<dl class="ovfacts">' + rows.map(function (f) {
         var w = valueWord(f, data[f[1]]);
         return '<div><dt>' + esc(f[2]) + '</dt><dd' + (w ? '' : ' class="is-missing"') + '>' + esc(w || 'Not set') + '</dd></div>';
-      }).join('') + '</dl>' : '<p class="prs-none">Not filled.</p>';
+      }).join('') + '</dl>' : '<p class="prs-none">Not set</p>';
       return group(s[1], inner);
     }).join('');
   }
@@ -284,7 +290,7 @@
       (team && rec.requested_at ? fact('Requested', dateWord(rec.requested_at)) : '') +
       (rec.updated_at ? fact('Last changed', dateWord(rec.updated_at) + (rec.updated_by ? ' by ' + rec.updated_by : '')) : '');
     return group('Employee record', '<dl class="ovfacts">' + facts + '</dl>' +
-      (miss ? '<p class="msg warn prs-miss">' + miss + (miss === 1 ? ' required field is' : ' required fields are') + ' not filled.</p>' : ''), act);
+      (miss ? '<p class="msg warn prs-miss">' + miss + (miss === 1 ? ' required field is' : ' required fields are') + ' not filled in.</p>' : ''), act);
   }
   function filesGroup(rec, can) {
     var files = rec.files || {};
@@ -296,7 +302,9 @@
           (f ? '<button class="btn btn-sm" type="button" data-f="view">View</button>' : '') +
           (can ? '<label class="btn btn-sm prs-pick">' + (f ? 'Replace' : PLUS + 'Add') +
             '<input type="file" accept="' + (k[0] === 'photo' ? 'image/jpeg,image/png' : 'image/jpeg,image/png,application/pdf') + '" data-f="pick" hidden></label>' : '') +
-          (f && can ? '<button class="btn btn-sm btn-quiet" type="button" data-f="remove">Remove</button>' : '') +
+          (f && can ? '<span class="team-act"><button class="kmenu-btn" type="button" data-f="menu" aria-label="More actions for ' + esc(k[1]) + '" aria-expanded="false">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>' +
+            '<div class="kmenu" data-menu hidden role="menu"><button class="kmenu-item is-danger" data-g="6" type="button" role="menuitem" data-f="remove">Delete</button></div></span>' : '') +
         '</span></div>';
     }).join('') + '</div><div class="msg" data-fmsg></div>');
   }
@@ -315,7 +323,7 @@
   }
   function salaryGroup(rec) {
     return group('Salary', '<dl class="ovfacts"><div><dt>Salary</dt><dd class="prs-locked">' + LOCK +
-      esc(rec.salary_set ? 'Held behind the master code' : 'Not set') + '</dd></div></dl>',
+      esc(rec.salary_set ? 'Set (master code required)' : 'Not set') + '</dd></div></dl>',
       '<button class="btn btn-sm" type="button" data-p="salary">View</button>');
   }
 
@@ -367,7 +375,7 @@
   }
   function request(b) {
     var m = team.m;
-    window.ADspaceConfirm.ask({ title: 'Request employee record?', body: m.name + ' is asked in the portal to fill in their employee record.', go: 'Send', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Request employee record?', body: m.name + ' will be asked to fill in their employee record in My records.', go: 'Request', wait: true },
       function () {
         return new Promise(function (ok) {
           call('personnel_request', { p_member: m.id }, function (d) {
@@ -464,7 +472,7 @@
   function refuse(d) {
     var k = d.field || (d.missing && d.missing[0]);
     msg('prsSheetMsg', d.error === 'incomplete' ? 'Fill in ' + (d.missing || []).slice(0, 4).map(labelOf).join(', ') + ((d.missing || []).length > 4 ? ' and the other required fields.' : '.') :
-      d.error === 'bad-field' && k ? 'Check ' + labelOf(k) + '.' : said(d));
+      d.error === 'bad-field' && k ? 'Enter a valid ' + lowerFirst(labelOf(k)) + '.' : said(d));
     var el = k && $('prs_' + k);
     if (el) { if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(el); el.focus(); }
   }
@@ -495,7 +503,7 @@
       title: 'Employment terms', go: 'Save', wait: true, opener: opener,
       fields: [
         { name: 'join', label: 'Join date', type: 'date', value: rec.join_date || '', required: false, half: true },
-        { name: 'probation', label: 'Probation in months', type: 'number', min: '0', max: '12', value: rec.probation_months == null ? '' : String(rec.probation_months), required: false, half: true },
+        { name: 'probation', label: 'Probation (months)', type: 'number', min: '0', max: '12', value: rec.probation_months == null ? '' : String(rec.probation_months), required: false, half: true },
         { name: 'status', label: 'Employee status', choices: [['', 'Not set']].concat(STATUSES.map(function (s) { return [s, s]; })), value: rec.employee_status || '' },
         { name: 'type', label: 'Employee type', choices: [['', 'Not set']].concat(TYPES), value: rec.employee_type || '', seg: true },
         { name: 'end', label: 'End of contract', type: 'date', value: rec.contract_end || '', required: false, note: 'For a contract or an internship.' },
@@ -581,9 +589,9 @@
         c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
         c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        c.toBlob(function (b) { if (b) ok({ blob: b, ext: 'jpg' }); else no(new Error('The picture could not be read.')); }, 'image/jpeg', 0.88);
+        c.toBlob(function (b) { if (b) ok({ blob: b, ext: 'jpg' }); else no(new Error('The picture could not be read. Choose a JPEG or PNG file.')); }, 'image/jpeg', 0.88);
       };
-      img.onerror = function () { URL.revokeObjectURL(url); no(new Error('The picture could not be read.')); };
+      img.onerror = function () { URL.revokeObjectURL(url); no(new Error('The picture could not be read. Choose a JPEG or PNG file.')); };
       img.src = url;
     });
   }
@@ -631,9 +639,20 @@
       });
       var v = row.querySelector('[data-f="view"]');
       if (v) v.addEventListener('click', function () { view(member, kind).catch(function (e) { msg(line, e.message); }); });
+      var mb = row.querySelector('[data-f="menu"]'), mn = row.querySelector('[data-menu]');
+      if (mb) {
+        mb.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var open = mn.hidden;
+          mn.hidden = !open; mb.setAttribute('aria-expanded', String(open));
+          if (open && window.ADspaceMenu) window.ADspaceMenu.place(mb, mn);
+        });
+        document.addEventListener('click', function (e) { if (!row.contains(e.target)) { mn.hidden = true; mb.setAttribute('aria-expanded', 'false'); } });
+      }
       var rm = row.querySelector('[data-f="remove"]');
       if (rm) rm.addEventListener('click', function () {
-        window.ADspaceConfirm.ask({ title: 'Remove from the record?', body: 'The file is taken off this record.', go: 'Remove', wait: true, opener: rm }, function () {
+        mn.hidden = true; mb.setAttribute('aria-expanded', 'false');
+        window.ADspaceConfirm.ask({ title: 'Delete file?', body: 'The file will be deleted from this employee record. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true, opener: mb }, function () {
           return new Promise(function (ok) {
             (member ? call : mineCall)('personnel_file_remove', { p_member: member || null, p_kind: kind }, function (d) {
               if (d.error) { ok(said(d)); return; }
@@ -725,13 +744,13 @@
       'Employee Status': 'Employee status', 'Basic Rate': 'Salary', 'Residence Country': 'Country', Nationality: 'Nationality' };
     Object.keys(need).forEach(function (h) { if (!v[h]) out.push(who + ': ' + need[h] + ' is not set.'); });
     if (!v['IC Number'] && !v['Passport Number']) out.push(who + ': NRIC Number or Passport Number is not set.');
-    Object.keys(MAX).forEach(function (h) { if (v[h] && String(v[h]).length > MAX[h]) out.push(who + ': ' + h + ' is longer than ' + MAX[h] + ' characters.'); });
-    if (v.Nationality && COUNTRIES.indexOf(v.Nationality) < 0) out.push(who + ': Nationality is not on AutoCount\'s list.');
-    if (v['Residence Country'] && COUNTRIES.indexOf(v['Residence Country']) < 0) out.push(who + ': Country is not on AutoCount\'s list.');
-    if (v.PostalCode && !/^\d{5}$/.test(v.PostalCode) && v['Residence Country'] === 'Malaysia') out.push(who + ': Postal code must be 5 digits.');
+    Object.keys(MAX).forEach(function (h) { if (v[h] && String(v[h]).length > MAX[h]) out.push(who + ': shorten ' + h + ' to ' + MAX[h] + ' characters.'); });
+    if (v.Nationality && COUNTRIES.indexOf(v.Nationality) < 0) out.push(who + ': choose a nationality from the list.');
+    if (v['Residence Country'] && COUNTRIES.indexOf(v['Residence Country']) < 0) out.push(who + ': choose a country from the list.');
+    if (v.PostalCode && !/^\d{5}$/.test(v.PostalCode) && v['Residence Country'] === 'Malaysia') out.push(who + ': enter a 5-digit postal code.');
     var b = x.data || {};
-    if (!b.bank || !b.bank_account || !b.bank_holder) out.push(who + ': Bank details are not complete.');
-    else if (BANKS.indexOf(b.bank) < 0) out.push(who + ': Bank is not on AutoCount\'s list.');
+    if (!b.bank || !b.bank_account || !b.bank_holder) out.push(who + ': complete the bank details.');
+    else if (BANKS.indexOf(b.bank) < 0) out.push(who + ': choose a bank from the list.');
     return out;
   }
   function exportAC(opener) {

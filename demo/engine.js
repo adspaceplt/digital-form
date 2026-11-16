@@ -4084,7 +4084,7 @@ function cardSlugFree(name, self, email) {
     var t = DB.team_members.filter(function (x) { return x.id === member && !x.erased_at; })[0];
     return t ? t.id : null;
   }
-  var PRS_FILE_WORD = { nric_front: 'NRIC front', nric_back: 'NRIC back', photo: 'Photograph' };
+  var PRS_FILE_WORD = { nric_front: 'NRIC (front)', nric_back: 'NRIC (back)', photo: 'Photograph' };
   function personnelRpc(name, a, fresh) {
     prsDb();
     var m = opsMe(), nowIso = new Date().toISOString();
@@ -4135,7 +4135,7 @@ function cardSlugFree(name, self, email) {
       if (!own && !what) return prsJson(id, true);
       r.data = c.data; r.updated_at = nowIso; r.updated_by = m.id;
       if (own) { r.consent_at = nowIso; r.declared_name = String(a.p_name).replace(/\s+/g, ' ').trim(); r.declared_at = nowIso; }
-      logAct('team.edited', who(id).name, own ? 'Personnel record declared' + (what ? ': ' + what : '') : 'Personnel record: ' + what);
+      logAct('team.edited', who(id).name, own ? 'Employee record submitted' + (what ? ': ' + what : '') : 'Employee record: ' + what);
       return prsJson(id, !own);
     }
     if (name === 'personnel_terms_set') {
@@ -4188,12 +4188,12 @@ function cardSlugFree(name, self, email) {
         r3.files = r3.files || {};
         r3.files[a.p_kind] = { key: a.p_key, at: nowIso, type: a.p_key.split('.').pop() };
         r3.updated_at = nowIso; r3.updated_by = m.id;
-        logAct('team.edited', who(w).name, 'Personnel record: ' + PRS_FILE_WORD[a.p_kind] + ' added');
+        logAct('team.edited', who(w).name, 'Employee record: ' + PRS_FILE_WORD[a.p_kind] + ' added');
       } else {
         if (!r3 || !r3.files || !r3.files[a.p_kind]) return { error: 'not-found' };
         delete r3.files[a.p_kind];
         r3.updated_at = nowIso; r3.updated_by = m.id;
-        logAct('team.edited', who(w).name, 'Personnel record: ' + PRS_FILE_WORD[a.p_kind] + ' removed');
+        logAct('team.edited', who(w).name, 'Employee record: ' + PRS_FILE_WORD[a.p_kind] + ' deleted');
       }
       return prsJson(w, w !== m.id);
     }

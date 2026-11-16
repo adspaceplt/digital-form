@@ -119464,7 +119464,7 @@ begin
   update public.personnel_records set data = c -> 'data', updated_at = now(), updated_by = me.id
    where team_member_id = p_member;
   insert into public.activity_log (actor, action, subject, detail)
-  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Personnel record: ' || what);
+  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Employee record: ' || what);
   return public.personnel_json(p_member, true);
 end $$;
 revoke all on function public.personnel_save(uuid, jsonb, timestamptz) from public, anon;
@@ -119497,7 +119497,7 @@ begin
    where team_member_id = me.id;
   insert into public.activity_log (actor, action, subject, detail)
   values (coalesce(me.name, 'colleague'), 'team.edited', me.name,
-          'Personnel record declared' || coalesce(': ' || what, ''));
+          'Employee record submitted' || coalesce(': ' || what, ''));
   return public.personnel_json(me.id, false);
 end $$;
 revoke all on function public.personnel_save_mine(jsonb, boolean, text, timestamptz) from public, anon;
@@ -119611,8 +119611,8 @@ begin
          updated_at = now(), updated_by = me.id
    where team_member_id = who;
   insert into public.activity_log (actor, action, subject, detail)
-  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Personnel record: '
-    || case p_kind when 'nric_front' then 'NRIC front' when 'nric_back' then 'NRIC back' else 'Photograph' end || ' added');
+  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Employee record: '
+    || case p_kind when 'nric_front' then 'NRIC (front)' when 'nric_back' then 'NRIC (back)' else 'Photograph' end || ' added');
   return public.personnel_json(who, who <> me.id);
 end $$;
 revoke all on function public.personnel_file_set(uuid, text, text) from public, anon;
@@ -119632,8 +119632,8 @@ begin
    where team_member_id = who and files ? p_kind;
   if not found then return jsonb_build_object('error', 'not-found'); end if;
   insert into public.activity_log (actor, action, subject, detail)
-  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Personnel record: '
-    || case p_kind when 'nric_front' then 'NRIC front' when 'nric_back' then 'NRIC back' else 'Photograph' end || ' removed');
+  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Employee record: '
+    || case p_kind when 'nric_front' then 'NRIC (front)' when 'nric_back' then 'NRIC (back)' else 'Photograph' end || ' deleted');
   return public.personnel_json(who, who <> me.id);
 end $$;
 revoke all on function public.personnel_file_remove(uuid, text) from public, anon;

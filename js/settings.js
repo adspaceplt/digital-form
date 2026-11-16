@@ -1047,7 +1047,7 @@
         if (!key || code === String((d && d.ac_code) || '')) return depChanged('Saved.');
         return db.rpc('department_ac_code_set', { p_key: key, p_code: code || null }).then(function (x) {
           var e = x.error || (x.data && x.data.error);
-          if (e) return e === 'taken' ? 'Another department holds this AutoCount code.' : e === 'bad-code' ? 'Enter 2 to 10 capital letters or digits.'
+          if (e) return e === 'taken' ? 'This AutoCount code is already used by another department.' : e === 'bad-code' ? 'Enter an AutoCount code of 2 to 10 letters or digits.'
             : (e.message && /function|schema cache/i.test(e.message)) ? window.ADspaceWords.line.notYet : 'Not saved.';
           return depChanged('Saved.');
         });
