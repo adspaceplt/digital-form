@@ -10577,3 +10577,12 @@ execution block's change; `pdfreal` now holds that it is one), and the
 `head` diagnostic pressed Add creators before opening the Creators pane.
 `crm`, `analytics` and `tabbar` passed, so their logged defects are struck.
 
+
+### 2026-11-16 · The letterhead takes the report's golden margin
+The user, on a printed quotation: the 54pt sides read as too much white
+beside small type, and asked for the margins cut, the type kept, to a golden
+proportion. Every letterhead document (quotation, client, HR and supplier
+letters, the Supplier Service Agreement) now prints 33.3pt in from each side,
+the Social Media Report's margin (10·φ^2.5, W ÷ φ⁶), one margin for every PDF
+the console draws on A4 but the Rate Card, which keeps the team's own layout.
+`pdfcases` measures the new bound.
