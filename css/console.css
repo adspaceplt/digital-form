@@ -5785,3 +5785,24 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .readgroup-head:has(> .prs-acts) { flex-wrap: wrap; }
 .is-narrow .prs-acts { flex: 1 0 100%; justify-content: stretch; }
 .is-narrow .prs-acts > .btn { flex: 1 1 50%; }
+/* Interview scorecards (2026-11-17): Position · Criteria · the pen and ⋯;
+   a candidate's scores and decision as the interviews' shaded cards. */
+.ind-row.is-hsc { grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 80px; }
+.ind-row.is-hsc .ind-acts { gap: 4px; justify-content: flex-start; }
+.ind-row.is-hsc .hsc-crit { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.hir-decide { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.hir-decide > .btn { flex: 0 0 auto; }
+.hir-scores { display: grid; gap: 12px; margin-top: 12px; }
+.hir-score { padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.hir-score .hir-iv-head { margin-bottom: 4px; }
+.hir-total { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.hir-card-line { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-mute); }
+.hir-note { margin: 4px 0 0; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .ind-row.is-hsc:not(.ind-head) { grid-template-columns: minmax(0, 1fr) 80px; grid-template-areas: "name acts" "crit acts"; column-gap: 8px; }
+  .ind-row.is-hsc > .hsc-pos { grid-area: name; }
+  .ind-row.is-hsc > .hsc-crit { grid-area: crit; }
+  .ind-row.is-hsc > .ind-acts { grid-area: acts; }
+  .ind-row.is-hsc.ind-head { display: none; }
+  .hir-decide > .btn { flex: 1 1 100%; }
+}

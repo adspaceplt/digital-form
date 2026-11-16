@@ -10685,3 +10685,16 @@ auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
 Settings row's figures are joined with no-break spaces, which a suite reads
 as such.
 
+### 2026-11-17 — Hiring outcomes: scores, the decision, the talent pool kept for a time (release H2 step C)
+HR-SPEC.md decisions 3 and 13. Scores are kept against a scorecard of the
+position (Standard for any other), 1 to 5 a criterion, because a single
+mark per candidate could not be compared across interviewers; every
+colleague on the candidate reads them, an Interviewer included, since
+decision 3 has them score. The decision is the part's or the Owner's, with
+Reopen as its way back. The talent pool needs the candidate's own
+agreement (PDPA 2010): Keep in talent pool asks on their page, and only an
+agreement starts the 12 months; an unanswered question ends with the link,
+and a closed candidate is removed after a keep period the team sets. SQL
+cannot remove a Storage object, so a removed candidate's CV path is queued
+and the part's console takes the files out once a visit.
+

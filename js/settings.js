@@ -259,13 +259,18 @@
               : 'Reminder every ' + plural(num('abroad_remind_hours'), 'hour', 'hours')].filter(Boolean)) },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) },
-        /* Hiring (2026-11-17, release H2 step B): how far apart an
-           invitation's interview times may be, and how long a candidate's
-           link stays open after the last step. */
+            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
+      /* Hiring (2026-11-17, release H2 steps B and C): an invitation's
+         window, the candidate link's days, the talent pool and how long a
+         closed candidate is kept; the scorecards at the Hiring part. */
+      ['Hiring', [
         biz && { id: 'hiring', name: 'Hiring', kind: 'edit',
           meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
-            num('hiring_link_days') == null ? '' : 'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days')].filter(Boolean)) }]]]);
+            'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
+            'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
+            'Closed kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
+        may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: '',
+          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', 'clients', [
       ['Clients', [

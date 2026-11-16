@@ -5949,7 +5949,9 @@
     abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')],
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
     hiring: { title: 'Hiring', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
-      ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')]] },
+      ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],
+      ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool', per('month')],
+      ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed kept', per('month')]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for (months)', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for (months after they leave)', 'leave', '', 'Leavers', per('month')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
