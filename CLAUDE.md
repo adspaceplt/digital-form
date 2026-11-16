@@ -315,6 +315,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
+| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey` | seal, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -3300,6 +3301,40 @@ Each line is a rule that broke once. Its reason is in the archive.
   under the description (the user, 2026-10-23: it read as the item's). The quotation website keeps the client's
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
+
+### Signed documents (`js/seal.js`, `2026-11-17-signed-seal.sql`; specs/SEAL-SPEC.md)
+- One mechanism for every document a client or candidate signs (quotations
+  now, the Employment Offer and Contract next): `ADspaceSeal` (`device`,
+  `sha256`, `pagesFor`, `addRecord`, `rows`, `panel`, `open`), the
+  `signing_steps` table (`doc_kind`, `step`: `opened`, `code`; RLS on, no
+  policy, no grant) and `seal_device`. Never quotation-only code.
+- A signer's steps keep the time, address, country and the device as the
+  browser reports it (browser, system, screen, time zone, language; never a
+  MAC address): the link read (`quote_opened`, anon, once in six hours an
+  address and device, a hundred a document, never a colleague's or an unsent
+  website quotation's), the code (`quote_sign_code`), the signature
+  (`signed.record.device`).
+- Approving a signed quotation seals it once (`quotation_review` ok, then
+  the reviewer's page): drawn with its Record of this Document as the last
+  page (Document ID, the SHA-256 of the signed pages, Verify with a QR code
+  of `/verify/?s={ref}`, every step to the second GMT+8, Slate Book 9pt in
+  every cell, every foot counting the Record page), stored private
+  (`sign-upload` `seal`), kept by `quotation_seal` (Quotations Work, once;
+  `not-reviewed`, `bad-key`, `bad-sha`, a second answering `kept`) with the
+  whole file's SHA-256 beside the pages'. Never drawn again: every Download,
+  send and Preview hands that file over (`sign-download` `quotation`); one
+  confirmed before, or whose keep failed, is sealed at its next Download by
+  a colleague at Work. Gated on `s3.privateInvoices`.
+- The quotation's ⋯ Record (`#sealSheet`, `quotation_record`, Quotations
+  View): State (Confirmed · sealed with the padlock), Document ID, SHA-256,
+  Verify, and every step to the second (issued, sent on the link, WhatsApp
+  or email, opened, code sent, signed, submitted, sent back, confirmed,
+  sealed).
+- The client's link reads Accepted · awaiting ADspace confirmation with who
+  signed to the second, then Confirmed by ADspace on its day with the
+  Document ID (`quote_seal_state`, anon) and Download signed copy
+  (`sign-download` `quoteKey`, the service role's `quote_seal_key`), the
+  main Download then gone.
 
 ### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);

@@ -77,6 +77,12 @@ const PURPOSES: Record<string, {
     clientOf: async (a, id) => { const r = await one(a.from('sm_report_versions').select('report_id, sm_reports(client_id)').eq('id', id).maybeSingle());
       const c = r && (r.sm_reports as Record<string, unknown> | null);
       return c ? { client: String(c.client_id) } : null; } },
+  /* A signed quotation's sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17):
+     drawn once it is approved, kept private under the quotation's own
+     client, asked of Clients: Quotations at Work in scope. */
+  seal: { field: 'quotationId', sections: ['clients.quotes'], kind: 'client', level: 'work', private: 'must',
+    clientOf: async (a, id) => { const r = await one(a.from('quotations').select('client_id').eq('id', id).maybeSingle());
+      return r ? { client: String(r.client_id) } : null; } },
   /* A video script scene's picture (2026-11-05): a colleague's photo or
      sketch, or one Draw with AI drew, under the client's folder, asked of
      the script's client at Work. */
@@ -94,7 +100,7 @@ Deno.serve(async (req) => {
   let body: {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
-    purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string;
+    purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string; quotationId?: string;
     memberId?: string | null; kind?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
