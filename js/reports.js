@@ -4907,8 +4907,12 @@
     });
     Array.prototype.forEach.call(box.querySelectorAll('[data-pickall]'), function (g) {
       g.addEventListener('change', function () {
+        /* The state is taken once: each row's change recounts the head tick,
+           which read part-ticked after the first row and stopped the rest
+           (2026-11-16, the user: the head ticked one ad). */
+        var on = g.checked;
         Array.prototype.forEach.call(g.closest('.rp-ad-table').querySelectorAll('[data-pick]'), function (i) {
-          if (i.checked !== g.checked) { i.checked = g.checked; i.dispatchEvent(new Event('change')); }
+          if (i.checked !== on) { i.checked = on; i.dispatchEvent(new Event('change')); }
         });
       });
     });
@@ -5203,6 +5207,21 @@
     if (/aware|reach|brand/.test(x)) return 'awareness';
     return null;
   }
+  /* With no Objective column (an export without it), the result type names
+     it: Reach and ad recall are awareness, a lead form leads, a link click
+     traffic (2026-11-16, the user: Laman Waringin's reach ads were filed as
+     Leads, the sheet's default). */
+  function objectiveOfResult(v) {
+    var x = String(v || '').toLowerCase().trim();
+    if (!x || x === 'mixed') return null;
+    if (/lead/.test(x)) return 'leads';
+    if (/purchase|website|add to cart|checkout|conversion/.test(x)) return 'sales';
+    if (/messag|conversation/.test(x)) return 'engagement';
+    if (/reach|recall|impression|thruplay|video (play|view)/.test(x)) return 'awareness';
+    if (/link click|landing page|profile|page visit/.test(x)) return 'traffic';
+    if (/engag|interaction|like|follow/.test(x)) return 'engagement';
+    return null;
+  }
   /* A date in the period's terms: before it starts reads as its first day,
      after it ends (or not ended) as its last. */
   function clip(d, lo, hi) { return !d ? d : (lo && d < lo ? lo : hi && d > hi ? hi : d); }
@@ -5266,10 +5285,21 @@
        that name two result types cannot be told apart, and are refused. */
     var groupOf = {}, idLabel = {}, idBase = {}, idAd = {}, noIdLabels = {};
     var CN = function (x) { return AN ? AN(x) : x; };
+    /* The objective an ad's result type names, from any of its rows (a day
+       with no results names none), by its Ad ID, else its name and ad set. */
+    var resObj = {};
+    var resKey = function (raw) { return raw.ad_id ? 'id:' + String(raw.ad_id).trim() : 'n:' + CN(raw.name) + '|' + (raw.audience || ''); };
     lines.slice(1).forEach(function (l) {
       var raw = cellsOf(l);
       if (!raw.name || TOTAL_ROW.test(raw.name)) return;
-      var obj = objectiveOf(raw.objective) || fallbackObj, base = [CN(raw.name), obj, raw.audience || ''].join('|');
+      var o0 = objectiveOfResult(raw.result_label), k0 = resKey(raw);
+      if (o0 && !resObj[k0]) resObj[k0] = o0;
+    });
+    var objOf = function (raw) { return objectiveOf(raw.objective) || resObj[resKey(raw)] || fallbackObj; };
+    lines.slice(1).forEach(function (l) {
+      var raw = cellsOf(l);
+      if (!raw.name || TOTAL_ROW.test(raw.name)) return;
+      var obj = objOf(raw), base = [CN(raw.name), obj, raw.audience || ''].join('|');
       if (raw.ad_id) {
         var id = raw.ad_id + '|' + raw.name;
         idBase[id] = base;
@@ -5316,7 +5346,7 @@
       if (TOTAL_ROW.test(raw.name || '')) return;
       if (!raw.name) { skipped++; return; }
       if (raw.account) accounts[raw.account] = true;
-      var obj = objectiveOf(raw.objective) || fallbackObj;
+      var obj = objOf(raw);
       /* An age band or a day of an ad is gathered into its row (Ad ID with
          the name, as a spreadsheet can round a long ID). */
       var key = raw.ad_id ? groupOf[raw.ad_id + '|' + raw.name] : [CN(raw.name), obj, raw.audience || ''].join('|');
