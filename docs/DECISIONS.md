@@ -10664,3 +10664,24 @@ fields take `type: 'number'` and a `check`. `team_roles_admin_guard` names
 DELETE in its body, so its restatement is the SQL Editor's part. Previous
 employers' salaries on the paper form are not asked (decision 10).
 
+### 2026-11-17 — Hiring interviews: three times, the candidate's choice, a colleague's approval (release H2 step B)
+HR-SPEC.md decision 2 asked for no slots system: up to three times within a
+window, the candidate choosing one or asking for others, a colleague
+approving before the confirmation goes. Built as `hiring_interviews` (an
+invitation a row, a new one replacing one still open) with the window
+(`hiring_invite_days`, 3) and the candidate link's days (`hiring_link_days`,
+30, deferred from step A because the sql suite holds every seeded setting to
+`app_settings_set`) as Business settings. The shared calendar holds every
+client's meetings, so the invitation's question names the online meetings
+already booked by their times alone (`meet-create` `busy`), and an
+interview's event is titled by its position alone: a candidate's name stays
+with the people on the candidate. The candidate's emails go through their
+own function (`hiring-mail`) from a careers sender, built on the portal's one
+layout; the button to their page rides the layout's `{invoices}` block, the
+one place it draws server-built HTML. Cancelling emails nobody, since the
+colleague who cancels may be about to send new times. Found on the way: the
+page's lone button sat centred because `.qs-foot` keeps a 560px column with
+auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
+Settings row's figures are joined with no-break spaces, which a suite reads
+as such.
+

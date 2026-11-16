@@ -5747,6 +5747,20 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .console .engcard { outline: 1px solid var(--card-edge, var(--line)); outline-offset: -1px; }
 .eng-invno { font-variant-numeric: tabular-nums; }
 .eng-invrow .linkbtn.eng-invno { color: var(--ink); font-weight: 500; }
+/* A candidate's interviews (2026-11-17, release H2 step B): a shaded card an
+   invitation, its name and state on one line with the ⋯ at the right edge,
+   the times a plain list, the acts at the card's right edge. */
+.hir-ivs { display: grid; gap: 12px; }
+.hir-iv { padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.hir-iv.is-off > :not(.hir-iv-head) { opacity: .6; }
+.hir-iv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); margin-bottom: 8px; }
+.hir-iv-head > b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.hir-iv-ctl { display: inline-flex; align-items: center; gap: 8px; }
+.hir-times { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hir-times .chip { margin-left: 6px; }
+.hir-iv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.hir-iv-acts > .btn { flex: 0 0 auto; }
+
 
 /* ---- Personnel (js/personnel.js, 2026-11-16): a colleague's employee record ---- */
 .prs-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }

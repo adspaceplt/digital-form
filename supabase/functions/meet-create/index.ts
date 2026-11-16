@@ -63,9 +63,13 @@ function meetLinkOf(ev: Record<string, unknown>): string | null {
    inside them), so two presses at once, or a press after a save was lost,
    ask Google for the same event and the second is answered 409, never a
    second booking whose save orphans the first. */
-function eventIdOf(touch: boolean, id: string): string {
-  return (touch ? 'adtouch' : 'admonth') + id.replace(/-/g, '').toLowerCase();
+type Kind = 'month' | 'touch' | 'hire';
+function eventIdOf(kind: Kind, id: string): string {
+  return (kind === 'touch' ? 'adtouch' : kind === 'hire' ? 'adhire' : 'admonth') + id.replace(/-/g, '').toLowerCase();
 }
+const MEETING = /https?:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
+const online = (x: Record<string, unknown>) => Boolean(meetLinkOf(x)) ||
+  MEETING.test(String(x.location || '')) || MEETING.test(String(x.description || ''));
 /* What the Calendar API said, in one word the page can name. */
 async function why(r: Response): Promise<string> {
   const d = await r.json().catch(() => ({}));
@@ -79,23 +83,51 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { engagementId?: string; touchId?: string; action?: string };
+  let body: { engagementId?: string; touchId?: string; interviewId?: string; action?: string; from?: string; to?: string };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
   /* A month's content meeting (engagementId), or a meeting a colleague
      logged in a client's Calls and visits outside any month (touchId,
-     2026-10-05). Each has its own pair of database functions; the booking
-     is the same. */
-  const touch = body.touchId != null;
-  const eid = String((touch ? body.touchId : body.engagementId) ?? '');
+     2026-10-05), or a candidate's interview (interviewId, 2026-11-17). Each
+     has its own pair of database functions; the booking is the same. Busy
+     answers the online meetings already on the calendar over a span, their
+     times alone, for a colleague keying a candidate's interview times. */
   const action = String(body.action ?? 'create');
-  if (!/^[0-9a-f-]{36}$/.test(eid)) return json({ error: touch ? 'bad_touch' : 'bad_engagement' }, 400, origin);
-  const PREP = touch ? 'client_touch_meet_prepare' : 'ops_engagement_meet_prepare';
-  const SET = touch ? 'client_touch_set_meet' : 'ops_engagement_set_meet';
-  const KEY = touch ? 'p_touch' : 'p_engagement';
-  if (!['create', 'update', 'delete'].includes(action)) return json({ error: 'bad_action' }, 400, origin);
+  const kind: Kind = body.interviewId != null ? 'hire' : body.touchId != null ? 'touch' : 'month';
+  const touch = kind === 'touch';
+  const eid = String((kind === 'hire' ? body.interviewId : touch ? body.touchId : body.engagementId) ?? '');
+  if (action !== 'busy' && !/^[0-9a-f-]{36}$/.test(eid)) {
+    return json({ error: kind === 'hire' ? 'bad_interview' : touch ? 'bad_touch' : 'bad_engagement' }, 400, origin);
+  }
+  const PREP = kind === 'hire' ? 'hiring_interview_meet_prepare' : touch ? 'client_touch_meet_prepare' : 'ops_engagement_meet_prepare';
+  const SET = kind === 'hire' ? 'hiring_interview_set_meet' : touch ? 'client_touch_set_meet' : 'ops_engagement_set_meet';
+  const KEY = kind === 'hire' ? 'p_interview' : touch ? 'p_touch' : 'p_engagement';
+  if (!['create', 'update', 'delete', 'busy'].includes(action)) return json({ error: 'bad_action' }, 400, origin);
 
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+
+  if (action === 'busy') {
+    const from = new Date(String(body.from || '')), to = new Date(String(body.to || ''));
+    if (isNaN(from.getTime()) || isNaN(to.getTime()) || to <= from || to.getTime() - from.getTime() > 15 * 86400000) {
+      return json({ error: 'bad_span' }, 400, origin);
+    }
+    const asker = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: auth } } });
+    const may = await asker.rpc('hiring_busy_may');
+    if (may.error || !may.data || (may.data as Record<string, unknown>).error) return json({ error: 'denied' }, 200, origin);
+    const t = await googleToken();
+    if (!t.token) return json({ error: t.error, missing: t.missing, reason: t.reason }, 200, origin);
+    const got = await fetch(`${CAL}?` + new URLSearchParams({
+      timeMin: from.toISOString(), timeMax: to.toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '250'
+    }), { headers: { Authorization: `Bearer ${t.token}` } });
+    if (!got.ok) return json({ error: 'google-refused', reason: await why(got) }, 200, origin);
+    /* The times alone: a title may name another client or candidate. */
+    const busy = ((await got.json()).items || [])
+      .filter((x: Record<string, unknown>) => x.status !== 'cancelled' && online(x))
+      .map((x: Record<string, any>) => ({ start: x.start?.dateTime || null, end: x.end?.dateTime || null }))
+      .filter((x: { start: string | null }) => x.start);
+    return json({ busy }, 200, origin);
+  }
   /* Every question about the caller is asked as the caller: the database
      decides whether this person may work this month, as it does for every
      other write on it. */
@@ -116,7 +148,7 @@ Deno.serve(async (req) => {
      Google. A delete then clears the record alone; a booking makes the
      record's own event. */
   const stored = m.meeting_event_id ? String(m.meeting_event_id) : '';
-  const eventId = stored === eventIdOf(touch, eid) ? stored : '';
+  const eventId = stored === eventIdOf(kind, eid) ? stored : '';
   if (action === 'delete') {
     if (eventId) {
       const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
@@ -143,11 +175,8 @@ Deno.serve(async (req) => {
     timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '50'
   }), { headers: g });
   if (!list.ok) return json({ error: 'google-refused', reason: await why(list) }, 200, origin);
-  const MEETING = /https?:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
-  const online = (x: Record<string, unknown>) => Boolean(meetLinkOf(x)) ||
-    MEETING.test(String(x.location || '')) || MEETING.test(String(x.description || ''));
   const clash = ((await list.json()).items || []).find((x: Record<string, unknown>) =>
-    x.id !== eventId && x.id !== eventIdOf(touch, eid) && x.status !== 'cancelled' && online(x));
+    x.id !== eventId && x.id !== eventIdOf(kind, eid) && x.status !== 'cancelled' && online(x));
   if (clash) {
     /* The clash's time alone: its title may be another client's meeting,
        which the colleague asking may not see (audit 2026-10-19, item 3). */
@@ -156,10 +185,12 @@ Deno.serve(async (req) => {
       end: (clash.end as Record<string, string>)?.dateTime || null }, 200, origin);
   }
 
-  const summary = touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
+  /* An interview names its position alone: the calendar is shared, and a
+     candidate's name stays with the people on the candidate. */
+  const summary = kind === 'hire' ? `Interview · ${m.position}` : touch ? `${m.client_name} · Meeting` : `${m.client_name} · ${m.month_word} Content Discussion`;
   const event: Record<string, unknown> = {
     summary,
-    description: (touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ADspace Digital Portal.',
+    description: (kind === 'hire' ? 'Interview' : touch ? 'Meeting' : `${m.month_word} Content Discussion`) + '\nBooked from the ADspace Digital Portal.',
     start: { dateTime: start.toISOString(), timeZone: TZ },
     end: { dateTime: end.toISOString(), timeZone: TZ }
   };
@@ -176,7 +207,7 @@ Deno.serve(async (req) => {
     r = await fetch(`${CAL}/${encodeURIComponent(eventId)}?conferenceDataVersion=1`,
       { method: 'PATCH', headers: g, body: JSON.stringify(event) });
   } else {
-    const fixed = eventIdOf(touch, eid);
+    const fixed = eventIdOf(kind, eid);
     r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify({ id: fixed, ...event }) });
     if (r.status === 409) {
       /* Already booked: the event another press made is this record's, and
@@ -220,5 +251,5 @@ Deno.serve(async (req) => {
   if (saved.error || (saved.data && saved.data.error)) {
     return json({ error: 'not-saved', link, event: made!.id }, 200, origin);
   }
-  return json({ link, event: made!.id, [touch ? 'touch' : 'engagement']: saved.data }, 200, origin);
+  return json({ link, event: made!.id, [kind === 'hire' ? 'interview' : touch ? 'touch' : 'engagement']: saved.data }, 200, origin);
 });
