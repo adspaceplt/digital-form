@@ -13503,7 +13503,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ceNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return ceNo(window.__refuseRpc[name]);
       if (!opsMe() || !opsGranted('team.settings', 'work')) return ceNo('denied');
-      DB.code_email_template = DB.code_email_template || { subject: 'Your ADspace code {purpose}',
+      DB.code_email_template = DB.code_email_template || { subject: 'Your ADspace verification code {purpose}',
         body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
         foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.' };
       var ce = DB.code_email_template;

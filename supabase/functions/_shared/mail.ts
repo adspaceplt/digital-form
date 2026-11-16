@@ -96,7 +96,7 @@ export async function resend(msg: Record<string, unknown>, key: string, apiKey: 
    box where it has a paragraph of its own, else as its digits. The code is
    never in the subject or the preview line a lock screen shows. */
 export const CODE_WORDS = {
-  subject: 'Your ADspace code {purpose}',
+  subject: 'Your ADspace verification code {purpose}',
   body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
   foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
 };

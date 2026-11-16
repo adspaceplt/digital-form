@@ -121013,7 +121013,7 @@ create table if not exists public.code_email_template (
 alter table public.code_email_template enable row level security;
 revoke all on table public.code_email_template from public, anon, authenticated;
 insert into public.code_email_template (id, subject, body, foot)
-select 1, 'Your ADspace code {purpose}',
+select 1, 'Your ADspace verification code {purpose}',
   E'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
   'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
 where not exists (select 1 from public.code_email_template);

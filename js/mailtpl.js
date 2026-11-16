@@ -33,7 +33,7 @@
     'not-found': 'This template no longer exists.',
     'foot-long': 'Keep the fine print to 1,000 characters.',
     'no-code': 'Keep {code} in the message, where the code goes.',
-    'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its locked screen.'
+    'code-in-subject': 'Take {code} out of the subject. A phone shows the subject on its lock screen.'
   };
   var REC = [['clients', 'Clients'], ['suppliers', 'Suppliers'], ['creators', 'Creators'], ['codes', 'Sign-in and codes']];
   /* The two Supabase sends: their words are set in Supabase's dashboard
@@ -129,7 +129,7 @@
           subject: c.subject, body: c.body, foot: c.foot || '',
           save: function (v) { return saveWith('code_email_template_save', { p_subject: v.subject, p_body: v.body, p_foot: v.foot }); } });
         SUPABASE.forEach(function (x, n) {
-          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Sent by Supabase', name: x[0], subject: x[1], fixed: true });
+          out.push({ id: 'supabase:' + n, rec: 'codes', sec: 'Set outside the portal', name: x[0], subject: x[1], fixed: true });
         });
       }
       st.free = Boolean(a[4]);

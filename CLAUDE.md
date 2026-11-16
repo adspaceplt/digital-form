@@ -306,7 +306,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
 | `hiring.js`, `careers.js`, `careers/`, the HIRING, HIRING INTERVIEWS and HIRING OUTCOMES sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
-| `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
+| `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED and VERIFICATION CODE TEMPLATE sections | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
@@ -678,7 +678,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   every email by recipient (Clients: Quotation, Letter of Offer, Client
   letter, Overdue reminder, Invoice email and New email's own; Suppliers:
   Supplier approved, Document and New email's own; Creators: the six
-  creator emails), each saved through its own function, and one editor
+  creator emails; Sign-in and codes: Verification code, the one email every
+  code the portal sends goes out in (`code_email_template`, its fields
+  {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
+  `code_email_template_save` at `team.settings`, read by `quote-request`
+  through `_shared/mail.ts` `codeEmail`; 2026-11-17, SEAL-SPEC decision 9),
+  and Supabase's Sign-in code and Invitation listed with no Edit), each saved through its own function, and one editor
   (`#mtEdSheet`): the words at the left, the email as it reads at the right
   (stacked under 720), the sender's fields from `template_fields_all()` as
   chips inserting at the caret, a field it cannot fill marked as it is

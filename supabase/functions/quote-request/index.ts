@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
        subject or the preview line a lock screen shows. */
     const tpl = await admin.rpc('code_email_template_read');
     const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
-      { name: d.name, code: d.code, minutes: 15, purpose: 'to sign Quotation ' + d.ref });
+      { name: d.name, code: d.code, minutes: 15, purpose: 'to sign quotation ' + d.ref });
     const msg = { from: CLIENT_FROM(), to: [d.email], subject: mail.subject, html: mail.html, text: mail.text };
     const sent = await resend(msg, String(d.id), secret('RESEND_API_KEY'));
     if (sent.status === 'failed') {
