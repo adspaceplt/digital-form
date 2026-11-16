@@ -463,7 +463,9 @@
       /* The creator bill's item and account (2026-11-15): Business settings. */
       var acct = [d.bill_item_sku ? 'Creator bill SKU ' + d.bill_item_sku : 'Creator bill SKU not set',
         d.bill_class_code ? 'Classification code ' + d.bill_class_code : 'Classification code not set',
-        d.bill_account_code ? 'Creator bill account ' + d.bill_account_code : 'Creator bill account not set'];
+        d.bill_account_code ? 'Creator bill account ' + d.bill_account_code : 'Creator bill account not set',
+        /* A quotation's advertising budget (2026-11-17). */
+        d.budget_account_code ? 'Advertising budget account ' + d.budget_account_code : 'Advertising budget account not set'];
       if (!on.length) return ['Not set'].concat(acct).map(function (x) { return x.replace(/ /g, '\u00a0').replace(/-/g, '\u2011'); }).join(' · ');
       var list = on.length === 1 ? on[0] : on.slice(0, -1).join(', ') + ' and ' + on[on.length - 1];
       return [list + (on.length === 1 ? ' field' : ' fields')].concat(off).concat(acct)
@@ -495,20 +497,28 @@
             note: 'If not set, the Creator ID goes in the Supplier ID field.' },
           { name: 'sku', head: 'Creator bills', label: 'Item SKU', value: c.bill_item_sku || '', placeholder: 'P995', required: true },
           { name: 'cls', label: 'Classification code', value: c.bill_class_code || '', placeholder: '037', required: true },
-          { name: 'account', label: 'Account', choices: acctChoices, value: c.bill_account_code || '', required: true }
+          { name: 'account', label: 'Account', choices: acctChoices, value: c.bill_account_code || '', required: true },
+          /* A quotation's advertising budget is invoiced on its own account,
+             with no tax (2026-11-17). */
+          { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account code', value: c.budget_account_code || '',
+            placeholder: '3000-01', required: false, note: 'The account code in Bukku\u2019s chart of accounts.' }
         ],
         check: function (v) {
           if (v.client && (v.client === v.supplier || v.client === v.creator)) return 'Choose a different field for the Client ID.';
           if (!/^[A-Za-z0-9._\/-]{1,40}$/.test(String(v.sku || '').trim())) return 'Enter the item SKU as Bukku holds it, for example P995.';
           if (!/^[0-9]{3}$/.test(String(v.cls || '').trim())) return 'Enter the classification code as three digits, for example 037.';
           if (!v.account) return 'Choose the account.';
+          if (String(v.budget || '').trim() && !/^[A-Za-z0-9._\/-]{1,30}$/.test(String(v.budget).trim())) return 'Enter the account code as Bukku holds it, for example 3000-01.';
           return '';
         }
       }, function (v) {
         return rpc('bukku_config_set', { p_client: v.client ? Number(v.client) : null, p_supplier: v.supplier ? Number(v.supplier) : null,
           p_creator: v.creator ? Number(v.creator) : null }).then(function (d) {
           if (d.error) return said(d);
-          var sku = String(v.sku || '').trim(), cls = String(v.cls || '').trim();
+          var sku = String(v.sku || '').trim(), cls = String(v.cls || '').trim(), bud = String(v.budget || '').trim();
+          var budget = bud === (c.budget_account_code || '') ? Promise.resolve({}) : rpc('bukku_invoice_set', { p_budget_code: bud || null });
+          return budget.then(function (db) {
+          if (db.error) return said(db);
           if (sku === (c.bill_item_sku || '') && cls === (c.bill_class_code || '') && v.account === (c.bill_account_code || '')) { sayRow('Saved.', 'ok'); return ''; }
           var pick = acctChoices.filter(function (x) { return x[0] === v.account; })[0];
           var hit = accts.filter(function (x) { return x.code === v.account; })[0];
@@ -517,6 +527,7 @@
             if (d2.error) return said(d2);
             sayRow('Saved.', 'ok');
             return '';
+          });
           });
         });
       });

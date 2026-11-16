@@ -619,6 +619,11 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
+- `sql`: "quote_opened and quote_seal_state are anon's and in open_to_anon"
+  fails on main since the seal release, and the suite crashes after the VIC
+  checks ("Unexpected end of JSON input"), hiding every check after them
+  (found 2026-11-17 by the quotation invoices release, which touches
+  neither).
 - `menus`: Team's bar ⋯ holds "Download for AutoCount" (personnel records,
   #1166 or after), a word `tests/menus.js` and `groupOf` do not place
   (found 2026-11-17 by the seal release, which does not touch Team).
