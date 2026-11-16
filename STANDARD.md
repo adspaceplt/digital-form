@@ -629,7 +629,6 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 - `work`: "High says its deadline under the post" and "Urgent says its own
   hours" fail when the deadline falls just after midnight (`12:06am` read
   against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
-
 - `sql`: "without one it is, as before" (a client's device following a
   campaign with no passcode) failed once and passed on other runs the same
   day (2026-11-16); it counts devices an hour, so a run soon after the
