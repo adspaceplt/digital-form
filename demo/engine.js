@@ -3012,8 +3012,8 @@ function cardSlugFree(name, self, email) {
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
   var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
     fx_sgd: ['Singapore dollar rate', ' per S$1'], creator_pay_days_myr: ['Creator payment in MYR', ' working days'], creator_pay_days_other: ['Creator payment in other currencies', ' working days'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
-    term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
-    term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
+    term_1_3: ['Under 3 months', '%'], term_4_5: ['3-month commitment', '%'], term_6_11: ['6-month commitment', '%'], term_12_23: ['12-month commitment', '%'], term_18_23: ['18-month commitment', '%'],
+    term_24: ['24-month commitment', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
     ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
@@ -11496,7 +11496,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
 
       var qtTermPct = function (set, term) {
-        return Number((term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
+        return Number((term <= 2 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
           : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
       };
       var qtPrice = function (snap, sel, rates) {
