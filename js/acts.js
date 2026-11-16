@@ -25,7 +25,7 @@
   /* [the words, the mark, after the words] */
   var ACTS = [
     [/^Publish$/, 'send'], [/^Unpublish$/, 'hide'],
-    [/^Edit$/, 'pen'],
+    [/^Edit$/, 'pen'], [/^(Rename|Edit description)$/, 'pen'],
     [/^Download$/, 'file'],
     [/^Copy( link| text| title)?$/, 'copy'],
     [/^(Preview|Preview PDF)$/, 'out', true],

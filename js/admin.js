@@ -963,6 +963,15 @@
   if ($('vicPopHide')) $('vicPopHide').addEventListener('click', function () { vicShut(true); });
   ADspaceMenu.onScroll(function () { vicShut(false); });
 
+  /* Hiring (2026-11-16): the live candidates this colleague holds a place
+     on, so the rail draws Hiring for an Owner or an interviewer without the
+     part. A read that fails, or a database without it, draws nothing. */
+  var hiringHeld = 0;
+  function loadHiring() {
+    return db.rpc('hiring_mine').then(function (r) {
+      hiringHeld = r && !r.error && r.data && r.data.ok ? Number(r.data.count) || 0 : 0;
+    }, function () { hiringHeld = 0; });
+  }
   var meLoaded = false;
   var meFailed = false;
   function loadMe(then) {
@@ -978,11 +987,11 @@
     }, function () {});
     /* Asked beside me(), never after it (2026-10-26): neither needs its
        answer, and waiting for it cost the phone one more round trip. */
-    var vic = loadVic(), dep = loadDepts(), due = loadDue(), again = false;
+    var vic = loadVic(), dep = loadDepts(), due = loadDue(), hir = loadHiring(), again = false;
     var go = function () {
       /* me() needed a fresh session: these are asked again under it. */
-      if (again) { vic = loadVic(); dep = loadDepts(); due = loadDue(); }
-      Promise.all([rates.then(null, function () {}), sys, vic, dep, due]).then(then, then);
+      if (again) { vic = loadVic(); dep = loadDepts(); due = loadDue(); hir = loadHiring(); }
+      Promise.all([rates.then(null, function () {}), sys, vic, dep, due, hir]).then(then, then);
     };
     var ask = function () { return db.rpc('me'); };
     ask().then(function (r) {
@@ -1050,7 +1059,7 @@
        like the four above, and for the same reason: administering the team
        is not reading everybody's scores. The database asks for the master
        code on top of this, every time. */
-    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice', 'analytics', 'personnel'],
+    team:      ['performance', 'perfadmin', 'settings', 'upgrade', 'invite', 'handbook', 'announce', 'notice', 'analytics', 'personnel', 'hiring'],
     /* White label (2026-10-07): granted like the ones above, so an admin
        holds it and any other group only once it is set. So is every act an
        admin alone could take before (2026-10-07, ADMIN PARTS): task
@@ -1063,7 +1072,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1, 'team.hiring': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -1107,6 +1116,9 @@
      being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
+    /* Hiring (2026-11-16): the granted part, an admin's by itself, or a
+       place on a candidate (Owner, Interviews), read once beside me(). */
+    if (name === 'hiring') return may('team.hiring', 'work') || hiringHeld > 0;
     if (name === 'activity') {
       return may('activity', 'view') || PARTS.activity.some(function (k) {
         return may('activity.' + k, 'view');
@@ -1235,7 +1247,7 @@
   var TAB_WORD = {
     overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'Messages', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
-    services: 'Services', team: 'Team', handbook: 'Handbook'
+    services: 'Services', hiring: 'Hiring', team: 'Team', handbook: 'Handbook'
   };
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
   var tabMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
@@ -1768,6 +1780,7 @@
     links: 'Short Links',
     register: 'Documents',
     suppliers: 'Suppliers',
+    hiring: 'Hiring',
     reports: 'Reports',
     services: 'Services',
     team: 'Team',
@@ -1801,6 +1814,7 @@
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
     suppliers: 'The suppliers ADspace pays, and the details each one submitted.',
+    hiring:    'Candidates for a position, the colleagues on each, and each candidate\'s own page.',
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
@@ -1855,6 +1869,9 @@
     suppliers: { name: 'Suppliers', steps: [
       { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
       { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
+    hiring: { name: 'Hiring', steps: [
+      { at: '#hirAdd', text: 'Add candidate saves their details and CV, and creates their own page.' },
+      { at: '#hirList button.hir-row', text: 'Open a candidate to add the colleagues who decide or interview, and to copy their page\'s link.' }] },
     reports: { name: 'Reports', steps: [
       { at: '#rhNew', text: 'New report creates an Accounts Report or an Advertising Report for an active client.' },
       { at: '#rhTabs', text: 'A report moves from Drafts to In review, Confirmed and Published. The client can read it once it is published.' },
@@ -2049,7 +2066,7 @@
      no section meets No access, which says to ask an admin; the Handbook
      is a mark at the rail's foot, never a section's floor (2026-11-11). */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'hiring', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'noaccess';
   }
@@ -2105,6 +2122,7 @@
     $('sectionLinks').hidden     = name !== 'links';
     $('sectionRegister').hidden  = name !== 'register';
     $('sectionSuppliers').hidden = name !== 'suppliers';
+    $('sectionHiring').hidden    = name !== 'hiring';
     $('sectionReports').hidden   = name !== 'reports';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
@@ -2193,6 +2211,12 @@
     if (name === 'suppliers') {
       if (!window.ADspaceSuppliers) { enterLater = 'suppliers'; return; }
       window.ADspaceSuppliers.enter();
+      setUrl();
+      return;
+    }
+    if (name === 'hiring') {
+      if (!window.ADspaceHiring) { enterLater = 'hiring'; return; }
+      window.ADspaceHiring.enter();
       setUrl();
       return;
     }
@@ -2372,6 +2396,9 @@
     } else if (section === 'services' && window.ADspaceCRM && window.ADspaceCRM.svcState) {
       var sv = window.ADspaceCRM.svcState();
       Object.keys(sv).forEach(function (k) { if (sv[k]) q.push(k + '=' + encodeURIComponent(sv[k])); });
+    } else if (section === 'hiring' && window.ADspaceHiring) {
+      var hir = window.ADspaceHiring.urlState();
+      Object.keys(hir).forEach(function (k) { if (hir[k]) q.push(k + '=' + encodeURIComponent(hir[k])); });
     } else if (section === 'suppliers' && window.ADspaceSuppliers) {
       var spl = window.ADspaceSuppliers.urlState();
       Object.keys(spl).forEach(function (k) { if (spl[k]) q.push(k + '=' + encodeURIComponent(spl[k])); });
@@ -6199,6 +6226,12 @@
       if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
       enterLater = '';
       window.ADspacePerf.enterTeam();
+    },
+    hiringReady: function () {
+      if (enterLater !== 'hiring' || section !== 'hiring') return;
+      enterLater = '';
+      window.ADspaceHiring.enter();
+      setUrl();
     },
     scriptsReady: function () {
       if (enterLater !== 'scripts' || section !== 'scripts') return;

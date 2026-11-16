@@ -2051,7 +2051,8 @@ dd > .linkbtn::before { inset: 3px 0; }
                            `.btn-go` alike, stated with `.btn-primary`)
      default  tonal        everything else, caution included
      danger   red words    destroys data
-     quiet    borderless   incidental, never the point of the section
+     quiet    tonal        a secondary act; words alone only as Cancel beside
+                           the view's blue primary
    ========================================================================= */
 /* Caution is not a colour of its own: Unpublish, Withdraw, Stop, Revert and
    Reopen are ordinary buttons, and where one costs something the question it
@@ -2059,9 +2060,17 @@ dd > .linkbtn::before { inset: 3px 0; }
    so a page can still name the role. */
 .btn-warn { flex: 0 0 auto; }
 
-.btn-quiet { background: none; border-color: transparent; color: var(--ink-mute); flex: 0 0 auto; }
+.btn-quiet { background: var(--tonal); border-color: transparent; color: var(--ink); flex: 0 0 auto; }
 @media (hover: hover) {
-  .btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+  .btn-quiet:hover { background: var(--tonal-hover); border-color: transparent; color: var(--ink); }
+}
+/* Every button that acts is shaded (the user, 2026-11-16: a word on a white
+   card "we don't even know if it's a button"); the one exception is the way
+   out beside the view's blue primary, Cancel, which stays words in the soft
+   ink, as Apple's sheets draw it. */
+:where(:has(> .btn-primary, > .btn-go)) > .btn-quiet { background: none; color: var(--ink-soft); }
+@media (hover: hover) {
+  :where(:has(> .btn-primary, > .btn-go)) > .btn-quiet:hover { background: var(--line-soft); color: var(--ink); }
 }
 .btn-quiet.is-danger { color: var(--err); }
 .btn-quiet.is-danger:hover { background: var(--err-bg); color: var(--err-hi); }
@@ -9632,6 +9641,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-change { justify-self: start; }
 .qs-head { display: grid; gap: 4px; }
 .qs-meta { font-size: 13px; color: var(--ink-mute); }
+.qs-meta.qs-own { color: var(--ink-soft); font-weight: 500; }
 .qs-status .chip-state { font-size: 13px; }
 .qs-table { display: grid; }
 .qs-row {
@@ -9818,3 +9828,11 @@ body.qs-page { background: var(--card); }
   font-size: 16px; cursor: text;
 }
 @media (max-width: 400px) { .otp-cells { gap: 6px; } }
+
+/* A candidate's own page (2026-11-16, js/careers.js): the title over its
+   lead, the facts on a shaded card, then what happens next, 16px apart. */
+.cr-page { display: grid; gap: 16px; }
+.cr-facts { padding: 16px 18px; border-radius: var(--radius); background: var(--sunk); }
+.cr-facts > div { grid-template-columns: 120px minmax(0, 1fr); }
+.cr-facts dd { font-size: 14px; }
+.cr-next { margin: 0; font-size: 14px; color: var(--ink-soft); }

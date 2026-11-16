@@ -26,7 +26,7 @@ declare
     'ops.override', 'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite',
     'team.handbook', 'team.announce', 'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai',
     'reports.meta', 'register.types', 'campaigns.files_delete', 'clients.vic', 'suppliers.pay',
-    'team.analytics', 'campaigns.pay', 'team.personnel'];
+    'team.analytics', 'campaigns.pay', 'team.hiring', 'team.personnel'];
   k text;
 begin
   if who = '' or pg_trigger_depth() > 1 then

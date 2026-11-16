@@ -717,7 +717,7 @@ declare
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
-    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial'];
+    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -119131,6 +119131,1023 @@ create index if not exists ops_tasks_template_idx on public.ops_tasks (template_
 
 -- END OF DATABASE SAFEGUARDS --------------------------------------------------
 
+-- QUOTATION LINES OF OUR OWN -------------------------------------------------
+
+/* The order the team arranged a quotation's lines in (2026-11-16): each
+   line named in `order` by its key takes that place, the rest keep theirs
+   after them. The figures never move. */
+create or replace function public.quote_order(p_price jsonb, p_order jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v_lines jsonb;
+begin
+  if p_price ? 'error' or jsonb_typeof(p_price->'lines') is distinct from 'array'
+     or p_order is null or jsonb_typeof(p_order) = 'null' then
+    return p_price;
+  end if;
+  if jsonb_typeof(p_order) <> 'array' or jsonb_array_length(p_order) > 100
+     or exists (select 1 from jsonb_array_elements(p_order) o where jsonb_typeof(o) <> 'string' or length(o #>> '{}') > 300) then
+    return jsonb_build_object('error', 'bad-order');
+  end if;
+  select coalesce(jsonb_agg(l order by coalesce(
+           (select min(n) from jsonb_array_elements_text(p_order) with ordinality y(k, n) where y.k = l->>'key'), 100000 + i)), '[]'::jsonb)
+    into v_lines
+    from jsonb_array_elements(p_price->'lines') with ordinality x(l, i);
+  return p_price || jsonb_build_object('lines', v_lines);
+end $$;
+revoke all on function public.quote_order(jsonb, jsonb) from public, anon, authenticated;
+
+create or replace function public.quote_adjust(p_price jsonb, p_edits jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v_t jsonb := coalesce(p_price->'totals', '{}'::jsonb);
+  v_term int := coalesce((v_t->>'term')::int, 1);
+  v_lines jsonb := '[]'::jsonb;
+  v_l jsonb; v_e jsonb; v_k text; v_n int := 0; v_hit boolean;
+  v_qty numeric; v_rate numeric; v_mo int;
+  v_pct numeric := coalesce((v_t->>'term_pct')::numeric, 0);
+  v_sst_pct numeric := coalesce((v_t->>'sst_pct')::numeric, 0);
+  v_tot jsonb;
+  v_plan boolean := false;
+  v_basis text;
+  v_switched boolean := false;
+  v_det jsonb;
+begin
+  if p_price ? 'error' or jsonb_typeof(p_price->'lines') is distinct from 'array' then return p_price; end if;
+  if p_edits is not null and jsonb_typeof(p_edits) not in ('object', 'null') then
+    return jsonb_build_object('error', 'bad-edit');
+  end if;
+  -- A line at RM 0 beside a plan is read as part of it (Include in plan).
+  v_plan := exists (select 1 from jsonb_array_elements(p_price->'lines') x where x->>'kind' = 'plan');
+  for v_l in select * from jsonb_array_elements(p_price->'lines') loop
+    v_e := null;
+    v_k := (v_l->>'kind') || '|' || coalesce(v_l->>'slug', '') || '|' || (v_l->>'label');
+    v_qty := (v_l->>'qty')::numeric; v_rate := (v_l->>'rate')::numeric;
+    v_mo := case when v_l->>'basis' = 'month' then v_term else 1 end;
+    v_hit := false;
+    if jsonb_typeof(p_edits) = 'object' and jsonb_typeof(p_edits->v_k) = 'object' then
+      v_e := p_edits->v_k;
+      if (v_e ? 'qty' and coalesce(v_e->>'qty', '') !~ '^[0-9]{1,4}$')
+         or (v_e ? 'rate' and coalesce(v_e->>'rate', '') !~ '^[0-9]{1,7}(\.[0-9]{1,2})?$')
+         or (v_e ? 'basis' and (coalesce(v_e->>'basis', '') not in ('month', 'once') or v_l->>'basis' <> 'once'))
+         or (v_e ? 'months' and (coalesce(case when v_e->>'basis' = 'month' then 'month' end, v_l->>'basis') <> 'month'
+                                 or coalesce(v_e->>'months', '') !~ '^[0-9]{1,2}$'))
+         or (v_e ? 'incl' and jsonb_typeof(v_e->'incl') is distinct from 'boolean')
+         or (v_e ? 'tax' and coalesce(v_e->>'tax', '') !~ '^([A-Za-z0-9._ -]{1,30})?$')
+         or (v_e ? 'detail' and (jsonb_typeof(v_e->'detail') is distinct from 'array'
+             or jsonb_array_length(v_e->'detail') not between 1 and 12
+             or exists (select 1 from jsonb_array_elements(v_e->'detail') d
+                         where jsonb_typeof(d) <> 'string' or length(btrim(d #>> '{}')) not between 1 and 300)))
+         or (v_e ? 'name' and (jsonb_typeof(v_e->'name') is distinct from 'string'
+             or length(btrim(v_e->>'name')) not between 1 and 120)) then
+        return jsonb_build_object('error', 'bad-edit', 'line', v_l->>'label');
+      end if;
+      if (v_e ? 'qty' and (v_e->>'qty')::int < 1) or (v_e ? 'months' and (v_e->>'months')::int not between 1 and 36) then
+        return jsonb_build_object('error', 'bad-edit', 'line', v_l->>'label');
+      end if;
+      -- a line runs no longer than the commitment (2026-11-15)
+      if v_e ? 'months' and (v_e->>'months')::int > v_term then
+        return jsonb_build_object('error', 'over-term', 'line', v_l->>'label', 'term', v_term);
+      end if;
+      /* A one-off item of the Rate Card billed by the month (2026-11-12,
+         the user: nine graphics a month with no plan): Monthly over the
+         term, its months typed as any monthly line's. */
+      if v_e->>'basis' = 'month' and v_l->>'basis' = 'once' then
+        v_l := v_l || jsonb_build_object('basis', 'month', 'was_once', true);
+        v_mo := v_term; v_hit := true; v_switched := true;
+      end if;
+      if v_e ? 'qty' and (v_e->>'qty')::numeric <> v_qty then v_qty := (v_e->>'qty')::numeric; v_hit := true; end if;
+      if v_e ? 'rate' and (v_e->>'rate')::numeric <> v_rate then
+        v_l := v_l || jsonb_build_object('list_rate', v_rate);
+        v_rate := (v_e->>'rate')::numeric; v_hit := true;
+      end if;
+      if v_e ? 'months' and (v_e->>'months')::int <> v_mo then v_mo := (v_e->>'months')::int; v_hit := true; end if;
+      /* The line's points as the team wrote them for this quotation
+         (2026-11-13), the card's kept as list_detail. */
+      if v_e ? 'detail' then
+        v_det := (select jsonb_agg(btrim(d #>> '{}') order by n) from jsonb_array_elements(v_e->'detail') with ordinality x(d, n));
+        if v_det is distinct from coalesce(v_l->'detail', '[]'::jsonb) then
+          v_l := v_l || jsonb_build_object('list_detail', coalesce(v_l->'detail', '[]'::jsonb), 'detail', v_det);
+          v_hit := true;
+        end if;
+      end if;
+      /* The line's name as the team wrote it for this quotation
+         (2026-11-16, the user: "if we really need some changes for this
+         particular client"), the card's kept as list_label; the line's key
+         stays the card's, so its other edits still find it. */
+      if v_e ? 'name' and btrim(v_e->>'name') <> v_l->>'label' then
+        v_l := v_l || jsonb_build_object('list_label', v_l->>'label', 'label', btrim(v_e->>'name'));
+        v_hit := true;
+      end if;
+      /* A line's own tax code (2026-10-22), its rate read from tax_codes by
+         quote_tax_edits; an empty one keeps the quotation's SST. */
+      if coalesce(v_e->>'tax', '') <> '' then
+        if jsonb_typeof(v_e->'tax_pct') is distinct from 'number' then
+          return jsonb_build_object('error', 'bad-tax', 'line', v_l->>'label');
+        end if;
+        v_l := v_l || jsonb_build_object('tax_code', v_e->>'tax', 'sst', (v_e->>'tax_pct')::numeric);
+        v_hit := true;
+      end if;
+    end if;
+    if v_hit then v_n := v_n + 1; end if;
+    v_l := v_l - 'in_plan';
+    if v_plan and v_l->>'kind' is distinct from 'plan' and v_l->>'basis' = 'month' and v_rate = 0
+       and coalesce(v_e->>'incl', 'true') <> 'false' then
+      v_l := v_l || jsonb_build_object('in_plan', true);
+    end if;
+    v_l := v_l || jsonb_build_object('key', v_k, 'qty', v_qty, 'rate', v_rate, 'months', v_mo,
+                                     'amount', round(v_qty * v_rate, 2));
+    v_lines := v_lines || jsonb_build_array(v_l);
+  end loop;
+  -- each monthly line's own percentage, its months as edited (2026-11-15)
+  if v_t ? 'bands' then v_lines := public.quote_line_pcts(v_lines, v_t->'bands', v_term); end if;
+  if v_n = 0 then
+    return p_price || jsonb_build_object('lines', v_lines, 'adjusted', 0);
+  end if;
+  /* Lines that were all one-off took no term percentage; one made Monthly
+     takes the term's (quote_base's `term_pct_if`). */
+  if v_switched and coalesce((v_t->>'term_pct')::numeric, 0) = 0 and not exists (
+       select 1 from jsonb_array_elements(p_price->'lines') x where x->>'basis' = 'month') then
+    v_pct := coalesce((v_t->>'term_pct_if')::numeric, 0);
+    v_t := v_t || jsonb_build_object('term_pct', v_pct);
+  end if;
+  -- The figures, from the one calculation every quotation and letter shares.
+  v_tot := public.quote_totals(v_lines, v_term, v_pct, v_sst_pct);
+  return p_price || jsonb_build_object('lines', v_lines, 'adjusted', v_n,
+    'totals', v_t || jsonb_build_object('month', v_tot->'month', 'once', v_tot->'once', 'commitment', v_tot->'commitment', 'term_rows', v_tot->'term_rows'));
+end $$;
+revoke all on function public.quote_adjust(jsonb, jsonb) from public, anon, authenticated;
+
+
+create or replace function public.quote_custom(p_price jsonb, p_sel jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v_t jsonb := coalesce(p_price->'totals', '{}'::jsonb);
+  v_term int := coalesce((v_t->>'term')::int, 1);
+  v_lines jsonb := p_price->'lines';
+  r jsonb;
+  d jsonb;
+  i int := 0;
+  v_mo int;
+  v_start text;
+  v_tot jsonb;
+  v_any boolean := false;
+begin
+  if p_price ? 'error' or jsonb_typeof(p_price->'lines') is distinct from 'array' then return p_price; end if;
+  if jsonb_typeof(p_sel->'custom') is not null and jsonb_typeof(p_sel->'custom') <> 'null' then
+    if jsonb_typeof(p_sel->'custom') <> 'array' or jsonb_array_length(p_sel->'custom') > 30 then
+      return jsonb_build_object('error', 'bad-custom');
+    end if;
+    for r in select * from jsonb_array_elements(p_sel->'custom') loop
+      i := i + 1;
+      if jsonb_typeof(r) <> 'object'
+         or length(btrim(coalesce(r->>'label', ''))) not between 1 and 120
+         or coalesce(r->>'qty', '') !~ '^\d{1,4}$' or (r->>'qty')::int < 1
+         or coalesce(r->>'rate', '') !~ '^\d{1,7}(\.\d{1,2})?$'
+         or coalesce(r->>'basis', '') not in ('month', 'once')
+         or (jsonb_typeof(r->'detail') is not null and jsonb_typeof(r->'detail') not in ('array', 'null'))
+         or (jsonb_typeof(r->'detail') = 'array' and jsonb_array_length(r->'detail') > 12)
+         or (coalesce(r->>'renews', '') <> '' and r->>'renews' !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') then
+        return jsonb_build_object('error', 'bad-custom', 'line', coalesce(r->>'label', i::text));
+      end if;
+      if jsonb_typeof(r->'detail') = 'array' then
+        for d in select * from jsonb_array_elements(r->'detail') loop
+          if jsonb_typeof(d) <> 'string' or length(d #>> '{}') > 300 then
+            return jsonb_build_object('error', 'bad-custom', 'line', r->>'label');
+          end if;
+        end loop;
+      end if;
+      v_mo := 1;
+      if r->>'basis' = 'month' then
+        if coalesce(r->>'months', '') !~ '^\d{1,2}$' or (r->>'months')::int not between 1 and 36 then
+          return jsonb_build_object('error', 'bad-custom', 'line', r->>'label');
+        end if;
+        v_mo := (r->>'months')::int;
+        -- a line runs no longer than the commitment (2026-11-15)
+        if v_mo > v_term then return jsonb_build_object('error', 'over-term', 'line', r->>'label', 'term', v_term); end if;
+      end if;
+      v_start := nullif(r->>'start', '');
+      if v_start is not null and (v_start !~ '^\d{4}-\d{2}-\d{2}$' or public.doc_day_of(v_start) = date '0001-01-01') then
+        return jsonb_build_object('error', 'bad-custom', 'line', r->>'label');
+      end if;
+      v_lines := v_lines || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
+        'kind', 'custom', 'key', 'custom|' || i || '|' || btrim(r->>'label'), 'label', btrim(r->>'label'),
+        'detail', coalesce(r->'detail', '[]'::jsonb), 'qty', (r->>'qty')::numeric, 'rate', (r->>'rate')::numeric,
+        'basis', r->>'basis', 'months', v_mo, 'amount', round((r->>'qty')::numeric * (r->>'rate')::numeric, 2),
+        'start', v_start, 'renews', nullif(r->>'renews', ''))));
+      v_any := true;
+    end loop;
+  end if;
+  if not v_any then return public.quote_order(p_price, p_sel->'order'); end if;
+  /* Each custom monthly line takes the percentage of its own months
+     (2026-11-15): a one-off item beside it no longer takes the term's
+     percentage away from it. */
+  if v_t ? 'bands' then v_lines := public.quote_line_pcts(v_lines, v_t->'bands', v_term); end if;
+  v_tot := public.quote_totals(v_lines, v_term, coalesce((v_t->>'term_pct')::numeric, 0), coalesce((v_t->>'sst_pct')::numeric, 0));
+  return public.quote_order(p_price || jsonb_build_object('lines', v_lines,
+    'totals', v_t || jsonb_build_object('month', v_tot->'month', 'once', v_tot->'once', 'commitment', v_tot->'commitment', 'term_rows', v_tot->'term_rows')),
+    p_sel->'order');
+end $$;
+revoke all on function public.quote_custom(jsonb, jsonb) from public, anon, authenticated;
+
+create or replace function public.quote_extras(p_sel jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v_pay int;
+  v_rows jsonb := '[]'::jsonb;
+  v_total numeric := 0;
+  r jsonb;
+  v_amt numeric;
+  v_mo int;
+  v_terms jsonb := '[]'::jsonb;
+  t jsonb;
+  v_valid int;
+  v_title text;
+begin
+  /* The quotation's own title (2026-11-16), printed over its lines. */
+  if jsonb_typeof(p_sel->'title') is not null and jsonb_typeof(p_sel->'title') <> 'null' then
+    if jsonb_typeof(p_sel->'title') <> 'string' or length(btrim(p_sel->>'title')) > 120 then
+      return jsonb_build_object('error', 'bad-title');
+    end if;
+    v_title := nullif(btrim(p_sel->>'title'), '');
+  end if;
+  -- Payment terms for the whole quotation: NET 7 unless chosen.
+  if coalesce(p_sel->>'pay', '') = '' then v_pay := 7;
+  elsif p_sel->>'pay' ~ '^\d{1,3}$' then v_pay := (p_sel->>'pay')::int;
+  else return jsonb_build_object('error', 'bad-pay'); end if;
+  if v_pay not in (7, 14, 30, 60, 90) then return jsonb_build_object('error', 'bad-pay'); end if;
+  -- Valid for (2026-11-12): the days chosen in Build quote, else the
+  -- Business setting, which the caller reads (`valid_days` left out).
+  if coalesce(p_sel->>'valid', '') = '' then v_valid := null;
+  elsif p_sel->>'valid' ~ '^\d{1,3}$' and (p_sel->>'valid')::int in (14, 30, 45, 60, 90) then v_valid := (p_sel->>'valid')::int;
+  else return jsonb_build_object('error', 'bad-valid'); end if;
+  if jsonb_typeof(p_sel->'ads') is not null and jsonb_typeof(p_sel->'ads') <> 'null' then
+    if jsonb_typeof(p_sel->'ads') <> 'array' or jsonb_array_length(p_sel->'ads') > 6 then
+      return jsonb_build_object('error', 'bad-ads');
+    end if;
+    for r in select * from jsonb_array_elements(p_sel->'ads') loop
+      if jsonb_typeof(r) <> 'object'
+         or coalesce(r->>'platform', '') not in ('meta', 'tiktok', 'google', 'xhs', 'youtube', 'linkedin')
+         or coalesce(r->>'freq', '') not in ('monthly', 'once')
+         or coalesce(r->>'budget', '') !~ '^\d{1,9}(\.\d{1,2})?$' then
+        return jsonb_build_object('error', 'bad-ads');
+      end if;
+      v_amt := (r->>'budget')::numeric;
+      if v_amt <= 0 then return jsonb_build_object('error', 'bad-ads'); end if;
+      v_mo := null;
+      if r->>'freq' = 'monthly' then
+        if coalesce(r->>'months', '') !~ '^\d{1,2}$' or (r->>'months')::int not between 1 and 36 then
+          return jsonb_build_object('error', 'bad-ads');
+        end if;
+        v_mo := (r->>'months')::int;
+      end if;
+      v_rows := v_rows || jsonb_build_array(jsonb_build_object('platform', r->>'platform', 'freq', r->>'freq',
+                  'budget', v_amt, 'months', v_mo, 'amount', v_amt * coalesce(v_mo, 1)));
+      v_total := v_total + v_amt * coalesce(v_mo, 1);
+    end loop;
+  end if;
+  /* The quotation's own terms (2026-11-12), one point a line, after the
+     ones it works out: ten at most, 400 characters each. */
+  if jsonb_typeof(p_sel->'terms') is not null and jsonb_typeof(p_sel->'terms') <> 'null' then
+    if jsonb_typeof(p_sel->'terms') <> 'array' or jsonb_array_length(p_sel->'terms') > 10 then
+      return jsonb_build_object('error', 'bad-terms');
+    end if;
+    for t in select * from jsonb_array_elements(p_sel->'terms') loop
+      if jsonb_typeof(t) <> 'string' or length(t #>> '{}') > 400 then return jsonb_build_object('error', 'bad-terms'); end if;
+      if btrim(t #>> '{}') <> '' then v_terms := v_terms || jsonb_build_array(btrim(t #>> '{}')); end if;
+    end loop;
+  end if;
+  return jsonb_strip_nulls(jsonb_build_object('layout', 2, 'pay_days', v_pay, 'valid_days', v_valid, 'title', v_title)) ||
+    jsonb_build_object('ads', v_rows, 'ads_total', v_total, 'terms', v_terms);
+end $$;
+revoke all on function public.quote_extras(jsonb) from public, anon, authenticated;
+
+create or replace function public.quotation_make(p_client uuid, p_sel jsonb, p_idem text, p_source text,
+                                                 p_by text, p_contact jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_c public.clients;
+  v_on date := case when p_source = 'console' and jsonb_typeof(p_sel) = 'object' then public.doc_day_of(p_sel->>'date') end;
+  v_card jsonb;
+  v_p jsonb;
+  v_q public.quotations;
+  v_now timestamptz := now();
+  v_days int;
+  v_fx numeric;
+  v_x jsonb;
+  v_b jsonb;
+  v_sel jsonb := case when jsonb_typeof(p_sel) is distinct from 'object' then p_sel
+                      when p_source = 'console' then p_sel - 'client' - 'date'
+                      else p_sel - 'edits' - 'client' - 'date' end;
+begin
+  if p_idem is not null then
+    select * into v_q from public.quotations q where q.idem = p_idem and q.client_id = p_client;
+    if v_q.id is not null then return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref, 'again', true); end if;
+  end if;
+  /* The quotation's own date (2026-11-12, the user: a document may be
+     backdated): its reference's month, its validity, and the SST and terms
+     in force; a team's alone, today where none is chosen. */
+  if v_on is not null and not public.doc_day_ok(v_on) then return jsonb_build_object('error', 'bad-date'); end if;
+  if v_on is not null and v_on <> (v_now at time zone 'Asia/Kuala_Lumpur')::date then
+    v_now := (v_on::timestamp + (v_now at time zone 'Asia/Kuala_Lumpur')::time) at time zone 'Asia/Kuala_Lumpur';
+  end if;
+  v_on := (v_now at time zone 'Asia/Kuala_Lumpur')::date;
+  -- the Rate Card chosen in Build quote, else the one live on the date (2026-11-15)
+  v_card := public.quote_card(v_on, case when p_source = 'console' then nullif(btrim(coalesce(p_sel->>'card', '')), '') end);
+  select * into v_c from public.clients where id = p_client;
+  if v_c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_fx := public.quote_fx(v_c.id, v_on);
+  if v_fx = 0 then return jsonb_build_object('error', 'no-fx'); end if;
+  v_p := public.quote_fx_out(public.quote_custom(public.quote_adjust(public.quote_base(public.quote_fx_snap(public.quote_tax_snap(v_card->'snapshot', v_c.id, v_on), v_fx),
+           v_sel), public.quote_tax_edits(v_sel->'edits')), case when p_source = 'console' then v_sel else '{}'::jsonb end), v_fx);
+  if v_p ? 'error' then return v_p; end if;
+  /* The advertising budget and the payment terms (2026-11-12): a team's
+     own; a website quotation takes none and NET 7. */
+  v_x := public.quote_extras(case when p_source = 'console' then v_sel else '{}'::jsonb end);
+  if v_x ? 'error' then return v_x; end if;
+  if p_source = 'console' then
+    v_b := public.quote_client_extras(v_c.id, v_p->'lines', v_sel);
+    if v_b ? 'error' then return v_b; end if;
+    v_x := v_x || v_b;
+  end if;
+  /* A quotation holds at least one priced line (2026-10-29): a selection of
+     items quoted on request alone (a KOL campaign, a custom creator list)
+     made a quotation with no line and no figure. */
+  if jsonb_typeof(v_p->'lines') is distinct from 'array' or jsonb_array_length(v_p->'lines') = 0 then
+    return jsonb_build_object('error', 'nothing-priced');
+  end if;
+  v_days := coalesce((v_x->>'valid_days')::int, public.app_setting('quote_valid_days', (v_now at time zone 'Asia/Kuala_Lumpur')::date), 30)::int;
+  begin
+  insert into public.quotations (ref, client_id, brand, version, version_id, selection, lines, totals, source,
+                                 issued_at, valid_until, made_by, contact, idem, access_key)
+  values (public.quote_ref(v_c.name, v_now), v_c.id, v_c.name, v_card->>'version', (v_card->>'id')::uuid, v_sel,
+          v_p->'lines', v_p->'totals' || jsonb_build_object('on_request', v_p->'on_request') || v_x, p_source,
+          v_now, (v_now at time zone 'Asia/Kuala_Lumpur')::date + v_days, p_by, p_contact, p_idem,
+          case when p_source = 'website' then public.new_link_key() end)
+  returning * into v_q;
+  -- Two presses at once with one key: the second answers the first's.
+  exception when unique_violation then
+    select * into v_q from public.quotations q where q.idem = p_idem and q.client_id = p_client;
+    if p_idem is null or v_q.id is null then raise; end if;
+    return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref, 'again', true);
+  end;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(p_by, 'Website'), 'client.quotation', v_c.name,
+          v_q.ref || ' sent · ' || coalesce('Monthly incl. SST ' || case when v_fx is null then 'RM ' else 'S$ ' end ||
+            to_char((v_q.totals->'month'->>'incl')::numeric, 'FM999,999,990.00'), 'one-off') ||
+          ' · Rate Card v.' || v_q.version ||
+          case coalesce((v_p->>'adjusted')::int, 0) when 0 then '' when 1 then ' · 1 line changed'
+               else ' · ' || (v_p->>'adjusted') || ' lines changed' end);
+  return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref, 'key', v_q.access_key);
+end $$;
+revoke all on function public.quotation_make(uuid, jsonb, text, text, text, jsonb) from public, anon, authenticated;
+
+create or replace function public.quotation_edit(p_id uuid, p_sel jsonb)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_q public.quotations;
+  v_c public.clients;
+  v_on date := public.doc_day_of(p_sel->>'date');
+  v_card jsonb;
+  v_ref text;
+  v_was_ref text;
+  v_p jsonb;
+  v_fx numeric;
+  v_now timestamptz := now();
+  v_days int;
+  v_sel jsonb;
+  v_was numeric;
+  v_is numeric;
+  v_cur text;
+  v_n int;
+  v_doc text;
+  v_x jsonb;
+  v_b jsonb;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if jsonb_typeof(p_sel) is distinct from 'object' then return jsonb_build_object('error', 'bad-request'); end if;
+  if v_on is not null and not public.doc_day_ok(v_on) then return jsonb_build_object('error', 'bad-date'); end if;
+  if v_on is not null and v_on <> (v_now at time zone 'Asia/Kuala_Lumpur')::date then
+    v_now := (v_on::timestamp + (v_now at time zone 'Asia/Kuala_Lumpur')::time) at time zone 'Asia/Kuala_Lumpur';
+  end if;
+  v_on := (v_now at time zone 'Asia/Kuala_Lumpur')::date;
+  v_card := public.quote_card(v_on, nullif(btrim(coalesce(p_sel->>'card', '')), ''));
+  select * into v_q from public.quotations where id = p_id for update;
+  if v_q.id is null or not public.client_scope_ok('client', v_q.client_id, 'work') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if v_q.removed_at is not null then return jsonb_build_object('error', 'removed'); end if;
+  if v_q.signed_at is not null or v_q.reviewed_at is not null then return jsonb_build_object('error', 'signed'); end if;
+  if v_q.status = 'not_proceeding' then return jsonb_build_object('error', 'not-proceeding'); end if;
+  if exists (select 1 from public.quotations x where x.replaces = v_q.id and x.removed_at is null) then
+    return jsonb_build_object('error', 'revised');
+  end if;
+  if v_q.sent_out_at is not null or v_q.released_at is not null then return jsonb_build_object('error', 'sent'); end if;
+  -- A quotation a letter or service lines came from keeps its figures
+  -- (2026-11-07), as its removal is refused then: Edit makes its revision.
+  select count(*) into v_n from public.client_services s where s.quotation_id = v_q.id;
+  if v_n > 0 then return jsonb_build_object('error', 'lines', 'count', v_n); end if;
+  select d.number into v_doc from public.client_documents d
+   where d.lines @> jsonb_build_array(jsonb_build_object('quotation_id', v_q.id::text))
+   order by d.created_at limit 1;
+  if v_doc is not null then return jsonb_build_object('error', 'letter', 'number', v_doc); end if;
+  select * into v_c from public.clients where id = v_q.client_id;
+  if v_c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_card is null then return jsonb_build_object('error', 'no-card'); end if;
+  v_fx := public.quote_fx(v_c.id, v_on);
+  if v_fx = 0 then return jsonb_build_object('error', 'no-fx'); end if;
+  -- As the team builds it: their edits kept (quotation_make's console path);
+  -- a website quotation is never adjusted, as quotation_make holds (audit
+  -- 2026-11-15).
+  v_sel := case when v_q.source = 'console' then p_sel - 'client' - 'date' else p_sel - 'client' - 'date' - 'edits' end;
+  v_p := public.quote_fx_out(public.quote_custom(public.quote_adjust(public.quote_base(public.quote_fx_snap(public.quote_tax_snap(v_card->'snapshot', v_c.id, v_on), v_fx),
+           v_sel), public.quote_tax_edits(v_sel->'edits')), case when v_q.source = 'console' then v_sel else '{}'::jsonb end), v_fx);
+  if v_p ? 'error' then return v_p; end if;
+  v_x := public.quote_extras(case when v_q.source = 'console' then v_sel else '{}'::jsonb end);
+  if v_x ? 'error' then return v_x; end if;
+  if v_q.source = 'console' then
+    v_b := public.quote_client_extras(v_c.id, v_p->'lines', v_sel);
+    if v_b ? 'error' then return v_b; end if;
+    v_x := v_x || v_b;
+  end if;
+  if jsonb_typeof(v_p->'lines') is distinct from 'array' or jsonb_array_length(v_p->'lines') = 0 then
+    return jsonb_build_object('error', 'nothing-priced');
+  end if;
+  v_was := coalesce((v_q.totals->'month'->>'incl')::numeric, (v_q.totals->'once'->>'incl')::numeric);
+  v_days := coalesce((v_x->>'valid_days')::int, public.app_setting('quote_valid_days', (v_now at time zone 'Asia/Kuala_Lumpur')::date), 30)::int;
+  /* A team's quotation dated into another month takes that month's
+     reference (it has not been sent); the one it held is kept, never
+     issued again. */
+  v_ref := v_q.ref; v_was_ref := v_q.ref;
+  if v_q.source = 'console' and v_q.ref !~ ('^ADP/QT' || to_char(v_on, 'YYMM') || '-') then
+    v_ref := public.quote_ref(v_q.brand, v_now);
+    insert into public.quotation_refs_kept (ref) values (v_q.ref) on conflict do nothing;
+  end if;
+  update public.quotations
+     set ref = v_ref, version = v_card->>'version', version_id = (v_card->>'id')::uuid, selection = v_sel,
+         lines = v_p->'lines', totals = v_p->'totals' || jsonb_build_object('on_request', v_p->'on_request') || v_x,
+         -- A team's quotation is dated when it is made ready; a website one
+         -- keeps the day it was asked for (its validity runs from its send).
+         issued_at = case when v_q.source = 'console' then v_now else issued_at end,
+         valid_until = case when v_q.source = 'console' then (v_now at time zone 'Asia/Kuala_Lumpur')::date + v_days else valid_until end
+   where id = v_q.id
+  returning * into v_q;
+  v_is := coalesce((v_q.totals->'month'->>'incl')::numeric, (v_q.totals->'once'->>'incl')::numeric);
+  v_cur := case when v_fx is null then 'RM ' else 'S$ ' end;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', v_c.name,
+          case when v_ref <> v_was_ref then v_was_ref || ' → ' else '' end || v_q.ref || ' edited · ' ||
+          coalesce(v_cur || to_char(v_was, 'FM999,999,990.00'), 'not set') || ' → ' ||
+          coalesce(v_cur || to_char(v_is, 'FM999,999,990.00'), 'not set') ||
+          ' · Rate Card v.' || v_q.version ||
+          case coalesce((v_p->>'adjusted')::int, 0) when 0 then '' when 1 then ' · 1 line changed'
+               else ' · ' || (v_p->>'adjusted') || ' lines changed' end);
+  return jsonb_build_object('ok', true, 'id', v_q.id, 'ref', v_q.ref);
+end $$;
+revoke all on function public.quotation_edit(uuid, jsonb) from public, anon;
+
+-- END OF QUOTATION LINES OF OUR OWN ------------------------------------------
+
+select public.functions_tidy();
+
+-- HIRING ---------------------------------------------------------------------
+
+create table if not exists public.hiring_candidates (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null check (char_length(name) between 2 and 120),
+  email        text not null check (char_length(email) between 5 and 160 and email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+  phone        text check (phone is null or char_length(phone) between 6 and 30),
+  position     text not null check (char_length(position) between 2 and 80),
+  source       text not null check (source in ('jobstreet', 'linkedin', 'indeed', 'referral', 'website', 'walk_in', 'other')),
+  cv_url       text check (cv_url is null or (cv_url ~ '^https://' and cv_url !~ '[\s"''<>`\\]' and char_length(cv_url) <= 500)),
+  cv_path      text check (cv_path is null or char_length(cv_path) <= 300),
+  cv_name      text check (cv_name is null or char_length(cv_name) <= 200),
+  note         text check (note is null or char_length(note) <= 2000),
+  stage        text not null default 'new'
+               check (stage in ('new', 'invited', 'interview', 'offer', 'hired', 'pool', 'closed')),
+  link_key     text unique check (link_key is null or link_key ~ '^[a-z0-9]{8}$'),
+  last_step_at timestamptz not null default now(),
+  idem         text unique,
+  created_by   uuid references public.team_members(id) on delete set null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  removed_at   timestamptz,
+  removed_by   uuid references public.team_members(id) on delete set null
+);
+
+create table if not exists public.hiring_people (
+  candidate_id   uuid not null references public.hiring_candidates(id) on delete cascade,
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  role           text not null check (role in ('owner', 'interviews')),
+  added_by       uuid references public.team_members(id) on delete set null,
+  added_at       timestamptz not null default now(),
+  primary key (candidate_id, team_member_id)
+);
+
+create table if not exists public.hiring_events (
+  id           uuid primary key default gen_random_uuid(),
+  candidate_id uuid not null references public.hiring_candidates(id) on delete cascade,
+  actor        text not null,
+  action       text not null,
+  detail       text,
+  created_at   timestamptz not null default now()
+);
+create index if not exists hiring_events_candidate_idx on public.hiring_events (candidate_id, created_at desc);
+
+alter table public.hiring_candidates enable row level security;
+alter table public.hiring_people enable row level security;
+alter table public.hiring_events enable row level security;
+revoke all on table public.hiring_candidates from public, anon, authenticated;
+revoke all on table public.hiring_people from public, anon, authenticated;
+revoke all on table public.hiring_events from public, anon, authenticated;
+
+/* Who the caller is on a candidate: admin (the granted part), owner,
+   interviews, or nothing. A removed candidate is the part's alone. */
+create or replace function public.hiring_role(p_candidate uuid)
+returns text language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text;
+begin
+  if me.id is null then return null; end if;
+  if public.ops_granted('team.hiring', 'work') then return 'admin'; end if;
+  select p.role into v_role
+    from public.hiring_people p join public.hiring_candidates c on c.id = p.candidate_id
+   where p.candidate_id = p_candidate and p.team_member_id = me.id and c.removed_at is null;
+  return v_role;
+end $$;
+revoke all on function public.hiring_role(uuid) from public, anon, authenticated;
+
+create or replace function public.hiring_log(p_candidate uuid, p_action text, p_detail text)
+returns void language plpgsql security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (p_candidate, coalesce(me.name, 'System'), p_action, p_detail);
+end $$;
+revoke all on function public.hiring_log(uuid, text, text) from public, anon, authenticated;
+
+/* The live candidates the caller holds a place on: the rail draws Hiring
+   for a colleague with one, whatever their group. */
+create or replace function public.hiring_mine()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object('ok', true, 'admin', public.ops_granted('team.hiring', 'work'),
+    'count', (select count(*) from public.hiring_people p join public.hiring_candidates c on c.id = p.candidate_id
+               where p.team_member_id = me.id and c.removed_at is null));
+end $$;
+grant execute on function public.hiring_mine() to authenticated;
+
+/* The checks every write of a candidate's details makes. */
+create or replace function public.hiring_values(p jsonb)
+returns jsonb language plpgsql immutable set search_path = public as $$
+declare
+  o jsonb := '{}'::jsonb;
+  v text;
+  d text;
+begin
+  if p ? 'name' then
+    v := regexp_replace(btrim(coalesce(p->>'name', '')), '\s+', ' ', 'g');
+    if char_length(v) < 2 or char_length(v) > 120 then return jsonb_build_object('error', 'bad-name'); end if;
+    o := o || jsonb_build_object('name', v);
+  end if;
+  if p ? 'email' then
+    v := lower(btrim(coalesce(p->>'email', '')));
+    if v !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or char_length(v) > 160 then return jsonb_build_object('error', 'bad-email'); end if;
+    o := o || jsonb_build_object('email', v);
+  end if;
+  if p ? 'phone' then
+    v := btrim(coalesce(p->>'phone', ''));
+    d := regexp_replace(v, '[^0-9]', '', 'g');
+    if v <> '' and (char_length(d) < 8 or char_length(d) > 15 or v !~ '^\+?[0-9 ()-]+$') then
+      return jsonb_build_object('error', 'bad-phone');
+    end if;
+    o := o || jsonb_build_object('phone', nullif(v, ''));
+  end if;
+  if p ? 'position' then
+    v := regexp_replace(btrim(coalesce(p->>'position', '')), '\s+', ' ', 'g');
+    if char_length(v) < 2 or char_length(v) > 80 then return jsonb_build_object('error', 'bad-position'); end if;
+    o := o || jsonb_build_object('position', v);
+  end if;
+  if p ? 'source' then
+    v := coalesce(p->>'source', '');
+    if v not in ('jobstreet', 'linkedin', 'indeed', 'referral', 'website', 'walk_in', 'other') then
+      return jsonb_build_object('error', 'bad-source');
+    end if;
+    o := o || jsonb_build_object('source', v);
+  end if;
+  if p ? 'cv_url' then
+    v := btrim(coalesce(p->>'cv_url', ''));
+    if v <> '' and (v !~ '^https://[^\s"''<>`\\]+$' or char_length(v) > 500) then return jsonb_build_object('error', 'bad-cv'); end if;
+    o := o || jsonb_build_object('cv_url', nullif(v, ''));
+  end if;
+  if p ? 'note' then
+    v := btrim(coalesce(p->>'note', ''));
+    if char_length(v) > 2000 then return jsonb_build_object('error', 'too-long'); end if;
+    o := o || jsonb_build_object('note', nullif(v, ''));
+  end if;
+  return o;
+end $$;
+revoke all on function public.hiring_values(jsonb) from public, anon, authenticated;
+
+create or replace function public.hiring_row(c public.hiring_candidates, p_role text)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('id', c.id, 'name', c.name, 'position', c.position, 'source', c.source, 'stage', c.stage,
+    'created_at', c.created_at, 'last_step_at', c.last_step_at, 'removed_at', c.removed_at, 'role', p_role,
+    'owners', coalesce((select jsonb_agg(t.name order by t.name) from public.hiring_people p
+                         join public.team_members t on t.id = p.team_member_id
+                        where p.candidate_id = c.id and p.role = 'owner'), '[]'::jsonb));
+$$;
+revoke all on function public.hiring_row(public.hiring_candidates, text) from public, anon, authenticated;
+
+create or replace function public.hiring_list()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_admin boolean := public.ops_granted('team.hiring', 'work');
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  return jsonb_build_object('ok', true, 'admin', v_admin, 'rows', coalesce((
+    select jsonb_agg(public.hiring_row(c, case when v_admin then 'admin' else p.role end) order by c.created_at desc)
+      from public.hiring_candidates c
+      left join public.hiring_people p on p.candidate_id = c.id and p.team_member_id = me.id
+     where (v_admin or (p.role is not null and c.removed_at is null))), '[]'::jsonb));
+end $$;
+grant execute on function public.hiring_list() to authenticated;
+
+create or replace function public.hiring_get(p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  v_role text := public.hiring_role(p_id);
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into c from public.hiring_candidates where id = p_id;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('ok', true, 'role', v_role,
+    'candidate', public.hiring_row(c, v_role) || jsonb_strip_nulls(jsonb_build_object(
+      'email', c.email, 'phone', c.phone, 'cv_url', c.cv_url, 'cv_path', c.cv_path, 'cv_name', c.cv_name,
+      'note', c.note, 'updated_at', c.updated_at,
+      'link_key', case when v_role in ('admin', 'owner') then c.link_key end,
+      'link_ends', c.last_step_at + make_interval(days => v_days))),
+    'people', coalesce((select jsonb_agg(jsonb_build_object('id', t.id, 'name', t.name, 'role', p.role,
+                          'designation', t.designation) order by (p.role <> 'owner'), t.name)
+                          from public.hiring_people p join public.team_members t on t.id = p.team_member_id
+                         where p.candidate_id = c.id), '[]'::jsonb),
+    'events', coalesce((select jsonb_agg(jsonb_build_object('actor', e.actor, 'action', e.action, 'detail', e.detail,
+                          'created_at', e.created_at) order by e.created_at desc)
+                          from (select * from public.hiring_events e where e.candidate_id = c.id
+                                 order by e.created_at desc limit 100) e), '[]'::jsonb));
+end $$;
+grant execute on function public.hiring_get(uuid) to authenticated;
+
+create or replace function public.hiring_add(p_values jsonb, p_idem text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v jsonb;
+  c public.hiring_candidates;
+  v_dup public.hiring_candidates;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_idem, '') !~ '^[A-Za-z0-9-]{8,64}$' then return jsonb_build_object('error', 'bad-request'); end if;
+  perform pg_advisory_xact_lock(hashtext('hiring_add:' || p_idem));
+  select * into c from public.hiring_candidates where idem = p_idem;
+  if c.id is not null then return jsonb_build_object('ok', true, 'id', c.id, 'again', true); end if;
+  v := public.hiring_values(p_values || jsonb_build_object(
+    'name', coalesce(p_values->>'name', ''), 'email', coalesce(p_values->>'email', ''),
+    'position', coalesce(p_values->>'position', ''), 'source', coalesce(p_values->>'source', '')));
+  if v ? 'error' then return v; end if;
+  select * into v_dup from public.hiring_candidates
+   where lower(email) = v->>'email' and removed_at is null and stage not in ('hired', 'closed') limit 1;
+  if v_dup.id is not null then
+    return jsonb_build_object('error', 'taken', 'id', v_dup.id, 'name', v_dup.name);
+  end if;
+  insert into public.hiring_candidates (name, email, phone, position, source, cv_url, note, link_key, idem, created_by)
+  values (v->>'name', v->>'email', v->>'phone', v->>'position', v->>'source', v->>'cv_url', v->>'note',
+          public.new_link_key(), p_idem, me.id)
+  returning * into c;
+  insert into public.hiring_people (candidate_id, team_member_id, role, added_by) values (c.id, me.id, 'owner', me.id);
+  perform public.hiring_log(c.id, 'candidate.added', c.position || ' · ' || initcap(replace(c.source, '_', '-')));
+  return jsonb_build_object('ok', true, 'id', c.id);
+end $$;
+grant execute on function public.hiring_add(jsonb, text) to authenticated;
+
+/* Details changed by an admin or the candidate's Owner, over the row as
+   read; the CV file's path held to the candidate's own folder. */
+create or replace function public.hiring_save(p_id uuid, p_values jsonb, p_expected timestamptz)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_role text := public.hiring_role(p_id);
+  c public.hiring_candidates;
+  v jsonb;
+  v_path text;
+  v_said text[] := '{}';
+  k text;
+  w text[] := array['name', 'Name', 'email', 'Email', 'phone', 'Phone', 'position', 'Position', 'source', 'Source',
+                    'cv_url', 'CV link', 'note', 'Note'];
+  i int;
+begin
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_expected is not null and c.updated_at is distinct from p_expected then
+    return jsonb_build_object('error', 'stale', 'updated_at', c.updated_at);
+  end if;
+  v := public.hiring_values(coalesce(p_values, '{}'::jsonb) - 'cv_path' - 'cv_name');
+  if v ? 'error' then return v; end if;
+  if p_values ? 'cv_path' then
+    v_path := nullif(btrim(coalesce(p_values->>'cv_path', '')), '');
+    if v_path is not null and (v_path not like c.id::text || '/%' or v_path ~ '\.\.' or char_length(v_path) > 300) then
+      return jsonb_build_object('error', 'bad-cv');
+    end if;
+    if v_path is distinct from c.cv_path then v_said := v_said || case when v_path is null then 'CV file removed' else 'CV file added' end; end if;
+  end if;
+  if v ? 'email' and lower(v->>'email') is distinct from lower(c.email) and exists (
+       select 1 from public.hiring_candidates x where lower(x.email) = v->>'email' and x.id <> c.id
+          and x.removed_at is null and x.stage not in ('hired', 'closed')) then
+    return jsonb_build_object('error', 'taken');
+  end if;
+  for i in 1 .. array_length(w, 1) by 2 loop
+    k := w[i];
+    if v ? k and (v->>k) is distinct from (to_jsonb(c)->>k) then
+      v_said := v_said || (w[i + 1] || case when k in ('note', 'cv_url', 'email', 'phone') then ' changed'
+                  else ': ' || coalesce(to_jsonb(c)->>k, 'not set') || ' → ' || coalesce(v->>k, 'not set') end);
+    end if;
+  end loop;
+  if array_length(v_said, 1) is null then return jsonb_build_object('ok', true, 'same', true, 'updated_at', c.updated_at); end if;
+  update public.hiring_candidates x set
+    name = coalesce(v->>'name', x.name), email = coalesce(v->>'email', x.email),
+    phone = case when v ? 'phone' then v->>'phone' else x.phone end,
+    position = coalesce(v->>'position', x.position), source = coalesce(v->>'source', x.source),
+    cv_url = case when v ? 'cv_url' then v->>'cv_url' else x.cv_url end,
+    cv_path = case when p_values ? 'cv_path' then v_path else x.cv_path end,
+    cv_name = case when p_values ? 'cv_path' then case when v_path is null then null
+                else left(coalesce(nullif(btrim(p_values->>'cv_name'), ''), 'CV'), 200) end else x.cv_name end,
+    note = case when v ? 'note' then v->>'note' else x.note end,
+    updated_at = now()
+   where x.id = p_id returning * into c;
+  perform public.hiring_log(p_id, 'candidate.edited', array_to_string(v_said, ' · '));
+  return jsonb_build_object('ok', true, 'updated_at', c.updated_at);
+end $$;
+grant execute on function public.hiring_save(uuid, jsonb, timestamptz) to authenticated;
+
+/* A colleague on a candidate, by an admin alone; told in the bell, the
+   notice opening the candidate. */
+create or replace function public.hiring_person_set(p_id uuid, p_member uuid, p_role text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.hiring_candidates;
+  t public.team_members;
+  v_was text;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_role, '') not in ('owner', 'interviews') then return jsonb_build_object('error', 'bad-role'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into t from public.team_members where id = p_member and active and removed_at is null and not system;
+  if t.id is null then return jsonb_build_object('error', 'bad-colleague'); end if;
+  select role into v_was from public.hiring_people where candidate_id = p_id and team_member_id = p_member;
+  if v_was = p_role then return jsonb_build_object('ok', true, 'same', true); end if;
+  insert into public.hiring_people (candidate_id, team_member_id, role, added_by)
+  values (p_id, p_member, p_role, me.id)
+  on conflict (candidate_id, team_member_id) do update set role = excluded.role;
+  perform public.hiring_log(p_id, 'candidate.people', t.name || case when v_was is null then ' added as ' else ': ' || initcap(v_was) || ' → ' end
+    || case p_role when 'owner' then 'Owner' else 'Interviewer' end);
+  if v_was is null and t.id <> me.id then
+    insert into public.ops_notifications (team_member_id, kind, title, body, link)
+    values (t.id, 'hiring.added', 'You were added to a candidate',
+            c.position || ' · ' || case p_role when 'owner' then 'Owner' else 'Interviewer' end || ' · added by ' || me.name,
+            'https://digital.adspace.me/admin/?s=hiring&candidate=' || c.id);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.hiring_person_set(uuid, uuid, text) to authenticated;
+
+create or replace function public.hiring_person_remove(p_id uuid, p_member uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text;
+  v_name text;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select p.role, t.name into v_role, v_name from public.hiring_people p join public.team_members t on t.id = p.team_member_id
+   where p.candidate_id = p_id and p.team_member_id = p_member;
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  delete from public.hiring_people where candidate_id = p_id and team_member_id = p_member;
+  perform public.hiring_log(p_id, 'candidate.people', v_name || ' removed (' || case v_role when 'owner' then 'Owner' else 'Interviewer' end || ')');
+  return jsonb_build_object('ok', true, 'role', v_role);
+end $$;
+grant execute on function public.hiring_person_remove(uuid, uuid) to authenticated;
+
+/* Remove hides a candidate from everyone but the part; Restore brings it
+   back; Delete takes it away for good once removed, the name typed back,
+   and answers the CV file's path for the page to remove. */
+create or replace function public.hiring_remove(p_id uuid, p_restore boolean default false)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.hiring_candidates;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if coalesce(p_restore, false) then
+    if c.removed_at is null then return jsonb_build_object('ok', true, 'same', true); end if;
+    update public.hiring_candidates set removed_at = null, removed_by = null, updated_at = now() where id = p_id;
+    perform public.hiring_log(p_id, 'candidate.restored', null);
+  else
+    if c.removed_at is not null then return jsonb_build_object('ok', true, 'same', true); end if;
+    update public.hiring_candidates set removed_at = now(), removed_by = me.id, updated_at = now() where id = p_id;
+    perform public.hiring_log(p_id, 'candidate.removed', null);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.hiring_remove(uuid, boolean) to authenticated;
+
+create or replace function public.hiring_delete(p_id uuid, p_name text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.hiring_candidates;
+begin
+  if me.id is null or not public.ops_granted('team.hiring', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.removed_at is null then return jsonb_build_object('error', 'not-removed'); end if;
+  if lower(btrim(coalesce(p_name, ''))) <> lower(c.name) then return jsonb_build_object('error', 'bad-name'); end if;
+  delete from public.hiring_candidates where id = p_id;
+  return jsonb_build_object('ok', true, 'cv_path', c.cv_path);
+end $$;
+grant execute on function public.hiring_delete(uuid, text) to authenticated;
+
+/* The candidate's page: its key, read by an admin or the Owner; Reset link
+   retires the old one at once. */
+create or replace function public.hiring_link(p_id uuid, p_reset boolean default false)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  v_role text := public.hiring_role(p_id);
+  c public.hiring_candidates;
+begin
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if coalesce(p_reset, false) or c.link_key is null then
+    update public.hiring_candidates set link_key = public.new_link_key(), last_step_at = now(), updated_at = now()
+     where id = p_id returning * into c;
+    perform public.hiring_log(p_id, 'candidate.link', case when p_reset then 'Link reset' else 'Link created' end);
+  end if;
+  return jsonb_build_object('ok', true, 'key', c.link_key, 'updated_at', c.updated_at);
+end $$;
+grant execute on function public.hiring_link(uuid, boolean) to authenticated;
+
+/* The candidate's own page (`/careers/?k=`): their name, the position and
+   where it stands; never a colleague's name, a note or a score. The link
+   ends `hiring_link_days` after the last step. */
+create or replace function public.careers_read(p_key text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  return jsonb_build_object('ok', true, 'name', c.name, 'position', c.position, 'stage',
+    case when c.stage in ('new', 'pool') then 'received' else c.stage end, 'received_at', c.created_at);
+end $$;
+revoke all on function public.careers_read(text) from public;
+grant execute on function public.careers_read(text) to anon, authenticated;
+
+/* A CV file in the private bucket `hiring`, at `{candidate id}/{name}`: read
+   by anyone on that candidate, added and removed by an admin or its Owner.
+   Used by the bucket's policies, so it keeps `authenticated`. */
+create or replace function public.hiring_file_ok(p_name text, p_write boolean)
+returns boolean language plpgsql stable security definer set search_path = public as $$
+declare
+  v_id uuid;
+  v_role text;
+begin
+  begin
+    v_id := split_part(coalesce(p_name, ''), '/', 1)::uuid;
+  exception when others then return false;
+  end;
+  v_role := public.hiring_role(v_id);
+  if v_role is null then return false; end if;
+  return not coalesce(p_write, false) or v_role in ('admin', 'owner');
+end $$;
+revoke all on function public.hiring_file_ok(text, boolean) from public, anon;
+grant execute on function public.hiring_file_ok(text, boolean) to authenticated;
+
+/* STORAGE (the SQL Editor's, a run of its own: the connector holds a drop).
+   The private bucket and who may touch it, where the project has storage. */
+do $$
+begin
+  if not exists (select 1 from pg_namespace where nspname = 'storage') then
+    raise notice 'hiring: no storage schema here, so no bucket or policy was written.';
+    return;
+  end if;
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('hiring', 'hiring', false, 20971520, array['application/pdf', 'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+  on conflict (id) do update set public = false, file_size_limit = 20971520,
+    allowed_mime_types = excluded.allowed_mime_types;
+  execute 'drop policy if exists hiring_files_read on storage.objects';
+  execute $p$create policy hiring_files_read on storage.objects for select to authenticated
+    using (bucket_id = 'hiring' and public.hiring_file_ok(name, false))$p$;
+  execute 'drop policy if exists hiring_files_add on storage.objects';
+  execute $p$create policy hiring_files_add on storage.objects for insert to authenticated
+    with check (bucket_id = 'hiring' and public.hiring_file_ok(name, true))$p$;
+  execute 'drop policy if exists hiring_files_remove on storage.objects';
+  execute $p$create policy hiring_files_remove on storage.objects for delete to authenticated
+    using (bucket_id = 'hiring' and public.hiring_file_ok(name, true))$p$;
+end $$;
+
+/* `team.hiring` and `team.personnel` join the admin tools only an admin
+   turns on (as SUPER ADMIN left the guard, with the two added). */
+create or replace function public.team_roles_admin_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_granted constant text[] := array['ops.all', 'ops.reports', 'ops.workflows', 'ops.time', 'ops.numbering',
+    'ops.override', 'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite',
+    'team.handbook', 'team.announce', 'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai',
+    'reports.meta', 'register.types', 'campaigns.files_delete', 'clients.vic', 'suppliers.pay',
+    'team.analytics', 'campaigns.pay', 'team.hiring', 'team.personnel'];
+  k text;
+begin
+  if who = '' or pg_trigger_depth() > 1 then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+  /* A group made admin, an admin group made plain, made or deleted: the
+     super admin's alone. */
+  if not public.team_super_ok() and (
+       (tg_op = 'INSERT' and (coalesce(new.is_admin, false) or new.slug = 'admin'))
+    or (tg_op = 'DELETE' and (coalesce(old.is_admin, false) or old.slug = 'admin'))
+    or (tg_op = 'UPDATE' and coalesce(new.is_admin, false) is distinct from coalesce(old.is_admin, false))) then
+    raise exception 'super-only' using errcode = '42501', hint = 'Only the super admin makes or removes an admin group.';
+  end if;
+  if public.allowed('admin') then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+  if (tg_op <> 'INSERT' and (coalesce(old.is_admin, false) or old.slug = 'admin'))
+     or (tg_op <> 'DELETE' and (coalesce(new.is_admin, false) or new.slug = 'admin')) then
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin group.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  foreach k in array v_granted loop
+    if coalesce(new.access ->> k, '') is distinct from
+       (case when tg_op = 'INSERT' then '' else coalesce(old.access ->> k, '') end) then
+      raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin tool.';
+    end if;
+  end loop;
+  return new;
+end $$;
+revoke all on function public.team_roles_admin_guard() from public, anon, authenticated;
+
+/* Hiring may be placed in a colleague's own order of the rail (as SUPPLIERS
+   left it, with `hiring` added). */
+create or replace function public.rail_order_set(p_sections text[])
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members;
+  v_list text[] := coalesce(p_sections, '{}');
+  v_known constant text[] := array['work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp',
+    'register', 'suppliers', 'links', 'services', 'hiring', 'team', 'handbook'];
+begin
+  me := public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if exists (select 1 from unnest(v_list) k where k is null or not (k = any(v_known)))
+     or (select count(distinct k) from unnest(v_list) k) <> cardinality(v_list) then
+    return jsonb_build_object('error', 'bad-order');
+  end if;
+  insert into public.rail_orders (member_id, sections, updated_at) values (me.id, v_list, now())
+  on conflict (member_id) do update set sections = excluded.sections, updated_at = now();
+  return jsonb_build_object('sections', to_jsonb(v_list));
+end $$;
+grant execute on function public.rail_order_set(text[]) to authenticated;
+
+-- END OF HIRING --------------------------------------------------------------
+
 select public.functions_tidy();
 
 -- PERSONNEL RECORDS ---------------------------------------------------------
@@ -119885,7 +120902,7 @@ declare
     'ops.override', 'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite',
     'team.handbook', 'team.announce', 'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai',
     'reports.meta', 'register.types', 'campaigns.files_delete', 'clients.vic', 'suppliers.pay',
-    'team.analytics', 'campaigns.pay', 'team.personnel'];
+    'team.analytics', 'campaigns.pay', 'team.hiring', 'team.personnel'];
   k text;
 begin
   if who = '' or pg_trigger_depth() > 1 then

@@ -1767,7 +1767,7 @@
       if (r.error) return r.error.message;
       if (d.error) return PAY_SAID[d.error] || d.error;
       window.ADspaceSheet.close();
-      cpqSaid((q.name || 'The creator') + (ok ? '’s details approved.' : '’s details declined.'), 'ok');
+      cpqSaid((q.name || 'The creator') + (ok ? '’s details are approved.' : '’s details are declined.'), 'ok');
       reloadPayStates();
       loadQueue();
       return '';
@@ -5851,7 +5851,7 @@
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
         .eq('id', o.id).select('id').then(function (r) {
           /* Every slot already booked (`campaign_options_slots_hold`, audit 2026-11-15). */
-          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'Every slot is booked. Add a slot or withdraw a creator first.', 'err'); return; }
+          if (r.error && r.error.hint === 'over-slots') { cardSay(o, 'Every creator place is booked. Raise Creators in Edit, or withdraw a creator first.', 'err'); return; }
           if (r.error) { cardSay(o, r.error.message, 'err'); return; }
           if (!(r.data || []).length) { cardSay(o, 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);

@@ -4874,7 +4874,6 @@
     }
     if (g === 'waiting') {
       n.title = 'On hold';
-      n.line = 'Resume the task when the work can continue.';
       var res = resumeTo(t);
       if (work && res) n.go = { label: 'Resume', run: function () { move(res); } };
       return n;
@@ -5097,7 +5096,7 @@
     if (!work) return n;
     if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Move to In progress', 'doing'); }
     else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Move to Done', 'complete'); }
-    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Resume the task when the work can continue.'; n.go = go('Resume', 'doing'); }
+    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.go = go('Resume', 'doing'); }
     else if (p === 'review') { n.title = n.title || 'Ready for review'; n.go = go('Move to Done', 'complete'); }
     return n;
   }

@@ -248,7 +248,11 @@
                 ['analytics', 'AI analysis on Analytics'],
                 /* A colleague's employee record, salary and the AutoCount
                    HRMS import (2026-11-16, Hiring and People H1). */
-                ['personnel', 'Employee records and salary']],
+                ['personnel', 'Employee records and salary'],
+                /* Hiring (2026-11-16): every candidate, adding them and the
+                   colleagues on each. A colleague added to one candidate
+                   sees that candidate alone without it. */
+                ['hiring', 'Hiring']],
     /* A report carrying a white-label client's logo, and the White label
        tick on a client's Brand (2026-10-07): granted, an admin's by itself
        and any other group's once set. */
@@ -265,7 +269,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1, 'team.hiring': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -298,7 +302,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'suppliers.pay': ['view', 'work'], 'campaigns.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'suppliers.pay': ['view', 'work'], 'campaigns.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -695,7 +699,7 @@
   var ADMIN_ONLY = 'Only an admin can make a colleague admin, change an admin, or turn an admin tool on or off. Please ask an admin.';
   function teamSaid(e) {
     var t = String(e && e.message || e || '');
-    if (/own-expiry/.test(t)) return 'Your own access date can only be set by another admin. Please ask another admin.';
+    if (/own-expiry/.test(t)) return 'Your own access date is set by another admin. Please ask one to change it.';
     if (/expired-date/.test(t)) return 'Move the access date first.';
     if (/past-date/.test(t)) return 'Choose today or a later date.';
     if (/system-account/.test(t)) return 'The super admin account cannot be changed or removed.';
@@ -999,7 +1003,7 @@
     if (id === 'mrecMsg' && rec.said) rec.said.work = m.id;
   }
   var REMOVE_SAID = {
-    own: 'Your own account can only be removed by another admin. Please ask another admin.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
+    own: 'Your own account is removed by another admin. Please ask one to remove it.', 'system-account': 'The super admin account cannot be changed or removed.', 'admin-only': ADMIN_ONLY,
     'super-only': 'Only the super admin can make or remove an admin. Please ask the super admin.',
     'bad-name': 'The name does not match.', 'last-admin': 'This is the last admin with access. Make another colleague admin first.',
     denied: 'You do not have permission to change colleagues. Please ask an admin.', 'not-found': 'This colleague is no longer on the team.'
@@ -1296,7 +1300,7 @@
     ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Documents', ['register.types']],
-    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel']]
+    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel', 'team.hiring']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
@@ -1316,6 +1320,7 @@
      name alone left a group unsure that Service lines held no quotations. */
   var PART_DESC = {
     'clients.contacts': 'The client\'s people and their portal access.',
+    'team.hiring': 'Candidates, their CVs and the colleagues added to each.',
     'clients.billing': 'Registered Company Name, BRN, billing contact and address.',
     'clients.quotes': 'Build quote and the client\'s quotations.',
     'clients.services': 'The client\'s service lines and their rates.',
