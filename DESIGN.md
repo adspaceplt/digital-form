@@ -30,8 +30,8 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
   the card at 15/600 with its count as a `.tab-n`, its list the card's
   rows) and each rail block, each edged by `--part-edge` (a register (`.bookreg`) the card, its rows lines in it; ink at 11%; light
   ink at 12% in dark), 16px apart, the grouping carried by the space; a
-  part's add act is quiet (`.btn-quiet .btn-sm` with its glyph) unless it
-  is the record's next step; a rail fact's pen and ⋯ show on hover and
+  part's add act is a shaded `.btn-sm` with its glyph (`.btn-quiet`) unless
+  it is the record's next step, then blue; a rail fact's pen and ⋯ show on hover and
   focus at a desk, always under a finger. Phones
   keep their solid head and one-line title. What holds words over other
   words (a menu, a popover, the finder, a sheet, a question) is solid
@@ -489,7 +489,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     the one blue primary; `.btn` is tonal, caution included (`.btn-warn` is
     the tonal button, its question saying what it costs); `.btn-danger` is
     red words on the tonal button, never a red slab.
-  - `.btn-quiet` is text only.
+  - Every button that acts is shaded (the user, 2026-11-16: a word on a
+    white card did not read as a button): `.btn-quiet` is the tonal ground
+    like `.btn`, and words alone only as Cancel beside the view's blue
+    primary (`:has(> .btn-primary, > .btn-go)`). A way inside a line of
+    facts stays `.linkbtn`.
   - `.btn-sm`.
   - A sheet Cancel is `.btn-quiet`, never a bare `.btn` (`flex: 1` grows it).
     `.sheet-foot > .btn { flex: 0 0 auto }`.

@@ -10643,3 +10643,6 @@ interviewer: a place on a candidate draws Team, which moved what Marketing
 sees in `team`; the suite adds her itself. `rail_order_set` keeps `hiring`
 among its keys (harmless: no rail item sends it).
 
+
+### 2026-11-17 · Every button that acts is shaded
+The user, 2026-11-16: on a white card a text-only button (Add service, Issue document, Show more) read as words, "we don't even know if it's a button". `.btn-quiet` now takes the tonal ground of `.btn`; words alone stay only for Cancel beside the view's blue primary, found by `:has(> .btn-primary, > .btn-go)` so no screen names it. Build quote's line buttons went first (#1163).
