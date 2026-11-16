@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261115f">
-<link rel="stylesheet" href="/css/console.css?v=20261115q">
+<link rel="stylesheet" href="/css/portal.css?v=20261116">
+<link rel="stylesheet" href="/css/console.css?v=20261116">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -328,6 +328,9 @@
         </button>
         <button class="navitem" data-section="services" type="button">
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
+        </button>
+        <button class="navitem" data-section="hiring" type="button" hidden>
+          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 11.3-4.4"/><path d="M18 14v6M15 17h6"/></svg><span>Hiring</span>
         </button>
         <button class="navitem" data-section="team" type="button" hidden>
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
@@ -3898,6 +3901,28 @@
         <div id="supRec" hidden></div>
     </div>
 
+    <!-- Hiring (2026-11-16, js/hiring.js): candidates for a position, the
+         colleagues on each, and each candidate's own page (/careers/?k=).
+         Every candidate at the granted part `team.hiring`; a colleague added
+         to a candidate sees that candidate alone. -->
+    <div class="console-body" id="sectionHiring" hidden>
+        <div class="cmdbar" id="hirBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="hirFind" type="search" placeholder="Search name or position" aria-label="Search candidates" autocomplete="off">
+          </span>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="hirCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add candidate</button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="hirMsg"></div>
+        <div id="hirList"></div>
+        <div id="hirRec" hidden></div>
+    </div>
+
     <div class="console-body" id="sectionTeam" data-swipe="teamTabs" hidden>
       <!-- Members and groups are one job and the monthly reviews another, gated
            apart: a group given Team does not read anybody's scores, and a
@@ -6196,6 +6221,65 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 
 <!-- A serial made elsewhere, added so the verify page answers it. -->
+<!-- A candidate's details (js/hiring.js): Add candidate, and Edit. -->
+<div class="sheet" id="hirSheet" hidden>
+  <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hirSheetTitle">
+    <div class="sheet-head">
+      <h3 id="hirSheetTitle">Add candidate</h3>
+      <button class="iconbtn" id="hirSheetClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <section class="fsec">
+        <h4 class="fsec-h">Candidate</h4>
+        <div class="row fgrid">
+          <div class="span-all"><label class="field-label" for="hirName">Name</label>
+            <textarea class="input" id="hirName" rows="1" data-oneline aria-required="true" maxlength="120" placeholder="Jane Doe"></textarea></div>
+          <div><label class="field-label" for="hirEmail">Email</label>
+            <input class="input" id="hirEmail" type="email" aria-required="true" maxlength="160" placeholder="email@adspace.me"></div>
+          <div><label class="field-label" for="hirPhone">Phone</label>
+            <input class="input" id="hirPhone" type="tel" maxlength="30" placeholder="012-345 6789"></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Application</h4>
+        <div class="row fgrid">
+          <div><label class="field-label" for="hirPosition">Position</label>
+            <input class="input" id="hirPosition" aria-required="true" maxlength="80" list="hirPositions" placeholder="Graphic Designer"><datalist id="hirPositions"></datalist></div>
+          <div><label class="field-label" for="hirSource">Source</label>
+            <select class="select" id="hirSource" aria-required="true">
+              <option value="">Choose a source</option><option value="jobstreet">JobStreet</option><option value="linkedin">LinkedIn</option>
+              <option value="indeed">Indeed</option><option value="referral">Referral</option><option value="website">Website</option>
+              <option value="walk_in">Walk-in</option><option value="other">Other</option>
+            </select></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">CV</h4>
+        <div class="row fgrid">
+          <div class="span-all"><label class="field-label" for="hirCvUrl">CV link</label>
+            <textarea class="input" id="hirCvUrl" rows="1" data-oneline maxlength="500" placeholder="https://adspace.me"></textarea></div>
+          <div class="span-all"><label class="field-label" for="hirCvFile">CV file</label>
+            <input class="input" id="hirCvFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" data-nodraft>
+            <p class="asknote" id="hirCvHeld" hidden></p></div>
+        </div>
+      </section>
+      <section class="fsec">
+        <h4 class="fsec-h">Note</h4>
+        <div class="row">
+          <textarea class="textarea" id="hirNote" rows="3" maxlength="2000" placeholder="Optional" aria-label="Note"></textarea>
+        </div>
+      </section>
+      <div class="msg" id="hirSheetMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="hirSheetGo" type="button">Add candidate</button>
+      <button class="btn btn-quiet" id="hirSheetCancel" type="button">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- A supplier's details (js/suppliers.js): Edit, and Use details with the
      answers its form sent. The NRIC and the bank details are drawn only at
      Documents: Supplier bank details Work. -->
@@ -6490,13 +6574,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261115b"></script>
+<script src="/js/admin.js?v=20261116a"></script>
 <script src="/js/documents.js?v=20261116b"></script>
 <script src="/js/letters.js?v=20261116b"></script>
 <script src="/js/smreport.js?v=20261113g"></script>
 <script src="/js/reports.js?v=20261116c"></script>
 <script src="/js/register.js?v=20261112j"></script>
 <script src="/js/suppliers.js?v=20261113zzh"></script>
+<script src="/js/hiring.js?v=20261116a"></script>
 <script src="/js/bukku.js?v=20261115a"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
@@ -6505,7 +6590,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261112zt"></script>
 <script src="/js/crm.js?v=20261115h"></script>
 <script src="/js/sales.js?v=20261115h"></script>
-<script src="/js/team.js?v=20261116a"></script>
+<script src="/js/team.js?v=20261116c"></script>
 <script src="/js/namecard.js?v=20261115a"></script>
 <script src="/js/handbook.js?v=20261112h"></script>
 <script src="/js/frames.js?v=20261115d"></script>

@@ -4220,6 +4220,39 @@ button.sup-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 #supClient > p.muted + .ovfacts { margin-top: 8px; }
 .sup-go { margin-top: 12px; display: flex; }
 
+/* Hiring (2026-11-16, js/hiring.js): a row a candidate, one button: name
+   over the position, the source, the Owner, the day added, the state, the
+   chevron. On a phone, name over one line (position · source) at the left,
+   the state over the day at the right. */
+.hir-row { grid-template-columns: minmax(0, 1.4fr) 104px minmax(0, 1fr) 104px var(--state-w) 16px; }
+button.hir-row { width: 100%; border: 0; border-bottom: 1px solid var(--line-soft); background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+button.hir-row:last-child { border-bottom: 0; }
+@media (hover: hover) { button.hir-row:hover { background: var(--sunk); } }
+button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; }
+.hir-src, .hir-own, .hir-day { min-width: 0; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hir-go { display: flex; color: var(--ink-mute); }
+.hir-go svg { width: 15px; height: 15px; }
+.hir-line { display: none; }
+.hir-line .nb { white-space: nowrap; }
+.is-narrow .hir-row { grid-template-columns: minmax(0, 1fr) 120px; grid-template-areas: "name state" "who day"; align-items: start; }
+.is-narrow .hir-row > .svc-name { grid-area: name; }
+.is-narrow .hir-row .svc-name > small { display: none; }
+.is-narrow .hir-row > .hir-src, .is-narrow .hir-row > .hir-own, .is-narrow .hir-row > .hir-go { display: none; }
+.is-narrow .hir-row > .hir-line { display: block; grid-area: who; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .hir-row > .hir-state { grid-area: state; justify-self: end; }
+.is-narrow .hir-row > .hir-day { grid-area: day; text-align: right; font-size: 12.5px; color: var(--ink-mute); }
+.hir-headcard, #hirTabs { margin-bottom: 12px; }
+.hir-body .readgroups.hir-pane { margin-top: 0; }
+#hirMsg:empty, #hirRecMsg:empty { display: none; }
+/* The colleagues on a candidate: a row each, the name over the position,
+   the role as a grey tag, the ⋯ at the right edge. */
+.hir-people { display: flex; flex-direction: column; }
+.hir-person { display: grid; grid-template-columns: minmax(0, 1fr) auto 36px; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.hir-person:first-child { border-top: 0; }
+.hir-person-who { display: flex; flex-direction: column; min-width: 0; }
+.hir-person-who b { font-weight: 500; }
+.hir-person-who small { font-size: 12.5px; color: var(--ink-mute); }
+
 /* A colleague's record (2026-10-18, js/team.js): the list and the Team strip
    step away while it is open. */
 #sectionTeam.is-member .tabline,
