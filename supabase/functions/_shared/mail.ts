@@ -103,8 +103,8 @@ export const CODE_WORDS = {
 export function codeEmail(t: { subject?: string; body?: string; foot?: string } | null,
   v: { name: string; code: string; minutes: number | string; purpose: string }): { subject: string; html: string; text: string } {
   const w = { subject: (t && t.subject) || CODE_WORDS.subject, body: (t && t.body) || CODE_WORDS.body, foot: t && typeof t.foot === 'string' ? t.foot : CODE_WORDS.foot };
-  const fill = (s: string) => s.replace(/\{\s*name\s*\}/gi, v.name).replace(/\{\s*minutes\s*\}/gi, String(v.minutes))
-    .replace(/\{\s*purpose\s*\}/gi, v.purpose).replace(/\s+([.,:;])/g, '$1');
+  const fill = (s: string) => s.replace(/\{\s*name\s*\}/gi, () => v.name).replace(/\{\s*minutes\s*\}/gi, () => String(v.minutes))
+    .replace(/\{\s*purpose\s*\}/gi, () => v.purpose).replace(/\s+([.,:;])/g, '$1');
   const subject = fill(w.subject.replace(/\{\s*code\s*\}/gi, '')).replace(/\s+/g, ' ').trim();
   const body = fill(w.body);
   const foot = fill(w.foot).trim();
@@ -112,9 +112,9 @@ export function codeEmail(t: { subject?: string; body?: string; foot?: string } 
   const own = paras(body).some((p) => /^\{\s*code\s*\}$/i.test(p));
   const html = layout({
     heading: 'Your verification code', preheader: subject + '.', block: own ? box : undefined,
-    body: own ? body.replace(/\{\s*code\s*\}/i, '{invoices}').replace(/\{\s*code\s*\}/gi, v.code) : body.replace(/\{\s*code\s*\}/gi, v.code),
+    body: own ? body.replace(/\{\s*code\s*\}/i, '{invoices}').replace(/\{\s*code\s*\}/gi, () => v.code) : body.replace(/\{\s*code\s*\}/gi, () => v.code),
     foot: foot || undefined
   });
-  const text = body.replace(/\{\s*code\s*\}/gi, v.code) + (foot ? '\n\n' + foot : '');
+  const text = body.replace(/\{\s*code\s*\}/gi, () => v.code) + (foot ? '\n\n' + foot : '');
   return { subject, html, text };
 }
