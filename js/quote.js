@@ -104,6 +104,9 @@
       goneT: 'This quotation has expired', goneP: 'Request a new quotation at the current rates, or contact ADspace on WhatsApp.',
       goneAsked: 'Request received. ADspace will contact you shortly.',
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
+      decline: 'Decline', declineT: 'Decline this quotation', declineWhy: 'Reason', declineHint: 'Optional',
+      declined: 'Declined', declinedT: 'You have declined this quotation',
+      withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn from {d}.',
       monthSub: 'Monthly subtotal', commit: '{n}-month term discount ({p}%)', termAdj: '{n}-month term surcharge ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
@@ -221,6 +224,9 @@
       goneT: '本报价已过期', goneP: '您可按最新价格申请新的报价，或通过 WhatsApp 咨询 ADspace。',
       goneAsked: '已收到您的确认，ADspace 将尽快与您联系。',
       closed: '已取消', closedT: '本报价已取消',
+      decline: '拒绝', declineT: '拒绝此报价', declineWhy: '原因', declineHint: '选填',
+      declined: '已拒绝', declinedT: '您已拒绝此报价',
+      withdrawn: '已撤回', withdrawnP: '此报价已于{d}起撤回。',
       monthSub: '每月小计', commit: '{n}个月合约优惠（{p}%）', termAdj: '{n}个月合约附加费（{p}%）', monthExcl: '每月（未含 SST）',
       sst: 'SST {p}%', sstNone: '不适用 SST', onceSub: '一次性小计', onceTag: '一次性',
       monthlyNone: '每月', firstNone: '首月', oneOffNone: '一次性合计',
@@ -623,7 +629,8 @@
        confirmed); the letter and its signing are the stage card's, said
        once (2026-10-27, QTE-3). */
     var over = q.valid_until < q.today;
-    var chip = st === 'welcome' ? ['is-ok', t().confirmed] : st === 'closed' ? ['is-off', t().closed]
+    var chip = q.seal && q.seal.withdrawn ? ['is-off', t().withdrawn] : st === 'welcome' ? ['is-ok', t().confirmed]
+      : st === 'closed' ? ['is-off', q.declined ? t().declined : t().closed]
       : over ? ['is-off', f(t().expired, { d: day(q.valid_until) })] : ['is-ok', f(t().valid, { d: day(q.valid_until) })];
     var status = '<span class="chip-state ' + chip[0] + '">' + esc(chip[1]) + '</span>';
     var lines = window.ADspaceMoney.planFold(q.lines).map(function (l) {
@@ -745,7 +752,7 @@
     var w = t(), st = stageOf(q), rep = q.rep ? '<div class="qs-side-rep">' + repHtml(q) + '</div>'
       : '<a class="btn" href="' + esc(waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     if (st === 'expired' || st === 'closed') {
-      return '<h2>' + esc(st === 'closed' ? w.closedT : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
+      return '<h2>' + esc(st === 'closed' ? (q.declined ? w.declinedT : w.closedT) : w.goneT) + '</h2><p>' + esc(w.goneP) + '</p>' + (q.proceed_at ? done(w.goneAsked) : '') +
         '<button class="btn btn-primary" type="button" data-a="new">' + esc(w.newQuote) + '</button>' +
         '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
@@ -767,6 +774,8 @@
     if (SG && SG.step) return signHtml(q);
     return '<h2>' + esc(w.sg.title) + '</h2><p>' + esc(w.sg.line) + '</p>' + signSteps(0) +
       '<button class="btn btn-primary" type="button" data-a="signgo">' + esc(w.sg.go) + '</button>' +
+      /* The client may decline instead (QUOTATION WAYS OUT, 2026-11-17). */
+      (PREVIEW ? '' : '<button class="btn btn-quiet" type="button" data-a="decline">' + esc(w.decline) + '</button>') +
       '<p class="msg" id="qsSideMsg" role="status"></p>' + rep;
   }
 
@@ -1080,8 +1089,10 @@
   function confirmedHtml(q, quiet) {
     var w = t().sg, C = window.ADspaceClock, sl = q.seal || {};
     var on = q.reviewed && q.reviewed.at ? (lang === 'zh' ? day(C.day(q.reviewed.at)) : day(C.day(q.reviewed.at), true)) : '';
-    return (quiet ? '' : '<p class="qs-sstate"><span class="chip-state is-ok">' + esc(w.confT) + '</span></p>') +
+    var off = sl.withdrawn && sl.withdrawn_on ? (lang === 'zh' ? day(sl.withdrawn_on) : day(sl.withdrawn_on, true)) : '';
+    return (quiet ? '' : '<p class="qs-sstate"><span class="chip-state ' + (sl.withdrawn ? 'is-off' : 'is-ok') + '">' + esc(sl.withdrawn ? t().withdrawn : w.confT) + '</span></p>') +
       '<p class="qs-sline">' + esc(on ? f(w.confP, { d: on }) : '') + (sl.id ? ' ' + esc(f(w.docId, { id: sl.id })) : '') + '</p>' +
+      (off ? '<p class="qs-sline">' + esc(f(t().withdrawnP, { d: off })) + '</p>' : '') +
       (sl.sealed ? '<button class="btn" type="button" data-a="sealed">' + esc(w.sealDl) + '</button><p class="msg" id="qsSideMsg" role="status"></p>' : '');
   }
   /* The sealed copy, read through sign-download by the link's own key. */
@@ -1253,13 +1264,38 @@
       sealRead.told = true;
       db.rpc('quote_opened', { p_key: k, p_device: window.ADspaceSeal ? window.ADspaceSeal.device() : null }).then(function () {}, function () {});
     }
-    if (!Q.reviewed || Q.seal) return;
+    /* A closed quotation asks whether the client declined it; a confirmed
+       one its seal and whether it was withdrawn (QUOTATION WAYS OUT). */
+    var closed = stageOf(Q) === 'closed';
+    if ((!Q.reviewed && !closed) || Q.seal || Q.declined) return;
     db.rpc('quote_seal_state', { p_key: k }).then(function (r) {
       var d = r && r.data;
-      if (r.error || !d || !d.confirmed || !Q) return;
-      Q.seal = { id: d.id, sealed: !!d.sealed };
+      if (r.error || !d || !Q) return;
+      if (!d.confirmed) { if (d.declined) { Q.declined = true; paint(); } return; }
+      Q.seal = { id: d.id, sealed: !!d.sealed, withdrawn: !!d.withdrawn, withdrawn_on: d.withdrawn_on || null };
       paint();
     }).catch(function () {});
+  }
+  /* Decline (QUOTATION WAYS OUT, 2026-11-17): a reason if they wish, then
+     the quotation reads Declined to them and Cancelled to the team, who
+     are told. */
+  function declineHtml() {
+    var w = t();
+    return '<h2>' + esc(w.declineT) + '</h2>' +
+      sgField('qsDeclineWhy', w.declineWhy, false, '<textarea class="input" rows="1" id="qsDeclineWhy" maxlength="300" data-oneline placeholder="' + esc(w.declineHint) + '"></textarea>') +
+      '<div class="qs-sfoot"><button class="btn" type="button" data-a="declineback">' + esc(w.back) + '</button>' +
+      '<button class="btn" type="button" data-a="declinego">' + esc(w.decline) + '</button></div>' +
+      '<p class="msg" id="qsSideMsg" role="status"></p>';
+  }
+  function declineSend(btn) {
+    var why = ($('qsDeclineWhy') || {}).value || '';
+    btn.disabled = true;
+    db.rpc('quote_decline', { p_key: qKey(), p_reason: why.trim() || null }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
+      Q.status = 'not_proceeding'; Q.stage = 'closed'; Q.declined = true;
+      paint();
+    }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
   }
   function propose(btn) {
     var k = new URLSearchParams(location.search).get('q');
@@ -1345,6 +1381,9 @@
     else if (a === 'start') go('need');
     else if (a === 'back') { var s = steps(); go(S.step === 'need' ? 'intro' : s[Math.max(0, s.indexOf(S.step) - 1)]); }
     else if (a === 'propose') propose(b);
+    else if (a === 'decline') { $('qsSide').innerHTML = declineHtml(); decorate(); var dw = $('qsDeclineWhy'); if (dw) dw.focus(); }
+    else if (a === 'declineback') { $('qsSide').innerHTML = sideHtml(Q); decorate(); var dg = $('qsSide').querySelector('[data-a="decline"]'); if (dg) dg.focus(); }
+    else if (a === 'declinego') declineSend(b);
     else if (a === 'signgo') { signStart(); signShow(); }
     else if (a === 'signback') { signRead(); if (SG.step === 1) { SG = null; clearInterval(resendTimer); $('qsSide').innerHTML = sideHtml(Q); decorate(); var g = $('qsSide').querySelector('[data-a="signgo"]'); if (g) g.focus(); } else signShow(SG.step - 1); }
     else if (a === 'signnext') { if (signCheck()) signShow(2); }

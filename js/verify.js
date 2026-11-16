@@ -20,10 +20,10 @@
       notFound: 'Not found', notFoundText: 'Please check the reference, or contact ADspace.', enterRef: 'Enter the reference.',
       failed: 'Unable to check', failedText: 'Please try again.',
       locked: 'Too many checks', lockedText: 'Too many references were checked from this connection. Please try again in {wait}.',
-      issued: 'Issued', signed: 'Signed', confirmed: 'Confirmed', docId: 'Document ID',
+      issued: 'Issued', signed: 'Signed', confirmed: 'Confirmed', withdrawnOn: 'Withdrawn from', docId: 'Document ID',
       fileGo: 'Check a file', fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match: this file has been altered', fileFailed: 'Unable to check the file. Please try again.',
-      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired' }
+      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn' }
     },
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号。',
@@ -31,10 +31,10 @@
       notFound: '未找到', notFoundText: '请核对编号，或联系 ADspace。', enterRef: '请输入编号。',
       failed: '无法核验', failedText: '请稍后再试。',
       locked: '查询次数过多', lockedText: '此网络连接查询编号的次数过多。请于{wait}后重试。',
-      issued: '签发于', signed: '签署于', confirmed: '确认于', docId: '文件编号',
+      issued: '签发于', signed: '签署于', confirmed: '确认于', withdrawnOn: '撤回于', docId: '文件编号',
       fileGo: '核验文件', fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '不一致：此文件已被更改', fileFailed: '无法核验文件，请稍后再试。',
-      state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期' },
+      state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
       kind: { 'quotation': '报价单', 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
@@ -100,6 +100,7 @@
     var days = [];
     if (a.signed_at) days.push(t().signed + ' ' + niceDate(a.signed_at));
     if (a.confirmed_at) days.push(t().confirmed + ' ' + niceDate(a.confirmed_at));
+    if (a.withdrawn_on) days.push(t().withdrawnOn + ' ' + niceDate(a.withdrawn_on));
     out.innerHTML =
       '<b>' + esc(a.serial) + '</b>' +
       '<span>' + esc(kindWord(a.kind) + (a.issued_at ? ' · ' + t().issued + ' ' + niceDate(a.issued_at) : '')) + '</span>' +
