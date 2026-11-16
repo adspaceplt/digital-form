@@ -14030,7 +14030,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         hLog(hc.id, 'candidate.people', ht.name + (was ? ': ' + RW[was] + ' → ' : ' added as ') + RW[args.p_role]);
         if (!was && ht.id !== hMe.id) (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: ht.id, kind: 'hiring.added',
           title: 'You were added to a candidate', body: hc.position + ' · ' + RW[args.p_role] + ' · added by ' + hMe.name,
-          link: 'https://digital.adspace.me/admin/?s=hiring&candidate=' + hc.id, created_at: new Date().toISOString(), read_at: null });
+          link: 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' + hc.id, created_at: new Date().toISOString(), read_at: null });
         return hOk();
       }
       if (name === 'hiring_person_remove') {

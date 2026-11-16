@@ -304,7 +304,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `careers/`, the HIRING section | hiring, hiringsql, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `careers/`, the HIRING section | hiring, hiringsql, team, perfui, search, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -1777,9 +1777,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`2026-10-10-letters-held-to-their-lines.sql`).
   - No preset below Admin opens Team, HR letters or performance reviews,
     their history included (`activity.team`, `activity.hr` shut; S5).
-- User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
-  Members, Performance and Health (`tab=health`, an admin's alone); the
-  strip is drawn only where two tabs show.
+- User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`); the
+  strip reads Members, Hiring (`tab=hiring`), Groups, Performance and Health
+  (`tab=health`, an admin's alone), each drawn only where readable, the strip
+  only where two tabs show.
 - The Admin group has no ⋯ and cannot be deleted. A group delete takes
   `.select('slug')` and names a refusal.
 - While an active system account exists, it alone (the super admin) makes
@@ -3302,10 +3303,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
-  step A built. Hiring is in the Internal chunk before Team, drawn at the
-  granted part `team.hiring` (an admin tool, an admin's by itself, held by
-  `team_roles_admin_guard` with `team.personnel`) or for a colleague holding
-  a place on a live candidate (`hiring_mine()`, read beside `me()`).
+  step A built. Hiring is Team's tab, never a rail section (the user,
+  2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
+  opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
+  away) with Back to the list, an older `?s=hiring` address opening it.
+  The tab and Team are drawn at the granted part `team.hiring` (an admin
+  tool, an admin's by itself, held by `team_roles_admin_guard` with
+  `team.personnel`) or for a colleague holding a place on a live candidate
+  (`hiring_mine()`, read beside `me()`). Search lists Candidates after Team.
 - A candidate (`hiring_candidates`, `hiring_people`, `hiring_events`; RLS on,
   no policy, no grant) is added at the part alone (`hiring_add(p_values,
   p_idem)`: name, email, phone, position, source, CV link; one live candidate

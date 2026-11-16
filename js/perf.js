@@ -238,6 +238,7 @@
       if (q.get('tab') === 'performance') st.tab = 'performance';
       if (q.get('tab') === 'groups') st.tab = 'groups';
       if (q.get('tab') === 'health') st.tab = 'health';
+      if (q.get('tab') === 'hiring') st.tab = 'hiring';
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
       /* The rewards views (2026-09-28) and the quarter or period they show. */
       var pv = q.get('view'), qq = q.get('q');
@@ -251,12 +252,16 @@
     /* Team: Health is an admin's alone, behind the master code
        (2026-10-18, Team audit 11). */
     var canHealth = Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin());
+    /* Hiring (2026-11-16): the granted part, or a place on a candidate. */
+    var canHiring = Boolean(bridge.hiringOk && bridge.hiringOk());
+    if (!canHiring && st.tab === 'hiring') st.tab = 'members';
     if (!canPerf && st.tab === 'performance') st.tab = 'members';
     if (!canHealth && st.tab === 'health') st.tab = 'members';
-    if (!canMembers && (st.tab === 'members' || st.tab === 'groups')) st.tab = canPerf ? 'performance' : 'health';
+    if (!canMembers && (st.tab === 'members' || st.tab === 'groups')) st.tab = canHiring ? 'hiring' : canPerf ? 'performance' : 'health';
     /* Members and Groups are one permission, Performance another and Health
        a third; the strip draws whenever there is more than one tab. */
-    $('teamTabs').hidden = (canMembers ? 2 : 0) + (canPerf ? 1 : 0) + (canHealth ? 1 : 0) < 2;
+    $('teamTabs').hidden = (canMembers ? 2 : 0) + (canHiring ? 1 : 0) + (canPerf ? 1 : 0) + (canHealth ? 1 : 0) < 2;
+    $('teamTabHiring').hidden = !canHiring;
     $('teamTabMembers').hidden = !canMembers;
     $('teamTabGroups').hidden = !canMembers;
     $('teamTabPerf').hidden = !canPerf;
@@ -268,11 +273,14 @@
     });
     $('teamMembersPane').hidden = st.tab !== 'members';
     $('teamGroupsPane').hidden = st.tab !== 'groups';
+    $('teamHiringPane').hidden = st.tab !== 'hiring';
+    if (st.tab !== 'hiring') $('sectionTeam').classList.remove('is-candidate');
     $('teamPerfPane').hidden = st.tab !== 'performance';
     $('teamHealthPane').hidden = st.tab !== 'health';
     $('perfTools').hidden = st.tab !== 'performance';
     if (st.tab === 'members' || st.tab === 'groups') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
     else if (st.tab === 'health') { if (window.ADspaceHealth) window.ADspaceHealth.enterTeam(); }
+    else if (st.tab === 'hiring') { if (window.ADspaceHiring) window.ADspaceHiring.enter(); }
     else enterPerf();
   }
   Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
@@ -3607,6 +3615,11 @@
     urlState: function () {
       if (st.tab === 'groups') return { tab: 'groups' };
       if (st.tab === 'health') return { tab: 'health' };
+      if (st.tab === 'hiring') {
+        /* The tab first, then the candidate and its pane, as the address reads. */
+        var hs = window.ADspaceHiring ? window.ADspaceHiring.urlState() : {};
+        return { tab: 'hiring', candidate: hs.candidate || '', ctab: hs.ctab || '' };
+      }
       /* Members: a colleague's record rides in the address (js/team.js). */
       if (st.tab !== 'performance') return window.ADspaceTeam && window.ADspaceTeam.urlState ? window.ADspaceTeam.urlState() : {};
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };

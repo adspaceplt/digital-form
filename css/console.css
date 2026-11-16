@@ -4257,6 +4257,8 @@ button.hir-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .hir-headcard, #hirTabs { margin-bottom: 12px; }
 .hir-body .readgroups.hir-pane { margin-top: 0; }
 #hirMsg:empty, #hirRecMsg:empty { display: none; }
+/* A candidate opens in place of Team's strip and list, as a colleague does. */
+#sectionTeam.is-candidate .tabline { display: none; }
 /* The colleagues on a candidate: a row each, the name over the position,
    the role as a grey tag, the ⋯ at the right edge. */
 .hir-people { display: flex; flex-direction: column; }

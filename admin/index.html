@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261117a">
-<link rel="stylesheet" href="/css/console.css?v=20261116r">
+<link rel="stylesheet" href="/css/console.css?v=20261117p">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -328,9 +328,6 @@
         </button>
         <button class="navitem" data-section="services" type="button">
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
-        </button>
-        <button class="navitem" data-section="hiring" type="button" hidden>
-          <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="8" r="3.5"/><path d="M3.5 20a6.5 6.5 0 0 1 11.3-4.4"/><path d="M18 14v6M15 17h6"/></svg><span>Hiring</span>
         </button>
         <button class="navitem" data-section="team" type="button" hidden>
           <svg class="sec sec-int" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
@@ -3903,28 +3900,6 @@
         <div id="supRec" hidden></div>
     </div>
 
-    <!-- Hiring (2026-11-16, js/hiring.js): candidates for a position, the
-         colleagues on each, and each candidate's own page (/careers/?k=).
-         Every candidate at the granted part `team.hiring`; a colleague added
-         to a candidate sees that candidate alone. -->
-    <div class="console-body" id="sectionHiring" hidden>
-        <div class="cmdbar" id="hirBar">
-          <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-            <input class="input input-sm" id="hirFind" type="search" placeholder="Search name or position" aria-label="Search candidates" autocomplete="off">
-          </span>
-          <span class="cmdbar-end">
-            <span class="cmdbar-quiet"><span class="cmdbar-count" id="hirCount"></span></span>
-            <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add candidate</button>
-            </span>
-          </span>
-        </div>
-        <div class="msg" id="hirMsg"></div>
-        <div id="hirList"></div>
-        <div id="hirRec" hidden></div>
-    </div>
-
     <div class="console-body" id="sectionTeam" data-swipe="teamTabs" hidden>
       <!-- Members and groups are one job and the monthly reviews another, gated
            apart: a group given Team does not read anybody's scores, and a
@@ -3933,6 +3908,7 @@
       <div class="tabline">
         <div class="tabrow" id="teamTabs" role="tablist" hidden>
           <button class="tab is-on" id="teamTabMembers" data-tab="members" type="button" role="tab">Members</button>
+          <button class="tab" id="teamTabHiring" data-tab="hiring" type="button" role="tab" hidden>Hiring</button>
           <button class="tab" id="teamTabGroups" data-tab="groups" type="button" role="tab">Groups</button>
           <button class="tab" id="teamTabPerf" data-tab="performance" type="button" role="tab">Performance</button>
           <button class="tab tab-health" id="teamTabHealth" data-tab="health" type="button" role="tab" hidden><svg class="health-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20Z"/><path d="M7 12.5h2.6l1.4-2.6 2.2 4.6 1.3-2h2.5"/></svg>Health</button>
@@ -4054,6 +4030,26 @@
       <!-- ---- Groups: one set of switches per group, members inherit. A tab
            of its own (Team audit, 2026-10-03): under the members list a phone
            scrolled past everybody to reach a group. ---- -->
+      <!-- Hiring (2026-11-16, js/hiring.js): Team's tab for candidates, at the
+           granted part `team.hiring` or for a colleague on a candidate; a
+           candidate opens in place (`candidate=`), as a colleague does. -->
+      <div id="teamHiringPane" hidden>
+        <div class="cmdbar" id="hirBar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="hirFind" type="search" placeholder="Search name or position" aria-label="Search candidates" autocomplete="off">
+          </span>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet"><span class="cmdbar-count" id="hirCount"></span></span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="hirAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add candidate</button>
+            </span>
+          </span>
+        </div>
+        <div class="msg" id="hirMsg"></div>
+        <div id="hirList"></div>
+        <div id="hirRec" hidden></div>
+      </div>
       <div id="teamGroupsPane" hidden>
       <!-- The tab names the list, so the pane opens on its bar as Members
            does: the count and the one action, no heading saying Groups twice. -->
@@ -6600,14 +6596,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261116r"></script>
+<script src="/js/admin.js?v=20261117p"></script>
 <script src="/js/documents.js?v=20261116b"></script>
 <script src="/js/letters.js?v=20261116b"></script>
 <script src="/js/smreport.js?v=20261113g"></script>
 <script src="/js/reports.js?v=20261116c"></script>
 <script src="/js/register.js?v=20261112j"></script>
 <script src="/js/suppliers.js?v=20261113zzh"></script>
-<script src="/js/hiring.js?v=20261116a"></script>
+<script src="/js/hiring.js?v=20261117"></script>
 <script src="/js/bukku.js?v=20261115a"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
@@ -6616,7 +6612,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/checklists.js?v=20261112zt"></script>
 <script src="/js/crm.js?v=20261115h"></script>
 <script src="/js/sales.js?v=20261115h"></script>
-<script src="/js/team.js?v=20261116r"></script>
+<script src="/js/team.js?v=20261117p"></script>
 <script src="/js/namecard.js?v=20261115a"></script>
 <script src="/js/handbook.js?v=20261112h"></script>
 <script src="/js/frames.js?v=20261115d"></script>
@@ -6625,15 +6621,15 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/scriptpdf.js?v=20261112zt"></script>
 <script src="/js/ratecardpdf.js?v=20261115x"></script>
 <script src="/js/campaigns.js?v=20261116a"></script>
-<script src="/js/ops.js?v=20261116r"></script>
-<script src="/js/perf.js?v=20261116r"></script>
+<script src="/js/ops.js?v=20261117p"></script>
+<script src="/js/perf.js?v=20261117p"></script>
 <script src="/js/health.js?v=20261115h"></script>
-<script src="/js/xlsx.js?v=20261116r"></script>
-<script src="/js/personnel.js?v=20261116r"></script>
-<script src="/js/search.js?v=20261116a"></script>
+<script src="/js/xlsx.js?v=20261117p"></script>
+<script src="/js/personnel.js?v=20261117p"></script>
+<script src="/js/search.js?v=20261117p"></script>
 <script src="/js/agent.js?v=20261116a"></script>
 <script src="/js/overview.js?v=20261116b"></script>
 <script src="/js/analytics.js?v=20261116a"></script>
-<script src="/js/settings.js?v=20261116r"></script>
+<script src="/js/settings.js?v=20261117p"></script>
 </body>
 </html>

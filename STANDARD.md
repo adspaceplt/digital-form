@@ -631,6 +631,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   runs on claude/hr-personnel (2026-11-17, 00:28 and 00:43 MYT) and passed
   in the other 4 and on main; the answer it got is not yet seen. Next run
   that fails prints it (the check's detail).
+- `perfui`: "its headings are in title case and nothing crosses the margins"
+  reads the letterhead's name, registration and address on page 1 past its
+  margin since the letterhead moved to 33.3pt margins (#1158, #1159; found
+  2026-11-17 by the Hiring release, which does not touch `js/documents.js`);
+  the suite's margin needs the new figure.
 - `work`: "High says its deadline under the post" and "Urgent says its own
   hours" fail when the deadline falls just after midnight (`12:06am` read
   against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
