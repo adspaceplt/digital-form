@@ -112,7 +112,7 @@
     'self-confirm': 'A report you submitted must be confirmed by another colleague.',
     'no-reviewer': 'Choose who reviews it.',
     'self-review': 'A report you submitted must be reviewed by another colleague.',
-    'bad-reviewer': 'Choose a colleague with Full control of Reports.',
+    'bad-reviewer': 'Choose a colleague with Reports at Full control.',
     'not-reviewer': 'Only the report\'s reviewer or an admin can do this.',
     'same-reviewer': 'This colleague is already the reviewer.',
     'month-gate': 'Its month in My Work is not in order: see the checks above.',
@@ -2375,7 +2375,7 @@
       var res = got[0], d = (res && res.data) || {};
       if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
       var pool = (d.reviewers || []).filter(function (x) { return !ask.skip || x.id !== ask.skip; });
-      if (!pool.length) { say(m, 'No colleague with Full control of Reports can review it.', 'err'); return; }
+      if (!pool.length) { say(m, 'No colleague can review this report. Please ask an admin to give a colleague Reports at Full control.', 'err'); return; }
       /* Changing the reviewer opens on another colleague, never on Me. */
       var pick = (pool.filter(function (x) { return x.last; })[0] ||
         (ask.skip && pool.filter(function (x) { return !x.self; })[0]) || pool[0]).id;

@@ -118,7 +118,7 @@
     ['ai_on', 'Use AI', 'Write with AI, the Assistant and Draw with AI.'],
     ['email_on', 'Send email', 'Emails sent by hand to clients, suppliers and others.'],
     ['whatsapp_on', 'Send WhatsApp', 'WhatsApp templates sent by hand.'],
-    ['sensitive_on', 'Sensitive details', 'Client billing, creator payment details and supplier bank details, at each section\'s level.']
+    ['sensitive_on', 'Sensitive details', 'Client billing, creator payment details and supplier bank details, at the level each section gives.']
   ];
   var GSW_PRESET = { admin: ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'], manager: ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'],
     staff: ['ai_on'], viewer: [] };
@@ -714,6 +714,7 @@
     if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin. Please ask the super admin.';
     if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin can change your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
+    if (/reports-loop/.test(t)) return 'A group cannot report to itself or to a group that reports to it. Choose another group in Reports to.';
     return t;
   }
   /* A save refused because a value is another colleague's names the field
@@ -1404,7 +1405,7 @@
       '<div class="permpart"><span class="permpart-name" id="grReportsName">Reports to</span>' +
         '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName"></select></div>' +
       '<div class="permpart"><span class="permpart-name" id="grScopeName">Clients they see' +
-        '<small>Own clients: clients where they are Person in charge or Sales by, and leads nobody holds.</small></span>' +
+        '<small>Own clients only: clients where they are Person in charge or Sales by, and leads nobody has taken.</small></span>' +
         '<select class="select select-sm" id="grScope" aria-labelledby="grScopeName">' +
         '<option value="all">All clients</option><option value="own">Own clients only</option></select></div>' +
       GSW.map(function (g) {
@@ -1754,7 +1755,7 @@
       roles.map(function (r) {
         var acc = accessOf(r), off = !r.is_admin && acc[DASH] === 'none';
         var none = !off && !r.is_admin && !SECTIONS.some(function (s) { return acc[s[0]] === 'manage'; });
-        return cell(r.name, '<b>' + (off ? 'Off' : 'On') + '</b>' + (none ? '<small>Nothing shown without Full control</small>' : ''), off ? 'is-off' : '');
+        return cell(r.name, '<b>' + (off ? 'Off' : 'On') + '</b>' + (none ? '<small>No section at Full control</small>' : ''), off ? 'is-off' : '');
       }).join('') + '</div>';
     CHUNKS.forEach(function (c) {
       html += '<div class="permcmp-chunk">' + esc(c[0]) + '</div>';
@@ -1773,7 +1774,7 @@
         return cell(r.name, '<b>' + esc(to ? to.name : 'No one') + '</b>', to ? '' : 'is-off');
       }).join('') + '</div>' +
       '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">Clients they see</span>' +
-      roles.map(function (r) { return cell(r.name, '<b>' + (r.client_scope === 'own' ? 'Own clients' : 'All clients') + '</b>'); }).join('') + '</div>' +
+      roles.map(function (r) { return cell(r.name, '<b>' + SCOPE_WORD[r.client_scope === 'own' ? 'own' : 'all'] + '</b>'); }).join('') + '</div>' +
       GSW.map(function (g) {
         return '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">' + esc(g[1]) + '</span>' +
           roles.map(function (r) { var on = r.is_admin || r[g[0]]; return cell(r.name, '<b>' + (on ? 'On' : 'Off') + '</b>', on ? '' : 'is-off'); }).join('') + '</div>';

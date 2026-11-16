@@ -297,7 +297,7 @@ insert into public.access_keys (key, tier, label, holds) values
   ('group.ai_on', 'group', 'Use AI', 'Write with AI, the Assistant and Draw with AI'),
   ('group.email_on', 'group', 'Send email', 'Emails sent by hand to clients, suppliers and others'),
   ('group.whatsapp_on', 'group', 'Send WhatsApp', 'WhatsApp templates sent by hand'),
-  ('group.sensitive_on', 'group', 'Sensitive details', 'Client billing, creator payments and supplier bank details'),
+  ('group.sensitive_on', 'group', 'Sensitive details', 'Client billing, creator payment details and supplier bank details'),
   ('ops', 'section', 'My Work', ''), ('clients', 'section', 'Clients', ''), ('review', 'section', 'Content Review', ''),
   ('scripts', 'section', 'Video Scripts', ''), ('campaigns', 'section', 'Creator Campaigns', ''),
   ('reports', 'section', 'Reports', ''), ('whatsapp', 'section', 'Messages', ''), ('register', 'section', 'Documents', ''),

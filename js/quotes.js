@@ -56,7 +56,7 @@
     'not-signed': 'This quotation has not been signed.', signed: 'This quotation has already been signed. Refresh the page.',
     reviewed: 'This quotation has already been reviewed. Refresh the page.',
     'in-review': 'This quotation is already with its reviewer. Refresh the page.',
-    'bad-reviewer': 'Choose a reviewer with Full control of quotations.', own: 'Choose a reviewer other than yourself.',
+    'bad-reviewer': 'Choose a colleague with Clients: Quotations at Full control.', own: 'Choose a reviewer other than yourself.',
     'not-submitted': 'This quotation is not waiting for review. Refresh the page.',
     'not-reviewer': 'Only the chosen reviewer or an admin can approve this quotation.',
     'note-required': 'Enter the corrections.',
@@ -901,7 +901,7 @@
       var d = r.data || {};
       if (r.error || d.error) { sheetMsg('qsgCheckMsg', said(r.error || d.error), 'err'); return; }
       var list = d.reviewers || [];
-      if (!list.length) { sheetMsg('qsgCheckMsg', 'No colleague can review it. A reviewer needs Clients: Quotations at Full control.', 'err'); return; }
+      if (!list.length) { sheetMsg('qsgCheckMsg', 'No colleague can review this quotation. Please ask an admin to give a colleague Clients: Quotations at Full control.', 'err'); return; }
       sel.innerHTML = '<option value="">Choose a colleague</option>' + list.map(function (m) {
         return '<option value="' + esc(m.id) + '"' + (m.last ? ' selected' : '') + '>' + esc((m.code ? m.code + ' · ' : '') + m.name) + '</option>';
       }).join('');
