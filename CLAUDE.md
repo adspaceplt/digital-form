@@ -315,7 +315,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
-| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey`, the VERIFY SEALED FILES section | seal, docs, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
+| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey`, the VERIFY SEALED FILES and QUOTATION WAYS OUT sections | seal, menus, docs, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -3057,6 +3057,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     uploaded, its SHA-256 asked of `verify_file` (anon), Matches the sealed
     copy or Does not match: this file has been altered. Both functions take
     one count (`verify_count()`, no caller's; `2026-11-17-verify-sealed-files.sql`).
+    A quotation withdrawn after signing reads Withdrawn with the day
+    (QUOTATION WAYS OUT).
   - Anyone the team does not hold is answered 30 lookups an hour a
     connection (`verify_tries` by `request_ip()`, RLS on, no policy, no
     grant), then `locked` with the minutes left before any reference is
@@ -3352,6 +3354,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   main Download then gone.
 - /verify/ answers a sealed quotation with its Document ID and checks a
   file against the whole file's SHA-256 (Documents, `/verify/`).
+- Ways out (`2026-11-17-quotation-ways-out.sql`, decision 8): before
+  signing the team cancels (Cancel) and the client declines on the link
+  (Decline, under Accept, an optional reason of 300: `quote_decline`, anon,
+  the quotation then Cancelled to the team and Declined to the client and
+  on the row, the Declined step in its record, who prepared it and the
+  person in charge told, `quote.declined`); once signed it is never
+  deleted: the ⋯'s Mark withdrawn (Clients: Quotations Full Access;
+  `quotation_withdraw`, a day from its signing to today and a reason, the
+  lines its approval confirmed back to To quote where ticked, each line's
+  state kept; `not-signed`, `withdrawn`, `bad-date`, `bad-reason`) with Undo
+  where it happened (`quotation_withdraw_undo`), the sealed copy kept, its
+  record, /verify/, the Register and the client's link reading Withdrawn
+  from that day.
+- Documents lists every quotation sent out or signed as its first family,
+  Quotations, read from `quotations` (no copy): the reference, its state as
+  the record says it, the brand, the company that signed, the day; its ⋯
+  Download (the sealed copy, where sealed) and Open client record.
 
 ### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);

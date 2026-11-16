@@ -95,6 +95,9 @@
      past its day. */
   function stateOf(q, live) {
     if (q.removed_at) return ['Removed', 'is-off'];
+    /* Withdrawn after signing (QUOTATION WAYS OUT, 2026-11-17): kept, its
+       sealed copy too, never deleted. */
+    if (q.withdrawn_at) return ['Withdrawn', 'is-off', 'From ' + window.ADspaceClock.date(q.withdrawn_on).replace(/ \d{4}$/, '')];
     /* Signed on its link or on paper, then checked, submitted and reviewed
        (QUOTATION SIGNING, 2026-10-31): the signing outranks the date, since
        a signed quotation is held to as signed. */
@@ -106,7 +109,7 @@
     }
     var held = (q._lines || []).map(function (id) { return live && live[id]; }).filter(Boolean)[0];
     if (held) return ['Letter of Offer issued', 'is-ok', held];
-    if (q.status === 'not_proceeding') return ['Cancelled', 'is-off'];
+    if (q.status === 'not_proceeding') return q.declined_at ? ['Declined', 'is-off', 'By the client'] : ['Cancelled', 'is-off'];
     /* A later quotation made from this one revises it; the prospect's link
        shows that one (2026-10-26). */
     if (q._revised) return ['Revised', 'is-off', 'By ' + q._revised];
@@ -157,7 +160,7 @@
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
     'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
-    'sealed_at, seal_sha, seal_pages_sha, sealed_by';
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by, declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -320,6 +323,11 @@
               items.push('<button class="kmenu-item" data-g="5" data-a="not_proceeding" type="button" role="menuitem">Cancel</button>');
             }
             if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
+            /* Once signed it is withdrawn from a day, never deleted (QUOTATION
+               WAYS OUT, 2026-11-17), at Full Access. */
+            if (q.signed_at && !q.withdrawn_at && ctx.may('clients.quotes', 'manage')) {
+              items.push('<button class="kmenu-item" data-g="5" data-a="withdraw" data-need="clients.quotes:manage" type="button" role="menuitem">Mark withdrawn</button>');
+            }
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
           /* The signed document's record (SIGNED DOCUMENT SEAL, 2026-11-17):
@@ -724,6 +732,7 @@
         body: 'The Quotation ready message, with the link to ' + q.ref + ', will be sent to ' + to + ' again.', go: 'Send' }, function () { go(false); });
       return;
     }
+    if (a === 'withdraw') { withdraw(q, ctx); return; }
     if (a === 'adjust') { build(ctx, q.selection, btn, q); return; }
     /* A quotation a letter or service lines came from keeps its figures:
        Edit makes its revision, as once sent out (2026-11-07). */
@@ -735,6 +744,46 @@
       ctx.undo(q.ref + (a === 'remove' ? ' removed.' : ' cancelled.'), function () {
         set(q, back, ctx, function () {});
       }, $('qtMsg'));
+    });
+  }
+  /* Mark withdrawn (QUOTATION WAYS OUT, 2026-11-17): a signed quotation
+     stops from a day, with a reason; its sealed copy is kept and reads
+     Withdrawn; the service lines its approval confirmed go back to To
+     quote where asked. Undo where it happened puts it all back. */
+  var OUT_SAID = {
+    denied: 'You do not have permission to withdraw quotations. Please ask an admin.',
+    'not-signed': 'Only a signed quotation can be withdrawn. Cancel this one instead.',
+    withdrawn: 'This quotation is already withdrawn.',
+    'bad-date': 'Choose a date between the signing date and today.',
+    'bad-reason': 'Enter a reason.'
+  };
+  function withdraw(q, ctx) {
+    var today = window.ADspaceClock.today(), signedDay = window.ADspaceClock.day(q.signed_at);
+    var fields = [{ name: 'on', label: 'Withdrawn from', type: 'date', required: true, value: today, min: signedDay, max: today },
+      { name: 'reason', label: 'Reason', required: true }];
+    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Return its confirmed service lines to To quote', tick: true, value: 'on' });
+    window.ADspaceConfirm.ask({
+      title: 'Mark withdrawn?',
+      body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
+      fields: fields, go: 'Mark withdrawn', tone: 'warn',
+      check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a date between the signing date and today.' : ''; },
+      wait: true
+    }, function (v) {
+      return ctx.db.rpc('quotation_withdraw', { p_id: q.id, p_on: v.on, p_reason: v.reason, p_lines: v.lines === 'on' }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) return OUT_SAID[d.error] || said(r.error || d.error);
+        var n = d.lines || 0;
+        ctx.reload(function () {
+          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' returned to To quote.' : ''), function () {
+            ctx.db.rpc('quotation_withdraw_undo', { p_id: q.id }).then(function (u) {
+              var e = u.error || (u.data && u.data.error);
+              if (e) { ctx.msg('qtMsg', said(e), 'err'); return; }
+              ctx.reload(function () { ctx.msg('qtMsg', 'Undone.', 'ok'); });
+            }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
+          }, $('qtMsg'));
+        });
+        return '';
+      }).catch(function (e) { return said(e); });
     });
   }
   function set(q, what, ctx, ok) {

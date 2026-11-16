@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -613,6 +613,7 @@
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
     quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
+    quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
     quotation_submit: 'p_id p_reviewer p_company',
@@ -2329,7 +2330,8 @@ function cardSlugFree(name, self, email) {
       return { found: true, serial: qt.ref, kind: 'Quotation', issued_at: qt.issued_at,
         signed_at: qt.signed_at || null, confirmed_at: qt.reviewed_at || null,
         document_id: qt.seal_key ? qt.id : null, sealed: !!qt.seal_key,
-        state: qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
+        withdrawn_on: qt.withdrawn_on || null,
+        state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
           : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
     }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
@@ -11441,7 +11443,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_)/.test(name)) {
+    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -12054,8 +12056,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'quote_seal_key') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_seal_key' } });
         var ssq = /^[a-z0-9]{8}$/.test(String(args.p_key || '')) && sealOf(args.p_key);
         if (!ssq) return qtOk({ error: 'not-found' });
-        if (!ssq.reviewed_at) return qtOk({ confirmed: false });
-        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key });
+        if (!ssq.reviewed_at) return qtOk({ confirmed: false, declined: !!ssq.declined_at, declined_at: ssq.declined_at || null });
+        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key,
+          withdrawn: !!ssq.withdrawn_at, withdrawn_on: ssq.withdrawn_on || null });
       }
       if (name === 'quotation_record' || name === 'quotation_seal_key') {
         if (!qtMe || !opsAllowed('clients.quotes', 'view')) return qtOk({ error: 'denied' });
@@ -12085,10 +12088,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (rq.submitted_at) steps.push({ step: 'submitted', at: rq.submitted_at, team: true, by: rq.submitted_by, to: rq.reviewer_name });
         if (rq.returned_at) steps.push({ step: 'returned', at: rq.returned_at, team: true, by: rq.returned_by, note: rq.return_note });
         if (rq.reviewed_at) steps.push({ step: 'confirmed', at: rq.reviewed_at, team: true, by: rq.reviewed_by, role: rq.reviewed_role });
+        if (rq.withdrawn_at) steps.push({ step: 'withdrawn', at: rq.withdrawn_at, team: true, by: rq.withdrawn_by,
+          note: 'From ' + (window.ADspaceClock ? ADspaceClock.date(rq.withdrawn_on) : rq.withdrawn_on) + ' · ' + rq.withdrawn_reason });
         if (rq.sealed_at) steps.push({ step: 'sealed', at: rq.sealed_at, team: true, by: rq.sealed_by, note: rq.seal_sha });
         steps.sort(function (a, b) { return (Date.parse(a.at) - Date.parse(b.at)) || String(a.step).localeCompare(String(b.step)); });
         return qtOk({ id: rq.id, ref: rq.ref, brand: rq.brand, company: sg && sg.company ? sg.company.legal_name : null,
-          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at,
+          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at, withdrawn: !!rq.withdrawn_at, declined: !!rq.declined_at,
           seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
       }
       if (name === 'quotation_seal') {
@@ -12103,6 +12108,58 @@ function opsCodeRange(cid, period, ty, src, seq) {
         Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
         qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
         return qtOk({ ok: true, sha: args.p_sha });
+      }
+
+      if (name === 'quote_decline') {
+        if (!/^[a-z0-9]{8}$/.test(String(args.p_key || ''))) return qtOk({ error: 'not-found' });
+        var dr = String(args.p_reason || '').trim() || null;
+        if (dr && dr.length > 300) return qtOk({ error: 'too-long' });
+        var dq = sealOf(args.p_key);
+        if (!dq || dq.removed_at) return qtOk({ error: 'not-found' });
+        if (dq.declined_at) return qtOk({ ok: true, again: true });
+        if (dq.signed_at) return qtOk({ error: 'signed' });
+        if (dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+        if (dq.source === 'website' && !dq.released_at) return qtOk({ error: 'unsent' });
+        if (dq.valid_until < qtToday) return qtOk({ error: 'expired' });
+        Object.assign(dq, { status: 'not_proceeding', declined_at: qtNow.toISOString(), decline_reason: dr });
+        DB.signing_steps = DB.signing_steps || [];
+        DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: dq.id, step: 'declined', at: qtNow.toISOString(), ip: window.__callerIp || '203.0.113.24', country: window.__country || 'MY' });
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: dq.brand,
+          detail: dq.ref + ' declined on the quotation link' + (dr ? ' · ' + dr : ''), created_at: qtNow.toISOString() });
+        var dc = DB.clients.filter(function (c) { return c.id === dq.client_id; })[0];
+        var dwho = [qsMember(dq.made_by), qsMember(dc && dc.owner)].filter(Boolean).map(function (m) { return m.id; });
+        if (!dwho.length) qtTell(dq.client_id, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id + ':declined');
+        else qsNotify(dwho, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id, dq.client_id);
+        return qtOk({ ok: true });
+      }
+      if (name === 'quotation_withdraw' || name === 'quotation_withdraw_undo') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'manage')) return qtOk({ error: 'denied' });
+        var xq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var xc = xq && DB.clients.filter(function (c) { return c.id === xq.client_id; })[0];
+        if (!xq || (xc && !scopeRowOk(xc.stage, xc.owner, 'manage', xc.sales_by))) return qtOk({ error: 'not-found' });
+        if (name === 'quotation_withdraw_undo') {
+          if (!xq.withdrawn_at) return qtOk({ error: 'not-withdrawn' });
+          (xq.withdrawn_lines || []).forEach(function (l) {
+            (DB.client_services || []).forEach(function (sv) { if (sv.id === l.id && sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'to_quote') sv.state = l.state; });
+          });
+          Object.assign(xq, { withdrawn_at: null, withdrawn_on: null, withdrawn_reason: null, withdrawn_by: null, withdrawn_lines: null });
+          qtLog(xq.brand, xq.ref + ' withdrawal undone');
+          return qtOk({ ok: true });
+        }
+        if (!xq.signed_at) return qtOk({ error: 'not-signed' });
+        if (xq.withdrawn_at) return qtOk({ error: 'withdrawn' });
+        var sday = new Date(Date.parse(xq.signed_at) + 8 * 3600e3).toISOString().slice(0, 10);
+        if (!args.p_on || args.p_on < sday || args.p_on > qtToday) return qtOk({ error: 'bad-date' });
+        var xr = String(args.p_reason || '').trim();
+        if (xr.length < 3 || xr.length > 300) return qtOk({ error: 'bad-reason' });
+        var moved = [];
+        if (args.p_lines) (DB.client_services || []).forEach(function (sv) {
+          if (sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'confirmed') { moved.push({ id: sv.id, state: sv.state }); sv.state = 'to_quote'; }
+        });
+        Object.assign(xq, { withdrawn_at: qtNow.toISOString(), withdrawn_on: args.p_on, withdrawn_reason: xr, withdrawn_by: qtMe.name, withdrawn_lines: moved });
+        qtLog(xq.brand, xq.ref + ' withdrawn from ' + (window.ADspaceClock ? ADspaceClock.date(args.p_on) : args.p_on) + ' · ' + xr +
+          (moved.length ? ' · ' + moved.length + (moved.length === 1 ? ' service line' : ' service lines') + ' returned to To quote' : ''));
+        return qtOk({ ok: true, lines: moved.length });
       }
       if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
