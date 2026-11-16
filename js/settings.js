@@ -268,7 +268,7 @@
           meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
             'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
             'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
-            'Closed kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
+            'Closed candidates ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
         may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: '',
           open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');

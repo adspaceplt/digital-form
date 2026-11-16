@@ -49,7 +49,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
         'Thank you for your interest in the position of ' + m.position + ' and for the time you have given us. ' +
         'There is no suitable opening for you at this time. ADspace would like to keep your application for ' + m.months +
         ' months, so that we may contact you about future positions.\n\n' +
-        'Please let us know on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
+        'Please indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
       block: button('Respond on your page', PAGE + m.key)
     };
   }

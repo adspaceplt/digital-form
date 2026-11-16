@@ -20,7 +20,7 @@
     received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed',
-    offer: 'Offer being prepared', pool: 'Talent pool', closed: 'Application closed' };
+    offer: 'Offer to follow', pool: 'Talent pool', closed: 'Application closed' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   function when(iso) { return window.ADspaceClock.date(iso, { long: true }) + ', ' + window.ADspaceClock.clock(iso); }
   var ORG = window.ADSPACE_ORG || {};
@@ -61,7 +61,7 @@
   function decision(d) {
     var head = '';
     if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you by email about an offer.</p></section>';
-    if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">Thank you for your interest in joining ADspace. ' +
+    if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' +
       'ADspace will not be proceeding with your application at this time. We wish you every success in your search.</p></section>';
     var p = d.pool;
     if (d.stage !== 'pool' || !p) return '';

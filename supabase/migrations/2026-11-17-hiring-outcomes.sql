@@ -445,7 +445,7 @@ begin
   if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') then return jsonb_build_object('error', 'bad-request'); end if;
   update public.hiring_candidates set outcome_mail = p_status, outcome_mail_at = now(), updated_at = now() where id = p_id;
   perform public.hiring_log(p_id, 'candidate.email', 'Decision' || case p_status when 'sent' then ' emailed'
-    when 'unknown' then ' emailed, not confirmed' else ' not emailed' || coalesce(': ' || left(p_error, 120), '') end);
+    when 'unknown' then ' emailed, not confirmed' else ' not emailed' end);
   return jsonb_build_object('ok', true);
 end $$;
 grant execute on function public.hiring_outcome_mail_done(uuid, text, text) to authenticated;

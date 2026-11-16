@@ -49,10 +49,10 @@
     'meet-not-set-up': 'Google Meet is not set up yet. Please contact an admin.',
     'google-token': 'Google Meet is not available at the moment. Please contact an admin.',
     'google-refused': 'Google Meet is not available at the moment. Please try again.',
-    'meet-pending': 'Google is still creating the Meet. Press Create Google Meet again in a moment.',
+    'meet-pending': 'Google is still creating the Google Meet link. Press Create Google Meet again shortly.',
     'bad-recommend': 'Choose a recommendation.', 'bad-outcome': 'Please refresh the page and try again.',
     'no-email': 'This decision sends no email.', 'bad-criteria': 'Enter 3 to 8 criteria, each 2 to 60 characters, none twice.',
-    'bad-position': 'Enter the position, 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.'
+    'bad-position': 'Enter a position of 2 to 80 characters.', 'standard': 'The Standard scorecard cannot be deleted.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
@@ -336,7 +336,7 @@
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Scores</h4>' +
         (open ? '<button class="btn btn-sm' + (mine ? ' btn-quiet' : '') + '" type="button" data-h="score">' + (mine ? 'Edit scores' : 'Add scores') + '</button>' : '') + '</div>' +
-      '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 a criterion</p>' +
+      '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 per criterion</p>' +
       (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' +
         '<div class="hir-scores">' + o.scores.map(function (x) {
           return '<div class="hir-score"><div class="hir-iv-head"><b>' + esc(x.name) + '</b><span class="hir-iv-ctl"><span class="hir-total">' + esc(Number(x.total).toFixed(1)) + '</span>' +
@@ -359,7 +359,7 @@
       value: mine.recommend || 'proceed', head: 'Recommendation' });
     f.push({ name: 'note', label: 'Note', rows: 3, required: false, placeholder: 'Optional', value: mine.note || '' });
     window.ADspaceConfirm.ask({ title: (mine.scores ? 'Edit scores' : 'Add scores') + ' for ' + c.name, go: 'Save', wait: true, fields: f,
-      body: '1 is weak and 5 is strong. Everyone on the candidate reads the scores.',
+      body: '1 is weak and 5 is strong. Everyone added to this candidate can see the scores.',
       check: function (v) {
         var gap = (o.scorecard.criteria || []).filter(function (k, n) { return !v['c' + n]; })[0];
         return gap ? 'Choose a score for ' + gap + '.' : String(v.note || '').trim().length > 1000 ? 'Shorten the note to 1,000 characters.' : '';
@@ -385,9 +385,9 @@
   }
   function decide(o) {
     var c = state.rec, mails = o !== 'proceed';
-    var body = { proceed: c.name + ' moves to Offer. The offer is prepared in the next step.',
+    var body = { proceed: c.name + ' moves to Offer. The offer will be prepared in the next step.',
       pool: c.name + ' will be asked on their page to agree to ADspace keeping their application. If they do not agree, their details will be deleted.',
-      not: c.name + '\'s application will be closed. Their details will be deleted after the keep months in Settings.' }[o];
+      not: c.name + '\'s application will be closed. Their details will be deleted after the period set in Settings (Closed candidates kept).' }[o];
     var f = [{ name: 'note', label: 'Note', rows: 2, required: false, placeholder: 'Optional', note: 'Seen by the team only.' }];
     if (mails) f.push({ name: 'mail', label: 'Email ' + c.name, tick: true, value: 'on' });
     window.ADspaceConfirm.ask({ title: REC[o] + '?', go: REC[o], tone: o === 'not' ? 'warn' : '', wait: true, body: body, fields: f },
@@ -675,7 +675,7 @@
         var d = r.data || {};
         if (r.error || d.error) { msg('hirRecMsg', said(r), 'err'); return; }
         openRec(c.id).then(function () {
-          if (bridge.undoHere) bridge.undoHere('Your scores removed.', function () {
+          if (bridge.undoHere) bridge.undoHere('Your scores were removed.', function () {
             return rpc('hiring_score_save', { p_id: c.id, p_scores: d.scores, p_recommend: d.recommend, p_note: d.note }).then(function () { openRec(c.id); });
           }, $('hirRecMsg'));
         });
