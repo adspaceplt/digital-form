@@ -5760,3 +5760,28 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .hir-times .chip { margin-left: 6px; }
 .hir-iv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .hir-iv-acts > .btn { flex: 0 0 auto; }
+
+
+/* ---- Personnel (js/personnel.js, 2026-11-16): a colleague's employee record ---- */
+.prs-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.prs-miss { margin: 8px 0 0; }
+.prs-files { display: grid; }
+.prs-file { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.prs-file:first-child { border-top: 0; padding-top: 0; }
+.prs-file-who { display: flex; flex-direction: column; min-width: 0; }
+.prs-file-name { font-weight: 500; }
+.prs-file-meta { font-size: 12.5px; color: var(--ink-mute); }
+.prs-file-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.prs-pick { cursor: pointer; }
+.prs-locked { display: flex; align-items: center; gap: 6px; }
+.prs-locked svg { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
+.prs-declare { font-size: 13px; color: var(--ink-soft); margin: 0 0 12px; }
+.prs-ticks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.is-narrow .prs-file { flex-direction: column; align-items: stretch; }
+.is-narrow .prs-file-acts { justify-content: flex-start; }
+.dep-code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-mute); margin-left: 8px; }
+.prs-none { margin: 0; font-size: 13px; color: var(--ink-mute); }
+/* On a narrow pane the record's two acts take their own row, equal halves. */
+.is-narrow .readgroup-head:has(> .prs-acts) { flex-wrap: wrap; }
+.is-narrow .prs-acts { flex: 1 0 100%; justify-content: stretch; }
+.is-narrow .prs-acts > .btn { flex: 1 1 50%; }

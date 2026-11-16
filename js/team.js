@@ -246,6 +246,9 @@
                    (2026-11-13) the charts follow their sections, and this
                    part writes the AI analysis alone. */
                 ['analytics', 'AI analysis on Analytics'],
+                /* A colleague's employee record, salary and the AutoCount
+                   HRMS import (2026-11-16, Hiring and People H1). */
+                ['personnel', 'Employee records and salary'],
                 /* Hiring (2026-11-16): every candidate, adding them and the
                    colleagues on each. A colleague added to one candidate
                    sees that candidate alone without it. */
@@ -266,7 +269,7 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.hiring': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1, 'team.hiring': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
@@ -299,7 +302,7 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.hiring': ['work'], 'suppliers.pay': ['view', 'work'], 'campaigns.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'suppliers.pay': ['view', 'work'], 'campaigns.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
        removing a client stays with Clients Full Access. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
@@ -1297,7 +1300,7 @@
     ['Creator Campaigns', ['campaigns.files_delete']],
     ['Reports', ['reports.meta', 'reports.whitelabel', 'reports.transfer']],
     ['Documents', ['register.types']],
-    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.hiring']]
+    ['Team', ['team.invite', 'team.handbook', 'team.perfadmin', 'team.personnel', 'team.hiring']]
   ];
   /* The three My Work views follow My Work and are not offered here. */
   var UNDRAWN = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
@@ -1341,6 +1344,7 @@
     'register.documents': 'Client letters and other documents.',
     'register.hr': 'HR letters and downloaded performance records.',
     'suppliers.pay': 'A supplier\'s NRIC and bank details.',
+    'team.personnel': 'Each colleague\'s employee record, their salary behind the master code, and the AutoCount HRMS download.',
     'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.time': 'Correct another colleague\'s time records.',
@@ -1887,10 +1891,13 @@
     var wrap = $('teamMoreWrap'), btn = $('teamMoreBtn'), menu = $('teamMore');
     if (!wrap || !btn || !menu) return;
     wrap.hidden = false;
+
     var shut = function () { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
       var open = menu.hidden;
+      var ac = menu.querySelector('[data-a="autocount"]');
+      if (ac) ac.hidden = !(may('team.personnel', 'work') && window.ADspacePersonnel);
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
       if (open && window.ADspaceMenu) window.ADspaceMenu.place(btn, menu);
@@ -1901,6 +1908,10 @@
       var it = e.target.closest('.kmenu-item');
       if (!it) return;
       shut();
+      if (it.getAttribute('data-a') === 'autocount') {
+        if (window.ADspacePersonnel) window.ADspacePersonnel.exportAC(btn);
+        return;
+      }
       /* The colleagues the function changes, as it chooses them: an admin's
          date is an admin's to set. Their own dates are named in the
          question and put back by Undo (2026-10-27, TEAM-3). */
@@ -2053,10 +2064,12 @@
      readable. The list stays the way in; Back returns to it. */
   var rec = { id: null, pane: 'overview', seq: 0 };
   var BACK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>';  /* the one way back every record draws (`.backlink`) */
-  var PANES = [['overview', 'Overview'], ['work', 'Work'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
+  var PANES = [['overview', 'Overview'], ['work', 'Work'], ['personnel', 'Personnel'], ['documents', 'Documents'], ['performance', 'Performance'], ['health', 'Health']];
   function paneOk(k) {
     if (k === 'work') return may('team', 'manage');
     if (k === 'documents') return may('register.hr', 'view');
+    /* The employee record (2026-11-16): the granted part alone. */
+    if (k === 'personnel') return may('team.personnel', 'work') && Boolean(window.ADspacePersonnel);
     if (k === 'performance') return may('team.performance', 'view');
     if (k === 'health') return Boolean(window.ADspaceAdmin && window.ADspaceAdmin.isAdmin && window.ADspaceAdmin.isAdmin());
     return true;
@@ -2177,6 +2190,7 @@
     var live = function () { return seq === rec.seq && $('mrecPane') === host; };
     if (rec.pane === 'work') return paneWork(m, host, live);
     if (rec.pane === 'documents') return paneDocs(m, host, live);
+    if (rec.pane === 'personnel') return window.ADspacePersonnel.paneTeam(m, host, live, state.rows || []);
     if (rec.pane === 'performance') return panePerf(m, host);
     if (rec.pane === 'health') return paneHealth(m, host, live);
     paneOverview(m, host);
