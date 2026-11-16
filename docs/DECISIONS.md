@@ -10664,3 +10664,24 @@ fields take `type: 'number'` and a `check`. `team_roles_admin_guard` names
 DELETE in its body, so its restatement is the SQL Editor's part. Previous
 employers' salaries on the paper form are not asked (decision 10).
 
+
+## 2026-11-17 · Access security fixes: groups an admin's, Own clients by id
+
+The user, deciding the access restructure's question 6 ("6 ok"): two holes
+found while mapping the live access were released ahead of the restructure.
+1. Team Full Access could edit a non-admin user group, its access included,
+   so a colleague holding Team Full Access could raise their own group's
+   sections. `roles_admin` now asks `allowed('admin')` and
+   `team_roles_admin_guard` refuses anyone else (`admin-only`); the page
+   draws Edit, Delete and Add group for an admin alone. The granted-part
+   list left the guard: nothing below an admin reaches it.
+2. Own clients only compared the client's Person in charge, a name, with the
+   colleague's name. Names are unique only among colleagues not removed, so a
+   newcomer sharing a removed colleague's name saw every client still named
+   after them. `clients.owner_id` is stamped from the name by trigger
+   `client_owner_id_stamp` (named to run before `client_scope_guard`, which
+   reads it), kept while that colleague holds the name, and the rule
+   (`client_row_seen_by`, now five arguments) and its 13 readers compare ids.
+   A rename is carried by id. The four-argument rule and the unused
+   three-argument `client_row_seen` are dropped in the SQL Editor part, so a
+   later restatement cannot fall back to a name.

@@ -1075,6 +1075,9 @@
     head.className = 'group-head';
     head.innerHTML = '<span>Group</span><span>Access</span><span></span>';
     box.appendChild(head);
+    /* ACCESS SECURITY FIXES (2026-11-17): a user group is made, changed and
+       deleted by an admin alone (`roles_insert`, `team_roles_admin_guard`). */
+    if ($('groupAdd')) $('groupAdd').hidden = !amAdmin();
     state.roles.forEach(function (r) { box.appendChild(groupRow(r)); });
     var n = state.roles.length;
     $('groupCount').textContent = n ? n + (n === 1 ? ' group' : ' groups') : '';
@@ -1148,7 +1151,7 @@
     el.innerHTML =
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       '<span class="group-grants">' + grantHtml(r) + '</span>' +
-      (locked || !may('team', 'manage') ? '<span class="team-act"></span>'
+      (locked || !amAdmin() ? '<span class="team-act"></span>'
         /* Every group it may change shows Edit on its row; an empty group's
            ⋯ holds Delete beside it (TEAM2-14, 2026-10-24). */
         : '<span class="team-act group-acts"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button>' +

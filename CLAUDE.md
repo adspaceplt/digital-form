@@ -1669,8 +1669,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   plus every client whose Sales by is the colleague: `clients.sales_by`,
   `2026-10-23-sales-by.sql`; the user, 2026-10-23: a sales executive keeps
   sight of a client handed to operations, at their group's own level).
-  One rule, `client_row_seen_by(stage, owner, sales_by, level)` (over
-  `client_row_seen`), held by a restrictive
+  One rule, `client_row_seen_by(stage, owner, owner_id, sales_by, level)`,
+  the Person in charge matched by `clients.owner_id` (stamped by trigger
+  `client_owner_id_stamp` from the name, kept while that colleague holds it;
+  never the name alone: a newcomer sharing a removed colleague's name sees
+  none of theirs; `2026-11-17-access-security-fixes.sql`), held by a restrictive
   `client_scope` read policy and a `client_scope_guard` trigger (writes at
   Manage, `client-scope`) on the client and every table under it, by
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
@@ -1747,8 +1750,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     Admin in Start from is the only way to make a group admin, offered to
     an admin alone, as an admin group in any select is (S6, 2026-10-24).
   - Each group row reads its access as phrases held whole (`team-part`), Edit
-    on every row the colleague may change (none on the Admin group, nor on
-    an admin group for anyone but an admin), a ⋯ holding Delete beside it
+    on every row for an admin alone (a user group is made, changed and
+    deleted by an admin: `roles_admin` and `team_roles_admin_guard`,
+    `admin-only`, 2026-11-17; none on the Admin group, nor on an admin group
+    for anyone but the super admin), a ⋯ holding Delete beside it
     on an empty group alone (TEAM2-11, TEAM2-14). Services offers No Access,
     View and Full Access; Leads and Past clients offer no level above
     Clients; a client part that follows Clients is greyed while Clients is
@@ -7715,8 +7720,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `2026-10-24-colleague-last-seen.sql`).
 - Set inactive / Set active sits in the record's ⋯ (never on your own record). Send
   invitation asks first.
-- Add member, Set access expiry, a member's values and Set inactive, and a
-  group's ⋯ are Team Full Access (`team_admin`); Send invitation is
+- Add member, Set access expiry, a member's values and Set inactive are
+  Team Full Access (`team_admin`); a user group and Add group an admin's
+  alone; Send invitation is
   `team.invite` (`invite-member`), which makes a team login only for an
   address an active colleague holds (`not_team_member`) and claims every
   invitation first, twenty a caller in 24 hours (`team_invite_claim`,

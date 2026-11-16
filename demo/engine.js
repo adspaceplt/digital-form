@@ -34,7 +34,7 @@
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
     quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
-    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by',
+    clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
     creator_profiles: 'id creator_id platform url handle created_at',
     creators: 'id name followers cost_rate client_rate industries notes active created_by created_at updated_at access_code code_issued_at whatsapp creator_code inactive_reason',
@@ -684,6 +684,8 @@
     }
   });
 
+  (DB.clients || []).forEach(function (c) { if (c.owner_id === undefined) c.owner_id = ownerIdOf(c.owner); });
+
   (DB.team_members || []).concat(DB.team_roles || []).forEach(function (x) { if (!x.updated_at) x.updated_at = '2026-10-01T00:00:00.000Z'; });
 
   idFormats();
@@ -1004,7 +1006,25 @@
     if (kind === 'script') { var vs = scopeOne('video_scripts', id); return vs ? vs.client_id : null; }
     return null;
   }
-  function scopeRowOk(stage, owner, level, salesBy) {
+
+  function ownerIdOf(name) {
+    var n = String(name || '').trim().toLowerCase(); if (!n) return null;
+    var hit = (DB.team_members || []).filter(function (t) { return !t.removed_at && String(t.name || '').trim().toLowerCase() === n; })
+      .sort(function (a, b) { return (b.active !== false) - (a.active !== false); })[0];
+    return hit ? hit.id : null;
+  }
+  function ownerStamp(nw, old) {
+    var n = String(nw.owner || '').trim(); if (!n) return null;
+    if (old && nw.owner === old.owner && nw.owner_id === old.owner_id && nw.owner_id) return nw.owner_id;
+    if (nw.owner_id && (DB.team_members || []).some(function (t) { return t.id === nw.owner_id && String(t.name || '').trim().toLowerCase() === n.toLowerCase(); })) return nw.owner_id;
+    return ownerIdOf(n);
+  }
+  function withOwner(table, r, pending) {
+    var nx = Object.assign({}, r, pending);
+    if (table === 'clients' && ('owner' in pending || 'owner_id' in pending)) nx.owner_id = ownerStamp(nx, r);
+    return nx;
+  }
+  function scopeRowOk(stage, owner, ownerId, level, salesBy) {
     var m = opsMe(); if (!m) return true;
     var a = opsAccess(m); if (a.admin) return true;
     var band = ['lead', 'contacted', 'proposal'].indexOf(stage) > -1 ? 'clients.leads' : stage === 'past' ? 'clients.past' : null;
@@ -1018,18 +1038,18 @@
       if (salesBy && salesBy === m.id) return true;
       var ow = String(owner || '').trim();
       if (!ow) return band === 'clients.leads';
-      return ow.toLowerCase() === String(m.name || '').trim().toLowerCase();
+      return Boolean(ownerId) && ownerId === m.id;
     }
     return true;
   }
   function scopeSeen(clientId, level) {
     if (!clientId) return true;
     var c = scopeOne('clients', clientId);
-    return c ? scopeRowOk(c.stage, c.owner, level, c.sales_by) : true;
+    return c ? scopeRowOk(c.stage, c.owner, c.owner_id, level, c.sales_by) : true;
   }
   function scopeOk(table, row, level) {
     var k = SCOPE_KIND[table]; if (!k || !row) return true;
-    if (k[0] === 'self') return scopeRowOk(row.stage, row.owner, level, row.sales_by);
+    if (k[0] === 'self') return scopeRowOk(row.stage, row.owner, row.owner_id, level, row.sales_by);
     return scopeSeen(scopeClientOf(k[0], row[k[1]]), level);
   }
 
@@ -1093,7 +1113,7 @@
     sm_report_platforms: { r: 'reports:view', i: 'reports:work', u: 'reports:work', d: 'reports:work' },
     sm_report_posts: { r: 'reports:view', i: 'reports:work', u: 'reports:work', d: 'reports:work' },
     team_members: { r: 'team', i: 'team:manage', u: 'team:manage' },
-    team_roles: { r: 'team|team:manage', i: 'team:manage', u: 'team:manage', d: 'team:manage' },
+    team_roles: { r: 'team|admin:work', i: 'admin:work', u: 'admin:work', d: 'admin:work' },
     doc_types: { r: 'team' },
     documents: { r: 'team' },
     ops_engagements: { r: 'team' },
@@ -1297,7 +1317,7 @@
           rows = []; api.__err = { code: 'P0001', message: 'sm-not-draft' }; return api;
         }
         var inHit = DB[table].filter(function (r) { return set.indexOf(String(r[f])) > -1 && scopeOk(table, r, 'view'); });
-        if (inHit.some(function (r) { return !scopeOk(table, r, 'work') || !scopeOk(table, Object.assign({}, r, pending), 'work'); })) {
+        if (inHit.some(function (r) { return !scopeOk(table, r, 'work') || !scopeOk(table, withOwner(table, r, pending), 'work'); })) {
           rows = []; api.__err = SCOPE_REFUSED; return api;
         }
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
@@ -1346,7 +1366,7 @@
         if (inHit.some(function (r) { return ownerChangeRefused(table, r, pending); })) {
           rows = []; api.__err = { code: '42501', message: 'Person in charge is changed at Clients Full Access.', hint: 'owner-change' }; return api;
         }
-        inHit.forEach(function (r) { stageClock(table, r, pending); Object.assign(r, pending); });
+        inHit.forEach(function (r) { stageClock(table, r, pending); Object.assign(r, withOwner(table, r, pending)); });
         rows = inHit;
         return api;
       }
@@ -1428,7 +1448,7 @@
         if (eqHit.some(function (r) { return adminGuard(table, r, Object.assign({}, r, pending)); })) {
           rows = []; api.__err = { code: '42501', message: guardWord }; return api;
         }
-        if (eqHit.some(function (r) { return !scopeOk(table, r, 'work') || !scopeOk(table, Object.assign({}, r, pending), 'work'); })) {
+        if (eqHit.some(function (r) { return !scopeOk(table, r, 'work') || !scopeOk(table, withOwner(table, r, pending), 'work'); })) {
           rows = []; api.__err = SCOPE_REFUSED; return api;
         }
         if (table === 'clients' && pending && ['vic_at', 'vic_by', 'vic_note'].some(function (k) { return k in pending; })) {
@@ -1630,8 +1650,11 @@
               var rnBy = (DB.team_members.filter(function (t) { return String(t.email || '').toLowerCase() === whoNow(); })[0] || {}).name || 'system';
               ['clients', 'campaigns'].forEach(function (tb) {
                 (DB[tb] || []).forEach(function (x) {
-                  if (String(x.owner || '').trim().toLowerCase() !== rnOld) return;
+
+                  if (tb === 'clients' ? !(x.owner_id === r.id || (!x.owner_id && String(x.owner || '').trim().toLowerCase() === rnOld))
+                                       : String(x.owner || '').trim().toLowerCase() !== rnOld) return;
                   x.owner = rnNew;
+                  if (tb === 'clients') x.owner_id = r.id;
                   DB.activity_log.push({ id: nid('a'), actor: rnBy, action: tb === 'clients' ? 'client.edited' : 'campaign.edited',
                     subject: x.name || x.title, detail: 'Person in charge: ' + String(r.name).trim() + ' to ' + rnNew, created_at: rnAt });
                 });
@@ -1656,7 +1679,7 @@
           if (table === 'campaign_deliverables' && 'removed_at' in pending && (pending.removed_at || null) !== (r.removed_at || null)) qcVoid(r.option_id);
           var wasPub = r.published;
           (api.__before = api.__before || []).push([r, JSON.parse(JSON.stringify(r))]);
-          Object.assign(r, pending);
+          Object.assign(r, withOwner(table, r, pending));
           if (table === 'clients') entSync(r, api.__before[api.__before.length - 1][1]);
 
           if (table === 'client_contacts' && ((pending.is_primary === false && api.__before[api.__before.length - 1][1].is_primary) ||
@@ -1781,6 +1804,7 @@
           });
           if (dup) err = { message: 'duplicate key value violates unique constraint' };
         }
+        if (table === 'clients') x.owner_id = ownerStamp(x, null);
         if (!err && SCOPE_KIND[table] && !scopeOk(table, x, 'work')) err = SCOPE_REFUSED;
 
         if (!err && table === 'clients') {
@@ -3341,7 +3365,7 @@ function cardSlugFree(name, self, email) {
         if (o.creator_id !== creator || BOOKED_OUT.indexOf(o.state) > -1) return false;
         var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
         var c = m && (DB.clients || []).filter(function (x) { return x.id === m.client_id; })[0];
-        return c && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
+        return c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by);
       }), function (o) {
         var m = DB.campaigns.filter(function (x) { return x.id === o.campaign_id; })[0];
         return billMarket(DB.clients.filter(function (x) { return x.id === m.client_id; })[0]) === 'SG' ? 'SGD' : 'MYR';
@@ -3356,7 +3380,7 @@ function cardSlugFree(name, self, email) {
     var cliCur = function (o) {
       var m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0];
       var c = m && (DB.clients || []).filter(function (x) { return x.id === m.client_id; })[0];
-      return c && scopeRowOk(c.stage, c.owner, 'view', c.sales_by) ? (billMarket(c) === 'SG' ? 'SGD' : 'MYR') : null;
+      return c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by) ? (billMarket(c) === 'SG' ? 'SGD' : 'MYR') : null;
     };
     var fcur = function (o) { return feeOf(o).currency; }, famt = function (o) { return feeOf(o).amount; };
     var agreed = pay ? group(booked, fcur, famt, 'bookings') : null;
@@ -3422,7 +3446,7 @@ function cardSlugFree(name, self, email) {
       if (!keep) return;
       var c = crOf(o.creator_id), m = (DB.campaigns || []).filter(function (x) { return x.id === o.campaign_id; })[0] || {};
       var cl = (DB.clients || []).filter(function (x) { return x.id === m.client_id; })[0];
-      var seen = !!cl && scopeRowOk(cl.stage, cl.owner, 'view', cl.sales_by);
+      var seen = !!cl && scopeRowOk(cl.stage, cl.owner, cl.owner_id, 'view', cl.sales_by);
       var fe = (DB.creator_fees || []).filter(function (f) { return f.option_id === o.id; })[0];
       var appr = (DB.creator_pay_requests || []).filter(function (r) { return r.creator_id === c.id && r.status === 'approved'; }).sort(function (a, x) { return (x.seq || 0) - (a.seq || 0); })[0];
       jobs.push({ option: o.id, creator: c.id, name: c.name, code: c.creator_code || null,
@@ -4902,6 +4926,8 @@ function cardSlugFree(name, self, email) {
   }
   function plainGuard(table, old, nw) {
     var m = opsMe(); if (!m || opsAccess(m).admin) return null;
+
+    if (table === 'team_roles') return 'admin-only';
     if (table === 'team_roles') {
       if ((old && (old.is_admin || old.slug === 'admin')) || (nw && (nw.is_admin || nw.slug === 'admin'))) return 'admin-only';
 
@@ -7528,7 +7554,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (!me || !opsAllowed('clients', 'work')) return { error: 'denied' };
     var c = (DB.clients || []).filter(function (x) { return x.id === clientId; })[0];
     if (!c) return { error: 'not-found' };
-    if (!scopeRowOk(c.stage, c.owner, 'work', c.sales_by)) return { error: 'client-scope' };
+    if (!scopeRowOk(c.stage, c.owner, c.owner_id, 'work', c.sales_by)) return { error: 'client-scope' };
     var r = ckRoom(me);
     if (r.limit === 0) return { error: 'ai-limit', scope: 'stopped', limit: 0 };
     if (!r.left) return { error: 'ai-limit', scope: 'checklist', limit: r.limit, next: r.next };
@@ -7702,7 +7728,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       var filled = [];
       var cB = client(b1.client_id);
-      if (on && cB && opsAllowed('clients.brand', 'work') && scopeRowOk(cB.stage, cB.owner, 'work', cB.sales_by)) {
+      if (on && cB && opsAllowed('clients.brand', 'work') && scopeRowOk(cB.stage, cB.owner, cB.owner_id, 'work', cB.sales_by)) {
         var an = b1.analysis || {}, bf = an.brief || {}, was = cB.brief && typeof cB.brief === 'object' && !Array.isArray(cB.brief) ? cB.brief : {};
         var nb = Object.assign({}, was);
         var ln = function (x) { return (Array.isArray(x) ? x : []).map(function (y) { return String(y).trim(); }).filter(Boolean); };
@@ -8371,7 +8397,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var owItems = [], owSeen = {};
       (DB.ops_engagements || []).filter(function (e) { return e.period === owP && e.status !== 'cancelled' && (e.reports || []).length; })
         .map(function (e) { return { e: e, c: owClient(e.client_id) }; })
-        .filter(function (x) { return x.c && scopeRowOk(x.c.stage, x.c.owner, 'view', x.c.sales_by); })
+        .filter(function (x) { return x.c && scopeRowOk(x.c.stage, x.c.owner, x.c.owner_id, 'view', x.c.sales_by); })
         .sort(function (p, q) { return String(p.c.name).localeCompare(String(q.c.name)); })
         .forEach(function (x) {
           var e = x.e, c = x.c, sp = owSpan(e);
@@ -8405,7 +8431,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return (m ? m.period : String(r.period_end).slice(0, 7)) === owP;
       }).forEach(function (r) {
         var c = owClient(r.client_id);
-        if (!c || !scopeRowOk(c.stage, c.owner, 'view', c.sales_by)) return;
+        if (!c || !scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by)) return;
         var due = owDue(r.period_end);
         owItems.push({ client_id: c.id, client: c.name, slug: c.slug || null, kind: r.kind || 'social', brand: owBrand(r), report_id: r.id,
           status: r.status, sent_on: r.sent_on || null, asked: false, task_id: null, assignee: null, due: due,
@@ -9161,7 +9187,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (REMOVE_OF[name] && args) {
       var rmOf = REMOVE_OF[name];
       var rmRow = (DB[rmOf[0]] || []).filter(function (x) { return x.id === args[rmOf[1]]; })[0];
-      if (rmRow && !(rmOf[0] === 'clients' ? scopeRowOk(rmRow.stage, rmRow.owner, 'manage', rmRow.sales_by) : scopeSeen(rmRow.client_id, 'manage'))) {
+      if (rmRow && !(rmOf[0] === 'clients' ? scopeRowOk(rmRow.stage, rmRow.owner, rmRow.owner_id, 'manage', rmRow.sales_by) : scopeSeen(rmRow.client_id, 'manage'))) {
         return Promise.resolve({ data: null, error: SCOPE_REFUSED });
       }
     }
@@ -11087,7 +11113,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!raMe || !opsAllowed('clients.requests', 'manage')) return raOk({ error: 'denied' });
         var rdq = DB.client_requests.filter(function (r) { return r.id === args.p_id; })[0];
         var rdc = rdq && DB.clients.filter(function (c) { return c.id === rdq.client_id; })[0];
-        if (!rdq || (rdc && !scopeRowOk(rdc.stage, rdc.owner, 'manage', rdc.sales_by))) return raOk({ error: 'not-found' });
+        if (!rdq || (rdc && !scopeRowOk(rdc.stage, rdc.owner, rdc.owner_id, 'manage', rdc.sales_by))) return raOk({ error: 'not-found' });
         DB.client_requests = DB.client_requests.filter(function (r) { return r.id !== rdq.id; });
         DB.activity_log.unshift({ id: nid('al'), actor: raMe.name, action: 'request.deleted', subject: rdc ? rdc.name : null,
           detail: (raWord[rdq.kind] || rdq.kind) + (rdq.service_label ? ' · ' + rdq.service_label : ''), created_at: new Date().toISOString() });
@@ -11095,7 +11121,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (!raMe || !opsAllowed('clients.requests', 'work')) return raOk({ error: 'denied' });
       var rac = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
-      if (!rac || !scopeRowOk(rac.stage, rac.owner, 'work', rac.sales_by)) return raOk({ error: 'not-found' });
+      if (!rac || !scopeRowOk(rac.stage, rac.owner, rac.owner_id, 'work', rac.sales_by)) return raOk({ error: 'not-found' });
       var raKey = args.p_idem ? String(args.p_idem).slice(0, 64) : null;
       var raWas = raKey && DB.client_requests.filter(function (r) { return r.client_id === rac.id && r.idem === raKey; })[0];
       if (raWas) return raOk({ ok: true, id: raWas.id, again: true });
@@ -11263,7 +11289,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'client_checklists_due') {
         if (!ckMe || !opsAllowed('clients.checklists', 'view')) return ckOk([]);
         var due = [];
-        DB.clients.filter(function (c) { return c.stage === 'active' && scopeRowOk(c.stage, c.owner, 'view', c.sales_by); }).forEach(function (c) {
+        DB.clients.filter(function (c) { return c.stage === 'active' && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by); }).forEach(function (c) {
           ['onboarding', 'pre_ads'].forEach(function (k) {
             var r = DB.client_checklists.filter(function (x) { return x.client_id === c.id && x.kind === k; })[0];
             if (r && r.status === 'signed') return;
@@ -11283,7 +11309,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (!ckMe || !opsAllowed('clients.checklists', name === 'client_checklist' ? 'view' : name === 'client_checklist_step' && args.p_step === 'reopen' ? 'manage' : 'work')) return ckOk({ error: 'denied' });
       if (!ckCl) return ckOk({ error: 'not-found' });
-      if (!scopeRowOk(ckCl.stage, ckCl.owner, name === 'client_checklist' ? 'view' : 'work', ckCl.sales_by)) return ckOk({ error: 'client-scope' });
+      if (!scopeRowOk(ckCl.stage, ckCl.owner, ckCl.owner_id, name === 'client_checklist' ? 'view' : 'work', ckCl.sales_by)) return ckOk({ error: 'client-scope' });
       if (['onboarding', 'pre_ads'].indexOf(args.p_kind) < 0) return ckOk({ error: 'bad-kind' });
       if (name === 'client_checklist') return ckOk(ckJson());
       if (name === 'client_checklist_set') {
@@ -11960,7 +11986,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qtMe || !opsAllowed('clients.quotes', qsLevel)) return qtOk({ error: 'denied' });
         var sq2 = DB.quotations.filter(function (q) { return q.id === args.p_id && !q.removed_at; })[0];
         var sc2 = sq2 && DB.clients.filter(function (c) { return c.id === sq2.client_id; })[0];
-        if (!sq2 || (sc2 && !scopeRowOk(sc2.stage, sc2.owner, 'work', sc2.sales_by))) return qtOk({ error: 'not-found' });
+        if (!sq2 || (sc2 && !scopeRowOk(sc2.stage, sc2.owner, sc2.owner_id, 'work', sc2.sales_by))) return qtOk({ error: 'not-found' });
         var mayRev = function (m) {
           if (!m || !m.active || m.system) return false;
           if (m.is_admin || m.role === 'admin') return true;
@@ -12196,7 +12222,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!qtMe || !opsAllowed('clients.quotes', 'manage')) return qtOk({ error: 'denied' });
         var qdq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
         var qdc = qdq && DB.clients.filter(function (c) { return c.id === qdq.client_id; })[0];
-        if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
+        if (!qdq || (qdc && !scopeRowOk(qdc.stage, qdc.owner, qdc.owner_id, 'manage', qdc.sales_by))) return qtOk({ error: 'not-found' });
         if (!qdq.removed_at) return qtOk({ error: 'not-removed' });
         if (String(args.p_ref || '').trim() !== qdq.ref) return qtOk({ error: 'bad-ref' });
         var qdn = (DB.client_services || []).filter(function (l) { return l.quotation_id === qdq.id; }).length;
@@ -12216,7 +12242,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'quote_preview') {
         if (!qtCard) return qtOk({ error: 'no-card' });
         var qpc = args.p_sel && args.p_sel.client && DB.clients.filter(function (c) { return c.id === args.p_sel.client; })[0];
-        var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
+        var qpId = qpc && scopeRowOk(qpc.stage, qpc.owner, qpc.owner_id, 'view', qpc.sales_by) ? qpc.id : null, qpFx = qtFx(qpId);
         if (qpFx === 0) return qtOk({ error: 'no-fx' });
         var qp = qtFxOut(qtCustom(qtPrice(qtFxSnap(qtTax(qtCard.snapshot, qpId), qpFx), qtNoClient(args.p_sel), args.p_sel && args.p_sel.edits), qtNoClient(args.p_sel)), qpFx);
         if (!qp.error) { qp.version = qtCard.version; qp.versions = DB.rate_card_versions.slice().sort(function (a, b) { return String(b.published_at).localeCompare(String(a.published_at)); }).map(function (v) { return { version: v.version, published_at: v.published_at }; }); }
@@ -12260,7 +12286,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         var qc = DB.clients.filter(function (c) { return c.id === args.p_client; })[0];
         if (!qc) return qtOk({ error: 'not-found' });
-        if (!scopeRowOk(qc.stage, qc.owner, 'work', qc.sales_by)) return qtOk({ error: 'client-scope' });
+        if (!scopeRowOk(qc.stage, qc.owner, qc.owner_id, 'work', qc.sales_by)) return qtOk({ error: 'client-scope' });
         if (args.p_idem) { var qAgain = DB.quotations.filter(function (q) { return q.idem === args.p_idem && q.client_id === args.p_client; })[0]; if (qAgain) return qtOk({ ok: true, id: qAgain.id, ref: qAgain.ref, again: true }); }
         if (!qtCard) return qtOk({ error: 'no-card' });
         args.p_sel = qtNoClient(args.p_sel);
@@ -12291,7 +12317,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       var qq = DB.quotations.filter(function (q) { return q.id === (name === 'quotation_replace' ? args.p_new : args.p_id); })[0];
       var qcl = qq && DB.clients.filter(function (c) { return c.id === qq.client_id; })[0];
-      if (!qq || (qcl && !scopeRowOk(qcl.stage, qcl.owner, 'work', qcl.sales_by))) return qtOk({ error: 'not-found' });
+      if (!qq || (qcl && !scopeRowOk(qcl.stage, qcl.owner, qcl.owner_id, 'work', qcl.sales_by))) return qtOk({ error: 'not-found' });
 
       if (name === 'quotation_edit') {
         qtStampOut();
@@ -13357,7 +13383,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ivAll = invScopeAll();
       var ivSeen = function (cid) {
         var c = DB.clients.filter(function (x) { return x.id === cid; })[0];
-        return Boolean(c) && scopeRowOk(c.stage, c.owner, 'view', c.sales_by);
+        return Boolean(c) && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by);
       };
       if (name === 'invoice_scope') {
 
@@ -13414,7 +13440,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       DB.bukku_settings = DB.bukku_settings || (window.__bukkuFieldsSet === false ? {} : { field_client: 11, field_supplier: 12 });
       DB.bukku_links = DB.bukku_links || [];
       var bkMe = opsMe();
-      var bkSeen = function (cid) { var c = DB.clients.filter(function (x) { return x.id === cid; })[0]; return Boolean(c) && scopeRowOk(c.stage, c.owner, 'view', c.sales_by); };
+      var bkSeen = function (cid) { var c = DB.clients.filter(function (x) { return x.id === cid; })[0]; return Boolean(c) && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by); };
       var bkMay = function (k, lv, id) {
         if (!bkMe) return false;
         if (k === 'client') return opsAllowed('clients.billing', lv);
@@ -14155,7 +14181,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var spFind = function (id) { return DB.suppliers.filter(function (x) { return x.id === id; })[0]; };
       var payView = opsGranted('suppliers.pay', 'view'), payWork = opsGranted('suppliers.pay', 'work');
 
-      var spClient = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0]; return c && scopeRowOk(c.stage, c.owner, 'view', c.sales_by) ? c : null; };
+      var spClient = function (id) { var c = (DB.clients || []).filter(function (x) { return x.id === id; })[0]; return c && scopeRowOk(c.stage, c.owner, c.owner_id, 'view', c.sales_by) ? c : null; };
       if (name === 'client_suppliers') {
         if (!spClient(args.p_client)) return spNo('denied');
         return spOk({ rows: DB.suppliers.filter(function (x) { return x.client_id === args.p_client; })
@@ -15154,7 +15180,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var llRow = (llKind === 'review' ? DB.clients : DB.campaigns || []).filter(function (x) { return x.id === args.p_id; })[0];
       if (!llRow) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       var llCl = llKind === 'review' ? llRow : (DB.clients || []).filter(function (x) { return x.id === llRow.client_id; })[0];
-      if (llCl && !scopeRowOk(llCl.stage, llCl.owner, name === 'link_lock_state' ? 'view' : 'work', llCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
+      if (llCl && !scopeRowOk(llCl.stage, llCl.owner, llCl.owner_id, name === 'link_lock_state' ? 'view' : 'work', llCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
       var llAt = (DB.link_attempts || []).filter(function (x) { return x.kind === llKind && x.token === llRow.access_token; })[0];
       var llOn = !!(llAt && llAt.locked_until && llAt.locked_until > Date.now());
       if (name === 'link_lock_state') {
@@ -15173,7 +15199,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var crl = DB.campaigns.filter(function (x) { return x.id === args.p_campaign; })[0];
       if (!crl) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       var crlCl = (DB.clients || []).filter(function (x) { return x.id === crl.client_id; })[0];
-      if (crlCl && !scopeRowOk(crlCl.stage, crlCl.owner, 'work', crlCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
+      if (crlCl && !scopeRowOk(crlCl.stage, crlCl.owner, crlCl.owner_id, 'work', crlCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
       var crlA = '23456789abcdefghjkmnpqrstuvwxyz', crlK = '';
       for (var crlI = 0; crlI < 8; crlI++) crlK += crlA[Math.floor(Math.random() * crlA.length)];
       crl.access_token = crlK; crl.moved_token = null;
@@ -15188,7 +15214,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var ccc = DB.campaigns.filter(function (x) { return x.id === args.p_campaign; })[0];
       if (!ccc) return Promise.resolve({ data: { error: 'not-found' }, error: null });
       var cccCl = (DB.clients || []).filter(function (x) { return x.id === ccc.client_id; })[0];
-      if (cccCl && !scopeRowOk(cccCl.stage, cccCl.owner, 'work', cccCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
+      if (cccCl && !scopeRowOk(cccCl.stage, cccCl.owner, cccCl.owner_id, 'work', cccCl.sales_by)) return Promise.resolve({ data: { error: 'client-scope' }, error: null });
       var cccKey = args.p_idem ? String(args.p_idem).slice(0, 64) : null;
       if (cccKey && DB.campaign_confirmations.some(function (k) { return k.campaign_id === ccc.id && k.idem === cccKey; })) {
         return Promise.resolve({ data: { ok: true, again: true }, error: null });
