@@ -577,7 +577,7 @@
      of Offer and the letters in js/letters.js cannot come out on two
      different sheets of paper. `ctx.page` is the page being drawn; the caller
      owns the cursor. */
-  var W = 595.28, H = 841.89, M = 54, R = W - M;
+  var W = 595.28, H = 841.89, M = 33.3, R = W - M;
   function pen(PDF, fonts, logo) {
     var font = fonts.font;
     /* The paper's three inks (the user, 2026-11-12): text #1a1a1a, never
