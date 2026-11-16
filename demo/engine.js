@@ -684,7 +684,7 @@
     }
   });
 
-  (DB.clients || []).forEach(function (c) { if (c.owner_id === undefined) c.owner_id = ownerIdOf(c.owner); });
+  (DB.clients || []).forEach(function (c) { c.owner_id = ownerStamp(c, null); });
 
   (DB.team_members || []).concat(DB.team_roles || []).forEach(function (x) { if (!x.updated_at) x.updated_at = '2026-10-01T00:00:00.000Z'; });
 
@@ -1025,6 +1025,8 @@
     return nx;
   }
   function scopeRowOk(stage, owner, ownerId, level, salesBy) {
+
+    if (ownerId === undefined) ownerId = ownerIdOf(owner);
     var m = opsMe(); if (!m) return true;
     var a = opsAccess(m); if (a.admin) return true;
     var band = ['lead', 'contacted', 'proposal'].indexOf(stage) > -1 ? 'clients.leads' : stage === 'past' ? 'clients.past' : null;
@@ -1651,7 +1653,7 @@
               ['clients', 'campaigns'].forEach(function (tb) {
                 (DB[tb] || []).forEach(function (x) {
 
-                  if (tb === 'clients' ? !(x.owner_id === r.id || (!x.owner_id && String(x.owner || '').trim().toLowerCase() === rnOld))
+                  if (tb === 'clients' ? ownerStamp(x, null) !== r.id
                                        : String(x.owner || '').trim().toLowerCase() !== rnOld) return;
                   x.owner = rnNew;
                   if (tb === 'clients') x.owner_id = r.id;
