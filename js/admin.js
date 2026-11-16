@@ -1870,7 +1870,7 @@
       { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
       { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
     hiring: { name: 'Hiring', steps: [
-      { at: '#hirAdd', text: 'Add candidate keeps their details and CV, and makes their own page.' },
+      { at: '#hirAdd', text: 'Add candidate saves their details and CV, and creates their own page.' },
       { at: '#hirList button.hir-row', text: 'Open a candidate to add the colleagues who decide or interview, and to copy their page\'s link.' }] },
     reports: { name: 'Reports', steps: [
       { at: '#rhNew', text: 'New report creates an Accounts Report or an Advertising Report for an active client.' },

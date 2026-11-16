@@ -17,7 +17,7 @@
   /* Where the application stands, in the candidate's words. The steps
      after Received arrive with the later releases. */
   var NEXT = {
-    received: 'ADspace will contact you by email when there is a next step. It will also be shown on this page.'
+    received: 'ADspace will contact you by email when there is a next step. The next step will also be shown on this page.'
   };
   function paint(d) {
     root().innerHTML = '<div class="qs-step cr-page" data-shown>' +

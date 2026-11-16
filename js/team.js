@@ -1317,7 +1317,7 @@
      name alone left a group unsure that Service lines held no quotations. */
   var PART_DESC = {
     'clients.contacts': 'The client\'s people and their portal access.',
-    'team.hiring': 'Every candidate: add them, their CV and the colleagues on each.',
+    'team.hiring': 'Candidates, their CVs and the colleagues added to each.',
     'clients.billing': 'Registered Company Name, BRN, billing contact and address.',
     'clients.quotes': 'Build quote and the client\'s quotations.',
     'clients.services': 'The client\'s service lines and their rates.',

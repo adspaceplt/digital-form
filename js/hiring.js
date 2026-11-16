@@ -5,7 +5,7 @@
  *
  * Every candidate is read and added at the granted part `team.hiring` (an
  * admin's by itself). On a candidate the part adds colleagues as Owner
- * (decides and sends) or Interviews (sees that candidate and scores); such a
+ * (decides and sends) or Interviewer (sees that candidate and scores); such a
  * colleague sees that candidate alone. Nothing about a candidate goes to the
  * Activity record or to an AI service: its history is its own
  * (`hiring_events`), drawn on its Activity pane.
@@ -30,21 +30,21 @@
      releases (invitations, scorecards, offer, Make colleague). */
   var STAGE = { new: ['New', 'is-off'], invited: ['Invited', 'is-warn'], interview: ['Interview', 'is-warn'], offer: ['Offer', 'is-warn'],
     hired: ['Hired', 'is-ok'], pool: ['Talent pool', 'is-off'], closed: ['Closed', 'is-off'] };
-  var ROLE = { admin: 'Hiring', owner: 'Owner', interviews: 'Interviews' };
+  var ROLE = { admin: 'Hiring', owner: 'Owner', interviews: 'Interviewer' };
   var SAID = {
     'denied': 'You do not have permission to do this. Please ask an admin.', 'not-found': 'This candidate no longer exists.',
     'bad-name': 'Enter a name of 2 to 120 characters.', 'bad-email': 'Enter a valid email address.',
     'bad-phone': 'Enter a phone number of 8 to 15 digits, for example 012-345 6789.', 'bad-position': 'Enter the position.',
     'bad-source': 'Choose a source.', 'bad-cv': 'Enter a web address that starts with https://.', 'too-long': 'Shorten the note to 2,000 characters.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
-    'bad-role': 'Choose Owner or Interviews.', 'bad-colleague': 'Choose an active colleague.', 'not-removed': 'Remove the candidate first.',
-    'bad-request': 'Reload the page and try again.'
+    'bad-role': 'Choose Owner or Interviewer.', 'bad-colleague': 'Choose an active colleague.', 'not-removed': 'Remove the candidate first.',
+    'bad-request': 'Please refresh the page and try again.'
   };
   function said(r) {
     var m = r && r.error && (r.error.message || '');
     if (m && /could not find|does not exist|schema cache/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
     var k = (r && r.data && r.data.error) || m;
-    if (k === 'taken') return r.data && r.data.name ? 'This email belongs to ' + r.data.name + ', a candidate already added.' : 'This email belongs to a candidate already added.';
+    if (k === 'taken') return r.data && r.data.name ? r.data.name + ' has already been added with this email address. Enter another email address.' : 'A candidate has already been added with this email address. Enter another email address.';
     if (k === 'bad-name' && state.deleting) return 'Type the candidate\'s name exactly as shown.';
     return SAID[k] || k || 'The request failed. Please try again.';
   }
@@ -239,12 +239,12 @@
       '<span class="chip">' + esc(ROLE[p.role] || '') + '</span>' +
       (acts ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for ' + esc(p.name) + '" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" hidden><button class="kmenu-item" data-g="2" type="button" data-h="role" data-id="' + esc(p.id) + '" role="menuitem">' +
-          (p.role === 'owner' ? 'Make Interviews' : 'Make Owner') + '</button>' +
+          (p.role === 'owner' ? 'Make interviewer' : 'Make owner') + '</button>' +
         '<button class="kmenu-item is-danger" data-g="6" type="button" data-h="unperson" data-id="' + esc(p.id) + '" role="menuitem">Remove</button></div></span>' : '') +
       '</div>';
   }
   var WORD = { 'candidate.added': 'Candidate added', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
-    'candidate.link': 'Candidate page', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored' };
+    'candidate.link': 'Link changed', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored' };
   function paintLog() {
     var host = $('hirLog');
     if (!host || !window.ADspaceRecords) return;
@@ -386,11 +386,11 @@
       var opts = free.slice().sort(F && F.sequence ? F.sequence('staff_code') : undefined).map(function (m) {
         return [m.id, named ? named(m.staff_code, m.name) : m.name];
       });
-      if (!opts.length) { msg('hirRecMsg', 'Every active colleague is already on this candidate.', 'warn'); return; }
+      if (!opts.length) { msg('hirRecMsg', 'Every active colleague has already been added to this candidate.', 'warn'); return; }
       window.ADspaceConfirm.ask({ title: 'Add colleague', go: 'Add', wait: true,
         fields: [{ name: 'member', label: 'Colleague', choices: [['', 'Choose a colleague']].concat(opts), required: true },
-                 { name: 'role', label: 'Role', choices: [['interviews', 'Interviews'], ['owner', 'Owner']], seg: true, value: 'interviews',
-                   note: 'An Owner decides and sends. Interviews sees this candidate and scores.' }] },
+                 { name: 'role', label: 'Role', choices: [['interviews', 'Interviewer'], ['owner', 'Owner']], seg: true, value: 'interviews',
+                   note: 'The owner decides on the candidate and sends the messages. An interviewer sees the candidate and enters scores.' }] },
       function (v) {
         if (!v.member) return 'Choose a colleague.';
         return rpc('hiring_person_set', { p_id: c.id, p_member: v.member, p_role: v.role }).then(function (r) {

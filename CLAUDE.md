@@ -3309,12 +3309,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   p_idem)`: name, email, phone, position, source, CV link; one live candidate
   an email, `taken` naming it; the same key twice one candidate), its adder
   its Owner. On a candidate the part adds colleagues as Owner (decides and
-  sends) or Interviews (sees it and scores; `hiring_person_set`, told in the
+  sends) or Interviewer (sees it and scores; stored `interviews`; `hiring_person_set`, told in the
   bell with no candidate's name, `hiring_person_remove` with Undo where it
   happened); a colleague on it sees that candidate alone (`hiring_role`).
   Edit (`hiring_save`, over the row as read, `stale`) and the link
-  (`hiring_link`, Reset link) are the part's or the Owner's; Interviews reads
-  no link.
+  (`hiring_link`, Reset link) are the part's or the Owner's; an Interviewer
+  reads no link.
 - The list is a card a stage (New first, Removed last and shut); a record
   is Overview (Details, the CV, Candidate page with Copy link and Preview),
   People and Activity (`hiring_events`, never the Activity record: a

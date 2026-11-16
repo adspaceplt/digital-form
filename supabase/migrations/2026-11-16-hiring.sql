@@ -356,11 +356,11 @@ begin
   values (p_id, p_member, p_role, me.id)
   on conflict (candidate_id, team_member_id) do update set role = excluded.role;
   perform public.hiring_log(p_id, 'candidate.people', t.name || case when v_was is null then ' added as ' else ': ' || initcap(v_was) || ' → ' end
-    || case p_role when 'owner' then 'Owner' else 'Interviews' end);
+    || case p_role when 'owner' then 'Owner' else 'Interviewer' end);
   if v_was is null and t.id <> me.id then
     insert into public.ops_notifications (team_member_id, kind, title, body, link)
     values (t.id, 'hiring.added', 'You were added to a candidate',
-            c.position || ' · ' || case p_role when 'owner' then 'Owner' else 'Interviews' end || ' · added by ' || me.name,
+            c.position || ' · ' || case p_role when 'owner' then 'Owner' else 'Interviewer' end || ' · added by ' || me.name,
             'https://digital.adspace.me/admin/?s=hiring&candidate=' || c.id);
   end if;
   return jsonb_build_object('ok', true);
@@ -379,7 +379,7 @@ begin
    where p.candidate_id = p_id and p.team_member_id = p_member;
   if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
   delete from public.hiring_people where candidate_id = p_id and team_member_id = p_member;
-  perform public.hiring_log(p_id, 'candidate.people', v_name || ' removed (' || case v_role when 'owner' then 'Owner' else 'Interviews' end || ')');
+  perform public.hiring_log(p_id, 'candidate.people', v_name || ' removed (' || case v_role when 'owner' then 'Owner' else 'Interviewer' end || ')');
   return jsonb_build_object('ok', true, 'role', v_role);
 end $$;
 grant execute on function public.hiring_person_remove(uuid, uuid) to authenticated;
@@ -440,7 +440,7 @@ begin
   if coalesce(p_reset, false) or c.link_key is null then
     update public.hiring_candidates set link_key = public.new_link_key(), last_step_at = now(), updated_at = now()
      where id = p_id returning * into c;
-    perform public.hiring_log(p_id, 'candidate.link', case when p_reset then 'Link reset' else 'Link made' end);
+    perform public.hiring_log(p_id, 'candidate.link', case when p_reset then 'Link reset' else 'Link created' end);
   end if;
   return jsonb_build_object('ok', true, 'key', c.link_key, 'updated_at', c.updated_at);
 end $$;

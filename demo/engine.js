@@ -13690,7 +13690,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (!hr) return hNo('not-found');
         if (hr !== 'admin' && hr !== 'owner') return hNo('denied');
         if (!hc || hc.removed_at) return hNo('not-found');
-        if (args.p_reset || !hc.link_key) { hc.link_key = hKey(); hc.last_step_at = hc.updated_at = new Date().toISOString(); hLog(hc.id, 'candidate.link', args.p_reset ? 'Link reset' : 'Link made'); }
+        if (args.p_reset || !hc.link_key) { hc.link_key = hKey(); hc.last_step_at = hc.updated_at = new Date().toISOString(); hLog(hc.id, 'candidate.link', args.p_reset ? 'Link reset' : 'Link created'); }
         return hOk({ key: hc.link_key, updated_at: hc.updated_at });
       }
       if (!hAdmin) return hNo('denied');
@@ -13704,7 +13704,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (hp && hp.role === args.p_role) return hOk({ same: true });
         var was = hp ? hp.role : null;
         if (hp) hp.role = args.p_role; else DB.hiring_people.push({ candidate_id: hc.id, team_member_id: ht.id, role: args.p_role, added_by: hMe.id, added_at: new Date().toISOString() });
-        var RW = { owner: 'Owner', interviews: 'Interviews' };
+        var RW = { owner: 'Owner', interviews: 'Interviewer' };
         hLog(hc.id, 'candidate.people', ht.name + (was ? ': ' + RW[was] + ' → ' : ' added as ') + RW[args.p_role]);
         if (!was && ht.id !== hMe.id) (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: ht.id, kind: 'hiring.added',
           title: 'You were added to a candidate', body: hc.position + ' · ' + RW[args.p_role] + ' · added by ' + hMe.name,
@@ -13715,7 +13715,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var rp = DB.hiring_people.filter(function (p) { return p.candidate_id === hc.id && p.team_member_id === args.p_member; })[0];
         if (!rp) return hNo('not-found');
         DB.hiring_people = DB.hiring_people.filter(function (p) { return p !== rp; });
-        hLog(hc.id, 'candidate.people', hName(rp.team_member_id) + ' removed (' + (rp.role === 'owner' ? 'Owner' : 'Interviews') + ')');
+        hLog(hc.id, 'candidate.people', hName(rp.team_member_id) + ' removed (' + (rp.role === 'owner' ? 'Owner' : 'Interviewer') + ')');
         return hOk({ role: rp.role });
       }
       if (name === 'hiring_remove') {
