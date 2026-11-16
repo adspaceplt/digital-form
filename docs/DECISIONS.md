@@ -10586,3 +10586,8 @@ letters, the Supplier Service Agreement) now prints 33.3pt in from each side,
 the Social Media Report's margin (10·φ^2.5, W ÷ φ⁶), one margin for every PDF
 the console draws on A4 but the Rate Card, which keeps the team's own layout.
 `pdfcases` measures the new bound.
+
+The same day the user saw the top stand wider than the sides: the letterhead
+kept its old fixed positions (the wordmark 48pt down). The wordmark and the
+monogram now start at the margin, a continuation page's hairline too, and the
+foot sits on it, so all four sides read alike.

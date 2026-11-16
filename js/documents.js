@@ -619,12 +619,16 @@
     };
     // The letterhead, in the reference's positions; returns the y under it.
     p.head = function () {
-      var T = function (top) { return H - top; };
+      /* The letterhead stands on the side margin (2026-11-16, the user:
+         the top read wider than the sides): the wordmark's capitals start
+         M down, everything under it keeps its place below it. */
+      var D = 58 - (M + 10);
+      var T = function (top) { return H - (top - D); };
       p.text('ADspace', M, T(58), 14, fonts.mark || fonts.bold);
       if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, T(70), 9, font, mute);
       var ly = T(83);
       String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s) { p.text(s, M, ly, 11); ly -= 12.5; });
-      if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); p.page.drawImage(logo, { x: R - mw, y: T(65), width: mw, height: mh }); }
+      if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); p.page.drawImage(logo, { x: R - mw, y: H - M - mh, width: mw, height: mh }); }
       var ry = T(92);
       [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { p.right(s, R, ry, 11); ry -= 12.5; });
       return Math.min(ly, ry) - 10;
@@ -633,7 +637,7 @@
        the top of the page and nowhere else: the foot carried a second one,
        which ADspace has dropped (the user, 2026-09-25). */
     p.footMark = function (i, n, size) {
-      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, size || 7.5, font, faint);
+      p.right('Page ' + (i + 1) + ' of ' + n, R, M, size || 7.5, font, faint);
     };
     return p;
   }
@@ -788,11 +792,11 @@
     pages.forEach(function (pg, i) {
       pn.page = pg;
       pn.footMark(i, n, FZ);
-      pn.text(serial, M, 30, FZ, font, pn.faint);
+      pn.text(serial, M, M, FZ, font, pn.faint);
       var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
       var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
       x = Math.min(x, pageStart - GAP - sentW);
-      pn.text(footWord, x, 30, FZ, font, pn.faint);
+      pn.text(footWord, x, M, FZ, font, pn.faint);
     });
   }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
@@ -886,7 +890,7 @@
       var text = pn.text, width = pn.width, right = pn.right, rule = pn.rule, wrap = pn.wrap;
       var pages = [];
       var page, y;
-      var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); y = H - 57; };
+      var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); y = H - M - 8; };
       var need = function (h) { if (y - h < 64) newPage(); };
       newPage();
 
@@ -902,7 +906,7 @@
          means a page lifted out of this letter still says which letter it is. */
       var foot = function (i, n) {
         pn.footMark(i, n);
-        text(doc.number, M, 30, 7.5, font, mute);
+        text(doc.number, M, M, 7.5, font, mute);
         /* The initials go where a hand rests to write them, which is the same
            side of the page the signature is on. They sit a row above the page
            number rather than beside it: the two are the only marks in the

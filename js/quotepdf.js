@@ -147,7 +147,7 @@
     var newPage = function () {
       pn.page = pdf.addPage([W, H]);
       pages.push(pn.page);
-      y = H - 50;
+      y = H - M;
       rule(y);
       y -= 14;
     };
