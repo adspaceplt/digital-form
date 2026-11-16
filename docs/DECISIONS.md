@@ -10685,3 +10685,14 @@ auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
 Settings row's figures are joined with no-break spaces, which a suite reads
 as such.
 
+### 2026-11-17 · Business settings quick fixes
+The Business settings audit (2026-11-16) found three slips, fixed together
+on the user's yes: Past dates on new tasks was checked on the page as 1 to
+60 days (the deadlines' range) while the database takes 0 to 365, so 0
+("none") and anything past 60 were refused (a kind of its own, `back`);
+`app_settings_read()` answered a page outside the team no `fx_sgd`, so a
+quotation downloaded from /quote/ for a Singapore lead billed in RM lost
+its approx. S$ line that the console's copy printed (CLIENT PAGES READ THE
+S$ RATE); and AI prices still asked a price per scene picture, which only
+the Gemini pictures before 2026-11-06 are priced at.
+

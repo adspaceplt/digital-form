@@ -644,6 +644,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   day (2026-11-16); it counts devices an hour, so a run soon after the
   flood check can meet the hour's limit.
 
+- `settings`: "every group is a card under its heading" and its phone
+  twin fail on main since the Personnel and Hiring releases added rows to
+  Portal (AutoCount, Hiring) the suite does not list (2026-11-17); fixed
+  with the Settings regroup.
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
