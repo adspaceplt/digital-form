@@ -1554,7 +1554,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Performance they are `app_settings` (`2026-10-05-app-settings.sql`, key,
   from_date, value; RLS on, no policy, no grant): `app_setting(key, at)` for
   functions, `app_settings_read()` for pages (anyone the team does not hold
-  is answered `sst_pct` and the term percentages alone, what a client page
+  is answered `sst_pct`, the term percentages and `fx_sgd` alone, what a client page
   prices with; `2026-10-19-settings-a-client-page-reads.sql`), `app_settings_set(p_from,
   p_values)` an admin's, from today (MYT) or later (`past`); a figure is the
   one in force on the day, the first row standing in for an earlier day
@@ -2650,8 +2650,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     as a quotation's (2026-10-22, SL-1, SL-3, SL-5 to SL-7).
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
-  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–17,
-    18–23 and 24+ months, each percentage a setting (`term_1_3` 25,
+  - Prefilled from `termPct(months, at)`: a term takes the longest commitment it
+    has reached (the user, 2026-11-17): Under 3 months (1 and 2), then the
+    3-, 6-, 12-, 18- and 24-month commitments (3 to 5, 6 to 11, 12 to 17,
+    18 to 23, 24 and more; `quote_term_pct`, `termPct`, the Rate Card's
+    3 months reading `term_4_5`), each percentage a setting (`term_1_3` 25,
     `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
     from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
     terms at `team.settings` alone, 0 for none; a quotation takes them, and

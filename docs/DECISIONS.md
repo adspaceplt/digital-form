@@ -10685,6 +10685,28 @@ auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
 Settings row's figures are joined with no-break spaces, which a suite reads
 as such.
 
+### 2026-11-17 · Business settings quick fixes
+The Business settings audit (2026-11-16) found three slips, fixed together
+on the user's yes: Past dates on new tasks was checked on the page as 1 to
+60 days (the deadlines' range) while the database takes 0 to 365, so 0
+("none") and anything past 60 were refused (a kind of its own, `back`);
+`app_settings_read()` answered a page outside the team no `fx_sgd`, so a
+quotation downloaded from /quote/ for a Singapore lead billed in RM lost
+its approx. S$ line that the console's copy printed (CLIENT PAGES READ THE
+S$ RATE); and AI prices still asked a price per scene picture, which only
+the Gemini pictures before 2026-11-06 are priced at.
+
+### 2026-11-17 · Quotation terms by commitment
+The user found the term bands in Tax and terms read as odd numbers (1 to 3,
+4 and 5, 6 to 11, 12 to 17, 18 to 23): a term is a commitment, and 3, 4 and
+5 months have reached the 3-month commitment and not the 6-month one. The
+bands became commitment tiers: Under 3 months (1 and 2), then the 3-, 6-,
+12-, 18- and 24-month commitments, each with its own percentage in Tax and
+terms (TERMS BY COMMITMENT). The keys stay; only a 3-month term moves from
+`term_1_3` to `term_4_5`, and the Rate Card PDF's 3 months reads `term_4_5`.
+Live figures on the day: every tier 0% but 18 months −8% and 24 months
+−10%, so no live quotation changes price; the user will set each tier.
+
 ### 2026-11-17 — Hiring outcomes: scores, the decision, the talent pool kept for a time (release H2 step C)
 HR-SPEC.md decisions 3 and 13. Scores are kept against a scorecard of the
 position (Standard for any other), 1 to 5 a criterion, because a single
