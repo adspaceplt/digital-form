@@ -364,7 +364,7 @@
         window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
-        say('The signed copy could not be read. Please try again.', 'err');
+        say('The signed copy could not be opened. Please try again.', 'err');
       });
     });
     return el;

@@ -12158,7 +12158,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         });
         Object.assign(xq, { withdrawn_at: qtNow.toISOString(), withdrawn_on: args.p_on, withdrawn_reason: xr, withdrawn_by: qtMe.name, withdrawn_lines: moved });
         qtLog(xq.brand, xq.ref + ' withdrawn from ' + (window.ADspaceClock ? ADspaceClock.date(args.p_on) : args.p_on) + ' · ' + xr +
-          (moved.length ? ' · ' + moved.length + (moved.length === 1 ? ' service line' : ' service lines') + ' back to To quote' : ''));
+          (moved.length ? ' · ' + moved.length + (moved.length === 1 ? ' service line' : ' service lines') + ' returned to To quote' : ''));
         return qtOk({ ok: true, lines: moved.length });
       }
       if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {

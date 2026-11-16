@@ -752,21 +752,21 @@
      quote where asked. Undo where it happened puts it all back. */
   var OUT_SAID = {
     denied: 'You do not have permission to withdraw quotations. Please ask an admin.',
-    'not-signed': 'Only a signed quotation is withdrawn. Cancel this one instead.',
+    'not-signed': 'Only a signed quotation can be withdrawn. Cancel this one instead.',
     withdrawn: 'This quotation is already withdrawn.',
-    'bad-date': 'Choose a day from its signing to today.',
+    'bad-date': 'Choose a date between the signing date and today.',
     'bad-reason': 'Enter a reason.'
   };
   function withdraw(q, ctx) {
     var today = window.ADspaceClock.today(), signedDay = window.ADspaceClock.day(q.signed_at);
     var fields = [{ name: 'on', label: 'Withdrawn from', type: 'date', required: true, value: today, min: signedDay, max: today },
       { name: 'reason', label: 'Reason', required: true }];
-    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Put back the service lines it confirmed', tick: true, value: 'on' });
+    if (q.reviewed_at) fields.push({ name: 'lines', label: 'Return its confirmed service lines to To quote', tick: true, value: 'on' });
     window.ADspaceConfirm.ask({
       title: 'Mark withdrawn?',
       body: q.ref + ' will read Withdrawn on its record and on the verify page. The signed copy is kept.',
       fields: fields, go: 'Mark withdrawn', tone: 'warn',
-      check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a day from its signing to today.' : ''; },
+      check: function (v) { return v.on < signedDay || v.on > today ? 'Choose a date between the signing date and today.' : ''; },
       wait: true
     }, function (v) {
       return ctx.db.rpc('quotation_withdraw', { p_id: q.id, p_on: v.on, p_reason: v.reason, p_lines: v.lines === 'on' }).then(function (r) {
@@ -774,7 +774,7 @@
         if (r.error || d.error) return OUT_SAID[d.error] || said(r.error || d.error);
         var n = d.lines || 0;
         ctx.reload(function () {
-          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' back to To quote.' : ''), function () {
+          ctx.undo(q.ref + ' withdrawn.' + (n ? ' ' + n + (n === 1 ? ' service line' : ' service lines') + ' returned to To quote.' : ''), function () {
             ctx.db.rpc('quotation_withdraw_undo', { p_id: q.id }).then(function (u) {
               var e = u.error || (u.data && u.data.error);
               if (e) { ctx.msg('qtMsg', said(e), 'err'); return; }

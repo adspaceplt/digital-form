@@ -120786,7 +120786,7 @@ begin
   insert into public.activity_log (actor, action, subject, detail)
   values (me.name, 'client.quotation', q.brand,
           q.ref || ' withdrawn from ' || public.register_day(p_on) || ' · ' || v_reason ||
-          case when v_n > 0 then ' · ' || v_n || case when v_n = 1 then ' service line' else ' service lines' end || ' back to To quote' else '' end);
+          case when v_n > 0 then ' · ' || v_n || case when v_n = 1 then ' service line' else ' service lines' end || ' returned to To quote' else '' end);
   return jsonb_build_object('ok', true, 'lines', v_n);
 end $$;
 revoke all on function public.quotation_withdraw(uuid, date, text, boolean) from public, anon;

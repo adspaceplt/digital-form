@@ -106,7 +106,7 @@
       closed: 'Cancelled', closedT: 'This quotation has been cancelled',
       decline: 'Decline', declineT: 'Decline this quotation', declineWhy: 'Reason', declineHint: 'Optional',
       declined: 'Declined', declinedT: 'You have declined this quotation',
-      withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn from {d}.',
+      withdrawn: 'Withdrawn', withdrawnP: 'This quotation was withdrawn with effect from {d}.',
       monthSub: 'Monthly subtotal', commit: '{n}-month term discount ({p}%)', termAdj: '{n}-month term surcharge ({p}%)', monthExcl: 'Monthly excl. SST',
       sst: 'SST {p}%', sstNone: 'SST not applicable', onceSub: 'One-off subtotal', onceTag: 'One-off',
       monthlyNone: 'Monthly', firstNone: 'First month', oneOffNone: 'One-off total',
@@ -119,6 +119,7 @@
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
         expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace. It will be sent to you on WhatsApp once ready.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
+        signed: 'This quotation has already been signed. Please contact ADspace on WhatsApp.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
       },
@@ -239,6 +240,7 @@
         'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
         expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 仍在审核本报价，审核完成后将通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
+        signed: '本报价已签署，请通过 WhatsApp 联系 ADspace。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
       },
@@ -1292,7 +1294,7 @@
     btn.disabled = true;
     db.rpc('quote_decline', { p_key: qKey(), p_reason: why.trim() || null }).then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[d.error] || t().err.any); return; }
+      if (r.error || d.error) { btn.disabled = false; say('qsSideMsg', t().err[{ closed: 'not-proceeding', unsent: 'not-sent' }[d.error] || d.error] || t().err.any); return; }
       Q.status = 'not_proceeding'; Q.stage = 'closed'; Q.declined = true;
       paint();
     }).catch(function () { btn.disabled = false; say('qsSideMsg', t().err.any); });
