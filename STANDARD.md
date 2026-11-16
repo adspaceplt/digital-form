@@ -626,6 +626,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
   suite needs a fixed time of day.
+- `sql`: "without one it is, as before" (a client's device following a
+  campaign once its passcode is cleared, `push_subscribe`) failed in 2 of 6
+  runs on claude/hr-personnel (2026-11-17, 00:28 and 00:43 MYT) and passed
+  in the other 4 and on main; the answer it got is not yet seen. Next run
+  that fails prints it (the check's detail).
 - `perfui`: "its headings are in title case and nothing crosses the margins"
   reads the letterhead's name, registration and address on page 1 past its
   margin since the letterhead moved to 33.3pt margins (#1158, #1159; found

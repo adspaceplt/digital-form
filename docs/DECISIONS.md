@@ -10646,3 +10646,21 @@ among its keys (harmless: no rail item sends it).
 
 ### 2026-11-17 · Every button that acts is shaded
 The user, 2026-11-16: on a white card a text-only button (Add service, Issue document, Show more) read as words, "we don't even know if it's a button". `.btn-quiet` now takes the tonal ground of `.btn`; words alone stay only for Cancel beside the view's blue primary, found by `:has(> .btn-primary, > .btn-go)` so no screen names it. Build quote's line buttons went first (#1163).
+
+### 2026-11-16 · Personnel records and the AutoCount HRMS download (Hiring and People H1)
+The user approved Hiring and People and split it across sessions; H1 holds
+decisions 8 to 11 of `tests/hr-templates/HR-SPEC.md`. Each colleague's employee
+record form now lives in the portal (Team's Personnel tab, the admin tool
+`team.personnel`; My records, Personnel for their own), its fields one list in
+the page and the database, AutoCount's lists in place of the paper form's
+Other. The salary is its own table, read only behind a caution step and the
+Performance master code. The AutoCount import is the user's own template
+filled from row 3 in the browser and checked before it is made. Found while
+building: the first form drew short lists as segments, which always hold an
+answer, so a first save stored a gender, a religion and language levels
+nobody chose; every list now opens on Choose (`tests/personnel.js`). The
+question sheet's `match` is a value typed back, not a pattern; the number
+fields take `type: 'number'` and a `check`. `team_roles_admin_guard` names
+DELETE in its body, so its restatement is the SQL Editor's part. Previous
+employers' salaries on the paper form are not asked (decision 10).
+
