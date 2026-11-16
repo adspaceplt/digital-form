@@ -304,6 +304,7 @@
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
+    code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -5013,7 +5014,8 @@ function cardSlugFree(name, self, email) {
     invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices'],
     'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
     'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
-    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link']
+    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
+    code: ['name', 'code', 'minutes', 'purpose']
   };
   function tplCheck(text, kind) {
     var re = /\{\s*([^{}]*?)\s*\}/g, m, list = TPL_FIELDS[kind] || [];
@@ -13496,6 +13498,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
+
+    if (name === 'code_email_template_get' || name === 'code_email_template_save') {
+      var ceNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return ceNo(window.__refuseRpc[name]);
+      if (!opsMe() || !opsGranted('team.settings', 'work')) return ceNo('denied');
+      DB.code_email_template = DB.code_email_template || { subject: 'Your ADspace code {purpose}',
+        body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
+        foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.' };
+      var ce = DB.code_email_template;
+      if (name === 'code_email_template_get') return Promise.resolve({ data: { subject: ce.subject, body: ce.body, foot: ce.foot }, error: null });
+      var ceS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), ceB = String(args.p_body || '').replace(/\r/g, '').trim(), ceF = String(args.p_foot || '').replace(/\r/g, '').trim();
+      if (ceS.length < 2 || ceS.length > 200) return ceNo('bad-subject');
+      if (ceB.length < 2 || ceB.length > 5000) return ceNo('bad-body');
+      if (ceF.length > 1000) return ceNo('foot-long');
+      if (/\{\s*code\s*\}/i.test(ceS)) return ceNo('code-in-subject');
+      if (!/\{\s*code\s*\}/i.test(ceB)) return ceNo('no-code');
+      var ceBad = tplCheck(ceS + '\n' + ceB + '\n' + ceF, 'code');
+      if (ceBad) return tplNo(ceBad);
+      var ceMv = [];
+      if (ce.subject !== ceS) ceMv.push('Subject: ' + ce.subject + ' → ' + ceS);
+      if (ce.body !== ceB) ceMv.push('Message');
+      if (ce.foot !== ceF) ceMv.push('Fine print');
+      if (ceMv.length) { ce.subject = ceS; ce.body = ceB; ce.foot = ceF; logAct('team.changed', 'Email templates', 'Verification code · ' + ceMv.join(' · ')); persist(); }
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'meeting_message_get' || name === 'meeting_message_save') {
       var mmMe = opsMe();
       var mmNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
