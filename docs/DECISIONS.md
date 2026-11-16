@@ -10768,3 +10768,17 @@ to Bukku's contact terms; the reference `{quotation ref} · {cycle day}`
 (` · Ads`) is searched before any invoice is made, so a second press or one
 made by hand is never doubled.
 
+
+- **2026-11-17, Sign-in and codes (SEAL-SPEC decision 9).** The signing code
+  quote-request emailed had its words in the function, the one email the
+  team could not read or change in Email templates. It is now Verification
+  code, one template (`code_email_template`) every code the portal sends
+  goes out in (the Employment Contract's code next), its fields {name},
+  {code}, {minutes} and {purpose}; {code} is refused in the subject, since a
+  phone shows the subject on its lock screen, and required in the message.
+  The two emails Supabase sends are listed beside it with no Edit: their
+  words live in Supabase's dashboard (docs/SIGN-IN-EMAILS.md). Found on the
+  phone screenshot: Sign-in and codes, a fourth small segment option, ran
+  past the sheet's edge, since a small segment's options never shrink and
+  `fit` measured only each option's own words; a track wider than its row
+  now wraps (`js/form.js`, `.seg.is-sm.is-wrap`).
