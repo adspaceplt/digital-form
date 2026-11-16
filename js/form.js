@@ -84,7 +84,18 @@
     /* A button cutting its words with an ellipsis reports no overflow of its
        own (Chromium, 2026-10-29: "Unavaila…" read as fitting), so the words
        are measured, against the room inside the padding. */
+    /* A small segment's options never shrink, so a track wider than the
+       row it stands in cuts its last option at the edge instead (2026-11-17:
+       Sign-in and codes at 390); a row that scrolls sideways is left so. */
+    var overRow = function () {
+      var par = seg.parentNode;
+      if (!par || !par.getBoundingClientRect) return false;
+      var cs = getComputedStyle(par);
+      if (/auto|scroll/.test(cs.overflowX)) return false;
+      return seg.getBoundingClientRect().right > par.getBoundingClientRect().right - (parseFloat(cs.paddingRight) || 0) - (parseFloat(cs.borderRightWidth) || 0) + 0.5;
+    };
     var cutAt = function () {
+      if (overRow()) return true;
       return Array.prototype.some.call(seg.children, function (b) {
         if (b.scrollWidth > b.clientWidth + 1) return true;
         var cs = getComputedStyle(b), px = function (k) { return parseFloat(cs[k]) || 0; };
