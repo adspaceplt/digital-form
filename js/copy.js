@@ -79,7 +79,7 @@
     var done = function () { say(btn, word || 'Copied'); };
     /* Whatever happens, the button answers: a control that says nothing when
        pressed reads as broken, and this portal has no browser dialogs. */
-    var fell = function () { say(btn, legacy(text) ? (word || 'Copied') : 'Press Ctrl C'); };
+    var fell = function () { say(btn, legacy(text) ? (word || 'Copied') : (/Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '') ? 'Press ⌘ C' : 'Press Ctrl C')); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(done).catch(fell);
     } else {

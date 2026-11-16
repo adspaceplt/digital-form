@@ -1813,7 +1813,7 @@
           return { fig: String(d.waiting.length), sub: parts.length ? parts.slice(0, 2).join(', ') : 'Nothing waiting' };
         }, 'wait') }].forEach(function (t) { tile(grid, t); });
     }
-    /* The Assistant as one field (Ctrl + J): what is typed opens it with the
+    /* The Assistant as one field (⌘ J): what is typed opens it with the
        question asked; two suggested questions under it. */
     function ask(box, d) {
       var AG = window.ADspaceAgent;
@@ -1823,7 +1823,7 @@
       wrap.innerHTML = '<form class="ovw-ask-box" id="ovwAsk"><span class="ovw-ask-ai" aria-hidden="true">' +
         ((window.ADspaceConfirm && window.ADspaceConfirm.ai && window.ADspaceConfirm.ai.glyph) || '') + '</span>' +
         '<input class="ovw-ask-field" id="ovwAskQ" type="text" autocomplete="off" aria-label="Ask about your clients and work" placeholder="Ask about your clients and work">' +
-        '<kbd class="ovw-ask-key">Ctrl J</kbd></form><div class="ovw-ask-try" id="ovwAskTry"></div>';
+        '<kbd class="ovw-ask-key">' + (/Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '') ? '⌘ J' : 'Ctrl J') + '</kbd></form><div class="ovw-ask-try" id="ovwAskTry"></div>';
       box.appendChild(wrap);
       wrap.querySelector('form').addEventListener('submit', function (e) {
         e.preventDefault();

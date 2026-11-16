@@ -1,6 +1,6 @@
 /* One search across the console (the user, 2026-09-27).
  *
- * A control in the console head opens a panel; Cmd / Ctrl + K opens it from
+ * A control in the console head opens a panel; ⌘ K opens it from
  * anywhere, and so does "/" when no field has the caret. At a desk the panel
  * drops from the head; on a phone it is the sheet every other form is, from
  * the floor, full height. It opens and shuts through js/sheet.js, so Escape,
@@ -653,7 +653,7 @@
     if (row && Number(row.getAttribute('data-n')) !== active) setActive(Number(row.getAttribute('data-n')));
   });
 
-  /* Cmd / Ctrl + K from anywhere; "/" when the caret is in no field. Neither
+  /* ⌘ K (Ctrl + K off a Mac) from anywhere; "/" when the caret is in no field. Neither
      takes over another sheet that is open, which may hold typing. */
   function typing(el) {
     return el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));

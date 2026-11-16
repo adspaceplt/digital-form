@@ -1,7 +1,7 @@
 /* ADspace Digital Portal — the Assistant (2026-11-13; the user: "ok approve,
  * all colleagues, build all phases", after the Assistant mockup).
  *
- * A colleague asks in words from Ask in the console's head (Ctrl + J). This
+ * A colleague asks in words from Ask in the console's head (⌘ J). This
  * page holds the conversation and posts it to `portal-agent`, which asks
  * Claude with a fixed set of tools and hands back its answer. Every tool
  * Claude asks for runs here, through the colleague's own sign-in:
