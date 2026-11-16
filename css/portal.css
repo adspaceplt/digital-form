@@ -2016,6 +2016,12 @@ dd > .linkbtn::before { inset: 3px 0; }
 :root[data-face="client"] .verify-out span { font-size: 16px; }
 .verify-out .tone { font-size: 11.5px; color: inherit; }
 .verify-out .verify-need { color: var(--err); }
+/* A sealed quotation's Document ID and its file check (SEAL-SPEC decision 6). */
+.verify-out .verify-id { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+:root[data-face="client"] .verify-out .verify-id { font-size: 12.5px; }
+.verify-file { margin-top: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.verify-out .verify-file-out { font-size: 14px; }
+:root[data-face="client"] .verify-out .verify-file-out { font-size: 14px; }
 /* The verify page is a form, not a notice (2026-10-31, VER-1 to VER-3): on
    the scale (the title 8 over its line, the field 24 under it, the answer
    24 under that, 32 above and below), its line at the form's 14 as the
