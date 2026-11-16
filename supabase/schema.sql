@@ -119139,6 +119139,11 @@ alter table public.departments add column if not exists ac_code text;
 update public.departments set ac_code = 'CRE' where key = 'creative' and ac_code is null;
 update public.departments set ac_code = 'MKT' where key = 'marketing' and ac_code is null;
 update public.departments set ac_code = 'MGT' where key = 'management' and ac_code is null;
+/* AutoCount's MGT is Management (the admins): made once where no
+   department holds the name or the code, out of the prize. */
+insert into public.departments (key, name, active, in_prize, position, ac_code)
+select 'management', 'Management', true, false, coalesce((select max(d.position) from public.departments d), 0) + 1, 'MGT'
+ where not exists (select 1 from public.departments d where d.key = 'management' or lower(d.name) = 'management' or d.ac_code = 'MGT');
 do $$
 begin
   if not exists (select 1 from pg_constraint where conname = 'departments_ac_code_check') then
