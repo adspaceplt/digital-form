@@ -6225,7 +6225,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     Starts and Ends held inside the period, else the reporting range. Rates:
     a Hook or Hold rate column's formula is found from the rows; without one,
     hook is 3-second plays over impressions and hold ThruPlays over 3-second
-    plays. Rows from two ad accounts are refused. The result type comes from
+    plays. Rows from two ad accounts are refused. With no Objective column an ad's objective is the one its result type names (Reach and ad recall Awareness, Leads Leads, link clicks Traffic; `objectiveOfResult`), the sheet's Default objective only where none is named (2026-11-16, Laman Waringin's reach ads filed as Leads). The result type comes from
     the first row naming one (never `mixed`), read as its word
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF

@@ -10591,3 +10591,12 @@ The same day the user saw the top stand wider than the sides: the letterhead
 kept its old fixed positions (the wordmark 48pt down). The wordmark and the
 monogram now start at the margin, a continuation page's hairline too, and the
 foot sits on it, so all four sides read alike.
+
+### 2026-11-16 · An ad's objective from its result type; the head tick takes every ad
+Laman Waringin's October import filed its reach and ad recall ads under Leads:
+the export (raw .xlsx, pasted) carried no Objective column, and every row took
+the sheet's Default objective. An ad now takes the objective its result type
+names, from any of its rows, the default only where none is named. The same
+day the Ads step's head tick ticked one ad: each row's change recounted the
+head tick, which read part-ticked after the first and stopped the loop (the
+Posts step had been fixed so before). `adsreport` holds both.
