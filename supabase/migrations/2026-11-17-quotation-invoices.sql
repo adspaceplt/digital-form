@@ -210,6 +210,8 @@ begin
   if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
   if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
   if q.removed_at is not null then return jsonb_build_object('error', 'removed'); end if;
+  -- A signed quotation withdrawn (QUOTATION WAYS OUT) makes no further invoice.
+  if q.withdrawn_at is not null then return jsonb_build_object('error', 'withdrawn'); end if;
   v_start := public.quotation_start(q.id);
   if v_start is null then return jsonb_build_object('error', 'no-start'); end if;
   if p_cycle > public.quotation_cycles(q.id) then return jsonb_build_object('error', 'bad-request'); end if;

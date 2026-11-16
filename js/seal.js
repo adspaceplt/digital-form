@@ -124,6 +124,7 @@
     else if (st.step === 'returned') { who = 'by ' + (st.by || ''); if (st.note) meta.push(st.note); }
     else if (st.step === 'confirmed') who = 'by ' + (st.by || '') + (st.role ? ', ' + st.role : '');
     else if (st.step === 'sealed') { who = st.by ? 'by ' + st.by : ''; if (st.note) meta.push('SHA-256 ' + st.note.slice(0, 4) + '…' + st.note.slice(-4)); }
+    else if (st.step === 'declined') { who = 'by the client'; if (where(st)) meta.push(where(st)); }
     else if (st.by) who = 'by ' + st.by;
     if (st.note && ['issued', 'withdrawn', 'declined'].indexOf(st.step) >= 0) meta.push(st.note);
     return '<li class="seal-step"><span class="seal-when">' + esc(when(st.at)) + '</span><span class="seal-what"><b>' + esc(head) + '</b>' +

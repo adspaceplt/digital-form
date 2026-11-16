@@ -61,12 +61,17 @@
        the Register's to issue or to correct: it is issued from the record
        that holds the service lines it prices. */
     if (family === 'offer') return may('clients.documents', level);
+    /* A quotation is read from `quotations` itself, at Clients: Quotations
+       (QUOTATION WAYS OUT, 2026-11-17), and acted on from the client's
+       record. */
+    if (family === 'quotation') return may('clients.quotes', level);
     return may('register.documents', level) || may('clients.documents', level);
   }
   /* The part a row's acts name in `data-need`, on the Register. */
   function needOf(family) {
     if (family === 'hr') return 'register.hr';
     if (family === 'offer') return 'clients.documents';
+    if (family === 'quotation') return 'clients.quotes';
     if (family === 'supplier') return 'suppliers';
     /* A client letter answers to either part (register_may): name the one
        granting more, so a row offers what the database would allow. */
@@ -101,9 +106,9 @@
 
   // ---- The list ------------------------------------------------------------
   var state = { docs: null, clients: [], members: [], suppliers: [], types: [], me: null, find: '', sort: 'newest', err: null };
-  var FAMILIES = ['quote_cover', 'offer', 'client', 'supplier', 'hr', 'other'];
+  var FAMILIES = ['quotation', 'quote_cover', 'offer', 'client', 'supplier', 'hr', 'other'];
   var BAND = {
-    quote_cover: 'Quotation Covers', offer: 'Letters of Offer',
+    quotation: 'Quotations', quote_cover: 'Quotation Covers', offer: 'Letters of Offer',
     client: 'Client Letters', supplier: 'Supplier Letters', hr: 'HR Letters', other: 'Other documents'
   };
 
@@ -215,8 +220,10 @@
       LET.listAll(function (rows, err) {
         if (err) { state.err = err; UI.failLine(box, 'Documents', err.message || String(err), load); return; }
         perfRows(function (pr) {
-          state.docs = (rows || []).concat(pr);
-          paint();
+          quoteRows(function (qr) {
+            state.docs = (rows || []).concat(pr, qr);
+            paint();
+          });
         });
       });
     });
@@ -235,6 +242,32 @@
         return { id: 'perf-' + x.id, serial: x.serial, family: 'hr', kind: 'Monthly Performance Record',
                  source: 'perf', member_id: x.member_id, issued_at: x.released_at || x.downloaded_at,
                  recipient: { name: x.name }, period: x.period, created_at: x.downloaded_at };
+      }));
+    }).catch(function () { then([]); });
+  }
+
+  /* Every quotation that left ADspace (sent out or signed), read from the
+     quotations themselves, never a copy (SEAL-SPEC decision 7): its state
+     as the client's record says it, the company that signed it, and its
+     sealed copy to download. A refused read lists none. */
+  function quoteRows(then) {
+    if (!mayFamily('quotation', 'view') || !window.ADspaceAPI || !window.ADspaceAPI.readPages) { then([]); return; }
+    var COLS = 'id, ref, client_id, brand, status, source, issued_at, valid_until, contact, signed_at, signed, reviewed_at, reviewed_by, ' +
+      'submitted_at, reviewer_name, returned_at, returned_by, removed_at, sent_out_at, released_at, replaces, sealed_at, declined_at, withdrawn_at, withdrawn_on';
+    window.ADspaceAPI.readPages(function () {
+      return db.from('quotations').select(COLS).is('removed_at', null).order('issued_at', { ascending: false });
+    }).then(function (r) {
+      var all = (!r.error && r.data) || [];
+      var rows = all.filter(function (q) { return q.sent_out_at || q.signed_at; });
+      var revised = {};
+      all.forEach(function (q) { if (q.replaces) revised[q.replaces] = q.ref; });
+      then(rows.map(function (q) {
+        q._revised = revised[q.id] || null;
+        var st = window.ADspaceQuotes && window.ADspaceQuotes.stateOf ? window.ADspaceQuotes.stateOf(q) : ['', ''];
+        var co = (q.signed && q.signed.company && q.signed.company.legal_name) || '';
+        return { id: 'qt-' + q.id, quote: q, serial: q.ref, family: 'quotation', kind: 'Quotation', source: 'quote',
+                 client_id: q.client_id, issued_at: q.issued_at, created_at: q.issued_at, state: st,
+                 recipient: { name: co || (q.contact && q.contact.name) || '' } };
       }));
     }).catch(function () { then([]); });
   }
@@ -295,6 +328,47 @@
       }));
     });
   }
+  /* A quotation's row (SEAL-SPEC decision 7): the reference to copy, its
+     state as a status, the brand, the company, the day; its ⋯ opens the
+     client's record, and once sealed downloads the stored copy. */
+  function quoteRow(d, own) {
+    var q = d.quote, st = d.state || ['', ''];
+    var el = document.createElement('div');
+    el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (st[1] === 'is-off' ? ' is-off' : '');
+    el.setAttribute('data-doc', d.id);
+    el.innerHTML =
+      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button></b>' +
+        '<small>' + (st[0] ? '<span class="chip-state ' + esc(st[1]) + '">' + esc(st[0]) + '</span>' : esc(d.kind)) + '</small></span>' +
+      (own ? '' : '<span class="reg-brand">' + (brandOf(d) || q.brand ? esc(brandOf(d) || q.brand) : '<span class="muted">—</span>') + '</span>') +
+      '<span class="reg-who">' + (recipientOf(d) ? esc(recipientOf(d)) : '<span class="muted">—</span>') + '</span>' +
+      '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
+      '<span class="team-act"><button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([
+          [q.sealed_at && { a: 'sealed', label: 'Download' }, { a: 'record', label: 'Open client record' }]]) + '</div></span>';
+    wireMenu(el);
+    var cp = el.querySelector('[data-a="copy"]');
+    if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
+    var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(b); }); };
+    on('record', function () {
+      var c = clientOf(d.client_id);
+      var key = (window.ADspaceCRM && c && window.ADspaceCRM.keyOf(c)) || d.client_id;
+      history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(key) + '&tab=services');
+      if (bridge.show) bridge.show('clients');
+    });
+    /* The sealed copy, as stored: never drawn again (SIGNED DOCUMENT SEAL). */
+    on('sealed', function () {
+      var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
+      db.functions.invoke('sign-download', { body: { quotation: q.id } }).then(function (r) {
+        var b = r && r.data;
+        if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('unread');
+        window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
+      }).catch(function () {
+        if (tab) try { tab.close(); } catch (x) {}
+        say('The signed copy could not be opened. Please try again.', 'err');
+      });
+    });
+    return el;
+  }
   /* Newest first is issued date, then when the row was added, so a row with
      no date sits under the dated ones rather than among them. */
   function sorter() {
@@ -320,6 +394,7 @@
        away, where the consequence can be counted. */
     var offer = d.family === 'offer';
     var perf = d.source === 'perf';
+    if (d.family === 'quotation') return quoteRow(d, own);
     var el = document.createElement('div');
     /* `own` is the client record's pane, where every row is that client's,
        so the brand would say the same thing on every line. */
