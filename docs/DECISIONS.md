@@ -10750,6 +10750,25 @@ found while mapping the live access were released ahead of the restructure.
    three-argument `client_row_seen` are dropped in the SQL Editor part, so a
    later restatement cannot fall back to a name.
 
+### 2026-11-17 · An approved quotation's invoices made in Bukku as drafts
+Finance retyped each approved quotation into Bukku every month. The user
+chose option B: the portal prepares each billing cycle's invoice from the
+quotation and makes it in Bukku as a draft, finance approving it there.
+Decided by the user: draft only; a line's product found by its Rate Card
+SKU, whose Bukku product carries the income account; the advertising budget
+its own invoice to a debtor contact, with no SST; a cycle starts on the day
+the services start and runs a full month (the 16th to the 15th), the first
+never pro-rated; Clients: Billing at Work makes them. Decided by me under
+the user's authorisation (2026-11-17, "anything that needs my decision, you
+may proceed"): the budget's account is a typed code in Settings, Money,
+Bukku (the accounts list Bukku answers holds expense accounts alone); the
+debtor contact is chosen a client, else the client's own contact; a custom
+line with no SKU is refused by name rather than guessed; due dates are left
+to Bukku's contact terms; the reference `{quotation ref} · {cycle day}`
+(` · Ads`) is searched before any invoice is made, so a second press or one
+made by hand is never doubled.
+
+
 - **2026-11-17, Sign-in and codes (SEAL-SPEC decision 9).** The signing code
   quote-request emailed had its words in the function, the one email the
   team could not read or change in Email templates. It is now Verification

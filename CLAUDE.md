@@ -309,6 +309,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED and VERIFICATION CODE TEMPLATE sections | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
 | `js/bukku.js`, `supabase/functions/bukku-sync/`, the BUKKU CONTACTS section | bukku, bukkufn, bukkusql, sql, then `ui` |
+| Quotation invoices (the QUOTATION INVOICES section, `bukku-sync` `invoicecreate`, `#qiSheet`) | quotes, bukkufn, sql, settings, then `ui` |
 | Billing from Bukku (the BILLING FROM BUKKU section, `bukku-sync` `read`/`save`/`hold`/`nightly`) | bukku, bukkufn, entitysql, entities, crm, sql, then `ui` |
 | Billing entities (`client_entities_list`, the BILLING ENTITIES section, `#crmEntities`), Bill to (the BILL TO section) | entities, entitysql, lettersql, letter, docs, crm, billgate, bukku, search, sql, then `ui` |
 | The MEETING MESSAGE section, `clientMessage` (`js/ops.js`), Settings' Meeting message | meetmsgsql, work, settings, sql, demo |
@@ -3681,6 +3682,24 @@ Each line is a rule that broke once. Its reason is in the archive.
   `invoice_recipient_options` does not hold (`bad-recipient`, `bad-copy`)
   and greets the contact chosen (the finance email Sir or Madam); every
   copy is sent (`cc_list`) and filed in `cc_email`, comma separated.
+- Quotation invoices (`2026-11-17-quotation-invoices.sql`; the user,
+  2026-11-17, option B): an approved quotation's row act Invoices
+  (Clients: Billing View) opens `#qiSheet`, a row a billing cycle of the
+  term from the day its confirmed lines start (`quotation_start`; the 16th
+  runs to the 15th, never pro-rated) and a row a cycle for the advertising
+  budget; Create in Bukku (Billing Work) asks `quotation_invoice_prep` as
+  the caller (`not-reviewed`, `no-start`, `not-linked`, `invoiced`,
+  `creating` for ten minutes, `no-budget-account`, `no-tax-code`), then
+  `bukku-sync` `invoicecreate` searches Bukku for an invoice holding the
+  reference (`{ref} · {cycle day}`, ` · Ads`) and makes none twice, else
+  makes one draft: each line on the Bukku product of its Rate Card SKU
+  (`no-sku`, `no-product` name the line), its income account the
+  product's, its rate after the line's own term percentage, its tax code
+  Bukku's; the budget on the account code set in Settings, Money, Bukku
+  (`bukku_invoice_set`), no tax, to the contact chosen for the client
+  (`client_ad_debtor_set`), else the client's own; filed by
+  `quotation_invoice_done` (`client.billing`). `quotation_invoices` and
+  `client_ad_debtors` have RLS on, no policy, no grant.
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
 - The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
