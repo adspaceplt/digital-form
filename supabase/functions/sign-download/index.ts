@@ -21,6 +21,13 @@
  * with the upload key and streamed back, so the page saves it under its own
  * name exactly as it went out.
  *
+ * A signed quotation's sealed copy (2026-11-17) comes back the same way: a
+ * colleague sends { quotation } with their sign-in (`quotation_seal_key`
+ * answers them as themselves); the client's link sends { quoteKey } and the
+ * service role reads the quotation the link shows (`quote_seal_key`, once
+ * ADspace has confirmed it). The key is always under the quotation's own
+ * client's folder.
+ *
  * Once CloudFront serves `private/*` behind the portal's key group
  * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
  * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
@@ -112,7 +119,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string;
+  let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string;
     personnel?: { member?: string | null; kind?: string } };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -121,18 +128,11 @@ Deno.serve(async (req) => {
   let stored = '';
   let owner = '';
 
-  if (body.reportVersion) {
-    // A report's kept PDF: the database answers the caller as themselves.
-    const auth = req.headers.get('Authorization') ?? '';
-    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
-    const version = String(body.reportVersion);
-    if (!UUID.test(version)) return json({ error: 'bad_version' }, 400, origin);
-    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
-    const { data, error } = await supa.rpc('sm_report_file_key', { p_version: version });
-    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
-    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
-    const key = String(data.key || '');
+  /* A kept file comes back as bytes, read from the bucket with the upload
+     key, so the page saves it under its own name exactly as it went out. */
+  const stream = async (key: string, owner?: string) => {
     if (!PRIVATE_KEY.test(key)) return json({ error: 'bad_key' }, 400, origin);
+    if (owner && !key.startsWith(`private/${owner}/`)) return json({ error: 'bad_key' }, 400, origin);
     const aws = new AwsClient({
       accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
       secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
@@ -145,6 +145,45 @@ Deno.serve(async (req) => {
       status: 200,
       headers: { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'no-store', ...cors(origin) }
     });
+  };
+  // deno-lint-ignore no-explicit-any
+  const kept = (data: any, error: unknown, owned = false) => {
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
+    return stream(String(data.key || ''), owned ? String(data.client || '') : undefined);
+  };
+
+  if (body.reportVersion) {
+    // A report's kept PDF: the database answers the caller as themselves.
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const version = String(body.reportVersion);
+    if (!UUID.test(version)) return json({ error: 'bad_version' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('sm_report_file_key', { p_version: version });
+    return kept(data, error);
+  }
+
+  /* A signed quotation's sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17):
+     a colleague names the quotation and the database answers them as
+     themselves; the client's link names its key and the service role reads
+     the quotation that link shows, once ADspace has confirmed it. Either
+     way the file is the quotation's own client's. */
+  if (body.quotation) {
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const id = String(body.quotation);
+    if (!UUID.test(id)) return json({ error: 'bad_quotation' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('quotation_seal_key', { p_id: id });
+    return kept(data, error, true);
+  }
+  if (body.quoteKey) {
+    const qk = String(body.quoteKey);
+    if (!/^[a-z0-9]{8}$/.test(qk)) return json({ error: 'bad_key' }, 400, origin);
+    const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data, error } = await admin.rpc('quote_seal_key', { p_key: qk });
+    return kept(data, error, true);
   }
 
   if (body.personnel) {

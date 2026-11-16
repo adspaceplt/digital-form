@@ -10707,3 +10707,19 @@ terms (TERMS BY COMMITMENT). The keys stay; only a 3-month term moves from
 Live figures on the day: every tier 0% but 18 months −8% and 24 months
 −10%, so no live quotation changes price; the user will set each tier.
 
+### 2026-11-17 — Hiring outcomes: scores, the decision, the talent pool kept for a time (release H2 step C)
+HR-SPEC.md decisions 3 and 13. Scores are kept against a scorecard of the
+position (Standard for any other), 1 to 5 a criterion, because a single
+mark per candidate could not be compared across interviewers; every
+colleague on the candidate reads them, an Interviewer included, since
+decision 3 has them score. The decision is the part's or the Owner's, with
+Reopen as its way back. The talent pool needs the candidate's own
+agreement (PDPA 2010): Keep in talent pool asks on their page, and only an
+agreement starts the 12 months; an unanswered question ends with the link,
+and a closed candidate is removed after a keep period the team sets. SQL
+cannot remove a Storage object, so a removed candidate's CV path is queued
+and the part's console takes the files out once a visit.
+
+### 2026-11-17 · Signed documents sealed, quotations first
+The user approved specs/SEAL-SPEC.md and its mockup on 2026-11-17: a signed and approved quotation is drawn once, stored privately with its SHA-256 and Document ID, and never drawn again; its last page is the Record of this Document. A file cannot print its own hash, so the signed pages are drawn and hashed first, that hash printed on the Record page appended after them, and the whole file's hash stored beside it for /verify/'s file check (step 2). The foot of every signed page counts the Record page (`letterFoot` takes the total). Built as one shared module (`js/seal.js`, `signing_steps`) so the Hiring session reuses it for the Employment Contract. The device is what the browser reports; a browser never gives a MAC address. The link's Opened step is kept once in six hours an address and device and never for a colleague, so a refresh does not fill the record. The client page's Accepted card no longer names the company or offers a second Download: the mockup's words, and one download once sealed.
+

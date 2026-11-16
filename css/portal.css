@@ -9733,6 +9733,10 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-sfacts { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; font-size: 14px; }
 .qs-sfacts dt { color: var(--ink-mute); }
 .qs-sfacts dd { margin: 0; overflow-wrap: anywhere; }
+/* A signed quotation's state (SIGNED DOCUMENT SEAL, 2026-11-17): the
+   status, then who signed or confirmed it and the Document ID. */
+.qs-sstate { margin: 0; }
+.qs-sline { margin: 0; color: var(--ink-soft); overflow-wrap: anywhere; }
 @media (min-width: 900px) {
   .qs-quote { grid-template-columns: minmax(0, 1.618fr) minmax(0, 1fr); gap: 32px; }
   .qs-quote.is-single { grid-template-columns: minmax(0, 1fr); max-width: 560px; }

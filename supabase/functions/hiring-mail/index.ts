@@ -5,7 +5,11 @@
  *   { interviewId, kind: 'invite' }   the times offered, with the button to
  *                                     the candidate's own page to choose one;
  *   { interviewId, kind: 'confirm' }  the time approved, with its Google Meet
- *                                     or the office's address.
+ *                                     or the office's address;
+ *   { candidateId, kind: 'outcome' }  the decision (step C): Keep in talent
+ *                                     pool asks the candidate to agree on
+ *                                     their page; Not proceed thanks them.
+ *                                     Never the team's note on the decision.
  *
  * Every question is asked as the caller (`hiring_mail_prepare`, the part or
  * the candidate's Owner); the address, the words' facts and the link are the
@@ -36,6 +40,30 @@ function button(label: string, href: string): string {
 /* The words, as a formal letter (DESIGN.md §6): a fact a paragraph. */
 export function words(m: Record<string, any>): { subject: string; heading: string; body: string; block: string } {
   const where = m.mode === 'online' ? 'by Google Meet' : 'at our office';
+  const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
+  if (m.kind === 'pool') {
+    return {
+      subject: 'Your application: ' + m.position,
+      heading: 'Your application',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given us. ' +
+        'There is no suitable opening for you at this time. ADspace would like to keep your application for ' + m.months +
+        ' months, so that we may contact you about future positions.\n\n' +
+        'Please indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
+      block: button('Respond on your page', PAGE + m.key)
+    };
+  }
+  if (m.kind === 'not') {
+    return {
+      subject: 'Your application: ' + m.position,
+      heading: 'Your application',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given us. ' +
+        'After careful consideration, ADspace will not be proceeding with your application.\n\n' +
+        'We wish you every success in your search.\n\n' + close,
+      block: ''
+    };
+  }
   if (m.kind === 'invite') {
     const times = (m.times || []).map((t: string) => '• ' + t + ' (Malaysia time)').join('\n');
     return {
@@ -70,15 +98,17 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
-  let b: { interviewId?: string; kind?: string };
+  let b: { interviewId?: string; candidateId?: string; kind?: string };
   try { b = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
-  const id = String(b.interviewId || ''), kind = String(b.kind || '');
-  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  const kind = String(b.kind || ''), outcome = kind === 'outcome';
+  const id = String((outcome ? b.candidateId : b.interviewId) || '');
+  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'outcome'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: auth } } });
-  const prep = await db.rpc('hiring_mail_prepare', { p_interview: id, p_kind: kind });
+  const prep = outcome ? await db.rpc('hiring_outcome_mail_prepare', { p_id: id })
+    : await db.rpc('hiring_mail_prepare', { p_interview: id, p_kind: kind });
   if (prep.error) return json({ error: 'denied' }, 200, origin);
   const m = prep.data as Record<string, any>;
   if (!m || m.error) return json({ error: (m && m.error) || 'denied' }, 200, origin);
@@ -87,11 +117,14 @@ Deno.serve(async (req) => {
   const w = words(m);
   const msg: Record<string, unknown> = {
     from: FROM(), to: [m.to], subject: w.subject,
-    html: layout({ heading: w.heading, body: w.body, block: w.block, preheader: w.subject }),
+    html: layout({ heading: w.heading, body: w.body, block: w.block || undefined, preheader: w.subject }),
     text: w.body.replace('{invoices}', PAGE + m.key)
   };
   if (EMAIL.test(String(m.reply_to || ''))) msg.reply_to = m.reply_to;
-  const { status, error } = await resend(msg, 'hire-' + kind + '-' + id, secret('RESEND_API_KEY'));
-  await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });
+  /* A decision's key carries the decision's kind, so a reopened candidate
+     decided again is emailed again. */
+  const { status, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id, secret('RESEND_API_KEY'));
+  if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
+  else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);
 });

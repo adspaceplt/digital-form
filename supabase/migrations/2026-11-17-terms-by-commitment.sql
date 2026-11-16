@@ -51,7 +51,7 @@ declare
     'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
     'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
     'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links',
-    'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days'];
+    'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days', 'hiring_pool_months', 'hiring_keep_months'];
   v_moved text[] := '{}';
   v_drop boolean; v_fw text; v_fv text;
 begin
@@ -82,6 +82,8 @@ begin
        or (v_k = 'task_past_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
        or (v_k = 'hiring_invite_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
        or (v_k = 'hiring_link_days' and (v_v < 7 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_pool_months' and (v_v < 1 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_keep_months' and (v_v < 1 or v_v > 36 or v_v <> trunc(v_v)))
        or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
        or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
        or (v_k in ('creator_pay_days_myr', 'creator_pay_days_other') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
@@ -127,7 +129,7 @@ begin
         when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
         when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
         when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
-        when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'hiring_pool_months' then 'Talent pool kept' when 'hiring_keep_months' then 'Closed candidates kept' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
         when 'quote_reply_days' then 'Contact within'
         when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
         when 'wa_repeat_hours' then 'WhatsApp sent again'
@@ -151,7 +153,7 @@ begin
         when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days') then ' days'
         when v_k in ('quote_reply_days', 'creator_pay_days_myr', 'creator_pay_days_other') then ' working days'
         when v_k = 'quote_wa_day' then ' per day'
-        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_k in ('health_keep_months', 'hiring_pool_months', 'hiring_keep_months', 'health_leaver_months') then ' months'
         when v_pre <> '' then '' else '%' end;
       v_fw := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links') then case when v_was = 1 then 'On' else 'Off' end
               when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set') else coalesce(v_pre ||
@@ -179,16 +181,5 @@ end $$;
 revoke all on function public.app_settings_set(date, jsonb) from public, anon;
 grant execute on function public.app_settings_set(date, jsonb) to authenticated;
 
-/* One interview as the console reads it. */
-create or replace function public.hiring_interview_row(i public.hiring_interviews)
-returns jsonb language sql stable security definer set search_path = public as $$
-  select jsonb_strip_nulls(jsonb_build_object('id', i.id, 'round', i.round, 'slots', to_jsonb(i.slots), 'minutes', i.minutes,
-    'mode', i.mode, 'note', i.note, 'state', i.state, 'picked', i.picked, 'picked_at', i.picked_at,
-    'candidate_note', i.candidate_note, 'invited_at', i.invited_at,
-    'invited_by', (select t.name from public.team_members t where t.id = i.invited_by),
-    'approved_at', i.approved_at, 'approved_by', (select t.name from public.team_members t where t.id = i.approved_by),
-    'meeting_link', i.meeting_link, 'invite_mail', i.invite_mail, 'invite_mail_at', i.invite_mail_at,
-    'confirm_mail', i.confirm_mail, 'confirm_mail_at', i.confirm_mail_at));
-$$;
 -- END OF TERMS BY COMMITMENT ------------------------------------------------
 select public.functions_tidy();

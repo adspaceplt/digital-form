@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261117q">
-<link rel="stylesheet" href="/css/console.css?v=20261117q">
+<link rel="stylesheet" href="/css/portal.css?v=20261117u">
+<link rel="stylesheet" href="/css/console.css?v=20261117u">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,7 +125,7 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261113"><\/script><script src="/demo/engine.js?v=20261117r"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261113"><\/script><script src="/demo/engine.js?v=20261116r"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
@@ -133,7 +133,7 @@
 <script src="/js/demo.js?v=20261115d"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261113zzh"></script>
-<script src="/js/clock.js?v=20261112z"></script>
+<script src="/js/clock.js?v=20261117t"></script>
 <script src="/js/icons.js?v=20261102a"></script>
 <script src="/js/copy.js?v=20261116a"></script>
 <script src="/js/acts.js?v=20261116f"></script>
@@ -146,7 +146,7 @@
 <script src="/js/otp.js?v=20261111"></script>
 <script src="/js/state.js?v=20261113zzh"></script>
 <script src="/js/group.js?v=20261026f"></script>
-<script src="/js/menu.js?v=20261112a"></script>
+<script src="/js/menu.js?v=20261117t"></script>
 <script src="/js/guide.js?v=20261112a"></script>
 <script src="/js/cmdbar.js?v=20261113b"></script>
 <script src="/js/records.js?v=20261026f"></script>
@@ -160,7 +160,7 @@
 <script src="/js/mailtpl.js?v=20261112h"></script>
 <script src="/js/docmail.js?v=20261112h"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261117s"></script>
+<script src="/js/money.js?v=20261117v"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261024d"></script>
 </head>
@@ -4702,6 +4702,19 @@
       </div>
     </div>
 
+    <!-- A signed document's record (SIGNED DOCUMENT SEAL, js/seal.js,
+         2026-11-17): the state, Document ID, SHA-256 and every step to the
+         second; one sheet for every signed document. -->
+    <div class="sheet" id="sealSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="sealTitle">
+        <div class="sheet-head">
+          <div class="qb-headtext"><h3 id="sealTitle">Record of this Document</h3><p class="qb-for" id="sealFor"></p></div>
+          <button class="iconbtn" id="sealClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" data-narrow="560"><div id="sealBody"></div><div class="msg" id="sealMsg" role="alert"></div></div>
+      </div>
+    </div>
+
     <!-- Rate card wording (Settings, Templates; 2026-10-29): the card's
          words a block a row by the page they print on, each its pen; still
          published with the card on Services. -->
@@ -6082,6 +6095,27 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- Interview scorecards (2026-11-17, release H2 step C): a position's
+     criteria, Standard for any other position (js/hiring.js). -->
+<div class="sheet" id="hscSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="hscHead">
+    <div class="sheet-head">
+      <h3 id="hscHead">Interview scorecards</h3>
+      <button class="iconbtn" id="hscClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="hscMsg" role="status"></p>
+      <div class="tax-bar"><span class="tax-count" id="hscCount"></span>
+        <span class="tax-acts"><button class="btn btn-sm" id="hscAdd" type="button">Add scorecard</button></span></div>
+      <div id="hscList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="hscCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <!-- Industries (2026-11-04): the list a client's industry is chosen from. -->
 <div class="sheet" id="indSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="indHead">
@@ -6596,21 +6630,22 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261117s"></script>
-<script src="/js/documents.js?v=20261116b"></script>
+<script src="/js/admin.js?v=20261117v"></script>
+<script src="/js/documents.js?v=20261117u"></script>
 <script src="/js/letters.js?v=20261116b"></script>
 <script src="/js/smreport.js?v=20261113g"></script>
 <script src="/js/reports.js?v=20261116c"></script>
 <script src="/js/register.js?v=20261112j"></script>
 <script src="/js/suppliers.js?v=20261113zzh"></script>
-<script src="/js/hiring.js?v=20261117q"></script>
+<script src="/js/hiring.js?v=20261117r"></script>
 <script src="/js/bukku.js?v=20261115a"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
-<script src="/js/quotes.js?v=20261116f"></script>
-<script src="/js/quotepdf.js?v=20261116f"></script>
+<script src="/js/quotes.js?v=20261117t"></script>
+<script src="/js/quotepdf.js?v=20261117t"></script>
+<script src="/js/seal.js?v=20261117t"></script>
 <script src="/js/checklists.js?v=20261112zt"></script>
-<script src="/js/crm.js?v=20261117s"></script>
+<script src="/js/crm.js?v=20261117v"></script>
 <script src="/js/sales.js?v=20261115h"></script>
 <script src="/js/team.js?v=20261117p"></script>
 <script src="/js/namecard.js?v=20261115a"></script>
@@ -6619,7 +6654,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/animatic.js?v=20261115d"></script>
 <script src="/js/scripts.js?v=20261112zt"></script>
 <script src="/js/scriptpdf.js?v=20261112zt"></script>
-<script src="/js/ratecardpdf.js?v=20261117s"></script>
+<script src="/js/ratecardpdf.js?v=20261117v"></script>
 <script src="/js/campaigns.js?v=20261116a"></script>
 <script src="/js/ops.js?v=20261117p"></script>
 <script src="/js/perf.js?v=20261117p"></script>
@@ -6630,6 +6665,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261116a"></script>
 <script src="/js/overview.js?v=20261116b"></script>
 <script src="/js/analytics.js?v=20261116a"></script>
-<script src="/js/settings.js?v=20261117q"></script>
+<script src="/js/settings.js?v=20261117r"></script>
 </body>
 </html>
