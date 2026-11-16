@@ -289,6 +289,13 @@
     hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
     hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
     hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
+    hiring_unlock: 'p_code', hiring_docs_of: 'p_id', hiring_doc_save: 'p_candidate p_doc p_kind p_terms p_expected',
+    hiring_doc_pay_set: 'p_doc p_basic p_probation p_token', hiring_doc_pay_get: 'p_doc p_token', hiring_doc_send: 'p_doc',
+    hiring_doc_withdraw: 'p_doc p_restore', hiring_doc_mark: 'p_doc p_route p_on p_path', hiring_doc_send_back: 'p_doc p_note',
+    hiring_doc_confirm: 'p_doc p_stamp_no p_stamp_path', hiring_doc_signed: 'p_doc p_token', hiring_doc_seal: 'p_doc p_path p_sha p_pages_sha',
+    hiring_doc_void: 'p_doc p_note', hiring_doc_replace: 'p_doc', hiring_doc_delete: 'p_doc p_serial', hiring_doc_record: 'p_doc',
+    hiring_doc_mail_prepare: 'p_doc', hiring_doc_mail_done: 'p_doc p_status p_error',
+    careers_doc_open: 'p_key p_doc p_code p_device', careers_doc_read: 'p_key p_doc p_view', careers_doc_answer: 'p_key p_doc p_view p_answer p_payload',
     supplier_get: 'p_id', supplier_client_set: 'p_id p_client', client_suppliers: 'p_client',
     supplier_create: 'p_code p_name',
     supplier_link: 'p_id p_reset',
@@ -14254,7 +14261,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool)$/.test(name)) {
+    if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool|doc_open|doc_read|doc_answer)$/.test(name)) {
       var hOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var hNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return hNo(window.__refuseRpc[name]);
@@ -14325,7 +14332,76 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         if (cc.stage === 'pool' || cc.stage === 'closed') civ = null;
         var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;
-        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool }, error: null });
+        var cdocs = cc.stage === 'offer' || cc.stage === 'hired' ? (DB.hiring_docs || []).filter(function (d) { return d.candidate_id === cc.id && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })
+          .map(function (d) { return { id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state, sent_at: d.sent_at, reply_by: d.reply_by, signed_at: d.signed_at || undefined }; }) : undefined;
+        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool, docs: cdocs }, error: null });
+      }
+
+      DB.hiring_docs = DB.hiring_docs || []; DB.hiring_doc_pay = DB.hiring_doc_pay || []; DB.hiring_doc_views = DB.hiring_doc_views || [];
+      DB.signing_steps = DB.signing_steps || [];
+      var hdOf = function (key, id) {
+        var c = DB.hiring_candidates.filter(function (x) { return x.link_key === String(key || '') && !x.removed_at; })[0];
+        if (!c || Date.parse(c.last_step_at) + hDays * 864e5 <= Date.now()) return null;
+        return DB.hiring_docs.filter(function (d) { return d.id === id && d.candidate_id === c.id && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })[0] || null;
+      };
+      var hdJson = function (d) {
+        var c = hFind(d.candidate_id), p = DB.hiring_doc_pay.filter(function (x) { return x.doc_id === d.id; })[0] || {};
+        var t = (DB.team_members || []).filter(function (m) { return m.id === d.sent_by; })[0] || {};
+        return { ok: true, id: d.id, kind: d.kind, serial: d.serial, state: d.state === 'sent' && Date.parse(d.reply_by) <= Date.now() ? 'expired' : d.state,
+          sent_at: d.sent_at, reply_by: d.reply_by, terms: JSON.parse(JSON.stringify(d.terms)), returned_note: d.state === 'sent' ? d.returned_note || undefined : undefined,
+          name: c.name, signed_at: d.signed_at || undefined, signed_name: d.signed && d.signed.name || undefined,
+          signatory: { name: t.name, designation: t.designation }, pay: { basic: p.basic, probation: p.probation == null ? undefined : p.probation } };
+      };
+      var hdView = function (id, v) { return DB.hiring_doc_views.filter(function (x) { return x.doc_id === id && x.view === v && x.until > Date.now(); })[0]; };
+      if (name === 'careers_doc_open') {
+        var od = hdOf(args.p_key, args.p_doc);
+        if (!od) return hNo('not_found');
+        var oc = (window.__hireCodes || {})[od.id];
+        if (!oc || oc.used) return hNo('no-code');
+        if (String(args.p_code || '') !== oc.code) { oc.tries = (oc.tries || 0) + 1; return hNo(oc.tries >= 5 ? 'locked' : 'wrong', { left: Math.max(0, 5 - oc.tries) }); }
+        oc.used = true;
+        var ov = Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2) + Math.random().toString(16).slice(2);
+        DB.hiring_doc_views.push({ doc_id: od.id, view: ov, email: oc.email, until: Date.now() + 30 * 60000 });
+        DB.signing_steps.push({ doc_kind: 'hiring_doc', doc_id: od.id, step: 'opened', at: hNowIso, email: oc.email, ip: '203.0.113.7', country: 'MY', device: args.p_device || null });
+        persist();
+        return Promise.resolve({ data: Object.assign(hdJson(od), { view: ov }), error: null });
+      }
+      if (name === 'careers_doc_read') {
+        var rd = hdOf(args.p_key, args.p_doc);
+        if (!rd) return hNo('not_found');
+        if (!hdView(rd.id, args.p_view)) return hNo('code-needed');
+        return Promise.resolve({ data: hdJson(rd), error: null });
+      }
+      if (name === 'careers_doc_answer') {
+        var ad = hdOf(args.p_key, args.p_doc);
+        if (!ad) return hNo('not_found');
+        var av = hdView(ad.id, args.p_view);
+        if (!av) return hNo('code-needed');
+        if (ad.state !== 'sent') return hNo('answered');
+        if (Date.parse(ad.reply_by) <= Date.now()) return hNo('expired');
+        var ap = args.p_payload || {}, ac = hFind(ad.candidate_id);
+        if (args.p_answer === 'decline') {
+          if (ad.kind !== 'offer') return hNo('bad-request');
+          ad.state = 'declined'; ad.answered_at = hNowIso; ad.decline_note = String(ap.note || '').trim() || null;
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document', detail: ad.serial + ' declined', created_at: hNowIso });
+          hTell(ac, 'hiring.declined', 'A candidate declined an offer', ad.serial + '.');
+          return hOk({});
+        }
+        if ((args.p_answer === 'accept') !== (ad.kind === 'offer') || ['accept', 'sign'].indexOf(args.p_answer) < 0) return hNo('bad-request');
+        var an = String(ap.name || '').trim();
+        if (an.length < 2 || an.length > 120) return hNo('bad-name');
+        if (String(ap.agree) !== 'true') return hNo('bad-agree');
+        if (ad.kind === 'contract') {
+          if (!/^([0-9]{6}-[0-9]{2}-[0-9]{4}|[A-Z0-9]{6,20})$/.test(String(ap.id_no || '').toUpperCase())) return hNo('bad-id');
+          if (!/^[MLQCZmlqcz0-9 .,-]+$/.test(String(ap.signature || '')) || String(ap.signature).length < 8) return hNo('bad-signature');
+        }
+        ad.state = 'signed'; ad.signed_at = hNowIso; ad.answered_at = hNowIso;
+        ad.signed = { via: 'online', name: an, id_no: ad.kind === 'contract' ? String(ap.id_no).toUpperCase() : undefined, signature: ad.kind === 'contract' ? ap.signature : undefined,
+          record: { at: hNowIso, email: av.email, ip: '203.0.113.7', country: 'MY', device: ap.device || null, fingerprint: 'A1B2C3D4E5F60718' } };
+        DB.hiring_events.unshift({ id: nid('he'), candidate_id: ac.id, actor: 'Candidate page', action: 'candidate.document',
+          detail: ad.serial + (ad.kind === 'offer' ? ' accepted' : ' signed') + ' on the candidate page', created_at: hNowIso });
+        hTell(ac, 'hiring.signed', ad.kind === 'offer' ? 'A candidate accepted an offer' : 'A candidate signed a contract', ad.serial + '. Open the candidate to confirm it.');
+        return hOk({});
       }
       var hMe = opsMe();
       if (!hMe) return hNo('denied');
@@ -14464,6 +14540,212 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var before = DB.hiring_files_gone.length;
         DB.hiring_files_gone = DB.hiring_files_gone.filter(function (x) { return (args.p_paths || []).indexOf(x.path) < 0; });
         return hOk({ done: before - DB.hiring_files_gone.length });
+      }
+
+      if (/^hiring_(unlock|docs_of|doc_)/.test(name)) {
+        var dWord = function (k) { return k === 'offer' ? 'Employment Offer' : 'Employment Contract'; };
+        var dTok = function (t) {
+          if (!hAdmin) return 'denied';
+          var u = (DB.perf_unlocks || []).filter(function (x) { return x.token === t && x.team_member_id === hMe.id && x.expires > Date.now(); })[0];
+          if (!u) return 'code-needed';
+          u.expires = Date.now() + 15 * 60000; return null;
+        };
+        var dRow = function (d) {
+          var nm = function (id) { var t = (DB.team_members || []).filter(function (m) { return m.id === id; })[0]; return t || {}; };
+          var o = JSON.parse(JSON.stringify(d));
+          delete o.history; o.made_by = nm(d.made_by).name; o.sent_by = d.sent_by ? nm(d.sent_by).name : undefined; o.sent_role = d.sent_by ? nm(d.sent_by).designation : undefined;
+          o.confirmed_by = d.confirmed_by ? nm(d.confirmed_by).name : undefined;
+          o.expired = d.state === 'sent' && Date.parse(d.reply_by) <= Date.now();
+          o.signed = d.signed ? { via: d.signed.via, name: d.signed.name, on: d.signed.on, has_scan: !!d.signed.path, path: d.signed.path, email: d.signed.record && d.signed.record.email } : undefined;
+          o.pay_set = DB.hiring_doc_pay.some(function (x) { return x.doc_id === d.id; });
+          return o;
+        };
+        if (name === 'hiring_unlock') {
+          if (!hAdmin) return hNo('denied');
+          if (args.p_code !== DB.perf_code) return hNo('wrong-code', { left: 4 });
+          var tk = 'tok' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+          DB.perf_unlocks = DB.perf_unlocks || [];
+          DB.perf_unlocks.push({ token: tk, team_member_id: hMe.id, expires: Date.now() + 15 * 60000 });
+          persist();
+          return Promise.resolve({ data: { token: tk, expires_at: new Date(Date.now() + 15 * 60000).toISOString() }, error: null });
+        }
+        if (name === 'hiring_docs_of') {
+          var r0 = hRole(args.p_id);
+          if (!r0) return hNo('not-found');
+          if (r0 !== 'admin' && r0 !== 'owner') return hNo('denied');
+          return hOk({ rows: DB.hiring_docs.filter(function (d) { return d.candidate_id === args.p_id; }).sort(function (a, b) { return a.made_at < b.made_at ? 1 : -1; }).map(dRow) });
+        }
+        var dTerms = function (k, t) {
+          t = t || {};
+          var pos = String(t.position || '').trim(), type = t.type, prob = Number(t.probation_months || 0), reply = Number(t.reply_days || (k === 'offer' ? 3 : 7));
+          if (pos.length < 2 || pos.length > 80) return { error: 'bad-position' };
+          if (['permanent', 'contract', 'intern', 'part_time'].indexOf(type) < 0) return { error: 'bad-type' };
+          if (!(prob >= 0 && prob <= 12)) return { error: 'bad-probation' };
+          if (!(reply >= 1 && reply <= 14)) return { error: 'bad-reply' };
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(String(t.start || ''))) return { error: 'bad-start' };
+          if ((type === 'contract' || type === 'intern') && !(t.end && t.end > t.start)) return { error: 'bad-end' };
+          if (k === 'offer' && String(t.scope || '').trim().length < 2) return { error: 'bad-scope' };
+          if (k === 'contract' && String(t.duties || '').trim().length < 2) return { error: 'bad-duties' };
+          var o = { position: pos, type: type, probation_months: prob, reply_days: reply, start: t.start };
+          if ((type === 'contract' || type === 'intern') && t.end) o.end = t.end;
+          ['scope', 'duties', 'place'].forEach(function (f) { if (String(t[f] || '').trim()) o[f] = String(t[f]).trim(); });
+          return { terms: o };
+        };
+        if (name === 'hiring_doc_save') {
+          var sr = hRole(args.p_candidate), sc = hFind(args.p_candidate);
+          if (!sr || !sc) return hNo('not-found');
+          if (sr !== 'admin' && sr !== 'owner') return hNo('denied');
+          if (args.p_doc) {
+            var ed = DB.hiring_docs.filter(function (d) { return d.id === args.p_doc; })[0];
+            if (!ed) return hNo('gone');
+            if (ed.state !== 'draft') return hNo('not-draft');
+            if (args.p_expected && ed.updated_at !== args.p_expected) return hNo('stale', { row: dRow(ed) });
+            var et = dTerms(ed.kind, args.p_terms); if (et.error) return hNo(et.error);
+            ed.terms = et.terms; ed.updated_at = new Date().toISOString();
+            hLog(sc.id, 'candidate.document', dWord(ed.kind) + ' draft edited');
+            return hOk({ row: dRow(ed) });
+          }
+          if (sc.stage !== 'offer') return hNo('not-offer');
+          if (args.p_kind === 'contract' && !DB.hiring_docs.some(function (d) { return d.candidate_id === sc.id && d.kind === 'offer' && d.state === 'confirmed'; })) return hNo('offer-first');
+          if (DB.hiring_docs.some(function (d) { return d.candidate_id === sc.id && d.kind === args.p_kind && ['draft', 'sent', 'signed', 'confirmed'].indexOf(d.state) > -1 && !d.replaces; })) return hNo('exists');
+          var nt = dTerms(args.p_kind, args.p_terms); if (nt.error) return hNo(nt.error);
+          var nd = { id: nid('hd'), candidate_id: sc.id, kind: args.p_kind, state: 'draft', serial: null, terms: nt.terms, made_by: hMe.id, made_at: new Date().toISOString(), updated_at: new Date().toISOString(), history: [] };
+          DB.hiring_docs.push(nd);
+          hLog(sc.id, 'candidate.document', dWord(nd.kind) + ' drafted');
+          return hOk({ row: dRow(nd) });
+        }
+        var hd = DB.hiring_docs.filter(function (d) { return d.id === args.p_doc; })[0];
+        if (!hd) return hNo(name === 'hiring_doc_delete' ? 'gone' : 'gone');
+        var dr = hRole(hd.candidate_id), dc = hFind(hd.candidate_id);
+        if (!dr) return hNo('not-found');
+        var keepsD = dr === 'admin' || dr === 'owner', nowD = new Date().toISOString();
+        if (name === 'hiring_doc_pay_set' || name === 'hiring_doc_pay_get' || name === 'hiring_doc_signed') {
+          var te = dTok(args.p_token); if (te) return hNo(te);
+          if (name === 'hiring_doc_signed') return hOk({ signed: hd.signed || null });
+          var py = DB.hiring_doc_pay.filter(function (x) { return x.doc_id === hd.id; })[0];
+          if (name === 'hiring_doc_pay_get') return hOk({ basic: py ? py.basic : null, probation: py ? py.probation : null });
+          if (hd.state !== 'draft') return hNo('not-draft');
+          var bs = Number(args.p_basic);
+          if (!(bs > 0 && bs < 1e6)) return hNo('bad-basic');
+          if (args.p_probation != null && !(Number(args.p_probation) > 0)) return hNo('bad-probation-pay');
+          if (py) { py.basic = bs; py.probation = args.p_probation == null ? null : Number(args.p_probation); }
+          else DB.hiring_doc_pay.push({ doc_id: hd.id, basic: bs, probation: args.p_probation == null ? null : Number(args.p_probation) });
+          hd.updated_at = nowD; hLog(dc.id, 'candidate.document', 'Salary changed');
+          return hOk({});
+        }
+        if (name === 'hiring_doc_record') {
+          if (!keepsD) return hNo('denied');
+          var st = [{ step: 'issued', at: hd.made_at, team: true, by: hName(hd.made_by) }];
+          if (hd.sent_at) st.push({ step: 'sent', at: hd.sent_at, team: true, via: 'page', by: hName(hd.sent_by) });
+          DB.signing_steps.filter(function (g) { return g.doc_kind === 'hiring_doc' && g.doc_id === hd.id; }).forEach(function (g) {
+            st.push({ step: g.step, at: g.at, team: false, party: 'Candidate', email: g.email, ip: g.ip, country: g.country, device: g.device });
+          });
+          (hd.history || []).forEach(function (h) {
+            st.push({ step: 'signed', at: h.at, team: false, party: 'Candidate', by: h.signed.name, via: h.signed.via === 'online' ? 'online' : 'paper', email: h.signed.record && h.signed.record.email });
+            st.push({ step: 'returned', at: h.returned_at, team: true, by: h.returned_by, note: h.note });
+          });
+          if (hd.signed) st.push({ step: 'signed', at: hd.signed_at, team: false, party: 'Candidate', by: hd.signed.name || dc.name, via: hd.signed.via === 'online' ? 'online' : 'paper',
+            email: hd.signed.record && hd.signed.record.email, ip: hd.signed.record && hd.signed.record.ip, country: hd.signed.record && hd.signed.record.country,
+            device: hd.signed.record && hd.signed.record.device, entered_by: hd.signed.via !== 'online' ? hd.signed.record && hd.signed.record.by : undefined });
+          if (hd.confirmed_at) st.push({ step: 'confirmed', at: hd.confirmed_at, team: true, by: hName(hd.confirmed_by) });
+          if (hd.stamp_no) st.push({ step: 'stamped', at: hd.confirmed_at, team: true, by: hName(hd.confirmed_by), note: hd.stamp_no });
+          if (hd.sealed_at) st.push({ step: 'sealed', at: hd.sealed_at, team: true, by: hd.sealed_by, note: hd.seal_sha });
+          return hOk({ id: hd.id, ref: hd.serial, steps: st, signed: !!hd.signed, confirmed: !!hd.confirmed_at, withdrawn: hd.state === 'void',
+            seal: hd.seal_sha ? { sha: hd.seal_sha, pages_sha: hd.seal_pages_sha, at: hd.sealed_at } : undefined });
+        }
+        if (name === 'hiring_doc_mail_prepare') {
+          if (!keepsD) return hNo('denied');
+          if (hd.state !== 'sent') return hNo('not-sent');
+          return Promise.resolve({ data: { id: hd.id, kind: 'doc', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
+            reply_by: hd.reply_by, returned: !!hd.returned_note, sender: hMe.name, reply_to: hMe.email }, error: null });
+        }
+        if (name === 'hiring_doc_mail_done') {
+          if (!keepsD) return hNo('denied');
+          hd.mail = args.p_status; hd.mail_at = nowD;
+          hLog(dc.id, 'candidate.email', hd.serial + (args.p_status === 'sent' ? ' emailed' : ' not emailed'));
+          return hOk({});
+        }
+        var partOnly = ['hiring_doc_confirm', 'hiring_doc_void'].indexOf(name) > -1;
+        if (partOnly ? !hAdmin : !keepsD) return hNo('denied');
+        if (name === 'hiring_doc_send') {
+          if (hd.state !== 'draft') return hNo('not-draft');
+          if (!DB.hiring_doc_pay.some(function (x) { return x.doc_id === hd.id; })) return hNo('no-pay');
+          if (dc.stage !== 'offer') return hNo('not-offer');
+          var ser;
+          if (hd.replaces) {
+            var old = DB.hiring_docs.filter(function (d) { return d.id === hd.replaces; })[0];
+            ser = old.serial; old.state = 'void'; old.void_note = 'Replaced'; old.voided_at = nowD; old.voided_by = hMe.name;
+          } else {
+            var yymm = (window.ADspaceClock ? window.ADspaceClock.today() : nowD.slice(0, 10)).slice(2, 7).replace('-', '');
+            var pre = 'ADHR/' + (hd.kind === 'offer' ? 'OFR' : 'EMP') + yymm;
+            var nmax = DB.hiring_docs.filter(function (d) { return String(d.serial || '').indexOf(pre) === 0; }).map(function (d) { return Number(d.serial.slice(-3)); });
+            ser = pre + ('00' + ((nmax.length ? Math.max.apply(null, nmax) : 0) + 1)).slice(-3);
+          }
+          Object.assign(hd, { state: 'sent', serial: ser, sent_by: hMe.id, sent_at: nowD, reply_by: new Date(Date.now() + (hd.terms.reply_days || 3) * 864e5).toISOString(), mail: null, mail_at: null, updated_at: nowD });
+          dc.last_step_at = nowD; hLog(dc.id, 'candidate.document', dWord(hd.kind) + ' ' + ser + ' sent');
+          return hOk({ row: dRow(hd) });
+        }
+        if (name === 'hiring_doc_withdraw') {
+          if (args.p_restore) { if (hd.state !== 'withdrawn') return hOk({ same: true }); if (Date.parse(hd.reply_by) <= Date.now()) return hNo('expired'); hd.state = 'sent'; }
+          else { if (hd.state !== 'sent') return hNo('not-sent'); hd.state = 'withdrawn'; }
+          hd.updated_at = nowD; hLog(dc.id, 'candidate.document', hd.serial + (args.p_restore ? ' restored' : ' withdrawn'));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_mark') {
+          if (['sent', 'withdrawn'].indexOf(hd.state) < 0) return hNo('not-sent');
+          if (!new RegExp('^' + dc.id + '/[0-9]{10,16}-[A-Za-z0-9._ -]{1,120}\\.pdf$').test(String(args.p_path || ''))) return hNo('bad-file');
+          Object.assign(hd, { state: 'signed', signed_at: nowD, answered_at: nowD, signed: { via: args.p_route, on: args.p_on, path: args.p_path, record: { by: hMe.name, at: nowD } }, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + (args.p_route === 'scan' ? ' signed by scan' : ' signed on paper'));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_send_back') {
+          if (hd.state !== 'signed') return hNo('not-signed');
+          var note = String(args.p_note || '').trim(); if (note.length < 2) return hNo('bad-note');
+          hd.history = (hd.history || []).concat([{ signed: hd.signed, at: hd.signed_at, returned_at: nowD, returned_by: hMe.name, note: note }]);
+          Object.assign(hd, { state: 'sent', signed: null, signed_at: null, answered_at: null, returned_at: nowD, returned_by: hMe.name, returned_note: note,
+            reply_by: new Date(Date.now() + (hd.terms.reply_days || 3) * 864e5).toISOString(), updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' sent back: ' + note);
+          return hOk({});
+        }
+        if (name === 'hiring_doc_confirm') {
+          if (hd.state !== 'signed') return hNo('not-signed');
+          var stp = String(args.p_stamp_no || '').trim();
+          if (stp && !/^[A-Za-z0-9/-]{4,40}$/.test(stp)) return hNo('bad-stamp');
+          Object.assign(hd, { state: 'confirmed', confirmed_by: hMe.id, confirmed_at: nowD, stamp_no: stp || null, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' confirmed' + (stp ? ' · stamped' : ''));
+          return hOk({});
+        }
+        if (name === 'hiring_doc_seal') {
+          if (hd.state !== 'confirmed') return hNo('not-confirmed');
+          if (hd.seal_path) return hOk({ kept: true, path: hd.seal_path });
+          if (String(args.p_path || '') !== dc.id + '/sealed-' + hd.id + '.pdf' && !new RegExp('^' + dc.id + '/sealed-[0-9a-z-]+\\.pdf$').test(String(args.p_path || ''))) return hNo('bad-file');
+          if (!/^[0-9a-f]{64}$/.test(String(args.p_sha || '')) || !/^[0-9a-f]{64}$/.test(String(args.p_pages_sha || ''))) return hNo('bad-sha');
+          Object.assign(hd, { seal_path: args.p_path, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: nowD, sealed_by: hMe.name, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' sealed');
+          return hOk({ path: hd.seal_path });
+        }
+        if (name === 'hiring_doc_void') {
+          if (['draft', 'void'].indexOf(hd.state) > -1) return hNo('bad-state');
+          var vn = String(args.p_note || '').trim(); if (vn.length < 2) return hNo('bad-note');
+          Object.assign(hd, { state: 'void', void_note: vn, voided_at: nowD, voided_by: hMe.name, updated_at: nowD });
+          hLog(dc.id, 'candidate.document', hd.serial + ' voided: ' + vn);
+          return hOk({});
+        }
+        if (name === 'hiring_doc_replace') {
+          if (['sent', 'withdrawn', 'declined', 'signed'].indexOf(hd.state) < 0) return hNo('bad-state');
+          if (DB.hiring_docs.some(function (d) { return d.replaces === hd.id && d.state === 'draft'; })) return hNo('exists');
+          var rp = { id: nid('hd'), candidate_id: dc.id, kind: hd.kind, state: 'draft', serial: null, terms: JSON.parse(JSON.stringify(hd.terms)), replaces: hd.id, made_by: hMe.id, made_at: nowD, updated_at: nowD, history: [] };
+          DB.hiring_docs.push(rp); hLog(dc.id, 'candidate.document', 'Replacement for ' + hd.serial + ' drafted');
+          return hOk({ row: dRow(rp) });
+        }
+        if (name === 'hiring_doc_delete') {
+          if (hd.state === 'void') { if (!hAdmin) return hNo('denied'); if (String(args.p_serial || '').trim() !== hd.serial) return hNo('bad-serial'); }
+          else if (hd.state !== 'draft') return hNo('bad-state');
+          DB.hiring_docs = DB.hiring_docs.filter(function (d) { return d.id !== hd.id; });
+          hLog(dc.id, 'candidate.document', (hd.serial || dWord(hd.kind) + ' draft') + ' deleted');
+          return hOk({});
+        }
+        return hNo('bad-request');
       }
       var hr = hRole(args.p_id);
       var hc = hFind(args.p_id);
@@ -16132,6 +16414,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
             if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
             window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: m.kind, months: m.months }]);
             return rpc('hiring_outcome_mail_done', { p_id: ho.candidateId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
+          });
+        }
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'code') {
+
+          var hcb = opts.body;
+          DB.hiring_docs = DB.hiring_docs || [];
+          var hcd = DB.hiring_docs.filter(function (d) { return d.id === hcb.docId && ['sent', 'signed', 'confirmed', 'declined'].indexOf(d.state) > -1; })[0];
+          var hcc = hcd && (DB.hiring_candidates || []).filter(function (x) { return x.id === hcd.candidate_id && x.link_key === hcb.key && !x.removed_at; })[0];
+          if (!hcd || !hcc) return Promise.resolve({ data: { error: 'not_found' }, error: null });
+          if (window.__mail === false) return Promise.resolve({ data: { error: 'mail-not-set-up' }, error: null });
+          window.__hireCodes = window.__hireCodes || {};
+          window.__hireCodes[hcd.id] = { code: '482915', email: hcc.email, tries: 0 };
+          DB.signing_steps = DB.signing_steps || [];
+          DB.signing_steps.push({ doc_kind: 'hiring_doc', doc_id: hcd.id, step: 'code', at: new Date().toISOString(), email: hcc.email, ip: '198.51.100.4', country: 'MY', device: hcb.device || null });
+          persist();
+          window.__hireMail = (window.__hireMail || []).concat([{ to: hcc.email, kind: 'code', ref: hcd.serial }]);
+          return Promise.resolve({ data: { ok: true }, error: null });
+        }
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'doc') {
+          var hdb = opts.body;
+          return rpc('hiring_doc_mail_prepare', { p_doc: hdb.docId }).then(function (r) {
+            var m = r.data || {};
+            if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
+            if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: 'doc', ref: m.ref, doc: m.doc }]);
+            return rpc('hiring_doc_mail_done', { p_doc: hdb.docId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
           });
         }
         if (name === 'hiring-mail') {

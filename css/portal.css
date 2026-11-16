@@ -9856,3 +9856,17 @@ body.qs-page { background: var(--card); }
 .cr-note { margin: 0; padding: 12px 14px; border-radius: var(--radius); background: var(--sunk); font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
 .cr-facts dd.is-pre { white-space: pre-line; }
 .cr-iv > .qs-foot { margin: 0; max-width: none; padding-top: 8px; }
+/* A candidate's offer and contract (2026-11-17, release H2 step D): a card
+   a document, its name over its reference at the left, where it stands at
+   the right; opened, the code, the caution, then the terms and the reply. */
+.cr-docs { gap: 12px; }
+.cr-doc { display: grid; gap: 16px; }
+.cr-doc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cr-doc-who { display: grid; gap: 2px; min-width: 0; }
+.cr-doc-who > b { font-size: 15px; font-weight: 600; }
+.cr-doc-meta { font-size: 13px; color: var(--ink-mute); }
+.cr-doc-head > .chip-state { flex: none; white-space: nowrap; }
+.cr-doc-body, .cr-caution { display: grid; gap: 12px; }
+.cr-doc-h { margin: 0; font-size: 15px; font-weight: 600; }
+.cr-doc .qs-foot { margin: 0; max-width: none; }
+.cr-code { max-width: 200px; letter-spacing: 4px; font-variant-numeric: tabular-nums; }

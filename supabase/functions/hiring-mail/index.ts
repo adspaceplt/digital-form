@@ -10,6 +10,16 @@
  *                                     pool asks the candidate to agree on
  *                                     their page; Not proceed thanks them.
  *                                     Never the team's note on the decision.
+ *   { docId, kind: 'doc' }            an Employment Offer or Contract waits
+ *                                     on the candidate's page (step D):
+ *                                     the reference and the day to answer,
+ *                                     never the salary or the terms;
+ *   { key, docId, kind: 'code', device }  the candidate's own press on their
+ *                                     page, with no sign-in: a six-digit
+ *                                     code to read that document, made by
+ *                                     `hiring_doc_code` as the service role
+ *                                     and sent to the candidate's own email
+ *                                     alone; answered alike whatever befalls.
  *
  * Every question is asked as the caller (`hiring_mail_prepare`, the part or
  * the candidate's Owner); the address, the words' facts and the link are the
@@ -39,6 +49,31 @@ function button(label: string, href: string): string {
 
 /* The words, as a formal letter (DESIGN.md §6): a fact a paragraph. */
 export function words(m: Record<string, any>): { subject: string; heading: string; body: string; block: string } {
+  const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
+  if (m.kind === 'code') {
+    return {
+      subject: 'Your verification code for ' + m.ref,
+      heading: 'Your verification code',
+      body: 'Dear ' + m.name + ',\n\n' +
+        'Please enter the code below on your application page to open your ' + title + ' ' + m.ref + '. The code expires in 15 minutes.\n\n{invoices}\n\n' +
+        'If you did not request this code, please ignore this email.\n\nADspace',
+      block: '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
+        '<td style="background:#f5f5f5;border-radius:10px;padding:14px 22px;font-family:' + FONT + ';font-size:26px;font-weight:600;' +
+        'letter-spacing:6px;color:#1a1a1a;text-align:center;" x-apple-data-detectors="false">' + esc(m.code) + '</td></tr></table>'
+    };
+  }
+  if (m.kind === 'doc') {
+    return {
+      subject: title + ': ' + m.ref,
+      heading: 'Your ' + title,
+      body: 'Dear ' + m.name + ',\n\n' +
+        (m.returned ? 'Your ' + title + ' ' + m.ref + ' has been returned to you ' + (m.doc === 'contract' ? 'for your signature again.' : 'for your reply again.')
+          : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
+        'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
+        'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + 'Yours sincerely,\n' + m.sender + '\nADspace',
+      block: button(m.doc === 'contract' ? 'Read and sign' : 'Read your offer', PAGE + m.key)
+    };
+  }
   const where = m.mode === 'online' ? 'by Google Meet' : 'at our office';
   const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
   if (m.kind === 'pool') {
@@ -92,22 +127,54 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
   };
 }
 
+/* The caller's address as Cloudflare saw it: never the first
+   X-Forwarded-For entry, which the caller writes. */
+function ipOf(req: Request): string {
+  const cf = (req.headers.get('cf-connecting-ip') || '').trim();
+  if (cf) return cf.slice(0, 64);
+  const xff = (req.headers.get('x-forwarded-for') || '').split(',').map((x) => x.trim()).filter(Boolean);
+  return (xff[xff.length - 1] || '').slice(0, 64);
+}
+
+/* The candidate's code: no sign-in, the link's key and the document; the
+   address, the name and the reference are the database's. */
+async function sendCode(req: Request, b: Record<string, any>, origin: string | null): Promise<Response> {
+  const key = String(b.key || ''), doc = String(b.docId || '');
+  if (!/^[a-z0-9]{8}$/.test(key) || !/^[0-9a-f-]{36}$/.test(doc)) return json({ error: 'bad-request' }, 400, origin);
+  if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
+  const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const r = await db.rpc('hiring_doc_code', { p_key: key, p_doc: doc, p_device: String(b.device || '').slice(0, 200), p_ip: ipOf(req) || null });
+  const m = r.data as Record<string, any>;
+  if (r.error || !m) return json({ error: 'not-sent' }, 200, origin);
+  if (m.error) return json({ error: m.error === 'too-many' ? 'too-many' : 'not_found' }, 200, origin);
+  if (!EMAIL.test(String(m.to || m.email || ''))) return json({ error: 'not-sent' }, 200, origin);
+  const w = words(Object.assign({ kind: 'code' }, m));
+  const { status } = await resend({
+    from: FROM(), to: [m.email], subject: w.subject,
+    html: layout({ heading: w.heading, body: w.body, block: w.block, preheader: 'Your verification code' }),
+    text: w.body.replace('{invoices}', m.code)
+  }, 'hire-code-' + doc + '-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
+  return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
+}
+
 Deno.serve(async (req) => {
   const origin = req.headers.get('Origin');
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method' }, 405, origin);
+  let b: Record<string, any>;
+  try { b = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
+  if (b && b.kind === 'code') return sendCode(req, b, origin);
   const auth = req.headers.get('Authorization') ?? '';
   if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
-  let b: { interviewId?: string; candidateId?: string; kind?: string };
-  try { b = await req.json(); } catch { return json({ error: 'bad-request' }, 400, origin); }
-  const kind = String(b.kind || ''), outcome = kind === 'outcome';
-  const id = String((outcome ? b.candidateId : b.interviewId) || '');
-  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'outcome'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
+  const kind = String(b.kind || ''), outcome = kind === 'outcome', isDoc = kind === 'doc';
+  const id = String((outcome ? b.candidateId : isDoc ? b.docId : b.interviewId) || '');
+  if (!/^[0-9a-f-]{36}$/.test(id) || !['invite', 'confirm', 'outcome', 'doc'].includes(kind)) return json({ error: 'bad-request' }, 400, origin);
   if (!secret('RESEND_API_KEY')) return json({ error: 'mail-not-set-up' }, 200, origin);
 
   const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!,
     { global: { headers: { Authorization: auth } } });
   const prep = outcome ? await db.rpc('hiring_outcome_mail_prepare', { p_id: id })
+    : isDoc ? await db.rpc('hiring_doc_mail_prepare', { p_doc: id })
     : await db.rpc('hiring_mail_prepare', { p_interview: id, p_kind: kind });
   if (prep.error) return json({ error: 'denied' }, 200, origin);
   const m = prep.data as Record<string, any>;
@@ -123,8 +190,11 @@ Deno.serve(async (req) => {
   if (EMAIL.test(String(m.reply_to || ''))) msg.reply_to = m.reply_to;
   /* A decision's key carries the decision's kind, so a reopened candidate
      decided again is emailed again. */
-  const { status, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id, secret('RESEND_API_KEY'));
-  if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
+  /* A document's key carries its sending, so a document sent back is
+     emailed again. */
+  const { status, error } = await resend(msg, 'hire-' + (outcome ? m.kind : kind) + '-' + id + (isDoc ? '-' + String(m.sent_key || '') : ''), secret('RESEND_API_KEY'));
+  if (isDoc) await db.rpc('hiring_doc_mail_done', { p_doc: id, p_status: status, p_error: error || null });
+  else if (outcome) await db.rpc('hiring_outcome_mail_done', { p_id: id, p_status: status, p_error: error || null });
   else await db.rpc('hiring_mail_done', { p_interview: id, p_kind: kind, p_status: status, p_error: error || null });
   return json(status === 'sent' ? { ok: true } : { error: status === 'unknown' ? 'unknown' : 'not-sent' }, 200, origin);
 });

@@ -73,8 +73,10 @@
   var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>';
 
   var state = { rows: null, admin: false, find: '', open: null, rec: null, pane: 'overview', wired: false, editing: null, deleting: false, team: null };
-  var PANES = [['overview', 'Overview'], ['interview', 'Interview'], ['scores', 'Scores'], ['people', 'People'], ['activity', 'Activity']];
-  function paneOk(k) { return PANES.some(function (x) { return x[0] === k; }); }
+  var PANES = [['overview', 'Overview'], ['interview', 'Interview'], ['scores', 'Scores'], ['offer', 'Offer'], ['people', 'People'], ['activity', 'Activity']];
+  /* Offer (step D) is the part's and the Owner's alone. */
+  function panesFor(role) { return PANES.filter(function (x) { return x[0] !== 'offer' || role === 'admin' || role === 'owner'; }); }
+  function paneOk(k) { return panesFor(state.role).some(function (x) { return x[0] === k; }); }
   /* Team's tab (`tab=hiring`): a candidate rides as `candidate=`, its pane as
      `ctab=` (Overview left out), as a colleague's does as `member=` and `mtab=`. */
   function urlState() { return { candidate: state.open || '', ctab: state.open && state.pane !== 'overview' ? state.pane : '' }; }
@@ -101,7 +103,7 @@
     wire();
     var q = new URLSearchParams(location.search);
     state.open = q.get('candidate') || null;
-    state.pane = state.open && paneOk(q.get('ctab')) ? q.get('ctab') : 'overview';
+    state.pane = state.open && PANES.some(function (x) { return x[0] === q.get('ctab'); }) ? q.get('ctab') : 'overview';
     $('hirAdd').hidden = !admin();
     load();
   }
@@ -216,7 +218,13 @@
           if (state.open !== id) return;
           var od = o.data || {};
           state.outcome = o.error || od.error ? null : od;
-          paintRec();
+          if (state.role !== 'admin' && state.role !== 'owner') { state.docs = []; paintRec(); return; }
+          return rpc('hiring_docs_of', { p_id: id }).then(function (x) {
+            if (state.open !== id) return;
+            var xd = x.data || {};
+            state.docs = x.error || xd.error ? null : (xd.rows || []);
+            paintRec();
+          });
         });
       });
     });
@@ -227,6 +235,7 @@
   }
   function paintRec() {
     var c = state.rec, rec = $('hirRec'), role = state.role, keeps = role === 'admin' || role === 'owner';
+    if (!paneOk(state.pane)) state.pane = 'overview';
     var removed = !!c.removed_at;
     var menu = (keeps && !removed ? '<button class="kmenu-item" data-g="2" type="button" data-h="edit" role="menuitem">Edit</button>' +
         '<button class="kmenu-item" data-g="5" type="button" data-h="reset" role="menuitem">Reset link</button>' : '') +
@@ -251,6 +260,7 @@
             '</div></div>' : '') + '</section>' : ''),
       interview: interviewPane(c, keeps && !removed && c.stage !== 'hired' && c.stage !== 'closed'),
       scores: scoresPane(c, keeps && !removed),
+      offer: keeps ? docsPane(c, !removed) : '',
       people: '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">People</h4>' +
           (role === 'admin' && !removed ? '<button class="btn btn-sm" type="button" data-h="addperson">Add colleague</button>' : '') + '</div>' +
           (state.people.length ? '<div class="hir-people">' + state.people.map(personRow).join('') + '</div>' : '<p class="emptyline">No colleagues.</p>') + '</section>',
@@ -267,17 +277,18 @@
             (menu ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" hidden>' + menu + '</div></span>' : '') +
           '</div></div></div>' +
-      '<nav class="rectabs" id="hirTabs" role="tablist" aria-label="Candidate">' + PANES.map(function (x) {
+      '<nav class="rectabs" id="hirTabs" role="tablist" aria-label="Candidate">' + panesFor(role).map(function (x) {
         var on = x[0] === state.pane;
         return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" aria-selected="' + on + '" data-pane="' + x[0] + '">' + esc(x[1]) + '</button>';
       }).join('') + '</nav>' +
       '<div class="msg" id="hirRecMsg"></div>' +
-      '<div class="panel hir-body" data-swipe="hirTabs">' + PANES.map(function (x) {
+      '<div class="panel hir-body" data-swipe="hirTabs">' + panesFor(role).map(function (x) {
         return '<div class="readgroups hir-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
       }).join('') + '</div>';
     paintLog();
     if ($('hirScFail')) UI.failLine($('hirScFail'), 'the scores', 'Please try again.', function () { openRec(c.id); });
     if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', 'Please try again.', function () { openRec(c.id); });
+    if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', 'Please try again.', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
     wireRec();
@@ -451,6 +462,384 @@
         (i.approved_at ? fact('Approved by', esc([i.approved_by, when(i.approved_at)].filter(Boolean).join(' · '))) : '') +
         mail('invite', 'Invitation') + mail('confirm', 'Confirmation') +
       '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
+  }
+
+  /* ---- Offers and contracts (step D; HR-SPEC.md decisions 4, 5, 10) ------
+     A document a card: its reference, where it stands and its next step.
+     The salary is set, read and drawn only behind the master code and a
+     caution step (`hiring_unlock`, the token kept 15 minutes in this page's
+     memory alone); never shown in a fact, a line or the history. */
+  var DOC_WORD = { offer: 'Employment Offer', contract: 'Employment Contract' };
+  var DOC_STATE = { draft: ['Draft', 'is-off'], sent: ['Sent', 'is-warn'], withdrawn: ['Withdrawn', 'is-off'], declined: ['Declined', 'is-off'],
+    signed: ['Signed', 'is-warn'], confirmed: ['Confirmed', 'is-ok'], void: ['Void', 'is-off'] };
+  var EMP_TYPE = { permanent: 'Permanent', contract: 'Contract', intern: 'Internship', part_time: 'Part-time' };
+  var DOC_SAID = {
+    'not-offer': 'Choose Proceed on the Scores tab first.', 'offer-first': 'Confirm the Employment Offer first.',
+    'exists': 'This candidate already has one. Open it below.', 'not-draft': 'This document has been sent and can no longer be edited.',
+    'no-pay': 'Set the salary first.', 'bad-type': 'Choose the employment type.', 'bad-probation': 'Enter a probation of 0 to 12 months.',
+    'bad-reply': 'Enter 1 to 14 days to reply.', 'bad-start': 'Enter the commencement date.', 'bad-end': 'Enter an end date after the commencement date.',
+    'bad-scope': 'Enter the scope.', 'bad-duties': 'Enter the nature of works.', 'bad-basic': 'Enter the basic salary.',
+    'bad-probation-pay': 'Enter the salary during probation, or leave it empty.', 'code-needed': 'Enter the master code again.',
+    'wrong-code': 'The master code is incorrect.', 'locked': 'Too many attempts. Please try again in 15 minutes.',
+    'no-code': 'The master code is not set up yet. Please contact an admin.', 'not-sent': 'This document is not on the candidate\'s page.',
+    'not-signed': 'This document has not been signed.', 'bad-note': 'Enter a reason.', 'bad-date': 'Choose a date from the day it was sent to today.',
+    'bad-file': 'Upload the signed copy as a PDF.', 'bad-stamp': 'Enter the stamp certificate number as printed.', 'bad-state': 'This document has changed. Refresh the page.',
+    'bad-serial': 'Type the reference exactly as shown.', 'expired': 'The days to reply have passed. Replace the document instead.',
+    'replaced': 'The document it replaces can no longer be replaced.', 'gone': 'This document no longer exists.', 'not-confirmed': 'Confirm the document first.',
+    'bad-sha': 'The sealed copy could not be saved. Please try again.'
+  };
+  function docSaid(r) { var k = r && r.data && r.data.error; return DOC_SAID[k] || said(r); }
+  function docOf(b) { var id = b.getAttribute('data-id'); return (state.docs || []).filter(function (d) { return d.id === id; })[0] || {}; }
+  function docsPane(c, can) {
+    if (state.docs == null) return '<section class="readgroup"><div id="hirDocFail"></div></section>';
+    var live = function (k) { return state.docs.some(function (d) { return d.kind === k && ['draft', 'sent', 'signed', 'confirmed'].indexOf(d.state) >= 0; }); };
+    var newOffer = can && c.stage === 'offer' && !live('offer');
+    var newContract = can && c.stage === 'offer' && !live('contract') && state.docs.some(function (d) { return d.kind === 'offer' && d.state === 'confirmed'; });
+    var head = '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Offer and contract</h4>' +
+      (newOffer ? '<button class="btn btn-sm" type="button" data-h="docnew" data-kind="offer">New offer</button>' : '') +
+      (newContract ? '<button class="btn btn-sm" type="button" data-h="docnew" data-kind="contract">New contract</button>' : '') + '</div>';
+    if (!state.docs.length) return head + '<p class="emptyline">' + (c.stage === 'offer' ? 'No documents.' : 'Choose Proceed on the Scores tab first.') + '</p></section>';
+    return head + '<div class="hir-ivs">' + state.docs.map(function (d) { return docCard(d, can); }).join('') + '</div></section>';
+  }
+  function docCard(d, can) {
+    var st = DOC_STATE[d.state] || DOC_STATE.draft, t = d.terms || {}, part = admin(), id = ' data-id="' + esc(d.id) + '"';
+    var label = d.state === 'sent' && d.expired ? ['Expired', 'is-off'] : st;
+    var acts = '', items = [];
+    var item = function (g, h, words, red) { items.push('<button class="kmenu-item' + (red ? ' is-danger' : '') + '" data-g="' + g + '" type="button" data-h="' + h + '"' + id + ' role="menuitem">' + words + '</button>'); };
+    if (can) {
+      if (d.state === 'draft') {
+        if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpay"' + id + '>' + (d.pay_set ? 'Change salary' : 'Set salary') + '</button>';
+        if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpreview"' + id + '>Preview PDF</button>';
+        acts += '<button class="btn btn-sm btn-go" type="button" data-h="docsend"' + id + '>Send</button>';
+        item(2, 'docedit', 'Edit'); item(6, 'docdelete', 'Delete', true);
+      }
+      if (d.state === 'sent') {
+        if (part) acts += '<button class="btn btn-sm" type="button" data-h="docpreview"' + id + '>Preview PDF</button>';
+        if (!d.expired && d.mail !== 'sent') acts += '<button class="btn btn-sm" type="button" data-h="docmail"' + id + '>Email candidate</button>';
+        item(4, 'docmark', 'Mark signed'); item(2, 'docreplace', 'Replace'); if (!d.expired) item(5, 'docwithdraw', 'Withdraw');
+      }
+      if (d.state === 'withdrawn') {
+        if (!d.expired) acts += '<button class="btn btn-sm" type="button" data-h="docrestore"' + id + '>Restore</button>';
+        item(4, 'docmark', 'Mark signed'); item(2, 'docreplace', 'Replace');
+      }
+      if (d.state === 'declined') item(2, 'docreplace', 'Replace');
+      if (d.state === 'signed') {
+        acts += '<button class="btn btn-sm" type="button" data-h="docback"' + id + '>Send back</button>';
+        if (part) acts += '<button class="btn btn-sm btn-go" type="button" data-h="docconfirm"' + id + '>Confirm</button>';
+        item(2, 'docreplace', 'Replace');
+      }
+      if (d.state === 'confirmed') acts += '<button class="btn btn-sm" type="button" data-h="docseal"' + id + '>Download</button>';
+      if (d.signed && d.signed.has_scan) item(1, 'docscan', 'Signed copy');
+      if (d.state !== 'draft') item(1, 'docrecord', 'Record');
+      if (part && ['sent', 'withdrawn', 'declined', 'signed', 'confirmed'].indexOf(d.state) >= 0) item(6, 'docvoid', 'Void', true);
+      if (part && d.state === 'void') item(6, 'docdelete', 'Delete', true);
+    }
+    var menu = items.length ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for ' + esc(DOC_WORD[d.kind]) + '" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" hidden>' + items.join('') + '</div></span>' : '';
+    var signed = d.signed ? (d.signed.via === 'online' ? esc(d.signed.name || '') + ' · ' + esc(when(d.signed_at)) + ' · Code confirmed' :
+      (d.signed.via === 'scan' ? 'By scan' : 'On paper') + (d.signed.on ? ' · ' + esc(day(d.signed.on)) : '')) : '';
+    return '<div class="hir-iv' + (d.state === 'void' ? ' is-off' : '') + '"><div class="hir-iv-head"><b>' + esc(DOC_WORD[d.kind]) +
+        (d.serial ? ' <span class="nb hir-doc-ref">' + esc(d.serial) + '</span>' : '') + '</b>' +
+        '<span class="hir-iv-ctl"><span class="chip-state ' + label[1] + '">' + esc(label[0]) + '</span>' + menu + '</span></div>' +
+      '<dl class="ovfacts">' +
+        fact('Position', esc(t.position || '')) + fact('Employment', esc(EMP_TYPE[t.type] || '')) +
+        fact('Commencement', esc(day(t.start))) + (t.end ? fact('End of contract', esc(day(t.end))) : '') +
+        fact('Probation', t.probation_months ? esc(t.probation_months) + ' month' + (t.probation_months === 1 ? '' : 's') : 'None') +
+        fact('Salary', d.pay_set ? 'Set' : '', d.pay_set ? '' : 'is-warn') +
+        (d.state === 'draft' ? fact('Days to reply', esc(t.reply_days || '')) : '') +
+        (d.sent_at ? fact('Sent', esc([d.sent_by, when(d.sent_at)].filter(Boolean).join(' · '))) : '') +
+        (d.state === 'sent' ? fact(d.expired ? 'Expired' : 'Reply by', esc(when(d.reply_by))) : '') +
+        (d.mail ? fact('Email', esc(MAIL[d.mail] || d.mail) + ' · ' + esc(when(d.mail_at)), d.mail === 'sent' ? '' : 'is-warn') : '') +
+        (d.returned_note && d.state === 'sent' ? fact('Sent back', esc(d.returned_note), 'is-pre') : '') +
+        (signed ? fact(d.kind === 'offer' ? 'Accepted' : 'Signed', signed) : '') +
+        (d.state === 'declined' ? fact('Declined', esc(when(d.answered_at)) + (d.decline_note ? ' · ' + esc(d.decline_note) : '')) : '') +
+        (d.confirmed_at ? fact('Confirmed', esc([d.confirmed_by, when(d.confirmed_at)].filter(Boolean).join(' · '))) : '') +
+        (d.stamp_no ? fact('Stamp certificate', esc(d.stamp_no)) : '') +
+        (d.sealed_at ? fact('Sealed', esc(when(d.sealed_at))) : '') +
+        (d.void_note ? fact('Void', esc(d.void_note)) : '') +
+      '</dl>' + (acts ? '<div class="hir-iv-acts">' + acts + '</div>' : '') + '</div>';
+  }
+  function docSheet(d, kind) {
+    var c = state.rec, k = d ? d.kind : kind, t = (d && d.terms) || {};
+    var last = (state.docs || []).filter(function (x) { return x.kind === 'offer' && x.terms; })[0];
+    if (!d && k === 'contract' && last) t = Object.assign({}, last.terms, { reply_days: 7 });
+    var f = [
+      { name: 'position', label: 'Position', value: t.position || c.position || '', required: true },
+      { name: 'type', label: 'Employment', choices: [['permanent', 'Permanent'], ['contract', 'Contract'], ['intern', 'Internship'], ['part_time', 'Part-time']], value: t.type || 'permanent' },
+      { name: 'start', label: 'Commencement', type: 'date', value: t.start || '', half: true, required: true },
+      { name: 'end', label: 'End of contract', type: 'date', value: t.end || '', required: false, note: 'Contract and internship only.' },
+      { name: 'probation', label: 'Probation (months)', type: 'number', value: t.probation_months == null ? 3 : t.probation_months, half: true },
+      { name: 'reply', label: 'Days to reply', type: 'number', value: t.reply_days || (k === 'offer' ? 3 : 7) }
+    ];
+    if (k === 'offer') f.push({ name: 'scope', label: 'Scope', value: t.scope || '', required: true });
+    else {
+      f.push({ name: 'duties', label: 'Nature of works', rows: 3, value: t.duties || '', required: true });
+      f.push({ name: 'place', label: 'Place of employment', value: t.place || '', required: false, note: 'Leave empty for the registered office.' });
+    }
+    window.ADspaceConfirm.ask({ title: (d ? 'Edit ' : 'New ') + (k === 'offer' ? 'offer' : 'contract'), go: d ? 'Save' : 'Create', wait: true, fields: f,
+      check: function (v) {
+        if (!String(v.position || '').trim()) return DOC_SAID['bad-position'] || 'Enter the position.';
+        if (!v.start) return DOC_SAID['bad-start'];
+        if ((v.type === 'contract' || v.type === 'intern') && (!v.end || v.end <= v.start)) return DOC_SAID['bad-end'];
+        return '';
+      } },
+    function (v) {
+      var terms = { position: String(v.position).trim(), type: v.type, start: v.start, end: v.end || null, probation_months: Number(v.probation) || 0,
+        reply_days: Number(v.reply) || 0, scope: v.scope, duties: v.duties, place: v.place };
+      return rpc('hiring_doc_save', { p_candidate: c.id, p_doc: d ? d.id : null, p_kind: k, p_terms: terms, p_expected: d ? d.updated_at : null }).then(function (r) {
+        var x = r.data || {};
+        if (r.error || x.error) return docSaid(r);
+        state.pane = 'offer';
+        openRec(c.id).then(function () { msg('hirRecMsg', d ? 'Saved.' : 'Draft created. Set the salary, then send it.', 'ok'); });
+        return '';
+      });
+    });
+  }
+  /* The master code, then the caution step; the token held 15 minutes in
+     this page alone (never stored). */
+  var unlockAt = 0, unlockTok = '';
+  function unlocked() {
+    if (unlockTok && Date.now() - unlockAt < 14 * 60000) return Promise.resolve(unlockTok);
+    return new Promise(function (resolve) {
+      window.ADspaceConfirm.ask({ title: 'Enter the master code', go: 'Unlock', wait: true,
+        body: 'Enter the master code to see the salary.',
+        field: { name: 'code', label: 'Master code', type: 'password', required: true } },
+      function (v) {
+        return rpc('hiring_unlock', { p_code: v.code }).then(function (r) {
+          var x = r.data || {};
+          if (r.error || x.error) return x.error === 'wrong-code' ? 'The master code is incorrect. ' + x.left + ' attempts left.' : docSaid(r);
+          unlockTok = x.token; unlockAt = Date.now();
+          setTimeout(function () { resolve(unlockTok); }, 0);
+          return '';
+        });
+      });
+    }).then(function (tok) {
+      return new Promise(function (resolve) {
+        window.ADspaceConfirm.ask({ title: 'Sensitive information follows', body: 'Proceed with caution.', go: 'Continue' }, function () { resolve(tok); });
+      });
+    });
+  }
+  function payOf(d, tok) {
+    return rpc('hiring_doc_pay_get', { p_doc: d.id, p_token: tok }).then(function (r) {
+      var x = r.data || {};
+      if (r.error || x.error) { if (x.error === 'code-needed') unlockTok = ''; throw new Error(docSaid(r)); }
+      unlockAt = Date.now();
+      return x;
+    });
+  }
+  function docPay(d, b) {
+    unlocked().then(function (tok) {
+      return payOf(d, tok).then(function (p) {
+        var prob = Number((d.terms || {}).probation_months) || 0;
+        var f = [{ name: 'basic', label: 'Basic salary per month (RM)', type: 'number', value: p.basic == null ? '' : p.basic, required: true }];
+        if (prob) f.push({ name: 'probation', label: 'During probation per month (RM)', type: 'number', value: p.probation == null ? '' : p.probation, required: false, note: 'Leave empty if it is the same as the basic salary.' });
+        window.ADspaceConfirm.ask({ title: 'Salary', go: 'Save', wait: true, fields: f,
+          check: function (v) { return Number(v.basic) > 0 ? '' : DOC_SAID['bad-basic']; } },
+        function (v) {
+          return rpc('hiring_doc_pay_set', { p_doc: d.id, p_basic: Number(v.basic), p_probation: v.probation === '' || v.probation == null ? null : Number(v.probation), p_token: tok }).then(function (r) {
+            if (r.error || (r.data || {}).error) return docSaid(r);
+            unlockAt = Date.now();
+            openRec(state.rec.id).then(function () { msg('hirRecMsg', 'Saved.', 'ok'); });
+            return '';
+          });
+        });
+      });
+    }).catch(function (e) { msg('hirRecMsg', e && e.message ? e.message : 'The request failed. Please try again.', 'err'); });
+  }
+  function docInfo(d) {
+    var c = state.rec, me = bridge.me ? bridge.me() : {};
+    return { kind: d.kind, serial: d.serial, sent_at: d.sent_at, terms: d.terms, name: c.name, signed: null,
+      signatory: { name: d.sent_by || (me && me.name) || '', designation: d.sent_role || '' } };
+  }
+  function docPreview(d, b) {
+    var tab = window.ADspaceDocs.previewTab ? window.ADspaceDocs.previewTab() : null;
+    unlocked().then(function (tok) { return payOf(d, tok); }).then(function (p) {
+      return window.ADspaceHrDocs.bytes(docInfo(d), p, { draft: d.state === 'draft' });
+    }).then(function (bytes) {
+      return window.ADspaceDocs.save(new Blob([bytes], { type: 'application/pdf' }), window.ADspaceHrDocs.fileName(d), tab);
+    }).catch(function (e) { if (tab && tab.close) try { tab.close(); } catch (x) {} msg('hirRecMsg', e && e.message ? e.message : 'The document could not be generated. Please try again.', 'err'); });
+  }
+  function docMail(d) {
+    return fnCall('hiring-mail', { docId: d.id, kind: 'doc' }).then(function (x) {
+      if (x.error) { msg('hirRecMsg', SAID[x.error] || said({ data: x }), x.error === 'unknown' ? 'warn' : 'err'); return false; }
+      return true;
+    });
+  }
+  function docSend(d, b) {
+    var c = state.rec;
+    window.ADspaceConfirm.ask({ title: 'Send ' + DOC_WORD[d.kind] + '?', go: 'Send', wait: true,
+      body: 'ADspace will email ' + c.name + ' at ' + c.email + '. Their page asks for a code before it shows the document. The email does not include the salary.' },
+    function () {
+      return rpc('hiring_doc_send', { p_doc: d.id }).then(function (r) {
+        var x = r.data || {};
+        if (r.error || x.error) return docSaid(r);
+        docMail(d).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); });
+        return '';
+      });
+    });
+  }
+  function docWithdraw(d, back) {
+    var c = state.rec;
+    rpc('hiring_doc_withdraw', { p_doc: d.id, p_restore: back }).then(function (r) {
+      if (r.error || (r.data || {}).error) { msg('hirRecMsg', docSaid(r), 'err'); return; }
+      openRec(c.id).then(function () {
+        if (!back && bridge.undoHere) bridge.undoHere('Withdrawn.', function () {
+          return rpc('hiring_doc_withdraw', { p_doc: d.id, p_restore: true }).then(function () { openRec(c.id); });
+        }, $('hirRecMsg'));
+      });
+    });
+  }
+  /* A PDF picked and stored in the candidate's private folder; answers its
+     path. */
+  function pickPdf(label) {
+    return new Promise(function (resolve, reject) {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'application/pdf,.pdf';
+      inp.addEventListener('change', function () {
+        var f = inp.files && inp.files[0];
+        if (!f) { reject(new Error('')); return; }
+        if (!/\.pdf$/i.test(f.name) || (f.type && f.type !== 'application/pdf')) { reject(new Error(DOC_SAID['bad-file'])); return; }
+        if (f.size > MAX_MB * 1048576) { reject(new Error('Choose a file of ' + MAX_MB + ' MB or less.')); return; }
+        var path = state.rec.id + '/' + Date.now() + '-' + label + '.pdf';
+        db.storage.from(BUCKET).upload(path, f, { contentType: 'application/pdf', upsert: false }).then(function (x) {
+          if (x.error) reject(new Error('The file was not uploaded. Please try again.')); else resolve(path);
+        }, function () { reject(new Error('The file was not uploaded. Please try again.')); });
+      });
+      inp.click();
+    });
+  }
+  function docMark(d) {
+    var c = state.rec, today = window.ADspaceClock.today();
+    window.ADspaceConfirm.ask({ title: 'Mark signed', go: 'Choose the signed copy', wait: true,
+      body: 'Upload the signed copy as a PDF.',
+      fields: [{ name: 'route', label: 'Signed', choices: [['scan', 'By scan'], ['paper', 'On paper']], seg: true, value: 'scan' },
+        { name: 'on', label: 'Date signed', type: 'date', value: today, required: true }],
+      check: function (v) { return !v.on || v.on > today || v.on < window.ADspaceClock.day(d.sent_at) ? DOC_SAID['bad-date'] : ''; } },
+    function (v) {
+      return pickPdf('signed-' + d.kind).then(function (path) {
+        return rpc('hiring_doc_mark', { p_doc: d.id, p_route: v.route, p_on: v.on, p_path: path }).then(function (r) {
+          if (r.error || (r.data || {}).error) { db.storage.from(BUCKET).remove([path]).then(function () {}, function () {}); return docSaid(r); }
+          openRec(c.id).then(function () { msg('hirRecMsg', 'Marked signed.', 'ok'); });
+          return '';
+        });
+      }).catch(function (e) { return (e && e.message) || ''; });
+    });
+  }
+  function docBack(d) {
+    var c = state.rec;
+    window.ADspaceConfirm.ask({ title: 'Send back?', go: 'Send back', tone: 'warn', wait: true,
+      body: 'The candidate will be asked to ' + (d.kind === 'offer' ? 'reply' : 'sign') + ' again. The signing so far is kept in its record.',
+      field: { name: 'note', label: 'Reason', required: true } },
+    function (v) {
+      return rpc('hiring_doc_send_back', { p_doc: d.id, p_note: String(v.note || '').trim() }).then(function (r) {
+        if (r.error || (r.data || {}).error) return docSaid(r);
+        docMail(d).then(function () { openRec(c.id); });
+        return '';
+      });
+    });
+  }
+  function docConfirm(d, b) {
+    var c = state.rec;
+    window.ADspaceConfirm.ask({ title: 'Confirm ' + DOC_WORD[d.kind] + '?', go: 'Confirm', wait: true,
+      body: 'Confirming countersigns it for ' + (window.ADSPACE_ORG && window.ADSPACE_ORG.name || 'ADSPACE PLT') + '. The confirmed copy is then sealed and cannot be changed.',
+      fields: [{ name: 'stamp', label: 'Stamp certificate number', value: '', required: false, note: 'Optional. Enter it if the document was stamped.' }] },
+    function (v) {
+      return rpc('hiring_doc_confirm', { p_doc: d.id, p_stamp_no: String(v.stamp || '').trim() || null, p_stamp_path: null }).then(function (r) {
+        if (r.error || (r.data || {}).error) return docSaid(r);
+        openRec(c.id).then(function () {
+          msg('hirRecMsg', 'Confirmed.', 'ok');
+          var now = (state.docs || []).filter(function (x) { return x.id === d.id; })[0];
+          if (now) docSealed(now, null);
+        });
+        return '';
+      });
+    });
+  }
+  /* The sealed copy: drawn once behind the master code, with its Record of
+     this Document, stored privately and never drawn again; later presses
+     open the kept file. */
+  function docSealed(d, b) {
+    if (d.seal_path) { openPath(d.seal_path, b); return; }
+    var c = state.rec, rec;
+    rpc('hiring_doc_record', { p_doc: d.id }).then(function (r) {
+      if (r.error || (r.data || {}).error) throw new Error(docSaid(r));
+      rec = r.data;
+      return unlocked();
+    }).then(function (tok) { return payOf(d, tok); }).then(function (p) {
+      var info = docInfo(d);
+      return signedOf(d).then(function (s) { info.signed = s; return window.ADspaceHrDocs.seal(info, p, rec); });
+    }).then(function (blob) {
+      var path = c.id + '/sealed-' + d.id + '.pdf';
+      return db.storage.from(BUCKET).upload(path, blob, { contentType: 'application/pdf', upsert: false }).then(function (x) {
+        if (x.error && !/exists|Duplicate/i.test(x.error.message || '')) throw new Error('The sealed copy could not be saved. Please try again.');
+        return rpc('hiring_doc_seal', { p_doc: d.id, p_path: path, p_sha: blob.seal.sha, p_pages_sha: blob.seal.pagesSha });
+      }).then(function (r) {
+        if (r.error || (r.data || {}).error) throw new Error(docSaid(r));
+        openRec(c.id).then(function () { msg('hirRecMsg', 'Sealed.', 'ok'); });
+      });
+    }).catch(function (e) { if (e && e.message) msg('hirRecMsg', e.message, 'err'); });
+  }
+  /* The candidate's signing as the PDF prints it (the signature drawn and
+     the record), read with the salary's unlock. */
+  function signedOf(d) {
+    return rpc('hiring_doc_signed', { p_doc: d.id, p_token: unlockTok }).then(function (r) {
+      var x = r.data || {};
+      return x.ok ? x.signed : null;
+    });
+  }
+  function openPath(path, b) {
+    if (!path) return;
+    var tab = window.open('', '_blank');
+    db.storage.from(BUCKET).createSignedUrl(path, SIGN_SECS).then(function (x) {
+      if (x.error || !x.data) { if (tab) tab.close(); msg('hirRecMsg', 'The file could not be opened. Please try again.', 'err'); return; }
+      if (tab) tab.location.href = x.data.signedUrl; else location.href = x.data.signedUrl;
+    }, function () { if (tab) tab.close(); });
+  }
+  function docRecord(d, b) {
+    if (!window.ADspaceSeal) return;
+    window.ADspaceSeal.open({ title: 'Record of this Document', sub: DOC_WORD[d.kind] + ' ' + (d.serial || ''), opener: b,
+      verifyUrl: 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(d.serial || ''),
+      load: function () { return rpc('hiring_doc_record', { p_doc: d.id }).then(function (r) { if (r.error || (r.data || {}).error) throw new Error('x'); return r.data; }); },
+      download: d.seal_path ? function () { openPath(d.seal_path); } : null });
+  }
+  function docReplace(d) {
+    var c = state.rec;
+    window.ADspaceConfirm.ask({ title: 'Replace ' + DOC_WORD[d.kind] + '?', go: 'Replace', wait: true,
+      body: 'A new draft will be created from these terms. Once sent, it takes ' + d.serial + ' and this document becomes void. Set the salary again before sending.' },
+    function () {
+      return rpc('hiring_doc_replace', { p_doc: d.id }).then(function (r) {
+        if (r.error || (r.data || {}).error) return docSaid(r);
+        openRec(c.id).then(function () { msg('hirRecMsg', 'Draft created.', 'ok'); });
+        return '';
+      });
+    });
+  }
+  function docVoid(d) {
+    var c = state.rec;
+    window.ADspaceConfirm.ask({ title: 'Void ' + d.serial + '?', go: 'Void', tone: 'danger', wait: true,
+      body: 'It will be removed from the candidate\'s page. A signed or sealed copy is kept.',
+      field: { name: 'note', label: 'Reason', required: true } },
+    function (v) {
+      return rpc('hiring_doc_void', { p_doc: d.id, p_note: String(v.note || '').trim() }).then(function (r) {
+        if (r.error || (r.data || {}).error) return docSaid(r);
+        openRec(c.id);
+        return '';
+      });
+    });
+  }
+  function docDelete(d) {
+    var c = state.rec, draft = d.state === 'draft';
+    window.ADspaceConfirm.ask({ title: 'Delete', go: 'Delete', tone: 'danger', wait: true,
+      body: draft ? 'This draft will be deleted. This cannot be undone.' : d.serial + ', its record and its files will be deleted. This cannot be undone.',
+      field: draft ? null : { name: 'serial', label: 'Type the reference', match: d.serial } },
+    function (v) {
+      return rpc('hiring_doc_delete', { p_doc: d.id, p_serial: draft ? null : v.serial }).then(function (r) {
+        if (r.error || (r.data || {}).error) return docSaid(r);
+        sweepFiles();
+        openRec(c.id);
+        return '';
+      });
+    });
   }
   function fnCall(name, body) {
     return db.functions.invoke(name, { body: body }).then(function (r) {
@@ -651,6 +1040,23 @@
       });
     });
     on('addperson', addPerson);
+    on('docnew', function (b) { docSheet(null, b.getAttribute('data-kind')); });
+    on('docedit', function (b) { docSheet(docOf(b), null); });
+    on('docpay', function (b) { docPay(docOf(b), b); });
+    on('docpreview', function (b) { docPreview(docOf(b), b); });
+    on('docsend', function (b) { docSend(docOf(b), b); });
+    on('docmail', function (b) { b.disabled = true; docMail(docOf(b)).then(function (ok) { openRec(c.id).then(function () { if (ok) msg('hirRecMsg', 'Sent.', 'ok'); }); }); });
+    on('docwithdraw', function (b) { docWithdraw(docOf(b), false); });
+    on('docrestore', function (b) { docWithdraw(docOf(b), true); });
+    on('docmark', function (b) { docMark(docOf(b)); });
+    on('docback', function (b) { docBack(docOf(b)); });
+    on('docconfirm', function (b) { docConfirm(docOf(b), b); });
+    on('docseal', function (b) { docSealed(docOf(b), b); });
+    on('docscan', function (b) { openPath(docOf(b).signed.path, b); });
+    on('docrecord', function (b) { docRecord(docOf(b), b); });
+    on('docreplace', function (b) { docReplace(docOf(b)); });
+    on('docvoid', function (b) { docVoid(docOf(b)); });
+    on('docdelete', function (b) { docDelete(docOf(b)); });
     on('invite', invite);
     on('ivapprove', function (b) { approve(b.getAttribute('data-id')); });
     on('ivmeet', function (b) { b.disabled = true; meetThenMail(b.getAttribute('data-id'), 'online'); });

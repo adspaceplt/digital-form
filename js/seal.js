@@ -63,8 +63,8 @@
 
   // ---- The record's words ---------------------------------------------------
   var STEP = { issued: 'Issued', sent: 'Sent', opened: 'Opened', code: 'Code sent', signed: 'Signed', submitted: 'Submitted',
-    returned: 'Sent back', confirmed: 'Confirmed', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined' };
-  var VIA = { link: 'on the quotation link', whatsapp: 'on WhatsApp', email: 'by email' };
+    returned: 'Sent back', confirmed: 'Confirmed', stamped: 'Stamped', sealed: 'Sealed', withdrawn: 'Withdrawn', declined: 'Declined' };
+  var VIA = { link: 'on the quotation link', page: 'on the candidate page', whatsapp: 'on WhatsApp', email: 'by email' };
   /* Time to the second, Malaysia's (GMT+8): 17 Nov 2026, 10:42:15am. */
   function when(iso) {
     if (!iso || !C()) return '';
@@ -92,7 +92,7 @@
   function row(st) {
     var by;
     if (st.team) by = (st.by || 'ADspace') + (st.role ? ', ' + st.role : '') + (st.by && st.by !== 'ADspace' ? ', ADspace' : '');
-    else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : 'Client';
+    else by = st.step === 'signed' && st.by ? st.by + (st.role ? ', ' + st.role : '') : (st.party || 'Client');
     var how = st.step === 'sent' ? (VIA[st.via] || '') : st.step === 'signed' && st.via === 'paper' ? 'Signed on paper' + (st.entered_by ? ', entered by ' + st.entered_by : '') : '';
     return [STEP[st.step] || st.step, when(st.at), by,
       st.step === 'signed' || st.step === 'code' ? (st.email || '—') : '—',
@@ -113,7 +113,8 @@
     var head = STEP[st.step] || st.step, who = '', meta = [];
     if (st.step === 'issued') who = st.by ? 'by ' + st.by : 'on the quotation website';
     else if (st.step === 'sent') { who = (VIA[st.via] || '') + (st.by ? ' by ' + st.by : ''); if (st.to) meta.push('To ' + st.to); if (st.state && st.via !== 'link') meta.push(String(st.state).replace(/^./, function (c) { return c.toUpperCase(); })); }
-    else if (st.step === 'opened') { who = 'by the client'; meta.push(where(st)); }
+    else if (st.step === 'opened') { who = 'by the ' + String(st.party || 'Client').toLowerCase(); meta.push(where(st)); }
+    else if (st.step === 'stamped') { who = st.by ? 'by ' + st.by : ''; if (st.note) meta.push('Stamp certificate ' + st.note); }
     else if (st.step === 'code') { meta.push('To ' + (st.email || '') + (st.in_contacts === true ? ' (in Contacts)' : st.in_contacts === false ? ' (not in Contacts)' : '')); if (where(st)) meta.push(where(st)); }
     else if (st.step === 'signed') {
       who = 'by ' + (st.by || '') + (st.role ? ', ' + st.role : '');
@@ -127,6 +128,7 @@
     else if (st.step === 'declined') { who = 'by the client'; if (where(st)) meta.push(where(st)); }
     else if (st.by) who = 'by ' + st.by;
     if (st.note && ['issued', 'withdrawn', 'declined'].indexOf(st.step) >= 0) meta.push(st.note);
+    if (st.step === 'signed' && st.via === 'paper' && st.party) meta[0] = 'On paper or by scan' + (st.entered_by ? ' · entered by ' + st.entered_by : '');
     return '<li class="seal-step"><span class="seal-when">' + esc(when(st.at)) + '</span><span class="seal-what"><b>' + esc(head) + '</b>' +
       (who ? ' ' + esc(who) : '') + (meta.length ? '<span class="seal-meta">' + esc(meta.join(' · ')) + '</span>' : '') + '</span></li>';
   }
