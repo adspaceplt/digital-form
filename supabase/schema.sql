@@ -119931,7 +119931,7 @@ begin
     insert into public.ops_notifications (team_member_id, kind, title, body, link)
     values (t.id, 'hiring.added', 'You were added to a candidate',
             c.position || ' · ' || case p_role when 'owner' then 'Owner' else 'Interviewer' end || ' · added by ' || me.name,
-            'https://digital.adspace.me/admin/?s=hiring&candidate=' || c.id);
+            'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' || c.id);
   end if;
   return jsonb_build_object('ok', true);
 end $$;

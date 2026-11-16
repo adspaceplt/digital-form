@@ -967,6 +967,7 @@
      on, so the rail draws Hiring for an Owner or an interviewer without the
      part. A read that fails, or a database without it, draws nothing. */
   var hiringHeld = 0;
+  function hiringOk() { return may('team.hiring', 'work') || hiringHeld > 0; }
   function loadHiring() {
     return db.rpc('hiring_mine').then(function (r) {
       hiringHeld = r && !r.error && r.data && r.data.ok ? Number(r.data.count) || 0 : 0;
@@ -1116,9 +1117,6 @@
      being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
-    /* Hiring (2026-11-16): the granted part, an admin's by itself, or a
-       place on a candidate (Owner, Interviews), read once beside me(). */
-    if (name === 'hiring') return may('team.hiring', 'work') || hiringHeld > 0;
     if (name === 'activity') {
       return may('activity', 'view') || PARTS.activity.some(function (k) {
         return may('activity.' + k, 'view');
@@ -1127,7 +1125,9 @@
     if (name === 'work') return may('ops', 'view');
     /* Team is two jobs gated apart: members and groups, and the monthly
        reviews. Either opens the route; the tab strip shows what is held. */
-    if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
+    /* Hiring is Team's tab (2026-11-16, the user): the granted part, or a
+       place on a candidate (Owner, Interviewer), read once beside me(). */
+    if (name === 'team') return may('team', 'view') || may('team.performance', 'view') || hiringOk();
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
     /* Settings (2026-10-10): any colleague holding one of its granted parts. */
@@ -1247,7 +1247,7 @@
   var TAB_WORD = {
     overview: 'Dashboard', analytics: 'Analytics', work: 'My Work', clients: 'Clients', whatsapp: 'Messages', review: 'Review',
     scripts: 'Scripts', campaigns: 'Campaigns', register: 'Documents', suppliers: 'Suppliers', reports: 'Reports', links: 'Links',
-    services: 'Services', hiring: 'Hiring', team: 'Team', handbook: 'Handbook'
+    services: 'Services', team: 'Team', handbook: 'Handbook'
   };
   var TAB_MORE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18.5" cy="12" r="1.3"/></svg>';
   var tabMedia = window.matchMedia && window.ADSPACE_TABBAR ? window.matchMedia(window.ADSPACE_TABBAR) : null;
@@ -1780,7 +1780,6 @@
     links: 'Short Links',
     register: 'Documents',
     suppliers: 'Suppliers',
-    hiring: 'Hiring',
     reports: 'Reports',
     services: 'Services',
     team: 'Team',
@@ -1814,7 +1813,6 @@
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
     suppliers: 'The suppliers ADspace pays, and the details each one submitted.',
-    hiring:    'Candidates for a position, the colleagues on each, and each candidate\'s own page.',
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The Rate Card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
@@ -1869,7 +1867,7 @@
     suppliers: { name: 'Suppliers', steps: [
       { at: '#supNew', text: 'New supplier creates a Supplier ID and a link. The supplier fills in their own details.' },
       { at: '#supList button.sup-row', text: 'Open a supplier to review the details they submitted, approve them and issue documents.' }] },
-    hiring: { name: 'Hiring', steps: [
+    'team.hiring': { name: 'Hiring', steps: [
       { at: '#hirAdd', text: 'Add candidate saves their details and CV, and creates their own page.' },
       { at: '#hirList button.hir-row', text: 'Open a candidate to add the colleagues who decide or interview, and to copy their page\'s link.' }] },
     reports: { name: 'Reports', steps: [
@@ -1883,7 +1881,7 @@
       { at: '#svcAdd', text: 'Add a service or an add-on to the Rate Card.' },
       { at: '#svcList .svc-row:not(.crm-head)', text: 'Each line is the starting point for a client\'s service line, which can then be edited.' }] },
     team: { name: 'Team', steps: [
-      { at: '#teamTabs', text: 'Members, the user groups that control what each member can open, Performance and Health.' },
+      { at: '#teamTabs', text: 'Members, Hiring, the user groups that control what each member can open, Performance and Health.' },
       { at: '#teamAdd', text: 'Add member gives a colleague their sign-in and digital namecard.' }] },
     handbook: { name: 'Handbook', steps: [
       { at: '#hbAdd', text: 'Add a file or a link. A new version never replaces the old one.' },
@@ -1947,6 +1945,7 @@
       return document.querySelector('#mineHealthBox [data-a="agree"]') ? 'mine.health' : 'mine.checkin';
     }
     if (section === 'team' && q.get('tab') === 'health') return 'team.health';
+    if (section === 'team' && q.get('tab') === 'hiring') return q.get('candidate') ? '' : 'team.hiring';
     if (section === 'reports') {
       var on = document.querySelector('#rhEdit:not([hidden]) .rp-step.is-on');
       if (!on) return q.get('report') ? '' : 'reports';
@@ -2066,7 +2065,7 @@
      no section meets No access, which says to ask an admin; the Handbook
      is a mark at the rail's foot, never a section's floor (2026-11-11). */
   function firstAllowed() {
-    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'hiring', 'team'];
+    var order = ['overview', 'work', 'clients', 'review', 'scripts', 'campaigns', 'reports', 'whatsapp', 'register', 'suppliers', 'links', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'noaccess';
   }
@@ -2122,7 +2121,6 @@
     $('sectionLinks').hidden     = name !== 'links';
     $('sectionRegister').hidden  = name !== 'register';
     $('sectionSuppliers').hidden = name !== 'suppliers';
-    $('sectionHiring').hidden    = name !== 'hiring';
     $('sectionReports').hidden   = name !== 'reports';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
@@ -2211,12 +2209,6 @@
     if (name === 'suppliers') {
       if (!window.ADspaceSuppliers) { enterLater = 'suppliers'; return; }
       window.ADspaceSuppliers.enter();
-      setUrl();
-      return;
-    }
-    if (name === 'hiring') {
-      if (!window.ADspaceHiring) { enterLater = 'hiring'; return; }
-      window.ADspaceHiring.enter();
       setUrl();
       return;
     }
@@ -2396,9 +2388,6 @@
     } else if (section === 'services' && window.ADspaceCRM && window.ADspaceCRM.svcState) {
       var sv = window.ADspaceCRM.svcState();
       Object.keys(sv).forEach(function (k) { if (sv[k]) q.push(k + '=' + encodeURIComponent(sv[k])); });
-    } else if (section === 'hiring' && window.ADspaceHiring) {
-      var hir = window.ADspaceHiring.urlState();
-      Object.keys(hir).forEach(function (k) { if (hir[k]) q.push(k + '=' + encodeURIComponent(hir[k])); });
     } else if (section === 'suppliers' && window.ADspaceSuppliers) {
       var spl = window.ADspaceSuppliers.urlState();
       Object.keys(spl).forEach(function (k) { if (spl[k]) q.push(k + '=' + encodeURIComponent(spl[k])); });
@@ -2468,6 +2457,13 @@
        stays inside it (2026-09-28). */
     var where = params.get('s') || (params.get('client') ? 'clients' : firstAllowed());
     if (where === 'dashboard') where = 'overview';
+    /* Hiring was a section of its own for its first release (2026-11-16):
+       an address or a notice from then opens Team's Hiring tab. */
+    if (where === 'hiring') {
+      where = 'team';
+      var hc = params.get('candidate');
+      history.replaceState(null, '', '?s=team&tab=hiring' + (hc ? '&candidate=' + encodeURIComponent(hc) : ''));
+    }
     if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {
@@ -6227,12 +6223,8 @@
       enterLater = '';
       window.ADspacePerf.enterTeam();
     },
-    hiringReady: function () {
-      if (enterLater !== 'hiring' || section !== 'hiring') return;
-      enterLater = '';
-      window.ADspaceHiring.enter();
-      setUrl();
-    },
+    /* Hiring (2026-11-16): Team's tab is offered for the part or a place on a candidate. */
+    hiringOk: function () { return hiringOk(); },
     scriptsReady: function () {
       if (enterLater !== 'scripts' || section !== 'scripts') return;
       enterLater = '';
