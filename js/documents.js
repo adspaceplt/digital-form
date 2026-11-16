@@ -779,8 +779,11 @@
      on the left, the page count on the right, the given line between them,
      centred on the page where it clears both, else in the room they leave.
      7.5pt; where the longest line cannot clear both, 7pt on every page. */
-  function letterFoot(pn, pages, serial, footWord) {
-    var font = pn.fonts.font, M = pn.M, R = pn.R, W = pn.W, n = pages.length;
+  /* `total` and `from` count pages drawn apart from these: a sealed copy's
+     signed pages read "of n" with its Record page counted, and the Record
+     page reads its own place (SIGNED DOCUMENT SEAL, 2026-11-17). */
+  function letterFoot(pn, pages, serial, footWord, total, from) {
+    var font = pn.fonts.font, M = pn.M, R = pn.R, W = pn.W, n = total || pages.length, at = from || 0;
     var GAP = 12, lineW = R - M;
     var rowFits = function (z) {
       return font.widthOfTextAtSize(String(serial || ''), z) + font.widthOfTextAtSize(footWord, z) +
@@ -791,9 +794,9 @@
     var sentW = font.widthOfTextAtSize(footWord, FZ);
     pages.forEach(function (pg, i) {
       pn.page = pg;
-      pn.footMark(i, n, FZ);
+      pn.footMark(i + at, n, FZ);
       pn.text(serial, M, M, FZ, font, pn.faint);
-      var pageStart = R - font.widthOfTextAtSize('Page ' + (i + 1) + ' of ' + n, FZ);
+      var pageStart = R - font.widthOfTextAtSize('Page ' + (i + at + 1) + ' of ' + n, FZ);
       var x = Math.max(W / 2 - sentW / 2, refEnd + GAP);
       x = Math.min(x, pageStart - GAP - sentW);
       pn.text(footWord, x, M, FZ, font, pn.faint);

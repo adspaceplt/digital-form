@@ -156,7 +156,8 @@
   }
   var COLS = 'id, ref, client_id, brand, version, version_id, selection, lines, totals, status, source, issued_at, ' +
     'valid_until, made_by, contact, access_key, requested_at, removed_at, removed_by, proceed_at, proceed_due, proceed_start, proceed_decider, replaces, no_contact_at, released_at, reply_due, ' +
-    'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at';
+    'signed_at, signed, submitted_at, submitted_by, reviewer_id, reviewer_name, reviewed_at, reviewed_by, reviewed_role, returned_at, return_note, returned_by, sign_history, sent_out_at, ' +
+    'sealed_at, seal_sha, seal_pages_sha, sealed_by';
   /* Two short lines (2026-10-26, the user: "too many info"): what it is, then
      where it came from and when. */
   function metaOf(q) {
@@ -321,6 +322,9 @@
             if (!q.signed_at) items.push('<button class="kmenu-item is-danger" data-g="6" data-a="remove" data-soft type="button" role="menuitem">Remove</button>');
           }
           if (maySet && q.removed_at) items.push('<button class="kmenu-item" data-g="5" data-a="restore" type="button" role="menuitem">Restore</button>');
+          /* The signed document's record (SIGNED DOCUMENT SEAL, 2026-11-17):
+             every step to the second, and its seal once confirmed. */
+          if (q.signed_at && !q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="record" type="button" role="menuitem">Record</button>');
           if (!q.removed_at) items.unshift('<button class="kmenu-item" data-g="1" data-a="pdf" type="button" role="menuitem">Download</button>');
           if (edit) items.splice(2, 0, '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>');
           return '<div class="svc-row qt-row' + (q.removed_at || st[1] === 'is-off' ? ' is-off' : '') + (acts.length || !q.removed_at ? ' has-acts' : '') + '" data-id="' + esc(q.id) + '">' +
@@ -446,7 +450,61 @@
       .then(function (r) { ROLES[name] = (((r && r.data) || [])[0] || {}).designation || ''; return ROLES[name]; })
       .catch(function () { return ''; });
   }
+  /* SIGNED DOCUMENT SEAL (2026-11-17): a confirmed quotation's PDF is the
+     sealed copy, drawn once with its Record of this Document and kept
+     private; every Download, send and Preview hands that file over. One
+     confirmed before the seal, or whose first keep failed, is sealed at its
+     next Download by a colleague at Work; anyone else reads it drawn. */
+  function sealOn() { var s3 = (window.ADSPACE_CONFIG || {}).s3; return Boolean(s3 && s3.privateInvoices && window.ADspaceSeal && window.ADspaceAdmin && window.ADspaceAdmin.putToS3); }
+  function verifyUrl(q) { return 'https://digital.adspace.me/verify/?s=' + encodeURIComponent(q.ref); }
+  function readSealed(q, ctx) {
+    return ctx.db.functions.invoke('sign-download', { body: { quotation: q.id } }).then(function (r) {
+      var b = r && r.data;
+      if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('kept-unread');
+      return b.type === 'application/pdf' ? b : new Blob([b], { type: 'application/pdf' });
+    });
+  }
+  var sealing = {};
+  function sealNow(q, ctx) {
+    if (sealing[q.id]) return sealing[q.id];
+    var s3 = (window.ADSPACE_CONFIG || {}).s3 || {}, blob;
+    var job = ctx.db.rpc('quotation_record', { p_id: q.id }).then(function (r) {
+      var rec = r.data || {};
+      if (r.error || rec.error) throw new Error(said(r.error || rec.error));
+      return drawPlain(q, ctx, { seal: { record: rec, verifyUrl: verifyUrl(q) } });
+    }).then(function (b) {
+      blob = b;
+      return ctx.db.functions.invoke(s3.functionName || 'sign-upload', {
+        body: { ext: 'pdf', clientId: q.client_id, size: b.size, private: true, purpose: 'seal', quotationId: q.id } });
+    }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || !d.uploadUrl || !d.key) throw new Error(d.error || 'The sealed copy could not be stored.');
+      return window.ADspaceAdmin.putToS3(d.uploadUrl, blob, d.contentType || 'application/pdf').then(function () {
+        return ctx.db.rpc('quotation_seal', { p_id: q.id, p_key: d.key, p_sha: blob.seal.sha, p_pages_sha: blob.seal.pagesSha });
+      });
+    }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) throw new Error(said(r.error || d.error));
+      q.sealed_at = q.sealed_at || new Date().toISOString();
+      /* Sealed first by someone else: theirs is the file kept. */
+      if (d.kept) return readSealed(q, ctx);
+      q.seal_sha = blob.seal.sha; q.seal_pages_sha = blob.seal.pagesSha;
+      return blob;
+    });
+    sealing[q.id] = job;
+    job.catch(function () { return null; }).then(function () { delete sealing[q.id]; });
+    return job;
+  }
   function drawPdf(q, ctx, extra) {
+    if (!(extra && extra.draft)) {
+      if (q.sealed_at) return readSealed(q, ctx);
+      if (q.reviewed_at && sealOn() && ctx.may('clients.quotes', 'work')) {
+        return sealNow(q, ctx).catch(function () { return drawPlain(q, ctx, extra); });
+      }
+    }
+    return drawPlain(q, ctx, extra);
+  }
+  function drawPlain(q, ctx, extra) {
     var c = ctx.client || {};
     var by = q.made_by || (q.source === 'website' ? c.owner : '') || '';
     return Promise.all([coverWords(ctx), roleOf(ctx, by)]).then(function (got) {
@@ -559,6 +617,17 @@
           ctx.reload(function () { ctx.msg('qtMsg', q.ref + ' is open for signing again.', 'ok'); });
         }).catch(function (e) { ctx.msg('qtMsg', said(e), 'err'); });
       });
+      return;
+    }
+    if (a === 'record') {
+      window.ADspaceSeal.open({ title: 'Record of this Document', sub: 'Quotation ' + q.ref, opener: btn, verifyUrl: verifyUrl(q),
+        load: function () {
+          return ctx.db.rpc('quotation_record', { p_id: q.id }).then(function (r) {
+            if (r.error) throw r.error;
+            return r.data;
+          });
+        },
+        download: function (b) { act('pdf', q, ctx, host, b); } });
       return;
     }
     if (a === 'pdf' || a === 'view') {
@@ -930,7 +999,18 @@
         RV = null;
         var line = q.ref + ' approved. ' + (d.lines || 0) + ' service line' + (d.lines === 1 ? '' : 's') + ' confirmed. ' + (BILLING_SAID[d.billing] || '') +
           (c.stage && c.stage !== 'active' ? ' Move the client to Active from the record’s stage.' : '');
-        var done = function () { (ctx.refresh || ctx.reload)(function () { ctx.msg('qtMsg', line.trim(), 'ok'); }); };
+        /* The signed copy is sealed at once (SIGNED DOCUMENT SEAL): drawn
+           from the row as it now stands, kept private, never drawn again.
+           A seal that fails is said; the next Download seals it. */
+        var sealed = function () {
+          if (!sealOn()) return Promise.resolve();
+          return ctx.db.from('quotations').select(COLS).eq('id', q.id).maybeSingle().then(function (x) {
+            if (x.error || !x.data) throw new Error('not-read');
+            return sealNow(x.data, ctx);
+          }).then(function () { line += ' Signed copy sealed.'; })
+            .catch(function () { line += ' The signed copy was not sealed; it is sealed at its next Download.'; });
+        };
+        var done = function () { sealed().then(function () { (ctx.refresh || ctx.reload)(function () { ctx.msg('qtMsg', line.trim(), 'ok'); }); }); };
         if (!start) { done(); return; }
         ctx.db.rpc('quotation_lines_start', { p_id: q.id, p_start: start }).then(function (r2) {
           var e2 = r2.error || (r2.data && r2.data.error);
