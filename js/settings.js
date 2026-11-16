@@ -97,6 +97,8 @@
         return parts(pgCounts(rows).concat(set.length <= 3 ? [set.map(function (p) { return p.name; }).join(', ')] : []));
       });
     },
+    /* What the AutoCount HRMS row holds (2026-11-16). */
+    autocount: function () { return window.ADspacePersonnel ? window.ADspacePersonnel.settingsLine() : Promise.resolve(''); },
     /* What the Departments row holds, from the list (2026-10-23). */
     depts: function () {
       return db.rpc('departments_list').then(function (r) {
@@ -245,6 +247,10 @@
       ['Company', [
         biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta(), open: openHol },
         biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts'), open: openDepts },
+        /* The AutoCount HRMS company defaults (2026-11-16): what every
+           colleague's row of the import takes. */
+        biz && W.ADspacePersonnel && { id: 'autocount', name: 'AutoCount HRMS', kind: 'open', meta: line('autocount'),
+          open: function (btn) { W.ADspacePersonnel.openSettings(btn); } },
         /* Overseas approval (2026-10-24): how long an approval runs at most
            and how often a waiting request reminds. */
         biz && { id: 'abroadays', name: 'Overseas approval', kind: 'edit',
@@ -994,7 +1000,7 @@
       dep.rows.map(function (d) {
         var n = d.members || 0;
         return '<div class="ind-row is-dep dep-row' + (d.active ? '' : ' is-past') + '" data-key="' + esc(d.key) + '">' +
-          '<span class="ind-name dep-name">' + esc(d.name) + '</span>' +
+          '<span class="ind-name dep-name">' + esc(d.name) + (d.ac_code ? '<span class="dep-code">' + esc(d.ac_code) + '</span>' : '') + '</span>' +
           '<span class="ind-n dep-n">' + n + '<span class="ind-unit"> ' + (n === 1 ? 'colleague' : 'colleagues') + (d.in_prize ? ' · In the department prize' : '') + '</span></span>' +
           '<span class="dep-prize">' + (d.in_prize ? 'Included' : '<span class="ind-none">—</span>') + '</span>' +
           '<span class="dep-on"><span class="chip-state ' + (d.active ? 'is-ok' : 'is-off') + '">' + (d.active ? 'Active' : 'Inactive') + '</span></span>' +
@@ -1014,6 +1020,8 @@
   function depAsk(d) {
     var crit = (d && d.criteria) || [];
     var fields = [{ name: 'name', label: 'Name', value: d ? d.name : '', placeholder: 'Sales', required: true },
+      /* AutoCount HRMS's Department Code (2026-11-16): CRE, MKT, MGT. */
+      { name: 'ac', label: 'AutoCount code', value: d ? d.ac_code || '' : '', placeholder: 'CRE', required: false },
       { name: 'prize', label: 'In the department prize', tick: true, value: d && d.in_prize ? 'on' : '' }];
     CRIT_MAX.forEach(function (mx, i) {
       fields.push({ name: 'c' + i, label: 'Criterion ' + (i + 1) + ', out of ' + mx, value: crit[i] || '', required: false,
@@ -1026,13 +1034,23 @@
         var named = CRIT_MAX.filter(function (x, i) { return String(v['c' + i] || '').trim(); }).length;
         if (v.prize === 'on' && named < 5) return DEP_SAID['criteria-needed'];
         if (named && named < 5) return 'Name all five criteria, or leave them all empty.';
+        if (v.ac && !/^[A-Za-z0-9]{2,10}$/.test(String(v.ac).trim())) return 'Enter an AutoCount code of 2 to 10 letters or digits.';
         return '';
       }
     }, function (v) {
       var cr = CRIT_MAX.map(function (x, i) { return String(v['c' + i] || '').trim(); });
       return db.rpc('department_save', { p_key: d ? d.key : null, p_name: v.name, p_in_prize: v.prize === 'on',
         p_criteria: cr.every(function (c) { return !c; }) ? null : cr }).then(function (r) {
-        return depSaid(r) || depChanged('Saved.');
+        var bad = depSaid(r);
+        if (bad) return bad;
+        var key = (r.data && r.data.key) || (d && d.key), code = String(v.ac || '').trim().toUpperCase();
+        if (!key || code === String((d && d.ac_code) || '')) return depChanged('Saved.');
+        return db.rpc('department_ac_code_set', { p_key: key, p_code: code || null }).then(function (x) {
+          var e = x.error || (x.data && x.data.error);
+          if (e) return e === 'taken' ? 'Another department holds this AutoCount code.' : e === 'bad-code' ? 'Enter 2 to 10 capital letters or digits.'
+            : (e.message && /function|schema cache/i.test(e.message)) ? window.ADspaceWords.line.notYet : 'Not saved.';
+          return depChanged('Saved.');
+        });
       }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
     });
   }
@@ -1747,6 +1765,8 @@
     if (b) b.focus();
   }
   window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint,
-    pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow };
+    pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow,
+    /* A row's line read again after its sheet saved (AutoCount HRMS, 2026-11-16). */
+    refresh: function (id) { readLine(id); } };
   if (bridge.settingsReady) bridge.settingsReady();
 })();

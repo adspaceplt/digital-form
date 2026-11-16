@@ -1558,6 +1558,7 @@
         if (st.mv === 'reflection') loadRefl();
         if (st.mv === 'letters') loadLetters();
         if (st.mv === 'health') loadHealth();
+    if (st.mv === 'personnel') loadPersonnel();
       });
     });
   }
@@ -3220,10 +3221,12 @@
   // The colleague's own --------------------------------------------------------------------
   function mvFromUrl() {
     var v = new URLSearchParams(location.search).get('view');
-    return v === 'initiatives' || v === 'reflection' || v === 'letters' || v === 'health' ? v : 'reviews';
+    return v === 'initiatives' || v === 'reflection' || v === 'letters' || v === 'health' || v === 'personnel' ? v : 'reviews';
   }
   var MV = { reviews: 'mineReviews', initiatives: 'mineInits', reflection: 'mineRefl', letters: 'mineLetters',
-             health: 'mineHealth' };
+             personnel: 'minePersonnel', health: 'mineHealth' };
+  /* The employee record (js/personnel.js, 2026-11-16), behind the same proof. */
+  function loadPersonnel() { if (window.ADspacePersonnel) window.ADspacePersonnel.enterMine(); }
   /* Health is its own script (js/health.js, 2026-10-07), behind the same proof. */
   function loadHealth() { if (window.ADspaceHealth) window.ADspaceHealth.enterMine(); }
   function setMv(v, quiet) {
@@ -3246,6 +3249,7 @@
     if (st.mv === 'reflection') loadRefl();
     if (st.mv === 'letters') loadLetters();
     if (st.mv === 'health') loadHealth();
+    if (st.mv === 'personnel') loadPersonnel();
   });
   /* HR letters issued to the colleague and shared with them (2026-10-06),
      behind the same proof as their reviews: their own alone, newest first,

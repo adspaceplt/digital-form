@@ -8789,6 +8789,8 @@
     if (!x.task_id && /^abroad\./.test(x.kind || '')) return 'team';
     if (!x.task_id && /^(perf|health)\./.test(x.kind || '')) return x.kind === 'perf.disputed' ? 'team' : 'mine';
     if (!x.task_id && x.kind === 'hr.letter') return 'mine';
+    if (!x.task_id && x.kind === 'personnel.request') return 'mine';
+    if (!x.task_id && x.kind === 'personnel.probation') return 'team';
     if (!x.task_id && /^creator\./.test(x.kind || '')) return 'campaigns';
     if (!x.task_id && x.report_id) return 'reports';
     if (!x.task_id && x.script_id) return 'scripts';
@@ -8889,6 +8891,26 @@
           rows.filter(function (a) { return a.name === abName; })[0];
         abGo(hit && hit.member);
       }).catch(function () { abGo(null); });
+      return;
+    }
+    /* A request for the employee record opens the colleague's Personnel
+       (2026-11-16); a probation review due opens that colleague's
+       Personnel, whose salary asks the caution and the master code first.
+       The notice names nobody: its key carries the colleague's id alone. */
+    if (!x.task_id && x.kind === 'personnel.request') {
+      history.replaceState(null, '', '/admin/?s=mine&view=personnel');
+      if (window.ADspacePerf && window.ADspacePerf.openView) window.ADspacePerf.openView('personnel');
+      else if (bridge.show) bridge.show('mine');
+      return;
+    }
+    if (!x.task_id && x.kind === 'personnel.probation') {
+      var pm = (String(x.dedupe_key || '').match(/^personnel\.probation:([^:]+):/) || [])[1];
+      if (pm && window.ADspacePersonnel) window.ADspacePersonnel.probation(pm);
+      history.replaceState(null, '', '/admin/?s=team' + (pm ? '&member=' + encodeURIComponent(pm) + '&mtab=personnel' : ''));
+      if (window.ADspaceTeam && window.ADspaceTeam.fromUrl) window.ADspaceTeam.fromUrl();
+      if (bridge.show) bridge.show('team');
+      var ptab = document.querySelector('#teamTabs .tab[data-tab="members"]');
+      if (ptab && !ptab.classList.contains('is-on') && !ptab.closest('[hidden]')) ptab.click();
       return;
     }
     /* A letter shared with the colleague opens their Letters. */
