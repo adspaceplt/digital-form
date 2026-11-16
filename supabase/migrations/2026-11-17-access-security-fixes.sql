@@ -44,7 +44,7 @@ begin
   end if;
   /* Every other group, its access and its granted parts: an admin's. */
   if not public.allowed('admin') then
-    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes a user group.';
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin can change a user group. Please ask an admin.';
   end if;
   if tg_op = 'DELETE' then return old; end if;
   return new;
