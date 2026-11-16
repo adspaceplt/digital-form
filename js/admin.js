@@ -5860,7 +5860,7 @@
   var SET_BOUND = { hours: [1, 720, true], days: [1, 365, true], due: [1, 60, true], pct: [0, 100, false], adj: [-100, 100, false], usd: [0, 1000, false], allow: [0, 5, false],
     every: [0, 24, true], ahead: [0, 30, true], quote: [1, 90, true], week: [0, 168, true], keep: [6, 120, true], leave: [1, 60, true],
     rm: [0, 10000, false], share: [1, 100, false], share0: [0, 100, false], pay: [1, 90, true], fx: [0.5, 10, false, 4, true], away: [1, 30, true],
-    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true] };
+    month: [202308, 209912, true], chg: [1, 50, true], churn: [1, 100, true], reply: [1, 10, true], cap: [0, 500, true], back: [0, 365, true] };
   /* A month held as YYYYMM (Analytics counts from), in words: Sept 2026. */
   function monthOfSetting(v) {
     v = Number(v);
@@ -5877,10 +5877,12 @@
      details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
-    ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
-    ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
-    ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
-    ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
+    /* A term takes the longest commitment it has reached (the user,
+       2026-11-17): under 3 months, then 3, 6, 12, 18 and 24 months. */
+    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '3-month commitment', 'adj', 'Terms under a year (%)'],
+    ['term_6_11', '6-month commitment', 'adj', 'Terms under a year (%)'],
+    ['term_12_23', '12-month commitment', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18-month commitment', 'adj', 'Terms of a year or more (%)'],
+    ['term_24', '24-month commitment', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
@@ -5898,8 +5900,8 @@
   function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
   var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
-    term_1_3: ['1 to 3 months', setSigned], term_4_5: ['4 and 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
-    term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
+    term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 months', setSigned], term_6_11: ['6 months', setSigned],
+    term_12_23: ['12 months', setSigned], term_18_23: ['18 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SETTING_SHEETS = {
     details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },
@@ -5913,7 +5915,7 @@
       ['revision_due_days', 'Revision (Client) due (working days after changes are requested)', 'due', '', 'Revision', per('working day')],
       ['approval_reminder_days', 'Remind after (days without client approval)', 'due', '', 'Approval reminder', per('day')],
       /* How far back a new task's dates may go (2026-11-10). */
-      ['task_past_days', 'Past dates on new tasks (days before today, 0 allows none)', 'due', '', 'Past dates', per('day')]] },
+      ['task_past_days', 'Past dates on new tasks (days before today, 0 allows none)', 'back', '', 'Past dates', per('day')]] },
     priority: { title: 'Priority deadlines', keys: [['priority_urgent_hours', 'Urgent (hours from when it is set)', 'hours', '', 'Urgent', per('hour')],
       ['priority_high_hours', 'High (hours from when it is set)', 'hours', '', 'High', per('hour')],
       ['priority_medium_hours', 'Medium (hours from when it is set)', 'hours', '', 'Medium', per('hour')]] },
@@ -5921,8 +5923,7 @@
       ['task_start_days', 'Remind of tasks not started (days before the due date, 0 turns this off)', 'ahead', '', 'Not started', per('day')]] },
     prices: { title: 'AI prices', keys: [['ai_price_in', 'Input price per million tokens', 'usd', '', 'Input', function (v) { return 'US$ ' + v; }],
       ['ai_price_out', 'Output price per million tokens', 'usd', '', 'Output', function (v) { return 'US$ ' + v; }],
-      ['ai_price_search', 'Web search price per thousand searches', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }],
-      ['ai_price_image', 'Price per scene picture', 'usd', '', 'Scene pictures', function (v) { return 'US$ ' + v; }]] },
+      ['ai_price_search', 'Web search price per thousand searches', 'usd', '', 'Web searches', function (v) { return 'US$ ' + v; }]] },
     reach: { title: 'Reach allowance', keys: [['reach_allowance_pct', 'Reach allowance against Meta (%)', 'allow', '', 'Reach within', pctOf]] },
     /* The Meta Malaysia benchmarks the Brand analysis weighs a budget
        against (2026-10-15, the client analysis playbook). */
@@ -5972,7 +5973,7 @@
   /* A figure in words, as the Settings row says it ("SST 6%"): the key's
      own short name and format where the Settings page gives them (k[4],
      k[5]), else its label and its kind's unit (2026-10-20, SET-5). */
-  var SET_UNIT = { pct: '%', adj: '%', allow: '%', share: '%', hours: ' hours', days: ' days', due: ' days', quote: ' days',
+  var SET_UNIT = { pct: '%', adj: '%', allow: '%', share: '%', hours: ' hours', days: ' days', due: ' days', back: ' days', quote: ' days',
     week: ' hours', every: ' hours', ahead: ' days', keep: ' months', leave: ' months', chg: '%', churn: '%', cap: ' per day' };
   function setWord(k, v) {
     if (v == null || v === '') return 'not set';

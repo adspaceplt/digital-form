@@ -10685,6 +10685,28 @@ auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
 Settings row's figures are joined with no-break spaces, which a suite reads
 as such.
 
+### 2026-11-17 · Business settings quick fixes
+The Business settings audit (2026-11-16) found three slips, fixed together
+on the user's yes: Past dates on new tasks was checked on the page as 1 to
+60 days (the deadlines' range) while the database takes 0 to 365, so 0
+("none") and anything past 60 were refused (a kind of its own, `back`);
+`app_settings_read()` answered a page outside the team no `fx_sgd`, so a
+quotation downloaded from /quote/ for a Singapore lead billed in RM lost
+its approx. S$ line that the console's copy printed (CLIENT PAGES READ THE
+S$ RATE); and AI prices still asked a price per scene picture, which only
+the Gemini pictures before 2026-11-06 are priced at.
+
+### 2026-11-17 · Quotation terms by commitment
+The user found the term bands in Tax and terms read as odd numbers (1 to 3,
+4 and 5, 6 to 11, 12 to 17, 18 to 23): a term is a commitment, and 3, 4 and
+5 months have reached the 3-month commitment and not the 6-month one. The
+bands became commitment tiers: Under 3 months (1 and 2), then the 3-, 6-,
+12-, 18- and 24-month commitments, each with its own percentage in Tax and
+terms (TERMS BY COMMITMENT). The keys stay; only a 3-month term moves from
+`term_1_3` to `term_4_5`, and the Rate Card PDF's 3 months reads `term_4_5`.
+Live figures on the day: every tier 0% but 18 months −8% and 24 months
+−10%, so no live quotation changes price; the user will set each tier.
+
 ### 2026-11-17 — Hiring outcomes: scores, the decision, the talent pool kept for a time (release H2 step C)
 HR-SPEC.md decisions 3 and 13. Scores are kept against a scorecard of the
 position (Standard for any other), 1 to 5 a criterion, because a single
@@ -10701,6 +10723,8 @@ and the part's console takes the files out once a visit.
 ### 2026-11-17 · Signed documents sealed, quotations first
 The user approved specs/SEAL-SPEC.md and its mockup on 2026-11-17: a signed and approved quotation is drawn once, stored privately with its SHA-256 and Document ID, and never drawn again; its last page is the Record of this Document. A file cannot print its own hash, so the signed pages are drawn and hashed first, that hash printed on the Record page appended after them, and the whole file's hash stored beside it for /verify/'s file check (step 2). The foot of every signed page counts the Record page (`letterFoot` takes the total). Built as one shared module (`js/seal.js`, `signing_steps`) so the Hiring session reuses it for the Employment Contract. The device is what the browser reports; a browser never gives a MAC address. The link's Opened step is kept once in six hours an address and device and never for a colleague, so a refresh does not fill the record. The client page's Accepted card no longer names the company or offers a second Download: the mockup's words, and one download once sealed.
 
+### 2026-11-17 · /verify/ checks a sealed file
+SEAL-SPEC decision 6, built as the seal's step 2. A quotation is answered only once it left ADspace (sent out or signed): a draft or an unreleased website quotation is Not found, as an unissued letter is. Expired is added beside Valid, Void and Replaced because an unsigned quotation past its validity no longer stands; Withdrawn waits for step 3's Mark withdrawn. The count of lookups moved into `verify_count()` so the file check and the reference share one limit of 30 an hour a connection; a file check is a lookup. The file is hashed on the page with `ADspaceSeal.sha256` (the one hash) and only its SHA-256 goes to the database, so the file never leaves the visitor's device.
 ## 2026-11-17 · Access security fixes: groups an admin's, Own clients by id
 
 The user, deciding the access restructure's question 6 ("6 ok"): two holes

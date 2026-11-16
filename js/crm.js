@@ -7407,8 +7407,8 @@
     if (typeof v === 'number' || (typeof v === 'string' && /^-?\d+(\.\d+)?$/.test(v))) return String(Number(v));
     return JSON.stringify(v);
   }
-  var SVC_TERMS = [['sst_pct', 'SST'], ['term_1_3', '1 to 3 months'], ['term_4_5', '4 and 5 months'], ['term_6_11', '6 to 11 months'],
-    ['term_12_23', '12 to 17 months'], ['term_18_23', '18 to 23 months'], ['term_24', '24 months and more']];
+  var SVC_TERMS = [['sst_pct', 'SST'], ['term_1_3', 'Under 3 months'], ['term_4_5', '3-month commitment'], ['term_6_11', '6-month commitment'],
+    ['term_12_23', '12-month commitment'], ['term_18_23', '18-month commitment'], ['term_24', '24-month commitment']];
   function pctWord(v) { return v == null || v === '' ? 'not set' : Number(v) + '%'; }
   var SVC_CMP = ['category', 'name', 'rate', 'unit', 'position', 'active', 'note', 'detail', 'min_months', 'spec'];
   /* What the draft holds that the live version does not: each line New or
