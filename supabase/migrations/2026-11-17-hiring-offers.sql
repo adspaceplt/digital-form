@@ -673,7 +673,7 @@ begin
   if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
   return jsonb_build_object('id', d.id, 'kind', 'doc', 'doc', d.kind, 'ref', d.serial, 'to', c.email, 'name', c.name,
     'position', d.terms->>'position', 'key', c.link_key, 'reply_by', public.register_day((d.reply_by at time zone 'Asia/Kuala_Lumpur')::date),
-    'returned', d.returned_note is not null,
+    'returned', d.returned_note is not null, 'sent_key', extract(epoch from coalesce(d.returned_at, d.sent_at))::bigint,
     'sender', me.name, 'reply_to', me.email);
 end $$;
 grant execute on function public.hiring_doc_mail_prepare(uuid) to authenticated;
