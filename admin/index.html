@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261117t">
-<link rel="stylesheet" href="/css/console.css?v=20261117t">
+<link rel="stylesheet" href="/css/portal.css?v=20261117u">
+<link rel="stylesheet" href="/css/console.css?v=20261117u">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -160,7 +160,7 @@
 <script src="/js/mailtpl.js?v=20261112h"></script>
 <script src="/js/docmail.js?v=20261112h"></script>
 <script src="/js/push.js?v=20261001a"></script>
-<script src="/js/money.js?v=20261117q"></script>
+<script src="/js/money.js?v=20261117u"></script>
 <script src="/js/media.js?v=20261022zr"></script>
 <script src="/js/mockups.js?v=20261024d"></script>
 </head>
@@ -6095,6 +6095,27 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- Interview scorecards (2026-11-17, release H2 step C): a position's
+     criteria, Standard for any other position (js/hiring.js). -->
+<div class="sheet" id="hscSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="hscHead">
+    <div class="sheet-head">
+      <h3 id="hscHead">Interview scorecards</h3>
+      <button class="iconbtn" id="hscClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="msg" id="hscMsg" role="status"></p>
+      <div class="tax-bar"><span class="tax-count" id="hscCount"></span>
+        <span class="tax-acts"><button class="btn btn-sm" id="hscAdd" type="button">Add scorecard</button></span></div>
+      <div id="hscList"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-quiet" id="hscCancel" type="button">Close</button>
+    </div>
+  </div>
+</div>
 <!-- Industries (2026-11-04): the list a client's industry is chosen from. -->
 <div class="sheet" id="indSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="indHead">
@@ -6609,14 +6630,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261117q"></script>
-<script src="/js/documents.js?v=20261117t"></script>
+<script src="/js/admin.js?v=20261117u"></script>
+<script src="/js/documents.js?v=20261117u"></script>
 <script src="/js/letters.js?v=20261116b"></script>
 <script src="/js/smreport.js?v=20261113g"></script>
 <script src="/js/reports.js?v=20261116c"></script>
 <script src="/js/register.js?v=20261112j"></script>
 <script src="/js/suppliers.js?v=20261113zzh"></script>
-<script src="/js/hiring.js?v=20261117q"></script>
+<script src="/js/hiring.js?v=20261117r"></script>
 <script src="/js/bukku.js?v=20261115a"></script>
 <script src="/js/invoices.js?v=20261112h"></script>
 <script src="/js/engage.js?v=20261112h"></script>
@@ -6644,6 +6665,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261116a"></script>
 <script src="/js/overview.js?v=20261116b"></script>
 <script src="/js/analytics.js?v=20261116a"></script>
-<script src="/js/settings.js?v=20261117q"></script>
+<script src="/js/settings.js?v=20261117r"></script>
 </body>
 </html>

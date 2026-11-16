@@ -304,7 +304,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `careers/`, the HIRING and HIRING INTERVIEWS sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `careers/`, the HIRING, HIRING INTERVIEWS and HIRING OUTCOMES sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -3336,9 +3336,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`sign-download` `quoteKey`, the service role's `quote_seal_key`), the
   main Download then gone.
 
-### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `hiring-mail`)
+### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
-  steps A and B built. Hiring is Team's tab, never a rail section (the user,
+  steps A to C built. Hiring is Team's tab, never a rail section (the user,
   2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
   opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
   away) with Back to the list, an older `?s=hiring` address opening it.
@@ -3394,7 +3394,27 @@ Each line is a rule that broke once. Its reason is in the archive.
   failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
-  not chosen. Settings, Portal: Hiring holds both figures (`team.settings`).
+  not chosen. Settings, Portal, Hiring: Hiring holds the figures
+  (`team.settings`) and Interview scorecards the scorecards (the part).
+- Scores and the decision (step C): everyone on a candidate scores them on
+  the Scores tab against their position's scorecard (`hiring_scorecards`,
+  3 to 8 criteria, one a position, Standard for any other and never
+  deleted; `hiring_scorecard_save` / `_delete` the part's), each criterion
+  1 to 5 with a recommendation and a note (`hiring_score_save`, one a
+  colleague, `incomplete` naming the criterion; Remove with Undo); the tab
+  reads every score, its total and each criterion's average
+  (`hiring_outcome_of`). The part or the Owner decides (`hiring_decide`):
+  Proceed (stage Offer), Keep in talent pool (the candidate asked on their
+  page, `careers_pool`, anon: agreed kept `hiring_pool_months`, 12, from
+  then; declined closed) or Not proceed (closed); Reopen is the way back,
+  Undo where it happened. The decision's note stays with the team; Keep in
+  talent pool and Not proceed email the candidate (`hiring-mail`
+  `outcome`, a tick in the question, Email the candidate where it did not
+  go). `hiring_retention` (pg_cron `hiring-retention`, 03:50 MYT) removes a
+  pool agreement past its end, a pool question unanswered within the link's
+  days, and a closed or removed candidate after `hiring_keep_months` (12),
+  PDPA 2010; their CV files wait in `hiring_files_gone` for the part's
+  console to take out of Storage once a visit.
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 
