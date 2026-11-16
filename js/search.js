@@ -461,6 +461,33 @@
           }
         };
       } },
+    /* Candidates (2026-11-16), Team's Hiring tab: the list is its
+       function's (the tables answer no browser), read once a query and
+       matched on the page by name or position; a colleague on a candidate
+       finds that one alone. */
+    { key: 'hiring', glyph: 'team', head: 'Candidates', can: function () { return Boolean(bridge.hiringOk && bridge.hiringOk()); },
+      read: function (q) {
+        return db.rpc('hiring_list', {}).then(function (r) {
+          var d = (r && r.data) || {};
+          if ((r && r.error) || d.error) return { error: (r && r.error) || { message: d.error } };
+          return { rows: (d.rows || []).filter(function (x) { return !x.removed_at && (has(x.name, q) || has(x.position, q)); }).slice(0, LIMIT) };
+        }).catch(function (e) { return { error: e || { message: 'Failed' } }; });
+      },
+      row: function (c) {
+        return {
+          id: 'candidate-' + c.id, name: c.name, code: '',
+          meta: [c.position],
+          open: function () {
+            var url = '/admin/?s=team&tab=hiring&candidate=' + encodeURIComponent(c.id);
+            history.replaceState(null, '', url);
+            go(url, 'team');
+            /* Team opens on the tab last used; a candidate is on Hiring. */
+            var tab = document.querySelector('#teamTabs .tab[data-tab="hiring"]');
+            if (tab && !tab.classList.contains('is-on') && !tab.closest('[hidden]')) tab.click();
+            else if (window.ADspaceHiring) window.ADspaceHiring.enter();
+          }
+        };
+      } },
     /* The Handbook (SHELL-1): a file by its title, every colleague reads
        it; an archived one is an admin's and stays out of search. */
     { key: 'handbook', head: 'Handbook', can: function () { return true; },

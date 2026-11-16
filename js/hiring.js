@@ -1,6 +1,6 @@
 /*
  * Hiring (2026-11-16, release H2 step A; the user's HR-SPEC.md decisions 1
- * and 3). Candidates for a position, the colleagues on each, and each
+ * and 3), Team's Hiring tab since the same day (`?s=team&tab=hiring`). Candidates for a position, the colleagues on each, and each
  * candidate's own page (`/careers/?k=`). A candidate never holds an account.
  *
  * Every candidate is read and added at the granted part `team.hiring` (an
@@ -61,7 +61,9 @@
   var state = { rows: null, admin: false, find: '', open: null, rec: null, pane: 'overview', wired: false, editing: null, deleting: false, team: null };
   var PANES = [['overview', 'Overview'], ['people', 'People'], ['activity', 'Activity']];
   function paneOk(k) { return PANES.some(function (x) { return x[0] === k; }); }
-  function urlState() { return { candidate: state.open || '', tab: state.open && state.pane !== 'overview' ? state.pane : '' }; }
+  /* Team's tab (`tab=hiring`): a candidate rides as `candidate=`, its pane as
+     `ctab=` (Overview left out), as a colleague's does as `member=` and `mtab=`. */
+  function urlState() { return { candidate: state.open || '', ctab: state.open && state.pane !== 'overview' ? state.pane : '' }; }
   function setUrl() { if (bridge.setUrl) bridge.setUrl(); }
 
   function wire() {
@@ -77,7 +79,7 @@
     $('hirSheetClose').addEventListener('click', shutSheet);
     $('hirSheetGo').addEventListener('click', saveSheet);
     window.addEventListener('popstate', function () {
-      if ($('sectionHiring') && !$('sectionHiring').hidden) enter();
+      if ($('teamHiringPane') && !$('teamHiringPane').hidden) enter();
     });
     document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#hirRec .team-act')) shutMenus(); });
   }
@@ -85,7 +87,7 @@
     wire();
     var q = new URLSearchParams(location.search);
     state.open = q.get('candidate') || null;
-    state.pane = state.open && paneOk(q.get('tab')) ? q.get('tab') : 'overview';
+    state.pane = state.open && paneOk(q.get('ctab')) ? q.get('ctab') : 'overview';
     $('hirAdd').hidden = !admin();
     load();
   }
@@ -114,6 +116,7 @@
   function paint() {
     var box = $('hirList');
     $('hirRec').hidden = true; box.hidden = false; $('hirBar').hidden = false;
+    $('sectionTeam').classList.remove('is-candidate');
     if (!state.rows) return;
     var all = state.rows, rows = all.filter(matches);
     $('hirCount').textContent = !all.length ? '' : rows.length === all.length
@@ -162,6 +165,8 @@
   function openRec(id) {
     var rec = $('hirRec');
     $('hirList').hidden = true; $('hirBar').hidden = true; rec.hidden = false;
+    /* Team's strip steps away while a candidate is open, as for a colleague. */
+    $('sectionTeam').classList.add('is-candidate');
     if (!state.rec || state.rec.id !== id) UI.skeleton(rec, 4);
     return rpc('hiring_get', { p_id: id }).then(function (r) {
       if (state.open !== id) return;
@@ -478,5 +483,6 @@
   }
 
   window.ADspaceHiring = { enter: enter, urlState: urlState };
-  if (bridge.hiringReady) bridge.hiringReady();
+  /* Team opened on Hiring before this script arrived. */
+  if ($('teamHiringPane') && !$('teamHiringPane').hidden) enter();
 })();

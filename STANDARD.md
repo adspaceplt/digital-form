@@ -626,6 +626,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   a select of quarter hours" fail when the suite runs after 10pm MYT (the
   next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
   suite needs a fixed time of day.
+- `perfui`: "its headings are in title case and nothing crosses the margins"
+  reads the letterhead's name, registration and address on page 1 past its
+  margin since the letterhead moved to 33.3pt margins (#1158, #1159; found
+  2026-11-17 by the Hiring release, which does not touch `js/documents.js`);
+  the suite's margin needs the new figure.
 - `work`: "High says its deadline under the post" and "Urgent says its own
   hours" fail when the deadline falls just after midnight (`12:06am` read
   against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
