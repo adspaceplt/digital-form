@@ -315,7 +315,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
-| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey` | seal, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
+| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey`, the VERIFY SEALED FILES section | seal, docs, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -3042,6 +3042,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   match is answered first.
   - It never shows the recipient.
   - HR is shown as "HR letter".
+  - A quotation once sent out or signed reads Quotation, Valid, Void
+    (cancelled), Replaced (revised) or Expired (its validity passed
+    unsigned), issued, signed and confirmed days, and once sealed its
+    Document ID with Check a file: the PDF hashed in the browser, never
+    uploaded, its SHA-256 asked of `verify_file` (anon), Matches the sealed
+    copy or Does not match: this file has been altered. Both functions take
+    one count (`verify_count()`, no caller's; `2026-11-17-verify-sealed-files.sql`).
   - Anyone the team does not hold is answered 30 lookups an hour a
     connection (`verify_tries` by `request_ip()`, RLS on, no policy, no
     grant), then `locked` with the minutes left before any reference is
@@ -3335,6 +3342,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Document ID (`quote_seal_state`, anon) and Download signed copy
   (`sign-download` `quoteKey`, the service role's `quote_seal_key`), the
   main Download then gone.
+- /verify/ answers a sealed quotation with its Document ID and checks a
+  file against the whole file's SHA-256 (Documents, `/verify/`).
 
 ### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
