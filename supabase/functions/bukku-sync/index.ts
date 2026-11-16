@@ -821,6 +821,79 @@ async function billItem(p: any): Promise<any> {
   if (!acc) return { error: 'no-bukku-account', code: String(p.account_code) };
   return { product_id: prod.product_id, product_unit_id: prod.product_unit_id, account_id: acc, classification_code: String(p.class_code) };
 }
+// ---- A quotation's invoices as Bukku drafts (2026-11-17) ---------------------
+/* An invoice of the contact already holding the reference (the quotation's
+   and the cycle's), drafts included, so a second press makes nothing. */
+async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string } | null> {
+  const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const k = key(ref);
+  if (k.length < 6) return null;
+  const r = await bukku('GET', `/sales/invoices?search=${encodeURIComponent(ref)}&contact_id=${contact}&page=1&page_size=100`);
+  for (const x of ((r && r.transactions) || []) as any[]) {
+    if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
+    if (key([x.number2, x.reference, x.title, x.description, x.remarks].join(' ')).includes(k))
+      return { id: Number(x.id || 0), number: String(x.number || x.id) };
+  }
+  return null;
+}
+/* The income account a Bukku product sells to, as Bukku's own form fills it. */
+export function saleAccountOf(prod: any): number | null {
+  if (!prod) return null;
+  for (const k of ['sale_account_id', 'sales_account_id', 'income_account_id', 'revenue_account_id']) {
+    const v = Number(prod[k] || (prod.sale && prod.sale[k.replace(/^sales?_/, '')]) || 0);
+    if (v > 0) return v;
+  }
+  const s = prod.sale || prod.sales || null;
+  if (s && Number(s.account_id) > 0) return Number(s.account_id);
+  return null;
+}
+/* Each line's Bukku product by its Rate Card SKU, its base unit and the
+   income account it sells to; a line with no SKU or no product is named. */
+async function invoiceItems(lines: any[]): Promise<any> {
+  const out: any[] = [];
+  const seen: Record<string, any> = {};
+  for (const l of lines) {
+    const sku = String(l.sku || '').trim();
+    if (!sku) return { error: 'no-sku', line: String(l.label || '') };
+    if (!seen[sku]) {
+      const r = await bukku('GET', `/products?search=${encodeURIComponent(sku)}&page=1&page_size=100`);
+      const prod = productOf(r, sku);
+      if (!prod) return { error: 'no-product', sku, line: String(l.label || '') };
+      const d = await bukku('GET', `/products/${prod.product_id}`);
+      const full = (d && d.product) || {};
+      if (!prod.has_units) { const again = productOf([full], sku); if (again) prod.product_unit_id = again.product_unit_id; }
+      prod.account_id = saleAccountOf(full);
+      seen[sku] = prod;
+    }
+    out.push(seen[sku]);
+  }
+  return { items: out };
+}
+/* The invoice as Bukku's Create Invoice takes it: the reference in its
+   second number, a line a service at its rate after the term percentage
+   with its tax code, a draft for finance to check and post. */
+export function invoiceBody(p: any, items: any[] | null, budgetAccount: number | null): Record<string, unknown> {
+  const lines = (p.lines || []) as any[];
+  const form = lines.map((l, i) => {
+    const it: Record<string, unknown> = { description: String(l.label || '').slice(0, 255),
+      unit_price: Number(l.unit), quantity: Number(l.qty || 1) };
+    const pr = items && items[i];
+    if (pr) {
+      it.product_id = Number(pr.product_id);
+      if (pr.product_unit_id) it.product_unit_id = Number(pr.product_unit_id);
+      if (pr.account_id) it.account_id = Number(pr.account_id);
+    }
+    if (budgetAccount) it.account_id = budgetAccount;
+    if (l.tax) it.tax_code_id = Number(l.tax);
+    return it;
+  });
+  return {
+    contact_id: Number(p.contact_id), number2: String(p.ref).slice(0, 50), date: String(p.date),
+    currency_code: p.currency === 'SGD' ? 'SGD' : 'MYR', exchange_rate: p.currency === 'SGD' ? Number(p.fx) : 1,
+    tax_mode: 'exclusive', description: String(p.description || '').slice(0, 200),
+    status: 'draft', myinvois_action: 'NORMAL', form_items: form
+  };
+}
 /* A creator bill's page in Bukku: found by its number among the bills the
    caller reads on the creator's Payment pane, then on the creator's contact. */
 export function billWeb(sub: string, id: number): string | null {
@@ -1349,6 +1422,49 @@ Deno.serve(async (req) => {
       const list = await db.rpc('creator_bills_list', { p_creator: String(p.creator) });
       if (list.error) return json({ error: 'needs-update' }, 200, origin);
       return json(Object.assign({}, list.data || {}, had ? { error: 'in-bukku', number: had } : { made }), 200, origin);
+    }
+    /* A quotation's cycle made in Bukku as a draft invoice (2026-11-17):
+       asked of quotation_invoice_prep as the caller, which holds the press
+       ten minutes; Bukku asked first for an invoice holding the reference. */
+    if (action === 'invoicecreate') {
+      const qid = String(body.quotation || ''), cyc = Number(body.cycle), kind = String(body.kind || 'service');
+      if (!/^[0-9a-f-]{36}$/i.test(qid) || !Number.isInteger(cyc) || cyc < 1 || cyc > 36 || !/^(service|budget)$/.test(kind))
+        return json({ error: 'bad-request' }, 400, origin);
+      const prep = await db.rpc('quotation_invoice_prep', { p_id: qid, p_cycle: cyc, p_kind: kind });
+      if (prep.error) return json({ error: 'needs-update' }, 200, origin);
+      const p = prep.data || {};
+      if (p.error) return json({ error: p.error, number: p.number }, 200, origin);
+      const letGo = () => db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: null, p_number: null, p_amount: null });
+      const total = ((p.lines || []) as any[]).reduce((t, l) => t + Math.round(Number(l.qty || 1) * Number(l.unit) * 100) / 100, 0);
+      let sent = false;
+      try {
+        const had = await invoiceHolding(Number(p.contact_id), String(p.ref));
+        if (had) {
+          await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: had.id, p_number: had.number, p_amount: total });
+          return json({ ok: true, error: 'in-bukku', number: had.number }, 200, origin);
+        }
+        let items: any[] | null = null, budgetAccount: number | null = null;
+        if (kind === 'budget') {
+          const a = await bukku('POST', '/v2/lists', { lists: ['accounts'], params: {} });
+          budgetAccount = accountOf(a && a.accounts, String(p.account_code));
+          if (!budgetAccount) { await letGo(); return json({ error: 'no-bukku-account', code: String(p.account_code) }, 200, origin); }
+        } else {
+          const r = await invoiceItems(p.lines || []);
+          if (r.error) { await letGo(); return json(r, 200, origin); }
+          items = r.items;
+        }
+        sent = true;
+        const made = await bukku('POST', '/sales/invoices', invoiceBody(p, items, budgetAccount));
+        const t = (made && made.transaction) || {};
+        const num = String(t.number || '') || 'Created';
+        await db.rpc('quotation_invoice_done', { p_id: qid, p_cycle: cyc, p_kind: kind, p_bukku: Number(t.id || 0), p_number: num, p_amount: total });
+        return json({ ok: true, made: num }, 200, origin);
+      } catch (e) {
+        const refused = e instanceof BukkuError && e.status >= 400 && e.status < 500;
+        if (!sent || refused) await letGo();
+        else return json({ error: 'not-confirmed' }, 200, origin);
+        throw e;
+      }
     }
     if (action === 'billlink') {
       const cid = String(body.creator || ''), num = String(body.number || '').trim();

@@ -717,7 +717,7 @@ declare
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
-    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file'];
+    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'careers_pool', 'careers_doc_open', 'careers_doc_read', 'careers_doc_answer', 'quote_opened', 'quote_seal_state', 'verify_file', 'quote_decline'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -120688,6 +120688,425 @@ grant execute on function public.verify_file(text, text) to anon, authenticated;
 
 -- END OF VERIFY SEALED FILES --------------------------------------------------
 
+-- QUOTATION WAYS OUT — a quotation declined by the client, or withdrawn after signing.
+
+alter table public.quotations add column if not exists declined_at      timestamptz;
+alter table public.quotations add column if not exists decline_reason   text;
+alter table public.quotations add column if not exists withdrawn_at     timestamptz;
+alter table public.quotations add column if not exists withdrawn_on     date;
+alter table public.quotations add column if not exists withdrawn_reason text;
+alter table public.quotations add column if not exists withdrawn_by     text;
+alter table public.quotations add column if not exists withdrawn_lines  jsonb;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'quotations_ways_out_check') then
+    alter table public.quotations add constraint quotations_ways_out_check
+      check (char_length(coalesce(decline_reason, '')) <= 300 and char_length(coalesce(withdrawn_reason, '')) <= 300);
+  end if;
+end $$;
+grant select (declined_at, decline_reason, withdrawn_at, withdrawn_on, withdrawn_reason, withdrawn_by) on table public.quotations to authenticated;
+
+/* The client declines on the link: the quotation the link shows, while it
+   is sent and stands. */
+create or replace function public.quote_decline(p_key text, p_reason text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+  c public.clients;
+  v_reason text := nullif(btrim(coalesce(p_reason, '')), '');
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  if char_length(coalesce(v_reason, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id) for update;
+  if q.id is null or q.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if q.declined_at is not null then return jsonb_build_object('ok', true, 'again', true); end if;
+  if q.signed_at is not null then return jsonb_build_object('error', 'signed'); end if;
+  if q.status = 'not_proceeding' then return jsonb_build_object('error', 'closed'); end if;
+  if q.source = 'website' and q.released_at is null then return jsonb_build_object('error', 'unsent'); end if;
+  if q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then return jsonb_build_object('error', 'expired'); end if;
+  update public.quotations set status = 'not_proceeding', declined_at = now(), decline_reason = v_reason where id = q.id;
+  insert into public.signing_steps (doc_kind, doc_id, step, ip, country)
+  values ('quotation', q.id, 'declined', nullif(public.request_ip(), ''), nullif(public.request_country(), ''));
+  insert into public.activity_log (actor, action, subject, detail)
+  values ('Quotation website', 'client.quotation', q.brand,
+          q.ref || ' declined on the quotation link' || coalesce(' · ' || v_reason, ''));
+  select * into c from public.clients where id = q.client_id;
+  if public.quote_sign_member(q.made_by) is null and public.quote_sign_member(c.owner) is null then
+    perform public.quote_tell(q.client_id, 'quote.declined', 'Quotation declined · ' || q.brand,
+      q.ref || coalesce(' · ' || v_reason, ''), q.id::text || ':declined');
+  else
+    perform public.quote_sign_tell(array[public.quote_sign_member(q.made_by), public.quote_sign_member(c.owner)],
+      'quote.declined', 'Quotation declined · ' || q.brand, q.ref || coalesce(' · ' || v_reason, ''),
+      q.client_id, q.id::text || ':declined');
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quote_decline(text, text) from public;
+grant execute on function public.quote_decline(text, text) to anon, authenticated;
+
+/* A signed quotation withdrawn from a day: never deleted, its sealed copy
+   kept; the service lines its approval confirmed go back to To quote where
+   asked, each line's state kept for Undo. */
+create or replace function public.quotation_withdraw(p_id uuid, p_on date, p_reason text, p_lines boolean)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  v_reason text := btrim(coalesce(p_reason, ''));
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_lines jsonb := '[]'::jsonb;
+  v_n integer := 0;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'manage') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.signed_at is null then return jsonb_build_object('error', 'not-signed'); end if;
+  if q.withdrawn_at is not null then return jsonb_build_object('error', 'withdrawn'); end if;
+  if p_on is null or p_on < (q.signed_at at time zone 'Asia/Kuala_Lumpur')::date or p_on > v_today then
+    return jsonb_build_object('error', 'bad-date');
+  end if;
+  if char_length(v_reason) < 3 or char_length(v_reason) > 300 then return jsonb_build_object('error', 'bad-reason'); end if;
+  if coalesce(p_lines, false) then
+    select coalesce(jsonb_agg(jsonb_build_object('id', s.id, 'state', s.state)), '[]'::jsonb), count(*)
+      into v_lines, v_n
+      from public.client_services s
+     where s.quotation_id = q.id and s.archived_at is null and s.state = 'confirmed';
+    update public.client_services set state = 'to_quote'
+     where quotation_id = q.id and archived_at is null and state = 'confirmed';
+  end if;
+  update public.quotations
+     set withdrawn_at = now(), withdrawn_on = p_on, withdrawn_reason = v_reason, withdrawn_by = me.name, withdrawn_lines = v_lines
+   where id = q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand,
+          q.ref || ' withdrawn from ' || public.register_day(p_on) || ' · ' || v_reason ||
+          case when v_n > 0 then ' · ' || v_n || case when v_n = 1 then ' service line' else ' service lines' end || ' returned to To quote' else '' end);
+  return jsonb_build_object('ok', true, 'lines', v_n);
+end $$;
+revoke all on function public.quotation_withdraw(uuid, date, text, boolean) from public, anon;
+grant execute on function public.quotation_withdraw(uuid, date, text, boolean) to authenticated;
+
+create or replace function public.quotation_withdraw_undo(p_id uuid)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q  public.quotations;
+  v_l jsonb;
+begin
+  if me.id is null or not public.allowed('clients.quotes', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id for update;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'manage') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if q.withdrawn_at is null then return jsonb_build_object('error', 'not-withdrawn'); end if;
+  for v_l in select * from jsonb_array_elements(coalesce(q.withdrawn_lines, '[]'::jsonb)) loop
+    update public.client_services set state = v_l->>'state'
+     where id = (v_l->>'id')::uuid and quotation_id = q.id and archived_at is null and state = 'to_quote';
+  end loop;
+  update public.quotations
+     set withdrawn_at = null, withdrawn_on = null, withdrawn_reason = null, withdrawn_by = null, withdrawn_lines = null
+   where id = q.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.quotation', q.brand, q.ref || ' withdrawal undone');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quotation_withdraw_undo(uuid) from public, anon;
+grant execute on function public.quotation_withdraw_undo(uuid) to authenticated;
+
+create or replace function public.quotation_record(p_id uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  s jsonb;
+  v_steps jsonb := '[]'::jsonb;
+begin
+  if not public.is_team() or not public.allowed('clients.quotes', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'view') then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  s := q.signed;
+  v_steps := jsonb_build_array(jsonb_build_object('step', 'issued', 'at', q.issued_at,
+    'by', case when q.source = 'website' then null else q.made_by end, 'team', q.source <> 'website',
+    'note', 'Rate Card v.' || q.version));
+  if q.source = 'website' and q.released_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sent', 'at', q.released_at, 'by', q.released_by,
+      'team', true, 'via', 'link'));
+  end if;
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', 'sent', 'at', w.created_at, 'by', coalesce(w.created_by, 'ADspace'), 'team', true,
+             'via', 'whatsapp', 'to', w.to_name,
+             'state', case when w.read_at is not null then 'read' when w.delivered_at is not null then 'delivered' else w.state end))
+      from public.wa_outbox w
+     where w.ref_kind = 'quotation' and w.ref_id = q.id and coalesce(w.state, '') <> 'failed'), '[]'::jsonb);
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', 'sent', 'at', e.created_at,
+             'by', coalesce((select m.name from public.team_members m where m.id = e.sent_by), 'ADspace'), 'team', true,
+             'via', 'email', 'to', e.to_email, 'state', e.status))
+      from public.client_emails e
+     where e.kind = 'quotation' and e.ref_id = q.id and e.status <> 'failed'), '[]'::jsonb);
+  v_steps := v_steps || coalesce((
+    select jsonb_agg(jsonb_build_object('step', g.step, 'at', g.at, 'team', false, 'email', g.email,
+             'in_contacts', g.in_contacts, 'ip', g.ip, 'country', g.country, 'device', g.device))
+      from public.signing_steps g
+     where g.doc_kind = 'quotation' and g.doc_id = q.id), '[]'::jsonb);
+  if q.signed_at is not null and s is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'signed', 'at', q.signed_at, 'team', false,
+      'by', s->'signer'->>'name', 'role', s->'signer'->>'designation', 'via', coalesce(s->>'via', 'online'),
+      'company', s->'company'->>'legal_name',
+      'email', s->'record'->>'email', 'in_contacts', (s->'record'->>'in_contacts')::boolean,
+      'ip', s->'record'->>'ip', 'country', s->'record'->>'country',
+      'device', coalesce(s->'record'->>'device', s->'record'->>'agent'),
+      'entered_by', case when s->>'via' = 'paper' then s->'record'->>'by' end));
+  end if;
+  if q.submitted_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'submitted', 'at', q.submitted_at, 'team', true,
+      'by', q.submitted_by, 'to', q.reviewer_name));
+  end if;
+  if q.returned_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'returned', 'at', q.returned_at, 'team', true,
+      'by', q.returned_by, 'note', q.return_note));
+  end if;
+  if q.reviewed_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'confirmed', 'at', q.reviewed_at, 'team', true,
+      'by', q.reviewed_by, 'role', q.reviewed_role));
+  end if;
+  if q.withdrawn_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'withdrawn', 'at', q.withdrawn_at, 'team', true,
+      'by', q.withdrawn_by, 'note', 'From ' || public.register_day(q.withdrawn_on) || ' · ' || q.withdrawn_reason));
+  end if;
+  if q.sealed_at is not null then
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sealed', 'at', q.sealed_at, 'team', true,
+      'by', q.sealed_by, 'note', q.seal_sha));
+  end if;
+  return jsonb_build_object('id', q.id, 'ref', q.ref, 'brand', q.brand, 'company', s->'company'->>'legal_name',
+    'signed', q.signed_at is not null, 'confirmed', q.reviewed_at is not null,
+    'withdrawn', q.withdrawn_at is not null, 'declined', q.declined_at is not null,
+    'seal', case when q.seal_key is null then null else jsonb_build_object('sha', q.seal_sha, 'pages_sha', q.seal_pages_sha,
+                 'at', q.sealed_at, 'by', q.sealed_by) end,
+    'steps', coalesce((select jsonb_agg(x order by (x->>'at')::timestamptz, x->>'step') from jsonb_array_elements(v_steps) x), '[]'::jsonb));
+end $$;
+revoke all on function public.quotation_record(uuid) from public, anon;
+grant execute on function public.quotation_record(uuid) to authenticated;
+
+create or replace function public.verify_serial(p_serial text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  s text := upper(btrim(coalesce(p_serial, '')));
+  sd text;
+  d public.documents%rowtype;
+  l public.client_documents%rowtype;
+  q public.quotations%rowtype;
+  rv public.perf_reviews%rowtype;
+  dl public.perf_deleted%rowtype;
+  v_wait integer := public.verify_count();
+begin
+  if v_wait > 0 then
+    return jsonb_build_object('found', false, 'locked', true, 'minutes', v_wait);
+  end if;
+  if length(s) < 3 or length(s) > 40 then return jsonb_build_object('found', false); end if;
+  sd := replace(s, '/', '-');
+  select * into d from public.documents
+   where upper(serial) = s or replace(upper(serial), '/', '-') = sd
+   order by (upper(serial) = s) desc, (voided_at is null) desc, created_at desc limit 1;
+  if d.id is not null then
+    return jsonb_build_object('found', true, 'serial', d.serial,
+      'kind', case when d.family = 'hr' then 'HR Letter' else d.kind end,
+      'issued_at', d.issued_at,
+      'state', case when d.voided_at is null then 'valid' else 'voided' end);
+  end if;
+  select * into l from public.client_documents
+   where upper(number) = s or replace(upper(number), '/', '-') = sd
+   order by (upper(number) = s) desc limit 1;
+  if l.id is not null then
+    return jsonb_build_object('found', true, 'serial', l.number, 'kind', 'Letter of Offer',
+      'issued_at', l.issued_at,
+      'state', case when l.voided_at is not null then 'voided'
+                    when l.superseded_by is not null then 'replaced'
+                    else 'valid' end);
+  end if;
+  /* A quotation once it left ADspace (sent out, or signed): what its
+     reference stands for and no more (SIGNED DOCUMENT SEAL, decision 6). */
+  select * into q from public.quotations x
+   where (upper(x.ref) = s or replace(upper(x.ref), '/', '-') = sd)
+     and (x.sent_out_at is not null or x.signed_at is not null)
+   order by (upper(x.ref) = s) desc, x.issued_at desc limit 1;
+  if q.id is not null then
+    return jsonb_build_object('found', true, 'serial', q.ref, 'kind', 'Quotation',
+      'issued_at', q.issued_at,
+      'signed_at', q.signed_at,
+      'confirmed_at', q.reviewed_at,
+      'document_id', case when q.seal_key is not null then q.id end,
+      'sealed', q.seal_key is not null,
+      'withdrawn_on', q.withdrawn_on,
+      'state', case when q.withdrawn_at is not null then 'withdrawn'
+                    when q.status = 'not_proceeding' or q.removed_at is not null then 'voided'
+                    when exists (select 1 from public.quotations r where r.replaces = q.id and r.removed_at is null) then 'replaced'
+                    when q.signed_at is null and q.valid_until is not null
+                         and q.valid_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then 'expired'
+                    else 'valid' end);
+  end if;
+  select * into rv from public.perf_reviews pr
+   where (upper(pr.serial) = s or replace(upper(pr.serial), '/', '-') = sd)
+     and exists (select 1 from public.perf_events pe where pe.review_id = pr.id and pe.kind = 'printed')
+   limit 1;
+  if rv.id is not null then
+    return jsonb_build_object('found', true, 'serial', rv.serial, 'kind', 'HR Letter',
+      'issued_at', rv.released_at,
+      'state', case when rv.status = 'draft' then 'replaced' else 'valid' end);
+  end if;
+  select * into dl from public.perf_deleted pd
+   where pd.printed and (upper(pd.serial) = s or replace(upper(pd.serial), '/', '-') = sd)
+   order by pd.deleted_at desc limit 1;
+  if dl.id is not null then
+    return jsonb_build_object('found', true, 'serial', dl.serial, 'kind', 'HR Letter',
+      'issued_at', dl.released_at, 'state', 'voided');
+  end if;
+  return jsonb_build_object('found', false);
+end $$;
+revoke all on function public.verify_serial(text) from public;
+grant execute on function public.verify_serial(text) to anon, authenticated;
+
+create or replace function public.quote_seal_state(p_key text)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  w public.quotations;
+  q public.quotations;
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not-found'); end if;
+  select * into w from public.quotations x where x.access_key = p_key and x.removed_at is null;
+  if w.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into q from public.quotations x where x.id = public.quote_shown(w.id);
+  if q.id is null then return jsonb_build_object('confirmed', false); end if;
+  /* Declined by the client, or withdrawn after signing (QUOTATION WAYS OUT). */
+  if q.reviewed_at is null then
+    return jsonb_build_object('confirmed', false, 'declined', q.declined_at is not null, 'declined_at', q.declined_at);
+  end if;
+  return jsonb_build_object('confirmed', true, 'id', q.id, 'confirmed_at', q.reviewed_at, 'sealed', q.seal_key is not null,
+    'withdrawn', q.withdrawn_at is not null, 'withdrawn_on', q.withdrawn_on);
+end $$;
+revoke all on function public.quote_seal_state(text) from public;
+grant execute on function public.quote_seal_state(text) to anon, authenticated;
+
+-- END OF QUOTATION WAYS OUT ----------------------------------------------------
+
+-- VERIFICATION CODE TEMPLATE — the one editable email for every code the portal sends.
+
+create table if not exists public.code_email_template (
+  id         integer primary key default 1 check (id = 1),
+  subject    text not null,
+  body       text not null,
+  foot       text not null default '',
+  updated_at timestamptz not null default now(),
+  updated_by uuid
+);
+alter table public.code_email_template enable row level security;
+revoke all on table public.code_email_template from public, anon, authenticated;
+insert into public.code_email_template (id, subject, body, foot)
+select 1, 'Your ADspace verification code {purpose}',
+  E'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
+  'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.'
+where not exists (select 1 from public.code_email_template);
+
+create or replace function public.template_fields(p_kind text) returns text[]
+language sql immutable set search_path = public as $$
+  select case p_kind
+    when 'supplier' then array['contact name', 'supplier name', 'supplier id', 'payment term', 'currency',
+      'document title', 'document reference', 'document date', 'sender name']
+    when 'client' then array['contact name', 'client name', 'company name', 'document title', 'document reference',
+      'document date', 'valid until', 'sender name']
+    when 'free' then array['contact name', 'company name', 'client name', 'supplier name', 'sender name']
+    when 'invoice' then array['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices']
+    when 'creator-details' then array['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending',
+      'review link']
+    when 'creator-booking' then array['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by',
+      'payee', 'method', 'account ending', 'amount', 'bill number', 'review link']
+    when 'meeting' then array['meeting', 'date', 'time', 'month', 'channel', 'link']
+    when 'code' then array['name', 'code', 'minutes', 'purpose']
+  end $$;
+revoke all on function public.template_fields(text) from public, anon, authenticated;
+
+create or replace function public.template_fields_all() returns jsonb
+language sql stable security definer set search_path = public as $$
+  select case when public.is_team() then jsonb_build_object(
+    'supplier', to_jsonb(public.template_fields('supplier')),
+    'client', to_jsonb(public.template_fields('client')),
+    'free', to_jsonb(public.template_fields('free')),
+    'invoice', to_jsonb(public.template_fields('invoice')),
+    'creator-details', to_jsonb(public.template_fields('creator-details')),
+    'creator-booking', to_jsonb(public.template_fields('creator-booking')),
+    'meeting', to_jsonb(public.template_fields('meeting')),
+    'code', to_jsonb(public.template_fields('code'))) end $$;
+revoke all on function public.template_fields_all() from public, anon;
+grant execute on function public.template_fields_all() to authenticated;
+
+create or replace function public.code_email_template_get()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  t public.code_email_template;
+begin
+  if public.ops_me() is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.code_email_template where id = 1;
+  return jsonb_build_object('subject', t.subject, 'body', t.body, 'foot', t.foot);
+end $$;
+revoke all on function public.code_email_template_get() from public, anon;
+grant execute on function public.code_email_template_get() to authenticated;
+
+create or replace function public.code_email_template_save(p_subject text, p_body text, p_foot text)
+returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare
+  me  public.team_members := public.ops_me();
+  t   public.code_email_template;
+  v_s text := btrim(regexp_replace(coalesce(p_subject, ''), '\s+', ' ', 'g'));
+  v_b text := btrim(replace(coalesce(p_body, ''), E'\r', ''));
+  v_f text := btrim(replace(coalesce(p_foot, ''), E'\r', ''));
+  moved text[] := '{}';
+  v_bad jsonb;
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if length(v_s) < 2 or length(v_s) > 200 then return jsonb_build_object('error', 'bad-subject'); end if;
+  if length(v_b) < 2 or length(v_b) > 5000 then return jsonb_build_object('error', 'bad-body'); end if;
+  if length(v_f) > 1000 then return jsonb_build_object('error', 'foot-long'); end if;
+  if v_s ~* '\{\s*code\s*\}' then return jsonb_build_object('error', 'code-in-subject'); end if;
+  if v_b !~* '\{\s*code\s*\}' then return jsonb_build_object('error', 'no-code'); end if;
+  v_bad := public.template_check(v_s || E'\n' || v_b || E'\n' || v_f, 'code');
+  if v_bad is not null then return v_bad; end if;
+  select * into t from public.code_email_template where id = 1 for update;
+  if t.subject is distinct from v_s then moved := moved || ('Subject: ' || t.subject || ' → ' || v_s); end if;
+  if t.body is distinct from v_b then moved := moved || 'Message'::text; end if;
+  if t.foot is distinct from v_f then moved := moved || 'Fine print'::text; end if;
+  if array_length(moved, 1) is null then return jsonb_build_object('ok', true); end if;
+  update public.code_email_template set subject = v_s, body = v_b, foot = v_f, updated_at = now(), updated_by = me.id where id = 1;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Email templates', 'Verification code · ' || array_to_string(moved, ' · '));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.code_email_template_save(text, text, text) from public, anon;
+grant execute on function public.code_email_template_save(text, text, text) to authenticated;
+
+-- What quote-request sends (the service role's alone).
+create or replace function public.code_email_template_read()
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('subject', t.subject, 'body', t.body, 'foot', t.foot) from public.code_email_template t where t.id = 1 $$;
+revoke all on function public.code_email_template_read() from public, anon, authenticated;
+grant execute on function public.code_email_template_read() to service_role;
+
+-- END OF VERIFICATION CODE TEMPLATE -------------------------------------------
+
+
 
 select public.functions_tidy();
 
@@ -123636,6 +124055,371 @@ drop function if exists public.client_row_seen_by(text, text, uuid, text);
 drop function if exists public.client_row_seen(text, text, text);
 
 -- END OF ACCESS SECURITY FIXES, THE SQL EDITOR PART --------------------------
+
+-- ===========================================================================
+-- QUOTATION INVOICES — an approved quotation's invoices made as Bukku drafts,
+-- one a billing cycle (2026-11-17)
+-- ===========================================================================
+-- WHY (the user, 2026-11-17, approving the Quotation to Bukku Invoice
+-- proposal): finance retyped every approved quotation's lines into Bukku.
+-- Option B: the portal prepares each cycle's invoice from the quotation and
+-- creates it in Bukku as a draft; finance approves it there. A line's Bukku
+-- product is the Rate Card line's SKU, whose product carries its income
+-- account. The advertising budget is its own invoice, to a debtor contact
+-- the team chooses for the client, with no SST. A cycle starts on the day
+-- the services start (the 1st, the 16th, the 23rd) and runs a full month;
+-- the first is never pro-rated. Clients: Billing at Work makes them.
+--
+-- WHAT IT ADDS
+--   * `bukku_settings.budget_account_code`: the account the advertising
+--     budget's line posts to (Settings, Money, Bukku; `bukku_invoice_set`).
+--   * `client_ad_debtors`: the Bukku contact a client's advertising budget is
+--     invoiced to (`client_ad_debtor_set`), else the client's own contact.
+--   * `quotation_invoices`: one row a quotation, cycle and kind (service or
+--     budget), its Bukku draft's id and number once made; held ten minutes
+--     while one is being made, so a second press makes no second draft.
+--   * `quotation_cycle_lines`: the lines a cycle bills, each priced at its
+--     rate after its term percentage, its SKU and Bukku tax code.
+--   * `quotation_invoice_prep` / `_done` (as the caller) and
+--     `quotation_invoices_of` (the schedule: every cycle of the term).
+--
+-- ORDER: this file, then bukku-sync, then the pages. Safe to run twice.
+-- ROLLBACK: drop the six functions and the two tables; the column can stay.
+-- ===========================================================================
+
+alter table public.bukku_settings add column if not exists budget_account_code text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'bukku_settings_budget_account_code_check') then
+    alter table public.bukku_settings add constraint bukku_settings_budget_account_code_check
+      check (budget_account_code is null or budget_account_code ~ '^[A-Za-z0-9._/-]{1,30}$');
+  end if;
+end $$;
+
+create table if not exists public.client_ad_debtors (
+  client_id  uuid primary key references public.clients(id) on delete cascade,
+  contact_id bigint not null check (contact_id > 0),
+  code       text,
+  name       text check (name is null or length(name) <= 200),
+  set_by     uuid references public.team_members(id) on delete set null,
+  set_at     timestamptz not null default now()
+);
+alter table public.client_ad_debtors enable row level security;
+revoke all on table public.client_ad_debtors from public, anon, authenticated;
+
+create table if not exists public.quotation_invoices (
+  quotation_id uuid not null references public.quotations(id) on delete cascade,
+  cycle        int not null check (cycle between 1 and 36),
+  kind         text not null check (kind in ('service', 'budget')),
+  bukku_id     bigint,
+  number       text check (number is null or length(number) <= 60),
+  amount       numeric(14,2),
+  currency     text,
+  made_at      timestamptz,
+  made_by      uuid references public.team_members(id) on delete set null,
+  claimed_at   timestamptz,
+  claimed_by   uuid references public.team_members(id) on delete set null,
+  primary key (quotation_id, cycle, kind)
+);
+alter table public.quotation_invoices enable row level security;
+revoke all on table public.quotation_invoices from public, anon, authenticated;
+
+/* The day the quotation's services start: its confirmed lines' earliest
+   start, set at approval. */
+create or replace function public.quotation_start(p_id uuid)
+returns date language sql stable security definer set search_path = public as $$
+  select min(case when s.start_on ~ '^\d{4}-\d{2}-\d{2}$' then s.start_on::date
+                  when s.start_on ~ '^\d{4}-\d{2}$' then (s.start_on || '-01')::date end)
+    from public.client_services s
+   where s.quotation_id = p_id and s.archived_at is null
+$$;
+revoke all on function public.quotation_start(uuid) from public, anon, authenticated;
+
+/* The lines one cycle bills. A monthly line bills each cycle up to its
+   months; a one-off line the first cycle alone. Each is priced at its rate
+   after its own term percentage, to the cent, as the quotation totals it;
+   its SKU is the Rate Card line's, its tax Bukku's code for its rate. The
+   advertising budget: each platform's monthly amount up to its months, a
+   one-off amount the first cycle, no tax. */
+create or replace function public.quotation_cycle_lines(p_id uuid, p_cycle int, p_kind text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  v_out jsonb := '[]'::jsonb;
+  e jsonb;
+  v_months int; v_month boolean; v_pct numeric; v_rate numeric; v_unit numeric;
+  v_sst numeric; v_tax text; v_sku text;
+begin
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null then return v_out; end if;
+  if p_kind = 'budget' then
+    for e in select x from jsonb_array_elements(coalesce(q.totals->'ads', '[]'::jsonb)) x loop
+      v_month := coalesce(e->>'freq', 'monthly') = 'monthly';
+      v_months := greatest(1, coalesce((e->>'months')::int, 1));
+      if (v_month and p_cycle <= v_months) or (not v_month and p_cycle = 1) then
+        v_unit := round(coalesce((e->>'budget')::numeric, (e->>'amount')::numeric, 0), 2);
+        if v_unit > 0 then
+          v_out := v_out || jsonb_build_object('label', 'Advertising budget · ' ||
+            case lower(coalesce(e->>'platform', '')) when 'meta' then 'Meta' when 'tiktok' then 'TikTok' when 'google' then 'Google'
+              when 'xhs' then 'rednote' when 'rednote' then 'rednote' else initcap(coalesce(e->>'platform', 'Other')) end,
+            'qty', 1, 'unit', v_unit, 'sst', 0);
+        end if;
+      end if;
+    end loop;
+    return v_out;
+  end if;
+  for e in select x from jsonb_array_elements(coalesce(q.lines, '[]'::jsonb)) x loop
+    if coalesce((e->>'in_plan')::boolean, false) then continue; end if;
+    v_month := e->>'basis' = 'month';
+    v_months := greatest(1, coalesce((e->>'months')::int, (q.totals->>'term')::int, 1));
+    if not ((v_month and p_cycle <= v_months) or (not v_month and p_cycle = 1)) then continue; end if;
+    v_rate := coalesce((e->>'rate')::numeric, 0);
+    v_pct := case when v_month then coalesce((e->>'pct')::numeric, (q.totals->>'term_pct')::numeric, 0) else 0 end;
+    v_unit := round(v_rate * (1 + v_pct / 100), 2);
+    v_sst := coalesce((e->>'tax_pct')::numeric, (e->>'sst')::numeric, (q.totals->>'sst_pct')::numeric, 0);
+    v_tax := null;
+    if coalesce(e->>'tax', '') <> '' then
+      select t.bukku_id into v_tax from public.tax_codes t where t.code = e->>'tax';
+    end if;
+    if v_tax is null and v_sst > 0 then
+      select t.bukku_id into v_tax from public.tax_codes t
+       where t.active and t.rate = v_sst and t.bukku_id is not null
+       order by (t.code ilike 'SV%') desc, t.code limit 1;
+    end if;
+    v_sku := null;
+    if coalesce(e->>'slug', '') <> '' then
+      select nullif(btrim(s.sku), '') into v_sku from public.services s where s.slug = e->>'slug';
+    end if;
+    v_out := v_out || jsonb_strip_nulls(jsonb_build_object('label', coalesce(nullif(btrim(e->>'label'), ''), 'Service'),
+      'qty', coalesce((e->>'qty')::numeric, 1), 'unit', v_unit, 'sst', v_sst, 'tax', v_tax, 'sku', v_sku,
+      'pct', case when v_pct <> 0 then v_pct end, 'month', v_month));
+  end loop;
+  return v_out;
+end $$;
+revoke all on function public.quotation_cycle_lines(uuid, integer, text) from public, anon, authenticated;
+
+/* The number of cycles a quotation bills: its term, else one. */
+create or replace function public.quotation_cycles(p_id uuid)
+returns int language sql stable security definer set search_path = public as $$
+  select least(36, greatest(1, coalesce((q.totals->>'term')::int, 1),
+         coalesce((select max(coalesce((e->>'months')::int, 1)) from jsonb_array_elements(coalesce(q.lines, '[]'::jsonb)) e
+                    where e->>'basis' = 'month'), 1),
+         coalesce((select max(coalesce((e->>'months')::int, 1)) from jsonb_array_elements(coalesce(q.totals->'ads', '[]'::jsonb)) e
+                    where coalesce(e->>'freq', 'monthly') = 'monthly'), 1)))
+    from public.quotations q where q.id = p_id
+$$;
+revoke all on function public.quotation_cycles(uuid) from public, anon, authenticated;
+
+/* The schedule: each cycle of the term, its day, what it bills and the
+   draft made for it. Clients: Billing at View, the client in scope. */
+create or replace function public.quotation_invoices_of(p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  q public.quotations;
+  v_start date;
+  v_n int;
+  v_rows jsonb := '[]'::jsonb;
+  i int; k text; v_lines jsonb; v_sum numeric; r public.quotation_invoices;
+  v_day date;
+begin
+  if (public.ops_me()).id is null or not public.allowed('clients.billing', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'view') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
+  v_start := public.quotation_start(q.id);
+  v_n := public.quotation_cycles(q.id);
+  for i in 1 .. v_n loop
+    v_day := case when v_start is not null then (v_start + make_interval(months => i - 1))::date end;
+    foreach k in array array['service', 'budget'] loop
+      v_lines := public.quotation_cycle_lines(q.id, i, k);
+      if jsonb_array_length(v_lines) = 0 then continue; end if;
+      select coalesce(sum(round((x->>'qty')::numeric * (x->>'unit')::numeric, 2)), 0) into v_sum from jsonb_array_elements(v_lines) x;
+      select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = i and x.kind = k;
+      v_rows := v_rows || jsonb_strip_nulls(jsonb_build_object('cycle', i, 'kind', k, 'date', v_day,
+        'until', case when v_day is not null then ((v_start + make_interval(months => i))::date - 1) end,
+        'amount', v_sum, 'number', r.number, 'bukku_id', r.bukku_id, 'made_at', r.made_at,
+        'creating', r.claimed_at is not null and r.claimed_at > now() - interval '10 minutes' and r.number is null));
+    end loop;
+  end loop;
+  return jsonb_build_object('ok', true, 'ref', q.ref, 'start', v_start, 'cycles', v_n,
+    'currency', coalesce(q.totals->>'currency', 'MYR'), 'rows', v_rows,
+    'debtor', (select jsonb_build_object('contact_id', d.contact_id, 'code', d.code, 'name', d.name) from public.client_ad_debtors d where d.client_id = q.client_id),
+    'budget_account', (select b.budget_account_code from public.bukku_settings b where b.id = 1));
+end $$;
+revoke all on function public.quotation_invoices_of(uuid) from public, anon;
+grant execute on function public.quotation_invoices_of(uuid) to authenticated;
+
+/* One cycle's draft asked for: everything bukku-sync sends, read as the
+   caller, the press held ten minutes. */
+create or replace function public.quotation_invoice_prep(p_id uuid, p_cycle int, p_kind text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q public.quotations;
+  r public.quotation_invoices;
+  b public.bukku_settings;
+  v_start date; v_day date; v_lines jsonb; v_contact bigint; v_ent uuid; v_cur text; v_fx numeric := 1;
+  v_ref text;
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind is null or p_kind not in ('service', 'budget') or p_cycle is null or p_cycle < 1 or p_cycle > 36 then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if q.reviewed_at is null then return jsonb_build_object('error', 'not-reviewed'); end if;
+  if q.removed_at is not null then return jsonb_build_object('error', 'removed'); end if;
+  -- A signed quotation withdrawn (QUOTATION WAYS OUT) makes no further invoice.
+  if q.withdrawn_at is not null then return jsonb_build_object('error', 'withdrawn'); end if;
+  v_start := public.quotation_start(q.id);
+  if v_start is null then return jsonb_build_object('error', 'no-start'); end if;
+  if p_cycle > public.quotation_cycles(q.id) then return jsonb_build_object('error', 'bad-request'); end if;
+  v_lines := public.quotation_cycle_lines(q.id, p_cycle, p_kind);
+  if jsonb_array_length(v_lines) = 0 then return jsonb_build_object('error', 'nothing'); end if;
+  select * into b from public.bukku_settings where id = 1;
+  if p_kind = 'budget' then
+    if b.budget_account_code is null then return jsonb_build_object('error', 'no-budget-account'); end if;
+    select d.contact_id into v_contact from public.client_ad_debtors d where d.client_id = q.client_id;
+  end if;
+  if v_contact is null then
+    v_ent := nullif(q.totals->'bill_to'->>'entity_id', '')::uuid;
+    if v_ent is not null then
+      select l.contact_id into v_contact from public.bukku_links l where l.kind = 'entity' and l.record_id = v_ent;
+    end if;
+    if v_contact is null then
+      select l.contact_id into v_contact from public.bukku_links l where l.kind = 'client' and l.record_id = q.client_id;
+    end if;
+    if v_contact is null then
+      v_contact := (public.bukku_shared('client', q.client_id)->>'contact_id')::bigint;
+    end if;
+  end if;
+  if v_contact is null then return jsonb_build_object('error', 'not-linked'); end if;
+  if p_kind = 'service' and exists (select 1 from jsonb_array_elements(v_lines) x where (x->>'sst')::numeric > 0 and x->>'tax' is null) then
+    return jsonb_build_object('error', 'no-tax-code');
+  end if;
+  v_cur := case when q.totals->>'currency' = 'SGD' then 'SGD' else 'MYR' end;
+  if v_cur = 'SGD' then
+    v_fx := nullif(coalesce((q.totals->>'fx')::numeric, 0), 0);
+    if v_fx is null then return jsonb_build_object('error', 'no-fx'); end if;
+  end if;
+  select * into r from public.quotation_invoices x where x.quotation_id = q.id and x.cycle = p_cycle and x.kind = p_kind for update;
+  if r.number is not null then return jsonb_build_object('error', 'invoiced', 'number', r.number); end if;
+  if r.claimed_at is not null and r.claimed_at > now() - interval '10 minutes' then return jsonb_build_object('error', 'creating'); end if;
+  insert into public.quotation_invoices (quotation_id, cycle, kind, claimed_at, claimed_by)
+  values (q.id, p_cycle, p_kind, now(), me.id)
+  on conflict (quotation_id, cycle, kind) do update set claimed_at = now(), claimed_by = me.id;
+  v_day := (v_start + make_interval(months => p_cycle - 1))::date;
+  -- Bukku's second number names the quotation and the cycle, so one is found again.
+  v_ref := left(q.ref || ' · ' || to_char(v_day, 'YYYY-MM-DD') || case when p_kind = 'budget' then ' · Ads' else '' end, 50);
+  return jsonb_build_object('ok', true, 'contact_id', v_contact, 'ref', v_ref, 'date', v_day,
+    'until', ((v_start + make_interval(months => p_cycle))::date - 1), 'currency', v_cur, 'fx', v_fx,
+    'kind', p_kind, 'lines', v_lines, 'account_code', case when p_kind = 'budget' then b.budget_account_code end,
+    'description', left(q.brand || ' · ' || q.ref || ' · ' || public.register_day(v_day) ||
+      case when p_kind = 'budget' then ' · Advertising budget' else '' end, 200));
+end $$;
+revoke all on function public.quotation_invoice_prep(uuid, integer, text) from public, anon;
+grant execute on function public.quotation_invoice_prep(uuid, integer, text) to authenticated;
+
+/* The press let go: the draft's id and number kept where one was made (or
+   found), filed on the client. */
+create or replace function public.quotation_invoice_done(p_id uuid, p_cycle int, p_kind text, p_bukku bigint, p_number text, p_amount numeric)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  q public.quotations;
+  v_num text := nullif(left(btrim(coalesce(p_number, '')), 60), '');
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into q from public.quotations x where x.id = p_id;
+  if q.id is null or not public.client_scope_ok('client', q.client_id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if v_num is null then
+    update public.quotation_invoices set claimed_at = null, claimed_by = null
+     where quotation_id = q.id and cycle = p_cycle and kind = p_kind and number is null;
+    return jsonb_build_object('ok', true);
+  end if;
+  update public.quotation_invoices set number = v_num, bukku_id = nullif(p_bukku, 0), amount = p_amount,
+         currency = case when q.totals->>'currency' = 'SGD' then 'SGD' else 'MYR' end,
+         made_at = now(), made_by = me.id, claimed_at = null, claimed_by = null
+   where quotation_id = q.id and cycle = p_cycle and kind = p_kind and number is null;
+  if found then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (me.name, 'client.billing', q.brand, q.ref || ' · ' ||
+            case when p_kind = 'budget' then 'Advertising budget invoice ' else 'Invoice ' end ||
+            v_num || ' created in Bukku as a draft · Month ' || p_cycle);
+  end if;
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.quotation_invoice_done(uuid, integer, text, bigint, text, numeric) from public, anon;
+grant execute on function public.quotation_invoice_done(uuid, integer, text, bigint, text, numeric) to authenticated;
+
+/* The Bukku contact a client's advertising budget is invoiced to; none
+   (null) puts it back on the client's own contact. */
+create or replace function public.client_ad_debtor_set(p_client uuid, p_contact bigint, p_code text, p_name text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  c public.clients;
+  d public.client_ad_debtors;
+begin
+  if me.id is null or not public.allowed('clients.billing', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.clients x where x.id = p_client;
+  if c.id is null or not public.client_scope_ok('client', c.id, 'work') then return jsonb_build_object('error', 'not-found'); end if;
+  if p_contact is not null and p_contact <= 0 then return jsonb_build_object('error', 'bad-request'); end if;
+  select * into d from public.client_ad_debtors x where x.client_id = c.id;
+  if p_contact is null then
+    delete from public.client_ad_debtors x where x.client_id = c.id;
+  else
+    insert into public.client_ad_debtors (client_id, contact_id, code, name, set_by, set_at)
+    values (c.id, p_contact, nullif(left(btrim(coalesce(p_code, '')), 40), ''), nullif(left(btrim(coalesce(p_name, '')), 200), ''), me.id, now())
+    on conflict (client_id) do update set contact_id = excluded.contact_id, code = excluded.code, name = excluded.name,
+      set_by = excluded.set_by, set_at = now();
+  end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'client.billing', c.name, 'Advertising budget billed to: ' || coalesce(d.name, d.code, 'the client') || ' → ' ||
+          coalesce(nullif(btrim(p_name), ''), nullif(btrim(p_code), ''), 'the client'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.client_ad_debtor_set(uuid, bigint, text, text) from public, anon;
+grant execute on function public.client_ad_debtor_set(uuid, bigint, text, text) to authenticated;
+
+/* The advertising budget's account, by its code in Bukku's chart. */
+create or replace function public.bukku_invoice_set(p_budget_code text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  b public.bukku_settings;
+  v_code text := nullif(btrim(coalesce(p_budget_code, '')), '');
+begin
+  if me.id is null or not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if v_code is not null and v_code !~ '^[A-Za-z0-9._/-]{1,30}$' then return jsonb_build_object('error', 'bad-account'); end if;
+  select * into b from public.bukku_settings where id = 1 for update;
+  if b.budget_account_code is not distinct from v_code then return jsonb_build_object('ok', true); end if;
+  insert into public.bukku_settings (id, budget_account_code, set_by, set_at) values (1, v_code, me.id, now())
+  on conflict (id) do update set budget_account_code = excluded.budget_account_code, set_by = excluded.set_by, set_at = now();
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'team.changed', 'Bukku', 'Advertising budget account: ' || coalesce(b.budget_account_code, 'not set') || ' → ' || coalesce(v_code, 'not set'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.bukku_invoice_set(text) from public, anon;
+grant execute on function public.bukku_invoice_set(text) to authenticated;
+
+create or replace function public.bukku_config()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare b public.bukku_settings;
+begin
+  if (public.ops_me()).id is null or not (public.allowed('clients.billing', 'work') or public.allowed('suppliers', 'work')
+      or public.ops_granted('team.settings', 'work')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into b from public.bukku_settings where id = 1;
+  return jsonb_build_object('ok', true, 'field_client', b.field_client, 'field_supplier', b.field_supplier,
+    'field_creator', b.field_creator, 'bill_account', b.bill_account, 'bill_account_name', b.bill_account_name,
+    'bill_item_sku', b.bill_item_sku, 'bill_class_code', b.bill_class_code, 'bill_account_code', b.bill_account_code,
+    'budget_account_code', b.budget_account_code, 'set_at', b.set_at);
+end $$;
+revoke all on function public.bukku_config() from public, anon;
+grant execute on function public.bukku_config() to authenticated;
+
+-- END OF QUOTATION INVOICES -------------------------------------------------
 
 -- HIRING OFFERS AND CONTRACTS ---------------------------------------------------
 

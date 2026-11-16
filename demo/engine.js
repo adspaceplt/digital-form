@@ -32,7 +32,7 @@
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
     suppliers: 'id code name kind brn nric tin sst_no phone address contact_name designation email mobile payment_term currency payee_name bank_name bank_account finance_email swift bank_address status created_at created_by updated_at approved_at approved_by client_id',
     supplier_forms: 'id supplier_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by purpose',
-    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by',
+    quotations: 'id ref client_id brand version version_id selection lines totals status source issued_at valid_until made_by contact access_key requested_at idem removed_at removed_by proceed_at proceed_due proceed_start proceed_decider proceed_reminded_at replaces no_contact_at no_contact_by released_at released_by reply_due review_reminded_at signed_at signed submitted_at submitted_by reviewer_id reviewer_name reviewed_at reviewed_by reviewed_role returned_at return_note returned_by sign_history sent_out_at seal_key seal_sha seal_pages_sha sealed_at sealed_by declined_at decline_reason withdrawn_at withdrawn_on withdrawn_reason withdrawn_by withdrawn_lines',
     client_touches: 'id client_id kind happened_at by_whom contact_name summary next_action next_at created_at archived_at done_at updated_at meet_at meet_minutes meet_link meet_event_id',
     clients: 'id name logo_url access_token passcode active created_at drive_folder handle_ig handle_fb handle_tiktok handle_xhs stage industry owner market sst_applies company_no sst_no billing_address website source brand_notes updated_at legal_name company_no_old tin bill_contact bill_contact_email bill_contact_phone finance_email phone social_ig social_fb social_tiktok social_xhs review_hidden deal_value deal_note bill_contact_id slug stage_since stage_log commence client_code moved_token stage_reason stage_note white_label report_logo script_key brief restricted_platform restricted_since restricted_note vic_at vic_by vic_note bill_sgd sales_by owner_id',
     creator_profile_changes: 'id creator_id source actor before after restored_from created_at',
@@ -311,6 +311,7 @@
     supplier_form_submit: 'p_key p_answers',
     supplier_email_templates_list: '', supplier_email_template_save: 'p_purpose p_subject p_body',
     meeting_message_get: '', meeting_message_save: 'p_body', template_fields_all: '',
+    code_email_template_get: '', code_email_template_save: 'p_subject p_body p_foot',
     invoice_scope: '', invoice_reminders: 'p_contacts', invoice_email_template_get: '',
     invoice_email_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
     invoice_send_template_get: '', invoice_recipients: 'p_client p_contact', email_templates_list: '', email_template_save: 'p_id p_audience p_name p_subject p_body', email_template_delete: 'p_id', email_parties: '', email_recipients: 'p_client p_supplier', email_new_begin: 'p_audience p_client p_supplier p_template p_to p_ccs p_subject p_body p_attachment p_idem', email_new_done: 'p_id p_status p_provider p_error', team_emails_of: 'p_client', invoice_send_template_save: 'p_subject_one p_subject_many p_body p_legal p_disclaimer',
@@ -601,6 +602,8 @@
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
+    bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
+    quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -620,6 +623,7 @@
     quote_sign_finish: 'p_key p_code',
     quote_opened: 'p_key p_device', quote_seal_state: 'p_key', quote_seal_key: 'p_key',
     quotation_record: 'p_id', quotation_seal: 'p_id p_key p_sha p_pages_sha', quotation_seal_key: 'p_id',
+    quote_decline: 'p_key p_reason', quotation_withdraw: 'p_id p_on p_reason p_lines', quotation_withdraw_undo: 'p_id',
     quotation_link: 'p_id',
     quotation_reviewers: 'p_id',
     quotation_submit: 'p_id p_reviewer p_company',
@@ -2336,7 +2340,8 @@ function cardSlugFree(name, self, email) {
       return { found: true, serial: qt.ref, kind: 'Quotation', issued_at: qt.issued_at,
         signed_at: qt.signed_at || null, confirmed_at: qt.reviewed_at || null,
         document_id: qt.seal_key ? qt.id : null, sealed: !!qt.seal_key,
-        state: qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
+        withdrawn_on: qt.withdrawn_on || null,
+        state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
           : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
     }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
@@ -5018,7 +5023,8 @@ function cardSlugFree(name, self, email) {
     invoice: ['contact name', 'client', 'invoice no', 'count', 'total', 'sign off', 'invoices'],
     'creator-details': ['creator name', 'creator id', 'reference', 'payee', 'method', 'account ending', 'review link'],
     'creator-booking': ['creator name', 'creator id', 'job reference', 'campaign', 'posted date', 'pay by', 'payee', 'method', 'account ending', 'amount', 'bill number', 'review link'],
-    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link']
+    meeting: ['meeting', 'date', 'time', 'month', 'channel', 'link'],
+    code: ['name', 'code', 'minutes', 'purpose']
   };
   function tplCheck(text, kind) {
     var re = /\{\s*([^{}]*?)\s*\}/g, m, list = TPL_FIELDS[kind] || [];
@@ -11448,7 +11454,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -12061,8 +12067,9 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'quote_seal_key') return Promise.resolve({ data: null, error: { code: '42501', message: 'permission denied for function quote_seal_key' } });
         var ssq = /^[a-z0-9]{8}$/.test(String(args.p_key || '')) && sealOf(args.p_key);
         if (!ssq) return qtOk({ error: 'not-found' });
-        if (!ssq.reviewed_at) return qtOk({ confirmed: false });
-        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key });
+        if (!ssq.reviewed_at) return qtOk({ confirmed: false, declined: !!ssq.declined_at, declined_at: ssq.declined_at || null });
+        return qtOk({ confirmed: true, id: ssq.id, confirmed_at: ssq.reviewed_at, sealed: !!ssq.seal_key,
+          withdrawn: !!ssq.withdrawn_at, withdrawn_on: ssq.withdrawn_on || null });
       }
       if (name === 'quotation_record' || name === 'quotation_seal_key') {
         if (!qtMe || !opsAllowed('clients.quotes', 'view')) return qtOk({ error: 'denied' });
@@ -12092,10 +12099,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (rq.submitted_at) steps.push({ step: 'submitted', at: rq.submitted_at, team: true, by: rq.submitted_by, to: rq.reviewer_name });
         if (rq.returned_at) steps.push({ step: 'returned', at: rq.returned_at, team: true, by: rq.returned_by, note: rq.return_note });
         if (rq.reviewed_at) steps.push({ step: 'confirmed', at: rq.reviewed_at, team: true, by: rq.reviewed_by, role: rq.reviewed_role });
+        if (rq.withdrawn_at) steps.push({ step: 'withdrawn', at: rq.withdrawn_at, team: true, by: rq.withdrawn_by,
+          note: 'From ' + (window.ADspaceClock ? ADspaceClock.date(rq.withdrawn_on) : rq.withdrawn_on) + ' · ' + rq.withdrawn_reason });
         if (rq.sealed_at) steps.push({ step: 'sealed', at: rq.sealed_at, team: true, by: rq.sealed_by, note: rq.seal_sha });
         steps.sort(function (a, b) { return (Date.parse(a.at) - Date.parse(b.at)) || String(a.step).localeCompare(String(b.step)); });
         return qtOk({ id: rq.id, ref: rq.ref, brand: rq.brand, company: sg && sg.company ? sg.company.legal_name : null,
-          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at,
+          signed: !!rq.signed_at, confirmed: !!rq.reviewed_at, withdrawn: !!rq.withdrawn_at, declined: !!rq.declined_at,
           seal: rq.seal_key ? { sha: rq.seal_sha, pages_sha: rq.seal_pages_sha, at: rq.sealed_at, by: rq.sealed_by } : null, steps: steps });
       }
       if (name === 'quotation_seal') {
@@ -12110,6 +12119,58 @@ function opsCodeRange(cid, period, ty, src, seq) {
         Object.assign(lq, { seal_key: args.p_key, seal_sha: args.p_sha, seal_pages_sha: args.p_pages_sha, sealed_at: qtNow.toISOString(), sealed_by: qtMe.name });
         qtLog(lq.brand, lq.ref + ' · signed copy sealed · SHA-256 ' + args.p_sha.slice(0, 4) + '…' + args.p_sha.slice(-4));
         return qtOk({ ok: true, sha: args.p_sha });
+      }
+
+      if (name === 'quote_decline') {
+        if (!/^[a-z0-9]{8}$/.test(String(args.p_key || ''))) return qtOk({ error: 'not-found' });
+        var dr = String(args.p_reason || '').trim() || null;
+        if (dr && dr.length > 300) return qtOk({ error: 'too-long' });
+        var dq = sealOf(args.p_key);
+        if (!dq || dq.removed_at) return qtOk({ error: 'not-found' });
+        if (dq.declined_at) return qtOk({ ok: true, again: true });
+        if (dq.signed_at) return qtOk({ error: 'signed' });
+        if (dq.status === 'not_proceeding') return qtOk({ error: 'closed' });
+        if (dq.source === 'website' && !dq.released_at) return qtOk({ error: 'unsent' });
+        if (dq.valid_until < qtToday) return qtOk({ error: 'expired' });
+        Object.assign(dq, { status: 'not_proceeding', declined_at: qtNow.toISOString(), decline_reason: dr });
+        DB.signing_steps = DB.signing_steps || [];
+        DB.signing_steps.push({ id: nid('ss'), doc_kind: 'quotation', doc_id: dq.id, step: 'declined', at: qtNow.toISOString(), ip: window.__callerIp || '203.0.113.24', country: window.__country || 'MY' });
+        DB.activity_log.unshift({ id: nid('al'), actor: 'Quotation website', action: 'client.quotation', subject: dq.brand,
+          detail: dq.ref + ' declined on the quotation link' + (dr ? ' · ' + dr : ''), created_at: qtNow.toISOString() });
+        var dc = DB.clients.filter(function (c) { return c.id === dq.client_id; })[0];
+        var dwho = [qsMember(dq.made_by), qsMember(dc && dc.owner)].filter(Boolean).map(function (m) { return m.id; });
+        if (!dwho.length) qtTell(dq.client_id, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id + ':declined');
+        else qsNotify(dwho, 'quote.declined', 'Quotation declined · ' + dq.brand, dq.ref + (dr ? ' · ' + dr : ''), dq.id, dq.client_id);
+        return qtOk({ ok: true });
+      }
+      if (name === 'quotation_withdraw' || name === 'quotation_withdraw_undo') {
+        if (!qtMe || !opsAllowed('clients.quotes', 'manage')) return qtOk({ error: 'denied' });
+        var xq = DB.quotations.filter(function (q) { return q.id === args.p_id; })[0];
+        var xc = xq && DB.clients.filter(function (c) { return c.id === xq.client_id; })[0];
+        if (!xq || (xc && !scopeRowOk(xc.stage, xc.owner, 'manage', xc.sales_by))) return qtOk({ error: 'not-found' });
+        if (name === 'quotation_withdraw_undo') {
+          if (!xq.withdrawn_at) return qtOk({ error: 'not-withdrawn' });
+          (xq.withdrawn_lines || []).forEach(function (l) {
+            (DB.client_services || []).forEach(function (sv) { if (sv.id === l.id && sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'to_quote') sv.state = l.state; });
+          });
+          Object.assign(xq, { withdrawn_at: null, withdrawn_on: null, withdrawn_reason: null, withdrawn_by: null, withdrawn_lines: null });
+          qtLog(xq.brand, xq.ref + ' withdrawal undone');
+          return qtOk({ ok: true });
+        }
+        if (!xq.signed_at) return qtOk({ error: 'not-signed' });
+        if (xq.withdrawn_at) return qtOk({ error: 'withdrawn' });
+        var sday = new Date(Date.parse(xq.signed_at) + 8 * 3600e3).toISOString().slice(0, 10);
+        if (!args.p_on || args.p_on < sday || args.p_on > qtToday) return qtOk({ error: 'bad-date' });
+        var xr = String(args.p_reason || '').trim();
+        if (xr.length < 3 || xr.length > 300) return qtOk({ error: 'bad-reason' });
+        var moved = [];
+        if (args.p_lines) (DB.client_services || []).forEach(function (sv) {
+          if (sv.quotation_id === xq.id && !sv.archived_at && sv.state === 'confirmed') { moved.push({ id: sv.id, state: sv.state }); sv.state = 'to_quote'; }
+        });
+        Object.assign(xq, { withdrawn_at: qtNow.toISOString(), withdrawn_on: args.p_on, withdrawn_reason: xr, withdrawn_by: qtMe.name, withdrawn_lines: moved });
+        qtLog(xq.brand, xq.ref + ' withdrawn from ' + (window.ADspaceClock ? ADspaceClock.date(args.p_on) : args.p_on) + ' · ' + xr +
+          (moved.length ? ' · ' + moved.length + (moved.length === 1 ? ' service line' : ' service lines') + ' returned to To quote' : ''));
+        return qtOk({ ok: true, lines: moved.length });
       }
       if (/^quotation_(link|reviewers|submit|review|paper|resign|lines_start)$/.test(name)) {
         var qsLevel = name === 'quotation_reviewers' ? 'work' : 'work';
@@ -13446,6 +13507,31 @@ function opsCodeRange(cid, period, ty, src, seq) {
     }
 
     if (name === 'template_fields_all') return Promise.resolve({ data: opsMe() ? JSON.parse(JSON.stringify(TPL_FIELDS)) : null, error: null });
+
+    if (name === 'code_email_template_get' || name === 'code_email_template_save') {
+      var ceNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return ceNo(window.__refuseRpc[name]);
+      if (!opsMe() || !opsGranted('team.settings', 'work')) return ceNo('denied');
+      DB.code_email_template = DB.code_email_template || { subject: 'Your ADspace verification code {purpose}',
+        body: 'Dear {name},\n\nPlease enter the following code {purpose}:\n\n{code}\n\nThe code expires in {minutes} minutes.\n\nYours sincerely,\nADspace',
+        foot: 'The code may be used once. If you did not request it, please disregard this email; nothing is signed without the code.' };
+      var ce = DB.code_email_template;
+      if (name === 'code_email_template_get') return Promise.resolve({ data: { subject: ce.subject, body: ce.body, foot: ce.foot }, error: null });
+      var ceS = String(args.p_subject || '').replace(/\s+/g, ' ').trim(), ceB = String(args.p_body || '').replace(/\r/g, '').trim(), ceF = String(args.p_foot || '').replace(/\r/g, '').trim();
+      if (ceS.length < 2 || ceS.length > 200) return ceNo('bad-subject');
+      if (ceB.length < 2 || ceB.length > 5000) return ceNo('bad-body');
+      if (ceF.length > 1000) return ceNo('foot-long');
+      if (/\{\s*code\s*\}/i.test(ceS)) return ceNo('code-in-subject');
+      if (!/\{\s*code\s*\}/i.test(ceB)) return ceNo('no-code');
+      var ceBad = tplCheck(ceS + '\n' + ceB + '\n' + ceF, 'code');
+      if (ceBad) return tplNo(ceBad);
+      var ceMv = [];
+      if (ce.subject !== ceS) ceMv.push('Subject: ' + ce.subject + ' → ' + ceS);
+      if (ce.body !== ceB) ceMv.push('Message');
+      if (ce.foot !== ceF) ceMv.push('Fine print');
+      if (ceMv.length) { ce.subject = ceS; ce.body = ceB; ce.foot = ceF; logAct('team.changed', 'Email templates', 'Verification code · ' + ceMv.join(' · ')); persist(); }
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
     if (name === 'meeting_message_get' || name === 'meeting_message_save') {
       var mmMe = opsMe();
       var mmNo = function (e) { return Promise.resolve({ data: { error: e }, error: null }); };
@@ -13563,7 +13649,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
-    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku') {
+    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku' || /^quotation_invoice/.test(name) || name === 'client_ad_debtor_set') {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return bkNo(window.__refuseRpc[name]);
@@ -13597,7 +13683,127 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,
           field_creator: DB.bukku_settings.field_creator || null, bill_account: DB.bukku_settings.bill_account || null,
           bill_account_name: DB.bukku_settings.bill_account_name || null, bill_item_sku: bkBillSet().bill_item_sku || null,
-          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null });
+          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null,
+          budget_account_code: DB.bukku_settings.budget_account_code || null });
+      }
+
+      var qiQ = function (id) { return (DB.quotations || []).filter(function (x) { return x.id === id; })[0]; };
+      var qiStart = function (id) {
+        var ds = (DB.client_services || []).filter(function (x) { return x.quotation_id === id && !x.archived_at && x.start_on; })
+          .map(function (x) { return String(x.start_on).length === 7 ? x.start_on + '-01' : String(x.start_on).slice(0, 10); }).sort();
+        return ds[0] || null;
+      };
+      var qiAdd = function (day, n) {
+        var p = day.split('-').map(Number), y = p[0], m = p[1] - 1 + n, d = p[2];
+        y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+        var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+        return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0');
+      };
+      var qiMinus = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 1); return t.toISOString().slice(0, 10); };
+      var qiLines = function (q, cyc, kind) {
+        var tot = q.totals || {}, out = [];
+        if (kind === 'budget') {
+          (tot.ads || []).forEach(function (e) {
+            var mo = (e.freq || 'monthly') === 'monthly', n = Math.max(1, Number(e.months || 1));
+            if ((mo && cyc <= n) || (!mo && cyc === 1)) {
+              var u = Math.round(Number(e.budget != null ? e.budget : e.amount || 0) * 100) / 100;
+              if (u > 0) out.push({ label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other'), qty: 1, unit: u, sst: 0 });
+            }
+          });
+          return out;
+        }
+        (q.lines || []).forEach(function (e) {
+          if (e.in_plan) return;
+          var mo = e.basis === 'month', n = Math.max(1, Number(e.months || tot.term || 1));
+          if (!((mo && cyc <= n) || (!mo && cyc === 1))) return;
+          var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
+          var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
+          out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
+            sst: Number(e.sst != null ? e.sst : (tot.sst_pct || 0)), sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null });
+        });
+        return out;
+      };
+      var qiCycles = function (q) {
+        var t = q.totals || {}, m = Number(t.term || 1);
+        (q.lines || []).forEach(function (e) { if (e.basis === 'month') m = Math.max(m, Number(e.months || 1)); });
+        (t.ads || []).forEach(function (e) { if ((e.freq || 'monthly') === 'monthly') m = Math.max(m, Number(e.months || 1)); });
+        return Math.min(36, Math.max(1, m));
+      };
+      DB.quotation_invoices = DB.quotation_invoices || [];
+      DB.client_ad_debtors = DB.client_ad_debtors || [];
+      if (name === 'quotation_invoices_of') {
+        if (!bkMe || !opsAllowed('clients.billing', 'view')) return bkNo('denied');
+        var iq = qiQ(args.p_id);
+        if (!iq || !scopeSeen(iq.client_id, 'view')) return bkNo('not-found');
+        if (!iq.reviewed_at) return bkNo('not-reviewed');
+        var ist = qiStart(iq.id), irows = [];
+        for (var ic = 1; ic <= qiCycles(iq); ic++) {
+          ['service', 'budget'].forEach(function (k) {
+            var ls = qiLines(iq, ic, k);
+            if (!ls.length) return;
+            var made = DB.quotation_invoices.filter(function (x) { return x.quotation_id === iq.id && x.cycle === ic && x.kind === k; })[0];
+            var dd = ist ? qiAdd(ist, ic - 1) : null;
+            irows.push({ cycle: ic, kind: k, date: dd, until: ist ? qiMinus(qiAdd(ist, ic)) : null,
+              amount: ls.reduce(function (t, l) { return t + Math.round(l.qty * l.unit * 100) / 100; }, 0),
+              number: made && made.number || undefined, bukku_id: made && made.bukku_id || undefined });
+          });
+        }
+        var idb = DB.client_ad_debtors.filter(function (x) { return x.client_id === iq.client_id; })[0];
+        return bkOk({ ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows,
+          debtor: idb ? { contact_id: idb.contact_id, code: idb.code, name: idb.name } : null, budget_account: DB.bukku_settings.budget_account_code || null });
+      }
+      if (name === 'quotation_invoice_prep') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var pq = qiQ(args.p_id), pk = args.p_kind, pc = Number(args.p_cycle);
+        if (!/^(service|budget)$/.test(String(pk)) || !(pc >= 1 && pc <= 36)) return bkNo('bad-request');
+        if (!pq || !scopeSeen(pq.client_id, 'work')) return bkNo('not-found');
+        if (!pq.reviewed_at) return bkNo('not-reviewed');
+        if (pq.withdrawn_at) return bkNo('withdrawn');
+        var pst = qiStart(pq.id);
+        if (!pst) return bkNo('no-start');
+        var pls = qiLines(pq, pc, pk);
+        if (!pls.length) return bkNo('nothing');
+        if (pk === 'budget' && !DB.bukku_settings.budget_account_code) return bkNo('no-budget-account');
+        var pdb = pk === 'budget' ? DB.client_ad_debtors.filter(function (x) { return x.client_id === pq.client_id; })[0] : null;
+        var plk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'client' && l.record_id === pq.client_id; })[0];
+        var pcon = pdb ? pdb.contact_id : plk ? plk.contact_id : null;
+        if (!pcon) return bkNo('not-linked');
+        var pr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === pq.id && x.cycle === pc && x.kind === pk; })[0];
+        if (pr && pr.number) return bkNo('invoiced', { number: pr.number });
+        if (pr && pr.claimed_at && Date.now() - Date.parse(pr.claimed_at) < 600000) return bkNo('creating');
+        if (!pr) { pr = { quotation_id: pq.id, cycle: pc, kind: pk }; DB.quotation_invoices.push(pr); }
+        pr.claimed_at = new Date().toISOString();
+        var pday = qiAdd(pst, pc - 1);
+        return bkOk({ contact_id: pcon, ref: (pq.ref + ' · ' + pday + (pk === 'budget' ? ' · Ads' : '')).slice(0, 50), date: pday, kind: pk, lines: pls,
+          currency: (pq.totals || {}).currency === 'SGD' ? 'SGD' : 'MYR', fx: 1, account_code: pk === 'budget' ? DB.bukku_settings.budget_account_code : undefined,
+          description: pq.brand + ' · ' + pq.ref });
+      }
+      if (name === 'quotation_invoice_done') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var dr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === args.p_id && x.cycle === Number(args.p_cycle) && x.kind === args.p_kind; })[0];
+        if (!dr) return bkOk();
+        dr.claimed_at = null;
+        if (args.p_number && !dr.number) {
+          dr.number = String(args.p_number); dr.bukku_id = args.p_bukku || null; dr.amount = args.p_amount; dr.made_at = new Date().toISOString();
+          var dq = qiQ(args.p_id);
+          DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'client.billing', subject: dq ? dq.brand : '', detail: (dq ? dq.ref : '') + ' · ' +
+            (args.p_kind === 'budget' ? 'Advertising budget invoice ' : 'Invoice ') + dr.number + ' created in Bukku as a draft · Month ' + dr.cycle, created_at: new Date().toISOString() });
+        }
+        return bkOk();
+      }
+      if (name === 'client_ad_debtor_set') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        if (!scopeSeen(args.p_client, 'work')) return bkNo('not-found');
+        DB.client_ad_debtors = DB.client_ad_debtors.filter(function (x) { return x.client_id !== args.p_client; });
+        if (args.p_contact) DB.client_ad_debtors.push({ client_id: args.p_client, contact_id: Number(args.p_contact), code: args.p_code || null, name: args.p_name || null });
+        return bkOk();
+      }
+      if (name === 'bukku_invoice_set') {
+        if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
+        var bic = args.p_budget_code ? String(args.p_budget_code).trim() : null;
+        if (bic && !/^[A-Za-z0-9._\/-]{1,30}$/.test(bic)) return bkNo('bad-account');
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { budget_account_code: bic });
+        return bkOk();
       }
 
       if (name === 'bukku_bill_set') {
@@ -16444,6 +16650,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return rpc('bukku_config', {}).then(function (r) {
               if (r.data && r.data.error) return { data: r.data, error: null };
               return { data: { ok: true, accounts: bkAccounts() }, error: null };
+            });
+          }
+
+          if (bkb.action === 'invoicecreate') {
+            return rpc('quotation_invoice_prep', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind }).then(function (r) {
+              var p = r.data || {};
+              if (p.error) return { data: p, error: null };
+              var fin = function (num) { return rpc('quotation_invoice_done', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind, p_bukku: num ? 7000 : null, p_number: num, p_amount: 0 }); };
+              if (window.__bukkuDown) return fin(null).then(function () { return { data: { error: 'bukku-unreachable' }, error: null }; });
+              var nosku = bkb.kind === 'service' && (p.lines || []).filter(function (l) { return !l.sku; })[0];
+              if (nosku) return fin(null).then(function () { return { data: { error: 'no-sku', line: nosku.label }, error: null }; });
+              window.__bukkuInvoices = window.__bukkuInvoices || [];
+              var num = 'IV-' + String(9000 + window.__bukkuInvoices.length).padStart(5, '0');
+              window.__bukkuInvoices.push({ number: num, number2: p.ref, contact_id: p.contact_id, lines: p.lines, status: 'draft' });
+              return fin(num).then(function () { return { data: { ok: true, made: num }, error: null }; });
             });
           }
           if (bkb.action === 'createbill') {

@@ -6693,6 +6693,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    button it belongs with; its options as wide as their words. */
 .seg.is-sm { display: inline-flex; min-height: var(--ctl-h-sm); }
 .seg.is-sm > .seg-opt { flex: 0 0 auto; min-height: var(--ctl-h-sm); font-size: 12.5px; }
+/* Too wide for its row, a small segment wraps as any segment does: pills
+   two across, sharing the row's room (2026-11-17). */
+.seg.is-sm.is-wrap { display: grid; flex: 1 1 auto; min-width: 0; }
 .cmdbar-views.has-thumb.is-snap::before, .seg.has-thumb.is-snap::before,
 .rectabs.has-thumb.is-snap::before, .tabrow.has-thumb.is-snap::before { transition: none; }
 .cmdbar-views.has-thumb > .acttab, .seg.has-thumb > .seg-opt,
