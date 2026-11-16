@@ -119,7 +119,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405, origin);
 
-  let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string };
+  let body: { campaignId?: string; token?: string; passcode?: string; reportVersion?: string; quotation?: string; quoteKey?: string;
+    personnel?: { member?: string | null; kind?: string } };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
   const url = Deno.env.get('SUPABASE_URL')!;
@@ -183,6 +184,38 @@ Deno.serve(async (req) => {
     const admin = createClient(url, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
     const { data, error } = await admin.rpc('quote_seal_key', { p_key: qk });
     return kept(data, error, true);
+  }
+
+  if (body.personnel) {
+    /* A colleague's employee record file (2026-11-16), as bytes: the key is
+       what `personnel_file_key` answers the caller (their own behind the
+       fresh proof, or anyone's at Personnel), under that colleague's own
+       private folder. */
+    const auth = req.headers.get('Authorization') ?? '';
+    if (!auth.startsWith('Bearer ')) return json({ error: 'not_signed_in' }, 401, origin);
+    const want = body.personnel.member ? String(body.personnel.member) : null;
+    const kind = String(body.personnel.kind ?? '');
+    if ((want !== null && !UUID.test(want)) || !['nric_front', 'nric_back', 'photo'].includes(kind)) return json({ error: 'bad_request' }, 400, origin);
+    const supa = createClient(url, anon, { global: { headers: { Authorization: auth } } });
+    const { data, error } = await supa.rpc('personnel_file_key', { p_member: want, p_kind: kind });
+    if (error || !data) return json({ error: 'not_allowed' }, 403, origin);
+    if (data.error) return json({ error: data.error === 'not-kept' ? 'none' : 'not_allowed' }, data.error === 'not-kept' ? 404 : 403, origin);
+    const key = String(data.key || ''), who = String(data.member || '');
+    const m = key.match(/^private\/personnel\/([0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|pdf)$/);
+    if (!m || m[1] !== who) return json({ error: 'bad_key' }, 400, origin);
+    const aws = new AwsClient({
+      accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+      secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+      region: Deno.env.get('S3_REGION')!,
+      service: 's3'
+    });
+    const got = await aws.fetch(`https://${Deno.env.get('S3_BUCKET')!}.s3.${Deno.env.get('S3_REGION')!}.amazonaws.com/${key}`);
+    if (!got.ok || !got.body) return json({ error: 'none' }, 404, origin);
+    const type = m[2] === 'pdf' ? 'application/pdf' : m[2] === 'png' ? 'image/png' : 'image/jpeg';
+    return new Response(got.body, {
+      status: 200,
+      headers: { 'Content-Type': type, 'Cache-Control': 'no-store', ...cors(origin) }
+    });
   }
 
   if (body.token) {

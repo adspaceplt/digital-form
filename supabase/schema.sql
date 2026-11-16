@@ -717,7 +717,7 @@ declare
     'profile_of', 'push_public_key', 'push_status', 'push_subscribe', 'push_unsubscribe',
     'quote_catalogue', 'quote_website_read', 'quote_proceed', 'quote_sign_finish', 'public_holidays_between', 'industries_list',
     'client_details_read', 'client_details_submit', 'supplier_form_read', 'supplier_form_submit',
-    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'quote_opened', 'quote_seal_state'];
+    'review_draft', 'review_link_preview', 'demo_pin_ok', 'creator_pay_form', 'creator_pay_submit', 'creator_pay_address', 'save_selection', 'share_link_preview', 'submit_review_seen', 'verify_serial', 'careers_read', 'careers_pick', 'careers_none', 'quote_opened', 'quote_seal_state'];
   has_server constant boolean := exists (select 1 from pg_roles r where r.rolname = 'service_role');
   f record;
   sig text;
@@ -120562,5 +120562,1277 @@ revoke all on function public.quote_seal_state(text) from public;
 grant execute on function public.quote_seal_state(text) to anon, authenticated;
 
 -- END OF SIGNED DOCUMENT SEAL -------------------------------------------------
+
+select public.functions_tidy();
+
+-- HIRING INTERVIEWS -----------------------------------------------------------
+
+create table if not exists public.hiring_interviews (
+  id             uuid primary key default gen_random_uuid(),
+  candidate_id   uuid not null references public.hiring_candidates(id) on delete cascade,
+  round          int not null default 1 check (round between 1 and 20),
+  slots          timestamptz[] not null check (cardinality(slots) between 1 and 3),
+  minutes        int not null check (minutes in (30, 45, 60, 90)),
+  mode           text not null check (mode in ('online', 'office')),
+  note           text check (note is null or char_length(note) <= 500),
+  state          text not null default 'invited'
+                 check (state in ('invited', 'picked', 'none', 'confirmed', 'cancelled', 'replaced')),
+  picked         int check (picked is null or picked between 1 and 3),
+  picked_at      timestamptz,
+  candidate_note text check (candidate_note is null or char_length(candidate_note) <= 300),
+  idem           text unique,
+  invited_by     uuid references public.team_members(id) on delete set null,
+  invited_at     timestamptz not null default now(),
+  approved_by    uuid references public.team_members(id) on delete set null,
+  approved_at    timestamptz,
+  meeting_link   text check (meeting_link is null or meeting_link ~ '^https://meet\.google\.com/[a-z0-9-]+$'),
+  meeting_event_id text,
+  invite_mail    text,
+  invite_mail_at timestamptz,
+  confirm_mail   text,
+  confirm_mail_at timestamptz,
+  updated_at     timestamptz not null default now()
+);
+create index if not exists hiring_interviews_candidate_idx on public.hiring_interviews (candidate_id, invited_at desc);
+alter table public.hiring_interviews enable row level security;
+revoke all on table public.hiring_interviews from public, anon, authenticated;
+
+insert into public.app_settings (key, from_date, value)
+select 'hiring_invite_days', date '2023-08-14', 3
+ where not exists (select 1 from public.app_settings s where s.key = 'hiring_invite_days');
+insert into public.app_settings (key, from_date, value)
+select 'hiring_link_days', date '2023-08-14', 30
+ where not exists (select 1 from public.app_settings s where s.key = 'hiring_link_days');
+
+create or replace function public.app_settings_set(p_from date, p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_me public.team_members; v_k text; v_v numeric; v_was numeric; v_name text; v_unit text; v_pre text;
+  v_today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  v_keys constant text[] := array['lead_followup_hours', 'proposal_followup_days', 'sst_pct',
+    'term_1_3', 'term_4_5', 'term_6_11', 'term_12_23', 'term_18_23', 'term_24', 'report_due_days', 'revision_due_days',
+    'ai_price_in', 'ai_price_out', 'meta_checks', 'approval_reminder_days', 'ai_price_search',
+    'reach_allowance_pct', 'priority_urgent_hours', 'priority_high_hours', 'priority_medium_hours',
+    'task_remind_hours', 'task_start_days', 'quote_valid_days', 'details_form_days', 'wa_repeat_hours',
+    'bench_cpr_low', 'bench_cpr_mid', 'bench_cpr_high', 'bench_cpr_top', 'bench_msg_min', 'bench_msg_target', 'bench_msg_max',
+    'bench_form_min', 'bench_form_target', 'bench_form_max', 'bench_cpm_min', 'bench_cpm_max', 'bench_cpl_rise',
+    'bench_reels_share', 'bench_ad_spend_pct', 'bench_adset_daily', 'vic_lead_followup_hours', 'vic_proposal_followup_days', 'fx_sgd',
+    'health_keep_months', 'health_leaver_months', 'abroad_days', 'abroad_remind_hours', 'analytics_from',
+    'analytics_change_pct', 'analytics_churn_pct', 'quote_reply_days', 'quote_wa_day', 'client_email_on', 'ai_price_image', 'report_post_links',
+    'creator_pay_days_myr', 'creator_pay_days_other', 'task_past_days', 'hiring_invite_days', 'hiring_link_days'];
+  v_moved text[] := '{}';
+  v_drop boolean; v_fw text; v_fv text;
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  v_me := public.ops_me();
+  if p_from is null or p_from < v_today then return jsonb_build_object('error', 'past', 'today', v_today); end if;
+  if jsonb_typeof(p_values) is distinct from 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  for v_k in select jsonb_object_keys(p_values) loop
+    if not (v_k = any(v_keys)) or jsonb_typeof(p_values -> v_k) <> 'number' then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+    v_v := (p_values ->> v_k)::numeric;
+    if round(v_v, case when v_k = 'fx_sgd' then 4 else 2 end) <> v_v
+       or (v_k = 'fx_sgd' and (v_v < 0.5 or v_v > 10))
+       or (v_k in ('lead_followup_hours', 'vic_lead_followup_hours') and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k in ('proposal_followup_days', 'vic_proposal_followup_days') and (v_v < 1 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'report_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'revision_due_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'approval_reminder_days' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'sst_pct' and (v_v < 0 or v_v > 100))
+       or (v_k like 'term_%' and (v_v < -100 or v_v > 100))
+       or (v_k like 'ai_price_%' and (v_v < 0 or v_v > 1000))
+       or (v_k in ('meta_checks', 'client_email_on', 'report_post_links') and v_v not in (0, 1))
+       or (v_k = 'reach_allowance_pct' and (v_v < 0 or v_v > 5))
+       or (v_k like 'priority_%_hours' and (v_v < 1 or v_v > 720 or v_v <> trunc(v_v)))
+       or (v_k = 'task_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'task_start_days' and (v_v < 0 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'task_past_days' and (v_v < 0 or v_v > 365 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_invite_days' and (v_v < 1 or v_v > 14 or v_v <> trunc(v_v)))
+       or (v_k = 'hiring_link_days' and (v_v < 7 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k in ('quote_valid_days', 'details_form_days') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_reply_days' and (v_v < 1 or v_v > 10 or v_v <> trunc(v_v)))
+       or (v_k in ('creator_pay_days_myr', 'creator_pay_days_other') and (v_v < 1 or v_v > 90 or v_v <> trunc(v_v)))
+       or (v_k = 'wa_repeat_hours' and (v_v < 0 or v_v > 168 or v_v <> trunc(v_v)))
+       or (v_k = 'quote_wa_day' and (v_v < 0 or v_v > 500 or v_v <> trunc(v_v)))
+       or (v_k = 'health_keep_months' and (v_v < 6 or v_v > 120 or v_v <> trunc(v_v)))
+       or (v_k = 'health_leaver_months' and (v_v < 1 or v_v > 60 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_days' and (v_v < 1 or v_v > 30 or v_v <> trunc(v_v)))
+       or (v_k = 'abroad_remind_hours' and (v_v < 0 or v_v > 24 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_from' and (v_v < 202308 or v_v > 209912 or v_v <> trunc(v_v) or mod(v_v, 100) not between 1 and 12))
+       or (v_k = 'analytics_change_pct' and (v_v < 1 or v_v > 50 or v_v <> trunc(v_v)))
+       or (v_k = 'analytics_churn_pct' and (v_v < 1 or v_v > 100 or v_v <> trunc(v_v)))
+       or (v_k in ('bench_reels_share') and (v_v < 0 or v_v > 100))
+       or (v_k = 'bench_ad_spend_pct' and (v_v < 1 or v_v > 100))
+       or (v_k = 'bench_cpl_rise' and (v_v < -100 or v_v > 100))
+       or (v_k like 'bench_%' and v_k not in ('bench_reels_share', 'bench_ad_spend_pct', 'bench_cpl_rise') and (v_v < 0 or v_v > 10000)) then
+      return jsonb_build_object('error', 'bad-value', 'key', v_k);
+    end if;
+  end loop;
+  for v_k in select jsonb_object_keys(p_values) loop
+    v_v := (p_values ->> v_k)::numeric;
+    v_was := public.app_setting(v_k, p_from);
+    if v_was is distinct from v_v then
+      /* A planned change saved back to the value in force the day before is
+         withdrawn: its row goes, rather than a second row restating it. */
+      v_drop := p_from > v_today
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date = p_from)
+        and exists (select 1 from public.app_settings s where s.key = v_k and s.from_date < p_from)
+        and public.app_setting(v_k, p_from - 1) = v_v;
+      if v_drop then
+        delete from public.app_settings s where s.key = v_k and s.from_date = p_from;
+      else
+        insert into public.app_settings (key, from_date, value, set_by, set_at)
+        values (v_k, p_from, v_v, v_me.id, now())
+        on conflict (key, from_date) do update set value = excluded.value, set_by = excluded.set_by, set_at = now();
+      end if;
+      v_name := case v_k when 'lead_followup_hours' then 'Lead follow-up limit' when 'proposal_followup_days' then 'Proposal follow-up limit'
+        when 'vic_lead_followup_hours' then 'VIC lead follow-up limit' when 'vic_proposal_followup_days' then 'VIC proposal follow-up limit'
+        when 'sst_pct' then 'SST' when 'term_1_3' then '1 to 3 months' when 'term_4_5' then '4 and 5 months'
+        when 'term_6_11' then '6 to 11 months' when 'term_12_23' then '12 to 17 months' when 'term_18_23' then '18 to 23 months' when 'term_24' then '24 months and more'
+        when 'revision_due_days' then 'Revision due' when 'ai_price_in' then 'AI input price per million tokens'
+        when 'ai_price_out' then 'AI output price per million tokens' when 'ai_price_search' then 'AI web search price per thousand searches' when 'ai_price_image' then 'AI price per scene picture' when 'meta_checks' then 'Meta checks' when 'client_email_on' then 'Send by email' when 'report_post_links' then 'Posts linked to tasks'
+        when 'approval_reminder_days' then 'Approval reminder' when 'reach_allowance_pct' then 'Reach allowance'
+        when 'priority_urgent_hours' then 'Urgent deadline' when 'priority_high_hours' then 'High deadline'
+        when 'priority_medium_hours' then 'Medium deadline' when 'task_remind_hours' then 'Task reminders'
+        when 'task_start_days' then 'Not started reminder' when 'task_past_days' then 'Past dates on new tasks' when 'hiring_invite_days' then 'Interview times within' when 'hiring_link_days' then 'Candidate link open' when 'quote_valid_days' then 'Quotation validity' when 'details_form_days' then 'Details form open'
+        when 'quote_reply_days' then 'Contact within'
+        when 'creator_pay_days_myr' then 'Creator payment in MYR' when 'creator_pay_days_other' then 'Creator payment in other currencies'
+        when 'wa_repeat_hours' then 'WhatsApp sent again'
+        when 'quote_wa_day' then 'Website quotations on WhatsApp'
+        when 'bench_cpr_low' then 'Property cost per result, tier 1 from' when 'bench_cpr_mid' then 'Property cost per result, tier 2 from'
+        when 'bench_cpr_high' then 'Property cost per result, tier 3 from' when 'bench_cpr_top' then 'Property cost per result, tier 3 up to'
+        when 'bench_msg_min' then 'Messaging cost per result, low' when 'bench_msg_target' then 'Messaging cost per result, target'
+        when 'bench_msg_max' then 'Messaging cost per result, high' when 'bench_form_min' then 'Lead form cost per result, low'
+        when 'bench_form_target' then 'Lead form cost per result, target' when 'bench_form_max' then 'Lead form cost per result, high'
+        when 'bench_cpm_min' then 'Cost per 1,000 impressions, low' when 'bench_cpm_max' then 'Cost per 1,000 impressions, high'
+        when 'bench_cpl_rise' then 'Yearly rise in cost per lead' when 'bench_reels_share' then 'Reels share of impressions'
+        when 'bench_ad_spend_pct' then 'Ad spend share of the budget' when 'bench_adset_daily' then 'Minimum daily budget per ad set'
+        when 'fx_sgd' then 'Singapore dollar rate'
+        when 'health_keep_months' then 'Health check-ins kept' when 'health_leaver_months' then 'Leavers'' health data kept'
+        when 'abroad_days' then 'Overseas approval' when 'abroad_remind_hours' then 'Overseas reminder'
+        when 'analytics_from' then 'Analytics counts from'
+        when 'analytics_change_pct' then 'Analytics change threshold' when 'analytics_churn_pct' then 'Analytics quarterly churn alert'
+        else 'Report due' end;
+      v_pre := case when v_k = 'fx_sgd' then 'RM ' when v_k like 'ai_price_%' then 'US$' when v_k like 'bench_%' and v_k not in ('bench_cpl_rise', 'bench_reels_share', 'bench_ad_spend_pct') then 'RM ' else '' end;
+      v_unit := case when v_k = 'fx_sgd' then ' per S$1' when v_k in ('lead_followup_hours', 'vic_lead_followup_hours', 'task_remind_hours', 'wa_repeat_hours', 'abroad_remind_hours') or v_k like 'priority_%_hours' then ' hours'
+        when v_k in ('proposal_followup_days', 'vic_proposal_followup_days', 'report_due_days', 'revision_due_days', 'approval_reminder_days', 'task_start_days', 'task_past_days', 'quote_valid_days', 'details_form_days', 'abroad_days', 'hiring_invite_days', 'hiring_link_days') then ' days'
+        when v_k in ('quote_reply_days', 'creator_pay_days_myr', 'creator_pay_days_other') then ' working days'
+        when v_k = 'quote_wa_day' then ' per day'
+        when v_k in ('health_keep_months', 'health_leaver_months') then ' months'
+        when v_pre <> '' then '' else '%' end;
+      v_fw := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links') then case when v_was = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then coalesce(substr(public.register_day(to_date(v_was::bigint::text, 'YYYYMM')), 3), 'not set') else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') end;
+      v_fv := case when v_k in ('meta_checks', 'client_email_on', 'report_post_links') then case when v_v = 1 then 'On' else 'Off' end
+              when v_k = 'analytics_from' then substr(public.register_day(to_date(v_v::bigint::text, 'YYYYMM')), 3) else v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit end;
+      insert into public.activity_log (actor, action, subject, detail)
+      values (coalesce(v_me.name, 'admin'), 'team.changed', 'Settings',
+              case when v_drop then v_name || ': planned change withdrawn · ' || v_fw || ' from ' || public.register_day(p_from) ||
+                ', stays ' || v_fv else
+              case when v_k = 'analytics_from' then v_name || ': ' || v_fw || ' → ' || v_fv || ' · from ' || public.register_day(p_from) else
+              v_name || ': ' || case when v_k in ('meta_checks', 'client_email_on', 'report_post_links') then
+                case when v_was = 1 then 'On' else 'Off' end || ' → ' || case when v_v = 1 then 'On' else 'Off' end ||
+                ' · from ' || public.register_day(p_from) else '' end ||
+              case when v_k in ('meta_checks', 'client_email_on', 'report_post_links') then '' else coalesce(v_pre ||
+              trim(to_char(v_was, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit, 'not set') || ' → ' || v_pre ||
+              trim(to_char(v_v, case when v_k = 'fx_sgd' then 'FM999999990.9999' else 'FM999999990.99' end), '.') || v_unit ||
+              ' · from ' || public.register_day(p_from) end end end);
+      v_moved := v_moved || v_k;
+    end if;
+  end loop;
+  return public.app_settings_read() || jsonb_build_object('changed', to_jsonb(v_moved));
+end $$;
+revoke all on function public.app_settings_set(date, jsonb) from public, anon;
+grant execute on function public.app_settings_set(date, jsonb) to authenticated;
+
+/* One interview as the console reads it. */
+create or replace function public.hiring_interview_row(i public.hiring_interviews)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_strip_nulls(jsonb_build_object('id', i.id, 'round', i.round, 'slots', to_jsonb(i.slots), 'minutes', i.minutes,
+    'mode', i.mode, 'note', i.note, 'state', i.state, 'picked', i.picked, 'picked_at', i.picked_at,
+    'candidate_note', i.candidate_note, 'invited_at', i.invited_at,
+    'invited_by', (select t.name from public.team_members t where t.id = i.invited_by),
+    'approved_at', i.approved_at, 'approved_by', (select t.name from public.team_members t where t.id = i.approved_by),
+    'meeting_link', i.meeting_link, 'invite_mail', i.invite_mail, 'invite_mail_at', i.invite_mail_at,
+    'confirm_mail', i.confirm_mail, 'confirm_mail_at', i.confirm_mail_at));
+$$;
+revoke all on function public.hiring_interview_row(public.hiring_interviews) from public, anon, authenticated;
+
+/* A time in words, Malaysia's: Tue 18 Nov 2026, 2:00pm. */
+create or replace function public.hiring_when(p_at timestamptz)
+returns text language sql stable set search_path = public as $$
+  select to_char(p_at at time zone 'Asia/Kuala_Lumpur', 'Dy') || ' ' || public.register_day((p_at at time zone 'Asia/Kuala_Lumpur')::date)
+    || ', ' || ltrim(lower(to_char(p_at at time zone 'Asia/Kuala_Lumpur', 'HH12:MIam')), '0');
+$$;
+revoke all on function public.hiring_when(timestamptz) from public, anon, authenticated;
+
+/* The Owners of a candidate and the part's holders are told, never its
+   name in the notice, the notice opening it. */
+create or replace function public.hiring_tell(p_candidate uuid, p_kind text, p_title text, p_body text)
+returns void language plpgsql security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  insert into public.ops_notifications (team_member_id, kind, title, body, link)
+  select t.id, p_kind, p_title, p_body, 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' || p_candidate
+    from public.team_members t
+   where t.active and t.removed_at is null and not t.system and (me.id is null or t.id <> me.id)
+     and exists (select 1 from public.hiring_people p where p.candidate_id = p_candidate and p.team_member_id = t.id and p.role = 'owner');
+end $$;
+revoke all on function public.hiring_tell(uuid, text, text, text) from public, anon, authenticated;
+
+create or replace function public.hiring_invite(p_id uuid, p_slots timestamptz[], p_minutes int, p_mode text, p_note text, p_idem text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  v_role text := public.hiring_role(p_id);
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_invite_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 3);
+  v_slots timestamptz[];
+  v_round int;
+begin
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_idem, '') !~ '^[A-Za-z0-9-]{8,64}$' then return jsonb_build_object('error', 'bad-request'); end if;
+  perform pg_advisory_xact_lock(hashtext('hiring_invite:' || p_idem));
+  select * into i from public.hiring_interviews where idem = p_idem;
+  if i.id is not null then return jsonb_build_object('ok', true, 'id', i.id, 'again', true); end if;
+  select * into c from public.hiring_candidates where id = p_id for update;
+  if c.id is null or c.removed_at is not null then return jsonb_build_object('error', 'not-found'); end if;
+  if c.stage in ('hired', 'closed') then return jsonb_build_object('error', 'closed'); end if;
+  select array_agg(distinct s order by s) into v_slots from unnest(coalesce(p_slots, '{}')) s where s is not null;
+  if v_slots is null or cardinality(v_slots) < 1 or cardinality(v_slots) > 3 then return jsonb_build_object('error', 'bad-slots'); end if;
+  if v_slots[1] < now() + interval '1 hour' then return jsonb_build_object('error', 'slot-past'); end if;
+  if v_slots[cardinality(v_slots)] > now() + interval '60 days' then return jsonb_build_object('error', 'slot-far'); end if;
+  if (v_slots[cardinality(v_slots)] at time zone 'Asia/Kuala_Lumpur')::date - (v_slots[1] at time zone 'Asia/Kuala_Lumpur')::date >= v_days then
+    return jsonb_build_object('error', 'slot-window', 'days', v_days);
+  end if;
+  if coalesce(p_minutes, 0) not in (30, 45, 60, 90) then return jsonb_build_object('error', 'bad-minutes'); end if;
+  if coalesce(p_mode, '') not in ('online', 'office') then return jsonb_build_object('error', 'bad-mode'); end if;
+  if char_length(coalesce(p_note, '')) > 500 then return jsonb_build_object('error', 'too-long'); end if;
+  update public.hiring_interviews set state = 'replaced', updated_at = now()
+   where candidate_id = c.id and state in ('invited', 'picked', 'none');
+  select coalesce(max(round), 0) + 1 into v_round from public.hiring_interviews where candidate_id = c.id and state <> 'replaced';
+  insert into public.hiring_interviews (candidate_id, round, slots, minutes, mode, note, idem, invited_by)
+  values (c.id, least(v_round, 20), v_slots, p_minutes, p_mode, nullif(btrim(coalesce(p_note, '')), ''), p_idem, me.id)
+  returning * into i;
+  update public.hiring_candidates set stage = case when stage in ('new', 'pool', 'invited') then 'invited' else stage end,
+    last_step_at = now(), updated_at = now() where id = c.id;
+  perform public.hiring_log(c.id, 'candidate.invited', cardinality(v_slots) || case when cardinality(v_slots) = 1 then ' time' else ' times' end
+    || ' · ' || case p_mode when 'online' then 'Google Meet' else 'At the office' end || ' · ' || p_minutes || ' minutes');
+  return jsonb_build_object('ok', true, 'id', i.id);
+end $$;
+grant execute on function public.hiring_invite(uuid, timestamptz[], int, text, text, text) to authenticated;
+
+create or replace function public.hiring_interviews_of(p_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if public.hiring_role(p_id) is null then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('ok', true, 'rows', coalesce((select jsonb_agg(public.hiring_interview_row(i) order by i.invited_at desc)
+    from public.hiring_interviews i where i.candidate_id = p_id and i.state <> 'replaced'), '[]'::jsonb));
+end $$;
+grant execute on function public.hiring_interviews_of(uuid) to authenticated;
+
+create or replace function public.hiring_interview_cancel(p_interview uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare i public.hiring_interviews; v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if i.state in ('cancelled', 'replaced') then return jsonb_build_object('ok', true, 'same', true); end if;
+  update public.hiring_interviews set state = 'cancelled', updated_at = now() where id = i.id;
+  perform public.hiring_log(i.candidate_id, 'candidate.interview', 'Interview cancelled');
+  return jsonb_build_object('ok', true, 'event', i.meeting_event_id, 'had_meet', i.meeting_event_id is not null);
+end $$;
+grant execute on function public.hiring_interview_cancel(uuid) to authenticated;
+
+/* A colleague's Approve of the time the candidate picked. */
+create or replace function public.hiring_interview_approve(p_interview uuid)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  i public.hiring_interviews;
+  v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if i.state = 'confirmed' then return jsonb_build_object('ok', true, 'same', true); end if;
+  if i.state <> 'picked' or i.picked is null then return jsonb_build_object('error', 'not-picked'); end if;
+  if i.slots[i.picked] < now() then return jsonb_build_object('error', 'slot-past'); end if;
+  update public.hiring_interviews set state = 'confirmed', approved_by = me.id, approved_at = now(), updated_at = now() where id = i.id;
+  update public.hiring_candidates set stage = case when stage in ('new', 'pool', 'invited') then 'interview' else stage end,
+    last_step_at = now(), updated_at = now() where id = i.candidate_id;
+  perform public.hiring_log(i.candidate_id, 'candidate.interview', 'Interview approved for ' || public.hiring_when(i.slots[i.picked]));
+  return jsonb_build_object('ok', true, 'mode', i.mode);
+end $$;
+grant execute on function public.hiring_interview_approve(uuid) to authenticated;
+
+/* meet-create's, asked as the caller: a confirmed online interview's time. */
+create or replace function public.hiring_interview_meet_prepare(p_interview uuid)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare i public.hiring_interviews; c public.hiring_candidates; v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if i.state <> 'confirmed' or i.mode <> 'online' or i.picked is null then return jsonb_build_object('error', 'not-confirmed'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id;
+  return jsonb_build_object('id', i.id, 'meeting_at', i.slots[i.picked], 'meeting_minutes', i.minutes,
+    'meeting_event_id', i.meeting_event_id, 'meeting_link', i.meeting_link, 'position', c.position);
+end $$;
+grant execute on function public.hiring_interview_meet_prepare(uuid) to authenticated;
+
+create or replace function public.hiring_interview_set_meet(p_interview uuid, p_link text, p_event text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare i public.hiring_interviews; v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if p_link is not null and p_link !~ '^https://meet\.google\.com/[a-z0-9-]+$' then return jsonb_build_object('error', 'bad-link'); end if;
+  update public.hiring_interviews set meeting_link = p_link, meeting_event_id = p_event, updated_at = now() where id = i.id;
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.hiring_interview_set_meet(uuid, text, text) to authenticated;
+
+/* Who may read the shared calendar's online meetings while keying times. */
+create or replace function public.hiring_busy_may()
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare me public.team_members := public.ops_me();
+begin
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  if public.ops_granted('team.hiring', 'work') or exists (select 1 from public.hiring_people p join public.hiring_candidates c on c.id = p.candidate_id
+       where p.team_member_id = me.id and p.role = 'owner' and c.removed_at is null) then
+    return jsonb_build_object('ok', true);
+  end if;
+  return jsonb_build_object('error', 'denied');
+end $$;
+grant execute on function public.hiring_busy_may() to authenticated;
+
+/* hiring-mail's, asked as the caller: what an email to the candidate says. */
+create or replace function public.hiring_mail_prepare(p_interview uuid, p_kind text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  i public.hiring_interviews;
+  c public.hiring_candidates;
+  v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  select * into c from public.hiring_candidates where id = i.candidate_id;
+  if c.removed_at is not null or c.link_key is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_kind = 'invite' and i.state not in ('invited', 'none') then return jsonb_build_object('error', 'not-open'); end if;
+  if p_kind = 'confirm' and i.state <> 'confirmed' then return jsonb_build_object('error', 'not-confirmed'); end if;
+  if p_kind = 'confirm' and i.mode = 'online' and i.meeting_link is null then return jsonb_build_object('error', 'no-meet'); end if;
+  if p_kind not in ('invite', 'confirm') then return jsonb_build_object('error', 'bad-kind'); end if;
+  return jsonb_build_object('id', i.id, 'kind', p_kind, 'to', c.email, 'name', c.name, 'position', c.position,
+    'key', c.link_key, 'mode', i.mode, 'minutes', i.minutes, 'note', i.note, 'link', i.meeting_link,
+    'times', (select jsonb_agg(public.hiring_when(s) order by s) from unnest(i.slots) s),
+    'when', case when i.picked is not null then public.hiring_when(i.slots[i.picked]) end,
+    'sender', me.name, 'reply_to', me.email);
+end $$;
+grant execute on function public.hiring_mail_prepare(uuid, text) to authenticated;
+
+create or replace function public.hiring_mail_done(p_interview uuid, p_kind text, p_status text, p_error text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare i public.hiring_interviews; v_role text;
+begin
+  select * into i from public.hiring_interviews where id = p_interview for update;
+  if i.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_role := public.hiring_role(i.candidate_id);
+  if v_role is null or v_role not in ('admin', 'owner') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(p_status, '') not in ('sent', 'failed', 'unknown') or coalesce(p_kind, '') not in ('invite', 'confirm') then
+    return jsonb_build_object('error', 'bad-request');
+  end if;
+  if p_kind = 'invite' then update public.hiring_interviews set invite_mail = p_status, invite_mail_at = now(), updated_at = now() where id = i.id;
+  else update public.hiring_interviews set confirm_mail = p_status, confirm_mail_at = now(), updated_at = now() where id = i.id; end if;
+  perform public.hiring_log(i.candidate_id, 'candidate.email',
+    case p_kind when 'invite' then 'Invitation' else 'Confirmation' end || case p_status when 'sent' then ' emailed'
+      when 'unknown' then ' emailed, not confirmed' else ' not emailed' || coalesce(': ' || left(p_error, 120), '') end);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.hiring_mail_done(uuid, text, text, text) to authenticated;
+
+/* The candidate's page, with the latest invitation (restated from HIRING). */
+create or replace function public.careers_read(p_key text)
+returns jsonb language plpgsql stable security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state <> 'replaced'
+   order by invited_at desc limit 1;
+  return jsonb_build_object('ok', true, 'name', c.name, 'position', c.position, 'stage',
+    case when c.stage in ('new', 'pool') then 'received' else c.stage end, 'received_at', c.created_at,
+    'interview', case when i.id is null or i.state = 'cancelled' then null else jsonb_strip_nulls(jsonb_build_object(
+      'state', i.state, 'slots', case when i.state = 'invited' then to_jsonb(i.slots) end, 'minutes', i.minutes,
+      'mode', i.mode, 'note', i.note, 'at', case when i.picked is not null then i.slots[i.picked] end,
+      'link', case when i.state = 'confirmed' then i.meeting_link end)) end);
+end $$;
+revoke all on function public.careers_read(text) from public;
+grant execute on function public.careers_read(text) to anon, authenticated;
+
+/* The candidate's answer: one of the times, or none of them with a note. */
+create or replace function public.careers_pick(p_key text, p_slot int)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null for update;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state = 'invited'
+   order by invited_at desc limit 1 for update;
+  if i.id is null then return jsonb_build_object('error', 'not-open'); end if;
+  if p_slot is null or p_slot < 1 or p_slot > cardinality(i.slots) then return jsonb_build_object('error', 'bad-slot'); end if;
+  if i.slots[p_slot] < now() then return jsonb_build_object('error', 'slot-past'); end if;
+  update public.hiring_interviews set state = 'picked', picked = p_slot, picked_at = now(), updated_at = now() where id = i.id;
+  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (c.id, 'Candidate page', 'candidate.interview', 'Time chosen: ' || public.hiring_when(i.slots[p_slot]));
+  perform public.hiring_tell(c.id, 'hiring.picked', 'A candidate chose an interview time',
+    c.position || ' · ' || public.hiring_when(i.slots[p_slot]) || '. Approve it to send the confirmation.');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.careers_pick(text, int) from public;
+grant execute on function public.careers_pick(text, int) to anon, authenticated;
+
+create or replace function public.careers_none(p_key text, p_note text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare
+  c public.hiring_candidates;
+  i public.hiring_interviews;
+  v_days int := coalesce(public.app_setting('hiring_link_days', (now() at time zone 'Asia/Kuala_Lumpur')::date)::int, 30);
+begin
+  if coalesce(p_key, '') !~ '^[a-z0-9]{8}$' then return jsonb_build_object('error', 'not_found'); end if;
+  if char_length(coalesce(p_note, '')) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select * into c from public.hiring_candidates where link_key = p_key and removed_at is null for update;
+  if c.id is null then return jsonb_build_object('error', 'not_found'); end if;
+  if c.last_step_at + make_interval(days => v_days) <= now() then return jsonb_build_object('error', 'expired'); end if;
+  select * into i from public.hiring_interviews where candidate_id = c.id and state = 'invited'
+   order by invited_at desc limit 1 for update;
+  if i.id is null then return jsonb_build_object('error', 'not-open'); end if;
+  update public.hiring_interviews set state = 'none', candidate_note = nullif(btrim(coalesce(p_note, '')), ''), updated_at = now() where id = i.id;
+  update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
+  insert into public.hiring_events (candidate_id, actor, action, detail)
+  values (c.id, 'Candidate page', 'candidate.interview', 'Other times asked for');
+  perform public.hiring_tell(c.id, 'hiring.none', 'A candidate asked for other interview times',
+    c.position || '. Send new times from the candidate''s Interview tab.');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.careers_none(text, text) from public;
+grant execute on function public.careers_none(text, text) to anon, authenticated;
+
+-- END OF HIRING INTERVIEWS -----------------------------------------------------
+
+-- PERSONNEL RECORDS ---------------------------------------------------------
+
+alter table public.departments add column if not exists ac_code text;
+update public.departments set ac_code = 'CRE' where key = 'creative' and ac_code is null;
+update public.departments set ac_code = 'MKT' where key = 'marketing' and ac_code is null;
+update public.departments set ac_code = 'MGT' where key = 'management' and ac_code is null;
+/* AutoCount's MGT is Management (the admins): made once where no
+   department holds the name or the code, out of the prize. */
+insert into public.departments (key, name, active, in_prize, position, ac_code)
+select 'management', 'Management', true, false, coalesce((select max(d.position) from public.departments d), 0) + 1, 'MGT'
+ where not exists (select 1 from public.departments d where d.key = 'management' or lower(d.name) = 'management' or d.ac_code = 'MGT');
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'departments_ac_code_check') then
+    alter table public.departments add constraint departments_ac_code_check check (ac_code ~ '^[A-Z0-9]{2,10}$');
+  end if;
+end $$;
+create unique index if not exists departments_ac_code_idx on public.departments (ac_code) where ac_code is not null;
+
+create table if not exists public.personnel_records (
+  team_member_id   uuid primary key references public.team_members(id),
+  data             jsonb not null default '{}'::jsonb,
+  files            jsonb not null default '{}'::jsonb,
+  consent_at       timestamptz,
+  declared_name    text,
+  declared_at      timestamptz,
+  requested_at     timestamptz,
+  requested_by     uuid,
+  join_date        date,
+  employee_status  text check (employee_status in ('Management of the organization', 'Permanent', 'Contract', 'Part time', 'Interns', 'Others')),
+  employee_type    text check (employee_type in ('FT', 'PT', 'CT')),
+  probation_months integer check (probation_months between 0 and 12),
+  contract_end     date,
+  superior_id      uuid,
+  probation_told_at timestamptz,
+  updated_at       timestamptz not null default now(),
+  updated_by       uuid
+);
+alter table public.personnel_records enable row level security;
+revoke all on table public.personnel_records from public, anon, authenticated;
+
+create table if not exists public.personnel_salaries (
+  team_member_id uuid primary key references public.team_members(id),
+  probation      numeric(12, 2) check (probation >= 0),
+  confirmed      numeric(12, 2) check (confirmed >= 0),
+  updated_at     timestamptz not null default now(),
+  updated_by     uuid
+);
+alter table public.personnel_salaries enable row level security;
+revoke all on table public.personnel_salaries from public, anon, authenticated;
+
+create table if not exists public.personnel_settings (
+  key        text primary key,
+  value      text not null,
+  updated_at timestamptz not null default now(),
+  updated_by uuid
+);
+alter table public.personnel_settings enable row level security;
+revoke all on table public.personnel_settings from public, anon, authenticated;
+
+/* The AutoCount company defaults, seeded once a key: the team changes them
+   in Settings, Portal: AutoCount HRMS. */
+insert into public.personnel_settings (key, value) values
+  ('payment_by', 'Bank Transfer'), ('wages_type', 'Monthly'), ('pay_frequency', 'Monthly'),
+  ('epf_code', '11% & 13%'), ('socso_category', 'Employment Injury Scheme and Invalidity (Category 1)'),
+  ('tax_status', 'Resident'), ('socso_status', 'New Employee'), ('entitlement_group', 'STANDARD'),
+  ('calendar', 'DEFAULT'), ('branch', 'JHB'), ('eclaim', '1'), ('eleave', '1'),
+  ('pay_eis', '1'), ('pay_hrdf', '0'), ('epf_borne', '0'), ('socso_borne', '0'), ('eis_borne', '0'),
+  ('tax_by_employer', '0'), ('socso_eis_relief', '1'), ('skbbk_exempted', '0')
+on conflict (key) do nothing;
+
+/* What each setting may hold. */
+create or replace function public.personnel_setting_spec()
+returns jsonb
+language sql immutable set search_path = public as $$
+  select '{"payment_by":"Bank Transfer|Cash|Cheque","wages_type":"Monthly|Daily|Hourly|Piece Rate",
+    "pay_frequency":"Monthly|Fortnightly",
+    "epf_code":"5.5% & 6.5%|9% & RM5|11% & RM5|9% & 13%|5.5% & RM5|0% & 4%|11% & 13%",
+    "socso_category":"Employment Injury Scheme and Invalidity (Category 1)|Employment Injury Scheme (Category 2)",
+    "tax_status":"Resident|Non-Resident|Return Expert Program|Knowledge Worker (Iskandar)|Position of C Suite",
+    "socso_status":"New Employee|Resigned|Pass Away|On SOCSO Medical Leave|On No-paid Leave",
+    "entitlement_group":"*","calendar":"*","branch":"*","eclaim":"0|1","eleave":"0|1","pay_eis":"0|1","pay_hrdf":"0|1",
+    "epf_borne":"0|1","socso_borne":"0|1","eis_borne":"0|1","tax_by_employer":"0|1","socso_eis_relief":"0|1",
+    "skbbk_exempted":"0|1"}'::jsonb
+$$;
+revoke all on function public.personnel_setting_spec() from public, anon, authenticated;
+
+/* The employee record form's fields, the page's FIELDS (js/personnel.js):
+   each key's kind (t:n words of n characters at most, d a date, y a year,
+   mo a month, e an answer of its list, m several of it, b yes or no, i a
+   whole number in its range), its label and whether the colleague's own
+   declaration needs it. */
+create or replace function public.personnel_fields()
+returns jsonb
+language sql immutable set search_path = public as $$
+  select '{"full_name":["t:100","Full Name as per NRIC",1],"other_name":["t:60","Other name or Chinese name",0],"gender":["e:Male|Female","Gender",1],"birth_date":["d","Date of birth",1],"nationality":["t:60","Nationality",1],"nric":["t:20","NRIC Number",0],"old_ic":["t:15","Old IC Number",0],"passport":["t:20","Passport Number",0],"passport_expiry":["d","Passport expiry date",0],"immigration_no":["t:25","Immigration Number",0],"permit_expiry":["d","Working Permit expiry date",0],"race":["e:Malay|Chinese|Indian","Race",0],"religion":["e:Islam|Buddhist|Hindu|Christian","Religion",0],"disabled":["b","Person with disability",0],"address1":["t:120","Address line 1",1],"address2":["t:120","Address line 2",0],"postcode":["t:10","Postal code",1],"city":["t:50","City",1],"state":["e:Johor|Kedah|Kelantan|Malacca|Negeri Sembilan|Others|Pahang|Penang|Perak|Perlis|Sabah|Sarawak|Selangor|Terengganu|Wilayah Persekutuan Kuala Lumpur|Wilayah Persekutuan Labuan|Wilayah Persekutuan Putrajaya","State",1],"country":["t:60","Country",1],"email":["t:120","Email",1],"mobile":["t:25","Mobile or WhatsApp",1],"marital":["e:Single|Married|Divorced|Widowed","Marital status",1],"spouse_name":["t:60","Spouse name",0],"spouse_working":["b","Spouse working",0],"spouse_ic":["t:20","Spouse NRIC Number",0],"spouse_tax":["t:20","Spouse Income Tax Number",0],"spouse_phone":["t:25","Spouse mobile",0],"spouse_disabled":["b","Spouse with disability",0],"children_relief":["i:0:30","Children claimed for tax relief",0],"kin_name":["t:60","Name as per NRIC",1],"kin_relation":["e:Spouse|Child|Parent|Sibling","Relationship",1],"kin_mobile":["t:25","Mobile or WhatsApp",1],"kin_address1":["t:120","Address line 1",0],"kin_address2":["t:120","Address line 2",0],"kin_postcode":["t:10","Postal code",0],"kin_city":["t:50","City",0],"kin_state":["t:50","State",0],"kin_country":["t:60","Country",0],"bank":["t:150","Bank",1],"bank_account":["t:30","Account number",1],"bank_holder":["t:60","Account holder name",1],"epf_no":["t:20","EPF Number",0],"socso_no":["t:12","SOCSO Number",0],"tax_no":["t:20","Income Tax Number",0],"edu_primary_school":["t:100","Primary: school",0],"edu_primary_from":["y","Primary: from",0],"edu_primary_to":["y","Primary: to",0],"edu_primary_qual":["t:100","Primary: highest qualification",0],"edu_primary_results":["t:60","Primary: results",0],"edu_secondary_school":["t:100","Secondary: school",0],"edu_secondary_from":["y","Secondary: from",0],"edu_secondary_to":["y","Secondary: to",0],"edu_secondary_qual":["t:100","Secondary: highest qualification",0],"edu_secondary_results":["t:60","Secondary: results",0],"edu_college_school":["t:100","College or Pre-U: school",0],"edu_college_from":["y","College or Pre-U: from",0],"edu_college_to":["y","College or Pre-U: to",0],"edu_college_qual":["t:100","College or Pre-U: highest qualification",0],"edu_college_results":["t:60","College or Pre-U: results",0],"edu_university_school":["t:100","University: school",0],"edu_university_from":["y","University: from",0],"edu_university_to":["y","University: to",0],"edu_university_qual":["t:100","University: highest qualification",0],"edu_university_results":["t:60","University: results",0],"edu_professional_school":["t:100","Professional: school",0],"edu_professional_from":["y","Professional: from",0],"edu_professional_to":["y","Professional: to",0],"edu_professional_qual":["t:100","Professional: highest qualification",0],"edu_professional_results":["t:60","Professional: results",0],"training_1_course":["t:100","Training 1: type of course",0],"training_1_institution":["t:100","Training 1: institution",0],"training_1_qual":["t:100","Training 1: qualification",0],"training_1_year":["y","Training 1: year",0],"training_2_course":["t:100","Training 2: type of course",0],"training_2_institution":["t:100","Training 2: institution",0],"training_2_qual":["t:100","Training 2: qualification",0],"training_2_year":["y","Training 2: year",0],"training_3_course":["t:100","Training 3: type of course",0],"training_3_institution":["t:100","Training 3: institution",0],"training_3_qual":["t:100","Training 3: qualification",0],"training_3_year":["y","Training 3: year",0],"lang_en_spoken":["e:Excellent|Good|Fair|Poor","English: spoken",0],"lang_en_written":["e:Excellent|Good|Fair|Poor","English: written",0],"lang_zh_spoken":["e:Excellent|Good|Fair|Poor","Chinese: spoken",0],"lang_zh_written":["e:Excellent|Good|Fair|Poor","Chinese: written",0],"lang_ms_spoken":["e:Excellent|Good|Fair|Poor","Malay: spoken",0],"lang_ms_written":["e:Excellent|Good|Fair|Poor","Malay: written",0],"lang_other":["t:30","Other language",0],"lang_other_spoken":["e:Excellent|Good|Fair|Poor","Other language: spoken",0],"lang_other_written":["e:Excellent|Good|Fair|Poor","Other language: written",0],"typing":["e:Fast|Normal|Slow","Typing",0],"software":["m:Word|Excel|PowerPoint|Outlook","Software",0],"other_skills":["t:300","Other skills",0],"job_1_company":["t:100","Employment 1: company",0],"job_1_nature":["t:100","Employment 1: nature of business",0],"job_1_location":["t:60","Employment 1: location",0],"job_1_position":["t:60","Employment 1: position",0],"job_1_from":["mo","Employment 1: from",0],"job_1_to":["mo","Employment 1: to",0],"job_1_notes":["t:500","Employment 1: notes and reason for leaving",0],"job_2_company":["t:100","Employment 2: company",0],"job_2_nature":["t:100","Employment 2: nature of business",0],"job_2_location":["t:60","Employment 2: location",0],"job_2_position":["t:60","Employment 2: position",0],"job_2_from":["mo","Employment 2: from",0],"job_2_to":["mo","Employment 2: to",0],"job_2_notes":["t:500","Employment 2: notes and reason for leaving",0],"job_3_company":["t:100","Employment 3: company",0],"job_3_nature":["t:100","Employment 3: nature of business",0],"job_3_location":["t:60","Employment 3: location",0],"job_3_position":["t:60","Employment 3: position",0],"job_3_from":["mo","Employment 3: from",0],"job_3_to":["mo","Employment 3: to",0],"job_3_notes":["t:500","Employment 3: notes and reason for leaving",0],"heard":["e:Newspaper ads|Friends or relatives|Websites|Career fair","How they learned about ADspace",0],"applied_before":["b","Applied to ADspace before",0],"relative":["b","Relative or friend at ADspace",0],"relative_name":["t:100","Relative or friend: name and relationship",0],"convicted":["b","Convicted of a criminal offence",0],"conviction_note":["t:500","Conviction details",0],"licence":["b","Driving licence",0],"transport":["t:60","Transport to work",0],"ref_1_name":["t:60","Reference 1: name",0],"ref_1_title":["t:60","Reference 1: title",0],"ref_1_company":["t:100","Reference 1: company",0],"ref_1_address":["t:150","Reference 1: short address",0],"ref_1_phone":["t:25","Reference 1: contact number",0],"ref_2_name":["t:60","Reference 2: name",0],"ref_2_title":["t:60","Reference 2: title",0],"ref_2_company":["t:100","Reference 2: company",0],"ref_2_address":["t:150","Reference 2: short address",0],"ref_2_phone":["t:25","Reference 2: contact number",0]}'::jsonb
+$$;
+revoke all on function public.personnel_fields() from public, anon, authenticated;
+
+/* A form's answers held to their fields: the cleaned answers, else the
+   first field refused. An empty answer is left out. */
+create or replace function public.personnel_clean(p_data jsonb)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  f jsonb := public.personnel_fields();
+  k text; v jsonb; spec jsonb; kind text; s text; parts text[]; out jsonb := '{}'::jsonb; x jsonb; n numeric;
+begin
+  if p_data is null or jsonb_typeof(p_data) <> 'object' then return jsonb_build_object('error', 'bad-field', 'field', null); end if;
+  for k, v in select key, value from jsonb_each(p_data) loop
+    spec := f -> k;
+    if spec is null then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    if v is null or v = 'null'::jsonb or v = '""'::jsonb or v = '[]'::jsonb then continue; end if;
+    kind := spec ->> 0;
+    parts := string_to_array(kind, ':');
+    if parts[1] = 'b' then
+      if jsonb_typeof(v) <> 'boolean' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+      out := out || jsonb_build_object(k, v);
+      continue;
+    end if;
+    if parts[1] = 'i' then
+      if jsonb_typeof(v) <> 'number' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+      n := v::text::numeric;
+      if n <> trunc(n) or n < parts[2]::numeric or n > parts[3]::numeric then
+        return jsonb_build_object('error', 'bad-field', 'field', k);
+      end if;
+      out := out || jsonb_build_object(k, n::int);
+      continue;
+    end if;
+    if parts[1] = 'm' then
+      if jsonb_typeof(v) <> 'array' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+      for x in select value from jsonb_array_elements(v) loop
+        if jsonb_typeof(x) <> 'string' or not (x #>> '{}' = any (string_to_array(substr(kind, 3), '|'))) then
+          return jsonb_build_object('error', 'bad-field', 'field', k);
+        end if;
+      end loop;
+      out := out || jsonb_build_object(k, (select jsonb_agg(distinct e) from jsonb_array_elements_text(v) e));
+      continue;
+    end if;
+    if jsonb_typeof(v) <> 'string' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    s := btrim(regexp_replace(v #>> '{}', '[\r\n\t]+', ' ', 'g'));
+    if s = '' then continue; end if;
+    if parts[1] = 't' then
+      if char_length(s) > parts[2]::int or s ~ '[<>]' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    elsif parts[1] = 'e' then
+      if not (s = any (string_to_array(substr(kind, 3), '|'))) then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    elsif parts[1] = 'd' then
+      if s !~ '^(19|20)[0-9]{2}-[0-9]{2}-[0-9]{2}$' or to_char(to_date(s, 'YYYY-MM-DD'), 'YYYY-MM-DD') <> s then
+        return jsonb_build_object('error', 'bad-field', 'field', k);
+      end if;
+    elsif parts[1] = 'y' then
+      if s !~ '^(19|20)[0-9]{2}$' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    elsif parts[1] = 'mo' then
+      if s !~ '^(19|20)[0-9]{2}-(0[1-9]|1[0-2])$' then return jsonb_build_object('error', 'bad-field', 'field', k); end if;
+    else
+      return jsonb_build_object('error', 'bad-field', 'field', k);
+    end if;
+    out := out || jsonb_build_object(k, s);
+  end loop;
+  return jsonb_build_object('ok', true, 'data', out);
+end $$;
+revoke all on function public.personnel_clean(jsonb) from public, anon, authenticated;
+
+/* What the declaration still needs: the required fields, an NRIC or a
+   passport, the spouse's name once married. */
+create or replace function public.personnel_missing(p_data jsonb)
+returns text[]
+language sql immutable set search_path = public as $$
+  select coalesce(array(select k from jsonb_each(public.personnel_fields()) f(k, spec)
+                          where (spec ->> 2) = '1' and coalesce(p_data ->> k, '') = '' order by k), '{}')
+    || case when coalesce(p_data ->> 'nric', '') = '' and coalesce(p_data ->> 'passport', '') = '' then array['nric'] else '{}'::text[] end
+    || case when p_data ->> 'marital' = 'Married' and coalesce(p_data ->> 'spouse_name', '') = '' then array['spouse_name'] else '{}'::text[] end
+$$;
+revoke all on function public.personnel_missing(jsonb) from public, anon, authenticated;
+
+/* The labels of the fields that differ, for the Activity record: never a value. */
+create or replace function public.personnel_changed(p_old jsonb, p_new jsonb)
+returns text
+language sql immutable set search_path = public as $$
+  select string_agg(f.spec ->> 1, ', ' order by f.k)
+    from jsonb_each(public.personnel_fields()) f(k, spec)
+   where (coalesce(p_old, '{}'::jsonb) -> f.k) is distinct from (coalesce(p_new, '{}'::jsonb) -> f.k)
+$$;
+revoke all on function public.personnel_changed(jsonb, jsonb) from public, anon, authenticated;
+
+/* The day a probation ends (MYT): the join date plus its months. */
+create or replace function public.personnel_confirm_date(p_join date, p_months integer)
+returns date
+language sql immutable set search_path = public as $$
+  select case when p_join is null or p_months is null then null else (p_join + make_interval(months => p_months))::date end
+$$;
+revoke all on function public.personnel_confirm_date(date, integer) from public, anon, authenticated;
+
+create or replace function public.personnel_today()
+returns date
+language sql stable set search_path = public as $$
+  select (now() at time zone 'Asia/Kuala_Lumpur')::date
+$$;
+revoke all on function public.personnel_today() from public, anon, authenticated;
+
+/* The fresh proof for the salary and the export: the Performance unlock,
+   for a holder of the part (2026-11-16, decision 10). */
+create or replace function public.personnel_check(p_token text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; n integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return 'not-team'; end if;
+  if not public.ops_granted('team.personnel', 'work') then return 'denied'; end if;
+  if not public.perf_code_set() then return 'no-code'; end if;
+  update public.perf_unlocks set expires_at = now() + interval '15 minutes'
+   where token_hash = encode(sha256(convert_to(coalesce(p_token, ''), 'UTF8')), 'hex')
+     and team_member_id = m.id and expires_at > now();
+  get diagnostics n = row_count;
+  if n = 0 then return 'code-needed'; end if;
+  return null;
+end $$;
+revoke all on function public.personnel_check(text) from public, anon, authenticated;
+
+/* The master code for a holder of Personnel, counted and locked as
+   `perf_unlock` counts it; the token it answers is the same unlock. */
+create or replace function public.personnel_unlock(p_code text)
+returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  m public.team_members; h text; a public.perf_attempts; tok text; f integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_granted('team.personnel', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select value into h from public.app_secrets where key = 'perf_code';
+  if coalesce(h, '') = '' then return jsonb_build_object('error', 'no-code'); end if;
+  insert into public.perf_attempts (team_member_id, failures) values (m.id, 0)
+  on conflict (team_member_id) do nothing;
+  select * into a from public.perf_attempts where team_member_id = m.id for update;
+  if a.locked_until > now() then
+    return jsonb_build_object('error', 'locked', 'until', a.locked_until);
+  end if;
+  if crypt(coalesce(p_code, ''), h) <> h then
+    f := case when a.locked_until is not null then 1 else coalesce(a.failures, 0) + 1 end;
+    update public.perf_attempts set failures = f,
+           locked_until = case when f >= 5 then now() + interval '15 minutes' end
+     where team_member_id = m.id;
+    perform public.perf_log(null, null, 'unlock_failed', jsonb_build_object('failures', f));
+    if f >= 5 then
+      return jsonb_build_object('error', 'locked', 'until', now() + interval '15 minutes');
+    end if;
+    return jsonb_build_object('error', 'wrong-code', 'left', 5 - f);
+  end if;
+  update public.perf_attempts set failures = 0, locked_until = null where team_member_id = m.id;
+  tok := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into public.perf_unlocks (token_hash, team_member_id, expires_at)
+  values (encode(sha256(convert_to(tok, 'UTF8')), 'hex'), m.id, now() + interval '15 minutes');
+  perform public.perf_log(null, null, 'unlocked', '{}'::jsonb);
+  return jsonb_build_object('token', tok, 'expires_at', now() + interval '15 minutes');
+end $$;
+revoke all on function public.personnel_unlock(text) from public, anon;
+grant execute on function public.personnel_unlock(text) to authenticated;
+
+/* One record as the reader may read it: never a salary, never a file's key. */
+create or replace function public.personnel_json(p_member uuid, p_team boolean)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare r public.personnel_records; t public.team_members; s public.personnel_salaries;
+begin
+  select * into t from public.team_members where id = p_member;
+  select * into r from public.personnel_records where team_member_id = p_member;
+  select * into s from public.personnel_salaries where team_member_id = p_member;
+  return jsonb_build_object('ok', true, 'member', p_member, 'name', t.name,
+    'data', coalesce(r.data, '{}'::jsonb),
+    'files', coalesce((select jsonb_object_agg(k, jsonb_build_object('at', v ->> 'at', 'type', v ->> 'type'))
+                         from jsonb_each(coalesce(r.files, '{}'::jsonb)) x(k, v)), '{}'::jsonb),
+    'consent_at', r.consent_at, 'declared_name', r.declared_name, 'declared_at', r.declared_at,
+    'requested_at', r.requested_at, 'updated_at', r.updated_at,
+    'updated_by', (select u.name from public.team_members u where u.id = r.updated_by),
+    'join_date', r.join_date, 'employee_status', r.employee_status, 'employee_type', r.employee_type,
+    'probation_months', r.probation_months, 'contract_end', r.contract_end,
+    'confirm_date', public.personnel_confirm_date(r.join_date, r.probation_months),
+    'superior_id', case when p_team then r.superior_id end,
+    'salary_set', case when p_team then (s.probation is not null or s.confirmed is not null) end,
+    'missing', to_jsonb(public.personnel_missing(coalesce(r.data, '{}'::jsonb))));
+end $$;
+revoke all on function public.personnel_json(uuid, boolean) from public, anon, authenticated;
+
+create or replace function public.personnel_get(p_member uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.ops_granted('team.personnel', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not exists (select 1 from public.team_members t where t.id = p_member) then return jsonb_build_object('error', 'not-found'); end if;
+  return public.personnel_json(p_member, true);
+end $$;
+revoke all on function public.personnel_get(uuid) from public, anon;
+grant execute on function public.personnel_get(uuid) to authenticated;
+
+create or replace function public.personnel_mine()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare g jsonb;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  return public.personnel_json((public.ops_me()).id, false);
+end $$;
+revoke all on function public.personnel_mine() from public, anon;
+grant execute on function public.personnel_mine() to authenticated;
+
+/* The team's save: any field, no declaration asked. */
+create or replace function public.personnel_save(p_member uuid, p_data jsonb, p_expected timestamptz)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me public.team_members; t public.team_members; r public.personnel_records; c jsonb; what text;
+begin
+  if not public.ops_granted('team.personnel', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  me := public.ops_me();
+  select * into t from public.team_members where id = p_member;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if t.erased_at is not null then return jsonb_build_object('error', 'erased'); end if;
+  c := public.personnel_clean(p_data);
+  if c ? 'error' then return c; end if;
+  insert into public.personnel_records (team_member_id) values (p_member) on conflict (team_member_id) do nothing;
+  select * into r from public.personnel_records where team_member_id = p_member for update;
+  if p_expected is not null and r.updated_at > p_expected + interval '1 millisecond' then
+    return jsonb_build_object('error', 'stale', 'record', public.personnel_json(p_member, true));
+  end if;
+  what := public.personnel_changed(r.data, c -> 'data');
+  if what is null then return public.personnel_json(p_member, true); end if;
+  update public.personnel_records set data = c -> 'data', updated_at = now(), updated_by = me.id
+   where team_member_id = p_member;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Employee record: ' || what);
+  return public.personnel_json(p_member, true);
+end $$;
+revoke all on function public.personnel_save(uuid, jsonb, timestamptz) from public, anon;
+grant execute on function public.personnel_save(uuid, jsonb, timestamptz) to authenticated;
+
+/* The colleague's own: complete, consented and declared under their name. */
+create or replace function public.personnel_save_mine(p_data jsonb, p_consent boolean, p_name text, p_expected timestamptz)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare g jsonb; me public.team_members; r public.personnel_records; c jsonb; miss text[];
+        v_name text := btrim(regexp_replace(coalesce(p_name, ''), '\s+', ' ', 'g')); what text;
+begin
+  g := public.perf_mine_gate();
+  if g is not null then return g; end if;
+  me := public.ops_me();
+  c := public.personnel_clean(p_data);
+  if c ? 'error' then return c; end if;
+  miss := public.personnel_missing(c -> 'data');
+  if cardinality(miss) > 0 then return jsonb_build_object('error', 'incomplete', 'missing', to_jsonb(miss)); end if;
+  if not coalesce(p_consent, false) then return jsonb_build_object('error', 'no-consent'); end if;
+  if char_length(v_name) < 2 or char_length(v_name) > 100 then return jsonb_build_object('error', 'bad-name'); end if;
+  insert into public.personnel_records (team_member_id) values (me.id) on conflict (team_member_id) do nothing;
+  select * into r from public.personnel_records where team_member_id = me.id for update;
+  if p_expected is not null and r.updated_at > p_expected + interval '1 millisecond' then
+    return jsonb_build_object('error', 'stale', 'record', public.personnel_json(me.id, false));
+  end if;
+  what := public.personnel_changed(r.data, c -> 'data');
+  update public.personnel_records set data = c -> 'data', consent_at = now(), declared_name = v_name,
+         declared_at = now(), updated_at = now(), updated_by = me.id
+   where team_member_id = me.id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'colleague'), 'team.edited', me.name,
+          'Employee record submitted' || coalesce(': ' || what, ''));
+  return public.personnel_json(me.id, false);
+end $$;
+revoke all on function public.personnel_save_mine(jsonb, boolean, text, timestamptz) from public, anon;
+grant execute on function public.personnel_save_mine(jsonb, boolean, text, timestamptz) to authenticated;
+
+/* The employment terms the team keys in. A new join date or probation
+   tells the admins again on the new Confirm Date. */
+create or replace function public.personnel_terms_set(p_member uuid, p_join date, p_status text, p_type text,
+  p_probation integer, p_contract_end date, p_superior uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me public.team_members; t public.team_members; r public.personnel_records; moves text[] := '{}';
+begin
+  if not public.ops_granted('team.personnel', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  me := public.ops_me();
+  select * into t from public.team_members where id = p_member;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_status is not null and p_status not in ('Management of the organization', 'Permanent', 'Contract', 'Part time', 'Interns', 'Others') then
+    return jsonb_build_object('error', 'bad-status');
+  end if;
+  if p_type is not null and p_type not in ('FT', 'PT', 'CT') then return jsonb_build_object('error', 'bad-type'); end if;
+  if p_probation is not null and (p_probation < 0 or p_probation > 12) then return jsonb_build_object('error', 'bad-probation'); end if;
+  if p_join is not null and (p_join < date '2023-08-14' or p_join > date '2099-12-31') then return jsonb_build_object('error', 'bad-date'); end if;
+  if p_contract_end is not null and p_join is not null and p_contract_end <= p_join then return jsonb_build_object('error', 'bad-end'); end if;
+  if p_superior is not null and (p_superior = p_member or not exists (select 1 from public.team_members s where s.id = p_superior and s.active)) then
+    return jsonb_build_object('error', 'bad-superior');
+  end if;
+  insert into public.personnel_records (team_member_id) values (p_member) on conflict (team_member_id) do nothing;
+  select * into r from public.personnel_records where team_member_id = p_member for update;
+  if r.join_date is distinct from p_join then moves := moves || 'Join date'::text; end if;
+  if r.employee_status is distinct from p_status then moves := moves || 'Employee status'::text; end if;
+  if r.employee_type is distinct from p_type then moves := moves || 'Employee type'::text; end if;
+  if r.probation_months is distinct from p_probation then moves := moves || 'Probation'::text; end if;
+  if r.contract_end is distinct from p_contract_end then moves := moves || 'End of contract'::text; end if;
+  if r.superior_id is distinct from p_superior then moves := moves || 'Reports to'::text; end if;
+  if cardinality(moves) = 0 then return public.personnel_json(p_member, true); end if;
+  update public.personnel_records set join_date = p_join, employee_status = p_status, employee_type = p_type,
+         probation_months = p_probation, contract_end = p_contract_end, superior_id = p_superior,
+         probation_told_at = case when r.join_date is distinct from p_join or r.probation_months is distinct from p_probation
+                                  then null else r.probation_told_at end,
+         updated_at = now(), updated_by = me.id
+   where team_member_id = p_member;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Employment terms: ' || array_to_string(moves, ', '));
+  return public.personnel_json(p_member, true);
+end $$;
+revoke all on function public.personnel_terms_set(uuid, date, text, text, integer, date, uuid) from public, anon;
+grant execute on function public.personnel_terms_set(uuid, date, text, text, integer, date, uuid) to authenticated;
+
+/* Request employee record: the colleague is told, once a day at most. */
+create or replace function public.personnel_request(p_member uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me public.team_members; t public.team_members;
+begin
+  if not public.ops_granted('team.personnel', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  me := public.ops_me();
+  select * into t from public.team_members where id = p_member;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not t.active or coalesce(t.system, false) then return jsonb_build_object('error', 'inactive'); end if;
+  if t.id = me.id then return jsonb_build_object('error', 'own'); end if;
+  insert into public.personnel_records (team_member_id) values (p_member) on conflict (team_member_id) do nothing;
+  update public.personnel_records set requested_at = now(), requested_by = me.id where team_member_id = p_member;
+  perform public.perf_notify(p_member, 'personnel.request', 'Please complete your employee record in My records.',
+    'personnel.request:' || p_member || ':' || public.personnel_today());
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Employee record requested');
+  return jsonb_build_object('ok', true, 'requested_at', now());
+end $$;
+revoke all on function public.personnel_request(uuid) from public, anon;
+grant execute on function public.personnel_request(uuid) to authenticated;
+
+/* Whose files the caller may add, read or remove: their own behind the
+   fresh proof (no member named), else anyone's at the part. Answers the
+   member, else null. */
+create or replace function public.personnel_file_member(p_member uuid)
+returns uuid
+language plpgsql stable security definer set search_path = public as $$
+declare me public.team_members;
+begin
+  me := public.ops_me();
+  if me.id is null then return null; end if;
+  if p_member is null then
+    if public.perf_mine_gate() is not null then return null; end if;
+    return me.id;
+  end if;
+  if not public.ops_granted('team.personnel', 'work') then return null; end if;
+  if not exists (select 1 from public.team_members t where t.id = p_member and t.erased_at is null) then return null; end if;
+  return p_member;
+end $$;
+revoke all on function public.personnel_file_member(uuid) from public, anon;
+grant execute on function public.personnel_file_member(uuid) to authenticated;
+
+create or replace function public.personnel_file_set(p_member uuid, p_kind text, p_key text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare who uuid := public.personnel_file_member(p_member); me public.team_members; t public.team_members; ty text;
+begin
+  if who is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('nric_front', 'nric_back', 'photo') then return jsonb_build_object('error', 'bad-kind'); end if;
+  if p_key is null or p_key !~ ('^private/personnel/' || who || '/[0-9a-f-]{36}\.(jpg|png|pdf)$') then
+    return jsonb_build_object('error', 'bad-key');
+  end if;
+  if p_kind = 'photo' and p_key !~ '\.(jpg|png)$' then return jsonb_build_object('error', 'bad-key'); end if;
+  ty := substring(p_key from '\.([a-z]+)$');
+  me := public.ops_me();
+  select * into t from public.team_members where id = who;
+  insert into public.personnel_records (team_member_id) values (who) on conflict (team_member_id) do nothing;
+  update public.personnel_records
+     set files = files || jsonb_build_object(p_kind, jsonb_build_object('key', p_key, 'at', now(), 'type', ty)),
+         updated_at = now(), updated_by = me.id
+   where team_member_id = who;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Employee record: '
+    || case p_kind when 'nric_front' then 'NRIC (front)' when 'nric_back' then 'NRIC (back)' else 'Photograph' end || ' added');
+  return public.personnel_json(who, who <> me.id);
+end $$;
+revoke all on function public.personnel_file_set(uuid, text, text) from public, anon;
+grant execute on function public.personnel_file_set(uuid, text, text) to authenticated;
+
+/* A file taken off the record; the stored copy stays in S3. */
+create or replace function public.personnel_file_remove(p_member uuid, p_kind text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare who uuid := public.personnel_file_member(p_member); me public.team_members; t public.team_members;
+begin
+  if who is null then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('nric_front', 'nric_back', 'photo') then return jsonb_build_object('error', 'bad-kind'); end if;
+  me := public.ops_me();
+  select * into t from public.team_members where id = who;
+  update public.personnel_records set files = files - p_kind, updated_at = now(), updated_by = me.id
+   where team_member_id = who and files ? p_kind;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'colleague'), 'team.edited', t.name, 'Employee record: '
+    || case p_kind when 'nric_front' then 'NRIC (front)' when 'nric_back' then 'NRIC (back)' else 'Photograph' end || ' deleted');
+  return public.personnel_json(who, who <> me.id);
+end $$;
+revoke all on function public.personnel_file_remove(uuid, text) from public, anon;
+grant execute on function public.personnel_file_remove(uuid, text) to authenticated;
+
+/* sign-download asks this as the caller to read one file back. */
+create or replace function public.personnel_file_key(p_member uuid, p_kind text)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare who uuid := public.personnel_file_member(p_member); k text;
+begin
+  if who is null then return jsonb_build_object('error', 'denied'); end if;
+  select r.files -> p_kind ->> 'key' into k from public.personnel_records r where r.team_member_id = who;
+  if k is null then return jsonb_build_object('error', 'not-kept'); end if;
+  return jsonb_build_object('key', k, 'member', who);
+end $$;
+revoke all on function public.personnel_file_key(uuid, text) from public, anon;
+grant execute on function public.personnel_file_key(uuid, text) to authenticated;
+
+/* The salary, behind the part and the unlock: read for one colleague. */
+create or replace function public.personnel_salary_get(p_token text, p_member uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e text; s public.personnel_salaries;
+begin
+  e := public.personnel_check(p_token);
+  if e is not null then return jsonb_build_object('error', e); end if;
+  select * into s from public.personnel_salaries where team_member_id = p_member;
+  return jsonb_build_object('ok', true, 'probation', s.probation, 'confirmed', s.confirmed, 'updated_at', s.updated_at);
+end $$;
+revoke all on function public.personnel_salary_get(text, uuid) from public, anon;
+grant execute on function public.personnel_salary_get(text, uuid) to authenticated;
+
+create or replace function public.personnel_salary_set(p_token text, p_member uuid, p_probation numeric, p_confirmed numeric)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e text; me public.team_members; t public.team_members; s public.personnel_salaries;
+begin
+  e := public.personnel_check(p_token);
+  if e is not null then return jsonb_build_object('error', e); end if;
+  me := public.ops_me();
+  select * into t from public.team_members where id = p_member;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if (p_probation is not null and (p_probation < 0 or p_probation >= 10000000))
+     or (p_confirmed is not null and (p_confirmed < 0 or p_confirmed >= 10000000)) then
+    return jsonb_build_object('error', 'bad-amount');
+  end if;
+  insert into public.personnel_salaries (team_member_id) values (p_member) on conflict (team_member_id) do nothing;
+  select * into s from public.personnel_salaries where team_member_id = p_member for update;
+  if s.probation is not distinct from round(p_probation, 2) and s.confirmed is not distinct from round(p_confirmed, 2) then
+    return jsonb_build_object('ok', true, 'probation', s.probation, 'confirmed', s.confirmed, 'updated_at', s.updated_at);
+  end if;
+  update public.personnel_salaries set probation = round(p_probation, 2), confirmed = round(p_confirmed, 2),
+         updated_at = now(), updated_by = me.id
+   where team_member_id = p_member returning * into s;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.edited', t.name, 'Salary changed');
+  return jsonb_build_object('ok', true, 'probation', s.probation, 'confirmed', s.confirmed, 'updated_at', s.updated_at);
+end $$;
+revoke all on function public.personnel_salary_set(text, uuid, numeric, numeric) from public, anon;
+grant execute on function public.personnel_salary_set(text, uuid, numeric, numeric) to authenticated;
+
+/* Every active colleague's record for the AutoCount import, the basic rate
+   the one in force today; each read filed, never a figure. */
+create or replace function public.personnel_export(p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare e text; me public.team_members; rows jsonb; n integer; today date := public.personnel_today();
+begin
+  e := public.personnel_check(p_token);
+  if e is not null then return jsonb_build_object('error', e); end if;
+  me := public.ops_me();
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'member', t.id, 'code', t.staff_code, 'name', t.name, 'designation', t.designation, 'email', t.email,
+      'department', t.department, 'department_code', d.ac_code, 'active', t.active,
+      'data', coalesce(r.data, '{}'::jsonb), 'join_date', r.join_date,
+      'confirm_date', public.personnel_confirm_date(r.join_date, r.probation_months),
+      'employee_status', r.employee_status, 'employee_type', r.employee_type, 'contract_end', r.contract_end,
+      'superior_code', (select u.staff_code from public.team_members u where u.id = r.superior_id),
+      'basic_rate', case
+        when s.confirmed is not null and (public.personnel_confirm_date(r.join_date, r.probation_months) is null
+             or public.personnel_confirm_date(r.join_date, r.probation_months) <= today) then s.confirmed
+        else coalesce(s.probation, s.confirmed) end)
+      order by t.staff_code nulls last, t.name), '[]'::jsonb), count(*)
+    into rows, n
+    from public.team_members t
+    left join public.personnel_records r on r.team_member_id = t.id
+    left join public.personnel_salaries s on s.team_member_id = t.id
+    left join public.departments d on d.key = t.department
+   where t.active and not coalesce(t.system, false) and t.removed_at is null;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.changed', 'AutoCount HRMS', 'Downloaded for AutoCount: ' || n || ' colleagues');
+  return jsonb_build_object('ok', true, 'rows', rows,
+    'settings', (select jsonb_object_agg(x.key, x.value) from public.personnel_settings x));
+end $$;
+revoke all on function public.personnel_export(text) from public, anon;
+grant execute on function public.personnel_export(text) to authenticated;
+
+create or replace function public.personnel_settings_get()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not (public.ops_granted('team.settings', 'work') or public.ops_granted('team.personnel', 'work')) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('ok', true, 'values', (select jsonb_object_agg(x.key, x.value) from public.personnel_settings x),
+    'spec', public.personnel_setting_spec());
+end $$;
+revoke all on function public.personnel_settings_get() from public, anon;
+grant execute on function public.personnel_settings_get() to authenticated;
+
+create or replace function public.personnel_settings_set(p_values jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me public.team_members; spec jsonb := public.personnel_setting_spec(); k text; v text; was text; moves text[] := '{}';
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_values is null or jsonb_typeof(p_values) <> 'object' then return jsonb_build_object('error', 'bad-value'); end if;
+  me := public.ops_me();
+  for k, v in select key, value from jsonb_each_text(p_values) loop
+    if not spec ? k then return jsonb_build_object('error', 'bad-value', 'key', k); end if;
+    v := btrim(coalesce(v, ''));
+    if spec ->> k = '*' then
+      if v !~ '^[A-Za-z0-9 ._-]{1,20}$' then return jsonb_build_object('error', 'bad-value', 'key', k); end if;
+    elsif not (v = any (string_to_array(spec ->> k, '|'))) then
+      return jsonb_build_object('error', 'bad-value', 'key', k);
+    end if;
+  end loop;
+  for k, v in select key, btrim(value) from jsonb_each_text(p_values) loop
+    select x.value into was from public.personnel_settings x where x.key = k;
+    if was is distinct from v then
+      insert into public.personnel_settings (key, value, updated_at, updated_by) values (k, v, now(), me.id)
+      on conflict (key) do update set value = excluded.value, updated_at = now(), updated_by = me.id;
+      moves := moves || (k || ': ' || coalesce(was, 'not set') || ' → ' || v);
+    end if;
+  end loop;
+  if cardinality(moves) > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (coalesce(me.name, 'admin'), 'team.changed', 'AutoCount HRMS', array_to_string(moves, ' · '));
+  end if;
+  return public.personnel_settings_get();
+end $$;
+revoke all on function public.personnel_settings_set(jsonb) from public, anon;
+grant execute on function public.personnel_settings_set(jsonb) to authenticated;
+
+create or replace function public.department_ac_code_set(p_key text, p_code text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare me public.team_members; d public.departments; v text := nullif(upper(btrim(coalesce(p_code, ''))), '');
+begin
+  if not public.ops_granted('team.settings', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  me := public.ops_me();
+  select * into d from public.departments where key = p_key for update;
+  if d.key is null then return jsonb_build_object('error', 'not-found'); end if;
+  if v is not null and v !~ '^[A-Z0-9]{2,10}$' then return jsonb_build_object('error', 'bad-code'); end if;
+  if v is not null and exists (select 1 from public.departments x where x.ac_code = v and x.key <> p_key) then
+    return jsonb_build_object('error', 'taken');
+  end if;
+  if d.ac_code is not distinct from v then return jsonb_build_object('ok', true); end if;
+  update public.departments set ac_code = v, updated_at = now(), updated_by = me.id where key = p_key;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(me.name, 'admin'), 'team.changed', 'Departments',
+          d.name || ' · AutoCount code: ' || coalesce(d.ac_code, 'not set') || ' → ' || coalesce(v, 'not set'));
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.department_ac_code_set(text, text) from public, anon;
+grant execute on function public.department_ac_code_set(text, text) to authenticated;
+
+create or replace function public.departments_list()
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_team() then return jsonb_build_object('error', 'denied'); end if;
+  return coalesce((select jsonb_agg(jsonb_build_object(
+      'key', d.key, 'name', d.name, 'active', d.active, 'in_prize', d.in_prize,
+      'criteria', coalesce(d.criteria, '[]'::jsonb), 'ac_code', d.ac_code,
+      'members', (select count(*)::int from public.team_members t where t.department = d.key and t.active),
+      'in_records', exists (select 1 from public.team_members t where t.department = d.key)
+                    or exists (select 1 from public.perf_people p where p.department = d.key)
+                    or exists (select 1 from public.perf_dept_scores s where s.department = d.key))
+      order by d.position, lower(d.name))
+    from public.departments d), '[]'::jsonb);
+end $$;
+revoke all on function public.departments_list() from public, anon;
+grant execute on function public.departments_list() to authenticated;
+
+/* On the Confirm Date the admins are told, masked: no name, no figure. */
+create or replace function public.personnel_probation_due()
+returns integer
+language plpgsql security definer set search_path = public as $$
+declare r record; a record; n integer := 0; today date := public.personnel_today();
+begin
+  for r in select p.team_member_id, public.personnel_confirm_date(p.join_date, p.probation_months) as due
+             from public.personnel_records p join public.team_members t on t.id = p.team_member_id
+            where t.active and p.probation_told_at is null and p.probation_months > 0
+              and public.personnel_confirm_date(p.join_date, p.probation_months) between today - 7 and today
+  loop
+    for a in select t.id from public.team_members t
+              where t.active and (t.is_admin or t.role = 'admin') and not coalesce(t.system, false) loop
+      perform public.perf_notify(a.id, 'personnel.probation', 'A probation review is due. Sign in to view.',
+        'personnel.probation:' || r.team_member_id || ':' || r.due || ':' || a.id);
+    end loop;
+    update public.personnel_records set probation_told_at = now() where team_member_id = r.team_member_id;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.personnel_probation_due() from public, anon, authenticated;
+
+/* A colleague's details erased take their record and salary with them. */
+create or replace function public.team_members_erased_personnel()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.erased_at is not null and old.erased_at is null then
+    update public.personnel_records set data = '{}'::jsonb, files = '{}'::jsonb, consent_at = null,
+           declared_name = null, declared_at = null, updated_at = now()
+     where team_member_id = new.id;
+    update public.personnel_salaries set probation = null, confirmed = null, updated_at = now()
+     where team_member_id = new.id;
+  end if;
+  return new;
+end $$;
+revoke all on function public.team_members_erased_personnel() from public, anon, authenticated;
+create or replace trigger team_members_erased_personnel after update of erased_at on public.team_members
+  for each row execute function public.team_members_erased_personnel();
+
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'pg_cron is not enabled: no probation notices go out until it is.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'personnel-probation';
+  perform cron.schedule('personnel-probation', '25 0 * * *', 'select public.personnel_probation_due()');
+end $$;
+
+-- END OF PERSONNEL RECORDS --------------------------------------------------
+
+select public.functions_tidy();
+
+-- PERSONNEL IS AN ADMIN TOOL ------------------------------------------------
+
+create or replace function public.team_roles_admin_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_granted constant text[] := array['ops.all', 'ops.reports', 'ops.workflows', 'ops.time', 'ops.numbering',
+    'ops.override', 'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite',
+    'team.handbook', 'team.announce', 'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai',
+    'reports.meta', 'register.types', 'campaigns.files_delete', 'clients.vic', 'suppliers.pay',
+    'team.analytics', 'campaigns.pay', 'team.hiring', 'team.personnel'];
+  k text;
+begin
+  if who = '' or pg_trigger_depth() > 1 then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+  /* A group made admin, an admin group made plain, made or deleted: the
+     super admin's alone. */
+  if not public.team_super_ok() and (
+       (tg_op = 'INSERT' and (coalesce(new.is_admin, false) or new.slug = 'admin'))
+    or (tg_op = 'DELETE' and (coalesce(old.is_admin, false) or old.slug = 'admin'))
+    or (tg_op = 'UPDATE' and coalesce(new.is_admin, false) is distinct from coalesce(old.is_admin, false))) then
+    raise exception 'super-only' using errcode = '42501', hint = 'Only the super admin makes or removes an admin group.';
+  end if;
+  if public.allowed('admin') then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+  end if;
+  if (tg_op <> 'INSERT' and (coalesce(old.is_admin, false) or old.slug = 'admin'))
+     or (tg_op <> 'DELETE' and (coalesce(new.is_admin, false) or new.slug = 'admin')) then
+    raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin group.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  foreach k in array v_granted loop
+    if coalesce(new.access ->> k, '') is distinct from
+       (case when tg_op = 'INSERT' then '' else coalesce(old.access ->> k, '') end) then
+      raise exception 'admin-only' using errcode = '42501', hint = 'Only an admin changes an admin tool.';
+    end if;
+  end loop;
+  return new;
+end $$;
+revoke all on function public.team_roles_admin_guard() from public, anon, authenticated;
+
+-- END OF PERSONNEL IS AN ADMIN TOOL -----------------------------------------
 
 select public.functions_tidy();

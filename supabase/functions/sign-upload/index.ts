@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
     ext?: string; clientId?: string; size?: number;
     creatorCode?: string; optionId?: string; private?: boolean;
     purpose?: string; batchId?: string; campaignId?: string; versionId?: string; scriptId?: string; quotationId?: string;
+    memberId?: string | null; kind?: string;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -148,6 +149,37 @@ Deno.serve(async (req) => {
       .select('active').ilike('email', exactEmail(user.email))
       .order('active', { ascending: false }).limit(1).maybeSingle();
     if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
+
+    /* A colleague's employee record file (2026-11-16): an NRIC copy or a
+       photograph, private under the colleague's own folder, signed only
+       where the database answers that the caller may add it: their own
+       behind the fresh proof, or anyone's at Personnel
+       (`personnel_file_member`, asked as the caller). */
+    if (body.purpose === 'personnel') {
+      const want = body.memberId ? String(body.memberId) : null;
+      if (want !== null && !UUID.test(want)) return json({ error: 'bad_parent' }, 400, origin);
+      const { data: who, error: whoErr } = await supa.rpc('personnel_file_member', { p_member: want });
+      if (whoErr || !who || !UUID.test(String(who))) return json({ error: 'not_allowed' }, 403, origin);
+      const pext = String(body.ext ?? '').toLowerCase();
+      if (!['jpg', 'png', 'pdf'].includes(pext)) return json({ error: 'bad_extension' }, 400, origin);
+      const psize = Number(body.size ?? 0);
+      if (!Number.isSafeInteger(psize) || psize < 1 || psize > 10 * 1024 * 1024) return json({ error: 'too_large' }, 400, origin);
+      const pkey = `private/personnel/${who}/${crypto.randomUUID()}.${pext}`;
+      const preg = Deno.env.get('S3_REGION')!;
+      const ptype = EXT_TYPE[pext];
+      const paws = new AwsClient({
+        accessKeyId: Deno.env.get('AWS_ACCESS_KEY_ID')!,
+        secretAccessKey: Deno.env.get('AWS_SECRET_ACCESS_KEY')!,
+        region: preg,
+        service: 's3'
+      });
+      const psigned = await paws.sign(`https://${Deno.env.get('S3_BUCKET')!}.s3.${preg}.amazonaws.com/${pkey}?X-Amz-Expires=${PUT_EXPIRES}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': ptype, 'Content-Length': String(psize) },
+        aws: { signQuery: true, allHeaders: true }
+      });
+      return json({ uploadUrl: psigned.url, publicUrl: null, key: pkey, contentType: ptype }, 200, origin);
+    }
 
     const clientId = String(body.clientId ?? '');
     if (!UUID.test(clientId)) return json({ error: 'bad_client' }, 400, origin);
