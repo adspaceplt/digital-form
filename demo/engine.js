@@ -648,7 +648,7 @@
     team_member_remove: 'p_erase p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial'
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha'
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2293,6 +2293,19 @@ function cardSlugFree(name, self, email) {
       return x.serial && same(x.serial) &&
         (DB.perf_events || []).some(function (e) { return e.review_id === x.id && e.kind === 'printed'; });
     })[0];
+
+    var qt = (DB.quotations || []).filter(function (x) {
+      return x.ref && same(x.ref) && (x.sent_out_at || x.signed_at);
+    }).sort(function (x, y) { return String(y.issued_at || '').localeCompare(String(x.issued_at || '')); })[0];
+    if (qt) {
+      var today = (window.ADspaceClock && ADspaceClock.today) ? ADspaceClock.today() : new Date().toISOString().slice(0, 10);
+      var revised = (DB.quotations || []).some(function (r) { return r.replaces === qt.id && !r.removed_at; });
+      return { found: true, serial: qt.ref, kind: 'Quotation', issued_at: qt.issued_at,
+        signed_at: qt.signed_at || null, confirmed_at: qt.reviewed_at || null,
+        document_id: qt.seal_key ? qt.id : null, sealed: !!qt.seal_key,
+        state: qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
+          : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
+    }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
 
     var pd = (DB.perf_deleted || []).filter(function (x) { return x.printed && x.serial && same(x.serial); }).slice(-1)[0];
@@ -10059,6 +10072,15 @@ function opsCodeRange(cid, period, ty, src, seq) {
     if (name === 'document_set_void')  return Promise.resolve({ data: documentSetVoid(args), error: null });
     if (name === 'document_delete')    return Promise.resolve({ data: documentDelete(args), error: null });
     if (name === 'verify_serial')      return Promise.resolve({ data: verifySerial(args), error: null });
+    if (name === 'verify_file') {
+      if (window.__verifyLocked) return Promise.resolve({ data: { locked: true, minutes: window.__verifyLocked }, error: null });
+      var vh = String(args.p_sha || '').toLowerCase(), vs = String(args.p_serial || '').toUpperCase();
+      if (!/^[0-9a-f]{64}$/.test(vh)) return Promise.resolve({ data: { error: 'bad-request' }, error: null });
+      var vq = (DB.quotations || []).filter(function (x) {
+        return x.seal_key && x.ref && (x.ref.toUpperCase() === vs || x.ref.toUpperCase().replace(/\//g, '-') === vs.replace(/\//g, '-'));
+      })[0];
+      return Promise.resolve({ data: vq ? { match: vq.seal_sha === vh } : { none: true }, error: null });
+    }
 
     var CR_DELIVER = ['pending_draft', 'changes'];
     var CR_SHOW = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
