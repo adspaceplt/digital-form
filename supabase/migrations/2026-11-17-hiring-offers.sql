@@ -27,7 +27,7 @@
 --     Performance and Personnel take), `hiring_docs_of`, `hiring_doc_save`,
 --     `hiring_doc_pay_set`, `hiring_doc_pay_get`, `hiring_doc_send`,
 --     `hiring_doc_withdraw`, `hiring_doc_mark`, `hiring_doc_send_back`,
---     `hiring_doc_confirm`, `hiring_doc_seal`, `hiring_doc_void`,
+--     `hiring_doc_confirm`, `hiring_doc_signed`, `hiring_doc_seal`, `hiring_doc_void`,
 --     `hiring_doc_replace`, `hiring_doc_delete`, `hiring_doc_record`,
 --     `hiring_doc_mail_prepare`, `hiring_doc_mail_done`;
 --     `hiring_doc_code` (the service role's: hiring-mail emails the code);
@@ -220,7 +220,8 @@ returns jsonb language sql stable security definer set search_path = public as $
   select jsonb_strip_nulls(jsonb_build_object(
     'id', d.id, 'kind', d.kind, 'state', d.state, 'serial', d.serial, 'terms', d.terms, 'replaces', d.replaces,
     'made_by', (select t.name from public.team_members t where t.id = d.made_by), 'made_at', d.made_at,
-    'sent_by', (select t.name from public.team_members t where t.id = d.sent_by), 'sent_at', d.sent_at,
+    'sent_by', (select t.name from public.team_members t where t.id = d.sent_by),
+    'sent_role', (select t.designation from public.team_members t where t.id = d.sent_by), 'sent_at', d.sent_at,
     'reply_by', d.reply_by, 'expired', d.state = 'sent' and d.reply_by <= now(),
     'answered_at', d.answered_at, 'decline_note', d.decline_note,
     'signed', case when d.signed is not null then jsonb_strip_nulls(jsonb_build_object('via', d.signed->>'via',
@@ -519,6 +520,20 @@ begin
 end $$;
 grant execute on function public.hiring_doc_seal(uuid, text, text, text) to authenticated;
 
+/* The candidate's signing as the sealed copy prints it (the signature drawn
+   and the NRIC or passport number): the part's, behind the master code. */
+create or replace function public.hiring_doc_signed(p_doc uuid, p_token text)
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
+declare d public.hiring_docs; v_err text;
+begin
+  select * into d from public.hiring_docs where id = p_doc;
+  if d.id is null or public.hiring_role(d.candidate_id) is null then return jsonb_build_object('error', 'not-found'); end if;
+  v_err := public.hiring_pay_check(p_token);
+  if v_err is not null then return jsonb_build_object('error', v_err); end if;
+  return jsonb_build_object('ok', true, 'signed', d.signed);
+end $$;
+grant execute on function public.hiring_doc_signed(uuid, text) to authenticated;
+
 /* Void, with a reason: the part's alone; a signed or confirmed copy is
    kept. A candidate who did not join reads Withdrawn after signing. */
 create or replace function public.hiring_doc_void(p_doc uuid, p_note text)
@@ -612,7 +627,7 @@ begin
   v_steps := jsonb_build_array(jsonb_build_object('step', 'issued', 'at', d.made_at, 'team', true,
     'by', (select t.name from public.team_members t where t.id = d.made_by)));
   if d.sent_at is not null then
-    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sent', 'at', d.sent_at, 'team', true, 'via', 'link',
+    v_steps := v_steps || jsonb_build_array(jsonb_build_object('step', 'sent', 'at', d.sent_at, 'team', true, 'via', 'page',
       'by', (select t.name from public.team_members t where t.id = d.sent_by)));
   end if;
   v_steps := v_steps || coalesce((
@@ -805,7 +820,8 @@ grant execute on function public.careers_doc_read(text, uuid, text) to anon, aut
 /* The candidate's answer inside the view: an offer accepted (their name
    typed and the confirmation ticked) or declined (a reason optional); a
    contract signed (name, NRIC or passport number, a drawn signature, the
-   confirmation). The code's email, the address, country and device, and
+   confirmation; the signature a path drawn in a 300 by 100 box, as a
+   quotation's). The code's email, the address, country and device, and
    the document's fingerprint are kept with the signing. */
 create or replace function public.careers_doc_answer(p_key text, p_doc uuid, p_view text, p_answer text, p_payload jsonb)
 returns jsonb language plpgsql volatile security definer set search_path = public, extensions as $$
@@ -845,7 +861,7 @@ begin
   if coalesce(pl->>'agree', '') <> 'true' then return jsonb_build_object('error', 'bad-agree'); end if;
   if d.kind = 'contract' then
     if v_id !~ '^([0-9]{6}-[0-9]{2}-[0-9]{4}|[A-Z0-9]{6,20})$' then return jsonb_build_object('error', 'bad-id'); end if;
-    if v_sig !~ '^data:image/png;base64,[A-Za-z0-9+/=]+$' or char_length(v_sig) > 200000 then return jsonb_build_object('error', 'bad-signature'); end if;
+    if v_sig !~ '^[MLQCZmlqcz0-9 .,-]+$' or char_length(v_sig) not between 8 and 30000 then return jsonb_build_object('error', 'bad-signature'); end if;
   end if;
   select * into p from public.hiring_doc_pay where doc_id = d.id;
   update public.hiring_docs set state = 'signed', signed_at = v_at, answered_at = v_at,
