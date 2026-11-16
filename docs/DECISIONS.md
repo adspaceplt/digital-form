@@ -10629,3 +10629,6 @@ the database's; a line changed from the Rate Card reads Changed, the Rate Card d
 field took the id `qbHeading`: `qbTitle` is the sheet's own heading, which
 the first draft reused (caught by the quotes suite reading the sheet title).
 
+
+### 2026-11-17 · Every button that acts is shaded
+The user, 2026-11-16: on a white card a text-only button (Add service, Issue document, Show more) read as words, "we don't even know if it's a button". `.btn-quiet` now takes the tonal ground of `.btn`; words alone stay only for Cancel beside the view's blue primary, found by `:has(> .btn-primary, > .btn-go)` so no screen names it. Build quote's line buttons went first (#1163).
