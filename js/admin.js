@@ -5877,10 +5877,12 @@
      details form's days are the Settings page's Clients group (SET-9). */
   var TAX_KEYS = [['sst_pct', 'SST (%)', 'pct', 'Tax and validity'],
     ['quote_valid_days', 'Quotation valid for (days)', 'quote', 'Tax and validity'],
-    ['term_1_3', '1 to 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '4 and 5 months', 'adj', 'Terms under a year (%)'],
-    ['term_6_11', '6 to 11 months', 'adj', 'Terms under a year (%)'],
-    ['term_12_23', '12 to 17 months', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18 to 23 months', 'adj', 'Terms of a year or more (%)'],
-    ['term_24', 'From 24 months', 'adj', 'Terms of a year or more (%)'],
+    /* A term takes the longest commitment it has reached (the user,
+       2026-11-17): under 3 months, then 3, 6, 12, 18 and 24 months. */
+    ['term_1_3', 'Under 3 months', 'adj', 'Terms under a year (%)'], ['term_4_5', '3-month commitment', 'adj', 'Terms under a year (%)'],
+    ['term_6_11', '6-month commitment', 'adj', 'Terms under a year (%)'],
+    ['term_12_23', '12-month commitment', 'adj', 'Terms of a year or more (%)'], ['term_18_23', '18-month commitment', 'adj', 'Terms of a year or more (%)'],
+    ['term_24', '24-month commitment', 'adj', 'Terms of a year or more (%)'],
     /* A Singapore client's quotation is priced in S$ at this rate (2026-10-15). */
     ['fx_sgd', 'RM per S$1', 'fx', 'Singapore'],
     /* A website prospect ready to proceed is contacted within these working
@@ -5898,8 +5900,8 @@
   function per(u) { return function (v) { return setPlural(v, u, u + 's'); }; }
   function pctOf(v) { return v + '%'; }
   var SET_TAX_WORD = { sst_pct: ['SST', pctOf], quote_valid_days: ['Quotation valid', per('day')], quote_reply_days: ['Contact within', per('working day')],
-    term_1_3: ['1 to 3 months', setSigned], term_4_5: ['4 and 5 months', setSigned], term_6_11: ['6 to 11 months', setSigned],
-    term_12_23: ['12 to 17 months', setSigned], term_18_23: ['18 to 23 months', setSigned], term_24: ['24 months', setSigned],
+    term_1_3: ['Under 3 months', setSigned], term_4_5: ['3 months', setSigned], term_6_11: ['6 months', setSigned],
+    term_12_23: ['12 months', setSigned], term_18_23: ['18 months', setSigned], term_24: ['24 months', setSigned],
     fx_sgd: ['S$1', function (v) { return 'RM ' + v; }] };
   var SETTING_SHEETS = {
     details: { title: 'Details forms', keys: [['details_form_days', 'Details form link open for (days), clients and suppliers', 'quote', '', 'Open', per('day')]] },

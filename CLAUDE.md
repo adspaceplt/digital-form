@@ -2649,8 +2649,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     as a quotation's (2026-10-22, SL-1, SL-3, SL-5 to SL-7).
 - The term adjustment is a tick with a percentage (`term_pct`, stored whether
   the tick is on or not).
-  - Prefilled from `termPct(months, at)`: the ranges 1–3, 4–5, 6–11, 12–17,
-    18–23 and 24+ months, each percentage a setting (`term_1_3` 25,
+  - Prefilled from `termPct(months, at)`: a term takes the longest commitment it
+    has reached (the user, 2026-11-17): Under 3 months (1 and 2), then the
+    3-, 6-, 12-, 18- and 24-month commitments (3 to 5, 6 to 11, 12 to 17,
+    18 to 23, 24 and more; `quote_term_pct`, `termPct`, the Rate Card's
+    3 months reading `term_4_5`), each percentage a setting (`term_1_3` 25,
     `term_4_5` 15, `term_6_11` 0, `term_12_23` −5, `term_18_23` −5 (seeded
     from 12's; `2026-10-14-quotation-terms.sql`), `term_24` −10), Tax and
     terms at `team.settings` alone, 0 for none; a quotation takes them, and

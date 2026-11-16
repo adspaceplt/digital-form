@@ -10696,3 +10696,14 @@ its approx. S$ line that the console's copy printed (CLIENT PAGES READ THE
 S$ RATE); and AI prices still asked a price per scene picture, which only
 the Gemini pictures before 2026-11-06 are priced at.
 
+### 2026-11-17 · Quotation terms by commitment
+The user found the term bands in Tax and terms read as odd numbers (1 to 3,
+4 and 5, 6 to 11, 12 to 17, 18 to 23): a term is a commitment, and 3, 4 and
+5 months have reached the 3-month commitment and not the 6-month one. The
+bands became commitment tiers: Under 3 months (1 and 2), then the 3-, 6-,
+12-, 18- and 24-month commitments, each with its own percentage in Tax and
+terms (TERMS BY COMMITMENT). The keys stay; only a 3-month term moves from
+`term_1_3` to `term_4_5`, and the Rate Card PDF's 3 months reads `term_4_5`.
+Live figures on the day: every tier 0% but 18 months −8% and 24 months
+−10%, so no live quotation changes price; the user will set each tier.
+

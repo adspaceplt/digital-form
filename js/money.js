@@ -186,9 +186,11 @@
      stored value can take are therefore all meaningful — a number, `0` for a
      term the person chose to leave unadjusted, and `null` for a line from
      before — and none of them is a default. */
-  /* The ranges are the card's; the percentage for each is a setting. */
+  /* A term takes the longest commitment it has reached (the user,
+     2026-11-17): under 3 months, then 3, 6, 12, 18 and 24 months; the
+     percentage for each is a setting. The keys never move. */
   var TERM_PCT = [
-    [1, 3, 'term_1_3'], [4, 5, 'term_4_5'], [6, 11, 'term_6_11'], [12, 17, 'term_12_23'], [18, 23, 'term_18_23'], [24, 999, 'term_24']
+    [1, 2, 'term_1_3'], [3, 5, 'term_4_5'], [6, 11, 'term_6_11'], [12, 17, 'term_12_23'], [18, 23, 'term_18_23'], [24, 999, 'term_24']
   ];
   function termPct(months, at) {
     var n = Math.max(1, Math.floor(Number(months || 1)));

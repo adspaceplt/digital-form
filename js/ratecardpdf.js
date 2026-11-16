@@ -396,7 +396,7 @@
       gap(16);
     }
     /* The five terms a quotation is offered on (2026-10-14). */
-    var TERMS = [['term_1_3', '3 months'], ['term_6_11', '6 months'], ['term_12_23', '12 months'],
+    var TERMS = [['term_4_5', '3 months'], ['term_6_11', '6 months'], ['term_12_23', '12 months'],
       ['term_18_23', '18 months'], ['term_24', '24 months']];
     var termRows = TERMS.filter(function (t) { return set[t[0]] != null && set[t[0]] !== ''; });
     if (termRows.length) {

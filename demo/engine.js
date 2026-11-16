@@ -26,7 +26,7 @@
     client_requests: 'id client_id contact_id contact_name kind service_id service_label note state fee reply decided_by withdrawn_at created_at updated_at idem recorded_by',
     client_services: 'id client_id service_slug label qty rate unit state note created_at archived_at tenure start_on detail term_adjust term_pct quotation_id tax_code',
     public_holidays: 'day name updated_at updated_by',
-    departments: 'key name active in_prize criteria position updated_at updated_by',
+    departments: 'key name active in_prize criteria position updated_at updated_by ac_code',
     industries: 'name name_zh updated_at updated_by',
     client_checklists: 'id client_id kind version template answers sections_na status prepared_by prepared_name prepared_at reviewed_by reviewed_name reviewed_at history created_at updated_at',
     client_detail_forms: 'id client_id access_key created_at created_by expires_at voided_at submitted_at answers used_at used_by',
@@ -281,6 +281,14 @@
     hiring_mine: '', hiring_list: '', hiring_get: 'p_id', hiring_add: 'p_values p_idem', hiring_save: 'p_id p_values p_expected',
     hiring_person_set: 'p_id p_member p_role', hiring_person_remove: 'p_id p_member', hiring_remove: 'p_id p_restore',
     hiring_delete: 'p_id p_name', hiring_link: 'p_id p_reset', careers_read: 'p_key',
+    hiring_invite: 'p_id p_slots p_minutes p_mode p_note p_idem', hiring_interviews_of: 'p_id', hiring_interview_cancel: 'p_interview',
+    hiring_interview_approve: 'p_interview', hiring_interview_meet_prepare: 'p_interview', hiring_interview_set_meet: 'p_interview p_link p_event',
+    hiring_busy_may: '', hiring_mail_prepare: 'p_interview p_kind', hiring_mail_done: 'p_interview p_kind p_status p_error',
+    careers_pick: 'p_key p_slot', careers_none: 'p_key p_note', careers_pool: 'p_key p_yes',
+    hiring_scorecards_list: '', hiring_scorecard_save: 'p_id p_position p_criteria', hiring_scorecard_delete: 'p_id',
+    hiring_outcome_of: 'p_id', hiring_score_save: 'p_id p_scores p_recommend p_note', hiring_score_remove: 'p_id',
+    hiring_decide: 'p_id p_outcome p_note', hiring_outcome_mail_prepare: 'p_id', hiring_outcome_mail_done: 'p_id p_status p_error',
+    hiring_files_gone_list: '', hiring_files_gone_done: 'p_paths',
     supplier_get: 'p_id', supplier_client_set: 'p_id p_client', client_suppliers: 'p_client',
     supplier_create: 'p_code p_name',
     supplier_link: 'p_id p_reset',
@@ -589,6 +597,13 @@
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
+    department_ac_code_set: 'p_key p_code',
+    personnel_get: 'p_member', personnel_mine: '', personnel_save: 'p_member p_data p_expected',
+    personnel_save_mine: 'p_data p_consent p_name p_expected', personnel_terms_set: 'p_member p_join p_status p_type p_probation p_contract_end p_superior',
+    personnel_request: 'p_member', personnel_file_member: 'p_member', personnel_file_set: 'p_member p_kind p_key',
+    personnel_file_remove: 'p_member p_kind', personnel_file_key: 'p_member p_kind', personnel_unlock: 'p_code',
+    personnel_salary_get: 'p_token p_member', personnel_salary_set: 'p_token p_member p_probation p_confirmed',
+    personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
     public_holiday_save: 'p_day p_name p_was',
@@ -2972,17 +2987,19 @@ function cardSlugFree(name, self, email) {
 
     health_keep_months: 24, health_leaver_months: 6, abroad_days: 14, abroad_remind_hours: 2,
 
+    hiring_invite_days: 3, hiring_link_days: 30, hiring_pool_months: 12, hiring_keep_months: 12,
+
     analytics_from: 202308, analytics_change_pct: 10, analytics_churn_pct: 10 };
   var APP_WORD = { lead_followup_hours: ['Lead follow-up limit', ' hours'], proposal_followup_days: ['Proposal follow-up limit', ' days'],
     fx_sgd: ['Singapore dollar rate', ' per S$1'], creator_pay_days_myr: ['Creator payment in MYR', ' working days'], creator_pay_days_other: ['Creator payment in other currencies', ' working days'], vic_lead_followup_hours: ['VIC lead follow-up limit', ' hours'], vic_proposal_followup_days: ['VIC proposal follow-up limit', ' days'], sst_pct: ['SST', '%'],
-    term_1_3: ['1 to 3 months', '%'], term_4_5: ['4 and 5 months', '%'], term_6_11: ['6 to 11 months', '%'], term_12_23: ['12 to 17 months', '%'], term_18_23: ['18 to 23 months', '%'],
-    term_24: ['24 months and more', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
+    term_1_3: ['Under 3 months', '%'], term_4_5: ['3-month commitment', '%'], term_6_11: ['6-month commitment', '%'], term_12_23: ['12-month commitment', '%'], term_18_23: ['18-month commitment', '%'],
+    term_24: ['24-month commitment', '%'], report_due_days: ['Report due', ' days'], revision_due_days: ['Revision due', ' days'],
     ai_price_in: ['AI input price per million tokens', ''], ai_price_out: ['AI output price per million tokens', ''], ai_price_search: ['AI web search price per thousand searches', ''], meta_checks: ['Meta checks', ''], client_email_on: ['Send by email', ''], reach_allowance_pct: ['Reach allowance', '%'],
     approval_reminder_days: ['Approval reminder', ' days'],
     priority_urgent_hours: ['Urgent deadline', ' hours'], priority_high_hours: ['High deadline', ' hours'], priority_medium_hours: ['Medium deadline', ' hours'],
     task_remind_hours: ['Task reminders', ' hours'], task_start_days: ['Not started reminder', ' days'], task_past_days: ['Past dates on new tasks', ' days'], quote_valid_days: ['Quotation validity', ' days'], details_form_days: ['Details form open', ' days'],
     wa_repeat_hours: ['WhatsApp sent again', ' hours'], quote_wa_day: ['Website quotations on WhatsApp', ' per day'],
-    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'],
+    health_keep_months: ['Health check-ins kept', ' months'], health_leaver_months: ['Leavers\' health data kept', ' months'], abroad_days: ['Overseas approval', ' days'], abroad_remind_hours: ['Overseas reminder', ' hours'], hiring_invite_days: ['Interview times within', ' days'], hiring_link_days: ['Candidate link open', ' days'], hiring_pool_months: ['Talent pool kept', ' months'], hiring_keep_months: ['Closed candidates kept', ' months'],
     analytics_from: ['Analytics counts from', ''], analytics_change_pct: ['Analytics change threshold', '%'],
     analytics_churn_pct: ['Analytics quarterly churn alert', '%'],
     bench_cpr_low: ['Property cost per result, tier 1 from', ''], bench_cpr_mid: ['Property cost per result, tier 2 from', ''],
@@ -3478,6 +3495,8 @@ function cardSlugFree(name, self, email) {
           (k === 'task_remind_hours' && (v < 0 || v > 24 || v % 1)) || (k === 'task_start_days' && (v < 0 || v > 30 || v % 1)) || (k === 'task_past_days' && (v < 0 || v > 365 || v % 1)) || ((k === 'quote_valid_days' || k === 'details_form_days') && (v < 1 || v > 90 || v % 1)) ||
           (k === 'wa_repeat_hours' && (v < 0 || v > 168 || v % 1)) || (k === 'quote_wa_day' && (v < 0 || v > 500 || v % 1)) ||
           (k === 'health_keep_months' && (v < 6 || v > 120 || v % 1)) || (k === 'health_leaver_months' && (v < 1 || v > 60 || v % 1)) || (k === 'abroad_days' && (v < 1 || v > 30 || v % 1)) || (k === 'abroad_remind_hours' && (v < 0 || v > 24 || v % 1)) ||
+          (k === 'hiring_invite_days' && (v < 1 || v > 14 || v % 1)) || (k === 'hiring_link_days' && (v < 7 || v > 90 || v % 1)) ||
+          (k === 'hiring_pool_months' && (v < 1 || v > 24 || v % 1)) || (k === 'hiring_keep_months' && (v < 1 || v > 36 || v % 1)) ||
           (k === 'analytics_from' && (v < 202308 || v > 209912 || v % 1 || v % 100 < 1 || v % 100 > 12)) ||
           (k === 'analytics_change_pct' && (v < 1 || v > 50 || v % 1)) ||
           (/^creator_pay_days_/.test(k) && (v < 1 || v > 90 || v % 1)) || (k === 'analytics_churn_pct' && (v < 1 || v > 100 || v % 1)) ||
@@ -3974,6 +3993,298 @@ function cardSlugFree(name, self, email) {
     return read();
   }
 
+  var PRS_SET_SPEC = { payment_by: 'Bank Transfer|Cash|Cheque', wages_type: 'Monthly|Daily|Hourly|Piece Rate', pay_frequency: 'Monthly|Fortnightly',
+    epf_code: '5.5% & 6.5%|9% & RM5|11% & RM5|9% & 13%|5.5% & RM5|0% & 4%|11% & 13%',
+    socso_category: 'Employment Injury Scheme and Invalidity (Category 1)|Employment Injury Scheme (Category 2)',
+    tax_status: 'Resident|Non-Resident|Return Expert Program|Knowledge Worker (Iskandar)|Position of C Suite',
+    socso_status: 'New Employee|Resigned|Pass Away|On SOCSO Medical Leave|On No-paid Leave',
+    entitlement_group: '*', calendar: '*', branch: '*', eclaim: '0|1', eleave: '0|1', pay_eis: '0|1', pay_hrdf: '0|1',
+    epf_borne: '0|1', socso_borne: '0|1', eis_borne: '0|1', tax_by_employer: '0|1', socso_eis_relief: '0|1', skbbk_exempted: '0|1' };
+  function prsFields() {
+    var P = window.ADspacePersonnel;
+    var o = {};
+    ((P && P.FIELDS) || []).forEach(function (f) { o[f[1]] = f; });
+    return o;
+  }
+  function prsDb() {
+    DB.personnel_records = DB.personnel_records || [];
+    DB.personnel_salaries = DB.personnel_salaries || [];
+    if (!DB.personnel_settings) DB.personnel_settings = { payment_by: 'Bank Transfer', wages_type: 'Monthly', pay_frequency: 'Monthly',
+      epf_code: '11% & 13%', socso_category: 'Employment Injury Scheme and Invalidity (Category 1)', tax_status: 'Resident',
+      socso_status: 'New Employee', entitlement_group: 'STANDARD', calendar: 'DEFAULT', branch: 'JHB', eclaim: '1', eleave: '1',
+      pay_eis: '1', pay_hrdf: '0', epf_borne: '0', socso_borne: '0', eis_borne: '0', tax_by_employer: '0', socso_eis_relief: '1', skbbk_exempted: '0' };
+  }
+  function prsClean(d) {
+    var F = prsFields(), out = {};
+    if (!d || typeof d !== 'object' || Array.isArray(d)) return { error: 'bad-field', field: null };
+    var keys = Object.keys(d);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i], v = d[k], f = F[k];
+      if (!f) return { error: 'bad-field', field: k };
+      if (v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)) continue;
+      var kind = f[3], parts = kind.split(':'), bad = { error: 'bad-field', field: k };
+      if (parts[0] === 'b') { if (typeof v !== 'boolean') return bad; out[k] = v; continue; }
+      if (parts[0] === 'i') { if (typeof v !== 'number' || v % 1 || v < +parts[1] || v > +parts[2]) return bad; out[k] = v; continue; }
+      if (parts[0] === 'm') {
+        var list = kind.slice(2).split('|');
+        if (!Array.isArray(v) || v.some(function (x) { return list.indexOf(x) < 0; })) return bad;
+        out[k] = v.filter(function (x, j) { return v.indexOf(x) === j; }).sort(); continue;
+      }
+      if (typeof v !== 'string') return bad;
+      var s = v.replace(/[\r\n\t]+/g, ' ').trim();
+      if (!s) continue;
+      if (parts[0] === 't') { if (s.length > +parts[1] || /[<>]/.test(s)) return bad; }
+      else if (parts[0] === 'e') { if (kind.slice(2).split('|').indexOf(s) < 0) return bad; }
+      else if (parts[0] === 'd') { if (!/^(19|20)\d{2}-\d{2}-\d{2}$/.test(s) || isNaN(Date.parse(s + 'T00:00:00Z'))) return bad; }
+      else if (parts[0] === 'y') { if (!/^(19|20)\d{2}$/.test(s)) return bad; }
+      else if (parts[0] === 'mo') { if (!/^(19|20)\d{2}-(0[1-9]|1[0-2])$/.test(s)) return bad; }
+      else return bad;
+      out[k] = s;
+    }
+    return { ok: true, data: out };
+  }
+  function prsMissing(d) {
+    var F = prsFields();
+    var miss = Object.keys(F).filter(function (k) { return F[k][4] && !d[k]; }).sort();
+    if (!d.nric && !d.passport) miss.push('nric');
+    if (d.marital === 'Married' && !d.spouse_name) miss.push('spouse_name');
+    return miss;
+  }
+  function prsConfirm(join, months) {
+    if (!join || months == null) return null;
+    var p = join.split('-').map(Number), d = new Date(Date.UTC(p[0], p[1] - 1 + months, p[2]));
+    if (d.getUTCDate() !== p[2]) d = new Date(Date.UTC(p[0], p[1] + months, 0));
+    return d.toISOString().slice(0, 10);
+  }
+  function prsRow(id, make) {
+    prsDb();
+    var r = DB.personnel_records.filter(function (x) { return x.team_member_id === id; })[0];
+    if (!r && make) { r = { team_member_id: id, data: {}, files: {}, updated_at: new Date().toISOString() }; DB.personnel_records.push(r); }
+    return r;
+  }
+  function prsJson(id, team) {
+    var r = prsRow(id) || { data: {}, files: {} }, t = DB.team_members.filter(function (x) { return x.id === id; })[0] || {};
+    var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === id; })[0];
+    var files = {};
+    Object.keys(r.files || {}).forEach(function (k) { files[k] = { at: r.files[k].at, type: r.files[k].type }; });
+    return { ok: true, member: id, name: t.name, data: JSON.parse(JSON.stringify(r.data || {})), files: files,
+      consent_at: r.consent_at || null, declared_name: r.declared_name || null, declared_at: r.declared_at || null,
+      requested_at: r.requested_at || null, updated_at: r.updated_at || null,
+      updated_by: r.updated_by ? (DB.team_members.filter(function (x) { return x.id === r.updated_by; })[0] || {}).name : null,
+      join_date: r.join_date || null, employee_status: r.employee_status || null, employee_type: r.employee_type || null,
+      probation_months: r.probation_months == null ? null : r.probation_months, contract_end: r.contract_end || null,
+      confirm_date: prsConfirm(r.join_date, r.probation_months), superior_id: team ? r.superior_id || null : null,
+      salary_set: team ? Boolean(s && (s.probation != null || s.confirmed != null)) : null, missing: prsMissing(r.data || {}) };
+  }
+  function prsChanged(a, b) {
+    var F = prsFields();
+    return Object.keys(F).sort().filter(function (k) { return JSON.stringify((a || {})[k]) !== JSON.stringify((b || {})[k]); })
+      .map(function (k) { return F[k][2]; }).join(', ');
+  }
+  function prsCheck(token) {
+    var m = opsMe();
+    if (!m) return 'not-team';
+    if (!opsGranted('team.personnel', 'work')) return 'denied';
+    if (!DB.perf_code) return 'no-code';
+    var u = (DB.perf_unlocks || []).filter(function (x) { return x.token === token && x.team_member_id === m.id && x.expires > Date.now(); })[0];
+    if (!u) return 'code-needed';
+    u.expires = Date.now() + 15 * 60000;
+    return null;
+  }
+  function prsFileMember(member, fresh) {
+    var m = opsMe();
+    if (!m) return null;
+    if (!member) return fresh ? m.id : null;
+    if (!opsGranted('team.personnel', 'work')) return null;
+    var t = DB.team_members.filter(function (x) { return x.id === member && !x.erased_at; })[0];
+    return t ? t.id : null;
+  }
+  var PRS_FILE_WORD = { nric_front: 'NRIC (front)', nric_back: 'NRIC (back)', photo: 'Photograph' };
+  function personnelRpc(name, a, fresh) {
+    prsDb();
+    var m = opsMe(), nowIso = new Date().toISOString();
+    var who = function (id) { return DB.team_members.filter(function (x) { return x.id === id; })[0]; };
+    var part = opsGranted('team.personnel', 'work');
+    if (name === 'personnel_unlock') {
+      if (!m) return { error: 'not-team' };
+      if (!part) return { error: 'denied' };
+      if (!DB.perf_code) return { error: 'no-code' };
+      if (a.p_code !== DB.perf_code) return { error: 'wrong-code', left: 4 };
+      var tok = 'tok' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+      DB.perf_unlocks = DB.perf_unlocks || [];
+      DB.perf_unlocks.push({ token: tok, team_member_id: m.id, expires: Date.now() + 15 * 60000 });
+      return { token: tok, expires_at: new Date(Date.now() + 15 * 60000).toISOString() };
+    }
+    if (name === 'personnel_get') {
+      if (!part) return { error: 'denied' };
+      if (!who(a.p_member)) return { error: 'not-found' };
+      return prsJson(a.p_member, true);
+    }
+    if (name === 'personnel_mine') {
+      if (!m) return { error: 'not-team' };
+      if (!fresh) return { error: 'code-needed' };
+      return prsJson(m.id, false);
+    }
+    if (name === 'personnel_save' || name === 'personnel_save_mine') {
+      var own = name === 'personnel_save_mine', id;
+      if (own) { if (!m) return { error: 'not-team' }; if (!fresh) return { error: 'code-needed' }; id = m.id; }
+      else {
+        if (!part) return { error: 'denied' };
+        var t0 = who(a.p_member);
+        if (!t0) return { error: 'not-found' };
+        if (t0.erased_at) return { error: 'erased' };
+        id = t0.id;
+      }
+      var c = prsClean(a.p_data);
+      if (c.error) return c;
+      if (own) {
+        var miss = prsMissing(c.data);
+        if (miss.length) return { error: 'incomplete', missing: miss };
+        if (!a.p_consent) return { error: 'no-consent' };
+        var nm = String(a.p_name || '').replace(/\s+/g, ' ').trim();
+        if (nm.length < 2 || nm.length > 100) return { error: 'bad-name' };
+      }
+      var r = prsRow(id, true);
+      if (a.p_expected && r.updated_at && Date.parse(r.updated_at) > Date.parse(a.p_expected) + 1) return { error: 'stale', record: prsJson(id, !own) };
+      var what = prsChanged(r.data, c.data);
+      if (!own && !what) return prsJson(id, true);
+      r.data = c.data; r.updated_at = nowIso; r.updated_by = m.id;
+      if (own) { r.consent_at = nowIso; r.declared_name = String(a.p_name).replace(/\s+/g, ' ').trim(); r.declared_at = nowIso; }
+      logAct('team.edited', who(id).name, own ? 'Employee record submitted' + (what ? ': ' + what : '') : 'Employee record: ' + what);
+      return prsJson(id, !own);
+    }
+    if (name === 'personnel_terms_set') {
+      if (!part) return { error: 'denied' };
+      var t1 = who(a.p_member);
+      if (!t1) return { error: 'not-found' };
+      if (a.p_status != null && ['Management of the organization', 'Permanent', 'Contract', 'Part time', 'Interns', 'Others'].indexOf(a.p_status) < 0) return { error: 'bad-status' };
+      if (a.p_type != null && ['FT', 'PT', 'CT'].indexOf(a.p_type) < 0) return { error: 'bad-type' };
+      if (a.p_probation != null && (a.p_probation < 0 || a.p_probation > 12)) return { error: 'bad-probation' };
+      if (a.p_join != null && (a.p_join < '2023-08-14' || a.p_join > '2099-12-31')) return { error: 'bad-date' };
+      if (a.p_contract_end && a.p_join && a.p_contract_end <= a.p_join) return { error: 'bad-end' };
+      if (a.p_superior && (a.p_superior === a.p_member || !(who(a.p_superior) || {}).active)) return { error: 'bad-superior' };
+      var r1 = prsRow(t1.id, true), moves = [];
+      [['join_date', 'p_join', 'Join date'], ['employee_status', 'p_status', 'Employee status'], ['employee_type', 'p_type', 'Employee type'],
+       ['probation_months', 'p_probation', 'Probation'], ['contract_end', 'p_contract_end', 'End of contract'], ['superior_id', 'p_superior', 'Reports to']]
+        .forEach(function (x) { var nv = a[x[1]] == null ? null : a[x[1]]; if ((r1[x[0]] == null ? null : r1[x[0]]) !== nv) moves.push(x[2]); });
+      if (!moves.length) return prsJson(t1.id, true);
+      if (r1.join_date !== (a.p_join || null) || r1.probation_months !== (a.p_probation == null ? null : a.p_probation)) r1.probation_told_at = null;
+      r1.join_date = a.p_join || null; r1.employee_status = a.p_status || null; r1.employee_type = a.p_type || null;
+      r1.probation_months = a.p_probation == null ? null : a.p_probation; r1.contract_end = a.p_contract_end || null;
+      r1.superior_id = a.p_superior || null; r1.updated_at = nowIso; r1.updated_by = m.id;
+      logAct('team.edited', t1.name, 'Employment terms: ' + moves.join(', '));
+      return prsJson(t1.id, true);
+    }
+    if (name === 'personnel_request') {
+      if (!part) return { error: 'denied' };
+      var t2 = who(a.p_member);
+      if (!t2) return { error: 'not-found' };
+      if (!t2.active || t2.system) return { error: 'inactive' };
+      if (t2.id === m.id) return { error: 'own' };
+      var r2 = prsRow(t2.id, true);
+      r2.requested_at = nowIso; r2.requested_by = m.id;
+      perfNotify(t2.id, 'personnel.request', 'Please complete your employee record in My records.', 'personnel.request:' + t2.id + ':' + nowIso.slice(0, 10));
+      logAct('team.edited', t2.name, 'Employee record requested');
+      return { ok: true, requested_at: nowIso };
+    }
+    if (name === 'personnel_file_member') return prsFileMember(a.p_member, fresh);
+    if (name === 'personnel_file_set' || name === 'personnel_file_remove' || name === 'personnel_file_key') {
+      var w = prsFileMember(a.p_member, fresh);
+      if (!w) return { error: 'denied' };
+      if (['nric_front', 'nric_back', 'photo'].indexOf(a.p_kind) < 0) return { error: 'bad-kind' };
+      var r3 = prsRow(w, name === 'personnel_file_set');
+      if (name === 'personnel_file_key') {
+        var fk = r3 && r3.files && r3.files[a.p_kind];
+        return fk ? { key: fk.key, member: w } : { error: 'not-kept' };
+      }
+      if (name === 'personnel_file_set') {
+        var re = new RegExp('^private/personnel/' + w + '/[0-9a-f-]{36}\\.(jpg|png|pdf)$');
+        if (!re.test(a.p_key || '') || (a.p_kind === 'photo' && /\.pdf$/.test(a.p_key))) return { error: 'bad-key' };
+        r3.files = r3.files || {};
+        r3.files[a.p_kind] = { key: a.p_key, at: nowIso, type: a.p_key.split('.').pop() };
+        r3.updated_at = nowIso; r3.updated_by = m.id;
+        logAct('team.edited', who(w).name, 'Employee record: ' + PRS_FILE_WORD[a.p_kind] + ' added');
+      } else {
+        if (!r3 || !r3.files || !r3.files[a.p_kind]) return { error: 'not-found' };
+        delete r3.files[a.p_kind];
+        r3.updated_at = nowIso; r3.updated_by = m.id;
+        logAct('team.edited', who(w).name, 'Employee record: ' + PRS_FILE_WORD[a.p_kind] + ' deleted');
+      }
+      return prsJson(w, w !== m.id);
+    }
+    if (name === 'personnel_salary_get' || name === 'personnel_salary_set') {
+      var e = prsCheck(a.p_token);
+      if (e) return { error: e };
+      var s = DB.personnel_salaries.filter(function (x) { return x.team_member_id === a.p_member; })[0];
+      if (name === 'personnel_salary_get') return { ok: true, probation: s ? s.probation : null, confirmed: s ? s.confirmed : null, updated_at: s ? s.updated_at : null };
+      var t3 = who(a.p_member);
+      if (!t3) return { error: 'not-found' };
+      var okAmt = function (n) { return n == null || (typeof n === 'number' && n >= 0 && n < 1e7); };
+      if (!okAmt(a.p_probation) || !okAmt(a.p_confirmed)) return { error: 'bad-amount' };
+      var rd = function (n) { return n == null ? null : Math.round(n * 100) / 100; };
+      if (!s) { s = { team_member_id: t3.id, probation: null, confirmed: null }; DB.personnel_salaries.push(s); }
+      if (s.probation !== rd(a.p_probation) || s.confirmed !== rd(a.p_confirmed)) {
+        s.probation = rd(a.p_probation); s.confirmed = rd(a.p_confirmed); s.updated_at = nowIso; s.updated_by = m.id;
+        logAct('team.edited', t3.name, 'Salary changed');
+      }
+      return { ok: true, probation: s.probation, confirmed: s.confirmed, updated_at: s.updated_at };
+    }
+    if (name === 'personnel_export') {
+      var e2 = prsCheck(a.p_token);
+      if (e2) return { error: e2 };
+      var today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+      var rows = DB.team_members.filter(function (t) { return t.active !== false && !t.system && !t.removed_at; })
+        .sort(function (x, y) { return String(x.staff_code || '~' + x.name).localeCompare(String(y.staff_code || '~' + y.name), 'en', { numeric: true }); })
+        .map(function (t) {
+          var r4 = prsRow(t.id) || {}, s4 = DB.personnel_salaries.filter(function (x) { return x.team_member_id === t.id; })[0] || {};
+          var dep = (DB.departments || []).filter(function (d) { return d.key === t.department; })[0];
+          var cd = prsConfirm(r4.join_date, r4.probation_months);
+          var sup = r4.superior_id && who(r4.superior_id);
+          return { member: t.id, code: t.staff_code || null, name: t.name, designation: t.designation || null, email: t.email,
+            department: t.department || null, department_code: dep ? dep.ac_code || null : null, active: true,
+            data: JSON.parse(JSON.stringify(r4.data || {})), join_date: r4.join_date || null, confirm_date: cd,
+            employee_status: r4.employee_status || null, employee_type: r4.employee_type || null, contract_end: r4.contract_end || null,
+            superior_code: sup ? sup.staff_code || null : null,
+            basic_rate: s4.confirmed != null && (!cd || cd <= today) ? s4.confirmed : (s4.probation != null ? s4.probation : (s4.confirmed == null ? null : s4.confirmed)) };
+        });
+      logAct('team.changed', 'AutoCount HRMS', 'Downloaded for AutoCount: ' + rows.length + ' colleagues');
+      return { ok: true, rows: rows, settings: JSON.parse(JSON.stringify(DB.personnel_settings)) };
+    }
+    if (name === 'personnel_settings_get') {
+      if (!(opsGranted('team.settings', 'work') || part)) return { error: 'denied' };
+      return { ok: true, values: JSON.parse(JSON.stringify(DB.personnel_settings)), spec: JSON.parse(JSON.stringify(PRS_SET_SPEC)) };
+    }
+    if (name === 'personnel_settings_set') {
+      if (!opsGranted('team.settings', 'work')) return { error: 'denied' };
+      var vals = a.p_values || {}, mv = [];
+      var ks = Object.keys(vals);
+      for (var i = 0; i < ks.length; i++) {
+        var sp = PRS_SET_SPEC[ks[i]], v = String(vals[ks[i]] == null ? '' : vals[ks[i]]).trim();
+        if (!sp) return { error: 'bad-value', key: ks[i] };
+        if (sp === '*' ? !/^[A-Za-z0-9 ._-]{1,20}$/.test(v) : sp.split('|').indexOf(v) < 0) return { error: 'bad-value', key: ks[i] };
+      }
+      ks.forEach(function (k) {
+        var v = String(vals[k]).trim();
+        if (DB.personnel_settings[k] !== v) { mv.push(k + ': ' + DB.personnel_settings[k] + ' → ' + v); DB.personnel_settings[k] = v; }
+      });
+      if (mv.length) logAct('team.changed', 'AutoCount HRMS', mv.join(' · '));
+      return personnelRpc('personnel_settings_get', {}, fresh);
+    }
+    if (name === 'department_ac_code_set') {
+      if (!opsGranted('team.settings', 'work')) return { error: 'denied' };
+      var d = (DB.departments || []).filter(function (x) { return x.key === a.p_key; })[0];
+      if (!d) return { error: 'not-found' };
+      var code = String(a.p_code || '').trim().toUpperCase() || null;
+      if (code && !/^[A-Z0-9]{2,10}$/.test(code)) return { error: 'bad-code' };
+      if (code && DB.departments.some(function (x) { return x.ac_code === code && x.key !== a.p_key; })) return { error: 'taken' };
+      if ((d.ac_code || null) !== code) {
+        logAct('team.changed', 'Departments', d.name + ' · AutoCount code: ' + (d.ac_code || 'not set') + ' → ' + (code || 'not set'));
+        d.ac_code = code;
+      }
+      return { ok: true };
+    }
+    return { error: 'not-found' };
+  }
   function perfRpc(name, a) {
     perfDb();
     if (RW_NAMES.indexOf(name) > -1) return perfRewardsRpc(name, a);
@@ -4566,7 +4877,7 @@ function cardSlugFree(name, self, email) {
   var GRANTED_PARTS = ['ops.all', 'ops.reports', 'ops.workflows', 'ops.time', 'ops.numbering', 'ops.override',
     'team.performance', 'team.perfadmin', 'team.settings', 'team.upgrade', 'team.invite', 'team.handbook', 'team.announce',
     'team.notice', 'reports.whitelabel', 'reports.transfer', 'reports.ai', 'reports.meta', 'register.types',
-    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay'];
+    'campaigns.files_delete', 'clients.vic', 'suppliers.pay', 'team.analytics', 'campaigns.pay', 'team.personnel', 'team.hiring'];
 
   function notePush(row) {
     if (row && row.kind !== 'jobs.failed' && (DB.team_members || []).some(function (m) { return m.id === row.team_member_id && m.system; })) return;
@@ -9365,7 +9676,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         dOut = !dMe ? { error: 'denied' } : DB.departments.slice().sort(function (a, b) {
           return (a.position - b.position) || (a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1);
         }).map(function (d) {
-          return { key: d.key, name: d.name, active: d.active, in_prize: d.in_prize, criteria: (d.criteria || []).slice(),
+          return { key: d.key, name: d.name, active: d.active, in_prize: d.in_prize, criteria: (d.criteria || []).slice(), ac_code: d.ac_code || null,
             members: DB.team_members.filter(function (t) { return t.department === d.key && t.active; }).length,
 
             in_records: DB.team_members.some(function (t) { return t.department === d.key; }) ||
@@ -9507,6 +9818,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var hout = healthRpc(name, args || {}, hFresh);
       persist();
       return Promise.resolve({ data: hout, error: null });
+    }
+    if (/^personnel_/.test(name) || name === 'department_ac_code_set') {
+      var prr = window.__refuseRpc && window.__refuseRpc[name];
+      if (prr) return Promise.resolve({ data: null, error: { message: prr } });
+      var prFresh = (session && session.amr || []).some(function (x) {
+        return ['otp', 'magiclink', 'webauthn', 'passkey'].indexOf(x.method) > -1 && x.timestamp >= Math.floor(Date.now() / 1000) - 900;
+      });
+      var prOut = personnelRpc(name, args || {}, prFresh);
+      persist();
+      return Promise.resolve({ data: prOut, error: null });
     }
     if (/^perf_/.test(name) || name === 'my_letters') {
       var pr = window.__refuseRpc && window.__refuseRpc[name];
@@ -11146,7 +11467,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       };
 
       var qtTermPct = function (set, term) {
-        return Number((term <= 3 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
+        return Number((term <= 2 ? set.term_1_3 : term <= 5 ? set.term_4_5 : term <= 11 ? set.term_6_11 : term <= 17 ? set.term_12_23
           : term <= 23 ? (set.term_18_23 != null ? set.term_18_23 : set.term_12_23) : set.term_24) || 0);
       };
       var qtPrice = function (snap, sel, rates) {
@@ -13590,22 +13911,78 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (/^hiring_/.test(name) || name === 'careers_read') {
+    if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool)$/.test(name)) {
       var hOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var hNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return hNo(window.__refuseRpc[name]);
       DB.hiring_candidates = DB.hiring_candidates || []; DB.hiring_people = DB.hiring_people || []; DB.hiring_events = DB.hiring_events || [];
       var hNowIso = new Date().toISOString();
-      var hDays = 30;
+      var hDays = Number(appSet('hiring_link_days', appToday())) || 30;
       var hKey = function () { var k = ''; while (k.length < 8) k += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31)); return k; };
       var hFind = function (id) { return DB.hiring_candidates.filter(function (x) { return x.id === id; })[0]; };
+      DB.hiring_interviews = DB.hiring_interviews || [];
+      var hWhen = function (iso) { return window.ADspaceClock ? window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso) : iso; };
+      var hIvOf = function (cid) { return DB.hiring_interviews.filter(function (i) { return i.candidate_id === cid && i.state !== 'replaced'; })
+        .sort(function (a, b) { return a.invited_at < b.invited_at ? 1 : -1; }); };
+      var hTell = function (c, kind, title, body) {
+        DB.hiring_people.filter(function (p) { return p.candidate_id === c.id && p.role === 'owner'; }).forEach(function (p) {
+          (DB.ops_notifications = DB.ops_notifications || []).push({ id: nid('n'), team_member_id: p.team_member_id, kind: kind, title: title, body: body,
+            link: 'https://digital.adspace.me/admin/?s=team&tab=hiring&candidate=' + c.id, created_at: new Date().toISOString(), read_at: null });
+        });
+      };
+      if (name === 'careers_pool') {
+        var qk = String(args.p_key || '');
+        var qc = DB.hiring_candidates.filter(function (x) { return x.link_key === qk && !x.removed_at; })[0];
+        if (!qc) return hNo('not_found');
+        if (qc.stage !== 'pool' || qc.pool_consent !== 'asked') return hNo('not-open');
+        if (args.p_yes) { qc.pool_consent = 'yes'; var pu = new Date(); pu.setUTCMonth(pu.getUTCMonth() + (Number(appSet('hiring_pool_months', appToday())) || 12)); qc.pool_until = pu.toISOString(); }
+        else { qc.pool_consent = 'no'; qc.stage = 'closed'; }
+        qc.last_step_at = hNowIso;
+        DB.hiring_events.unshift({ id: nid('he'), candidate_id: qc.id, actor: 'Candidate page', action: 'candidate.decided', detail: args.p_yes ? 'Agreed to the talent pool' : 'Declined the talent pool', created_at: hNowIso });
+        hTell(qc, 'hiring.pool', args.p_yes ? 'A candidate agreed to the talent pool' : 'A candidate declined the talent pool', qc.position + '.');
+        return hOk({});
+      }
+      if (name === 'careers_pick' || name === 'careers_none') {
+        var pk = String(args.p_key || '');
+        if (!/^[a-z0-9]{8}$/.test(pk)) return hNo('not_found');
+        var pc = DB.hiring_candidates.filter(function (x) { return x.link_key === pk && !x.removed_at; })[0];
+        if (!pc) return hNo('not_found');
+        if (Date.parse(pc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
+        var pi = hIvOf(pc.id).filter(function (i) { return i.state === 'invited'; })[0];
+        if (!pi) return hNo('not-open');
+        if (name === 'careers_pick') {
+          var n = Number(args.p_slot);
+          if (!(n >= 1 && n <= pi.slots.length)) return hNo('bad-slot');
+          if (Date.parse(pi.slots[n - 1]) < Date.now()) return hNo('slot-past');
+          pi.state = 'picked'; pi.picked = n; pi.picked_at = hNowIso;
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'Time chosen: ' + hWhen(pi.slots[n - 1]), created_at: hNowIso });
+          hTell(pc, 'hiring.picked', 'A candidate chose an interview time', pc.position + ' · ' + hWhen(pi.slots[n - 1]) + '. Approve it to send the confirmation.');
+        } else {
+          if (String(args.p_note || '').length > 300) return hNo('too-long');
+          pi.state = 'none'; pi.candidate_note = String(args.p_note || '').trim() || null;
+          DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'Other times asked for', created_at: hNowIso });
+          hTell(pc, 'hiring.none', 'A candidate asked for other interview times', pc.position + '. Send new times from the candidate\'s Interview tab.');
+        }
+        pc.last_step_at = hNowIso;
+        return hOk({});
+      }
       if (name === 'careers_read') {
         var ck = String(args.p_key || '');
         if (!/^[a-z0-9]{8}$/.test(ck)) return hNo('not_found');
         var cc = DB.hiring_candidates.filter(function (x) { return x.link_key === ck && !x.removed_at; })[0];
         if (!cc) return hNo('not_found');
         if (Date.parse(cc.last_step_at) + hDays * 864e5 <= Date.now()) return hNo('expired');
-        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || cc.stage === 'pool' ? 'received' : cc.stage, received_at: cc.created_at }, error: null });
+        var ci = hIvOf(cc.id)[0], civ = null;
+        if (ci && ci.state !== 'cancelled') {
+          civ = { state: ci.state, minutes: ci.minutes, mode: ci.mode };
+          if (ci.note) civ.note = ci.note;
+          if (ci.state === 'invited') civ.slots = ci.slots.slice();
+          if (ci.picked) civ.at = ci.slots[ci.picked - 1];
+          if (ci.state === 'confirmed' && ci.meeting_link) civ.link = ci.meeting_link;
+        }
+        if (cc.stage === 'pool' || cc.stage === 'closed') civ = null;
+        var cpool = cc.stage === 'pool' && cc.outcome === 'pool' ? { consent: cc.pool_consent, until: cc.pool_until || undefined, months: Number(appSet('hiring_pool_months', appToday())) || 12 } : undefined;
+        return Promise.resolve({ data: { ok: true, name: cc.name, position: cc.position, stage: cc.stage === 'new' || (cc.stage === 'pool' && !cc.outcome) ? 'received' : cc.stage, received_at: cc.created_at, interview: civ, pool: cpool }, error: null });
       }
       var hMe = opsMe();
       if (!hMe) return hNo('denied');
@@ -13658,8 +14035,202 @@ function opsCodeRange(cid, period, ty, src, seq) {
         hLog(nc.id, 'candidate.added', nc.position + ' · ' + nc.source.charAt(0).toUpperCase() + nc.source.slice(1).replace('_', '-'));
         return hOk({ id: nc.id });
       }
+
+      if (name === 'hiring_busy_may') {
+        return hAdmin || DB.hiring_people.some(function (p) { return p.team_member_id === hMe.id && p.role === 'owner'; }) ? hOk({}) : hNo('denied');
+      }
+      if (/^hiring_(interview_|mail_)/.test(name)) {
+        var iv = DB.hiring_interviews.filter(function (i) { return i.id === args.p_interview; })[0];
+        if (!iv) return hNo('not-found');
+        var ir = hRole(iv.candidate_id), icand = hFind(iv.candidate_id);
+        if (!ir) return hNo('not-found');
+        if (ir !== 'admin' && ir !== 'owner') return hNo('denied');
+        if (name === 'hiring_interview_cancel') {
+          if (iv.state === 'cancelled' || iv.state === 'replaced') return hOk({ same: true });
+          iv.state = 'cancelled'; hLog(iv.candidate_id, 'candidate.interview', 'Interview cancelled');
+          return hOk({ event: iv.meeting_event_id || null, had_meet: !!iv.meeting_event_id });
+        }
+        if (name === 'hiring_interview_approve') {
+          if (iv.state === 'confirmed') return hOk({ same: true });
+          if (iv.state !== 'picked' || !iv.picked) return hNo('not-picked');
+          if (Date.parse(iv.slots[iv.picked - 1]) < Date.now()) return hNo('slot-past');
+          iv.state = 'confirmed'; iv.approved_by = hMe.id; iv.approved_at = hNowIso;
+          if (['new', 'pool', 'invited'].indexOf(icand.stage) > -1) icand.stage = 'interview';
+          icand.last_step_at = hNowIso;
+          hLog(iv.candidate_id, 'candidate.interview', 'Interview approved for ' + hWhen(iv.slots[iv.picked - 1]));
+          return hOk({ mode: iv.mode });
+        }
+        if (name === 'hiring_interview_set_meet') {
+          if (args.p_link && !/^https:\/\/meet\.google\.com\/[a-z0-9-]+$/.test(args.p_link)) return hNo('bad-link');
+          iv.meeting_link = args.p_link || null; iv.meeting_event_id = args.p_event || null;
+          return hOk({});
+        }
+        if (name === 'hiring_interview_meet_prepare') {
+          if (iv.state !== 'confirmed' || iv.mode !== 'online') return hNo('not-confirmed');
+          return Promise.resolve({ data: { id: iv.id, meeting_at: iv.slots[iv.picked - 1], meeting_minutes: iv.minutes, meeting_event_id: iv.meeting_event_id || null,
+            meeting_link: iv.meeting_link || null, position: icand.position }, error: null });
+        }
+        if (name === 'hiring_mail_prepare') {
+          var mk = args.p_kind;
+          if (mk === 'invite' && ['invited', 'none'].indexOf(iv.state) < 0) return hNo('not-open');
+          if (mk === 'confirm' && iv.state !== 'confirmed') return hNo('not-confirmed');
+          if (mk === 'confirm' && iv.mode === 'online' && !iv.meeting_link) return hNo('no-meet');
+          return Promise.resolve({ data: { id: iv.id, kind: mk, to: icand.email, name: icand.name, position: icand.position, key: icand.link_key, mode: iv.mode,
+            minutes: iv.minutes, note: iv.note || null, link: iv.meeting_link || null, times: iv.slots.map(hWhen),
+            when: iv.picked ? hWhen(iv.slots[iv.picked - 1]) : null, sender: hMe.name, reply_to: hMe.email }, error: null });
+        }
+        if (name === 'hiring_mail_done') {
+          iv[args.p_kind + '_mail'] = args.p_status; iv[args.p_kind + '_mail_at'] = hNowIso;
+          hLog(iv.candidate_id, 'candidate.email', (args.p_kind === 'invite' ? 'Invitation' : 'Confirmation') +
+            (args.p_status === 'sent' ? ' emailed' : args.p_status === 'unknown' ? ' emailed, not confirmed' : ' not emailed'));
+          return hOk({});
+        }
+      }
+
+      DB.hiring_scorecards = DB.hiring_scorecards || []; DB.hiring_scores = DB.hiring_scores || []; DB.hiring_files_gone = DB.hiring_files_gone || [];
+      var hCard = function (pos) { var p2 = String(pos || '').trim().toLowerCase(); return DB.hiring_scorecards.filter(function (x) { return x.position.toLowerCase() === p2; })[0] || DB.hiring_scorecards.filter(function (x) { return x.standard; })[0]; };
+      if (name === 'hiring_scorecards_list') {
+        if (!hAdmin) return hNo('denied');
+        return hOk({ rows: DB.hiring_scorecards.slice().sort(function (a, b) { return (b.standard - a.standard) || a.position.toLowerCase().localeCompare(b.position.toLowerCase()); }).map(function (x) { return JSON.parse(JSON.stringify(x)); }) });
+      }
+      if (name === 'hiring_scorecard_save') {
+        if (!hAdmin) return hNo('denied');
+        var cr = (args.p_criteria || []).map(function (x) { return String(x).trim().replace(/\s+/g, ' '); }).filter(Boolean);
+        var lc = cr.map(function (x) { return x.toLowerCase(); });
+        if (cr.length < 3 || cr.length > 8 || cr.some(function (x) { return x.length < 2 || x.length > 60; }) || lc.some(function (x, i) { return lc.indexOf(x) !== i; })) return hNo('bad-criteria');
+        var ex = args.p_id ? DB.hiring_scorecards.filter(function (x) { return x.id === args.p_id; })[0] : null;
+        if (args.p_id && !ex) return hNo('not-found');
+        var ps = ex && ex.standard ? ex.position : String(args.p_position || '').trim().replace(/\s+/g, ' ');
+        if (ps.length < 2 || ps.length > 80) return hNo('bad-position');
+        if (DB.hiring_scorecards.some(function (x) { return x.position.toLowerCase() === ps.toLowerCase() && (!ex || x.id !== ex.id); })) return hNo('taken');
+        if (ex) { ex.position = ps; ex.criteria = cr; ex.updated_at = hNowIso; }
+        else { ex = { id: nid('hsc'), position: ps, criteria: cr, standard: false, updated_at: hNowIso }; DB.hiring_scorecards.push(ex); }
+        return hOk({ id: ex.id });
+      }
+      if (name === 'hiring_scorecard_delete') {
+        if (!hAdmin) return hNo('denied');
+        var dx = DB.hiring_scorecards.filter(function (x) { return x.id === args.p_id; })[0];
+        if (!dx) return hNo('not-found');
+        if (dx.standard) return hNo('standard');
+        DB.hiring_scorecards = DB.hiring_scorecards.filter(function (x) { return x !== dx; });
+        return hOk({});
+      }
+      if (name === 'hiring_files_gone_list') return hAdmin ? hOk({ paths: DB.hiring_files_gone.map(function (x) { return x.path; }) }) : hNo('denied');
+      if (name === 'hiring_files_gone_done') {
+        if (!hAdmin) return hNo('denied');
+        var before = DB.hiring_files_gone.length;
+        DB.hiring_files_gone = DB.hiring_files_gone.filter(function (x) { return (args.p_paths || []).indexOf(x.path) < 0; });
+        return hOk({ done: before - DB.hiring_files_gone.length });
+      }
       var hr = hRole(args.p_id);
       var hc = hFind(args.p_id);
+      if (name === 'hiring_outcome_of') {
+        if (!hr || !hc) return hNo('not-found');
+        var card = hCard(hc.position);
+        return hOk({ role: hr, scorecard: { position: card.position, criteria: card.criteria.slice(), standard: card.standard },
+          scores: DB.hiring_scores.filter(function (x) { return x.candidate_id === hc.id; }).map(function (x) {
+            var vs = Object.keys(x.scores).map(function (k) { return Number(x.scores[k]); });
+            return { id: x.team_member_id, name: hName(x.team_member_id), mine: x.team_member_id === hMe.id, scores: JSON.parse(JSON.stringify(x.scores)),
+              recommend: x.recommend, note: x.note || undefined, updated_at: x.updated_at, total: Math.round(vs.reduce(function (a, b) { return a + b; }, 0) / vs.length * 10) / 10 };
+          }).sort(function (a, b) { return (b.mine - a.mine) || (a.updated_at < b.updated_at ? -1 : 1); }),
+          outcome: JSON.parse(JSON.stringify({ outcome: hc.outcome || undefined, note: hc.outcome_note || undefined, at: hc.outcome_at || undefined,
+            by: hc.outcome_by ? hName(hc.outcome_by) : undefined, pool_consent: hc.pool_consent || undefined, pool_until: hc.pool_until || undefined,
+            mail: hc.outcome_mail || undefined, mail_at: hc.outcome_mail_at || undefined })) });
+      }
+      if (name === 'hiring_score_save') {
+        if (!hr || !hc) return hNo('not-found');
+        if (hc.stage === 'hired' || hc.stage === 'closed') return hNo('closed');
+        if (['proceed', 'pool', 'not'].indexOf(args.p_recommend) < 0) return hNo('bad-recommend');
+        if (String(args.p_note || '').length > 1000) return hNo('too-long');
+        var card2 = hCard(hc.position), clean = {}, miss = null;
+        card2.criteria.forEach(function (k) { var v = (args.p_scores || {})[k]; if ([1, 2, 3, 4, 5].indexOf(v) < 0) miss = miss || k; else clean[k] = v; });
+        if (miss) return hNo('incomplete', { criterion: miss });
+        var mineS = DB.hiring_scores.filter(function (x) { return x.candidate_id === hc.id && x.team_member_id === hMe.id; })[0];
+        if (mineS) Object.assign(mineS, { scores: clean, recommend: args.p_recommend, note: String(args.p_note || '').trim() || null, updated_at: hNowIso });
+        else DB.hiring_scores.push({ candidate_id: hc.id, team_member_id: hMe.id, scores: clean, recommend: args.p_recommend, note: String(args.p_note || '').trim() || null, updated_at: hNowIso });
+        hLog(hc.id, 'candidate.scored', mineS ? 'Scores changed' : 'Scores added');
+        return hOk({});
+      }
+      if (name === 'hiring_score_remove') {
+        if (!hr || !hc) return hNo('not-found');
+        var rs = DB.hiring_scores.filter(function (x) { return x.candidate_id === hc.id && x.team_member_id === hMe.id; })[0];
+        if (!rs) return hNo('not-found');
+        DB.hiring_scores = DB.hiring_scores.filter(function (x) { return x !== rs; });
+        hLog(hc.id, 'candidate.scored', 'Scores removed');
+        return hOk({ scores: rs.scores, recommend: rs.recommend, note: rs.note });
+      }
+      if (name === 'hiring_decide') {
+        if (!hr || !hc) return hNo('not-found');
+        if (hr !== 'admin' && hr !== 'owner') return hNo('denied');
+        var oc = args.p_outcome;
+        if (['proceed', 'pool', 'not', 'reopen'].indexOf(oc) < 0) return hNo('bad-outcome');
+        if (hc.stage === 'hired') return hNo('closed');
+        var was = hc.outcome || null, wnote = hc.outcome_note || null;
+        if (oc === 'reopen') {
+          if (!hc.outcome) return hOk({ same: true });
+          var ivs = DB.hiring_interviews.filter(function (i) { return i.candidate_id === hc.id; });
+          hc.stage = ivs.some(function (i) { return i.state === 'confirmed'; }) ? 'interview' : ivs.some(function (i) { return ['invited', 'picked', 'none'].indexOf(i.state) > -1; }) ? 'invited' : 'new';
+          ['outcome', 'outcome_note', 'outcome_by', 'outcome_at', 'pool_consent', 'pool_until', 'outcome_mail', 'outcome_mail_at'].forEach(function (k) { hc[k] = null; });
+          hc.last_step_at = hNowIso; hLog(hc.id, 'candidate.decided', 'Reopened');
+          return hOk({ was: was, note: wnote });
+        }
+        if (hc.outcome === oc) return hOk({ same: true });
+        hc.stage = oc === 'proceed' ? 'offer' : oc === 'pool' ? 'pool' : 'closed';
+        Object.assign(hc, { outcome: oc, outcome_note: String(args.p_note || '').trim() || null, outcome_by: hMe.id, outcome_at: hNowIso,
+          pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso });
+        if (oc !== 'proceed') DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && ['invited', 'picked', 'none'].indexOf(i.state) > -1) i.state = 'cancelled'; });
+        hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Not proceed');
+        return hOk({ was: was, email: oc !== 'proceed' });
+      }
+      if (name === 'hiring_outcome_mail_prepare') {
+        if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
+        if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
+        return Promise.resolve({ data: { id: hc.id, kind: hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,
+          months: Number(appSet('hiring_pool_months', appToday())) || 12, sender: hMe.name, reply_to: hMe.email }, error: null });
+      }
+      if (name === 'hiring_outcome_mail_done') {
+        if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
+        hc.outcome_mail = args.p_status; hc.outcome_mail_at = hNowIso;
+        hLog(hc.id, 'candidate.email', 'Decision' + (args.p_status === 'sent' ? ' emailed' : args.p_status === 'unknown' ? ' emailed, not confirmed' : ' not emailed'));
+        return hOk({});
+      }
+      if (name === 'hiring_interviews_of') {
+        if (!hr || !hc) return hNo('not-found');
+        return hOk({ rows: hIvOf(hc.id).map(function (i) {
+          var o = JSON.parse(JSON.stringify(i));
+          o.invited_by = hName(i.invited_by); o.approved_by = i.approved_by ? hName(i.approved_by) : undefined;
+          delete o.candidate_id; delete o.idem; delete o.meeting_event_id;
+          return o;
+        }) });
+      }
+      if (name === 'hiring_invite') {
+        if (!hr || !hc) return hNo('not-found');
+        if (hr !== 'admin' && hr !== 'owner') return hNo('denied');
+        if (!/^[A-Za-z0-9-]{8,64}$/.test(String(args.p_idem || ''))) return hNo('bad-request');
+        var again2 = DB.hiring_interviews.filter(function (i) { return i.idem === args.p_idem; })[0];
+        if (again2) return hOk({ id: again2.id, again: true });
+        if (hc.removed_at) return hNo('not-found');
+        if (hc.stage === 'hired' || hc.stage === 'closed') return hNo('closed');
+        var sl = (args.p_slots || []).filter(Boolean).map(function (x) { return new Date(x).toISOString(); }).sort();
+        sl = sl.filter(function (x, i) { return sl.indexOf(x) === i; });
+        if (sl.length < 1 || sl.length > 3) return hNo('bad-slots');
+        if (Date.parse(sl[0]) < Date.now() + 3600000) return hNo('slot-past');
+        if (Date.parse(sl[sl.length - 1]) > Date.now() + 60 * 864e5) return hNo('slot-far');
+        var dk = function (x) { return window.ADspaceClock ? window.ADspaceClock.day(x) : x.slice(0, 10); };
+        var wdays = Number(appSet('hiring_invite_days', appToday())) || 3;
+        if ((Date.parse(dk(sl[sl.length - 1])) - Date.parse(dk(sl[0]))) / 864e5 >= wdays) return hNo('slot-window', { days: wdays });
+        if ([30, 45, 60, 90].indexOf(Number(args.p_minutes)) < 0) return hNo('bad-minutes');
+        if (['online', 'office'].indexOf(args.p_mode) < 0) return hNo('bad-mode');
+        if (String(args.p_note || '').length > 500) return hNo('too-long');
+        DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && ['invited', 'picked', 'none'].indexOf(i.state) > -1) i.state = 'replaced'; });
+        var ni = { id: nid('hi'), candidate_id: hc.id, round: hIvOf(hc.id).length + 1, slots: sl, minutes: Number(args.p_minutes), mode: args.p_mode,
+          note: String(args.p_note || '').trim() || null, state: 'invited', idem: args.p_idem, invited_by: hMe.id, invited_at: hNowIso };
+        DB.hiring_interviews.push(ni);
+        if (['new', 'pool', 'invited'].indexOf(hc.stage) > -1) hc.stage = 'invited';
+        hc.last_step_at = hNowIso;
+        hLog(hc.id, 'candidate.invited', sl.length + (sl.length === 1 ? ' time' : ' times') + ' · ' + (ni.mode === 'online' ? 'Google Meet' : 'At the office') + ' · ' + ni.minutes + ' minutes');
+        return hOk({ id: ni.id });
+      }
       if (name === 'hiring_get') {
         if (!hr || !hc) return hNo('not-found');
         var gc = Object.assign(hRow(hc, hr), { email: hc.email, phone: hc.phone || undefined, cv_url: hc.cv_url || undefined, cv_path: hc.cv_path || undefined,
@@ -15045,6 +15616,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
       functions: { invoke: function fnInvoke(name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
 
+        if (name === 'sign-download' && opts && opts.body && opts.body.personnel) {
+          var pfErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
+          return rpc('personnel_file_key', { p_member: opts.body.personnel.member || null, p_kind: opts.body.personnel.kind }).then(function (r) {
+            var d = r.data || {};
+            if (r.error || d.error) return pfErr(d.error === 'not-kept' ? 404 : 403);
+            return fetch('https://s3.test/get/' + d.key).then(function (res) {
+              if (!res.ok) return pfErr(404);
+              return res.blob().then(function (b) { return { data: b, error: null }; });
+            }).catch(function () { return { data: null, error: { name: 'FunctionsFetchError', message: 'Failed to send a request to the Edge Function' } }; });
+          });
+        }
         if (name === 'sign-download' && opts && opts.body && opts.body.reportVersion) {
           var fnErr = function (status) { return { data: null, error: { name: 'FunctionsHttpError', message: 'Edge Function returned a non-2xx status code', status: status } }; };
           return rpc('sm_report_file_key', { p_version: opts.body.reportVersion }).then(function (r) {
@@ -15154,6 +15736,50 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return Promise.resolve({ data: { ok: ok }, error: null });
         }
 
+        if (name === 'meet-create' && opts && opts.body && (opts.body.interviewId || opts.body.action === 'busy')) {
+          var hb = opts.body;
+          if (hb.action === 'busy') {
+            return rpc('hiring_busy_may', {}).then(function (r) {
+              if (r.error || (r.data || {}).error) return { data: { error: 'denied' }, error: null };
+              if (!window.__meet) return { data: { error: 'meet-not-set-up', missing: ['GOOGLE_REFRESH_TOKEN'] }, error: null };
+              return { data: { busy: (window.__meet.busy || []).slice() }, error: null };
+            });
+          }
+          return rpc('hiring_interview_meet_prepare', { p_interview: hb.interviewId }).then(function (r) {
+            var m = r.data || {};
+            if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
+            if (!window.__meet) return { data: { error: 'meet-not-set-up', missing: ['GOOGLE_REFRESH_TOKEN'] }, error: null };
+            if (hb.action === 'delete') return rpc('hiring_interview_set_meet', { p_interview: hb.interviewId, p_link: null, p_event: null }).then(function () { return { data: { deleted: true }, error: null }; });
+            if (window.__meet.clash) return { data: { error: 'slot-taken', start: m.meeting_at, end: new Date(Date.parse(m.meeting_at) + m.meeting_minutes * 60000).toISOString() }, error: null };
+            var hl = window.__meet.link || 'https://meet.google.com/abc-defg-hij', he = 'adhire' + String(hb.interviewId).replace(/-/g, '');
+            window.__meetCalls = (window.__meetCalls || []).concat([{ interview: hb.interviewId, action: hb.action || 'create', at: m.meeting_at }]);
+            return rpc('hiring_interview_set_meet', { p_interview: hb.interviewId, p_link: hl, p_event: he }).then(function () { return { data: { link: hl, event: he }, error: null }; });
+          });
+        }
+
+        if (name === 'hiring-mail' && opts && opts.body && opts.body.kind === 'outcome') {
+          var ho = opts.body;
+          return rpc('hiring_outcome_mail_prepare', { p_id: ho.candidateId }).then(function (r) {
+            var m = r.data || {};
+            if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
+            if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: m.kind, months: m.months }]);
+            return rpc('hiring_outcome_mail_done', { p_id: ho.candidateId, p_status: 'sent', p_error: null }).then(function () { return { data: { ok: true }, error: null }; });
+          });
+        }
+        if (name === 'hiring-mail') {
+          var hm = (opts && opts.body) || {};
+          return rpc('hiring_mail_prepare', { p_interview: hm.interviewId, p_kind: hm.kind }).then(function (r) {
+            var m = r.data || {};
+            if (r.error || m.error) return { data: { error: m.error || 'denied' }, error: null };
+            if (window.__mail === false) return { data: { error: 'mail-not-set-up' }, error: null };
+            var st = window.__mailStatus || 'sent';
+            window.__hireMail = (window.__hireMail || []).concat([{ to: m.to, kind: hm.kind, times: m.times, when: m.when, link: m.link }]);
+            return rpc('hiring_mail_done', { p_interview: hm.interviewId, p_kind: hm.kind, p_status: st, p_error: null }).then(function () {
+              return { data: st === 'sent' ? { ok: true } : { error: st === 'unknown' ? 'unknown' : 'not-sent' }, error: null };
+            });
+          });
+        }
         if (name === 'meet-create' && opts && opts.body && opts.body.touchId) {
 
           var tb2 = opts.body;
@@ -16138,6 +16764,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
           png: 'image/png', webp: 'image/webp', gif: 'image/gif', heic: 'image/heic', heif: 'image/heif',
           avif: 'image/avif', pdf: 'application/pdf', zip: 'application/zip' }[String(bd.ext || '').toLowerCase()];
         if (name === 'sign-upload' && !upType) return upRefuse('bad_extension');
+
+        if (name === 'sign-upload' && bd.purpose === 'personnel') {
+          if (['jpg', 'png', 'pdf'].indexOf(String(bd.ext || '').toLowerCase()) < 0) return upRefuse('bad_extension');
+          if (!(Number(bd.size) >= 1 && Number(bd.size) <= 10485760)) return upRefuse('too_large');
+          return rpc('personnel_file_member', { p_member: bd.memberId || null }).then(function (r) {
+            if (r.error || !r.data || typeof r.data !== 'string') return upRefuse('not_allowed');
+            var ph = function (n) { var o = ''; while (o.length < n) o += Math.random().toString(16).slice(2); return o.slice(0, n); };
+            var pk2 = 'private/personnel/' + r.data + '/' + [ph(8), ph(4), ph(4), ph(4), ph(12)].join('-') + '.' + String(bd.ext).toLowerCase();
+            return { data: { uploadUrl: 'https://s3.test/put/' + pk2, publicUrl: null, key: pk2, contentType: upType }, error: null };
+          });
+        }
         if (bd.creatorCode) {
           var okC = DB.campaign_options.some(function (o) {
             var cr = DB.creators.filter(function (x) { return x.id === o.creator_id; })[0];
