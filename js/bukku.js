@@ -500,8 +500,8 @@
           { name: 'account', label: 'Account', choices: acctChoices, value: c.bill_account_code || '', required: true },
           /* A quotation's advertising budget is invoiced on its own account,
              with no tax (2026-11-17). */
-          { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account code', value: c.budget_account_code || '',
-            placeholder: '3000-01', required: false, note: 'The account code in Bukku\u2019s chart of accounts.' }
+          { name: 'budget', head: 'Quotation invoices', label: 'Advertising budget account', value: c.budget_account_code || '',
+            placeholder: '3000-01', required: false }
         ],
         check: function (v) {
           if (v.client && (v.client === v.supplier || v.client === v.creator)) return 'Choose a different field for the Client ID.';

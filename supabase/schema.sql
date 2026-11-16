@@ -123923,7 +123923,7 @@ begin
     insert into public.activity_log (actor, action, subject, detail)
     values (me.name, 'client.billing', q.brand, q.ref || ' · ' ||
             case when p_kind = 'budget' then 'Advertising budget invoice ' else 'Invoice ' end ||
-            v_num || ' created in Bukku as a draft · cycle ' || p_cycle);
+            v_num || ' created in Bukku as a draft · Month ' || p_cycle);
   end if;
   return jsonb_build_object('ok', true);
 end $$;

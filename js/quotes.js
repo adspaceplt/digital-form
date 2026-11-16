@@ -1120,8 +1120,8 @@
     'not-linked': 'Link this client to Bukku in Billing first.', invoiced: 'This invoice has already been created in Bukku.',
     creating: 'This invoice is being created. Refresh in a few minutes.', 'no-budget-account': 'Set the advertising budget account in Settings, Money, Bukku.',
     nothing: 'Nothing is billed in this cycle.', 'no-tax-code': 'A line\'s SST has no Bukku tax code. Read the tax codes from Bukku in Settings, Money, Tax codes.',
-    'no-fx': 'This quotation has no S$ rate.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
-    'no-product': 'Bukku holds no product of that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku holds no account of that code. Check the code in Settings, Money, Bukku.',
+    'no-fx': 'Set the Singapore dollar rate in Settings, Money, Tax and terms.', 'no-sku': 'A line has no SKU on the Rate Card. Add its SKU in Services.',
+    'no-product': 'Bukku has no product with that SKU. Add it in Bukku first.', 'no-bukku-account': 'Bukku has no account with that code. Check the code in Settings, Money, Bukku.',
     'not-confirmed': 'Bukku did not answer. Check Bukku before creating it again.', removed: 'This quotation has been removed. Restore it first.',
     'bad-request': 'This invoice could not be read. Refresh the page.'
   };
@@ -1130,7 +1130,7 @@
     var k = String((e && e.message) || e || '');
     var w = QI_SAID[k] || said(k);
     if (k === 'no-sku' && d.line) w = d.line + ' has no SKU on the Rate Card. Add its SKU in Services.';
-    if (k === 'no-product' && d.sku) w = 'Bukku holds no product of SKU ' + d.sku + (d.line ? ' (' + d.line + ')' : '') + '. Add it in Bukku first.';
+    if (k === 'no-product' && d.sku) w = 'Bukku has no product with SKU ' + d.sku + (d.line ? ' (' + d.line + ')' : '') + '. Add it in Bukku first.';
     if (k === 'invoiced' && d.number) w = 'Invoice ' + d.number + ' has already been created in Bukku.';
     return w;
   }
@@ -1163,7 +1163,7 @@
     var budget = rows.some(function (x) { return x.kind === 'budget'; });
     var h = '<dl class="ovfacts">' +
       '<dt>Starts</dt><dd>' + (d.start ? esc(qiDay(d.start)) : 'Not set') + '</dd>' +
-      '<dt>Cycles</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>' +
+      '<dt>Months billed</dt><dd>' + esc(String(d.cycles || 1)) + ' month' + (d.cycles === 1 ? '' : 's') + '</dd>' +
       (budget ? '<dt>Advertising budget</dt><dd>' + esc(d.debtor ? (d.debtor.name || d.debtor.code || 'Chosen contact') : 'Billed to the client') +
         (work ? ' <button class="linkbtn" data-qi="debtor" type="button">Change</button>' : '') + '</dd>' : '') +
       '</dl>';
@@ -1203,7 +1203,7 @@
   function qiDebtor() {
     if (!QI) return;
     var me = QI, ctx = me.ctx;
-    window.ADspaceConfirm.ask({ title: 'Advertising budget billed to', go: 'Find', wait: true,
+    window.ADspaceConfirm.ask({ title: 'Bill the advertising budget to', go: 'Find', wait: true,
       fields: [{ name: 'q', label: 'Bukku contact', placeholder: 'Name or registration number', required: false,
         note: 'Leave empty to bill the client\'s own contact.' }] }, function (v) {
       var term = String(v.q || '').trim();
