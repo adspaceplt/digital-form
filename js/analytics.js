@@ -192,7 +192,7 @@
   var memo = {};
   function once(k, f) { return memo[k] || (memo[k] = f().catch(function (e) { delete memo[k]; throw e; })); }
   function rows(r) {
-    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The data could not be loaded.');
+    if (!r || r.error) throw new Error((r && r.error && r.error.message) || '');
     return r.data;
   }
   function clients() {
@@ -271,7 +271,7 @@
 
   // ---- Pieces of a page ----------------------------------------------------------------------
   function fail(host, what, e, again) {
-    UI.failLine(host, what, (e && e.message) || 'The data could not be loaded.', again);
+    UI.failLine(host, what, (e && e.message) || '', again);
   }
   function tiles(box, list) {
     var wrap = document.createElement('div');
