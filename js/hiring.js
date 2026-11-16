@@ -43,7 +43,7 @@
     'slot-far': 'Choose times within the next 60 days.', 'bad-minutes': 'Choose the length.', 'bad-mode': 'Choose Google Meet or At the office.',
     'closed': 'This candidate is no longer in hiring.', 'not-picked': 'The candidate has not chosen a time yet.',
     'not-confirmed': 'Approve the interview first.', 'no-meet': 'Create the Google Meet first.',
-    'mail-not-set-up': 'Email is not set up yet. Please contact an admin.', 'not-sent': 'The email was not sent. Please try again.',
+    'mail-not-set-up': (window.ADspaceWords.line || {}).mailOff || '', 'not-sent': 'The email was not sent. Please try again.',
     'unknown': 'The email may not have been sent. Check with the candidate before sending it again.',
     'slot-taken': 'Another online meeting is booked at this time. Send the candidate new times.',
     'meet-not-set-up': 'Google Meet is not set up yet. Please contact an admin.',
