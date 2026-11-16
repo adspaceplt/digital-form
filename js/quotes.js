@@ -36,6 +36,7 @@
     'bad-ads': 'Enter each platform\'s budget, and the months from 1 to 36.',
     'bad-pay': 'Choose the payment terms.',
     'bad-valid': 'Choose how many days the quotation is valid for.',
+    'bad-title': 'Enter a title of up to 120 characters.', 'bad-order': 'The order of the lines could not be read. Refresh the page.',
     'bad-custom': 'Enter each custom line\'s name, quantity and rate, and its months from 1 to 36.',
     'bad-renewal': 'A line to renew is no longer confirmed. Remove it and choose Renew lines again.',
     'bad-entity': 'That billing entity no longer bills this client. Choose another under Bill to.',
@@ -1095,7 +1096,9 @@
     /* `edits`: a line's quantity, rate and months the team typed, by the
        line's key (2026-10-15, the user: "fully customised for the rates qty
        and months"); priced and kept by the database as typed. */
-    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})), revises: revises || null, editing: editing || null, opener: opener };
+    B = { ctx: ctx, seq: 0, idem: null, plan: sel.plan || null, edits: JSON.parse(JSON.stringify(sel.edits || {})), revises: revises || null, editing: editing || null, opener: opener,
+      /* The order the team arranged the lines in (2026-11-16), by the lines' keys. */
+      order: Array.isArray(sel.order) ? sel.order.slice() : null };
     /* The tax codes a line may take (2026-10-22), drawn once read. */
     MON.taxCodes().then(function (list) {
       if (!B) return;
@@ -1109,6 +1112,7 @@
        backdated): today until changed; its reference takes the date's
        month, and it is priced and valid from it. */
     $('qbDate').value = /^\d{4}-\d{2}-\d{2}$/.test(String(sel.date || '')) ? sel.date : window.ADspaceClock.today(); $('qbDate').max = window.ADspaceClock.today();
+    $('qbHeading').value = String(sel.title || '');
     adsLoad(sel);
     advLoad(sel);
     FX = MON.curOf(ctx.client) === 'SG' ? Number(MON.setting('fx_sgd')) || 0 : null;
@@ -1531,7 +1535,7 @@
       var n = r.freq === 'once' ? null : r.months;
       return { platform: r.platform, freq: r.freq, budget: r.budget, months: n, amount: Math.round(r.budget * (n || 1) * 100) / 100 };
     });
-    var out = { layout: 2, pay_days: sel.pay || 7, valid_days: sel.valid || validDefault(), ads: rows, terms: sel.terms || [],
+    var out = { layout: 2, pay_days: sel.pay || 7, valid_days: sel.valid || validDefault(), ads: rows, terms: sel.terms || [], title: sel.title || null,
       ads_total: Math.round(rows.reduce(function (a, r) { return a + r.amount; }, 0) * 100) / 100 };
     var ent = sel.entity && (B.entities || []).filter(function (x) { return x.id === sel.entity; })[0];
     if (ent) out.bill_to = { entity_id: ent.id, legal_name: ent.legal_name, company_no: ent.company_no, billing_address: ent.billing_address };
@@ -1575,6 +1579,9 @@
     if (Object.keys(B.edits).length) sel.edits = JSON.parse(JSON.stringify(B.edits));
     sel.pay = Number($('qbPay').value) || 7;
     sel.valid = Number($('qbValid').value) || validDefault();
+    var title = $('qbHeading').value.replace(/\s+/g, ' ').trim();
+    if (title) sel.title = title;
+    if (B.order && B.order.length) sel.order = B.order.slice();
     if ($('qbAdOn').checked) sel.ads = adsRead();
     if ($('qbAdv').getAttribute('aria-checked') === 'true') {
       var cus = cusRead();
@@ -1644,6 +1651,8 @@
     if (t.once && !own) out.push(CUR + ' ' + acct(t.once.incl) + ' one-off');
     return out.length ? out.join(' · ') + (MON.sstOf(d.lines, t.sst_pct).on ? ' incl. SST' : '') : '';
   }
+  var UP = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>';
+  var DOWN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
   /* The lines and the totals as the quotation will keep them. */
   function table(d) {
     var t = d.totals || {}, rows = d.lines || [];
@@ -1698,7 +1707,13 @@
            this quotation (2026-11-13, the user: "shouldnt be dead end when
            inside admin"); the card itself changes only when it is
            published. A custom line is written in Advanced. */
-        var own = !!(B && B.edits[l.key] && B.edits[l.key].detail);
+        var own = !!(B && B.edits[l.key] && (B.edits[l.key].detail || B.edits[l.key].name));
+        /* Changed from the Rate Card for this quotation (2026-11-16): its
+           name, its description or its rate, said once on the line. */
+        var edited = l.kind !== 'custom' && (l.list_label != null || l.list_detail != null || l.list_rate != null);
+        var at = rows.indexOf(l);
+        var move = B ? '<button type="button" class="iconbtn qb-move" data-move="-1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move up, ' + l.label) + '"' + (at === 0 ? ' disabled' : '') + '>' + UP + '</button>' +
+          '<button type="button" class="iconbtn qb-move" data-move="1" data-key="' + esc(l.key || '') + '" aria-label="' + esc('Move down, ' + l.label) + '"' + (at === rows.length - 1 ? ' disabled' : '') + '>' + DOWN + '</button>' : '';
         var desc = '';
         if (l.kind !== 'custom' && B) {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
@@ -1706,12 +1721,24 @@
               '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
               '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div>' :
               (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-              '<div class="qb-desc-acts">' + (own ? '<span class="qb-desc-own">Edited</span>' : '') +
-                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit' : 'Add description') + '</button>' +
-                (own ? '<button type="button" class="btn btn-quiet btn-sm qb-desc-card">Use Rate Card</button>' : '') + '</div>') +
+              '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Edited</span>' : '') +
+                '<button type="button" class="btn btn-quiet btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
+                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
+                (own ? '<button type="button" class="btn btn-quiet btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
             '</div>';
-        } else if (incl.length) desc = '<ul class="incl qb-incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
-        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + esc(l.label) + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
+        } else {
+          desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
+            (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+            (B ? '<div class="qb-desc-acts"><span class="qb-moves">' + move + '</span></div>' : '') + '</div>';
+        }
+        /* The line's name, changed for this quotation where it is read. */
+        var naming = B && B.nameKey === l.key && l.kind !== 'custom';
+        var nameCell = naming ?
+          '<input class="input input-sm qb-name-in" type="text" maxlength="120" data-noenter data-nodraft data-key="' + esc(l.key || '') + '" value="' + esc(l.label) + '" aria-label="Name">' +
+          '<span class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-name-cancel" data-key="' + esc(l.key || '') + '">Cancel</button><button type="button" class="btn btn-sm qb-name-done" data-key="' + esc(l.key || '') + '">Done</button></span>' :
+          esc(l.label);
+        if (l.list_label != null) sub.unshift('Rate Card: ' + l.list_label);
+        return '<div class="svc-row qb-row"><span class="svc-name qb-name">' + nameCell + (sub.length ? '<small>' + esc(sub.join(' · ')) + '</small>' : '') + fold + '</span>' +
           desc +
           /* A Rate Card one-off item may be billed Monthly (2026-11-12, the
              user): its frequency beside its tax, the months then in its
@@ -1798,6 +1825,7 @@
     $('qbCard').addEventListener('change', function () { if (B && B.card && this.value !== B.card.version) rebuildOn(this.value, true); });
     $('qbPay').addEventListener('change', on);
     $('qbValid').addEventListener('change', on);
+    $('qbHeading').addEventListener('change', on);
     $('qbAdOn').addEventListener('change', function () {
       if (!B) return;
       $('qbAdBox').hidden = !this.checked;
@@ -1860,6 +1888,50 @@
       if (B && e.target.closest('.qb-val')) { $('qbSave').disabled = true; $('qbPreview').disabled = true; }
     });
     /* A line's description, edited for this quotation (2026-11-13). */
+    /* A line renamed, or moved, for this quotation (2026-11-16). */
+    $('qbLines').addEventListener('click', function (e) {
+      if (!B) return;
+      var mv = e.target.closest('.qb-move');
+      if (mv) {
+        var keys = (B.priced && B.priced.lines || []).map(function (l) { return l.key; });
+        var i = keys.indexOf(mv.getAttribute('data-key')), j = i + Number(mv.getAttribute('data-move'));
+        if (i < 0 || j < 0 || j >= keys.length) return;
+        var tmp = keys[i]; keys[i] = keys[j]; keys[j] = tmp;
+        B.order = keys;
+        preview();
+        return;
+      }
+      var nk = e.target.closest('.qb-name-edit');
+      if (nk) {
+        B.nameKey = nk.closest('.qb-incl').getAttribute('data-key'); B.descKey = null;
+        $('qbLines').innerHTML = table(B.priced);
+        var ni = $('qbLines').querySelector('.qb-name-in');
+        if (ni) { ni.focus(); ni.select(); }
+        return;
+      }
+      if (e.target.closest('.qb-name-cancel')) { B.nameKey = null; $('qbLines').innerHTML = table(B.priced); return; }
+      var nd = e.target.closest('.qb-name-done');
+      if (nd) nameDone(nd.getAttribute('data-key'));
+    });
+    function nameDone(k) {
+      var inp = $('qbLines').querySelector('.qb-name-in');
+      if (!inp) return;
+      var v = inp.value.replace(/\s+/g, ' ').trim();
+      var line = (B.priced.lines || []).filter(function (l) { return l.key === k; })[0] || {};
+      var card = line.list_label != null ? line.list_label : line.label;
+      var e4 = B.edits[k] || {};
+      /* Empty, or the Rate Card's own name, puts back the card's. */
+      if (!v || v === card) delete e4.name; else e4.name = v;
+      if (Object.keys(e4).length) B.edits[k] = e4; else delete B.edits[k];
+      B.nameKey = null;
+      preview();
+    }
+    $('qbLines').addEventListener('keydown', function (e) {
+      var ni = e.target.closest('.qb-name-in');
+      if (!ni || e.isComposing) return;
+      if (e.key === 'Enter') { e.preventDefault(); nameDone(ni.getAttribute('data-key')); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); B.nameKey = null; $('qbLines').innerHTML = table(B.priced); }
+    });
     $('qbLines').addEventListener('click', function (e) {
       var w = e.target.closest('.qb-incl[data-key]');
       if (!w || !B) return;
@@ -1883,7 +1955,7 @@
         B.descKey = null; $('qbMsg').textContent = ''; $('qbMsg').className = 'msg';
         preview();
       } else if (e.target.closest('.qb-desc-card')) {
-        if (B.edits[k]) { delete B.edits[k].detail; if (!Object.keys(B.edits[k]).length) delete B.edits[k]; }
+        if (B.edits[k]) { delete B.edits[k].detail; delete B.edits[k].name; if (!Object.keys(B.edits[k]).length) delete B.edits[k]; }
         preview();
       }
     });

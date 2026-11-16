@@ -9632,6 +9632,7 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-change { justify-self: start; }
 .qs-head { display: grid; gap: 4px; }
 .qs-meta { font-size: 13px; color: var(--ink-mute); }
+.qs-meta.qs-own { color: var(--ink-soft); font-weight: 500; }
 .qs-status .chip-state { font-size: 13px; }
 .qs-table { display: grid; }
 .qs-row {

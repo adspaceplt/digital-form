@@ -10600,3 +10600,14 @@ names, from any of its rows, the default only where none is named. The same
 day the Ads step's head tick ticked one ad: each row's change recounted the
 head tick, which read part-ticked after the first and stopped the loop (the
 Posts step had been fixed so before). `adsreport` holds both.
+
+### 2026-11-16 · A quotation's lines of the team's own
+The user: the quotation is "too tightly controlled"; a client's own
+requirements need a line named, a title and an order of the team's own.
+Build quote now takes Rename under each Rate Card line (the card's name kept
+as `list_label`), a Title (`totals.title`) and Move up / Move down
+(`p_sel.order`, `quote_order` after the custom lines), the figures always
+the database's; a line changed from the Rate Card reads Edited. The new
+field took the id `qbHeading`: `qbTitle` is the sheet's own heading, which
+the first draft reused (caught by the quotes suite reading the sheet title).
+

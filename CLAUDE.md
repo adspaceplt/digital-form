@@ -6921,7 +6921,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   figure back. A line's description is the Rate Card's until Edit under
   it rewrites it for that quotation (the edit's `detail`, one to twelve
   points of 300 at most, the card's kept as `list_detail`; Use Rate Card
-  puts it back; 2026-11-13), which the PDF and /quote/ print. A line may be priced at RM 0, a complimentary line (the
+  puts it back; 2026-11-13), which the PDF and /quote/ print; its name likewise (Rename under it, the edit's `name`, 1 to 120, the card's kept as `list_label`, Use Rate Card putting both back), the quotation a title of its own (`#qbHeading`, `p_sel.title`, 120, kept as `totals.title`, printed under Quotation on the PDF and over /quote/'s reference) and its lines in the team's order (Move up and Move down, `p_sel.order` by the lines' keys, `quote_order`, the figures never moved); a line changed from the Rate Card (name, description or rate) reads Edited (2026-11-16, the user: "too tightly controlled"). A line may be priced at RM 0, a complimentary line (the
   user, 2026-10-19): never refused. Beside a plan it is Include in plan,
   ticked unless the team unticks it (the edit's `incl: false`;
   `quote_adjust` stamps `in_plan`, a monthly line alone, never a one-off,

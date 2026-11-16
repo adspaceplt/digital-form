@@ -630,6 +630,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   hours" fail when the deadline falls just after midnight (`12:06am` read
   against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
 
+- `sql`: "without one it is, as before" (a client's device following a
+  campaign with no passcode) failed once and passed on other runs the same
+  day (2026-11-16); it counts devices an hour, so a run soon after the
+  flood check can meet the hour's limit.
+
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
   the email): mocked up and approved, held (the user, 2026-10-28: "dont
