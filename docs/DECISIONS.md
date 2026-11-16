@@ -10728,3 +10728,24 @@ SEAL-SPEC decision 6, built as the seal's step 2. A quotation is answered only o
 
 ### 2026-11-17 · Quotations in Documents, Decline and Mark withdrawn
 SEAL-SPEC decisions 7 and 8, the seal's step 3. The Register reads quotations from their own table as its first family, the way Letters of Offer are read from `client_documents`, so nothing is copied; its ⋯ downloads only the sealed copy (an unsealed quotation is drawn on the client's record, where its context is loaded). A declined quotation is stored as the team's Cancelled (`status` not_proceeding) with `declined_at` beside it, so every rule that holds a cancelled quotation holds a declined one, and the client and the row read Declined. Withdrawal after signing never deletes and never alters the sealed file (its hash would no longer match); it is a mark on the record, /verify/ and the link. Putting the lines back moves them from Confirmed to To quote and keeps each line's state, so Undo can return them through the confirm guard, which a security-definer function passes. The stand-in's link lookup answers only the `quote_` names its gate lists, which the suite found when Decline answered without writing; the gate now names `decline`. The suite's first selector filled the desk's date box (a text box, DD/MM/YYYY) with the reason: a suite fills a question's field by its own selector, never by a list.
+
+## 2026-11-17 · Access security fixes: groups an admin's, Own clients by id
+
+The user, deciding the access restructure's question 6 ("6 ok"): two holes
+found while mapping the live access were released ahead of the restructure.
+1. Team Full Access could edit a non-admin user group, its access included,
+   so a colleague holding Team Full Access could raise their own group's
+   sections. `roles_admin` now asks `allowed('admin')` and
+   `team_roles_admin_guard` refuses anyone else (`admin-only`); the page
+   draws Edit, Delete and Add group for an admin alone. The granted-part
+   list left the guard: nothing below an admin reaches it.
+2. Own clients only compared the client's Person in charge, a name, with the
+   colleague's name. Names are unique only among colleagues not removed, so a
+   newcomer sharing a removed colleague's name saw every client still named
+   after them. `clients.owner_id` is stamped from the name by trigger
+   `client_owner_id_stamp` (named to run before `client_scope_guard`, which
+   reads it), kept while that colleague holds the name, and the rule
+   (`client_row_seen_by`, now five arguments) and its 13 readers compare ids.
+   A rename is carried by id. The four-argument rule and the unused
+   three-argument `client_row_seen` are dropped in the SQL Editor part, so a
+   later restatement cannot fall back to a name.
