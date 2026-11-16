@@ -10619,4 +10619,13 @@ saves `hiring_link_days` with its Settings row: `app_settings_set` is
 restated by several sessions and is held by the connector. `team_roles_admin_guard`
 holds `team.personnel` too, so the Personnel release's restatement and this
 one agree whichever merges first.
+### 2026-11-16 · A quotation's lines of the team's own
+The user: the quotation is "too tightly controlled"; a client's own
+requirements need a line named, a title and an order of the team's own.
+Build quote now takes Rename under each Rate Card line (the card's name kept
+as `list_label`), a Title (`totals.title`) and Move up / Move down
+(`p_sel.order`, `quote_order` after the custom lines), the figures always
+the database's; a line changed from the Rate Card reads Changed, the Rate Card draft's own word. The new
+field took the id `qbHeading`: `qbTitle` is the sheet's own heading, which
+the first draft reused (caught by the quotes suite reading the sheet title).
 

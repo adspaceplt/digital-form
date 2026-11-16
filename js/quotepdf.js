@@ -176,6 +176,11 @@
     };
     if (t.layout === 2) {
       y -= 6; text('Quotation', M, y, H1, reg); y -= 22;
+      /* The quotation's own title (2026-11-16), under the heading. */
+      if (t.title) {
+        wrap(String(t.title), FULL, 12, reg).forEach(function (ln) { text(ln, M, y, 12, reg); y -= 15; });
+        y -= 7;
+      }
       var facts = [['Quotation no.', q.ref], ['Date', longDay(dayOf(q.issued_at))],
         ['Prepared for', buyer], ['Payment term', 'NET ' + (Number(t.pay_days) || 7)]];
       if (t.month) facts.push(['Minimum term', t.term + (Number(t.term) === 1 ? ' month' : ' months')]);
