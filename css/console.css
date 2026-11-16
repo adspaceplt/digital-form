@@ -3858,12 +3858,15 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .qb-row { grid-template-columns: minmax(0, 1fr) 64px 112px 84px 112px; grid-template-areas: "name qty rate mo amt" "tax qty rate mo amt"; align-items: center; }
 /* A line's inclusions run under its name, the figures staying on the
    name's line (2026-11-04). */
-.qb-row:has(> .qb-incl) { grid-template-areas: "name qty rate mo amt" "incl . . . ." "tax . . . ."; }
+.qb-row:has(> .qb-incl) { grid-template-areas: "name qty rate mo amt" "incl incl incl incl incl" "tax . . . ."; }
+/* The points keep the name's reading width; the line's actions run the
+   row's, Move up and Move down at its right edge (2026-11-16). */
+.qb-incl > .incl { max-width: 560px; }
 .qb-row > .qb-incl { grid-area: incl; margin-top: 2px; }
 /* A line's description edited for this quotation (2026-11-13). */
-.qb-incl .qb-desc-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 2px 0 0 -10px; }
+.qb-incl .qb-desc-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
 .qb-incl .qb-desc-acts > .btn { min-width: 0; }
-.qb-incl .qb-desc-own { padding-left: 10px; }
+.qb-incl .qb-desc-own { padding-left: 0; }
 .qb-incl .qb-desc-own { font-size: 12px; color: var(--ink-mute); }
 /* Move up and Move down at the actions' right end (2026-11-16). */
 .qb-incl .qb-moves { display: inline-flex; gap: 2px; margin-left: auto; }
@@ -3941,6 +3944,11 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
   .qb-row:has(> .qb-incl) { grid-template-areas: "name name amt amt" "incl incl incl incl" "tax qty rate mo"; }
   .qb-row:has(> .qb-incl):not(:has(> .qb-taxc)) { grid-template-areas: "name name amt amt" "incl incl incl incl" "qty qty rate mo"; }
   .qb-row > .qb-incl { margin-top: -4px; }
+  /* A name being changed takes the line's width, Cancel and Done equal
+     halves under it (2026-11-16). */
+  .qb-row:has(.qb-name-in) > .qb-name { grid-column: 1 / -1; }
+  .qb-row:has(.qb-name-in) > .qb-amt { display: none; }
+  .qb-name .qb-desc-acts > .btn { flex: 1 1 50%; }
   .qb-row.crm-head { display: none; }
   .qb-row > .qb-amt { align-self: start; }
   .qb-row > .qb-taxc, .qb-row > .qb-qty, .qb-row > .qb-rate, .qb-row > .qb-mo { display: flex; flex-direction: column; gap: 4px; min-width: 0; text-align: left; }

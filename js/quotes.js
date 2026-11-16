@@ -1721,10 +1721,10 @@
               '<textarea class="textarea qb-desc" rows="' + Math.max(2, incl.length) + '" data-nodraft aria-label="' + esc('Description, ' + l.label) + '" placeholder="One point per line">' + esc(incl.join('\n')) + '</textarea>' +
               '<div class="qb-desc-acts"><button type="button" class="btn btn-quiet btn-sm qb-desc-cancel">Cancel</button><button type="button" class="btn btn-sm qb-desc-done">Done</button></div>' :
               (incl.length ? '<ul class="incl">' + incl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
-              '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Edited</span>' : '') +
-                '<button type="button" class="btn btn-quiet btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
-                '<button type="button" class="btn btn-quiet btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
-                (own ? '<button type="button" class="btn btn-quiet btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
+              '<div class="qb-desc-acts">' + (edited ? '<span class="qb-desc-own">Changed</span>' : '') +
+                '<button type="button" class="btn btn-sm qb-name-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph('pen') : '') + 'Rename</button>' +
+                '<button type="button" class="btn btn-sm qb-desc-edit">' + (window.ADspaceActs ? window.ADspaceActs.glyph(incl.length ? 'pen' : 'plus') : '') + (incl.length ? 'Edit description' : 'Add description') + '</button>' +
+                (own ? '<button type="button" class="btn btn-sm qb-desc-card">Use Rate Card</button>' : '') + '<span class="qb-moves">' + move + '</span></div>') +
             '</div>';
         } else {
           desc = '<div class="qb-incl" data-key="' + esc(l.key || '') + '">' +
