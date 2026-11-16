@@ -595,6 +595,8 @@
     creator_bills_list: 'p_creator', creator_totals: 'p_creator', creator_payments_queue: 'p_paid_from', creator_earlier_job_set: 'p_option p_ref',
     creator_fee_set: 'p_option p_amount', creator_standard_fee_set: 'p_creator p_amount', creator_bill_prep: 'p_option', creator_bill_done: 'p_option p_number',
     bukku_bill_account_set: 'p_account p_name', bukku_bill_set: 'p_sku p_class p_account p_account_code p_name',
+    bukku_invoice_set: 'p_budget_code', client_ad_debtor_set: 'p_client p_contact p_code p_name',
+    quotation_invoices_of: 'p_id', quotation_invoice_prep: 'p_id p_cycle p_kind', quotation_invoice_done: 'p_id p_cycle p_kind p_bukku p_number p_amount',
     creator_earlier_job_add: 'p_creator p_ref', creator_earlier_job_remove: 'p_id p_restore', creator_bills_take: 'p_creator p_contact p_rows', creator_bills_due: '',
     creator_sheet_get: '', creator_sheet_set: 'p_on p_sheet p_tab', creator_sheet_state: 'p_creator', creator_sheet_claim: 'p_n', creator_sheet_done: 'p_id p_ok p_error',
     department_save: 'p_key p_name p_in_prize p_criteria',
@@ -11445,7 +11447,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return ckOk(ckJson());
       }
     }
-    if (name === 'quote_preview' || /^quotation_/.test(name) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
+    if (name === 'quote_preview' || (/^quotation_/.test(name) && !/^quotation_invoice/.test(name)) || /^quote_(catalogue|website_|proceed$|sign_|opened$|seal_|decline$)/.test(name)) {
       var qtOk = function (d) { persist(); return Promise.resolve({ data: d, error: null }); };
       var qtRef = window.__refuseRpc && window.__refuseRpc[name];
       if (qtRef) return Promise.resolve({ data: null, error: { message: qtRef } });
@@ -13640,7 +13642,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.' + name } });
     }
 
-    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku') {
+    if (/^bukku_/.test(name) || name === 'client_entity_from_bukku' || /^quotation_invoice/.test(name) || name === 'client_ad_debtor_set') {
       var bkOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var bkNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return bkNo(window.__refuseRpc[name]);
@@ -13674,7 +13676,127 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return bkOk({ field_client: DB.bukku_settings.field_client || null, field_supplier: DB.bukku_settings.field_supplier || null,
           field_creator: DB.bukku_settings.field_creator || null, bill_account: DB.bukku_settings.bill_account || null,
           bill_account_name: DB.bukku_settings.bill_account_name || null, bill_item_sku: bkBillSet().bill_item_sku || null,
-          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null });
+          bill_class_code: bkBillSet().bill_class_code || null, bill_account_code: bkBillSet().bill_account_code || null,
+          budget_account_code: DB.bukku_settings.budget_account_code || null });
+      }
+
+      var qiQ = function (id) { return (DB.quotations || []).filter(function (x) { return x.id === id; })[0]; };
+      var qiStart = function (id) {
+        var ds = (DB.client_services || []).filter(function (x) { return x.quotation_id === id && !x.archived_at && x.start_on; })
+          .map(function (x) { return String(x.start_on).length === 7 ? x.start_on + '-01' : String(x.start_on).slice(0, 10); }).sort();
+        return ds[0] || null;
+      };
+      var qiAdd = function (day, n) {
+        var p = day.split('-').map(Number), y = p[0], m = p[1] - 1 + n, d = p[2];
+        y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+        var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+        return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0');
+      };
+      var qiMinus = function (day) { var t = new Date(day + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - 1); return t.toISOString().slice(0, 10); };
+      var qiLines = function (q, cyc, kind) {
+        var tot = q.totals || {}, out = [];
+        if (kind === 'budget') {
+          (tot.ads || []).forEach(function (e) {
+            var mo = (e.freq || 'monthly') === 'monthly', n = Math.max(1, Number(e.months || 1));
+            if ((mo && cyc <= n) || (!mo && cyc === 1)) {
+              var u = Math.round(Number(e.budget != null ? e.budget : e.amount || 0) * 100) / 100;
+              if (u > 0) out.push({ label: 'Advertising budget · ' + ({ meta: 'Meta', tiktok: 'TikTok', google: 'Google', xhs: 'rednote', rednote: 'rednote' }[String(e.platform || '').toLowerCase()] || 'Other'), qty: 1, unit: u, sst: 0 });
+            }
+          });
+          return out;
+        }
+        (q.lines || []).forEach(function (e) {
+          if (e.in_plan) return;
+          var mo = e.basis === 'month', n = Math.max(1, Number(e.months || tot.term || 1));
+          if (!((mo && cyc <= n) || (!mo && cyc === 1))) return;
+          var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
+          var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
+          out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
+            sst: Number(e.sst != null ? e.sst : (tot.sst_pct || 0)), sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null });
+        });
+        return out;
+      };
+      var qiCycles = function (q) {
+        var t = q.totals || {}, m = Number(t.term || 1);
+        (q.lines || []).forEach(function (e) { if (e.basis === 'month') m = Math.max(m, Number(e.months || 1)); });
+        (t.ads || []).forEach(function (e) { if ((e.freq || 'monthly') === 'monthly') m = Math.max(m, Number(e.months || 1)); });
+        return Math.min(36, Math.max(1, m));
+      };
+      DB.quotation_invoices = DB.quotation_invoices || [];
+      DB.client_ad_debtors = DB.client_ad_debtors || [];
+      if (name === 'quotation_invoices_of') {
+        if (!bkMe || !opsAllowed('clients.billing', 'view')) return bkNo('denied');
+        var iq = qiQ(args.p_id);
+        if (!iq || !scopeSeen(iq.client_id, 'view')) return bkNo('not-found');
+        if (!iq.reviewed_at) return bkNo('not-reviewed');
+        var ist = qiStart(iq.id), irows = [];
+        for (var ic = 1; ic <= qiCycles(iq); ic++) {
+          ['service', 'budget'].forEach(function (k) {
+            var ls = qiLines(iq, ic, k);
+            if (!ls.length) return;
+            var made = DB.quotation_invoices.filter(function (x) { return x.quotation_id === iq.id && x.cycle === ic && x.kind === k; })[0];
+            var dd = ist ? qiAdd(ist, ic - 1) : null;
+            irows.push({ cycle: ic, kind: k, date: dd, until: ist ? qiMinus(qiAdd(ist, ic)) : null,
+              amount: ls.reduce(function (t, l) { return t + Math.round(l.qty * l.unit * 100) / 100; }, 0),
+              number: made && made.number || undefined, bukku_id: made && made.bukku_id || undefined });
+          });
+        }
+        var idb = DB.client_ad_debtors.filter(function (x) { return x.client_id === iq.client_id; })[0];
+        return bkOk({ ref: iq.ref, start: ist, cycles: qiCycles(iq), currency: (iq.totals || {}).currency || 'MYR', rows: irows,
+          debtor: idb ? { contact_id: idb.contact_id, code: idb.code, name: idb.name } : null, budget_account: DB.bukku_settings.budget_account_code || null });
+      }
+      if (name === 'quotation_invoice_prep') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var pq = qiQ(args.p_id), pk = args.p_kind, pc = Number(args.p_cycle);
+        if (!/^(service|budget)$/.test(String(pk)) || !(pc >= 1 && pc <= 36)) return bkNo('bad-request');
+        if (!pq || !scopeSeen(pq.client_id, 'work')) return bkNo('not-found');
+        if (!pq.reviewed_at) return bkNo('not-reviewed');
+        if (pq.withdrawn_at) return bkNo('withdrawn');
+        var pst = qiStart(pq.id);
+        if (!pst) return bkNo('no-start');
+        var pls = qiLines(pq, pc, pk);
+        if (!pls.length) return bkNo('nothing');
+        if (pk === 'budget' && !DB.bukku_settings.budget_account_code) return bkNo('no-budget-account');
+        var pdb = pk === 'budget' ? DB.client_ad_debtors.filter(function (x) { return x.client_id === pq.client_id; })[0] : null;
+        var plk = (DB.bukku_links || []).filter(function (l) { return l.kind === 'client' && l.record_id === pq.client_id; })[0];
+        var pcon = pdb ? pdb.contact_id : plk ? plk.contact_id : null;
+        if (!pcon) return bkNo('not-linked');
+        var pr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === pq.id && x.cycle === pc && x.kind === pk; })[0];
+        if (pr && pr.number) return bkNo('invoiced', { number: pr.number });
+        if (pr && pr.claimed_at && Date.now() - Date.parse(pr.claimed_at) < 600000) return bkNo('creating');
+        if (!pr) { pr = { quotation_id: pq.id, cycle: pc, kind: pk }; DB.quotation_invoices.push(pr); }
+        pr.claimed_at = new Date().toISOString();
+        var pday = qiAdd(pst, pc - 1);
+        return bkOk({ contact_id: pcon, ref: (pq.ref + ' · ' + pday + (pk === 'budget' ? ' · Ads' : '')).slice(0, 50), date: pday, kind: pk, lines: pls,
+          currency: (pq.totals || {}).currency === 'SGD' ? 'SGD' : 'MYR', fx: 1, account_code: pk === 'budget' ? DB.bukku_settings.budget_account_code : undefined,
+          description: pq.brand + ' · ' + pq.ref });
+      }
+      if (name === 'quotation_invoice_done') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        var dr = DB.quotation_invoices.filter(function (x) { return x.quotation_id === args.p_id && x.cycle === Number(args.p_cycle) && x.kind === args.p_kind; })[0];
+        if (!dr) return bkOk();
+        dr.claimed_at = null;
+        if (args.p_number && !dr.number) {
+          dr.number = String(args.p_number); dr.bukku_id = args.p_bukku || null; dr.amount = args.p_amount; dr.made_at = new Date().toISOString();
+          var dq = qiQ(args.p_id);
+          DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: 'client.billing', subject: dq ? dq.brand : '', detail: (dq ? dq.ref : '') + ' · ' +
+            (args.p_kind === 'budget' ? 'Advertising budget invoice ' : 'Invoice ') + dr.number + ' created in Bukku as a draft · Month ' + dr.cycle, created_at: new Date().toISOString() });
+        }
+        return bkOk();
+      }
+      if (name === 'client_ad_debtor_set') {
+        if (!bkMe || !opsAllowed('clients.billing', 'work')) return bkNo('denied');
+        if (!scopeSeen(args.p_client, 'work')) return bkNo('not-found');
+        DB.client_ad_debtors = DB.client_ad_debtors.filter(function (x) { return x.client_id !== args.p_client; });
+        if (args.p_contact) DB.client_ad_debtors.push({ client_id: args.p_client, contact_id: Number(args.p_contact), code: args.p_code || null, name: args.p_name || null });
+        return bkOk();
+      }
+      if (name === 'bukku_invoice_set') {
+        if (!bkMe || !opsGranted('team.settings', 'work')) return bkNo('denied');
+        var bic = args.p_budget_code ? String(args.p_budget_code).trim() : null;
+        if (bic && !/^[A-Za-z0-9._\/-]{1,30}$/.test(bic)) return bkNo('bad-account');
+        DB.bukku_settings = Object.assign({}, DB.bukku_settings, { budget_account_code: bic });
+        return bkOk();
       }
 
       if (name === 'bukku_bill_set') {
@@ -16220,6 +16342,21 @@ function opsCodeRange(cid, period, ty, src, seq) {
             return rpc('bukku_config', {}).then(function (r) {
               if (r.data && r.data.error) return { data: r.data, error: null };
               return { data: { ok: true, accounts: bkAccounts() }, error: null };
+            });
+          }
+
+          if (bkb.action === 'invoicecreate') {
+            return rpc('quotation_invoice_prep', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind }).then(function (r) {
+              var p = r.data || {};
+              if (p.error) return { data: p, error: null };
+              var fin = function (num) { return rpc('quotation_invoice_done', { p_id: bkb.quotation, p_cycle: bkb.cycle, p_kind: bkb.kind, p_bukku: num ? 7000 : null, p_number: num, p_amount: 0 }); };
+              if (window.__bukkuDown) return fin(null).then(function () { return { data: { error: 'bukku-unreachable' }, error: null }; });
+              var nosku = bkb.kind === 'service' && (p.lines || []).filter(function (l) { return !l.sku; })[0];
+              if (nosku) return fin(null).then(function () { return { data: { error: 'no-sku', line: nosku.label }, error: null }; });
+              window.__bukkuInvoices = window.__bukkuInvoices || [];
+              var num = 'IV-' + String(9000 + window.__bukkuInvoices.length).padStart(5, '0');
+              window.__bukkuInvoices.push({ number: num, number2: p.ref, contact_id: p.contact_id, lines: p.lines, status: 'draft' });
+              return fin(num).then(function () { return { data: { ok: true, made: num }, error: null }; });
             });
           }
           if (bkb.action === 'createbill') {
