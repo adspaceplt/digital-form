@@ -68,7 +68,7 @@
   /* A read that answers `{ error }` from a function after the page's own
      check passed is a refusal, and a refusal is never drawn as nothing. */
   function rows(r) {
-    if (!r || r.error) throw new Error((r && r.error && r.error.message) || 'The data could not be loaded.');
+    if (!r || r.error) throw new Error((r && r.error && r.error.message) || '');
     if (r.data && r.data.error) throw new Error(r.data.error === 'denied' ? 'You do not have permission to view this. Please ask an admin.' : String(r.data.error));
     return r.data;
   }
@@ -181,7 +181,7 @@
       var spans = [rangeOf(period), prevOf(period)].concat(want6 ? ms.map(function (m) { return { from: m.start, to: m.end }; }) : []);
       var all = db.rpc('ops_reports', { p_ranges: spans.map(function (r) { return { from: r.from.toISOString(), to: r.to.toISOString() }; }) })
         .then(rows).then(function (l) {
-          if (!Array.isArray(l)) throw new Error('The data could not be loaded.');
+          if (!Array.isArray(l)) throw new Error('');
           l.forEach(function (d) { rows({ data: d }); });
           return l;
         });
@@ -195,7 +195,7 @@
   var R = {
     report: function () { return reports().then(function (x) { return x.now; }); },
     reportPrev: function () { return reports().then(function (x) { return x.prev; }); },
-    months: function () { return memo.rep6 || reports().then(function () { return memo.rep6 || Promise.reject(new Error('The data could not be loaded.')); }); },
+    months: function () { return memo.rep6 || reports().then(function () { return memo.rep6 || Promise.reject(new Error('')); }); },
     /* Every client the group reads, once: the sales figures, leads going
        cold, the pipeline and restricted accounts all draw from it. */
     clients: function () {
@@ -568,7 +568,7 @@
     var live = SOURCES.filter(function (s) { return s.can(); });
     return Promise.all(live.map(function (s) {
       return s.load().then(function (rs) { return { rows: rs }; }).catch(function (e) {
-        return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || 'The data could not be loaded.' };
+        return { failed: typeof s.title === 'function' ? s.title() : s.title, why: (e && e.message) || '' };
       });
     })).then(function (all) {
       var out = [], failed = [];
@@ -1004,7 +1004,7 @@
 
   // ---- Drawing ----------------------------------------------------------------------
   function fail(body, title, e, again) {
-    UI.failLine(body, title || 'This card', (e && e.message) || 'The data could not be loaded.', again);
+    UI.failLine(body, title || 'This card', (e && e.message) || '', again);
   }
   function tile(grid, t) {
     var el = document.createElement('article');
@@ -1053,7 +1053,7 @@
         el.querySelector('.ovw-kpi-sub').innerHTML = '';
         var b = document.createElement('button');
         b.type = 'button'; b.className = 'btn btn-quiet btn-sm ovw-kpi-again'; b.textContent = 'Try again';
-        b.setAttribute('aria-label', 'Try again: ' + titleOf(t) + '. ' + ((e && e.message) || 'The data could not be loaded.'));
+        b.setAttribute('aria-label', 'Try again: ' + titleOf(t) + '. ' + ((e && e.message) || ''));
         b.addEventListener('click', function () { el.querySelector('.ovw-kpi-sub').textContent = ''; run(); });
         el.querySelector('.ovw-kpi-sub').appendChild(document.createTextNode('Could not load. '));
         el.querySelector('.ovw-kpi-sub').appendChild(b);
@@ -1874,7 +1874,7 @@
           var b = document.createElement('div');
           card.appendChild(b);
           /* A failed read is never drawn as nothing to do. */
-          if (d.failed.length) UI.failLine(b, d.failed.join(', '), 'The data could not be loaded.', redraw);
+          if (d.failed.length) UI.failLine(b, d.failed.join(', '), '', redraw);
           else UI.emptyLine(b, 'Nothing needs you today.');
           return;
         }
