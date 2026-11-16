@@ -682,7 +682,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   creator emails; Sign-in and codes: Verification code, the one email every
   code the portal sends goes out in (`code_email_template`, its fields
   {name}, {code}, {minutes}, {purpose}, {code} never in the subject,
-  `code_email_template_save` at `team.settings`, read by `quote-request`
+  `code_email_template_save` at `team.settings`, read by `quote-request` and `hiring-mail`
   through `_shared/mail.ts` `codeEmail`; 2026-11-17, SEAL-SPEC decision 9),
   and Supabase's Sign-in code and Invitation listed with no Edit), each saved through its own function, and one editor
   (`#mtEdSheet`): the words at the left, the email as it reads at the right

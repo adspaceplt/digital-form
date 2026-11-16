@@ -19,7 +19,9 @@
  *                                     code to read that document, made by
  *                                     `hiring_doc_code` as the service role
  *                                     and sent to the candidate's own email
- *                                     alone; answered alike whatever befalls.
+ *                                     alone, in the one Verification code
+ *                                     email (`codeEmail`); answered alike
+ *                                     whatever befalls.
  *
  * Every question is asked as the caller (`hiring_mail_prepare`, the part or
  * the candidate's Owner); the address, the words' facts and the link are the
@@ -33,7 +35,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 import { cors, json } from '../_shared/cors.ts';
-import { layout, resend, esc, FONT } from '../_shared/mail.ts';
+import { layout, resend, esc, FONT, codeEmail } from '../_shared/mail.ts';
 
 function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
 const FROM = () => secret('MAIL_CAREERS_FROM') || 'ADspace <noreply-careers@sc.adspace.me>';
@@ -50,18 +52,6 @@ function button(label: string, href: string): string {
 /* The words, as a formal letter (DESIGN.md §6): a fact a paragraph. */
 export function words(m: Record<string, any>): { subject: string; heading: string; body: string; block: string } {
   const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
-  if (m.kind === 'code') {
-    return {
-      subject: 'Your verification code for ' + m.ref,
-      heading: 'Your verification code',
-      body: 'Dear ' + m.name + ',\n\n' +
-        'Please enter the code below on your application page to open your ' + title + ' ' + m.ref + '. The code expires in 15 minutes.\n\n{invoices}\n\n' +
-        'If you did not request this code, please ignore this email.\n\nADspace',
-      block: '<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 24px;"><tr>' +
-        '<td style="background:#f5f5f5;border-radius:10px;padding:14px 22px;font-family:' + FONT + ';font-size:26px;font-weight:600;' +
-        'letter-spacing:6px;color:#1a1a1a;text-align:center;" x-apple-data-detectors="false">' + esc(m.code) + '</td></tr></table>'
-    };
-  }
   if (m.kind === 'doc') {
     return {
       subject: title + ': ' + m.ref,
@@ -148,11 +138,14 @@ async function sendCode(req: Request, b: Record<string, any>, origin: string | n
   if (r.error || !m) return json({ error: 'not-sent' }, 200, origin);
   if (m.error) return json({ error: m.error === 'too-many' ? 'too-many' : 'not_found' }, 200, origin);
   if (!EMAIL.test(String(m.to || m.email || ''))) return json({ error: 'not-sent' }, 200, origin);
-  const w = words(Object.assign({ kind: 'code' }, m));
+  /* The one Verification code email (CLAUDE.md, VERIFICATION CODE
+     TEMPLATE): the team's words, the code in its box, never in the subject. */
+  const tpl = await db.rpc('code_email_template_read');
+  const title = m.doc === 'contract' ? 'Employment Contract' : 'Employment Offer';
+  const mail = codeEmail(tpl.error ? null : (tpl.data as Record<string, string> | null),
+    { name: m.name, code: m.code, minutes: 15, purpose: 'to open your ' + title + ' ' + m.ref });
   const { status } = await resend({
-    from: FROM(), to: [m.email], subject: w.subject,
-    html: layout({ heading: w.heading, body: w.body, block: w.block, preheader: 'Your verification code' }),
-    text: w.body.replace('{invoices}', m.code)
+    from: FROM(), to: [m.email], subject: mail.subject, html: mail.html, text: mail.text
   }, 'hire-code-' + doc + '-' + crypto.randomUUID(), secret('RESEND_API_KEY'));
   return json(status === 'failed' ? { error: 'not-sent' } : { ok: true }, 200, origin);
 }
