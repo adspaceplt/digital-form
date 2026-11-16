@@ -120597,7 +120597,7 @@ begin
   update public.hiring_candidates set last_step_at = now(), updated_at = now() where id = c.id;
   insert into public.hiring_events (candidate_id, actor, action, detail)
   values (c.id, 'Candidate page', 'candidate.interview', 'Time chosen: ' || public.hiring_when(i.slots[p_slot]));
-  perform public.hiring_tell(c.id, 'hiring.picked', 'An interview time was chosen',
+  perform public.hiring_tell(c.id, 'hiring.picked', 'A candidate chose an interview time',
     c.position || ' · ' || public.hiring_when(i.slots[p_slot]) || '. Approve it to send the confirmation.');
   return jsonb_build_object('ok', true);
 end $$;

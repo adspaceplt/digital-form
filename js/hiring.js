@@ -41,7 +41,7 @@
     'bad-request': 'Please refresh the page and try again.',
     'bad-slots': 'Enter one to three times.', 'slot-past': 'Choose a time at least an hour from now.',
     'slot-far': 'Choose times within the next 60 days.', 'bad-minutes': 'Choose the length.', 'bad-mode': 'Choose Google Meet or At the office.',
-    'closed': 'This candidate is no longer in hiring.', 'not-picked': 'The candidate has not chosen a time yet.',
+    'closed': 'This application has been closed.', 'not-picked': 'The candidate has not chosen a time yet.',
     'not-confirmed': 'Approve the interview first.', 'no-meet': 'Create the Google Meet first.',
     'mail-not-set-up': (window.ADspaceWords.line || {}).mailOff || '', 'not-sent': 'The email was not sent. Please try again.',
     'unknown': 'The email may not have been sent. Check with the candidate before sending it again.',
@@ -252,6 +252,7 @@
         return '<div class="readgroups hir-pane" data-pane="' + x[0] + '"' + (x[0] === state.pane ? '' : ' hidden') + '>' + panes[x[0]] + '</div>';
       }).join('') + '</div>';
     paintLog();
+    if ($('hirIvFail')) UI.failLine($('hirIvFail'), 'the interviews', 'Please try again.', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
     wireRec();
@@ -278,7 +279,7 @@
   var MAIL = { sent: 'Emailed', unknown: 'Not confirmed', failed: 'Not emailed' };
   function when(iso) { return window.ADspaceClock.date(iso) + ', ' + window.ADspaceClock.clock(iso); }
   function interviewPane(c, can) {
-    if (state.interviews == null) return '<section class="readgroup"><p class="emptyline">The interviews could not be loaded.</p></section>';
+    if (state.interviews == null) return '<section class="readgroup"><div id="hirIvFail"></div></section>';
     var open = state.interviews.filter(function (i) { return i.state !== 'cancelled'; })[0];
     var invite = can && (!open || open.state === 'none' || open.state === 'confirmed');
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
@@ -359,11 +360,11 @@
         return out;
       };
       window.ADspaceConfirm.ask({ title: 'Invite ' + c.name, go: 'Send invitation', wait: true, fields: f,
-        body: 'The candidate chooses one of these times on their page.',
+        body: 'The candidate will choose one of these times on their page.',
         check: function (v) {
           var s = slots(v);
           if (!s.length) return SAID['bad-slots'];
-          if ([2, 3].some(function (n) { return Boolean(v['d' + n]) !== Boolean(v['t' + n]); })) return 'Enter both the date and the time of each time.';
+          if ([2, 3].some(function (n) { return Boolean(v['d' + n]) !== Boolean(v['t' + n]); })) return 'Enter a date and a time for each interview time.';
           if (s.some(function (t) { return t.getTime() < Date.now() + 3600000; })) return SAID['slot-past'];
           if (String(v.note || '').trim().length > 500) return 'Shorten the note to 500 characters.';
           return '';
@@ -386,8 +387,8 @@
     if (!i) return;
     var t = i.slots[i.picked - 1];
     window.ADspaceConfirm.ask({ title: 'Approve interview?', go: 'Approve', wait: true,
-      body: when(t) + ', ' + i.minutes + ' minutes, ' + (i.mode === 'online' ? 'by Google Meet. A Google Meet is created on the shared calendar' : 'at the office. ' + c.name + ' is emailed the confirmation') +
-        (i.mode === 'online' ? ', and ' + c.name + ' is emailed the confirmation.' : '.') },
+      body: when(t) + ', ' + i.minutes + ' minutes, ' + (i.mode === 'online' ? 'by Google Meet. A Google Meet will be created on the shared calendar' : 'at the office. ' + c.name + ' will be emailed the confirmation') +
+        (i.mode === 'online' ? ', and ' + c.name + ' will be emailed the confirmation.' : '.') },
     function () {
       return rpc('hiring_interview_approve', { p_interview: id }).then(function (r) {
         if (r.error || (r.data || {}).error) return said(r);
@@ -414,7 +415,7 @@
     var i = state.interviews.filter(function (x) { return x.id === id; })[0], c = state.rec;
     if (!i) return;
     window.ADspaceConfirm.ask({ title: 'Cancel interview?', go: 'Cancel interview', tone: 'warn', wait: true,
-      body: (i.meeting_link ? 'Its Google Meet is taken off the shared calendar. ' : '') + 'The candidate is not emailed; tell them, or send new times.' },
+      body: (i.meeting_link ? 'Its Google Meet will be removed from the shared calendar. ' : '') + 'The candidate will not be emailed. Tell the candidate, or send new times.' },
     function () {
       var off = i.meeting_link ? fnCall('meet-create', { interviewId: id, action: 'delete' }) : Promise.resolve({});
       return off.then(function (m) {
@@ -427,8 +428,8 @@
     });
   }
 
-  var WORD = { 'candidate.added': 'Candidate added', 'candidate.invited': 'Invitation sent', 'candidate.interview': 'Interview',
-    'candidate.email': 'Email', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
+  var WORD = { 'candidate.added': 'Candidate added', 'candidate.invited': 'Invitation sent', 'candidate.interview': 'Interview updated',
+    'candidate.email': 'Email to the candidate', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
     'candidate.link': 'Link changed', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored' };
   function paintLog() {
     var host = $('hirLog');

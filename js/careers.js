@@ -22,7 +22,6 @@
   var STATUS = { received: 'Application received', invited: 'Invited to an interview', interview: 'Interview confirmed' };
   var MARK = '<span class="qs-mark" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3.5 8.4l2.9 2.9 6.1-6.6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>';
   function when(iso) { return window.ADspaceClock.date(iso, { long: true }) + ', ' + window.ADspaceClock.clock(iso); }
-  function how(i) { return i.minutes + ' minutes, ' + (i.mode === 'online' ? 'by Google Meet' : 'at our office'); }
   var ORG = window.ADSPACE_ORG || {};
   /* The interview (step B, HR-SPEC.md decision 2): the times offered to
      choose from, or other times asked for; once confirmed, when and where. */
@@ -31,7 +30,7 @@
     var head = '<h2 class="qs-sec-h">Interview</h2>';
     if (i.state === 'invited') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head +
-        '<p class="cr-next">Please choose a time for your interview of ' + esc(how(i)) + '. All times are Malaysia time.</p>' +
+        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'by Google Meet' : 'at our office') + '. Please choose a time. All times are Malaysia time.</p>' +
         (i.note ? '<p class="cr-note">' + esc(i.note) + '</p>' : '') +
         '<fieldset class="cr-picks" aria-label="Interview time">' + (i.slots || []).map(function (t, n) {
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
@@ -43,7 +42,7 @@
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
     }
     if (i.state === 'picked') return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) +
-      '</dd></div><div><dt>Length</dt><dd>' + esc(how(i)) + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Where</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At our office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     if (i.state === 'confirmed') {
       var where = i.mode === 'online'
@@ -80,7 +79,7 @@
     });
     send.addEventListener('click', function () {
       var on = document.querySelector('input[name=crTime]:checked');
-      if (!on) { say('Choose a time.'); return; }
+      if (!on) { say('Please choose a time.'); return; }
       send.disabled = true;
       var ask = on.value === 'none' ? db.rpc('careers_none', { p_key: key, p_note: ($('crNone').value || '').trim() || null })
         : db.rpc('careers_pick', { p_key: key, p_slot: Number(on.value) });

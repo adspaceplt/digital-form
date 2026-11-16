@@ -13939,7 +13939,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (Date.parse(pi.slots[n - 1]) < Date.now()) return hNo('slot-past');
           pi.state = 'picked'; pi.picked = n; pi.picked_at = hNowIso;
           DB.hiring_events.unshift({ id: nid('he'), candidate_id: pc.id, actor: 'Candidate page', action: 'candidate.interview', detail: 'Time chosen: ' + hWhen(pi.slots[n - 1]), created_at: hNowIso });
-          hTell(pc, 'hiring.picked', 'An interview time was chosen', pc.position + ' · ' + hWhen(pi.slots[n - 1]) + '. Approve it to send the confirmation.');
+          hTell(pc, 'hiring.picked', 'A candidate chose an interview time', pc.position + ' · ' + hWhen(pi.slots[n - 1]) + '. Approve it to send the confirmation.');
         } else {
           if (String(args.p_note || '').length > 300) return hNo('too-long');
           pi.state = 'none'; pi.candidate_note = String(args.p_note || '').trim() || null;
