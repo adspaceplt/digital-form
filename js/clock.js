@@ -62,7 +62,7 @@
     var w = wall(v);
     if (!w) return null;
     return { y: w.getUTCFullYear(), mo: w.getUTCMonth(), d: w.getUTCDate(),
-             h: w.getUTCHours(), mi: w.getUTCMinutes(), wd: w.getUTCDay() };
+             h: w.getUTCHours(), mi: w.getUTCMinutes(), s: w.getUTCSeconds(), wd: w.getUTCDay() };
   }
   function dayOf(y, mo, d) {
     var w = new Date(Date.UTC(y, mo, d));
@@ -120,8 +120,9 @@
     var p = parts(v);
     if (!p) return '';
     if (o.h24) return pad(p.h) + ':' + pad(p.mi);
-    if (o.zh) return (p.h < 12 ? '上午' : '下午') + ((p.h % 12) || 12) + ':' + pad(p.mi);
-    return ((p.h % 12) || 12) + ':' + pad(p.mi) + (o.space ? ' ' : '') + (p.h < 12 ? 'am' : 'pm');
+    if (o.zh) return (p.h < 12 ? '上午' : '下午') + ((p.h % 12) || 12) + ':' + pad(p.mi) + (o.sec ? ':' + pad(p.s) : '');
+    /* `sec` adds the seconds, for a signed document's record (10:42:15am). */
+    return ((p.h % 12) || 12) + ':' + pad(p.mi) + (o.sec ? ':' + pad(p.s) : '') + (o.space ? ' ' : '') + (p.h < 12 ? 'am' : 'pm');
   }
   function month(v, o) {
     o = o || {};

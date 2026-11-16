@@ -304,7 +304,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `careers/`, the HIRING section | hiring, hiringsql, team, perfui, search, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `careers/`, the HIRING, HIRING INTERVIEWS and HIRING OUTCOMES sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringsql, hiringmailfn, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED section | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -315,6 +315,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `js/invoices.js`, bukku-sync's `invoices`, `remind` and `deliver`, `_shared/mail.ts`, the OVERDUE INVOICE REMINDERS, INVOICES SENT BY EMAIL, INVOICE RECIPIENTS CHOSEN and INVOICE EMAIL WORDING sections | overdue, invoicesql, bukkufn, mailfn, suppliersql, sql, settings, overview, then `ui` |
 | Tax codes (`tax_codes`, a line's `tax_code`, `ADspaceMoney.sstOf`), the TAX CODES PER LINE and TAX CODES CHOSEN AND DELETED sections | taxcodes, lettersql, sql, quotes, letter, crm, settings, bukkufn |
 | `quote.js`, `quote/`, `supabase/functions/quote-request/`, the QUOTATION WEBSITE section | quotesite, quotes, sql, seo, then `ui` |
+| `js/seal.js`, the SIGNED DOCUMENT SEAL section, `sign-upload` `seal`, `sign-download` `quotation` / `quoteKey` | seal, quotes, quotesite, signupload, signdownloadfn, sql, pdfreal, then `ui` |
 | `supabase/functions/meta-import/`, Import from Meta, the Report audit | metashape, metaimport, audit, smsql, reports, adsreport |
 | `workers/links/` | links |
 | `supabase/functions/caption-draft/`, Write caption | caption, smsql, reports |
@@ -3306,9 +3307,43 @@ Each line is a rule that broke once. Its reason is in the archive.
   SST; an issued letter keeps its snapshot. Account, classification code,
   tax inclusive and a line discount are not taken from Bukku.
 
-### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`)
+### Signed documents (`js/seal.js`, `2026-11-17-signed-seal.sql`; specs/SEAL-SPEC.md)
+- One mechanism for every document a client or candidate signs (quotations
+  now, the Employment Offer and Contract next): `ADspaceSeal` (`device`,
+  `sha256`, `pagesFor`, `addRecord`, `rows`, `panel`, `open`), the
+  `signing_steps` table (`doc_kind`, `step`: `opened`, `code`; RLS on, no
+  policy, no grant) and `seal_device`. Never quotation-only code.
+- A signer's steps keep the time, address, country and the device as the
+  browser reports it (browser, system, screen, time zone, language; never a
+  MAC address): the link read (`quote_opened`, anon, once in six hours an
+  address and device, a hundred a document, never a colleague's or an unsent
+  website quotation's), the code (`quote_sign_code`), the signature
+  (`signed.record.device`).
+- Approving a signed quotation seals it once (`quotation_review` ok, then
+  the reviewer's page): drawn with its Record of this Document as the last
+  page (Document ID, the SHA-256 of the signed pages, Verify with a QR code
+  of `/verify/?s={ref}`, every step to the second GMT+8, Slate Book 9pt in
+  every cell, every foot counting the Record page), stored private
+  (`sign-upload` `seal`), kept by `quotation_seal` (Quotations Work, once;
+  `not-reviewed`, `bad-key`, `bad-sha`, a second answering `kept`) with the
+  whole file's SHA-256 beside the pages'. Never drawn again: every Download,
+  send and Preview hands that file over (`sign-download` `quotation`); one
+  confirmed before, or whose keep failed, is sealed at its next Download by
+  a colleague at Work. Gated on `s3.privateInvoices`.
+- The quotation's ⋯ Record (`#sealSheet`, `quotation_record`, Quotations
+  View): State (Confirmed · sealed with the padlock), Document ID, SHA-256,
+  Verify, and every step to the second (issued, sent on the link, WhatsApp
+  or email, opened, code sent, signed, submitted, sent back, confirmed,
+  sealed).
+- The client's link reads Accepted · awaiting ADspace confirmation with who
+  signed to the second, then Confirmed by ADspace on its day with the
+  Document ID (`quote_seal_state`, anon) and Download signed copy
+  (`sign-download` `quoteKey`, the service role's `quote_seal_key`), the
+  main Download then gone.
+
+### Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `hiring-mail`)
 - Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
-  step A built. Hiring is Team's tab, never a rail section (the user,
+  steps A to C built. Hiring is Team's tab, never a rail section (the user,
   2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
   opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
   away) with Back to the list, an older `?s=hiring` address opening it.
@@ -3341,7 +3376,50 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `/careers/?k=` (`careers_read`, anon): Your application, the candidate
   greeted by their whole name, the position, the day received and Application
   received; never a colleague, a note or an email; English alone. The link
-  ends 30 days after the last step (`hiring_link_days`, saved in step C).
+  ends `hiring_link_days` (30, 7 to 90) after the last step.
+- Interviews (step B, decision 2; no slots system): the part or the Owner
+  invites from the record's Interview tab with one to three times, all
+  within `hiring_invite_days` (3, 1 to 14) of each other, an hour ahead at
+  least and 60 days at most, a length (30, 45, 60 or 90 minutes), Google
+  Meet or At the office and a note (`hiring_invite`, one key a question;
+  `slot-window` naming the days); its question names the online meetings
+  already on the shared calendar, by time alone (`meet-create` `busy`, 15
+  days at most, `hiring_busy_may`). A new invitation replaces one still
+  open. The candidate picks a time on their page, or None of these times
+  with a note (`careers_pick`, `careers_none`, anon, the link's own key;
+  the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
+  name). Approve (`hiring_interview_approve`, the part or the Owner) books
+  an online interview's Google Meet (`meet-create` `interviewId`, the event
+  `adhire{id}` titled Interview · {position}, never the candidate's name),
+  and the candidate moves Invited → Interview. Each step emails the
+  candidate (`hiring-mail`: the invitation with a button to their page, the
+  confirmation with the Meet or the office's address; from
+  `MAIL_CAREERS_FROM`, unset `ADspace <noreply-careers@sc.adspace.me>`,
+  replying to the sender; filed by `hiring_mail_done`, Email again where it
+  failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
+  The page reads the times offered, then the time chosen, then the
+  confirmed time with Join Google Meet or Get directions, never the times
+  not chosen. Settings, Portal, Hiring: Hiring holds the figures
+  (`team.settings`) and Interview scorecards the scorecards (the part).
+- Scores and the decision (step C): everyone on a candidate scores them on
+  the Scores tab against their position's scorecard (`hiring_scorecards`,
+  3 to 8 criteria, one a position, Standard for any other and never
+  deleted; `hiring_scorecard_save` / `_delete` the part's), each criterion
+  1 to 5 with a recommendation and a note (`hiring_score_save`, one a
+  colleague, `incomplete` naming the criterion; Remove with Undo); the tab
+  reads every score, its total and each criterion's average
+  (`hiring_outcome_of`). The part or the Owner decides (`hiring_decide`):
+  Proceed (stage Offer), Keep in talent pool (the candidate asked on their
+  page, `careers_pool`, anon: agreed kept `hiring_pool_months`, 12, from
+  then; declined closed) or Not proceed (closed); Reopen is the way back,
+  Undo where it happened. The decision's note stays with the team; Keep in
+  talent pool and Not proceed email the candidate (`hiring-mail`
+  `outcome`, a tick in the question, Email the candidate where it did not
+  go). `hiring_retention` (pg_cron `hiring-retention`, 03:50 MYT) removes a
+  pool agreement past its end, a pool question unanswered within the link's
+  days, and a closed or removed candidate after `hiring_keep_months` (12),
+  PDPA 2010; their CV files wait in `hiring_files_gone` for the part's
+  console to take out of Storage once a visit.
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 
@@ -8655,7 +8733,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     back the whole run.
 - An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`,
-  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`) is
+  `meta-import`, `caption-draft`, `script-draft`, `wa-send`, `wa-hook`, `brand-analysis`, `quote-request`, `checklist-draft`, `supplier-mail`, `bukku-sync`, `analytics-read`, `creator-mail`, `portal-agent`, `hiring-mail`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30) and compared with the

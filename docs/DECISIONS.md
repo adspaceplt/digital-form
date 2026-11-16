@@ -10664,6 +10664,42 @@ fields take `type: 'number'` and a `check`. `team_roles_admin_guard` names
 DELETE in its body, so its restatement is the SQL Editor's part. Previous
 employers' salaries on the paper form are not asked (decision 10).
 
+### 2026-11-17 — Hiring interviews: three times, the candidate's choice, a colleague's approval (release H2 step B)
+HR-SPEC.md decision 2 asked for no slots system: up to three times within a
+window, the candidate choosing one or asking for others, a colleague
+approving before the confirmation goes. Built as `hiring_interviews` (an
+invitation a row, a new one replacing one still open) with the window
+(`hiring_invite_days`, 3) and the candidate link's days (`hiring_link_days`,
+30, deferred from step A because the sql suite holds every seeded setting to
+`app_settings_set`) as Business settings. The shared calendar holds every
+client's meetings, so the invitation's question names the online meetings
+already booked by their times alone (`meet-create` `busy`), and an
+interview's event is titled by its position alone: a candidate's name stays
+with the people on the candidate. The candidate's emails go through their
+own function (`hiring-mail`) from a careers sender, built on the portal's one
+layout; the button to their page rides the layout's `{invoices}` block, the
+one place it draws server-built HTML. Cancelling emails nobody, since the
+colleague who cancels may be about to send new times. Found on the way: the
+page's lone button sat centred because `.qs-foot` keeps a 560px column with
+auto margins inside a grid (`.cr-iv > .qs-foot` gives them up), and the
+Settings row's figures are joined with no-break spaces, which a suite reads
+as such.
+
+### 2026-11-17 — Hiring outcomes: scores, the decision, the talent pool kept for a time (release H2 step C)
+HR-SPEC.md decisions 3 and 13. Scores are kept against a scorecard of the
+position (Standard for any other), 1 to 5 a criterion, because a single
+mark per candidate could not be compared across interviewers; every
+colleague on the candidate reads them, an Interviewer included, since
+decision 3 has them score. The decision is the part's or the Owner's, with
+Reopen as its way back. The talent pool needs the candidate's own
+agreement (PDPA 2010): Keep in talent pool asks on their page, and only an
+agreement starts the 12 months; an unanswered question ends with the link,
+and a closed candidate is removed after a keep period the team sets. SQL
+cannot remove a Storage object, so a removed candidate's CV path is queued
+and the part's console takes the files out once a visit.
+
+### 2026-11-17 · Signed documents sealed, quotations first
+The user approved specs/SEAL-SPEC.md and its mockup on 2026-11-17: a signed and approved quotation is drawn once, stored privately with its SHA-256 and Document ID, and never drawn again; its last page is the Record of this Document. A file cannot print its own hash, so the signed pages are drawn and hashed first, that hash printed on the Record page appended after them, and the whole file's hash stored beside it for /verify/'s file check (step 2). The foot of every signed page counts the Record page (`letterFoot` takes the total). Built as one shared module (`js/seal.js`, `signing_steps`) so the Hiring session reuses it for the Employment Contract. The device is what the browser reports; a browser never gives a MAC address. The link's Opened step is kept once in six hours an address and device and never for a colleague, so a refresh does not fill the record. The client page's Accepted card no longer names the company or offers a second Download: the mockup's words, and one download once sealed.
 
 ## 2026-11-17 · Access security fixes: groups an admin's, Own clients by id
 

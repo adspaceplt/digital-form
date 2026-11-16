@@ -3604,6 +3604,22 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
 .eml-row .wam-tplname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
 /* The message as sent, its lines kept, on the shaded ground. */
 .eml-facts { margin: 0 0 16px; }
+/* A signed document's record (SIGNED DOCUMENT SEAL, js/seal.js,
+   2026-11-17): the facts, then a step a line, its time to the second in a
+   fixed track, what and who, and the device or note under it. */
+.seal-facts { margin: 0 0 16px; }
+.seal-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; overflow-wrap: anywhere; }
+.seal-lock { display: inline-flex; margin-right: 4px; vertical-align: -2px; }
+.seal-lock svg { width: 13px; height: 13px; }
+.seal-steps { list-style: none; margin: 0; padding: 0; }
+.seal-step { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
+.seal-step:first-child { border-top: 0; }
+.seal-when { color: var(--ink-mute); font-variant-numeric: tabular-nums; font-size: 12.5px; white-space: nowrap; }
+.seal-what { min-width: 0; overflow-wrap: anywhere; }
+.seal-what b { font-weight: 600; }
+.seal-meta { display: block; color: var(--ink-mute); font-size: 12.5px; }
+.is-narrow .seal-step { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+.seal-acts { display: flex; justify-content: flex-end; margin-top: 12px; }
 .eml-body { background: var(--sunk); border-radius: var(--radius-sm); padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.55; color: var(--ink); }
 /* A New email (2026-11-04): Copy a tick a line; the attachment's name at the
    left, its acts at the right edge; the templates list's head. */
@@ -5747,6 +5763,20 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .console .engcard { outline: 1px solid var(--card-edge, var(--line)); outline-offset: -1px; }
 .eng-invno { font-variant-numeric: tabular-nums; }
 .eng-invrow .linkbtn.eng-invno { color: var(--ink); font-weight: 500; }
+/* A candidate's interviews (2026-11-17, release H2 step B): a shaded card an
+   invitation, its name and state on one line with the ⋯ at the right edge,
+   the times a plain list, the acts at the card's right edge. */
+.hir-ivs { display: grid; gap: 12px; }
+.hir-iv { padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.hir-iv.is-off > :not(.hir-iv-head) { opacity: .6; }
+.hir-iv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); margin-bottom: 8px; }
+.hir-iv-head > b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.hir-iv-ctl { display: inline-flex; align-items: center; gap: 8px; }
+.hir-times { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.hir-times .chip { margin-left: 6px; }
+.hir-iv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.hir-iv-acts > .btn { flex: 0 0 auto; }
+
 
 /* ---- Personnel (js/personnel.js, 2026-11-16): a colleague's employee record ---- */
 .prs-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -5771,3 +5801,24 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .is-narrow .readgroup-head:has(> .prs-acts) { flex-wrap: wrap; }
 .is-narrow .prs-acts { flex: 1 0 100%; justify-content: stretch; }
 .is-narrow .prs-acts > .btn { flex: 1 1 50%; }
+/* Interview scorecards (2026-11-17): Position · Criteria · the pen and ⋯;
+   a candidate's scores and decision as the interviews' shaded cards. */
+.ind-row.is-hsc { grid-template-columns: minmax(0, 200px) minmax(0, 1fr) 80px; }
+.ind-row.is-hsc .ind-acts { gap: 4px; justify-content: flex-start; }
+.ind-row.is-hsc .hsc-crit { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.hir-decide { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.hir-decide > .btn { flex: 0 0 auto; }
+.hir-scores { display: grid; gap: 12px; margin-top: 12px; }
+.hir-score { padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.hir-score .hir-iv-head { margin-bottom: 4px; }
+.hir-total { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.hir-card-line { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-mute); }
+.hir-note { margin: 4px 0 0; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .ind-row.is-hsc:not(.ind-head) { grid-template-columns: minmax(0, 1fr) 80px; grid-template-areas: "name acts" "crit acts"; column-gap: 8px; }
+  .ind-row.is-hsc > .hsc-pos { grid-area: name; }
+  .ind-row.is-hsc > .hsc-crit { grid-area: crit; }
+  .ind-row.is-hsc > .ind-acts { grid-area: acts; }
+  .ind-row.is-hsc.ind-head { display: none; }
+  .hir-decide > .btn { flex: 1 1 100%; }
+}

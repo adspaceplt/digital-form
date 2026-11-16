@@ -133,7 +133,8 @@
         codeL: 'Enter the code sent to {e}', digit: 'Digit {n} of 6', resendQ: 'Did not receive it?', resend: 'Send again',
         resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Sign and accept', finishing: 'Signing…',
         rec: 'The time, IP address and device are recorded with your signature.',
-        doneT: 'Quotation accepted', by: 'Signed by', forCo: 'For', on: 'On', dl: 'Download signed quotation',
+        waitT: 'Accepted · awaiting ADspace confirmation', waitP: 'Signed by {n} on {d} at {t} (GMT+8).',
+        confT: 'Confirmed', confP: 'Confirmed by ADspace on {d}.', docId: 'Document ID {id}', sealDl: 'Download signed copy',
         doneP: 'ADspace will review your details and confirm your start date within 2 working days.',
         say: {
           legal: 'Enter the Registered Company Name.', reg: 'Enter a valid Business Registration Number.', regOld: 'Enter a valid Old Registration Number.',
@@ -248,7 +249,8 @@
         codeL: '请输入发送至 {e} 的验证码', digit: '第{n}位，共6位', resendQ: '没有收到？', resend: '重新发送',
         resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '签署并接受', finishing: '签署中…',
         rec: '签署时间、IP 地址及设备将与您的签名一并记录。',
-        doneT: '报价已接受', by: '签署人', forCo: '公司', on: '日期', dl: '下载已签署报价',
+        waitT: '已接受 · 待 ADspace 确认', waitP: '由{n}于{d} {t}（GMT+8）签署。',
+        confT: '已确认', confP: 'ADspace 已于{d}确认。', docId: '文件编号 {id}', sealDl: '下载已签署副本',
         doneP: 'ADspace 将审核您的资料，并于2个工作日内确认开始日期。',
         say: {
           legal: '请填写公司注册名称。', reg: '请填写有效的商业注册号码。', regOld: '请填写有效的旧注册号码。',
@@ -660,7 +662,8 @@
       '<div class="qs-table"><div class="qs-row qs-headrow"><span>' + esc(t().line) + '</span><span class="qs-num qs-q">' + esc(t().qty) + '</span>' +
       '<span class="qs-num qs-r">' + esc(f(t().rate, { c: qc() })) + '</span><span class="qs-num">' + esc(f(t().sub, { c: qc() })) + '</span></div>' + lines + '</div>' +
       '<dl class="qs-tot">' + totalsRows(tt).map(function (x) { return '<div' + (x[2] ? ' class="is-total"' : '') + '><dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd></div>'; }).join('') + '</dl>' +
-      '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>' +
+      /* Once sealed, the signed copy beside it is the one download. */
+      (q.seal && q.seal.sealed ? '' : '<div class="qs-acts"><button class="btn" type="button" data-a="pdf">' + esc(t().download) + '</button></div>') +
       '<div class="qs-notes">' + notes.map(function (n) { return '<span>' + esc(n) + '</span>'; }).join('') + '</div>' +
       '</section>' + aside + '</div>';
   }
@@ -747,7 +750,7 @@
         '<a class="btn" href="' + esc(q.rep && q.rep.whatsapp ? 'https://wa.me/' + q.rep.whatsapp : waLink(q)) + '" target="_blank" rel="noopener">' + CHAT_MARK + esc(w.chat) + '</a>';
     }
     if (st === 'welcome') {
-      return '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
+      return (q.reviewed ? confirmedHtml(q, true) : '') + '<h2>' + esc(w.welcomeT) + '</h2><p>' + esc(w.welcomeP) + '</p>' +
         (q.portal ? '<a class="btn btn-primary" href="/client/">' + esc(w.portalBtn) + '</a>' : '<p>' + esc(w.portalLater) + '</p>') + rep;
     }
     if (st === 'accepted') return acceptedHtml(q) + rep;
@@ -959,7 +962,10 @@
       tin: c.tin || undefined, sst_no: c.sst_no || undefined, billing_address: c.billing_address, finance_email: c.finance_email || undefined },
       contact: { salutation: k.salutation || '', name: k.name, phone: k.phone, email: k.email },
       signer: { name: SG.signer.name, designation: SG.signer.designation },
-      signature: SG.mode === 'type' ? { type: 'typed', text: SG.text } : { type: 'drawn', path: SG.path }, agree: true };
+      signature: SG.mode === 'type' ? { type: 'typed', text: SG.text } : { type: 'drawn', path: SG.path }, agree: true,
+      /* The device as this browser reports it, kept with the signature
+         (SIGNED DOCUMENT SEAL, 2026-11-17). */
+      device: window.ADspaceSeal ? window.ADspaceSeal.device() : undefined };
   }
   /* The code goes to the billing contact's email, made by the server; the
      page is told where it went. Send again rests a minute after each. */
@@ -1058,13 +1064,40 @@
     padWire();
     if (SG.step === 3 && SG.sentAt) resendTick();
   }
+  /* Signed (SIGNED DOCUMENT SEAL, 2026-11-17): Accepted, awaiting
+     ADspace's confirmation, who signed and when to the second; then
+     Confirmed with the Document ID and the sealed copy to download. */
   function acceptedHtml(q) {
-    var w = t().sg, s = q.signed || {}, who = s.signer || {}, co = s.company || {};
-    return done(w.doneT) + '<dl class="qs-sfacts">' +
-      (who.name ? '<dt>' + esc(w.by) + '</dt><dd>' + esc(who.name + (who.designation ? ', ' + who.designation : '')) + '</dd>' : '') +
-      (co.legal_name ? '<dt>' + esc(w.forCo) + '</dt><dd>' + esc(co.legal_name) + '</dd>' : '') +
-      (s.at ? '<dt>' + esc(w.on) + '</dt><dd>' + esc(when(s.at)) + '</dd>' : '') + '</dl>' +
-      '<button class="btn" type="button" data-a="pdf">' + esc(w.dl) + '</button><p>' + esc(w.doneP) + '</p>';
+    if (q.reviewed) return confirmedHtml(q) + '<p>' + esc(t().sg.doneP) + '</p>';
+    var w = t().sg, s = q.signed || {}, who = s.signer || {}, C = window.ADspaceClock;
+    var name = who.name ? who.name + (who.designation ? (lang === 'zh' ? '（' + who.designation + '）' : ', ' + who.designation) : '') : '';
+    return '<p class="qs-sstate"><span class="chip-state is-warn">' + esc(w.waitT) + '</span></p>' +
+      (name && s.at ? '<p class="qs-sline">' + esc(f(w.waitP, { n: name, d: lang === 'zh' ? day(C.day(s.at)) : day(C.day(s.at), true),
+        t: C.clock(s.at, { sec: true, zh: lang === 'zh' }) })) + '</p>' : '') + '<p>' + esc(w.doneP) + '</p>';
+  }
+  /* Welcome's head already reads Confirmed, so its card says it once
+     (`quiet`). */
+  function confirmedHtml(q, quiet) {
+    var w = t().sg, C = window.ADspaceClock, sl = q.seal || {};
+    var on = q.reviewed && q.reviewed.at ? (lang === 'zh' ? day(C.day(q.reviewed.at)) : day(C.day(q.reviewed.at), true)) : '';
+    return (quiet ? '' : '<p class="qs-sstate"><span class="chip-state is-ok">' + esc(w.confT) + '</span></p>') +
+      '<p class="qs-sline">' + esc(on ? f(w.confP, { d: on }) : '') + (sl.id ? ' ' + esc(f(w.docId, { id: sl.id })) : '') + '</p>' +
+      (sl.sealed ? '<button class="btn" type="button" data-a="sealed">' + esc(w.sealDl) + '</button><p class="msg" id="qsSideMsg" role="status"></p>' : '');
+  }
+  /* The sealed copy, read through sign-download by the link's own key. */
+  function sealedPdf(btn) {
+    var tab = window.ADspaceDocs && window.ADspaceDocs.tabFor ? window.ADspaceDocs.tabFor() : null;
+    btn.disabled = true;
+    db.functions.invoke('sign-download', { body: { quoteKey: qKey() } }).then(function (r) {
+      var b = r && r.data;
+      if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('unread');
+      btn.disabled = false;
+      window.ADspaceDocs.save(b.type === 'application/pdf' ? b : new Blob([b], { type: 'application/pdf' }), window.ADspaceQuotePdf.fileName(Q), tab);
+    }).catch(function () {
+      btn.disabled = false;
+      if (tab) try { tab.close(); } catch (e) {}
+      say('qsSideMsg', t().err.any);
+    });
   }
   // A moment in Malaysia's time: 2 November 2026, 3:14pm; 2026年11月2日 下午3:14 (js/clock.js, one format).
   function when(iso) {
@@ -1098,7 +1131,7 @@
   }
   function decorate() {
     if (window.ADspaceForm && window.ADspaceForm.scan) window.ADspaceForm.scan(root());
-    Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"]'), function (b) { addGlyph(b, 'file'); });
+    Array.prototype.forEach.call(root().querySelectorAll('[data-a="pdf"], [data-a="sealed"]'), function (b) { addGlyph(b, 'file'); });
     if (window.ADspaceGrow && window.ADspaceGrow.fit) Array.prototype.forEach.call(root().querySelectorAll('textarea'), window.ADspaceGrow.fit);
     signWire();
   }
@@ -1208,7 +1241,25 @@
       if (d.error) { paint.lost = true; paint(); return; }
       Q = d; paint();
       if (then) then(); else window.scrollTo(0, 0);
+      sealRead(k);
     }).catch(function () { paint.off = true; paint(); });
+  }
+  /* The link read, kept as a step of the signed document's record (never a
+     colleague's preview); once ADspace has confirmed it, its Document ID and
+     whether the sealed copy is kept (SIGNED DOCUMENT SEAL, 2026-11-17). */
+  function sealRead(k) {
+    if (!Q || PREVIEW) return;
+    if (Q.stage !== 'review' && !sealRead.told) {
+      sealRead.told = true;
+      db.rpc('quote_opened', { p_key: k, p_device: window.ADspaceSeal ? window.ADspaceSeal.device() : null }).then(function () {}, function () {});
+    }
+    if (!Q.reviewed || Q.seal) return;
+    db.rpc('quote_seal_state', { p_key: k }).then(function (r) {
+      var d = r && r.data;
+      if (r.error || !d || !d.confirmed || !Q) return;
+      Q.seal = { id: d.id, sealed: !!d.sealed };
+      paint();
+    }).catch(function () {});
   }
   function propose(btn) {
     var k = new URLSearchParams(location.search).get('q');
@@ -1303,6 +1354,7 @@
     else if (a === 'signclear') { SG.path = ''; signRead(); signShow(); var pd = $('sgPad'); if (pd) pd.scrollIntoView({ block: 'center' }); }
     else if (a === 'signmode') { signRead(); SG.mode = SG.mode === 'draw' ? 'type' : 'draw'; signShow(); var m = $('qsSide').querySelector('[data-a="signmode"]'); if (m) m.focus(); }
     else if (a === 'pdf') pdf(b);
+    else if (a === 'sealed') sealedPdf(b);
     else if (a === 'change' || a === 'new') {
       if (madeBy) S.contact = madeBy;
       if (Q && Q.selection) adopt(Q.selection);
