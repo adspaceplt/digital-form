@@ -314,6 +314,10 @@
     subject: 'Enter a subject of 2 to 200 characters.',
     message: 'Enter a message of 2 to 5,000 characters.',
     mailOff: 'Email is not set up yet. Please contact an admin.',
+    /* A send refused by the portal's switch or the group's (GROUP
+       SWITCHES, 2026-11-17). */
+    emailSendOff: 'Sending email is turned off for you. Please ask an admin.',
+    whatsappSendOff: 'Sending WhatsApp is turned off for you. Please ask an admin.',
     /* A function the database does not hold yet, and a Settings refusal
        (2026-11-10: each was typed on every Settings sheet). */
     notYet: 'This feature is not available yet. Please contact an admin.',

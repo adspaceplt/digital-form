@@ -402,7 +402,7 @@
      wrote is kept (a caption or a script saved, a report submitted), never
      for words typed by hand. The tick is the declaration; the page files it
      under the record. One copy of the words, one glyph for every AI act. */
-  var AI_GLYPH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+  var AI_GLYPH = '<svg class="ai-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
     'stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 4.4L17 10l-4.4 1.6L11 16l-1.6-4.4L5 10l4.4-1.6z"/>' +
     '<path d="M18 14.5l.8 1.7 1.7.8-1.7.8-.8 1.7-.8-1.7-1.7-.8 1.7-.8z"/></svg>';
   var AI_TICK = 'I have read and checked it, and I take responsibility for its accuracy.';

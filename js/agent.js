@@ -41,7 +41,7 @@
   function me() { return (bridge.me && bridge.me()) || null; }
 
   var state = { messages: [], press: '', busy: false, notes: [], said: 0 };
-  var AI_GLYPH = '<svg class="spark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>';
+  var AI_GLYPH = '<svg class="spark ai-mark" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l1.6 4.4L14 7l-4.4 1.6L8 13l-1.6-4.4L2 7l4.4-1.6z"/></svg>';
 
   /* ---- Words ---------------------------------------------------------------- */
   var SAID = {
@@ -1207,6 +1207,8 @@
   /* ---- The panel ----------------------------------------------------------- */
   function open() {
     if (!box.hidden) return;
+    /* AI off for the portal or the group (GROUP SWITCHES, 2026-11-17). */
+    if (document.documentElement.classList.contains('no-ai')) return;
     /* A desk types straight in; under a finger the card takes focus, as
        every sheet does, so the keyboard does not rise over it. */
     var desk = !matchMedia('(pointer: coarse)').matches;

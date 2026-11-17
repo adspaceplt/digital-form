@@ -14,7 +14,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var bridge = window.ADspaceAdmin || {};
   /* What the database lets this colleague change here: a member and a group
-     are written at Team Full Access (`team_admin`), and a colleague's
+     are written at Team Full control (`team_admin`), and a colleague's
      invitation is an admin's alone (`invite-member`). A control the database
      would refuse is not drawn (audit, 2026-10-03). */
   function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
@@ -103,16 +103,28 @@
   /* The words the user chose (2026-10-01): No Access, View, Manage, Full
      Access. Only the words moved; the stored keys (none, view, work,
      manage) and what each opens are as they were. */
+  /* Renamed with the access restructure (2026-11-17, plan version 4):
+     Off, View, Edit, Full control. The stored keys never move. */
   var LEVELS = [
-    ['none',   'No Access'],
+    ['none',   'Off'],
     ['view',   'View'],
-    ['work',   'Manage'],
-    ['manage', 'Full Access']
+    ['work',   'Edit'],
+    ['manage', 'Full control']
   ];
-  var LEVEL_WORD = { view: 'View', work: 'Manage', manage: 'Full Access' };
+  var LEVEL_WORD = { view: 'View', work: 'Edit', manage: 'Full control' };
+  /* The group's switches (GROUP SWITCHES, 2026-11-17): set once, above
+     every section, each under the portal's own switch where it has one. */
+  var GSW = [
+    ['ai_on', 'Use AI', 'Write with AI, the Assistant and Draw with AI.'],
+    ['email_on', 'Send email', 'Emails sent by hand to clients, suppliers and others.'],
+    ['whatsapp_on', 'Send WhatsApp', 'WhatsApp templates sent by hand.'],
+    ['sensitive_on', 'Sensitive details', 'Client billing, creator payment details and supplier bank details, at the level each section gives.']
+  ];
+  var GSW_PRESET = { admin: ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'], manager: ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'],
+    staff: ['ai_on'], viewer: [] };
   var SCOPE_WORD = { all: 'All clients', own: 'Own clients only' };
   function readScope() { var el = document.getElementById('grScope'); return el && el.value === 'own' ? 'own' : 'all'; }
-  var SCOPE_CLASH = 'Own clients only cannot be given with the Activity record, which shows every client. Set the Activity record to No Access, or choose All clients.';
+  var SCOPE_CLASH = 'Own clients only cannot be given with the Activity record, which shows every client. Set the Activity record to Off, or choose All clients.';
   function scopeClash(access, scope, admin) {
     if (scope !== 'own' || admin) return false;
     return Object.keys(access || {}).some(function (k) {
@@ -142,7 +154,7 @@
        finished reports on the record. */
     ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     /* WhatsApp (2026-10-10): View reads the messages sent, Manage sends,
-       Full Access chooses the templates; the last of the Work chunk, as the
+       Full control chooses the templates; the last of the Work chunk, as the
        rail and the panel's chunks read (N1, 2026-10-24). */
     ['whatsapp',  'Messages',          ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
@@ -172,7 +184,7 @@
     /* Each tab of a client's record is a part (2026-10-22, the user: "AMV
        quote, AMV Service Lines, AMV Issue documents"): Quotations, Brand and
        Checklists apart from the lines, the letters and the record itself. */
-    clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['quotes', 'Quotations'], ['services', 'Service lines'],
+    clients:   [['contacts', 'Contacts'], ['quotes', 'Quotations'], ['services', 'Service lines'],
                 ['documents', 'Letters'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
                 ['brand', 'Brand'], ['checklists', 'Checklists'],
                 /* The lead stages and Past (2026-10-03): No Access, View or
@@ -184,23 +196,20 @@
                 ['vic', 'Mark VIC clients']],
     /* Each send from a record follows WhatsApp or is shut (2026-10-10):
        they replaced the Clients, Reports and Creator Campaigns parts. */
-    whatsapp:  [['report', 'Send a published report'], ['feedback', 'Feedback request'], ['booking', 'Booking message'],
-                /* A client reminded of what waits on their approval (2026-10-10). */
-                ['approval', 'Approval reminder'],
-                /* A quotation or a Letter of Offer sent to the client (2026-10-14). */
-                ['documents', 'Quotations and letters']],
+    /* Sending is the group's Send WhatsApp and Send email (GROUP SWITCHES,
+       2026-11-17); the five WhatsApp parts are no longer offered. */
+    whatsapp:  [],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance'],
                 /* A file the client approved, hidden and then deleted for good
                    (audit S6, 2026-10-10): granted, an admin's by itself. */
-                ['files_delete', 'Delete approved files'],
-                /* A creator's ID and account numbers, read at View and
-                   approved or declined at Work (2026-11-08): granted. */
-                ['pay', 'Creator payment details']],
+                ['files_delete', 'Delete approved files']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters'], ['types', 'Document types']],
     /* A supplier's NRIC and bank details (2026-10-18): granted, an admin's by
        itself, read at View and written at Work. */
-    suppliers: [['pay', 'Supplier bank details']],
+    /* Client billing, creator payment details and supplier bank details
+       are the group's Sensitive details (GROUP SWITCHES, 2026-11-17). */
+    suppliers: [],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
        campaigns log to the team opened every client's billing change and
@@ -269,24 +278,23 @@
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
     'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'suppliers.pay': 1, 'team.analytics': 1, 'campaigns.pay': 1, 'team.personnel': 1, 'team.hiring': 1 };
+    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1 };
   function isGranted(key) { return Boolean(GRANTED[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
      the section at Manage as well as itself. */
   /* The Dashboard (2026-10-11, option A the user chose): one row above the
-     sections, On or No Access. It is the key `overview` in the access map,
+     sections, On or Off. It is the key `overview` in the access map,
      stored only as `none`: On stores nothing, which is how every group
      stood before, so the page is offered where one of its cards is
-     allowed. No Access only hides the page; each card still asks Full
+     allowed. Off only hides the page; each card still asks Full
      Access on its own section. */
   var DASH = 'overview';
   /* Since the revamp (2026-11-13) every colleague has the Dashboard's Me
      tab; this row decides the Team tabs alone. */
-  var DASH_DESC = { on: 'Shows the Team tabs with the cards of each section the group has at Full Access.', none: 'The Team tabs are hidden. Me is always shown.',
-    empty: 'On, but the Team tabs show nothing: the group has no section at Full Access.' };
-  var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1,
-    'whatsapp.report': 1, 'whatsapp.feedback': 1, 'whatsapp.booking': 1, 'whatsapp.approval': 1, 'whatsapp.documents': 1 };
+  var DASH_DESC = { on: 'Shows the Team tabs with the cards of each section the group has at Full control.', none: 'The Team tabs are hidden. Me is always shown.',
+    empty: 'On, but the Team tabs show nothing: the group has no section at Full control.' };
+  var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
      checks (2026-09-24, the user found a select offering levels that did
@@ -302,9 +310,9 @@
     'ops.numbering': ['work'], 'ops.override': ['work'], 'team.perfadmin': ['work'], 'team.settings': ['work'],
     'team.upgrade': ['work'], 'team.invite': ['work'], 'team.handbook': ['work'], 'reports.transfer': ['work'],
     'reports.ai': ['work'], 'team.announce': ['work'], 'register.types': ['work'],
-    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'], 'suppliers.pay': ['view', 'work'], 'campaigns.pay': ['view', 'work'], 'whatsapp.report': ['work'], 'whatsapp.feedback': ['work'], 'whatsapp.booking': ['work'], 'whatsapp.approval': ['work'], 'whatsapp.documents': ['work'],
+    'team.notice': ['work'], 'reports.meta': ['work'], 'campaigns.files_delete': ['work'], 'clients.vic': ['work'], 'team.analytics': ['work'], 'team.personnel': ['work'], 'team.hiring': ['work'],
     /* Leads and Past clients narrow the Clients level and never widen it;
-       removing a client stays with Clients Full Access. */
+       removing a client stays with Clients Full control. */
     'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
   };
   function partLevels(key) {
@@ -706,6 +714,7 @@
     if (/super-only/.test(t)) return 'Only the super admin can make or remove an admin. Please ask the super admin.';
     if (/admin-only/.test(t)) return /own group/.test(String(e && e.hint || '')) ? 'Only an admin can change your own group. Please ask an admin.' : ADMIN_ONLY;
     if (/last-admin/.test(t)) return 'This is the last admin with access. Make another colleague admin first.';
+    if (/reports-loop/.test(t)) return 'A group cannot report to itself or to a group that reports to it. Choose another group in Reports to.';
     return t;
   }
   /* A save refused because a value is another colleague's names the field
@@ -1100,16 +1109,18 @@
       return (sec ? sec[1] : bits[0]) + (bits[1] ? ' · ' + (part ? part[1] : bits[1]) : '');
     };
     var word = function (k, v) {
-      if (k === DASH) return v === 'none' ? 'No Access' : 'On';
-      return v ? (LEVEL_WORD[v] || 'No Access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No Access');
+      if (k === DASH) return v === 'none' ? 'Off' : 'On';
+      return v ? (LEVEL_WORD[v] || 'Off') : (k.indexOf('.') > -1 ? 'Same as section' : 'Off');
     };
     var keys = Object.keys(before).concat(Object.keys(after)).filter(function (k, i, a) { return a.indexOf(k) === i; });
-    return keys.filter(function (k) { return (before[k] || '') !== (after[k] || ''); }).map(function (k) {
+    /* A key whose words read the same either side (none stored against
+       nothing stored) is no change. */
+    return keys.filter(function (k) { return (before[k] || '') !== (after[k] || '') && word(k, before[k]) !== word(k, after[k]); }).map(function (k) {
       return name(k) + ': ' + word(k, before[k]) + ' → ' + word(k, after[k]);
     }).join('; ');
   }
   /* What the group opens, as markup: each phrase ("Full Access:", a
-     section, "Billing: No Access") held whole, so a phone wraps between
+     section, "Billing: Off") held whole, so a phone wraps between
      them and never inside one (TEAM2-11, 2026-10-24). */
   function grantHtml(r) {
     var part = function (t) { return '<span class="team-part">' + esc(t) + '</span>'; };
@@ -1122,7 +1133,7 @@
       var ex = (PARTS[s[0]] || []).map(function (p) {
         var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
         if (!v || (only && v === 'none')) return '';
-        return part(p[1] + ': ' + (LEVEL_WORD[v] || 'No Access'));
+        return part(p[1] + ': ' + (LEVEL_WORD[v] || 'Off'));
       }).filter(Boolean);
       if (only && !ex.length) return '';
       return part(s[1]) + (ex.length ? ' (' + ex.join(', ') + ')' : '');
@@ -1136,8 +1147,9 @@
       .map(function (s) { return word(s, true); }).filter(Boolean);
     if (only.length) parts.push(part('Only:') + ' ' + only.join(', '));
     if (r.client_scope === 'own') parts.push(part('Own clients only'));
-    if (acc[DASH] === 'none') parts.push(part('Team dashboard: No Access'));
-    return parts.length ? parts.join(' · ') : part('No Access');
+    GSW.forEach(function (g) { if (r[g[0]]) parts.push(part(g[1])); });
+    if (acc[DASH] === 'none') parts.push(part('Team dashboard: Off'));
+    return parts.length ? parts.join(' · ') : part('Off');
   }
 
   function groupRow(r) {
@@ -1362,15 +1374,15 @@
       /* A granted part is not inherited, so its unset state is No Access,
          said once; an inherited part starts at Same as section and may
          still be shut on its own. */
-      (granted ? '<option value="">No Access</option>'
-               : '<option value="">Same as section</option><option value="none">No Access</option>') +
+      (granted ? '<option value="">Off</option>'
+               : '<option value="">Same as section</option><option value="none">Off</option>') +
       /* A part that follows its section or is shut has those two lines. */
       (VIEW_PARTS[key] ? '' :
         partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
       '</select></label>';
   }
   function secBlock(key) {
-    var sec = secOf(key), parts = ownParts(key), fold = parts.length || key === 'clients';
+    var sec = secOf(key), parts = ownParts(key), fold = parts.length;
     return '<div class="permsec" data-sec="' + key + '">' +
       '<span class="permsec-name">' + esc(sec[1]) + '</span>' +
       '<select class="select select-sm" data-seg data-sec="' + key + '" aria-label="' + esc(sec[1]) + ' access">' +
@@ -1382,20 +1394,29 @@
           '<span>Customise</span><span class="permsec-n" data-n="' + key + '"></span>' + SEG_ICON + '</button>' : '') +
       '<p class="permsec-diff" id="grDiff-' + key + '" hidden></p>' +
       (fold ? '<div class="permsec-parts" id="grParts-' + key + '" hidden>' + parts.map(function (p) { return partRow(sec, p); }).join('') +
-        /* Whose clients the group sees, in every section: all, or the ones
-           its colleague is Person in charge of with any lead nobody holds
-           (`team_roles.client_scope`). */
-        (key === 'clients' ? '<label class="permpart"><span class="permpart-name">Clients they see</span>' +
-          '<select class="select select-sm" id="grScope" aria-label="Clients: clients they see">' +
-          '<option value="all">All clients</option><option value="own">Own clients only</option></select></label>' : '') +
         '</div>' : '') +
       '</div>';
   }
   $('grFlags').innerHTML =
+    /* For the whole group (GROUP SWITCHES, 2026-11-17): who the group
+       reports to, whose clients it sees in every section, and its four
+       switches, set once above every section. */
+    '<div class="permchunk permgroup"><h4 class="fsec-h">For the whole group</h4>' +
+      '<div class="permpart"><span class="permpart-name" id="grReportsName">Reports to</span>' +
+        '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName"></select></div>' +
+      '<div class="permpart"><span class="permpart-name" id="grScopeName">Clients they see' +
+        '<small>Own clients only: clients where they are Person in charge or Sales by, and leads nobody has taken.</small></span>' +
+        '<select class="select select-sm" id="grScope" aria-labelledby="grScopeName">' +
+        '<option value="all">All clients</option><option value="own">Own clients only</option></select></div>' +
+      GSW.map(function (g) {
+        return '<div class="permpart"><span class="permpart-name" id="grSw-' + g[0] + '">' + esc(g[1]) + '<small>' + esc(g[2]) + '</small></span>' +
+          '<button class="switch" type="button" role="switch" aria-checked="false" data-gsw="' + g[0] + '" aria-labelledby="grSw-' + g[0] + '"></button></div>';
+      }).join('') +
+    '</div>' +
     '<div class="permchunk permdash"><div class="permsec" data-sec="' + DASH + '">' +
       '<span class="permsec-name">Team dashboard</span>' +
       '<select class="select select-sm" data-seg id="grDash" aria-label="Team dashboard access">' +
-        '<option value="none">No Access</option><option value="on">On</option></select>' +
+        '<option value="none">Off</option><option value="on">On</option></select>' +
       '<p class="permsec-desc" id="grDesc-' + DASH + '"></p></div></div>' +
     CHUNKS.map(function (c) {
       return '<div class="permchunk"><h4 class="fsec-h">' + esc(c[0]) + '</h4>' + c[1].map(secBlock).join('') + '</div>';
@@ -1420,6 +1441,22 @@
   function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
   function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
   function toolSwitches() { return Array.prototype.slice.call($('grFlags').querySelectorAll('[data-tool]')); }
+  function groupSwitches() { return Array.prototype.slice.call($('grFlags').querySelectorAll('[data-gsw]')); }
+  function readSwitches() {
+    var out = {};
+    groupSwitches().forEach(function (sw) { out[sw.getAttribute('data-gsw')] = sw.getAttribute('aria-checked') === 'true'; });
+    return out;
+  }
+  function setSwitches(on) {
+    groupSwitches().forEach(function (sw) { sw.setAttribute('aria-checked', on.indexOf(sw.getAttribute('data-gsw')) > -1 ? 'true' : 'false'); });
+  }
+  /* Reports to: any other group, or no one. */
+  function fillReports(r) {
+    var sel = $('grReports'), mine = r ? r.slug : null;
+    sel.innerHTML = '<option value="">No one</option>' + (state.roles || []).filter(function (g) { return g.slug !== mine; })
+      .map(function (g) { return '<option value="' + esc(g.slug) + '">' + esc(g.name) + '</option>'; }).join('');
+    sel.value = r && r.reports_to ? r.reports_to : '';
+  }
   function adminBox() { return flagBoxes().filter(function (cb) { return cb.getAttribute('data-f') === 'is_admin'; })[0]; }
   levelPicks().forEach(function (sel) {
     if (window.ADspaceForm) window.ADspaceForm.segment(sel);
@@ -1446,7 +1483,7 @@
       paintPanel();
     });
   });
-  toolSwitches().forEach(function (sw) {
+  groupSwitches().concat(toolSwitches()).forEach(function (sw) {
     sw.addEventListener('click', function () {
       if (sw.disabled) return;
       sw.setAttribute('aria-checked', sw.getAttribute('aria-checked') === 'true' ? 'false' : 'true');
@@ -1501,11 +1538,11 @@
   /* A key's value in the panel's words: a section's level, a part's (Same
      as section where it says nothing of its own), an admin tool On or Off. */
   function valueWord(k, v) {
-    if (k === DASH) return v === 'none' ? 'No Access' : 'On';
+    if (k === DASH) return v === 'none' ? 'Off' : 'On';
     if (TOOL[k]) return v ? 'On' : 'Off';
-    if (k.indexOf('.') < 0) return LEVEL_WORD[v] || 'No Access';
-    if (!v) return isGranted(k) ? 'No Access' : 'Same as section';
-    return LEVEL_WORD[v] || 'No Access';
+    if (k.indexOf('.') < 0) return LEVEL_WORD[v] || 'Off';
+    if (!v) return isGranted(k) ? 'Off' : 'Same as section';
+    return LEVEL_WORD[v] || 'Off';
   }
   function keyName(k) {
     if (k === DASH) return 'Team dashboard';
@@ -1555,7 +1592,7 @@
   /* The group in one sentence, read from the panel as it stands, in the
      panel's own words (Team audit, 2026-10-03). */
   var lastChanges = 0;
-  function sumText(acc, admin, scope, tools) {
+  function sumText(acc, admin, scope, tools, sw) {
     if (admin) return 'This group can do everything, in every section.';
     var by = { manage: [], work: [], view: [] };
     SECTIONS.forEach(function (s) { var v = acc[s[0]] || 'none'; if (by[v]) by[v].push(s[1]); });
@@ -1564,6 +1601,8 @@
     });
     var line = said.length ? 'This group has ' + listWords(said, ', and ') + '.' : 'This group has no access.';
     if (scope === 'own') line += ' Own clients only.';
+    var swOn = GSW.filter(function (g) { return sw && sw[g[0]]; }).map(function (g) { return g[1]; });
+    line += swOn.length ? ' ' + listWords(swOn) + (swOn.length === 1 ? ' is' : ' are') + ' on.' : ' Every switch is off.';
     if (acc[DASH] === 'none') line += ' The Team dashboard is hidden.';
     /* What differs is counted once, against the preset, by the Custom note
        (2026-10-20, TEAM-8); the sentence names no count of its own. */
@@ -1590,7 +1629,6 @@
       }
       var diff = (PARTS[s[0]] || []).filter(function (p) { var k = s[0] + '.' + p[0]; return !TOOL[k] && (k in access); })
         .map(function (p) { var k = s[0] + '.' + p[0]; return p[1] + ': ' + valueWord(k, access[k]); });
-      if (s[0] === 'clients' && readScope() === 'own') diff.push('Own clients only');
       var n = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
       if (n) n.textContent = diff.length ? '(' + diff.length + ')' : '';
       /* Shut, a section names only what differs; open, its parts say it. */
@@ -1612,14 +1650,14 @@
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part'), sec = k.split('.')[0], lv = access[sec] || 'none';
       /* A client part inherited from Clients says nothing while Clients is
-         No Access, so it is greyed there; a granted part stands alone
+         Off, so it is greyed there; a granted part stands alone
          (N2, 2026-10-24). */
       sel.disabled = locked || admin || (sec === 'clients' && !isGranted(k) && lv === 'none') ||
         /* A granted part is an admin's to give (S2, 2026-10-24). */
         (isGranted(k) && !amAdmin());
-      /* Leads and Past clients narrow Clients and never widen it, so they
-         offer no level above it (N3). */
-      if (k === 'clients.leads' || k === 'clients.past') {
+      /* A tab never exceeds its section (the one rule, 2026-11-17; Leads
+         and Past clients since N3), so no level above it is offered. */
+      if (!isGranted(k)) {
         Array.prototype.forEach.call(sel.options, function (o) {
           var over = RANK[o.value] > RANK[lv];
           o.hidden = over; o.disabled = over;
@@ -1630,7 +1668,13 @@
     toolSwitches().forEach(function (sw) {
       sw.disabled = locked || admin || !amAdmin();
     });
+    /* An admin holds every switch. */
+    groupSwitches().forEach(function (sw) {
+      if (admin) sw.setAttribute('aria-checked', 'true');
+      sw.disabled = locked || admin;
+    });
     $('grScope').disabled = locked || admin;
+    $('grReports').disabled = locked || admin;
     var shape = shapeOf(access, admin, readScope());
     var n2 = shape.changes.length;
     $('grPreset').value = n2 ? 'custom' : shape.key;
@@ -1643,7 +1687,7 @@
     $('grChanges').hidden = !n2 || $('grPresetNote').getAttribute('aria-expanded') !== 'true';
     $('grChanges').textContent = n2 ? shape.changes.join(' · ') : '';
     lastChanges = n2;
-    $('grSum').textContent = sumText(access, admin, readScope(), on.length);
+    $('grSum').textContent = sumText(access, admin, readScope(), on.length, readSwitches());
   }
   function setTools(acc) {
     toolSwitches().forEach(function (sw) {
@@ -1656,6 +1700,7 @@
     if (adm) adm.checked = k === 'admin';
     $('grScope').value = 'all';
     $('grDash').value = 'on';
+    setSwitches(GSW_PRESET[k] || []);
     carried = {};
     if (k !== 'admin') {
       var acc = PRESETS[k];
@@ -1696,7 +1741,7 @@
     var acc = accessOf(r), lv = secLevel(sec, acc[sec]);
     var n = ownParts(sec).filter(function (p) { return Boolean(offered(sec + '.' + p[0], exceptionOf(acc, sec + '.' + p[0]))); }).length +
       (sec === 'clients' && r.client_scope === 'own' ? 1 : 0);
-    return { word: LEVEL_WORD[lv] || 'No Access', n: n, off: lv === 'none' };
+    return { word: LEVEL_WORD[lv] || 'Off', n: n, off: lv === 'none' };
   }
   function paintCompare() {
     var roles = state.roles, box = $('grCmp');
@@ -1710,7 +1755,7 @@
       roles.map(function (r) {
         var acc = accessOf(r), off = !r.is_admin && acc[DASH] === 'none';
         var none = !off && !r.is_admin && !SECTIONS.some(function (s) { return acc[s[0]] === 'manage'; });
-        return cell(r.name, '<b>' + (off ? 'No Access' : 'On') + '</b>' + (none ? '<small>Nothing shown without Full Access</small>' : ''), off ? 'is-off' : '');
+        return cell(r.name, '<b>' + (off ? 'Off' : 'On') + '</b>' + (none ? '<small>No section at Full control</small>' : ''), off ? 'is-off' : '');
       }).join('') + '</div>';
     CHUNKS.forEach(function (c) {
       html += '<div class="permcmp-chunk">' + esc(c[0]) + '</div>';
@@ -1722,6 +1767,18 @@
           }).join('') + '</div>';
       });
     });
+    html += '<div class="permcmp-chunk">For the whole group</div>' +
+      '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">Reports to</span>' +
+      roles.map(function (r) {
+        var to = (state.roles || []).filter(function (g) { return g.slug === r.reports_to; })[0];
+        return cell(r.name, '<b>' + esc(to ? to.name : 'No one') + '</b>', to ? '' : 'is-off');
+      }).join('') + '</div>' +
+      '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">Clients they see</span>' +
+      roles.map(function (r) { return cell(r.name, '<b>' + SCOPE_WORD[r.client_scope === 'own' ? 'own' : 'all'] + '</b>'); }).join('') + '</div>' +
+      GSW.map(function (g) {
+        return '<div class="permcmp-row" ' + cols + '><span class="permcmp-sec">' + esc(g[1]) + '</span>' +
+          roles.map(function (r) { var on = r.is_admin || r[g[0]]; return cell(r.name, '<b>' + (on ? 'On' : 'Off') + '</b>', on ? '' : 'is-off'); }).join('') + '</div>';
+      }).join('');
     html += '<div class="permcmp-chunk">Admin tools</div><div class="permcmp-row" ' + cols + '><span class="permcmp-sec">On</span>' +
       roles.map(function (r) {
         var acc = accessOf(r), total = Object.keys(TOOL).length;
@@ -1787,6 +1844,8 @@
     });
     $('grScope').value = r && r.client_scope === 'own' ? 'own' : 'all';
     $('grScope').disabled = Boolean(r && r.slug === 'admin');
+    setSwitches(r ? GSW.map(function (g) { return g[0]; }).filter(function (k) { return r.is_admin || r[k]; }) : []);
+    fillReports(r);
     foldAll();
     flagBoxes().forEach(function (cb) {
       var k = cb.getAttribute('data-f');
@@ -1822,13 +1881,19 @@
       Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
       if (JSON.stringify(accessOf(r)) !== JSON.stringify(access)) patch.access = access;
       if ((r.client_scope || 'all') !== readScope()) patch.client_scope = readScope();
+      var sw = readSwitches();
+      Object.keys(sw).forEach(function (k) { if (Boolean(r[k]) !== sw[k]) patch[k] = sw[k]; });
+      if ((r.reports_to || '') !== $('grReports').value) patch.reports_to = $('grReports').value || null;
       if (Object.keys(patch).length) saveGroup(r, patch, $('grSave')); else shutGroupBox();
       return;
     }
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
     if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
-    var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope() };
+    var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope(),
+      reports_to: $('grReports').value || null };
+    var sw0 = readSwitches();
+    Object.keys(sw0).forEach(function (k) { row[k] = sw0[k]; });
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
       if (q.error) { msg('grMsg', /scope-activity/.test(q.error.message || '') ? SCOPE_CLASH : teamSaid(q.error), 'err'); return; }
@@ -2552,7 +2617,7 @@
   /* The rail (TEAM2-9, 2026-10-24): one block a question, as a client's.
      Their work: what they hold, overdue in red, Open Work and Hand over
      work (both left to the Work pane while it is open). Access: when it
-     ends, and at Team Full Access when they last signed in and were last
+     ends, and at Team Full control when they last signed in and were last
      active (`team_member_seen`), else whether an invitation went. */
   function whenWord(iso) {
     var C = window.ADspaceClock, d = C.day(iso);

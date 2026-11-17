@@ -5838,3 +5838,9 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
   .ind-row.is-hsc.ind-head { display: none; }
   .hir-decide > .btn { flex: 1 1 100%; }
 }
+
+/* ---- AI off (GROUP SWITCHES, 2026-11-17) --------------------------------
+   Where the portal's AI switch or the group's Use AI is off, every act that
+   asks AI steps away: a button carrying the AI mark, the Assistant in the
+   head and the Dashboard's question box. The database refuses the same. */
+:root.no-ai .btn:has(svg.ai-mark), :root.no-ai #agentOpen, :root.no-ai #ovwAsk, :root.no-ai #ovwAskTry { display: none !important; }

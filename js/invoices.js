@@ -29,6 +29,7 @@
   var C = window.ADspaceClock;
 
   var SAID = {
+    'send-off': window.ADspaceWords.line.emailSendOff,
     denied: 'You do not have permission to change billing details. Please ask an admin.',
     'bukku-not-set-up': 'Bukku is not set up yet. Please contact an admin.',
     'bukku-token': 'Bukku is not available at the moment. Please contact an admin.',
@@ -206,7 +207,8 @@
       st.err = null;
       st.rows = d.rows || [];
       st.rem = d.reminders || [];
-      st.send = d.send === true;
+      /* Sending also asks Send email (GROUP SWITCHES, 2026-11-17). */
+      st.send = d.send === true && may('send.email', 'work');
       var have = {};
       st.rows.forEach(function (l) { have[l.id] = true; });
       Object.keys(st.pick).forEach(function (k) { if (!have[k]) delete st.pick[k]; });
@@ -647,15 +649,15 @@
         '<span class="od-amt">' + esc(money(l.amount, l.currency)) + '</span>' +
         '<span class="od-st">' + (e ? '<span class="chip-state chip ' + s[1] + '">' + esc(s[0] + ' ' + C.date(e.at).replace(/ \d{4}$/, '')) + '</span>' : '') + '</span>' +
         /* Each unpaid invoice sent by email, due or not (2026-11-04). */
-        (d.send ? '<span class="od-act"><button class="btn btn-sm" type="button" data-a="send" data-id="' + esc(String(l.id)) + '" aria-label="' + esc('Send invoice ' + l.number) + '">Send invoice</button></span>' : '') + '</div>';
+        (d.send && may('send.email', 'work') ? '<span class="od-act"><button class="btn btn-sm" type="button" data-a="send" data-id="' + esc(String(l.id)) + '" aria-label="' + esc('Send invoice ' + l.number) + '">Send invoice</button></span>' : '') + '</div>';
     };
     var body = cos.length > 1 ? cos.map(function (k) {
       var mine = rows.filter(function (l) { return l.contact === k; });
       return '<p class="od-co">' + esc(companyOf(mine[0]) || 'Bukku contact') + '</p><div class="od-mini">' + mine.map(rowHtml).join('') + '</div>';
     }).join('') : '<div class="od-mini">' + rows.map(rowHtml).join('') + '</div>';
-    host.classList.toggle('od-sends', !!d.send);
+    host.classList.toggle('od-sends', !!d.send && may('send.email', 'work'));
     host.innerHTML = '<div class="readgroup-head"><h4 class="fsec-h">Unpaid invoices</h4>' +
-      (d.send && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
+      (d.send && may('send.email', 'work') && late.length ? '<button class="btn btn-sm" type="button" data-a="remind">Send reminder</button>' : '') + '</div>' +
       (rows.length ? body : '<p class="muted od-none">No unpaid invoices.</p>') +
       (rem.length ? '<h4 class="fsec-h od-sent-h">Emails sent</h4><div class="inv-log-t od-log">' +
         '<div class="r hd"><span>When</span><span>Invoices</span><span>Sent by</span><span>Status</span></div>' +
