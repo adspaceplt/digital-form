@@ -11849,13 +11849,14 @@ function opsCodeRange(cid, period, ty, src, seq) {
           else { once += v; b.once += v; }
         });
         var byR = {}, off = 0, spanIncl = 0, byP = {};
-        Object.keys(g).forEach(function (k) { var b = g[k], goff = qtR2(b.sub * b.p / 100);
-          off += goff; spanIncl += qtR2(b.span * (1 + b.p / 100) * (1 + b.r / 100));
-          var R = byR[b.r] || (byR[b.r] = { m: 0, o: 0 }); R.m += b.sub + goff; R.o += b.once;
+        Object.keys(g).forEach(function (k) { var b = g[k], goff = qtR2(b.sub * b.p / 100), gse = qtR2(b.span * (1 + b.p / 100));
+          off += goff; spanIncl += gse;
+          var R = byR[b.r] || (byR[b.r] = { m: 0, o: 0, se: 0 }); R.m += b.sub + goff; R.o += b.once; R.se += gse;
           if (b.sub > 0 && b.p !== 0) { var P = byP[b.p] || (byP[b.p] = { pct: b.p, amount: 0, lo: b.lo, hi: b.hi });
             P.amount = qtR2(P.amount + goff); P.lo = Math.min(P.lo, b.lo); P.hi = Math.max(P.hi, b.hi); } });
         var tx = 0, otx = 0;
-        Object.keys(byR).forEach(function (r) { tx += qtR2(byR[r].m * Number(r) / 100); otx += qtR2(byR[r].o * Number(r) / 100); });
+
+        Object.keys(byR).forEach(function (r) { tx += qtR2(byR[r].m * Number(r) / 100); otx += qtR2(byR[r].o * Number(r) / 100); spanIncl += qtR2(byR[r].se * Number(r) / 100); });
         off = qtR2(off);
         var terms = Object.keys(byP).map(function (k) { var P = byP[k]; return { pct: P.pct, amount: P.amount, months: P.lo === P.hi ? P.lo : null }; })
           .sort(function (a, b) { return a.pct - b.pct; });
@@ -13930,9 +13931,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!((mo && cyc <= n) || (!mo && cyc === 1))) return;
           var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
           var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
+          var sst = Number(e.sst != null ? e.sst : (tot.sst_pct || 0));
           out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
-            sst: Number(e.sst != null ? e.sst : (tot.sst_pct || 0)), sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null });
+            sst: sst, sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null,
+            _g: mo && pct ? sst + '|' + pct : null, _v: Number(e.qty || 1) * Number(e.rate || 0), _p: pct });
         });
+
+        var grp = {};
+        out.forEach(function (l, i) { if (l._g) { var g = grp[l._g] = grp[l._g] || { v: 0, b: 0, p: l._p, last: i }; g.v += l._v; g.b += l.qty * l.unit; g.last = i; } });
+        Object.keys(grp).forEach(function (k) {
+          var g = grp[k], diff = Math.round((g.v + Math.round(g.v * g.p) / 100 - g.b) * 100) / 100;
+          if (!diff) return;
+          var L = out[g.last], amt = Math.round((L.qty * L.unit + diff) * 100) / 100;
+          if (L.qty !== 1) L.label = L.qty + ' × ' + L.label;
+          L.qty = 1; L.unit = amt;
+        });
+        out.forEach(function (l) { delete l._g; delete l._v; delete l._p; });
         return out;
       };
       var qiCycles = function (q) {

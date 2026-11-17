@@ -822,7 +822,10 @@ async function billItem(p: any): Promise<any> {
 }
 // ---- A quotation's invoices as Bukku drafts (2026-11-17) ---------------------
 /* An invoice of the contact already holding the reference (the quotation's
-   and the cycle's), drafts included, so a second press makes nothing. */
+   and the cycle's), drafts included, so a second press makes nothing. The
+   reference is matched whole in one field: the service cycle's is the start
+   of the advertising budget's (`… · Ads`), so a match inside a longer one
+   would take the budget's invoice for the service's (review, 2026-11-17). */
 async function invoiceHolding(contact: number, ref: string): Promise<{ id: number; number: string } | null> {
   const key = (v: unknown) => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const k = key(ref);
@@ -830,7 +833,7 @@ async function invoiceHolding(contact: number, ref: string): Promise<{ id: numbe
   const r = await bukku('GET', `/sales/invoices?search=${encodeURIComponent(ref)}&contact_id=${contact}&page=1&page_size=100`);
   for (const x of ((r && r.transactions) || []) as any[]) {
     if (!x || Number(x.contact_id) !== contact || String(x.status || '') === 'void') continue;
-    if (key([x.number2, x.reference, x.title, x.description, x.remarks].join(' ')).includes(k))
+    if ([x.number2, x.reference].some((f) => key(f) === k))
       return { id: Number(x.id || 0), number: String(x.number || x.id) };
   }
   return null;
