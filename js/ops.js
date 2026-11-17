@@ -7649,7 +7649,7 @@
     else if (x.state === 'none') val = '<span class="chip-state is-warn">Not invoiced</span><small class="eng-inv-when">Checked ' + esc(niceDate(x.checked_at)) + '</small>';
     else val = (x.invoices || []).map(function (v) {
       return '<span class="eng-inv">' + (v.link ? '<a class="linkbtn eng-invno" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(v.number) + '</a>' : '<span class="eng-invno">' + esc(v.number) + '</span>') +
-        ' · ' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span>';
+        '<span class="eng-inv-sep"> · </span><span class="eng-inv-part">' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span></span>';
     }).join('');
     var act = I.linked && !I.failed ? '<span class="eng-meetacts"><button class="btn btn-quiet btn-sm" data-a="invcheck" type="button">' + (x ? 'Check again' : 'Check Bukku') + '</button></span>' : '';
     return '<div class="eng-row eng-invrow"><span class="eng-lab">Invoice</span><span class="eng-val">' + val + '</span>' + act + '</div>';
