@@ -2145,7 +2145,7 @@
     if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' line is' : ' lines are') + ' to quote, and no letter is issued.', go: 'documents', icon: 'file' };
+      return { text: quoting + (quoting === 1 ? ' line to quote is' : ' lines to quote are') + ' not yet in a letter.', go: 'documents', icon: 'file' };
     }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
       return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') +
