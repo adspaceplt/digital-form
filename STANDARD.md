@@ -622,6 +622,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
 None open (2026-11-17: the thirteen logged were fixed at their cause or
 found already passing on main; the story is in `docs/DECISIONS.md`, The
 verification loop).
+- `lettersql` (found 2026-11-17 on main c6e3895f, before the quotation
+  invoices release): a quotation of 635.96 × 12 and 426.06 × 6 a month with
+  a 41.09 one-off reads a commitment of 10,497.15 since TERM TOTAL FROM ITS
+  PARTS (#1225), while the letter issued from it totals 10,497.14 and is
+  refused `stale`; the letter's total and the term's must sum the same way.
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside

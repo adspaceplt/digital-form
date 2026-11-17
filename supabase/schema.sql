@@ -129742,9 +129742,9 @@ end $$;
 revoke all on function public.quotation_invoice_prep(uuid, integer, text) from public, anon;
 grant execute on function public.quotation_invoice_prep(uuid, integer, text) to authenticated;
 
-
 -- END OF QUOTATION INVOICES TO THE CENT ---------------------------------------
-=======
+
+-- ===========================================================================
 -- TERM TOTAL FROM ITS PARTS (2026-11-17)
 -- ===========================================================================
 -- WHY: tests/pricediff.js (2026-11-17), random quotations priced by
