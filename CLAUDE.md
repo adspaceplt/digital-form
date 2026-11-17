@@ -1816,12 +1816,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `#grDiff-{section}` names only what differs. No Admin tools block, no
     Customise. The My Work views (List, Board, Calendar) are not offered; a
     stored one is kept through a save.
-  - Each group row reads its access as phrases held whole (`team-part`), Edit
-    on every row for an admin alone (a user group is made, changed and
-    deleted by an admin: `roles_admin` and `team_roles_admin_guard`,
-    `admin-only`, 2026-11-17; none on the Admin group, nor on an admin group
-    for anyone but the super admin), a ⋯ holding Delete beside it
-    (TEAM2-11, TEAM2-14; every group since 2026-11-17). Services offers No Access,
+  - Each group row reads its access as phrases held whole (`team-part`),
+    and one ⋯ holding Edit then Delete for an admin alone, nothing beside
+    it (a user group is made, changed and deleted by an admin: `roles_admin`
+    and `team_roles_admin_guard`, `admin-only`; none on the Admin group, nor
+    on an admin group for anyone but the super admin; the user, 2026-11-17:
+    "menu only sit one option, edit stays outside?"). Services offers No Access,
     View and Full Access; Leads and Past clients offer no level above
     Clients; a client part that follows Clients is greyed while Clients is
     No Access (N2, N3).
