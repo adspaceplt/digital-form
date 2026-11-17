@@ -1059,16 +1059,19 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .permsec > .seg { grid-area: seg; justify-self: end; }
 .is-narrow .permsec > .seg { justify-self: stretch; }
 .is-narrow .permsec > .seg.is-sm > .seg-opt { flex: 1 0 auto; }
-.permtools .permsec-name .fsec-h { margin: 0; }
-.permtool-group { display: flex; flex-direction: column; }
-.permtool-h { padding: 4px 0 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+/* Main settings (2026-11-17): Start from, then the group's own rows, one
+   hairline between each, as the section rows read. */
+.permmain-h { margin: 8px 0 12px; }
+.permmain { gap: 0; }
+.permmain > .permpart { padding-block: 8px; border-top: 1px solid var(--line-soft); }
+.permmain > .permpart > .seg { flex: 0 0 auto; }
 .permsec-n { color: var(--ink); font-weight: 600; }
 .permsec-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
-/* Start from, then Custom: n changes as a quiet fold over the changes
-   (TEAM-4, 2026-10-14). */
+/* Start from, then Custom: n changes from {preset} beside it, plain words
+   (TEAM-4, 2026-10-14; no fold since 2026-11-17). */
 .permpreset-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; }
 .permpreset-head .field-label { margin-bottom: 0; }
-.permpreset-note { padding: 0 6px; font-size: 12px; font-weight: 600; color: var(--ink-soft); }
+.permpreset-note { font-size: 12px; color: var(--ink-mute); }
 .permsec-parts {
   grid-area: parts; display: flex; flex-direction: column; gap: 2px;
   margin-top: 4px; padding-left: 16px; border-left: 2px solid var(--line-soft);
