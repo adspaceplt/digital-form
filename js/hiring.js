@@ -367,7 +367,7 @@
     });
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
       '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
-        (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Interview sheet</button>' : '') + '</div>' +
+        (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Open sheet</button>' : '') + '</div>' +
       '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 per criterion</p>' +
       (people.length ? (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' : '') +
         '<div class="hir-scores">' + people.map(function (p) {
@@ -457,7 +457,7 @@
     $('hivBody').innerHTML =
       '<section class="qcard"><h3 class="qcard-title">Assessment</h3><div class="iv-fields">' +
         '<div class="field"><label class="field-label" for="hivRating">Rating (out of 10)</label><select class="select" id="hivRating">' + opts(10, ms.rating, 'Choose') + '</select></div>' +
-        area('remarks', 'Internal remarks', 3, 'Outcome or status. Seen by the team only.') + '</div></section>' +
+        area('remarks', 'Internal remarks', 3) + '</div></section>' +
       '<section class="qcard"><h3 class="qcard-title">Questions</h3><div class="iv-fields">' +
         sheetQs(c).map(function (q) { return area(q[0], q[1], q[0] === 'general' ? 3 : 2); }).join('') + '</div></section>' +
       (crit.length ? '<section class="qcard"><h3 class="qcard-title">Scores</h3><p class="hir-card-line">' +
@@ -1113,7 +1113,7 @@
         return out;
       };
       window.ADspaceConfirm.ask({ title: 'Invite ' + c.name, go: 'Send invitation', wait: true, fields: f,
-        body: 'The candidate will choose one of these times on their page. The times may be on different days.',
+        body: 'The candidate will choose one of these times on their page.',
         check: function (v) {
           var s = slots(v);
           if (!s.length) return SAID['bad-slots'];

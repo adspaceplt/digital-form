@@ -8326,7 +8326,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-cardhead .ovgo { margin: -8px -6px -8px auto; flex: 0 0 auto; }
 /* The rest of the list, a press away in the card: a quiet button whose words
    sit on the rows' own edge, giving its padding back to the side and below. */
-.ovw-more.btn { min-width: 0; margin: 4px 0 -6px -13px; align-self: flex-start; }
+.ovw-more.btn { min-width: 0; margin: 4px 0 0; align-self: flex-start; gap: 4px; }
 /* The empty and failed lines sit in the card as its content, not as a second
    card inside it. */
 .ovw-card .softpanel { background: none; border: 0; border-radius: 0; }

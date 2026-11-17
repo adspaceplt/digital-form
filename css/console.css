@@ -5326,7 +5326,7 @@ svg.sec {
 }
 .ovw-tbl .ovw-client small { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
 .ovw-tbl tfoot th, .ovw-tbl tfoot td { font-weight: 600; border-top: 1px solid var(--line); border-bottom: 0; }
-.is-tight .ovw-moved .ovw-who, .is-tight .ovw-valueby .ovw-share { display: none; }
+.is-tight .ovw-moved .ovw-mby, .is-tight .ovw-valueby .ovw-share { display: none; }
 .ovw-moved th, .ovw-moved td, .ovw-valueby th, .ovw-valueby td { vertical-align: baseline; }
 /* A client named over its Client ID is two lines: the button keeps them
    inside the row, never giving back a one-line control's room, and each row
@@ -5335,6 +5335,8 @@ svg.sec {
 .ovw-tbl .linkbtn.ovw-client:has(small) { min-height: 0; margin-block: 0; padding-block: 2px; }
 .ovw-moved tbody th, .ovw-moved tbody td, .ovw-valueby tbody th, .ovw-valueby tbody td { padding-block: 8px; }
 .ovw-moved tbody .ovw-tbl-group th { padding-bottom: 6px; }
+.ovw-moved .ovw-tbl-group .ovw-mby { font-weight: 400; }
+.ovw-moved thead th { white-space: nowrap; }
 
 /* A record's name in a list row reads at medium weight, as the revamp's
    references set their titles (the user, 2026-11-12: "minimalist, modern,

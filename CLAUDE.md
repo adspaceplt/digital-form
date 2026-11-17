@@ -4881,10 +4881,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     step's share of the one before; Pipeline now, a ring with the whole in
     its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
     won as a median, conversion of the leads decided, churn of those active
-    at the start, and for Services View the monthly value won and lost; By
-    person in charge, a table of counts, never a ranking; Clients who moved,
+    at the start, and for Services View the monthly value won and lost; Sales
+    by colleague, new leads, won and lost by the colleague who sold them (a
+    lead is never counted by its Person in charge; the user, 2026-11-17),
+    a table of counts, never a ranking; Clients who moved,
     each move's clients (Won, New leads, Lost leads, Churned, Paused,
-    Resumed, Win-backs) with their person in charge and day, five a move
+    Resumed, Win-backs) with their day and, by the move, Sales by (Won, New
+    leads, Lost leads) or Person in charge (the rest), five a move
     then Show N more, and Committed monthly value by client, each active
     client's month highest first with its share and a total a currency, for
     Services View, each client opening its record (its Services); the

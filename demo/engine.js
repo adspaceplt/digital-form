@@ -622,6 +622,7 @@
     personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
+    team_role_delete: 'p_slug p_to',
     public_holiday_save: 'p_day p_name p_was',
     public_holiday_delete: 'p_day',
     quote_website_read: 'p_key',
@@ -9760,6 +9761,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: iOut, error: null });
     }
 
+    if (name === 'team_role_delete') {
+      var tr0 = window.__refuseRpc && window.__refuseRpc[name];
+      if (tr0) return Promise.resolve({ data: null, error: { message: tr0 } });
+      var trA = args || {}, trMe = opsMe(), trOut;
+      var trSuperOk = function () {
+        var live = (DB.team_members || []).filter(function (x) { return x.system && x.active !== false && !x.removed_at; });
+        return !live.length || live.some(function (x) { return trMe && x.id === trMe.id; });
+      };
+      var trG = (DB.team_roles || []).filter(function (g) { return g.slug === trA.p_slug; })[0];
+      var trT = (DB.team_roles || []).filter(function (g) { return g.slug === trA.p_to; })[0];
+      var trIn = (DB.team_members || []).filter(function (m) { return trG && m.role === trG.slug; });
+      if (!trMe || !opsAccess(trMe).admin) trOut = { error: 'admin-only' };
+      else if (!trG) trOut = { error: 'not-found' };
+      else if (trG.slug === 'admin') trOut = { error: 'fixed' };
+      else if (trG.is_admin && !trSuperOk()) trOut = { error: 'super-only' };
+      else if (trIn.length && (!trT || trT.slug === trG.slug)) trOut = { error: 'no-target', members: trIn.length };
+      else if (trIn.length && (trT.is_admin || trT.slug === 'admin') && !trSuperOk()) trOut = { error: 'super-only' };
+      else if (trG.is_admin && !(trT && (trT.is_admin || trT.slug === 'admin')) && !(DB.team_members || []).some(function (m) {
+        return m.active !== false && !m.removed_at && m.role !== trG.slug && (m.is_admin || m.role === 'admin');
+      })) trOut = { error: 'last-admin' };
+      else {
+        trIn.forEach(function (m) {
+          m.role = trT.slug;
+          m.is_admin = Boolean(trT.is_admin || trT.slug === 'admin');
+          m.access = JSON.parse(JSON.stringify(trT.access || {}));
+          ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'].forEach(function (k) { if (k in trT) m[k] = trT[k]; });
+          m.updated_at = new Date().toISOString();
+        });
+        DB.team_roles.forEach(function (g) { if (g.reports_to === trG.slug) g.reports_to = null; });
+        DB.team_roles = DB.team_roles.filter(function (g) { return g !== trG; });
+        logAct('team.group_removed', trG.name, trIn.length ? trIn.length + (trIn.length === 1 ? ' member' : ' members') + ' moved to ' + trT.name : 'No members');
+        trOut = { ok: true, moved: trIn.length };
+      }
+      return Promise.resolve({ data: trOut, error: null });
+    }
     if (name === 'departments_list' || name === 'department_save' || name === 'department_set_active' || name === 'department_delete') {
       var dr = window.__refuseRpc && window.__refuseRpc[name];
       if (dr) return Promise.resolve({ data: null, error: { message: dr } });
