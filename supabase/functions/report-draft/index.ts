@@ -107,7 +107,20 @@ const ZH = `
 
 LANGUAGE
 This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们. Name the client by the placeholder {brand}, written exactly so with its braces (it is replaced with the brand's own name): "{brand}本月的潜在客户成本下降". Never 贵公司, 貴公司, 贵司, 貴司, 贵品牌, 貴品牌, 贵方, 贵企业 or 您公司: these honorifics read stiff to a Malaysian or Singaporean business owner. Use 您 sparingly, never in place of {brand}. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.
-TONE IN CHINESE (the team, 2026-10-16): smooth and easy to read, as a trusted account manager writes to the business owner, never a stiff audit report. Short, flowing sentences with natural connectives (所以, 因此, 接下来, 另外); plain words over report jargon. Avoid 鉴于, 综上所述, 据此, 予以, 系, 其中, 该数据, 该广告, 遭到, 不足以评估 and chains of 的. Example: "2610W1_Steps 带来 2 次消息对话，每次 RM 23.90，高于消息类广告每次 RM 15.20 的平均成本。接下来我们会调整开头的画面，看看能否把成本降下来。"`;
+TONE IN CHINESE (the team, 2026-10-16): smooth and easy to read, as a trusted account manager writes to the business owner, never a stiff audit report. Short, flowing sentences with natural connectives (所以, 因此, 接下来, 另外); plain words over report jargon. Avoid 鉴于, 综上所述, 据此, 予以, 系, 其中, 该数据, 该广告, 遭到, 不足以评估 and chains of 的. A cost per result is an average and reads as one (the user, 2026-11-17: "每次" alone read oddly): 平均每次对话成本 RM 19.72, 每条潜在客户平均成本 RM 43.29, 平均花费 RM 19.72 获得一次对话; never a bare 每次 RM 19.72 after a count. Spend reads 广告花费 RM 2,784.65, reach 触及 36,834 人, CTR 点击率 4.53%.
+Example: "2610W1_Steps 带来 2 次消息对话，平均每次对话成本 RM 23.90，高于消息类广告 RM 15.20 的平均成本。接下来我们会调整开头的画面，看看能否把成本降下来。"`;
+/* Said at the head of the request as well as in the system's last part: an
+   instruction at the end of a long English prompt, beside notes typed in
+   English, was outweighed and a 中文 press came back in English
+   (2026-11-17). */
+const ZH_ASK = 'Write every field in Simplified Chinese (简体中文), whatever language the notes and figures are in. ';
+/* Enough Chinese to read as a Chinese draft: more Han characters than
+   Latin letters, figures, names and codes left aside. */
+function readsChinese(t: string): boolean {
+  const han = (t.match(/[一-鿿]/g) || []).length;
+  const latin = (t.replace(/"[a-z_]+"\s*:/g, '').replace(/\{brand\}|[A-Za-z0-9_]*\d[A-Za-z0-9_]*|CTR|RM|S\$|Facebook|Instagram|TikTok|Meta/g, '').match(/[A-Za-z]/g) || []).length;
+  return han > 0 && han * 2 >= latin;
+}
 
 /* The house style, taken from the team's approved ads reports (the user,
    2026-10-01) and tightened where those reports were loosest: a reason for
@@ -462,7 +475,7 @@ async function runNext(db: any, id: string, data: Record<string, unknown>, origi
       max_tokens: 12000,
       system: NEXT + '\n\n' + AVOID + (lang === 'zh' ? ZH.replace(/every field/, 'every suggestion') : ''),
       output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Suggest the next batch for this report. Its figures follow as JSON.\n\n' + JSON.stringify(data) }]
+      messages: [{ role: 'user', content: (lang === 'zh' ? ZH_ASK : '') + 'Suggest the next batch for this report. Its figures follow as JSON.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
     spent.push(res);
     const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
@@ -803,14 +816,21 @@ Deno.serve(async (req) => {
     /* The answer is held to the schema by structured output, never a forced
        tool call: newer models refuse `tool_choice` of type tool. The model
        may think first, so the budget leaves room for that. */
-    const res = await client.messages.create({
+    const ask = (again: boolean) => client.messages.create({
       model: secret('REPORT_DRAFT_MODEL'),
       max_tokens: 16000,
-      system: (kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM) + SHARED + (lang === 'zh' ? ZH : ''),
+      system: (lang === 'zh' ? ZH_ASK + '\n\n' : '') + (kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM) + SHARED + (lang === 'zh' ? ZH : ''),
       output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
+      messages: [{ role: 'user', content: (again ? 'The last answer was written in English. ' : '') + (lang === 'zh' ? ZH_ASK : '') + 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
+    let res = await ask(false);
     spent.push(res);
+    /* A 中文 press that came back in English is asked once more, inside the
+       same press and its time (2026-11-17). */
+    if (lang === 'zh' && res.stop_reason === 'end_turn') {
+      const t0 = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+      if (!readsChinese(t0) && Date.now() - started < 60000) { res = await ask(true); spent.push(res); }
+    }
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
       await done(false);

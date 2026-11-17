@@ -530,12 +530,9 @@
            new report, so the next New report greys it. */
         (hub.rows = hub.rows || []).unshift({ id: id, kind: kind, client_id: client, period_start: a, period_end: b,
           status: 'draft', version_no: 1, brand_id: brand || null, on_request: asked });
-        /* A new report is written in the main contact's preferred language. */
-        db.from('client_contacts').select('lang').eq('client_id', client).eq('is_primary', true).limit(1).then(function (x) {
-          var c = x && !x.error && (x.data || [])[0];
-          if (!c || c.lang !== 'zh') return null;
-          return db.from('sm_reports').update({ lang: 'zh' }).eq('id', id).select('id');
-        }).catch(function () { return null; }).then(function () { openReport(id); });
+        /* The main contact's language is set by the database
+           (sm_reports_lang_default), whichever way a report is made. */
+        openReport(id);
       }).catch(function (e) { go.disabled = false; say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });

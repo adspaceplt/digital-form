@@ -6647,14 +6647,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
-    contact's preferred language. It decides only the language Draft with
+    contact's preferred language, set by trigger `sm_reports_lang_default`
+    whichever way it is made (New report, My Work's Start report;
+    2026-11-17). It decides only the language Draft with
     AI writes in (`ZH` in `report-draft`): the PDF's template is English
     throughout and what the team wrote prints as written (the user,
     2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
     Chinese drafts read smooth and easy, as an account manager writes to
     the owner, never a stiff audit report (`ZH`, TONE IN CHINESE; the
-    user, 2026-10-16).
+    user, 2026-10-16); a cost per result reads as an average (平均每次对话成本
+    RM 19.72, never a bare 每次). A 中文 press asks for Chinese at the head
+    of the request too (`ZH_ASK`), and one answered in English is asked once
+    more inside the same press (`readsChinese`; 2026-11-17).
     Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point, and candid both ways (the user,
