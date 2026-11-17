@@ -252,6 +252,7 @@
      listed under HR Letters with its reference, the person and the day it
      was confirmed, and its sealed copy to download; never a term or a
      figure. A refused read lists none. */
+  var SIGNED_FAIL = 'The signed copy could not be opened. Please try again.';
   var HIRING_KIND = { offer: 'Employment Offer', contract: 'Employment Contract' };
   function hiringRows(then) {
     if (!mayFamily('hr', 'view')) { then([]); return; }
@@ -383,7 +384,7 @@
         window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
-        say('The signed copy could not be opened. Please try again.', 'err');
+        say(SIGNED_FAIL, 'err');
       });
     });
     return el;
@@ -419,7 +420,7 @@
         if (tab) tab.location.href = x.data.signedUrl; else location.href = x.data.signedUrl;
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
-        say('The signed copy could not be opened. Please try again.', 'err');
+        say(SIGNED_FAIL, 'err');
       });
     });
     return el;
