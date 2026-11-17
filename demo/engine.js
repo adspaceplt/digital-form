@@ -1399,7 +1399,7 @@
           rows = []; api.__err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' }; return api;
         }
         if (inHit.some(function (r) { return ownerChangeRefused(table, r, pending); })) {
-          rows = []; api.__err = { code: '42501', message: 'Person in charge is changed at Clients Full Access.', hint: 'owner-change' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'Only a colleague at Clients Full Access can change the Person in charge. Please ask one.', hint: 'owner-change' }; return api;
         }
         inHit.forEach(function (r) { stageClock(table, r, pending); Object.assign(r, withOwner(table, r, pending)); });
         rows = inHit;
@@ -1519,7 +1519,7 @@
           rows = []; api.__err = { code: '42501', message: 'Sales by is set at Clients Full Access.', hint: 'sales-by' }; return api;
         }
         if (eqHit.some(function (r) { return ownerChangeRefused(table, r, pending); })) {
-          rows = []; api.__err = { code: '42501', message: 'Person in charge is changed at Clients Full Access.', hint: 'owner-change' }; return api;
+          rows = []; api.__err = { code: '42501', message: 'Only a colleague at Clients Full Access can change the Person in charge. Please ask one.', hint: 'owner-change' }; return api;
         }
         DB[table].forEach(function (r) {
           if (String(r[f]) !== String(v)) return;
@@ -2593,7 +2593,7 @@ function cardSlugFree(name, self, email) {
     });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
     DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name,
-      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + ' service lines reverted',
+      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
     return { ok: true, reverted: ids.length };
@@ -2630,7 +2630,7 @@ function cardSlugFree(name, self, email) {
     DB.client_documents = DB.client_documents.filter(function (x) { return x.id !== d.id; });
     var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
     DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name,
-      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + ' service lines reverted',
+      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + (ids.length === 1 ? ' service line reverted' : ' service lines reverted'),
       created_at: new Date().toISOString() });
     persist();
     return { ok: true, number: d.number, reverted: ids.length };
@@ -2729,7 +2729,7 @@ function cardSlugFree(name, self, email) {
     at = at || rwToday();
     return n >= rwSet('grade_a', at) ? 'A' : n >= rwSet('grade_b', at) ? 'B' : n >= rwSet('grade_c', at) ? 'C' : n >= rwSet('grade_d', at) ? 'D' : 'E';
   }
-  var PERF_WORD = { A: 'Distinction', B: 'Strong', C: 'Baseline', D: 'Needs Guidance', E: 'Performance Review' };
+  var PERF_WORD = { A: 'Distinction', B: 'Strong', C: 'Baseline', D: 'Needs support', E: 'Improvement plan' };
   function perfBand(v, t) { return v == null ? null : v >= t ? 'green' : v >= t * 0.9 ? 'amber' : 'red'; }
   function perfPace(v) { return v == null ? null : v <= 10 ? 'green' : v <= 20 ? 'amber' : 'red'; }
   function perfWorst(a) { var o = { green: 1, amber: 2, red: 3 }, w = null;
