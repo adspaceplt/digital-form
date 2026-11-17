@@ -10977,3 +10977,12 @@ client out of reach is said in plain words, a letter that fails to draw no
 longer shows the browser's error, Loading… is the portal's own word.
 Messages: a template the portal cannot send says to choose another.
 `settings`, `suppliers`, `whatsapp`, `holidays`, `depts`, `taxcodes` pass.
+
+### 2026-11-17 · Every user group can be deleted, its members moved
+The user: "why never give Team > Groups not able to delete?? i thot i have
+given multiple instructions to have delete options for every create". Delete
+had been offered only on an empty group (TEAM2-14), since a colleague's group
+is a foreign key. Now every group but Admin carries Delete in its ⋯; one
+holding colleagues asks Move its n members to, and `team_role_delete` moves
+them and deletes the group in one transaction, keeping the admin-only,
+super-only and last-admin checks. `scope` and `team` hold it.

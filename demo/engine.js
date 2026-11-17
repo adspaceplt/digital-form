@@ -295,6 +295,9 @@
     hiring_doc_confirm: 'p_doc p_stamp_no p_stamp_path', hiring_doc_signed: 'p_doc p_token', hiring_doc_seal: 'p_doc p_path p_sha p_pages_sha',
     hiring_doc_void: 'p_doc p_note', hiring_doc_replace: 'p_doc', hiring_doc_delete: 'p_doc p_serial', hiring_doc_record: 'p_doc',
     hiring_doc_mail_prepare: 'p_doc', hiring_doc_mail_done: 'p_doc p_status p_error',
+    hiring_hire_state: 'p_id', hiring_make_colleague: 'p_id p_values', welcome_kit_get: '', welcome_kit_save: 'p_sections p_expected',
+    welcome_kit_mine: '', welcome_kit_ack: '', onboarding_get: 'p_member', onboarding_tick: 'p_member p_side p_key p_on',
+    onboarding_assets_save: 'p_member p_assets p_expected',
     careers_doc_open: 'p_key p_doc p_code p_device', careers_doc_read: 'p_key p_doc p_view', careers_doc_answer: 'p_key p_doc p_view p_answer p_payload',
     supplier_get: 'p_id', supplier_client_set: 'p_id p_client', client_suppliers: 'p_client',
     supplier_create: 'p_code p_name',
@@ -618,6 +621,7 @@
     personnel_export: 'p_token', personnel_settings_get: '', personnel_settings_set: 'p_values',
     department_set_active: 'p_key p_on',
     department_delete: 'p_key',
+    team_role_delete: 'p_slug p_to',
     public_holiday_save: 'p_day p_name p_was',
     public_holiday_delete: 'p_day',
     quote_website_read: 'p_key',
@@ -9756,6 +9760,41 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: iOut, error: null });
     }
 
+    if (name === 'team_role_delete') {
+      var tr0 = window.__refuseRpc && window.__refuseRpc[name];
+      if (tr0) return Promise.resolve({ data: null, error: { message: tr0 } });
+      var trA = args || {}, trMe = opsMe(), trOut;
+      var trSuperOk = function () {
+        var live = (DB.team_members || []).filter(function (x) { return x.system && x.active !== false && !x.removed_at; });
+        return !live.length || live.some(function (x) { return trMe && x.id === trMe.id; });
+      };
+      var trG = (DB.team_roles || []).filter(function (g) { return g.slug === trA.p_slug; })[0];
+      var trT = (DB.team_roles || []).filter(function (g) { return g.slug === trA.p_to; })[0];
+      var trIn = (DB.team_members || []).filter(function (m) { return trG && m.role === trG.slug; });
+      if (!trMe || !opsAccess(trMe).admin) trOut = { error: 'admin-only' };
+      else if (!trG) trOut = { error: 'not-found' };
+      else if (trG.slug === 'admin') trOut = { error: 'fixed' };
+      else if (trG.is_admin && !trSuperOk()) trOut = { error: 'super-only' };
+      else if (trIn.length && (!trT || trT.slug === trG.slug)) trOut = { error: 'no-target', members: trIn.length };
+      else if (trIn.length && (trT.is_admin || trT.slug === 'admin') && !trSuperOk()) trOut = { error: 'super-only' };
+      else if (trG.is_admin && !(trT && (trT.is_admin || trT.slug === 'admin')) && !(DB.team_members || []).some(function (m) {
+        return m.active !== false && !m.removed_at && m.role !== trG.slug && (m.is_admin || m.role === 'admin');
+      })) trOut = { error: 'last-admin' };
+      else {
+        trIn.forEach(function (m) {
+          m.role = trT.slug;
+          m.is_admin = Boolean(trT.is_admin || trT.slug === 'admin');
+          m.access = JSON.parse(JSON.stringify(trT.access || {}));
+          ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'].forEach(function (k) { if (k in trT) m[k] = trT[k]; });
+          m.updated_at = new Date().toISOString();
+        });
+        DB.team_roles.forEach(function (g) { if (g.reports_to === trG.slug) g.reports_to = null; });
+        DB.team_roles = DB.team_roles.filter(function (g) { return g !== trG; });
+        logAct('team.group_removed', trG.name, trIn.length ? trIn.length + (trIn.length === 1 ? ' member' : ' members') + ' moved to ' + trT.name : 'No members');
+        trOut = { ok: true, moved: trIn.length };
+      }
+      return Promise.resolve({ data: trOut, error: null });
+    }
     if (name === 'departments_list' || name === 'department_save' || name === 'department_set_active' || name === 'department_delete') {
       var dr = window.__refuseRpc && window.__refuseRpc[name];
       if (dr) return Promise.resolve({ data: null, error: { message: dr } });
@@ -14422,6 +14461,175 @@ function opsCodeRange(cid, period, ty, src, seq) {
         persist();
         return spOk();
       }
+    }
+
+    if (['hiring_hire_state', 'hiring_make_colleague', 'welcome_kit_get', 'welcome_kit_save', 'welcome_kit_mine', 'welcome_kit_ack',
+         'onboarding_get', 'onboarding_tick', 'onboarding_assets_save'].indexOf(name) > -1) {
+      var eOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var eNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return eNo(window.__refuseRpc[name]);
+      var eMe = opsMe();
+      if (!eMe) return eNo('denied');
+      DB.team_welcome = DB.team_welcome || []; DB.team_onboarding = DB.team_onboarding || [];
+      if (!DB.welcome_kit) DB.welcome_kit = { sections: [
+        { title: 'Welcome', body: 'Your first few days are about settling in, meeting the people you will work with and getting your tools ready.' },
+        { title: 'About the company', body: 'Company: ADSPACE PLT\nAddress: 61-02, Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor\nParking: Outdoor parking, no coupon required\nWi-Fi network: ADunifi / ADunifi_5G' },
+        { title: 'Your first day', body: '10:00am: Arrive, settle in and a quick office tour\n11:30am: Set up your workstation and essential apps\n1:00pm: Lunch with the team' }],
+        updated_at: '2026-11-17T02:00:00Z' };
+      var eNow = new Date().toISOString();
+      var eTm = function (id) { return (DB.team_members || []).filter(function (m) { return m.id === id; })[0]; };
+      var eLog = function (action, subject, detail) { DB.activity_log.push({ id: nid('a'), actor: eMe.name, action: action, subject: subject, detail: detail, created_at: eNow }); };
+      var eDocs = function (cid, kind) { return (DB.hiring_docs || []).filter(function (d) { return d.candidate_id === cid && d.kind === kind && d.state === 'confirmed'; }); };
+      if (name === 'hiring_hire_state' || name === 'hiring_make_colleague') {
+        var ec = (DB.hiring_candidates || []).filter(function (x) { return x.id === args.p_id; })[0];
+        var eRole = opsGranted('team.hiring', 'work') ? 'admin'
+          : ec && !ec.removed_at && (DB.hiring_people || []).some(function (x) { return x.candidate_id === ec.id && x.team_member_id === eMe.id; }) ? 'person' : null;
+        if (name === 'hiring_hire_state') {
+          if (!eRole || !ec) return eNo('not-found');
+          if (ec.member_id) {
+            var em = eTm(ec.member_id) || {}, ew = DB.team_welcome.filter(function (w) { return w.member_id === ec.member_id; })[0] || {};
+            return eOk({ made: true, member: { id: em.id, name: em.name, staff_code: em.staff_code, email: em.email, active: em.active,
+              first_day: ew.first_day, hired_at: ec.hired_at, welcomed_at: ew.acked_at || undefined } });
+          }
+          var ectr = eDocs(ec.id, 'contract')[0];
+          return eOk({ made: false, ready: !!ectr && eDocs(ec.id, 'offer').length > 0 && !ec.removed_at, may: opsGranted('team.hiring', 'work'),
+            terms: ectr ? { position: ectr.terms.position, start: ectr.terms.start, type: ectr.terms.type } : null });
+        }
+        if (!opsGranted('team.hiring', 'work')) return eNo('denied');
+        if (!ec || ec.removed_at) return eNo('not-found');
+        if (ec.member_id) return eOk({ id: ec.member_id, again: true });
+        var ectr2 = eDocs(ec.id, 'contract')[0];
+        if (!ectr2 || !eDocs(ec.id, 'offer').length) return eNo('not-ready');
+        var ev = args.p_values || {};
+        var eEmail = String(ev.email || '').trim().toLowerCase(), eStaff = String(ev.staff_code || '').trim().toUpperCase();
+        var ePos = String(ev.designation || '').trim(), eDay = String(ev.first_day || '');
+        if (eEmail.length < 5 || eEmail.length > 160 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(eEmail)) return eNo('bad-email');
+        if (!(DB.team_roles || []).some(function (r) { return r.slug === ev.role; })) return eNo('bad-role');
+        if (!/^[A-Z0-9]{3,8}$/.test(eStaff)) return eNo('bad-staff');
+        if (!(DB.departments || []).some(function (d) { return d.key === ev.department && d.active !== false; })) return eNo('bad-department');
+        if (ePos.length < 2 || ePos.length > 80) return eNo('bad-position');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(eDay) || eDay < '2023-08-14' || eDay > '2099-12-31') return eNo('bad-day');
+        var eDm = eTm(ev.dm);
+        if (!eDm || !eDm.active) return eNo('bad-dm');
+        var eLive = (DB.team_members || []).filter(function (t) { return !t.removed_at; });
+        if (eLive.some(function (t) { return String(t.email || '').toLowerCase() === eEmail; })) return eNo('taken', { field: 'email' });
+        if (eLive.some(function (t) { return t.staff_code === eStaff; })) return eNo('taken', { field: 'staff_code' });
+        if (eLive.some(function (t) { return String(t.name || '').toLowerCase() === ec.name.toLowerCase(); })) return eNo('taken', { field: 'name' });
+        var eRoleRow = (DB.team_roles || []).filter(function (r) { return r.slug === ev.role; })[0];
+        if (eRoleRow.is_admin && !(eMe.is_admin || eMe.role === 'admin')) return eNo('refused', { reason: 'admin-only' });
+        var eDigits = String(ec.phone || '').replace(/\D/g, '').length;
+        var eId = nid('t');
+        DB.team_members.push({ id: eId, name: ec.name, email: eEmail, role: ev.role, staff_code: eStaff, designation: ePos, department: ev.department,
+          mobile: eDigits >= 8 && eDigits <= 15 ? ec.phone : null, active: true, access: Object.assign({}, eRoleRow.access || {}),
+          is_admin: !!eRoleRow.is_admin, card_key: (function () { var k = ''; while (k.length < 8) k += '23456789abcdefghjkmnpqrstuvwxyz'.charAt(Math.floor(Math.random() * 31)); return k; })(), card_on: true, card_mobile: true, created_at: eNow, updated_at: eNow });
+        var eType = (ectr2.terms || {}).type;
+        prsDb();
+        if (!DB.personnel_records.some(function (r) { return r.team_member_id === eId; })) DB.personnel_records.push({ team_member_id: eId, data: {}, files: {},
+          join_date: eDay, employee_status: { permanent: 'Permanent', contract: 'Contract', intern: 'Interns', part_time: 'Part time' }[eType] || null,
+          employee_type: eType === 'permanent' ? 'FT' : eType === 'part_time' ? 'PT' : 'CT', probation_months: Number((ectr2.terms || {}).probation_months) || 0,
+          contract_end: (ectr2.terms || {}).end || null, superior_id: eDm.id, updated_at: eNow, updated_by: eMe.id });
+        DB.team_welcome.push({ member_id: eId, first_day: eDay, dm_id: eDm.id, made_by: eMe.id, created_at: eNow, acked_at: null });
+        DB.team_onboarding.push({ member_id: eId, ticks: {}, assets: [], updated_at: eNow });
+        ec.stage = 'hired'; ec.member_id = eId; ec.hired_at = eNow; ec.last_step_at = eNow; ec.updated_at = eNow;
+        (DB.hiring_events = DB.hiring_events || []).unshift({ id: nid('he'), candidate_id: ec.id, actor: eMe.name, action: 'candidate.hired',
+          detail: eStaff + ' · first day ' + eDay, created_at: eNow });
+        eLog('team.added', ec.name, eEmail + ' · ' + (eRoleRow.name || ev.role) + ' · made from a candidate');
+        return eOk({ id: eId });
+      }
+      if (name === 'welcome_kit_get') {
+        if (!opsGranted('team.settings', 'work')) return eNo('denied');
+        return eOk({ sections: JSON.parse(JSON.stringify(DB.welcome_kit.sections)), updated_at: DB.welcome_kit.updated_at });
+      }
+      if (name === 'welcome_kit_save') {
+        if (!opsGranted('team.settings', 'work')) return eNo('denied');
+        var ks = args.p_sections;
+        if (!Array.isArray(ks) || ks.length < 1 || ks.length > 12) return eNo('bad-count');
+        var kOut = [];
+        for (var ki = 0; ki < ks.length; ki++) {
+          var kt = String((ks[ki] || {}).title || '').trim(), kb = String((ks[ki] || {}).body || '').trim();
+          if (kt.length < 2 || kt.length > 60) return eNo('bad-title', { at: ki + 1 });
+          if (kb.length < 1 || kb.length > 3000) return eNo('bad-body', { at: ki + 1 });
+          if (/(password|passcode|\bpin\b)[^\n]*:/i.test(kb)) return eNo('secret', { at: ki + 1 });
+          kOut.push({ title: kt, body: kb });
+        }
+        if (args.p_expected && args.p_expected !== DB.welcome_kit.updated_at) return eNo('stale', { sections: DB.welcome_kit.sections, updated_at: DB.welcome_kit.updated_at });
+        if (JSON.stringify(kOut) === JSON.stringify(DB.welcome_kit.sections)) return eOk({ same: true, sections: kOut, updated_at: DB.welcome_kit.updated_at });
+        DB.welcome_kit = { sections: kOut, updated_at: eNow };
+        eLog('team.changed', 'Welcome Kit', 'Sections: ' + kOut.map(function (x) { return x.title; }).join(', '));
+        return eOk({ sections: JSON.parse(JSON.stringify(kOut)), updated_at: eNow });
+      }
+      if (name === 'welcome_kit_mine') {
+        var mw = DB.team_welcome.filter(function (w) { return w.member_id === eMe.id; })[0];
+        if (!mw || mw.acked_at) return eOk({ due: false });
+        var mdm = eTm(mw.dm_id), mdep = (DB.departments || []).filter(function (d) { return d.key === eMe.department; })[0];
+        var kit = { name: eMe.name, first_day: mw.first_day, staff_code: eMe.staff_code, department: mdep ? mdep.name : undefined,
+          designation: eMe.designation, email: eMe.email, dm: mdm ? { name: mdm.name, mobile: mdm.mobile || undefined } : undefined,
+          sections: JSON.parse(JSON.stringify(DB.welcome_kit.sections)) };
+        Object.keys(kit).forEach(function (k) { if (kit[k] == null) delete kit[k]; });
+        return eOk({ due: true, kit: kit });
+      }
+      if (name === 'welcome_kit_ack') {
+        var aw = DB.team_welcome.filter(function (w) { return w.member_id === eMe.id && !w.acked_at; })[0];
+        if (aw) { aw.acked_at = eNow; eLog('team.edited', eMe.name, 'Welcome Kit acknowledged'); }
+        return eOk({});
+      }
+      if (!(opsGranted('team.personnel', 'work') || opsGranted('team.hiring', 'work'))) return eNo('denied');
+      var ot = eTm(args.p_member);
+      if (!ot) return eNo('not-found');
+      var oRow = function (make) {
+        var r = DB.team_onboarding.filter(function (x) { return x.member_id === ot.id; })[0];
+        if (!r && make) { r = { member_id: ot.id, ticks: {}, assets: [], updated_at: eNow }; DB.team_onboarding.push(r); }
+        return r;
+      };
+      if (name === 'onboarding_get') {
+        var og = oRow(false) || { ticks: {}, assets: [] };
+        prsDb();
+        var opr = DB.personnel_records.filter(function (r) { return r.team_member_id === ot.id; })[0] || { files: {} };
+        var ow = DB.team_welcome.filter(function (w) { return w.member_id === ot.id; })[0];
+        var oc = (DB.hiring_candidates || []).filter(function (c) { return c.member_id === ot.id; })[0];
+        var oFirst = function (k) { var d = oc ? eDocs(oc.id, k)[0] : null; return d ? d.confirmed_at || d.updated_at : undefined; };
+        var hbReq = (DB.handbook_docs || []).filter(function (d) { return d.required && !d.archived_at && (d.current_version > 0 || d.link_url); });
+        var known = { offer: oFirst('offer'), contract: oFirst('contract'), record: opr.declared_at || undefined,
+          nric: opr.files && opr.files.nric_front && opr.files.nric_back ? opr.files.nric_back.at : undefined,
+          welcome: ow && ow.acked_at || undefined, welcome_due: !!(ow && !ow.acked_at),
+          handbook_total: hbReq.length,
+          handbook_done: hbReq.filter(function (d) { return (DB.handbook_reads || []).some(function (h) { return h.doc_id === d.id && h.member_id === ot.id && h.version_no === d.current_version && h.acked_at; }); }).length };
+        Object.keys(known).forEach(function (k) { if (known[k] === undefined) delete known[k]; });
+        return eOk({ ticks: JSON.parse(JSON.stringify(og.ticks || {})), assets: JSON.parse(JSON.stringify(og.assets || [])), updated_at: og.updated_at || null, known: known });
+      }
+      if (name === 'onboarding_tick') {
+        var LBL = { doc: { nda: 'Non-Disclosure Agreement', tp: 'TP1 / TP2 / TP3', entryexit: 'Entry/Exit Form' },
+          entry: { email: 'Company email', systems: 'AutoCount HRMS, Bukku and Digital Portal', files: 'Work files access', cp22: 'CP22 / CP22A', tp3: 'TP3 / PCB release', device: 'Device setup / cleanup', desk: 'Desk setup / cleanup' } };
+        LBL.exit = LBL.entry;
+        var lbl = LBL[args.p_side] && LBL[args.p_side][args.p_key];
+        if (!lbl) return eNo('bad-request');
+        var tr = oRow(true), tk = args.p_side + ':' + args.p_key;
+        if (!!args.p_on === (tk in tr.ticks)) return eOk({ same: true, ticks: JSON.parse(JSON.stringify(tr.ticks)), updated_at: tr.updated_at });
+        if (args.p_on) tr.ticks[tk] = { at: eNow, by: eMe.name }; else delete tr.ticks[tk];
+        tr.updated_at = eNow;
+        eLog('team.edited', ot.name, 'Onboarding: ' + lbl + (args.p_side === 'entry' ? ' (entry)' : args.p_side === 'exit' ? ' (exit)' : '') + (args.p_on ? ' ticked' : ' unticked'));
+        return eOk({ ticks: JSON.parse(JSON.stringify(tr.ticks)), updated_at: tr.updated_at });
+      }
+      var al = args.p_assets;
+      if (!Array.isArray(al) || al.length > 40) return eNo('bad-count');
+      var aOut = [];
+      for (var ai = 0; ai < al.length; ai++) {
+        var aa = al[ai] || {};
+        if (['access_card', 'key', 'device', 'namecard', 'folder', 'other'].indexOf(aa.kind) < 0) return eNo('bad-kind', { at: ai + 1 });
+        var ad = String(aa.detail || '').trim();
+        if (ad.length < 1 || ad.length > 200) return eNo('bad-detail', { at: ai + 1 });
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(String(aa.issued || '')) || aa.issued < '2023-08-14' || aa.issued > '2099-12-31') return eNo('bad-date', { at: ai + 1 });
+        if (aa.returned && (!/^\d{4}-\d{2}-\d{2}$/.test(String(aa.returned)) || aa.returned < aa.issued)) return eNo('bad-returned', { at: ai + 1 });
+        var ao = { kind: aa.kind, detail: ad, issued: aa.issued };
+        if (aa.returned) ao.returned = aa.returned;
+        aOut.push(ao);
+      }
+      var ar = oRow(true);
+      if (args.p_expected && ar.updated_at !== args.p_expected) return eNo('stale', { assets: ar.assets, ticks: ar.ticks, updated_at: ar.updated_at });
+      if (JSON.stringify(ar.assets) === JSON.stringify(aOut)) return eOk({ same: true, assets: aOut, updated_at: ar.updated_at });
+      ar.assets = aOut; ar.updated_at = eNow;
+      eLog('team.edited', ot.name, 'Onboarding: assets ' + aOut.length + ' (' + aOut.filter(function (x) { return x.returned; }).length + ' returned)');
+      return eOk({ assets: JSON.parse(JSON.stringify(aOut)), updated_at: eNow });
     }
 
     if (/^hiring_/.test(name) || /^careers_(read|pick|none|pool|doc_open|doc_read|doc_answer)$/.test(name)) {

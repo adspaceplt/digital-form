@@ -1807,7 +1807,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     deleted by an admin: `roles_admin` and `team_roles_admin_guard`,
     `admin-only`, 2026-11-17; none on the Admin group, nor on an admin group
     for anyone but the super admin), a ⋯ holding Delete beside it
-    on an empty group alone (TEAM2-11, TEAM2-14). Services offers No Access,
+    (TEAM2-11, TEAM2-14; every group since 2026-11-17). Services offers No Access,
     View and Full Access; Leads and Past clients offer no level above
     Clients; a client part that follows Clients is greyed while Clients is
     No Access (N2, N3). The panel reads the sections and the Activity
@@ -1839,8 +1839,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   strip reads Members, Hiring (`tab=hiring`), Groups, Performance and Health
   (`tab=health`, an admin's alone), each drawn only where readable, the strip
   only where two tabs show.
-- The Admin group has no ⋯ and cannot be deleted. A group delete takes
-  `.select('slug')` and names a refusal.
+- The Admin group has no ⋯ and cannot be deleted. A group is deleted by
+  `team_role_delete(p_slug, p_to)` (`2026-11-17-group-delete.sql`; the user,
+  2026-11-17: "delete options for every create"): an admin's (`admin-only`),
+  an admin group or a move into one the super admin's (`super-only`), the
+  Admin group never (`fixed`); a group holding colleagues, removed ones
+  too, asks New group for its n members (`no-target` without it) and moves them
+  in the same transaction, each taking that group's access, the last admin
+  kept (`last-admin`); then the name typed back; filed
+  `team.group_removed` with how many moved and where.
 - While an active system account exists, it alone (the super admin) makes
   a colleague or a group admin, or changes an admin's group, admin mark or
   standing, or makes or deletes an admin group (`team_super_ok()`,
