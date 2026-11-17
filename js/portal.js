@@ -224,9 +224,9 @@
     if ((m = /^(\d+)[ -]month minimum$/.exec(k))) return '最少' + m[1] + '个月';
     if ((m = /^up to (\d+) seconds$/.exec(k))) return '最长' + m[1] + '秒';
     if ((m = /^(rmb?) ([\d,.]+) platform fee included$/.exec(k))) return '含 ' + m[1].toUpperCase() + ' ' + m[2] + ' 平台费';
-    if ((m = /^(\d+)-month term$/.exec(k))) return m[1] + '个月期限';
-    if ((m = /^([\d.]+)% short-term adjustment$/.exec(k))) return '短期调整' + m[1] + '%';
-    if ((m = /^([\d.]+)% long-term discount$/.exec(k))) return '长期折扣' + m[1] + '%';
+    if ((m = /^(\d+)-month commitment$/.exec(k))) return m[1] + '个月承诺期';
+    if ((m = /^([\d.]+)% surcharge$/.exec(k))) return '附加费' + m[1] + '%';
+    if ((m = /^([\d.]+)% discount$/.exec(k))) return '折扣' + m[1] + '%';
     return null;
   }
   function unitWord(u) {
