@@ -3314,8 +3314,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`client_suppliers`, Suppliers View), opening it.
 - Supplier emails (`2026-10-18-supplier-emails.sql`, `supplier-mail`,
   `docs/SUPPLIER-EMAIL-SETUP.md`; the user, 2026-10-18), sent by hand
-  through Resend from `ADspace <noreply-supplier@sc.adspace.me>`, replies
-  to ap@adspacestudios.com: Send email at the head of Emails (`#supMailSheet`,
+  through Resend from the suppliers' sender: Send email at the head of Emails (`#supMailSheet`,
   Suppliers Work, a supplier with an email) offers Supplier approved (an
   Active supplier) and Document (a letter not void, sent as its PDF, which
   `supplier-mail` takes only where its title names the reference), the
@@ -3351,9 +3350,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   Clients: Letters, Letters or Documents: Client documents at Work
   (`client_email_may`) with Clients: Contacts at View (its addresses are
   that part's; security audit 2026-11-07), the client in scope. One sheet (`#dmSheet`,
-  `ADspaceDocMail.compose`): From `ADspace <noreply-client@sc.adspace.me>`
-  (`MAIL_CLIENT_FROM`), replies to the colleague who sends (else
-  marketing@adspacestudios.com), To the client's contacts holding an email,
+  `ADspaceDocMail.compose`): From the clients' sender, To the client's contacts holding an email,
   the billing contact first, else the primary (`client_email_prepare`),
   Copy the finance email where it differs, Subject and Message the kind's
   template filled from the record and editable, the PDF drawn here as
@@ -3509,10 +3506,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `adhire{id}` titled Interview · {position}, never the candidate's name),
   and the candidate moves Invited → Interview. Each step emails the
   candidate (`hiring-mail`: the invitation with a button to their page, the
-  confirmation with the Meet or the office's address; from
-  `MAIL_CAREERS_FROM`, unset `ADspace <noreply-careers@sc.adspace.me>`,
-  replying to the sender; filed by `hiring_mail_done`, Email again where it
-  failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
+  confirmation with the Meet or the office's address; from the careers
+  sender; filed by `hiring_mail_done`, Email again where it failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
   not chosen. Settings, Hiring: Time limits holds the figures
@@ -3799,9 +3794,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   a company, the finance email copied where ticked; an invoice number of 1
   to 60 characters with no control character), builds the table where
   `{invoices}` stands (a View PDF a row for several, one small button for one,
-  from Bukku's share link), sends through Resend from `ADspace Finance
-  <noreply-finance@sc.adspace.me>` (`MAIL_FINANCE_FROM`), replies to
-  einvoice@adspacestudios.com (`MAIL_FINANCE_REPLY_TO`), and closes it
+  from Bukku's share link), sends through Resend from the finance sender, and closes it
   (`invoice_email_done`, filed `client.edited` on the client). A page never
   files or names a figure: begin and done are the service role's alone.
   Shut while sending, Review and send sends no further email and reads the
@@ -4455,7 +4448,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   sent by the `creator-mail` edge function (woken by `creator_mail_kick`
   with the wake secret, and by pg_cron `creator-mail-drain` every five
   minutes while one waits; `creator_mail_claim`, `creator_mail_done`, the
-  service role's alone), from `ADspace <noreply-creator@sc.adspace.me>`;
+  service role's alone), from the creators' sender;
   Resend's word, the sweep, the twelve-month clearing and Messages' Email
   log take them as every other email.
 - Creator payments (`2026-11-09-creator-payments.sql`, its SQL Editor part
@@ -8336,8 +8329,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   not delivered (red, where any) in the line under the section's name, filtered by Type and Status; a row is one button
   opening the email as sent (`#emlSheet`: From, To, Copy, the client or
   supplier opening its record, Reference, Sent by, Status, each step's
-  time, a bounce's reason, the message). Sign-in and invitation emails are
-  Supabase's and are not kept (the user, 2026-11-04).
+  time, a bounce's reason, the message). Every email the portal sends is
+  in it (the user, 2026-11-17: "All outgoing WhatsApp messages and emails
+  should be logged inside"; `2026-11-17-every-email-in-messages.sql`): a
+  sender with no log of its own files each send once Resend answers
+  (`system_emails`, RLS on, no policy, no grant; `system_email_file` and
+  `_shared/mail.ts` `fileSent`, the service role's): hiring-mail's
+  invitation, confirmation, outcome and document at the candidate's own
+  access (`hiring_role`), its document code (Code, Requested by Candidate,
+  its words never kept), and invite-member's invitations, a colleague's at
+  Team View and a client contact's at Clients: Contacts View on a client in
+  scope (a sign-in link's words never kept); a new sender files the same
+  way. Supabase's own sign-in codes are not the portal's to log.
 - New email (`#emlNew` on the Email bar, Messages at Work;
   `2026-11-04-new-email.sql` and its SQL Editor part; the user, 2026-11-04):
   `#nemSheet` asks For (Client, Supplier, Other as a segment): a client's
@@ -8356,9 +8359,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   a PDF), files it (`email_new_begin`: the record's own addresses alone,
   `bad-recipient`, `bad-copy`, `bad-email`, one key a sheet `again` with
   its email's status, read Not confirmed where it never went, a
-  hundred a colleague a day `too-many`), sends it in the branded layout from
-  noreply-client (a supplier's from noreply-supplier), replies to the
-  sender, and closes it (`email_new_done`, filed `email.sent` under
+  hundred a colleague a day `too-many`), sends it in the branded layout from the clients' sender (a supplier's from
+  the suppliers'), and closes it (`email_new_done`, filed `email.sent` under
   Messages by the recipient's name and the number of copies, never an
   address; Send by email's `client_email_done`, `supplier_email_done` and
   `invoice_email_done` alike; 2026-11-04). One to or copying a finance
@@ -8668,7 +8670,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Send invitation always sends one (2026-11-11, the user: two went
   nowhere): Supabase invites only an address with no login, so for one that
   has a login `invite-member` sends the same invitation itself through
-  `_shared/mail.ts` (from the sign-in emails' sender, a one-time sign-in
+  `_shared/mail.ts` (from the team's sender, a one-time sign-in
   link from `generateLink`, a key of its own each send), and a page says
   Invitation sent only on `sent`, never on `already`. A colleague is
   greeted by the name on their record, an admin alone wording it otherwise
@@ -9074,9 +9076,21 @@ Each line is a rule that broke once. Its reason is in the archive.
   J31-2401-32100002, 61-02 Jalan Mutiara Emas 2A, Taman Mount Austin, 81100
   Johor Bahru, Johor, Malaysia, advertise@adspacestudios.com, (60)18 762 5233,
   adspacestudios.com. The bank line is blank.
-- Emails:
-  - support and issuer: advertise@adspacestudios.com;
-  - account manager: marketing@adspacestudios.com;
+- Emails:  - support and issuer: advertise@adspacestudios.com (the client portal's
+    contact line too);
+  - every email the portal sends goes from its section's sender,
+    `noreply-{section}@sc.adspace.me` (clients, suppliers, creators,
+    careers, finance, team; `mail_senders`, `mail_sender(p_key)` through
+    `_shared/mail.ts` `sender`), and replies to a company mailbox, never a
+    colleague's own address (the user, 2026-11-17): General
+    advertise@ (clients, careers, invitations, all else), Accounts payable
+    ap@ (suppliers, creators), Finance finance@ (invoices and reminders),
+    e-Invoice einvoice@ (e-invoice submissions alone); the four are
+    Settings, Messages: Reply-to mailboxes (`mail_boxes`,
+    `mail_boxes_set`, `team.settings`, filed `team.changed` under Email
+    addresses), the pages reading them through `mail_senders_read`
+    (`ADspaceDocMail.showSender`) and the Email log's From through
+    `mail_log` `senders`;
   - admin login: adspacestudios@gmail.com.
 - Google Drive import uses the browser key (restricted to
   `digital.adspace.me/*`, Drive API only).
