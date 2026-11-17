@@ -11253,8 +11253,17 @@ before the merge; until now only `node --check` and screenshots ran before
 a merge and the suites once a day after it. The merge check
 `.claude/hooks/verify-gate.sh` starts in observe mode, logging to
 `/tmp/verify-gate.log` what it would have held; enforce once the log shows no
-false holds. (2) The logged failures are cleared at their cause or deleted
-with their reason, so main reads `gate: ok`. (3) `tests/pricediff.js`
+false holds. (2) The logged failures: `demo` (the creator page typed ADspace into its
+status lines; it now names the agency from the config), `crm` and `perfui`
+(three expectations older than an approved change: Reply in the request's
+⋯ #1210, the 33.3pt margins #1158, Off for No Access and a part never above
+its section, the access restructure), `sql` (the Completed check moved the
+first client by id, a random one, to Past and never back, so the push check
+met a Past client in 2 runs of 6), `work` (the deadline lines read across
+midnight; the clock is now held at 3:10pm as the meeting checks already
+were) and the `crm` logo (a fixed settle before an image drawn down;
+it now waits for the preview). portal, mailfn, hiringsql, menus and the
+sql seal check already passed on main. (3) `tests/pricediff.js`
 prices random quotations in Postgres and in the stand-in and holds the
 totals' own arithmetic: on its first run it found Total for the term a sen
 under First month incl. SST where a monthly line runs fewer months than the
