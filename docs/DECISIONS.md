@@ -11243,3 +11243,24 @@ bell's notices are not in Messages; Supabase's sign-in codes are sent by
 Supabase and cannot be logged by the portal. Every hi.adspace.me address the
 host answers is already listed in Short Links.
 
+
+### 2026-11-17 · The verification loop
+The user, after reading how the Claude Code team verifies its work: "Ok
+all" to five changes. (1) `tests/affected.js` reads a change's diff against
+the suite map, now data in the tests repository (`tests/affected.json`, the
+CLAUDE.md File → suites table moved there), and runs the suites it reaches
+before the merge; until now only `node --check` and screenshots ran before
+a merge and the suites once a day after it. The merge check
+`.claude/hooks/verify-gate.sh` starts in observe mode, logging to
+`/tmp/verify-gate.log` what it would have held; enforce once the log shows no
+false holds. (2) The logged failures are cleared at their cause or deleted
+with their reason, so main reads `gate: ok`. (3) `tests/pricediff.js`
+prices random quotations in Postgres and in the stand-in and holds the
+totals' own arithmetic: on its first run it found Total for the term a sen
+under First month incl. SST where a monthly line runs fewer months than the
+term (`quote_totals` rounded the adjustment and SST over the span in one
+step); TERM TOTAL FROM ITS PARTS rounds them as a month's incl. is worked.
+(4) `tests/expectations.js` lists every check a change removed or changed,
+for the PR body. (5) CLAUDE.md held every area's rules (636 KB), loaded by
+every session; the areas moved to `docs/rules/` (CLAUDE.md about 175 KB), each
+named by `.claude/hooks/area-rules.sh` on the first edit of its paths.
