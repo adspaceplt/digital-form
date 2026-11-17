@@ -7972,9 +7972,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`tests/teamrec.js`).
 - A colleague's record has a rail, as a client's (`.rec`, 1.618 : 1,
   splitting below 1100, its blocks leading the tabs on a phone; TEAM2-9,
-  2026-10-24): Their work (Team Full Access, off the Work pane: the counts
-  `team_work_held` and their open tasks answer, read once a visit and
-  again after a hand-over, overdue in red, Open Work and Hand over work)
+  2026-10-24), the same blocks on every pane so the strip and head never
+  jump between tabs (the user, 2026-11-17): Their work (Team Full Access:
+  the counts `team_work_held` and their open tasks answer, read once a
+  visit and again after a hand-over, overdue in red, Open Work and Hand
+  over work, the counts alone beside the Work pane)
   and Access (the access end off Overview, where it is set; at Team Full
   Access `team_member_seen(p_id)`: Active 2 hours ago / Active today,
   9:14am, Last sign-in 22 Oct, 9:14am from `auth.users`, else Not signed

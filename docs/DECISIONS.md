@@ -11047,3 +11047,12 @@ four switches, Clients they see, Reports to) and Section access, one row a
 section whose single Advanced fold holds its parts, the admin tools acting on
 it (the portal's under Team) and its Activity record line. Stored keys and
 checks unchanged; `perms`, `scope`, `team` hold it.
+
+### 2026-11-17 · A colleague's record holds one layout across its tabs
+The user, with screenshots of a removed colleague: "sudden jumping and
+missing". The rail's Their work block left on the Work tab, so the strip and
+head widened there and narrowed again on Overview. The rail now keeps its
+blocks on every tab, the counts alone beside the Work pane (its Hand over
+work said once). The ⋯ on a removed colleague whose details were erased held
+nothing that still applied; Delete permanently (the next release) fills it.
+`teamrec` measures the strip and head across the two tabs.

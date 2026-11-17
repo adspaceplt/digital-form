@@ -2654,9 +2654,10 @@
     var seenToo = may('team', 'manage') && !m.erased_at;
     var access = end || seenToo ? '<div class="railblock" id="mrecAccess"' + (end ? '' : ' hidden') + '><h3 class="railtitle">Access</h3><ul class="railseen" id="mrecSeen">' +
       (end ? '<li>' + esc(end) + '</li>' : '') + '</ul></div>' : '';
-    /* Their work is the Work pane's, read at Team Full Access, and left to
-       it while it is open. */
-    var work = paneOk('work') && !onWork;
+    /* The rail holds the same blocks on every pane, so the strip and the
+       head keep their width from tab to tab (the user, 2026-11-17: "sudden
+       jumping"); Their work stays beside the Work pane as its summary. */
+    var work = paneOk('work');
     rail.innerHTML = (work ? '<div class="railblock" id="mrecHeld"><h3 class="railtitle">Their work</h3><div id="mrecHeldBody"></div></div>' : '') + access;
     var lastOne = function () {
       var shown = rail.querySelectorAll('.railblock:not([hidden])');
@@ -2679,7 +2680,9 @@
       rows.push(['Other work', other]);
       var shown = rows.filter(function (r) { return r[1] > 0; });
       var acts = [];
-      if (shown.length) {
+      /* Beside the Work pane the rail is the counts alone: the pane holds
+         Hand over work, said once. */
+      if (shown.length && !onWork) {
         acts.push('<button class="btn btn-sm" type="button" data-r="work">Open Work</button>');
         if (!self && !m.system && may('team', 'manage')) acts.push('<button class="btn btn-sm" type="button" data-r="hand">Hand over work</button>');
       }
