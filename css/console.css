@@ -5911,6 +5911,27 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .hir-total { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .hir-card-line { margin: 0 0 8px; font-size: 12.5px; color: var(--ink-mute); }
 .hir-note { margin: 4px 0 0; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.hir-rating { font-size: 13px; font-weight: 500; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.iv-read { margin-top: 8px; }
+.iv-read > summary { display: inline-flex; align-items: center; min-height: var(--ctl-h-sm); font-size: 13px; font-weight: 500; color: var(--ink-soft); cursor: pointer; }
+.iv-facts { margin-top: 4px; }
+.iv-read > summary { list-style: none; gap: 8px; }
+.iv-read > summary::-webkit-details-marker { display: none; }
+.iv-read > summary::after { content: ""; width: 6px; height: 6px; margin-top: -3px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform var(--t-fast) var(--ease); }
+.iv-read[open] > summary::after { margin-top: 3px; transform: rotate(-135deg); }
+/* The Interviewer's Sheet (2026-11-17): a panel beside the record with no
+   scrim, so the candidate's record stays in sight and scrolls while the
+   interview runs (the user: "a slide window or so so the record could stay
+   right"). */
+.sheet.sheet-side.is-beside { background: transparent; pointer-events: none; }
+.sheet.sheet-side.is-beside > .sheet-card { pointer-events: auto; box-shadow: var(--shadow-lift); }
+.ivcard .qcard-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+.ivcard .hir-card-line { margin-top: -6px; }
+.iv-fields { display: grid; gap: 16px; }
+.iv-fields > .field { display: grid; gap: 6px; min-width: 0; }
+.iv-fields .field-label { margin: 0; }
+.iv-note { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.iv-saved { margin-right: auto; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .ind-row.is-hsc:not(.ind-head) { grid-template-columns: minmax(0, 1fr) 80px; grid-template-areas: "name acts" "crit acts"; column-gap: 8px; }
   .ind-row.is-hsc > .hsc-pos { grid-area: name; }

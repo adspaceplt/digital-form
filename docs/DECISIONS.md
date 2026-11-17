@@ -10992,3 +10992,19 @@ day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages wi
 signing in again and seeded the database before a reload that reseeds it; both fixed in
 the suite.
 - 2026-11-17 · Analytics and Documents, from the user's screenshots. On time by person stood a third of the Operations row wide, so its line and its five-column table ran over the card beside it: it now takes the row alone, Reports and Creator bookings sharing the next. Clients who moved drew broken hairlines because its colleague cell borrowed `.ovw-who`, the Team tab's flex row, which turned a table cell into a flex box (one class, one component): the cell is `.ovw-mby`. The user: "person in charge is the main personnel … not counted for leads … the leads are only by sales by". By person in charge became Sales by colleague (new leads, won and lost by `clients.sales_by`, read as the colleague's name, a leaver's kept); churn stays the Person in charge's and moved out of that table, and Clients who moved names Sales by for Won, New leads and Lost leads and Person in charge for the rest, said on each move's heading. Documents' Add existing document had gone behind the bar's ⋯ on 2026-11-03, where the user met a ⋯ holding one item and asked what it was for: it records a document issued outside the portal (an NDA, an older letter) under its own reference, and it stands on the bar again as a tonal button beside Issue document at a desk (the phone's bar keeps it behind its ⋯).
+
+### 2026-11-17 · The Interviewer's Sheet, beside the record
+
+The user sent the team's paper Interviewer's Sheet (a rating out of 10,
+internal remarks, MBTI and twelve questions) and asked for it on top of the
+scorecard, in "a slide window or so so the record could stay right", since
+an interview runs long; Add scores had been a centred question over a scrim.
+The Scores tab's Interview sheet now opens a side panel with no scrim, each
+note saved as its field is left so a long interview loses nothing, the
+scorecard and recommendation saved by Save. The same day: the invitation's
+note of online meetings already booked sat under Time 1's date as a half row
+("move below as one whole row"), now a full row under the times
+(ADspaceConfirm's `line`); and "the invite interview, shouldnt be jusst time
+within a same day": the seeded window of 3 days became 14, the setting's
+most, so the three times may sit on different days a week or more apart.
+
