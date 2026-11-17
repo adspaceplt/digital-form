@@ -11088,3 +11088,14 @@ serving an older `/version.json` never reads as newer; a tab refreshes by
 itself at most once in three minutes, so a stale edge cannot loop it.
 Client pages are untouched; nobody is signed out (Refresh app keeps the
 session). `tests/buildsync.js` holds it on Playwright's clock.
+
+### 2026-11-17 · A colleague in Bukku
+HR-SPEC decision 12 asked that a new colleague be pushed to Bukku as an
+employee contact, else a supplier marked Employee. Bukku's contacts take the
+type `employee` (bukku-sync already named it), so a colleague is their own
+kind, `member`, sent from the Onboarding pane at Personnel. Only the name,
+company email, mobile and home address go: never an NRIC, bank details or a
+salary. The link table's kind check can only be widened in the SQL Editor,
+so `bukku_may` asks `bukku_member_ready()` first and the band stays away
+until that part has run: nothing is ever made in Bukku that the portal cannot
+file.

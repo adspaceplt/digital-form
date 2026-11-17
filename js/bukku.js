@@ -33,7 +33,7 @@
   function esc(s) { return window.ADspaceWords.esc(s); }
   function day(iso) { return iso && window.ADspaceClock ? window.ADspaceClock.date(iso) : ''; }
   function may(k, l) { var A = window.ADspaceAdmin; return Boolean(A && A.may && A.may(k, l)); }
-  function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : kind === 'creator' ? may('campaigns.pay', 'work') : may('clients.billing', 'work'); }
+  function mayWork(kind) { return kind === 'supplier' ? may('suppliers', 'work') : kind === 'creator' ? may('campaigns.pay', 'work') : kind === 'member' ? may('team.personnel', 'manage') : may('clients.billing', 'work'); }
   /* A client's or billing entity's billing is Bukku's once linked; a supplier and a creator are sent. */
   function holds(kind) { return kind === 'client' || kind === 'entity'; }
 
@@ -305,7 +305,7 @@
     var code = d.code || String(d.contact_id);
     window.ADspaceConfirm.ask({
       title: 'Unlink from Bukku?', go: 'Unlink', tone: 'warn', wait: true, opener: opener,
-      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
+      body: 'This ' + (kind === 'client' ? 'client' : kind === 'entity' ? 'billing entity' : kind === 'creator' ? 'creator' : kind === 'member' ? 'colleague' : 'supplier') + ' will no longer be linked to Bukku contact ' + code + '. Nothing changes in Bukku. ' +
         (holds(kind) ? 'Link to Bukku' : 'Send to Bukku') + ' will then offer the matching contacts again.' + (kind === 'client' || kind === 'supplier' ? ' A supplier that is also a client shares one Bukku contact, so both will be unlinked.' : '')
     }, function () {
       return rpc('bukku_unlink', { p_kind: kind, p_id: id }).then(function (r) {

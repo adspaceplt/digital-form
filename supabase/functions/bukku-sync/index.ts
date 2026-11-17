@@ -1,6 +1,7 @@
 /*
  * bukku-sync — sends a client's billing or a supplier's details to Bukku as
- * one contact, by hand (2026-10-18; 2026-10-18-bukku-contacts.sql).
+ * one contact, by hand (2026-10-18; 2026-10-18-bukku-contacts.sql), and a
+ * colleague as an employee (kind `member`, 2026-11-17).
  *
  *   POST { action: 'fields' }                 Bukku's custom contact fields,
  *                                             for Settings' Bukku sheet.
@@ -382,7 +383,7 @@ function rowsOf(p: Prep, cur: any | null, next: Record<string, any>, terms: any[
   ];
   /* An existing contact's change is chosen field by field (2026-11-10, the
      user: "choose which one to send"); the type is always sent. */
-  return list.map(([key, field, now, after]) => ({ key, field, now, after, same: now === after,
+  return list.filter(([key]) => key !== 'our_id' || !!p.field_id).map(([key, field, now, after]) => ({ key, field, now, after, same: now === after,
     pick: !!cur && key !== 'types' }));
 }
 
@@ -1518,7 +1519,7 @@ Deno.serve(async (req) => {
     }
 
     const kind = String(body.kind || ''), id = String(body.id || '');
-    if (!['client', 'supplier', 'entity', 'creator'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
+    if (!['client', 'supplier', 'entity', 'creator', 'member'].includes(kind) || !/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
     const prep = await db.rpc('bukku_prepare', { p_kind: kind, p_id: id });
     if (prep.error) return json({ error: 'needs-update' }, 200, origin);
     let p = prep.data as Prep;
@@ -1534,7 +1535,9 @@ Deno.serve(async (req) => {
       }
     }
     if (!p || p.error) return json(p || { error: 'bad-request' }, 200, origin);
-    if (!p.field_id) return json({ error: 'no-field' }, 200, origin);
+    /* A colleague is an employee (HR-SPEC decision 12): no Bukku field
+       holds an Employee ID, so none is asked. */
+    if (!p.field_id && kind !== 'member') return json({ error: 'no-field' }, 200, origin);
 
     if (action === 'find') {
       if (p.contact_id) {

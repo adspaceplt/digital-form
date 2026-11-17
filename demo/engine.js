@@ -667,7 +667,7 @@
     team_member_remove: 'p_erase p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
-    verify_serial: 'p_serial', verify_file: 'p_serial p_sha'
+    verify_serial: 'p_serial', verify_file: 'p_serial p_sha', hiring_register: ''
   };
 
   function quoteName(c) { return ({ graphic: 'Graphic (Static)', gif: 'Graphic (GIF)', carousel: 'Graphic (Carousel)' })[c.spec && c.spec.kind] || c.name; }
@@ -2351,6 +2351,17 @@ function cardSlugFree(name, self, email) {
         withdrawn_on: qt.withdrawn_on || null,
         state: qt.withdrawn_at ? 'withdrawn' : qt.status === 'not_proceeding' || qt.removed_at ? 'voided' : revised ? 'replaced'
           : (!qt.signed_at && qt.valid_until && String(qt.valid_until) < today) ? 'expired' : 'valid' };
+    }
+
+    var hd = (DB.hiring_docs || []).filter(function (x) {
+      return x.serial && same(x.serial) && x.sent_at && x.state !== 'draft';
+    }).sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
+    if (hd) {
+      return { found: true, serial: hd.serial, kind: 'HR Letter', issued_at: hd.sent_at,
+        signed_at: hd.signed_at || null, confirmed_at: hd.confirmed_at || null,
+        document_id: hd.seal_sha ? hd.id : null, sealed: !!hd.seal_sha,
+        state: hd.state === 'void' ? 'voided' : hd.state === 'withdrawn' ? 'withdrawn' : hd.state === 'declined' ? 'declined'
+          : (hd.state === 'sent' && hd.reply_by && new Date(hd.reply_by) < new Date()) ? 'expired' : 'valid' };
     }
     if (pr) return { found: true, kind: 'HR letter', issued_at: pr.released_at, state: pr.status === 'draft' ? 'replaced' : 'valid' };
 
@@ -10194,7 +10205,25 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var vq = (DB.quotations || []).filter(function (x) {
         return x.seal_key && x.ref && (x.ref.toUpperCase() === vs || x.ref.toUpperCase().replace(/\//g, '-') === vs.replace(/\//g, '-'));
       })[0];
-      return Promise.resolve({ data: vq ? { match: vq.seal_sha === vh } : { none: true }, error: null });
+      var vsha = vq ? vq.seal_sha : null;
+      if (!vsha) {
+        var vd = (DB.hiring_docs || []).filter(function (x) {
+          return x.seal_sha && x.serial && (x.serial.toUpperCase() === vs || x.serial.toUpperCase().replace(/\//g, '-') === vs.replace(/\//g, '-'));
+        }).sort(function (x, y) { return (x.state === 'void' ? 1 : 0) - (y.state === 'void' ? 1 : 0); })[0];
+        vsha = vd ? vd.seal_sha : null;
+      }
+      return Promise.resolve({ data: vsha ? { match: vsha === vh } : { none: true }, error: null });
+    }
+
+    if (name === 'hiring_register') {
+      if (!opsAllowed('register.hr', 'view')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var hrRows = (DB.hiring_docs || []).filter(function (x) { return x.confirmed_at && x.serial; }).map(function (x) {
+        var hc = (DB.hiring_candidates || []).filter(function (c) { return c.id === x.candidate_id; })[0] || {};
+        return { id: x.id, serial: x.serial, kind: x.kind, name: hc.name || '', member_id: hc.member_id || null,
+          sent_at: x.sent_at, confirmed_at: x.confirmed_at, sealed: !!x.seal_path, seal_path: x.seal_path || null,
+          voided_at: x.voided_at || null };
+      }).sort(function (a2, b2) { return String(b2.confirmed_at).localeCompare(String(a2.confirmed_at)); });
+      return Promise.resolve({ data: { rows: JSON.parse(JSON.stringify(hrRows)) }, error: null });
     }
 
     var CR_DELIVER = ['pending_draft', 'changes'];
@@ -13770,11 +13799,19 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
         if (k === 'creator') return opsAllowed('campaigns.creators', 'view') && (lv === 'view' || opsGranted('campaigns.pay', 'work'));
         if (k === 'entity') return opsAllowed('clients.billing', lv) && (id == null || (DB.client_entities || []).some(function (l) { return l.entity_id === id && bkSeen(l.client_id); }));
+
+        if (k === 'member') return !window.__bukkuMemberOff && opsGranted('team.personnel', 'manage') &&
+          (id == null || DB.team_members.some(function (m) { return m.id === id && !m.erased_at && !m.system; }));
         return false;
       };
       var bkPay = function (id) { return (DB.creator_pay_requests || []).filter(function (r) { return r.creator_id === id && r.status === 'approved'; })
         .sort(function (a, b) { return a.decided_at < b.decided_at ? 1 : -1; })[0]; };
       var bkPrint = function (k, id) {
+        if (k === 'member') {
+          var pm = DB.team_members.filter(function (x) { return x.id === id; })[0];
+          var pd = ((DB.personnel_records || []).filter(function (x) { return x.team_member_id === id; })[0] || {}).data || {};
+          return pm ? JSON.stringify([pd.full_name || pm.name, pm.email, pd.mobile || pm.mobile, pm.staff_code, pd.address1, pd.postcode, pd.city]) : null;
+        }
         if (k === 'creator') { var pq = bkPay(id), pc = DB.creators.filter(function (x) { return x.id === id; })[0]; return pc ? JSON.stringify([pq ? pq.ref : null, pq ? pq.legal_name : null, pc.creator_code]) : null; }
         if (k === 'entity') {
           var be = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0];
@@ -14064,6 +14101,17 @@ function opsCodeRange(cid, period, ty, src, seq) {
         });
       }
       if (name === 'bukku_prepare') {
+        if (args.p_kind === 'member') {
+          var pmm = DB.team_members.filter(function (x) { return x.id === args.p_id; })[0];
+          if (!pmm) return bkNo('not-found');
+          var pmd = ((DB.personnel_records || []).filter(function (x) { return x.team_member_id === pmm.id; })[0] || {}).data || {};
+          var pmName = String(pmd.full_name || pmm.name).toLowerCase().replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+          var pmAddr = [pmd.address1, pmd.address2, [pmd.postcode, pmd.city].filter(Boolean).join(' '), pmd.state, pmd.country].filter(Boolean).join(', ');
+          return bkOk({ kind: 'member', id: pmm.id, legal_name: pmName, other_name: pmm.name,
+            entity_type: /^malaysia/i.test(pmd.nationality || 'Malaysian') ? 'MALAYSIAN_INDIVIDUAL' : 'FOREIGN_INDIVIDUAL',
+            email: pmm.email || null, phone_no: pmd.mobile || pmm.mobile || null, address: pmAddr || null, country: 'MY', currency: 'MYR',
+            person: pmName, our_id: pmm.staff_code || null, field_id: null, type: 'employee', contact_id: bkLink ? bkLink.contact_id : null });
+        }
         if (args.p_kind === 'creator') {
           var pcr = DB.creators.filter(function (x) { return x.id === args.p_id; })[0];
           if (!pcr) return bkNo('not-found');
@@ -14138,9 +14186,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
           return;
         }
         var fr = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : k === 'creator' ? DB.creators.filter(function (x) { return x.id === id; })[0]
+          : k === 'member' ? DB.team_members.filter(function (x) { return x.id === id; })[0]
           : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
-        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: k === 'client' ? 'client.edited' : k === 'creator' ? 'creator.updated' : 'supplier.edited',
-          subject: fr ? (k === 'client' || k === 'creator' ? fr.name : (fr.name || fr.code)) : 'Bukku', detail: detail, created_at: at });
+        DB.activity_log.unshift({ id: nid('al'), actor: bkMe.name, action: k === 'client' ? 'client.edited' : k === 'creator' ? 'creator.updated' : k === 'member' ? 'team.edited' : 'supplier.edited',
+          subject: fr ? (k === 'client' || k === 'creator' || k === 'member' ? fr.name : (fr.name || fr.code)) : 'Bukku', detail: detail, created_at: at });
       };
 
       if (name === 'bukku_unlink' || name === 'bukku_unlink_undo') {
@@ -14148,6 +14197,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var bkNameOf = function (k, id) {
           if (k === 'entity') { var ne = (DB.billing_entities || []).filter(function (x) { return x.id === id; })[0]; return ne ? (ne.legal_name || 'Billing entity') : null; }
           if (k === 'creator') { var nc = DB.creators.filter(function (x) { return x.id === id; })[0]; return nc ? nc.name : null; }
+          if (k === 'member') { var nm = DB.team_members.filter(function (x) { return x.id === id; })[0]; return nm ? nm.name : null; }
           var r = k === 'client' ? DB.clients.filter(function (x) { return x.id === id; })[0] : (DB.suppliers || []).filter(function (x) { return x.id === id; })[0];
           return r ? (k === 'client' ? r.name : (r.name || r.code)) : null;
         };
@@ -16600,6 +16650,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (opsGranted('team.hiring', 'work')) return true;
       if (!c || c.removed_at) return false;
       var p = (DB.hiring_people || []).filter(function (x) { return x.candidate_id === id && x.team_member_id === me.id; })[0];
+      if (!p && !write && opsAllowed('register.hr', 'view')) {
+
+        return (DB.hiring_docs || []).some(function (x) { return x.candidate_id === id && x.seal_path === path && x.confirmed_at; });
+      }
       return !!p && (!write || p.role === 'owner');
     };
     return {
@@ -17389,7 +17443,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
               jobs.forEach(function (j) { var k = rk(j); if (k.length >= 4 && (ref.indexOf(k) > -1 || no.indexOf(k) > -1) && !byJob[x.contact_id]) byJob[x.contact_id] = j; });
             });
             if (p.error) return { data: p, error: null };
-            if (!p.field_id) return { data: { error: 'no-field' }, error: null };
+            if (!p.field_id && p.kind !== 'member') return { data: { error: 'no-field' }, error: null };
             var byId = function (id) { return held.filter(function (c) { return c.id === Number(id); })[0]; };
             var nextC = function () { var f = (String(p.legal_name).match(/[A-Z0-9]/) || ['X'])[0]; return 'C-' + f + '0001'; };
             if (bkb.action === 'find') {
@@ -17415,8 +17469,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
                 { key: 'legal_name', pick: !!ct, field: 'Legal name', now: ct ? ct.legal_name : '', after: p.legal_name, same: Boolean(ct && ct.legal_name === p.legal_name) },
                 { key: 'reg_no', pick: !!ct, field: 'Business Registration No.', now: ct ? ct.reg_no || '' : '', after: p.reg_no || '', same: Boolean(ct && ct.reg_no === p.reg_no) },
                 { key: 'address', pick: !!ct, field: 'Billing address', now: ct ? ct.address || '' : '', after: p.address || '', same: Boolean(ct) && (ct.address || '') === (p.address || '') },
-                { key: 'our_id', pick: !!ct, field: p.kind === 'client' ? 'Client ID' : p.kind === 'creator' ? 'Creator ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
-                { key: 'types', pick: false, field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }] }, error: null };
+                p.field_id && { key: 'our_id', pick: !!ct, field: p.kind === 'client' ? 'Client ID' : p.kind === 'creator' ? 'Creator ID' : 'Supplier ID', now: idNow, after: p.our_id, same: idNow === p.our_id },
+                { key: 'types', pick: false, field: 'Type', now: ct ? ct.types.join(', ') : '', after: p.type, same: Boolean(ct) && ct.types.indexOf(p.type) > -1 }].filter(Boolean) }, error: null };
             }
 
             if (bkb.action === 'link') {
