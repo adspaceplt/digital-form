@@ -14645,10 +14645,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
               first_day: ew.first_day, hired_at: ec.hired_at, welcomed_at: ew.acked_at || undefined } });
           }
           var ectr = eDocs(ec.id, 'contract')[0];
-          return eOk({ made: false, ready: !!ectr && eDocs(ec.id, 'offer').length > 0 && !ec.removed_at, may: opsGranted('team.hiring', 'work'),
+          return eOk({ made: false, ready: !!ectr && eDocs(ec.id, 'offer').length > 0 && !ec.removed_at, may: opsGranted('team.hiring', 'work') && opsAllowed('team', 'manage'),
             terms: ectr ? { position: ectr.terms.position, start: ectr.terms.start, type: ectr.terms.type } : null });
         }
         if (!opsGranted('team.hiring', 'work')) return eNo('denied');
+        if (!opsAllowed('team', 'manage')) return eNo('team-access');
         if (!ec || ec.removed_at) return eNo('not-found');
         if (ec.member_id) return eOk({ id: ec.member_id, again: true });
         var ectr2 = eDocs(ec.id, 'contract')[0];
@@ -15204,7 +15205,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
           } else {
             var yymm = (window.ADspaceClock ? window.ADspaceClock.today() : nowD.slice(0, 10)).slice(2, 7).replace('-', '');
             var pre = 'ADHR/' + (hd.kind === 'offer' ? 'OFR' : 'EMP') + yymm;
-            var nmax = DB.hiring_docs.filter(function (d) { return String(d.serial || '').indexOf(pre) === 0; }).map(function (d) { return Number(d.serial.slice(-3)); });
+            var nmax = DB.hiring_docs.map(function (d) { return d.serial; }).concat(DB.hiring_serials_kept || [])
+              .filter(function (x) { return String(x || '').indexOf(pre) === 0; }).map(function (x) { return Number(x.slice(-3)); });
             ser = pre + ('00' + ((nmax.length ? Math.max.apply(null, nmax) : 0) + 1)).slice(-3);
           }
           Object.assign(hd, { state: 'sent', serial: ser, sent_by: hMe.id, sent_at: nowD, reply_by: new Date(Date.now() + (hd.terms.reply_days || 3) * 864e5).toISOString(), mail: null, mail_at: null, updated_at: nowD });
@@ -15267,6 +15269,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (name === 'hiring_doc_delete') {
           if (hd.state === 'void') { if (!hAdmin) return hNo('denied'); if (String(args.p_serial || '').trim() !== hd.serial) return hNo('bad-serial'); }
           else if (hd.state !== 'draft') return hNo('bad-state');
+          if (hd.serial) (DB.hiring_serials_kept = DB.hiring_serials_kept || []).push(hd.serial);
           DB.hiring_docs = DB.hiring_docs.filter(function (d) { return d.id !== hd.id; });
           hLog(dc.id, 'candidate.document', (hd.serial || dWord(hd.kind) + ' draft') + ' deleted');
           return hOk({});
@@ -15350,6 +15353,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           var ivs = DB.hiring_interviews.filter(function (i) { return i.candidate_id === hc.id; });
           hc.stage = ivs.some(function (i) { return i.state === 'confirmed'; }) ? 'interview' : ivs.some(function (i) { return ['invited', 'picked', 'none'].indexOf(i.state) > -1; }) ? 'invited' : 'new';
           ['outcome', 'outcome_note', 'outcome_by', 'outcome_at', 'pool_consent', 'pool_until', 'outcome_mail', 'outcome_mail_at'].forEach(function (k) { hc[k] = null; });
+          (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
           hc.last_step_at = hNowIso; hLog(hc.id, 'candidate.decided', 'Reopened');
           return hOk({ was: was, note: wnote });
         }
@@ -15357,6 +15361,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         hc.stage = oc === 'proceed' ? 'offer' : oc === 'pool' ? 'pool' : 'closed';
         Object.assign(hc, { outcome: oc, outcome_note: String(args.p_note || '').trim() || null, outcome_by: hMe.id, outcome_at: hNowIso,
           pool_consent: oc === 'pool' ? 'asked' : null, pool_until: null, outcome_mail: null, outcome_mail_at: null, last_step_at: hNowIso });
+        if (oc !== 'proceed') (DB.hiring_docs || []).forEach(function (d) { if (d.candidate_id === hc.id && d.state === 'sent') d.state = 'withdrawn'; });
         if (oc !== 'proceed') DB.hiring_interviews.forEach(function (i) { if (i.candidate_id === hc.id && ['invited', 'picked', 'none'].indexOf(i.state) > -1) i.state = 'cancelled'; });
         hLog(hc.id, 'candidate.decided', oc === 'proceed' ? 'Proceed' : oc === 'pool' ? 'Keep in talent pool' : 'Not proceed');
         return hOk({ was: was, email: oc !== 'proceed' });
@@ -15491,6 +15496,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (name === 'hiring_delete') {
         if (!hc.removed_at) return hNo('not-removed');
         if (String(args.p_name || '').trim().toLowerCase() !== hc.name.toLowerCase()) return hNo('bad-name');
+        if (hc.stage === 'hired' || hc.member_id || (DB.hiring_docs || []).some(function (d) {
+          return d.candidate_id === hc.id && (d.state === 'signed' || d.state === 'confirmed' || d.confirmed_at); })) return hNo('has-contract');
         DB.hiring_candidates = DB.hiring_candidates.filter(function (x) { return x !== hc; });
         DB.hiring_people = DB.hiring_people.filter(function (p) { return p.candidate_id !== hc.id; });
         DB.hiring_events = DB.hiring_events.filter(function (e) { return e.candidate_id !== hc.id; });
