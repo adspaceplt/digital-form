@@ -10992,3 +10992,20 @@ day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages wi
 signing in again and seeded the database before a reload that reseeds it; both fixed in
 the suite.
 - 2026-11-17 · Analytics and Documents, from the user's screenshots. On time by person stood a third of the Operations row wide, so its line and its five-column table ran over the card beside it: it now takes the row alone, Reports and Creator bookings sharing the next. Clients who moved drew broken hairlines because its colleague cell borrowed `.ovw-who`, the Team tab's flex row, which turned a table cell into a flex box (one class, one component): the cell is `.ovw-mby`. The user: "person in charge is the main personnel … not counted for leads … the leads are only by sales by". By person in charge became Sales by colleague (new leads, won and lost by `clients.sales_by`, read as the colleague's name, a leaver's kept); churn stays the Person in charge's and moved out of that table, and Clients who moved names Sales by for Won, New leads and Lost leads and Person in charge for the rest, said on each move's heading. Documents' Add existing document had gone behind the bar's ⋯ on 2026-11-03, where the user met a ⋯ holding one item and asked what it was for: it records a document issued outside the portal (an NDA, an older letter) under its own reference, and it stands on the bar again as a tonal button beside Issue document at a desk (the phone's bar keeps it behind its ⋯).
+
+### 2026-11-17 · Database wording (tone check, part 3, release 5)
+Fresh reviewers read the lines the database puts in front of a person
+against DESIGN.md §6. Five changed, words only, in one band
+(`2026-11-17-database-wording.sql`, mirrored in schema.sql): grades D and E
+read Needs support and Improvement plan (`perf_grade_word`; they read Needs
+Guidance and Performance Review against §6's vocabulary); one service line
+reverted reads in the singular (`letter_set_void`); a creator cleared to post
+is told "Draft approved for posting" (`campaign_options_push`); the Person in
+charge refusal says who can change it (`clients_owner_guard`, hint
+owner-change unchanged); the extension notice dates the day by
+`register_day` and names "A colleague" where the asker has no name
+(`ops_request_due_change`). No key, tag, argument or refusal code moved.
+Found: `sql`'s push check runs the 2026-09-27 migration, never the schema's
+last word, so the new title is checked by running this band's function on a
+re-subscribed creator device. `sql`, `perf`, `ops`, `lettersql`, `policies`
+pass; `demo` fails on the creator's page as already logged (#1189).
