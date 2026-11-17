@@ -5218,6 +5218,14 @@ svg.sec {
   :root:not(.has-tabbar) .sidebar-foot .railrow,
   :root:not(.has-tabbar) .sidebar-foot .railrow:not([hidden]) ~ .railrow { order: 0; margin: 0; }
   :root:not(.has-tabbar) .sidebar-foot .appver { order: 1; flex: 1 0 100%; padding: 0 10px; text-align: left; }
+  /* The build ends on the white sheet's foot (the user, 2026-11-17, an
+     iPad: a wide gap under it): the rail's foot takes the sheet's 12px,
+     never the home bar's inset on top of it, which the sheet does not
+     take, and the line keeps a control's height under a finger, its 44px
+     press drawn past its box. */
+  :root:not(.has-tabbar) .sidebar { padding-bottom: 12px; }
+  :root:not(.has-tabbar) button.appver { min-height: var(--ctl-h); position: relative; }
+  :root:not(.has-tabbar) button.appver::after { content: ''; position: absolute; inset: calc((var(--ctl-h) - var(--tap)) / 2) 0; }
   /* The edge is drawn inside the row: the rail's list scrolls when it does
      not fit, and a scroller clips a ring drawn outside it at its sides
      (the user, 2026-11-13: the chosen row "cut off slightly"). */
