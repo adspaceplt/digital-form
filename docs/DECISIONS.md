@@ -11017,3 +11017,17 @@ is a foreign key. Now every group but Admin carries Delete in its ⋯; one
 holding colleagues asks Move its n members to, and `team_role_delete` moves
 them and deletes the group in one transaction, keeping the admin-only,
 super-only and last-admin checks. `scope` and `team` hold it.
+
+### 2026-11-17 · HR documents speak as ADspace
+
+Agreed with the user: the Employment Offer and Contract greet the candidate
+by their whole name, close Yours sincerely (the contract read Yours
+faithfully to a named reader), and ask one declaration, the same sentence on
+the contract and the candidate's tick (the contract said "I hereby confirm"
+twice). We and our became ADspace, as every client page speaks. The
+template's slips were put right without changing a clause's substance
+(entitled to, in accordance with, Labour Day, months' salary, inform your
+Direct Manager, the right; SOCSO and EIS by their proper names). The page's
+status read Offer accepted once the contract was confirmed; it now follows
+the latest document. A copy review moved held by Google Meet to on, Where to
+Location, and the offer's opening off naming the employer twice.

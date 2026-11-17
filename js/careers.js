@@ -40,7 +40,7 @@
     var head = '<h2 class="qs-sec-h">Interview</h2>';
     if (i.state === 'invited') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head +
-        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'by Google Meet' : 'at the ADspace office') + '. Please choose a time. All times are Malaysia time.</p>' +
+        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'on Google Meet' : 'at the ADspace office') + '. Please choose a time. All times are Malaysia time.</p>' +
         (i.note ? '<p class="cr-note">' + esc(i.note) + '</p>' : '') +
         '<fieldset class="cr-picks" aria-label="Interview time">' + (i.slots || []).map(function (t, n) {
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
@@ -52,7 +52,7 @@
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
     }
     if (i.state === 'picked') return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) +
-      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Where</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At the ADspace office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Location</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At the ADspace office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     if (i.state === 'confirmed') {
       var where = i.mode === 'online'
@@ -60,7 +60,7 @@
         : '<a class="btn" href="' + esc(ORG.map || '#') + '" target="_blank" rel="noopener">Get directions</a>';
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>' +
-        '<div><dt>Where</dt><dd class="is-pre">' + (i.mode === 'online' ? 'Google Meet' : esc((ORG.name || 'ADSPACE PLT') + '\n' + (ORG.address || ''))) + '</dd></div></dl>' +
+        '<div><dt>Location</dt><dd class="is-pre">' + (i.mode === 'online' ? 'Google Meet' : esc((ORG.name || 'ADSPACE PLT') + '\n' + (ORG.address || ''))) + '</dd></div></dl>' +
         (where ? '<div class="qs-foot">' + where + '</div>' : '') + '</section>';
     }
     return '';

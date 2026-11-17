@@ -64,7 +64,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       block: button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
     };
   }
-  const where = m.mode === 'online' ? 'by Google Meet' : 'at the ADspace office';
+  const where = m.mode === 'online' ? 'on Google Meet' : 'at the ADspace office';
   const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
   if (m.kind === 'pool') {
     return {
@@ -103,7 +103,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       block: button('Choose a time', PAGE + m.key)
     };
   }
-  const place = m.mode === 'online' ? 'The interview will be held by Google Meet:\n' + m.link
+  const place = m.mode === 'online' ? 'The interview will be held on Google Meet:\n' + m.link
     : 'The interview will be held at the ADspace office:\nADSPACE PLT\n' + OFFICE;
   return {
     subject: 'Interview confirmed: ' + m.position,

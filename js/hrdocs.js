@@ -207,7 +207,7 @@
         y -= LH * 0.5;
 
         if (!contract) {
-          para('ADspace is pleased to offer you employment with ' + (ORG.name || 'ADSPACE PLT') + ', subject to the terms and conditions of the employment contract.');
+          para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
           var months = Number(t.probation_months) || 0;
           var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
@@ -229,7 +229,7 @@
           para('Thank you.');
         } else {
           var cl = clauses(doc, pay);
-          para('ADspace refers to your recent application and interviews, and is pleased to offer you employment as ' + cl.position +
+          para('With reference to your recent application and interviews, ADspace is pleased to offer you employment as ' + cl.position +
             ' on the following terms and conditions:');
           cl.list.forEach(function (c) {
             y -= 4; need(LH * 3);
