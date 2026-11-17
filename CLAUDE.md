@@ -713,16 +713,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   "ok build it", everyone on the same merged build): each minute the
   console's check runs (`often`'s `each`) it reads `/version.json` from
   Pages (no metered line); a build newer than the page's draws `#buildBar`
-  (laid as `.upgradebar`: A new version is available., Refresh), and five
-  minutes on the console refreshes by itself once idle. Settings, Portal:
+  (laid as `.upgradebar`: A new version is available., Refresh) and never
+  refreshes by itself (review 2026-11-17: an unsaved commentary was lost to
+  it). Settings, Portal:
   Require latest version (`team.upgrade`) stores the live build
   (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`
   for a build time ahead of now,
   filed `team.changed` under Portal from and to, Undo putting the one before
   back); `page_pulse` answers it to the console as `build`, its commit
-  and time alone, never who set it, and a console
-  below it refreshes within the minute once idle, its bar reading Refresh
-  now. Idle: nothing open over the page (a sheet, question, menu, popover,
+  and time alone, never who set it, and a console below it, on screen,
+  refreshes within the minute once idle, once for each build required
+  (`adspace-build-for`; still below it after, it waits for Refresh now),
+  its bar reading Refresh now. Idle: nothing open over the page (a sheet, question, menu, popover,
   finder, guide, bulk bar), no field holding the caret, no request out
   (`ADspaceAPI.loading.busy`), and no page's own `beforeunload` guard
   objecting (asked with a probe event). A refresh is Refresh app's, at most

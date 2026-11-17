@@ -3985,6 +3985,16 @@
      stood out). What older reports wrote across all platforms is kept in a
      fold. A summary written as an executive summary before this form
      existed is read into the one field. */
+  /* The commentary as it was shown or last saved (review 2026-11-17: a
+     refresh made by itself lost what was typed): a step left on screen with
+     its words changed asks before the tab closes or reloads, as a draft
+     being written does. */
+  var textSnap = null;
+  function textNow(b) {
+    return Array.prototype.map.call(b.querySelectorAll('[id^="rpT_"], [id^="rpP_"], [id^="rpN_"]'), function (el) {
+      return el.id + '=' + el.value; }).join('\n');
+  }
+  function textUnsaved() { return !!(textSnap && textSnap.box.isConnected && textNow(textSnap.box) !== textSnap.at); }
   function paintText() {
     var box = st.host.querySelector('.rp-text');
     if (!box) return;
@@ -4068,6 +4078,7 @@
     var numIds = fields.concat(more).filter(function (x) { return NUMBERED[x[0]]; }).map(function (x) { return 'rpT_' + x[0]; });
     groups.forEach(function (g) { ['worked', 'improve', 'actions'].forEach(function (k) { numIds.push('rpP_' + g.lead.id + '_' + k); }); });
     numIds.forEach(function (id) { var el = $(id); if (el) readFirst(el); });
+    textSnap = { box: box, at: textNow(box) };
     var m = box.querySelector('[data-m="text"]');
     /* Every field the step shows, for Draft with AI's question before it
        replaces what is written. */
@@ -4121,6 +4132,7 @@
       }));
       Promise.all(jobs).then(function () {
         btn.disabled = false;
+        if (textSnap && textSnap.box === box) textSnap.at = textNow(box);
         fileReport('report.saved', 'Commentary');
         paintSteps();
         if (then) { then(); return; }
@@ -4354,7 +4366,7 @@
      (`aiKept`) and filled in when its Commentary step is next shown. */
   var aiRun = {}, aiKept = {};
   window.addEventListener('beforeunload', function (e) {
-    if (!Object.keys(aiRun).length) return;
+    if (!Object.keys(aiRun).length && !textUnsaved()) return;
     e.preventDefault();
     e.returnValue = '';
   });
@@ -4448,18 +4460,31 @@
   /* The client's tasks named by the suggestions, read once a visit to the
      step (one request), so a task made before shows as made. */
   function nbKey(t) { return String(t || '').trim().toLowerCase(); }
-  function nbTaskOf(it) { return (st.nbTasks || {})[nbKey(it && it.title)] || null; }
+  /* A suggestion's task is the one made from it, kept on the suggestion by
+     its id (review 2026-11-17: a task of the same title, made for another
+     month, read as this one's). One made before the id was kept is still
+     found by its title. */
+  function nbTaskOf(it) {
+    var m = st.nbTasks || {};
+    return it && it.task_id ? m['id:' + it.task_id] || null : m[nbKey(it && it.title)] || null;
+  }
   function nbReadTasks(items) {
-    var titles = items.map(function (it) { return it.title; }).filter(Boolean);
-    var key = (st.open && st.open.id) + '|' + titles.join('|');
-    if (!titles.length || st.nbTasksFor === key || !(bridge.may && bridge.may('ops', 'view'))) return;
+    var ids = items.map(function (it) { return it.task_id; }).filter(Boolean);
+    var titles = items.filter(function (it) { return !it.task_id; }).map(function (it) { return it.title; }).filter(Boolean);
+    var key = (st.open && st.open.id) + '|' + ids.join('|') + '|' + titles.join('|');
+    if ((!titles.length && !ids.length) || st.nbTasksFor === key || !(bridge.may && bridge.may('ops', 'view'))) return;
     st.nbTasksFor = key;
-    db.from('ops_tasks').select('id, task_no, title').eq('client_id', st.client.id).in('title', titles).is('cancelled_at', null)
-      .then(function (r) {
+    var q = db.from('ops_tasks').select('id, task_no, title').eq('client_id', st.client.id).is('cancelled_at', null);
+    q = ids.length && titles.length ? q.or('id.in.(' + ids.join(',') + '),title.in.(' + titles.map(function (t) { return '"' + String(t).replace(/["\\]/g, '\\$&') + '"'; }).join(',') + ')')
+      : ids.length ? q.in('id', ids) : q.in('title', titles);
+    q.then(function (r) {
         if (r.error) return;
         st.nbTasks = st.nbTasks || {};
         var was = Object.keys(st.nbTasks).length;
-        (r.data || []).forEach(function (t) { if (!st.nbTasks[nbKey(t.title)]) st.nbTasks[nbKey(t.title)] = t; });
+        (r.data || []).forEach(function (t) {
+          if (ids.indexOf(t.id) >= 0) st.nbTasks['id:' + t.id] = t;
+          if (titles.length && !st.nbTasks[nbKey(t.title)]) st.nbTasks[nbKey(t.title)] = t;
+        });
         if (Object.keys(st.nbTasks).length !== was && st.host.querySelector('.rp-next')) paintNext();
       }).catch(function () { /* the button stays; the read is a convenience */ });
   }
@@ -4551,9 +4576,23 @@
           desc: (it.points || []).join('\n'),
           then: function (t) {
             st.nbTasks = st.nbTasks || {};
-            if (t && t.id) st.nbTasks[nbKey(it.title)] = { id: t.id, task_no: t.task_no };
-            if (box.isConnected) paintNext();
-            var h = st.host.querySelector('.rp-next [data-m="nb' + i + '"]'); if (h) say(h, 'Task added.', 'ok');
+            if (!t || !t.id) return;
+            st.nbTasks['id:' + t.id] = { id: t.id, task_no: t.task_no };
+            st.nbTasks[nbKey(it.title)] = { id: t.id, task_no: t.task_no };
+            var h = function () { return st.host.querySelector('.rp-next [data-m="nb' + i + '"]'); };
+            /* The task's id kept on its suggestion while the report is a
+               draft, so it is found by it; a report past its draft keeps
+               finding it by its title. */
+            if (!editable()) { if (box.isConnected) paintNext(); if (h()) say(h(), 'Task added.', 'ok'); return; }
+            var nb3 = JSON.parse(JSON.stringify(nbOf(st.open) || { items: [] }));
+            if (nb3.items[i]) nb3.items[i].task_id = t.id;
+            nbSave(rid, { next_batch: nb3 }).then(function () {
+              if (box.isConnected) paintNext();
+              if (h()) say(h(), 'Task added.', 'ok');
+            }).catch(function (e) {
+              if (box.isConnected) paintNext();
+              if (h()) say(h(), said(e), 'err');
+            });
           } });
         /* Shut without a task: the button is pressed again. */
         setTimeout(function () { if (b.isConnected) b.disabled = false; }, 1500);
