@@ -11070,6 +11070,23 @@ Direct Manager, the right; SOCSO and EIS by their proper names). The page's
 status read Offer accepted once the contract was confirmed; it now follows
 the latest document. A copy review moved held by Google Meet to on, Where to
 Location, and the offer's opening off naming the employer twice.
+
+### 2026-11-17 · A removed colleague can be deleted for good
+The user: "also allow entirely delete a person from Team". This supersedes
+"a colleague's row is never deleted" (2026-10-14, Team audit 2026-10-18, which
+had dropped the delete policy so nobody could cascade into reviews unseen).
+The delete stays off every page's direct write: an admin deletes a colleague
+already Removed from their ⋯, the name typed back, through
+`team_member_purge`. An audit of the live database on 2026-11-17 found 136
+foreign keys to `team_members`: 73 set null, 26 cascade (their own
+performance, health, notifications, devices), 27 nullable with no action and
+9 required (one restrict, `option_qc`). The function reads them from the
+catalogue at the press rather than a list, so a key added later never blocks
+it; nullable ones are cleared, required ones' rows deleted. Their name stays
+as text on past work, documents and the Activity record. `auditfix` runs it
+on the whole schema; four of that suite's older checks were reseeded for the
+group-switch rule (a tab never above its section, billing behind Sensitive
+details, email behind Send email).
 - 2026-11-17 · A ⋯ of one item beside another act (the user, on a user group's row: "seriously who taught this design.. menu only sit one option, edit stays outside?"). DESIGN.md §5 Menus rule 8 allowed a ⋯ of one item where it was a lifecycle or destroy act or sat in a command bar, so a group's Edit stood beside a ⋯ of Delete alone, a client request's Reply beside a ⋯ of Delete, and five bars (Short Links' Bulk import, Team's Compare groups, My Work's Select tasks, Reports' Select reports, Documents' and Services' on a phone) held one item behind a ⋯. The rule now never allows a ⋯ of one item beside another act: that act joins it, and a bar's lone item is its own button (`cmdbar.js` `.cmd-solo`; `ADspaceMenu.solo` for a section's own ⋯). `tests/menus.js` fails any ⋯ of one item with another act beside it, the bars' exception gone. The group row went to the Team session, which owns `js/team.js`.
 
 - 2026-11-17 · The ads report's creative pictures cut, and Next batch's Create task pressed twice (the user's two screenshots). The PDF draws each picture whole in its frame; the cut was in the picture kept: for a lead ad or a dynamic creative Meta names the image by its hash alone (no `image_url`), so `meta-import`'s creative reader fell through to Meta's 1080 thumbnail, which Meta crops square, and a 4:5 poster lost its top and foot. The reader now asks the ad account's images for the hash's own address before the thumbnail. Pictures kept before stay as kept: Pictures from Meta with Replace on a draft reads them again. Create task opened Add task and left the button as it was, so a suggestion could make a task twice; a suggestion now reads the client's task of its title (one request a visit) and offers Open task #WT… once one stands.

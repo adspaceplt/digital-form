@@ -1687,8 +1687,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One user group per person (`team_roles` → trigger → `team_members`); no
   per-person switches. A policy on `team_members` never queries itself; it
   takes inserts and updates at Team Full Access (`team_insert`,
-  `team_update`) and no delete from anybody
-  (`2026-10-18-colleague-row-never-deleted.sql`).
+  `team_update`) and no delete from any page
+  (`2026-10-18-colleague-row-never-deleted.sql`): a removed colleague is
+  deleted by `team_member_purge` alone (below).
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `whatsapp`, `review`, `scripts` (Video Scripts),
@@ -1814,7 +1815,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   Team shows it with a Super admin tag and no ⋯ for anyone else.
   - The team list is never derived from `auth.users`. The cutover sweep runs
     only while `team_members` is empty and skips client contacts.
-  - A wrong row is stood down (`active = false`), never deleted.
+  - A wrong row is stood down (`active = false`), removed, then deleted
+    by an admin where it should not exist.
   - `no_team_client_overlap`: one address is never both a colleague and a live
     portal contact. Where a legacy overlap exists, `portal_clients()` returns
     nothing for a team address.
@@ -8106,9 +8108,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   Send invitation email, unticked, is drawn only at `team.invite`; Add opens
   the new colleague's record, which says what happened (TEAM2-10,
   2026-10-24). Role standard, capacity and the namecard are set there.
-- A colleague's row is never deleted, only stood down or removed (the user,
-  2026-10-14; `2026-10-14-colleague-hand-over.sql`,
-  `2026-10-14-colleague-remove.sql`, the second run in the SQL Editor):
+- A colleague is stood down or removed (the user, 2026-10-14;
+  `2026-10-14-colleague-hand-over.sql`, `2026-10-14-colleague-remove.sql`,
+  the second run in the SQL Editor), and once removed an admin may delete
+  them for good (the user, 2026-11-17: "also allow entirely delete a person
+  from Team", superseding "a colleague's row is never deleted" of 2026-10-14
+  and 2026-10-18): the removed colleague's ⋯ holds Delete alone, the name
+  typed back, `team_member_purge(p_member, p_name)`
+  (`2026-11-17-colleague-deleted-permanently.sql`: `admin-only`,
+  `not-removed`, `own`, `system-account`, `last-admin`, `bad-name`), which
+  reads every foreign key to `team_members` from the catalogue at the
+  press, clears each nullable one, deletes the rows a required one holds
+  (their time records, extension requests, assignments, quality checks,
+  personnel record and salary, guides, section order), lets the cascades
+  take their own data (performance reviews, health, notifications,
+  devices), deletes their sign-in where no live client contact holds the
+  address, and files `team.changed` Deleted permanently; their name stays
+  as text on past work, documents and the Activity record:
   - Set inactive and Delete (the ⋯'s last item, red, Team Full Access, never
     one's own or a system account, not drawn once their details are
     deleted) first ask who takes each kind of live work the colleague holds,
