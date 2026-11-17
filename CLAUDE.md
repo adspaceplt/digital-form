@@ -277,6 +277,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `acts.js`, the act glyphs, a button's pending state | acts, then `ui` |
 | The loading line, `steadyFetch`, a skeleton, `failLine` | loadbar, state, crm, then `ui` |
 | a Delete anywhere, `confirm.js` | deletes, then the area's suite |
+| `js/delreq.js`, `delete_kinds`, the DELETE REQUESTS section | delreq, deletes, menus, sql, policies, then `ui` |
 | Any ⋯ menu, a bulk bar, `ADspaceMenu.items` | menus, deletes, then `ui` |
 | `handbook.js` | handbook |
 | The Activity record (`loadActivity`, `ACTION_LABEL`) | activity, run, crm |
@@ -1635,6 +1636,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     delete against USING alone (one reading at View let View delete;
     `2026-10-08-delete-at-its-level.sql`, `tests/sql.js` §DL). A draft
     report's rows delete at Work, the report's own steps.
+  - A Delete at Edit is a request (`js/delreq.js`,
+    `2026-11-17-delete-requests.sql`; the user, 2026-11-17: "Full control
+    deletes; Edit files a request an admin approves"): its ⋯ reads Request
+    delete, the screen's own question adds a Reason, and the call the
+    screen then makes (a function on `delete_kinds`, or a table's delete by
+    its key) is filed by `delete_request_file` in its place (`denied`,
+    `may-delete` at Full control, `bad-kind`, `bad-reason`, `already`,
+    `too-many` past 30 a day, `not-found` outside client scope), the record
+    left and every admin told (`delete.request`), Undo where it happened
+    withdrawing it. An admin decides in Settings, Portal: Delete requests
+    (`delete_request_decide`): Approve asks first, then the page makes that
+    same call as the admin and closes it (`delete_request_done`; refused,
+    the request waits again with the refusal); Decline asks a note. The
+    requester is told either way. A new delete function or table joins
+    `delete_kinds` and the stand-in's `DK` together. `delete_kinds` and
+    `delete_requests` have RLS on, no policy, no grant (`tests/delreq.js`).
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
 - One user group per person (`team_roles` → trigger → `team_members`); no

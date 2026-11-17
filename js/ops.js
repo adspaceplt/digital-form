@@ -8870,6 +8870,11 @@
        decided (2026-10-24; the user: approval sits on each colleague's
        record): the request its key names, else the waiting request whose
        colleague the title names, else the Team list. A decision told to the colleague opens nothing. */
+    /* A delete request opens the list it waits in (js/delreq.js). */
+    if (!x.task_id && /^delete\./.test(x.kind || '')) {
+      if (window.ADspaceDelReq) window.ADspaceDelReq.open();
+      return;
+    }
     if (!x.task_id && x.kind === 'abroad.request') {
       var abName = String(x.title || '').split(' · ').slice(1).join(' · ').trim();
       var abGo = function (id) {
