@@ -88,6 +88,12 @@
   }
   var READ = {
     /* Delete requests (2026-11-17): how many wait for an admin. */
+    teamaccess: function () {
+      return db.from('team_roles').select('slug').then(function (r) {
+        if (r.error) throw r.error;
+        return plural((r.data || []).length, 'user group', 'user groups');
+      });
+    },
     delreq: function () { return window.ADspaceDelReq ? window.ADspaceDelReq.waiting() : Promise.resolve(''); },
     /* Page availability (2026-10-29): which pages show their notice page
        now, and which are set for later (2026-10-31: "2 covered" read as
@@ -246,6 +252,25 @@
         /* Demo access (2026-10-27): the PIN typed in the sign-in's email box
            that opens the console on sample data (js/demo.js). */
         biz && { id: 'demo', name: 'Demo access', kind: 'edit', meta: line('demo'), open: function () { openDemo(); } }]],
+      ['Portal switches', [
+        /* Portal switches (2026-11-17, the access restructure): AI, email
+           and WhatsApp for every colleague at once, above each group's own
+           switches (`portal_switch_set`, Business settings). */
+        biz && { id: 'portalai', name: 'AI', kind: 'switch', on: autoOn('ai_on'),
+          meta: autoOn('ai_on') ? 'On · Write with AI and the Assistant' : 'Off',
+          open: function (sw) { flipPortal(sw, 'portalai', 'ai_on', 'AI'); } },
+        biz && { id: 'portalemail', name: 'Email', kind: 'switch', on: autoOn('email_on'),
+          meta: autoOn('email_on') ? 'On · Every email sent from the portal' : 'Off',
+          open: function (sw) { flipPortal(sw, 'portalemail', 'email_on', 'Email'); } },
+        biz && { id: 'portalwa', name: 'WhatsApp', kind: 'switch', on: autoOn('whatsapp_on'),
+          meta: autoOn('whatsapp_on') ? 'On · Every WhatsApp message sent from the portal' : 'Off',
+          open: function (sw) { flipPortal(sw, 'portalwa', 'whatsapp_on', 'WhatsApp'); } },
+        /* Each group's own switches and sections are Team's Groups tab. */
+        W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() &&
+          { id: 'teamaccess', name: 'Team access', kind: 'open', meta: line('teamaccess'), open: function () {
+            history.pushState(null, '', '/admin/?s=team&tab=groups');
+            W.ADspaceAdmin.show('team');
+          } }]],
       ['Company', [
         biz && { id: 'holidays', name: 'Public holidays', kind: 'open', meta: holMeta(), open: openHol },
         biz && { id: 'depts', name: 'Departments', kind: 'open', meta: line('depts'), open: openDepts },
@@ -603,6 +628,7 @@
   /* A switch unset reads On, as the database seeds it. */
   function autoOn(key) { var v = num(key); return v == null || v === 1; }
   function flipAuto(sw, id, kind, word) { flipOwn(sw, id, 'auto_send_set', word, { p_kind: kind }); }
+  function flipPortal(sw, id, key, word) { flipOwn(sw, id, 'portal_switch_set', word, { p_key: key }); }
   function flipOwn(sw, id, fn, word, extra) {
     var to = sw.getAttribute('aria-checked') !== 'true';
     sw.setAttribute('aria-checked', to ? 'true' : 'false');
