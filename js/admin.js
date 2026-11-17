@@ -2110,19 +2110,27 @@
      Handbook's required files before the portal opens): the files due are
      read beside me(), and while any is due the console holds the colleague
      on the Handbook, its rail and tab bar put away (`body.hb-gate`). */
-  var hbDue = null, hbFailed = false;
+  var hbDue = null, hbFailed = false, wkDue = null;
   /* A read that fails keeps the gate up with Try again, never opens the
-     portal (audit 2026-11-11); a database without the function has no gate. */
+     portal (audit 2026-11-11); a database without the function has no gate.
+     The Welcome Kit (2026-11-17, release H2 step E1) is the gate's first
+     step for a colleague made from a candidate, before the files. */
   function loadDue() {
-    return db.rpc('handbook_due').then(function (r) {
+    var hb = db.rpc('handbook_due').then(function (r) {
       var gone = r.error && (r.error.code === 'PGRST202' || r.error.code === '42883');
       hbFailed = Boolean(r.error && !gone);
       hbDue = !r.error && r.data && r.data.due ? r.data.due : [];
     }, function () { hbFailed = true; hbDue = []; });
+    var wk = db.rpc('welcome_kit_mine').then(function (r) {
+      var gone = r.error && (r.error.code === 'PGRST202' || r.error.code === '42883');
+      if (r.error && !gone) hbFailed = true;
+      wkDue = !r.error && r.data && r.data.due ? r.data.kit : null;
+    }, function () { hbFailed = true; wkDue = null; });
+    return Promise.all([hb, wk]);
   }
   function hbGated() {
     var admin = me && (me.is_admin || me.role === 'admin' || me.system);
-    return Boolean(me && !admin && (hbFailed || (hbDue && hbDue.length)));
+    return Boolean(me && !admin && (hbFailed || wkDue || (hbDue && hbDue.length)));
   }
   function wearGate() { document.body.classList.toggle('hb-gate', hbGated()); }
 
@@ -6281,6 +6289,8 @@
     /* HANDBOOK ACKNOWLEDGED: the required files still due, and the gate
        lifted once each is acknowledged, onto the first section held. */
     handbookDue: function () { return hbDue || []; },
+    welcomeDue: function () { return wkDue; },
+    welcomeDone: function () { wkDue = null; },
     handbookFailed: function () { return hbFailed && hbGated(); },
     handbookRetry: function (done) {
       loadDue().then(function () {
