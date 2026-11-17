@@ -40,7 +40,7 @@
     var head = '<h2 class="qs-sec-h">Interview</h2>';
     if (i.state === 'invited') {
       return '<section class="qs-sec cr-iv" id="crIv">' + head +
-        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'by Google Meet' : 'at our office') + '. Please choose a time. All times are Malaysia time.</p>' +
+        '<p class="cr-next">The interview will last ' + esc(i.minutes) + ' minutes and will be held ' + (i.mode === 'online' ? 'on Google Meet' : 'at the ADspace office') + '. Please choose a time. All times are Malaysia time.</p>' +
         (i.note ? '<p class="cr-note">' + esc(i.note) + '</p>' : '') +
         '<fieldset class="cr-picks" aria-label="Interview time">' + (i.slots || []).map(function (t, n) {
           return '<label class="qs-pick"><input type="radio" name="crTime" value="' + (n + 1) + '"><span class="qs-text"><b>' + esc(when(t)) + '</b></span>' + MARK + '</label>';
@@ -52,7 +52,7 @@
         '<div class="qs-foot"><button class="btn btn-primary" type="button" id="crSend">Confirm time</button></div></section>';
     }
     if (i.state === 'picked') return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Time chosen</dt><dd>' + esc(when(i.at)) +
-      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Where</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At our office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
+      '</dd></div><div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div><div><dt>Location</dt><dd>' + (i.mode === 'online' ? 'Google Meet' : 'At the ADspace office') + '</dd></div></dl><p class="cr-next">ADspace will confirm the interview by email.</p></section>';
     if (i.state === 'none') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will send you other times by email.</p></section>';
     if (i.state === 'confirmed') {
       var where = i.mode === 'online'
@@ -60,7 +60,7 @@
         : '<a class="btn" href="' + esc(ORG.map || '#') + '" target="_blank" rel="noopener">Get directions</a>';
       return '<section class="qs-sec cr-iv">' + head + '<dl class="ovfacts cr-facts"><div><dt>Date and time</dt><dd>' + esc(when(i.at)) + '</dd></div>' +
         '<div><dt>Length</dt><dd>' + esc(i.minutes) + ' minutes</dd></div>' +
-        '<div><dt>Where</dt><dd class="is-pre">' + (i.mode === 'online' ? 'Google Meet' : esc((ORG.name || 'ADSPACE PLT') + '\n' + (ORG.address || ''))) + '</dd></div></dl>' +
+        '<div><dt>Location</dt><dd class="is-pre">' + (i.mode === 'online' ? 'Google Meet' : esc((ORG.name || 'ADSPACE PLT') + '\n' + (ORG.address || ''))) + '</dd></div></dl>' +
         (where ? '<div class="qs-foot">' + where + '</div>' : '') + '</section>';
     }
     return '';
@@ -71,14 +71,14 @@
     var head = '';
     if (d.stage === 'offer') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will contact you by email about an offer.</p></section>';
     if (d.stage === 'closed') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">' +
-      'ADspace will not be proceeding with your application at this time. We wish you every success in your search.</p></section>';
+      'ADspace will not be proceeding with your application at this time. ADspace wishes you every success in your search.</p></section>';
     var p = d.pool;
     if (d.stage !== 'pool' || !p) return '';
     if (p.consent === 'yes') return '<section class="qs-sec cr-iv">' + head + '<p class="cr-next">ADspace will keep your application until ' +
       esc(window.ADspaceClock.date(p.until, { long: true })) + ' and may contact you about future positions. Your details will then be deleted.</p></section>';
     return '<section class="qs-sec cr-iv" id="crPool"><h2 class="qs-sec-h">Talent pool</h2>' +
       '<p class="cr-next">There is no suitable opening for you at this time. ADspace would like to keep your application for ' + esc(p.months) +
-      ' months, so that we may contact you about future positions. If you do not agree, your details will be deleted.</p>' +
+      ' months and may contact you about future positions. If you do not agree, your details will be deleted.</p>' +
       '<p class="msg" id="crMsg"></p>' +
       '<div class="qs-foot"><button class="btn" type="button" data-pool="no">Do not keep</button>' +
       '<button class="btn btn-primary" type="button" data-pool="yes">Keep my application</button></div></section>';
@@ -115,7 +115,7 @@
     'too-many': 'Too many codes have been requested. Please try again in an hour.',
     'code-needed': 'Please open the document again with a new code.',
     'bad-name': 'Enter your full name.', 'bad-agree': 'Please tick the confirmation.',
-    'bad-id': 'Enter your NRIC Number (for example 900101-01-1234) or Passport Number.',
+    'bad-id': 'Enter your NRIC or Passport Number (for example 900101-01-1234).',
     'bad-signature': 'Please sign in the box.', expired: 'The time to reply has passed. Please contact ADspace.',
     answered: 'You have already replied to this document. Refresh the page to see it.', 'too-long': 'Shorten the reason to 500 characters.',
     'mail-not-set-up': 'The code could not be sent. Please contact ADspace.', 'not-sent': 'The code could not be sent. Please try again.'
@@ -188,11 +188,11 @@
     }
     return facts + dl + '<div class="cr-answer qs-form"><h3 class="cr-doc-h">Sign the contract</h3>' +
       '<div class="field"><label class="field-label" for="crName">Full Name as per NRIC</label><input class="input" id="crName" autocomplete="name" maxlength="120" value="' + esc(d.name || '') + '"></div>' +
-      '<div class="field"><label class="field-label" for="crIdNo">NRIC Number or Passport Number</label><input class="input" id="crIdNo" maxlength="20" placeholder="900101-01-1234"></div>' +
+      '<div class="field"><label class="field-label" for="crIdNo">NRIC or Passport Number</label><input class="input" id="crIdNo" maxlength="20" placeholder="900101-01-1234"></div>' +
       '<div class="field"><div class="qs-sig-head"><span class="field-label">Signature</span><span class="qs-sig-acts"><button class="btn btn-quiet btn-sm" type="button" data-docx="clear" hidden>Clear</button></span></div>' +
         '<div class="qs-pad" id="crPad" role="img" aria-label="Signature box"><span class="qs-pad-line" aria-hidden="true"></span><span class="qs-pad-hint">Sign here</span>' +
         '<svg viewBox="0 0 300 100" preserveAspectRatio="none" aria-hidden="true"><path d=""/></svg></div></div>' +
-      tick('crAgree', 'I have read and fully understood the contents of this contract and I accept all the terms and conditions herein.') +
+      tick('crAgree', window.ADspaceHrDocs.declare) +
       '<p class="msg" id="crDocMsg"></p>' +
       '<div class="qs-foot"><button class="btn btn-primary" type="button" data-docx="sign">Sign contract</button></div></div>';
   }
@@ -318,7 +318,11 @@
     if (!l.length) return '';
     if (l.some(function (x) { return x.state === 'sent'; })) return 'Awaiting your reply';
     if (l.some(function (x) { return x.state === 'signed'; })) return 'Awaiting ADspace confirmation';
-    return l.some(function (x) { return x.kind === 'contract' && x.state === 'confirmed'; }) ? 'Offer accepted' : 'Awaiting ADspace confirmation';
+    var of = function (k) { return l.filter(function (x) { return x.kind === k; }).pop(); }, c = of('contract'), o = of('offer'), last = c || o;
+    if (c && c.state === 'confirmed') return 'Contract confirmed';
+    if (last.state === 'confirmed') return 'Offer accepted';
+    if (last.state === 'declined') return 'Offer declined';
+    return last.kind === 'contract' ? 'Contract expired' : 'Offer expired';
   }
   function paint(d) {
     var i = d.interview, dec = decision(d);

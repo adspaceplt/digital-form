@@ -11048,6 +11048,29 @@ section whose single Advanced fold holds its parts, the admin tools acting on
 it (the portal's under Team) and its Activity record line. Stored keys and
 checks unchanged; `perms`, `scope`, `team` hold it.
 
+### 2026-11-17 · A colleague's record holds one layout across its tabs
+The user, with screenshots of a removed colleague: "sudden jumping and
+missing". The rail's Their work block left on the Work tab, so the strip and
+head widened there and narrowed again on Overview. The rail now keeps its
+blocks on every tab, the counts alone beside the Work pane (its Hand over
+work said once). The ⋯ on a removed colleague whose details were erased held
+nothing that still applied; Delete permanently (the next release) fills it.
+`teamrec` measures the strip and head across the two tabs.
+
+### 2026-11-17 · HR documents speak as ADspace
+
+Agreed with the user: the Employment Offer and Contract greet the candidate
+by their whole name, close Yours sincerely (the contract read Yours
+faithfully to a named reader), and ask one declaration, the same sentence on
+the contract and the candidate's tick (the contract said "I hereby confirm"
+twice). We and our became ADspace, as every client page speaks. The
+template's slips were put right without changing a clause's substance
+(entitled to, in accordance with, Labour Day, months' salary, inform your
+Direct Manager, the right; SOCSO and EIS by their proper names). The page's
+status read Offer accepted once the contract was confirmed; it now follows
+the latest document. A copy review moved held by Google Meet to on, Where to
+Location, and the offer's opening off naming the employer twice.
+
 ### 2026-11-17 · Everyone on the same merged build
 The user approved ("ok build it") a way for every open console to end up on
 the build just merged: a console left open for a day ran yesterday's code

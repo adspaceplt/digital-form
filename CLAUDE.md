@@ -3575,9 +3575,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
   `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
   (`hiring_doc_seal`), never drawn again. The PDF (`js/hrdocs.js`) is the
-  user's templates word for word, their typos put right (SOCSO, your,
-  absent), the salary in words and figures, the intern and part-time
-  paragraphs only for those types, no NRIC in the greeting. Its
+  user's templates in substance, their typos and grammar put right,
+  ADspace in place of we and our, the candidate greeted by their whole
+  name (no NRIC), Yours sincerely on both, one declaration
+  (`ADspaceHrDocs.declare`, the contract's and the page's tick alike),
+  the signing block's NRIC or Passport Number, the salary in words and
+  figures, the intern and part-time paragraphs only for those types; the
+  page and emails read Read offer and Read contract. Its
   documents' files are queued for the console to take out of Storage when
   it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
   HR document's reference yet (step E).
@@ -7990,9 +7994,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`tests/teamrec.js`).
 - A colleague's record has a rail, as a client's (`.rec`, 1.618 : 1,
   splitting below 1100, its blocks leading the tabs on a phone; TEAM2-9,
-  2026-10-24): Their work (Team Full Access, off the Work pane: the counts
-  `team_work_held` and their open tasks answer, read once a visit and
-  again after a hand-over, overdue in red, Open Work and Hand over work)
+  2026-10-24), the same blocks on every pane so the strip and head never
+  jump between tabs (the user, 2026-11-17): Their work (Team Full Access:
+  the counts `team_work_held` and their open tasks answer, read once a
+  visit and again after a hand-over, overdue in red, Open Work and Hand
+  over work, the counts alone beside the Work pane)
   and Access (the access end off Overview, where it is set; at Team Full
   Access `team_member_seen(p_id)`: Active 2 hours ago / Active today,
   9:14am, Last sign-in 22 Oct, 9:14am from `auth.users`, else Not signed
