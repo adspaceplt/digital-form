@@ -11047,3 +11047,21 @@ four switches, Clients they see, Reports to) and Section access, one row a
 section whose single Advanced fold holds its parts, the admin tools acting on
 it (the portal's under Team) and its Activity record line. Stored keys and
 checks unchanged; `perms`, `scope`, `team` hold it.
+
+### 2026-11-17 · Everyone on the same merged build
+The user approved ("ok build it") a way for every open console to end up on
+the build just merged: a console left open for a day ran yesterday's code
+against today's database. Each minute the console's check runs it now also
+reads `/version.json` from Pages (no line Supabase meters); a newer build
+draws a bar with Refresh, and five minutes on the console refreshes by itself
+the first moment nothing is open in it. An admin can require the live build
+(Settings, Portal: Require latest build, `build_require`), which `page_pulse`
+hands every console; one below it refreshes within the minute once idle.
+"Idle" reuses what each page already guards: every `beforeunload` listener
+(a held file, an upload, a script being edited, a draft being written) is
+asked with a probe event, so a new guard joins without touching this code.
+Builds are compared by their build time, never by commit, so a CDN edge
+serving an older `/version.json` never reads as newer; a tab refreshes by
+itself at most once in three minutes, so a stale edge cannot loop it.
+Client pages are untouched; nobody is signed out (Refresh app keeps the
+session). `tests/buildsync.js` holds it on Playwright's clock.
