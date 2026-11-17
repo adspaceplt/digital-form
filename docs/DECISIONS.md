@@ -11248,3 +11248,33 @@ The review of the 86 releases since #1134 found five faults in Hiring. The Stora
 
 ### 2026-11-17 · A quotation's invoices to the cent
 The review since #1134 found three faults in Create in Bukku (#1176). Bukku was searched for the reference anywhere in an invoice's fields, and the service cycle's reference is the start of the advertising budget's (` · Ads`), so with the budget made first the service invoice was never created and the budget's number filed against it. A cycle's first press found no claim row to lock, so two presses at once both made a draft. Each line was priced as its unit rounded after its term percentage, where the quotation rounds the percentage once on the group's subtotal: 3 × RM 333.33 at +5% billed RM 1,050.00 against RM 1,049.99 signed. The reference is now matched whole, the quotation's row locked first, and a group's last line carries the sen; `bukkufn` and `sql` hold each.
+
+### 2026-11-17 · The verification loop
+The user, after reading how the Claude Code team verifies its work: "Ok
+all" to five changes. (1) `tests/affected.js` reads a change's diff against
+the suite map, now data in the tests repository (`tests/affected.json`, the
+CLAUDE.md File → suites table moved there), and runs the suites it reaches
+before the merge; until now only `node --check` and screenshots ran before
+a merge and the suites once a day after it. The merge check
+`.claude/hooks/verify-gate.sh` starts in observe mode, logging to
+`/tmp/verify-gate.log` what it would have held; enforce once the log shows no
+false holds. (2) The logged failures: `demo` (the creator page typed ADspace into its
+status lines; it now names the agency from the config), `crm` and `perfui`
+(three expectations older than an approved change: Reply in the request's
+⋯ #1210, the 33.3pt margins #1158, Off for No Access and a part never above
+its section, the access restructure), `sql` (the Completed check moved the
+first client by id, a random one, to Past and never back, so the push check
+met a Past client in 2 runs of 6), `work` (the deadline lines read across
+midnight; the clock is now held at 3:10pm as the meeting checks already
+were) and the `crm` logo (a fixed settle before an image drawn down;
+it now waits for the preview). portal, mailfn, hiringsql, menus and the
+sql seal check already passed on main. (3) `tests/pricediff.js`
+prices random quotations in Postgres and in the stand-in and holds the
+totals' own arithmetic: on its first run it found Total for the term a sen
+under First month incl. SST where a monthly line runs fewer months than the
+term (`quote_totals` rounded the adjustment and SST over the span in one
+step); TERM TOTAL FROM ITS PARTS rounds them as a month's incl. is worked.
+(4) `tests/expectations.js` lists every check a change removed or changed,
+for the PR body. (5) CLAUDE.md held every area's rules (636 KB), loaded by
+every session; the areas moved to `docs/rules/` (CLAUDE.md about 175 KB), each
+named by `.claude/hooks/area-rules.sh` on the first edit of its paths.

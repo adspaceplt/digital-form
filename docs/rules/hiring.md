@@ -1,0 +1,181 @@
+<!-- triggers: js/hiring.js js/careers.js js/hrdocs.js js/onboard.js careers/ supabase/functions/hiring-mail -->
+# Hiring (`js/hiring.js`, `?s=hiring`; `careers/`, `js/careers.js`, `js/hrdocs.js`; `2026-11-16-hiring.sql`, `2026-11-17-hiring-interviews.sql`, `2026-11-17-hiring-outcomes.sql`, `2026-11-17-hiring-offers.sql`, `hiring-mail`)
+
+Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the area is changed (a hook names this file on the first edit of a matching path). One place per fact, as CLAUDE.md §0.
+
+- Release H2 (HR-SPEC.md in the tests repository, the user, 2026-11-16);
+  steps A to D built. Hiring is Team's tab, never a rail section (the user,
+  2026-11-16: "one section for people"): `?s=team&tab=hiring`, a candidate
+  opened in place (`candidate=`, its pane `ctab=`, Team's strip stepping
+  away) with Back to the list, an older `?s=hiring` address opening it.
+  The tab and Team are drawn at the granted part `team.hiring` (an admin
+  tool, an admin's by itself, held by `team_roles_admin_guard` with
+  `team.personnel`) or for a colleague holding a place on a live candidate
+  (`hiring_mine()`, read beside `me()`). Search lists Candidates after Team.
+- A candidate (`hiring_candidates`, `hiring_people`, `hiring_events`; RLS on,
+  no policy, no grant) is added at the part alone (`hiring_add(p_values,
+  p_idem)`: name, email, phone, position, source, CV link; one live candidate
+  an email, `taken` naming it; the same key twice one candidate), its adder
+  its Owner. On a candidate the part adds colleagues as Owner (decides and
+  sends) or Interviewer (sees it and scores; stored `interviews`; `hiring_person_set`, told in the
+  bell with no candidate's name, `hiring_person_remove` with Undo where it
+  happened); a colleague on it sees that candidate alone (`hiring_role`).
+  Edit (`hiring_save`, over the row as read, `stale`) and the link
+  (`hiring_link`, Reset link) are the part's or the Owner's; an Interviewer
+  reads no link.
+- The list is a card a stage (New first, Removed last and shut); a record
+  is Overview (Details, the CV, Candidate page with Copy link and Preview),
+  People and Activity (`hiring_events`, never the Activity record: a
+  candidate's details reach only the people on it).
+- A CV is a link (https) or a file in the private Storage bucket `hiring`
+  (20 MB, PDF or Word, `{candidate id}/{time}-{name}`), read by anyone on the
+  candidate through a 60-second signed link opened at the press, added and
+  removed by the part or the Owner (`hiring_file_ok`).
+- Remove (the part) hides a candidate from everyone else and its page, Undo
+  where it happened, Restore in its ⋯; Delete once removed, the name typed
+  back, takes its people, history and CV file.
+- `/careers/?k=` (`careers_read`, anon): Your application, the candidate
+  greeted by their whole name, the position, the day received and Application
+  received; never a colleague, a note or an email; English alone. The link
+  ends `hiring_link_days` (30, 7 to 90) after the last step.
+- Interviews (step B, decision 2; no slots system): the part or the Owner
+  invites from the record's Interview tab with one to three times, all
+  within `hiring_invite_days` (14, 1 to 14; the user, 2026-11-17: times on
+  several days) of each other, an hour ahead at
+  least and 60 days at most, a length (30, 45, 60 or 90 minutes), Google
+  Meet or At the office and a note (`hiring_invite`, one key a question;
+  `slot-window` naming the days); its question names the online meetings
+  already on the shared calendar, by time alone, one row under the times
+  (`meet-create` `busy`, 15 days at most, `hiring_busy_may`). A new invitation replaces one still
+  open. The candidate picks a time on their page, or None of these times
+  with a note (`careers_pick`, `careers_none`, anon, the link's own key;
+  the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
+  name). Approve (`hiring_interview_approve`, the part or the Owner) books
+  an online interview's Google Meet (`meet-create` `interviewId`, the event
+  `adhire{id}` titled Interview · {position}, never the candidate's name),
+  and the candidate moves Invited → Interview. Each step emails the
+  candidate (`hiring-mail`: the invitation with a button to their page, the
+  confirmation with the Meet or the office's address; from the careers
+  sender; filed by `hiring_mail_done`, Email again where it failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
+  The page reads the times offered, then the time chosen, then the
+  confirmed time with Join Google Meet or Get directions, never the times
+  not chosen. Settings, Hiring: Time limits holds the figures
+  (`team.settings`) and Interview scorecards the scorecards (the part).
+- The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
+  user, 2026-11-17, the team's paper sheet: "a slide window or so so the
+  record could stay right"): the Scores tab's Interview sheet opens a panel
+  at the right with no scrim (`#hivSheet`, `.sheet-side.is-beside`), the
+  record in sight and scrolling beside it: Rating (out of 10), Internal
+  remarks, MBTI and the sheet's questions, each saved as it is left
+  (`hiring_sheet_save`, one a colleague, filed once when started;
+  `hiring_sheet_keys()` the fields, the page's `sheetQs` held equal by
+  `tests/hiringsql.js`), then the scorecard and the recommendation, saved by
+  Save; `hiring_sheets` (RLS on, no policy, no grant) goes with its
+  candidate. Each colleague's scores and sheet are one card on the tab
+  (`hiring_sheets_of`).
+- Scores and the decision (step C): everyone on a candidate scores them on
+  the Scores tab against their position's scorecard (`hiring_scorecards`,
+  3 to 8 criteria, one a position, Standard for any other and never
+  deleted; `hiring_scorecard_save` / `_delete` the part's), each criterion
+  1 to 5 with a recommendation and a note (`hiring_score_save`, one a
+  colleague, `incomplete` naming the criterion; Remove with Undo); the tab
+  reads every score, its total and each criterion's average
+  (`hiring_outcome_of`). The part or the Owner decides (`hiring_decide`):
+  Proceed (stage Offer), Keep in talent pool (the candidate asked on their
+  page, `careers_pool`, anon: agreed kept `hiring_pool_months`, 12, from
+  then; declined closed) or Not proceed (closed); Reopen is the way back,
+  Undo where it happened. The decision's note stays with the team; Keep in
+  talent pool and Not proceed email the candidate (`hiring-mail`
+  `outcome`, a tick in the question, Email the candidate where it did not
+  go). `hiring_retention` (pg_cron `hiring-retention`, 03:50 MYT) removes a
+  pool agreement past its end, a pool question unanswered within the link's
+  days, and a closed or removed candidate after `hiring_keep_months` (12),
+  PDPA 2010; their CV files wait in `hiring_files_gone` for the part's
+  console to take out of Storage once a visit.
+- Offer and contract (step D, decisions 4, 5, 10, 14): the record's Offer
+  tab (the part and the Owner alone) drafts the Employment Offer once the
+  candidate is to proceed, and the Employment Contract once an offer is
+  confirmed, one live of each (`hiring_doc_save`: position, employment
+  type, commencement, an end for a contract or internship, probation
+  months, days to reply prefilled 3 and 7, the offer's scope, the
+  contract's nature of works and place). The salary is `hiring_doc_pay`'s
+  alone (RLS on, no policy, no grant), set and read only by the part
+  behind the master code (`hiring_unlock`, the Performance unlock's token,
+  15 minutes) and the caution step (Sensitive information follows /
+  Proceed with caution., Continue); the record reads it Set, never a
+  figure, and no list, notice, email, history or search holds it. Send
+  numbers it (`ADHR/OFR{YYMM}{NNN}`, `ADHR/EMP{YYMM}{NNN}`, under the
+  kind's lock) and emails the candidate (`hiring-mail` `doc`: the
+  reference and the day to reply, never the terms). The candidate's page
+  lists each by its reference; Read asks a six-digit code emailed to the
+  candidate (`hiring-mail` `code`, no sign-in; `hiring_doc_code`, the
+  service role's, hashed, 15 minutes, five an hour, the address
+  Cloudflare saw), then the caution step, then the terms and salary for
+  30 minutes (`careers_doc_open`, a view token hashed); an offer is
+  accepted (name typed, the confirmation ticked) or declined (a reason
+  optional), a contract signed (name, NRIC or passport number, a
+  signature drawn in a 300 by 100 box), the code's email, address,
+  country, device and the document's fingerprint kept
+  (`careers_doc_answer`), the Owners told. Signed outside the page: Mark
+  signed (by scan or on paper, the PDF in the candidate's private folder,
+  `hiring_doc_mark`); Send back with a reason keeps the signing in its
+  history; Withdraw / Restore while the days run; Replace drafts a copy
+  that takes the reference on Send, the earlier one void; Void (the
+  part, a reason); Delete a draft, or a void one with its reference typed
+  back. Confirm (countersign) is the part's (`hiring_doc_confirm`, a stamp
+  certificate number optional), and the confirmed copy is drawn once
+  behind the master code with its Record of this Document
+  (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
+  `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
+  (`hiring_doc_seal`), never drawn again. The PDF (`js/hrdocs.js`) is the
+  user's templates in substance, their typos and grammar put right,
+  ADspace in place of we and our, the candidate greeted by their whole
+  name (no NRIC), Yours sincerely on both, one declaration
+  (`ADspaceHrDocs.declare`, the contract's and the page's tick alike),
+  the signing block's NRIC or Passport Number, the salary in words and
+  figures, the intern and part-time paragraphs only for those types; the
+  page and emails read Read offer and Read contract. Its
+  documents' files are queued for the console to take out of Storage when
+  it goes (trigger `hiring_docs_files_gone`). /verify/ answers an offer's
+  or contract's reference once sent as HR Letter (Valid, Void, Withdrawn,
+  Declined, Expired), its days and, sealed, its Document ID and Check a
+  file, never the person (`2026-11-17-hr-documents-verify.sql`); a
+  confirmed one is listed under HR Letters (`hiring_register()`, HR Letters
+  at View) and on the colleague's Documents, its ⋯ Download opening the
+  sealed copy through a 60-second link (`hiring_file_ok` lets HR Letters at
+  View read that file alone).
+- Make colleague and onboarding (step E1, `2026-11-17-hiring-onboarding.sql`,
+  `js/onboard.js`): a candidate whose contract is confirmed offers Make
+  colleague (the part or the Owner, `hiring_hire_state`): one question of
+  sign-in email, Employee ID, user group, department, position, first day
+  and direct manager, the terms read from the contract and never retyped
+  (`hiring_make_colleague`: `not-ready`, `taken` by field, `again` once
+  made), writing the colleague, their Personnel record's start, their
+  Welcome Kit and their onboarding at once, the candidate Hired
+  (`hiring_candidates.member_id`), never a salary. A colleague's record
+  draws Onboarding (Personnel or Hiring at Work): the checklist, a row a
+  step, what the portal knows ticked by itself (offer, contract, employee
+  record, NRIC, Welcome Kit, Handbook files) and the rest ticked by hand
+  with who and when (`onboarding_tick`); Assets, each kind, detail, issued
+  and returned (`onboarding_assets_save`, over the row as read); Entry and
+  exit, each step its own tick. `team_welcome`, `welcome_kit` and
+  `team_onboarding` have RLS on, no policy, no grant. A new colleague's
+  first sign-in meets the Welcome Kit before the Handbook's files
+  (`welcome_kit_mine`, read beside `handbook_due`, holding the gate):
+  their first day, Employee ID, department, position, direct manager and
+  company email, then the team's sections, the Wi-Fi password and door
+  PIN always Please check with your direct manager.; Acknowledge
+  (`welcome_kit_ack`, filed). The sections are Settings, Hiring: Welcome
+  Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
+  refusing a line naming a password, passcode or PIN with a value).
+- No candidate data goes to an AI service, ever (decision 10's rule for
+  salary covers every candidate field).
+- Hiring records held (`2026-11-17-hiring-records-held.sql`; the review
+  since #1134): an Interviewer reads a candidate's CV alone in Storage
+  (`hiring_file_ok`), never a sealed contract, scan or stamp; a hired
+  candidate, or one holding a signed or confirmed document, is never
+  deleted (`hiring_delete` `has-contract`); any outcome but Proceed, Reopen
+  included, withdraws the documents still `sent`; a deleted document's
+  reference is kept (`hiring_serials_kept`) and never given again; Make
+  colleague asks Team at Full Access as Add member does (`team-access`,
+  `hiring_hire_state` `may`).

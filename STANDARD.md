@@ -619,57 +619,9 @@ section holds only what is true of the project as a whole.
 ### Logged defects
 Found by a test in code a release did not touch; fixed in the next release
 and removed here when it ships (`CLAUDE.md` §1, one request, one release).
-- `demo`: "each client page opens on its sample link … the sample agency's
-  name alone" fails on the creator's page since #1189 wrote "ADspace will
-  review your submission." into `js/creator.js`'s status lines, which the
-  demo does not swap for the sample agency's name (found 2026-11-17 by the
-  Hiring E1 release, which does not touch `creator.js`).
-- `portal`: the request row's Reply is looked for on the row, but #1210
-  moved it into the row's ⋯ (no lone ⋯ item beside another act); the suite
-  times out at `scrollIntoViewIfNeeded` (found 2026-11-17 by the Every
-  email in Messages release, which does not touch `crm.js`).
-- `mailfn`: "every browser-called function takes its CORS from
-  _shared/cors.ts (21)" fails on main (found 2026-11-17, same release).
-- `hiringsql`: "the schema's anon list names careers_read" reads the anon
-  list before /verify/'s sealed file (#1173) added `verify_file` after it
-  (found 2026-11-17, same release).
-- `sql`: "quote_opened and quote_seal_state are anon's and in open_to_anon"
-  fails on main since the seal release, and the suite crashes after the VIC
-  checks ("Unexpected end of JSON input"), hiding every check after them
-  (found 2026-11-17 by the quotation invoices release, which touches
-  neither).
-- `menus`: Team's bar ⋯ holds "Download for AutoCount" (personnel records,
-  #1166 or after), a word `tests/menus.js` and `groupOf` do not place
-  (found 2026-11-17 by the seal release, which does not touch Team).
-- `crm`: "the logo previews, and the button reads Replace" (the Brand sheet's
-  wide logo upload) fails now and then on main, then passes on a rerun
-  (2026-11-08); its wait for the preview needs finding.
-- `work`: "a new meeting opens on the next free half hour" and "the time is
-  a select of quarter hours" fail when the suite runs after 10pm MYT (the
-  next free slot passes the day's last quarter hour; 2026-11-11, 23:30); the
-  suite needs a fixed time of day.
-- `sql`: "without one it is, as before" (a client's device following a
-  campaign once its passcode is cleared, `push_subscribe`) failed in 2 of 6
-  runs on claude/hr-personnel (2026-11-17, 00:28 and 00:43 MYT) and passed
-  in the other 4 and on main; the answer it got is not yet seen. Next run
-  that fails prints it (the check's detail).
-- `perfui`: "its headings are in title case and nothing crosses the margins"
-  reads the letterhead's name, registration and address on page 1 past its
-  margin since the letterhead moved to 33.3pt margins (#1158, #1159; found
-  2026-11-17 by the Hiring release, which does not touch `js/documents.js`);
-  the suite's margin needs the new figure.
-- `work`: "High says its deadline under the post" and "Urgent says its own
-  hours" fail when the deadline falls just after midnight (`12:06am` read
-  against the suite's pattern; 2026-11-14, 00:06 MYT); same cause.
-- `sql`: "without one it is, as before" (a client's device following a
-  campaign with no passcode) failed once and passed on other runs the same
-  day (2026-11-16); it counts devices an hour, so a run soon after the
-  flood check can meet the hour's limit.
-
-- `perfui`: "and it starts at No Access: granted, never inherited" (the
-  group sheet's Performance reviews part) and a click that times out after
-  the Activity record's Performance steps fail on main without any change
-  (found 2026-11-17 by the console tone check, which does not touch them).
+None open (2026-11-17: the thirteen logged were fixed at their cause or
+found already passing on main; the story is in `docs/DECISIONS.md`, The
+verification loop).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside

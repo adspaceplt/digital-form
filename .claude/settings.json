@@ -1,59 +1,88 @@
 {
     "extraKnownMarketplaces": {
-    "ponytail": { "source": { "source": "git", "url": "https://github.com/DietrichGebert/ponytail.git" } }
-  },
-  "enabledPlugins": { "ponytail@ponytail": true },
-  "permissions": {
-    "allow": [
-      "Bash",
-      "Bash(bash tests/snap.sh:*)",
-      "Bash(bash tests/gate.sh:*)",
-      "Bash(node tests/:*)",
-      "Bash(SHOTS=1 node tests/:*)",
-      "Bash(node --check:*)",
-      "mcp__github__actions_list",
-      "mcp__github__actions_get",
-      "mcp__github__pull_request_read",
-      "mcp__Supabase__get_edge_function",
-      "mcp__github__list_pull_requests",
-      "mcp__Supabase__query_logs",
-      "mcp__Supabase__list_edge_functions",
-      "mcp__Claude_Code_Remote__get_session",
-      "mcp__Supabase__list_migrations",
-      "mcp__github__create_pull_request",
-      "mcp__github__update_pull_request",
-      "mcp__github__merge_pull_request",
-      "mcp__github__enable_pr_auto_merge",
-      "mcp__github__update_pull_request_branch",
-      "mcp__claude-code-remote__subscribe_pr_activity",
-      "mcp__claude-code-remote__unsubscribe_pr_activity",
-      "mcp__Supabase__apply_migration",
-      "mcp__Supabase__execute_sql",
-      "mcp__Supabase__deploy_edge_function",
-      "mcp__claude-code-remote__create_session",
-      "mcp__claude-code-remote__send_message",
-      "mcp__claude-code-remote__get_session",
-      "mcp__claude-code-remote__list_sessions",
-      "mcp__claude-code-remote__list_events",
-      "mcp__claude-code-remote__set_session_title",
-      "mcp__claude-code-remote__set_session_tags",
-      "mcp__claude-code-remote__send_later",
-      "mcp__claude-code-remote__add_repo",
-      "mcp__claude-code-remote__check_repo_access",
-      "mcp__claude-code-remote__list_repos",
-      "mcp__claude-code-remote__register_repo_root"
-    ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
-          }
+        "ponytail": {
+            "source": {
+                "source": "git",
+                "url": "https://github.com/DietrichGebert/ponytail.git"
+            }
+        }
+    },
+    "enabledPlugins": {
+        "ponytail@ponytail": true
+    },
+    "permissions": {
+        "allow": [
+            "Bash",
+            "Bash(bash tests/snap.sh:*)",
+            "Bash(bash tests/gate.sh:*)",
+            "Bash(node tests/:*)",
+            "Bash(SHOTS=1 node tests/:*)",
+            "Bash(node --check:*)",
+            "mcp__github__actions_list",
+            "mcp__github__actions_get",
+            "mcp__github__pull_request_read",
+            "mcp__Supabase__get_edge_function",
+            "mcp__github__list_pull_requests",
+            "mcp__Supabase__query_logs",
+            "mcp__Supabase__list_edge_functions",
+            "mcp__Claude_Code_Remote__get_session",
+            "mcp__Supabase__list_migrations",
+            "mcp__github__create_pull_request",
+            "mcp__github__update_pull_request",
+            "mcp__github__merge_pull_request",
+            "mcp__github__enable_pr_auto_merge",
+            "mcp__github__update_pull_request_branch",
+            "mcp__claude-code-remote__subscribe_pr_activity",
+            "mcp__claude-code-remote__unsubscribe_pr_activity",
+            "mcp__Supabase__apply_migration",
+            "mcp__Supabase__execute_sql",
+            "mcp__Supabase__deploy_edge_function",
+            "mcp__claude-code-remote__create_session",
+            "mcp__claude-code-remote__send_message",
+            "mcp__claude-code-remote__get_session",
+            "mcp__claude-code-remote__list_sessions",
+            "mcp__claude-code-remote__list_events",
+            "mcp__claude-code-remote__set_session_title",
+            "mcp__claude-code-remote__set_session_tags",
+            "mcp__claude-code-remote__send_later",
+            "mcp__claude-code-remote__add_repo",
+            "mcp__claude-code-remote__check_repo_access",
+            "mcp__claude-code-remote__list_repos",
+            "mcp__claude-code-remote__register_repo_root"
         ]
-      }
-    ]
-  }
+    },
+    "hooks": {
+        "SessionStart": [
+            {
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+                    }
+                ]
+            }
+        ],
+        "PreToolUse": [
+            {
+                "matcher": "mcp__github__merge_pull_request",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/verify-gate.sh"
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Edit|Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/area-rules.sh"
+                    }
+                ]
+            }
+        ]
+    }
 }
