@@ -97,8 +97,8 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261117zt">
-<link rel="stylesheet" href="/css/console.css?v=20261117zv">
+<link rel="stylesheet" href="/css/portal.css?v=20261117zw">
+<link rel="stylesheet" href="/css/console.css?v=20261117zw">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -139,7 +139,7 @@
 <script src="/js/acts.js?v=20261116f"></script>
 <script src="/js/grow.js?v=20261008"></script>
 <script src="/js/ask.js?v=20261027b"></script>
-<script src="/js/confirm.js?v=20261117zc"></script>
+<script src="/js/confirm.js?v=20261117zw"></script>
 <script src="/js/sheet.js?v=20261023g"></script>
 <script src="/js/refresh.js?v=20261110p"></script>
 <script src="/js/form.js?v=20261117x"></script>
@@ -6128,6 +6128,31 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
+<!-- The Interviewer's Sheet (js/hiring.js, 2026-11-17): filled during the
+     interview in a panel beside the candidate's record, saved as each field
+     is left; the scorecard and the recommendation at its foot. -->
+<div class="sheet sheet-side is-beside" id="hivSheet" hidden>
+  <div class="sheet-card taskcard ivcard" role="dialog" aria-modal="true" aria-labelledby="hivTitle" tabindex="-1" data-narrow="460">
+    <div class="sheet-head qhead">
+      <div class="qhead-top">
+        <h2 class="qhead-title" id="hivTitle">Interview sheet</h2>
+        <span class="qhead-end">
+          <button class="iconbtn" id="hivClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </span>
+      </div>
+      <p class="qhead-ctx" id="hivCtx"></p>
+    </div>
+    <div class="sheet-body qbody" id="hivBody"></div>
+    <div class="qfoot">
+      <button class="btn btn-primary" id="hivSave" type="button">Save</button>
+      <button class="btn btn-quiet" id="hivCancel" type="button">Close</button>
+      <span class="iv-saved" id="hivSaved" role="status"></span>
+      <p class="msg" id="hivMsg" role="alert"></p>
+    </div>
+  </div>
+</div>
 <!-- The Welcome Kit's words (js/onboard.js, 2026-11-17): a section at a
      time, read by a new colleague at first sign-in. -->
 <div class="sheet" id="wkSheet" hidden>
@@ -6670,7 +6695,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/reports.js?v=20261117zh"></script>
 <script src="/js/register.js?v=20261117zd"></script>
 <script src="/js/suppliers.js?v=20261117zi"></script>
-<script src="/js/hiring.js?v=20261117zv"></script>
+<script src="/js/hiring.js?v=20261117zw"></script>
 <script src="/js/bukku.js?v=20261117y"></script>
 <script src="/js/invoices.js?v=20261117z"></script>
 <script src="/js/engage.js?v=20261112h"></script>

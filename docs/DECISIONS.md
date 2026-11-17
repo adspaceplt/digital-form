@@ -10991,3 +10991,19 @@ refused. Found while testing: `ADspaceClock.weekday` answers a number, so the ki
 day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages without
 signing in again and seeded the database before a reload that reseeds it; both fixed in
 the suite.
+
+### 2026-11-17 · The Interviewer's Sheet, beside the record
+
+The user sent the team's paper Interviewer's Sheet (a rating out of 10,
+internal remarks, MBTI and twelve questions) and asked for it on top of the
+scorecard, in "a slide window or so so the record could stay right", since
+an interview runs long; Add scores had been a centred question over a scrim.
+The Scores tab's Interview sheet now opens a side panel with no scrim, each
+note saved as its field is left so a long interview loses nothing, the
+scorecard and recommendation saved by Save. The same day: the invitation's
+note of online meetings already booked sat under Time 1's date as a half row
+("move below as one whole row"), now a full row under the times
+(ADspaceConfirm's `line`); and "the invite interview, shouldnt be jusst time
+within a same day": the seeded window of 3 days became 14, the setting's
+most, so the three times may sit on different days a week or more apart.
+

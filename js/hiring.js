@@ -214,10 +214,12 @@
         if (state.open !== id) return;
         var e = q.data || {};
         state.interviews = q.error || e.error ? null : (e.rows || []);
-        return rpc('hiring_outcome_of', { p_id: id }).then(function (o) {
+        return Promise.all([rpc('hiring_outcome_of', { p_id: id }), rpc('hiring_sheets_of', { p_id: id })]).then(function (pair) {
           if (state.open !== id) return;
-          var od = o.data || {};
+          var o = pair[0], od = o.data || {}, sd = pair[1].data || {};
           state.outcome = o.error || od.error ? null : od;
+          /* The interview sheets; a read that fails leaves them out. */
+          state.sheets = pair[1].error || sd.error ? [] : (sd.sheets || []);
           if (state.role !== 'admin' && state.role !== 'owner') { state.docs = []; paintRec(); return; }
           return rpc('hiring_docs_of', { p_id: id }).then(function (x) {
             if (state.open !== id) return;
@@ -334,6 +336,14 @@
     if (!o) return '<section class="readgroup"><div id="hirScFail"></div></section>';
     var crit = o.scorecard.criteria || [], out = o.outcome || {}, open = c.stage !== 'hired' && c.stage !== 'closed';
     var mine = o.scores.filter(function (x) { return x.mine; })[0];
+    var sheets = state.sheets || [], mySheet = sheets.filter(function (x) { return x.mine; })[0], qs = sheetQs(c);
+    /* A colleague's scores and their sheet are one card. */
+    var people = [];
+    o.scores.forEach(function (x) { people.push({ id: x.id, name: x.name, score: x }); });
+    sheets.forEach(function (x) {
+      var p = people.filter(function (y) { return y.id === x.id; })[0];
+      if (p) p.sheet = x; else people.push({ id: x.id, name: x.name, sheet: x });
+    });
     var decide = '';
     if (out.outcome) {
       var st = OUTCOME[out.outcome];
@@ -356,45 +366,158 @@
       return [k, v.length ? Math.round(v.reduce(function (a, b) { return a + b; }, 0) / v.length * 10) / 10 : null];
     });
     return '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Decision</h4></div>' + decide + '</section>' +
-      '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Scores</h4>' +
-        (open ? '<button class="btn btn-sm' + (mine ? ' btn-quiet' : '') + '" type="button" data-h="score">' + (mine ? 'Edit scores' : 'Add scores') + '</button>' : '') + '</div>' +
+      '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">Interviews</h4>' +
+        (open ? '<button class="btn btn-sm' + (mine || mySheet ? ' btn-quiet' : '') + '" type="button" data-h="score">Interview sheet</button>' : '') + '</div>' +
       '<p class="hir-card-line">' + esc(o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 to 5 per criterion</p>' +
-      (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' +
-        '<div class="hir-scores">' + o.scores.map(function (x) {
-          return '<div class="hir-score"><div class="hir-iv-head"><b>' + esc(x.name) + '</b><span class="hir-iv-ctl"><span class="hir-total">' + esc(Number(x.total).toFixed(1)) + '</span>' +
-            '<span class="chip">' + esc(REC[x.recommend] || '') + '</span>' +
-            (x.mine && open ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for your scores" aria-expanded="false">' + DOTS + '</button>' +
+      (people.length ? (o.scores.length ? '<dl class="ovfacts">' + avg.map(function (a) { return fact(a[0], a[1] == null ? '' : a[1].toFixed(1)); }).join('') + '</dl>' : '') +
+        '<div class="hir-scores">' + people.map(function (p) {
+          var x = p.score, sh = p.sheet || {}, a = sh.answers || {};
+          var read = qs.filter(function (q) { return a[q[0]]; });
+          return '<div class="hir-score"><div class="hir-iv-head"><b>' + esc(p.name) + '</b><span class="hir-iv-ctl">' +
+            (sh.rating ? '<span class="hir-rating">' + esc(sh.rating) + '/10</span>' : '') +
+            (x ? '<span class="hir-total">' + esc(Number(x.total).toFixed(1)) + '</span><span class="chip">' + esc(REC[x.recommend] || '') + '</span>' : '') +
+            (x && x.mine && open ? '<span class="team-act"><button class="kmenu-btn" type="button" data-h="menu" aria-label="More actions for your scores" aria-expanded="false">' + DOTS + '</button>' +
               '<div class="kmenu" hidden><button class="kmenu-item is-danger" data-g="6" type="button" data-h="unscore" role="menuitem">Remove</button></div></span>' : '') +
             '</span></div>' +
-            '<p class="hir-card-line">' + crit.map(function (k) { return '<span class="nb">' + esc(k) + ' ' + esc((x.scores || {})[k] || '') + '</span>'; }).join(' · ') + '</p>' +
-            (x.note ? '<p class="hir-note">' + esc(x.note) + '</p>' : '') + '</div>';
+            (x ? '<p class="hir-card-line">' + crit.map(function (k) { return '<span class="nb">' + esc(k) + ' ' + esc((x.scores || {})[k] || '') + '</span>'; }).join(' · ') + '</p>' : '<p class="hir-card-line">Not scored</p>') +
+            (x && x.note ? '<p class="hir-note">' + esc(x.note) + '</p>' : '') +
+            (a.remarks ? '<p class="hir-note">' + esc(a.remarks) + '</p>' : '') +
+            (read.length ? '<details class="iv-read"><summary>Interview sheet</summary><dl class="ovfacts iv-facts">' +
+              read.map(function (q) { return fact(q[1], esc(a[q[0]]), 'is-pre'); }).join('') + '</dl></details>' : '') + '</div>';
         }).join('') + '</div>'
-        : '<p class="emptyline">No scores.</p>') + '</section>';
+        : '<p class="emptyline">No interview sheets.</p>') + '</section>';
+  }
+  /* ---- The Interviewer's Sheet (2026-11-17) ----------------------------------
+     The team's paper sheet, filled during the interview in a panel beside
+     the record (the user: "it shouldnt be shown like a card, it should at
+     least a slide window or so so the record could stay right"): a rating
+     out of 10, internal remarks, MBTI and the sheet's questions, each saved
+     as it is left (`hiring_sheet_save`); the scorecard and the
+     recommendation at its foot, saved by Save (`hiring_score_save`). The
+     keys are the database's `hiring_sheet_keys()` (tests/hiringsql.js). */
+  function sheetQs(c) {
+    return [['mbti', 'MBTI'], ['why_role', 'Why do you want the ' + (c.position || 'this') + ' role?'],
+      ['about', 'About self and family background'], ['academics', 'Academics and languages'], ['experience', 'Experience'],
+      ['hobbies', 'Hobbies'], ['strengths', 'Strengths and weaknesses'],
+      ['future', 'Where do you see yourself in the next 5 to 10 years?'], ['ambition', 'What is your ambition?'],
+      ['company', 'What kind of company are you looking for?'], ['found', 'How did you find out about ADspace?'],
+      ['why_us', 'Why have you applied to ADspace?'], ['why_hire', 'Why should ADspace hire you?'],
+      ['others', 'Others'], ['general', 'General remarks']];
+  }
+  var iv = { dirty: false, saving: null, wired: false };
+  function ivVals() {
+    var a = {}, box = $('hivBody');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-q]'), function (el) {
+      var v = String(el.value || '').trim();
+      if (v) a[el.getAttribute('data-q')] = v;
+    });
+    var r = $('hivRating').value;
+    return { rating: r ? Number(r) : null, answers: a };
+  }
+  /* The notes go as they are left; one save at a time, the last words
+     sent once the one on its way answers. */
+  function ivSave() {
+    if (!iv.dirty || !state.rec) return iv.saving || Promise.resolve(true);
+    if (iv.saving) return iv.saving.then(ivSave);
+    iv.dirty = false;
+    var v = ivVals(), c = state.rec;
+    iv.saving = rpc('hiring_sheet_save', { p_id: c.id, p_rating: v.rating, p_answers: v.answers }).then(function (r) {
+      iv.saving = null;
+      var d = r.data || {};
+      if (r.error || d.error) {
+        iv.dirty = true;
+        msg('hivMsg', d.error === 'too-long' ? 'Shorten ' + ((sheetQs(c).filter(function (q) { return q[0] === d.field; })[0] || [0, 'the remarks'])[1]) + ' to ' + (d.field === 'mbti' ? '20' : '2,000') + ' characters.'
+          : said(r), 'err');
+        return false;
+      }
+      $('hivSaved').textContent = 'Saved ' + window.ADspaceClock.clock(d.updated_at || new Date().toISOString());
+      return true;
+    });
+    return iv.saving;
   }
   function score() {
-    var c = state.rec, o = state.outcome, mine = o.scores.filter(function (x) { return x.mine; })[0] || {};
-    var five = [['', 'Choose'], ['1', '1'], ['2', '2'], ['3', '3'], ['4', '4'], ['5', '5']];
-    var f = (o.scorecard.criteria || []).map(function (k, n) {
-      return { name: 'c' + n, label: k, choices: five, value: mine.scores ? String(mine.scores[k] || '') : '', half: true, head: n === 0 ? 'Scores' : '' };
-    });
-    f.push({ name: 'rec', label: 'Recommendation', choices: [['proceed', 'Proceed'], ['pool', 'Talent pool'], ['not', 'Not proceed']], seg: true,
-      value: mine.recommend || 'proceed', head: 'Recommendation' });
-    f.push({ name: 'note', label: 'Note', rows: 3, required: false, placeholder: 'Optional', value: mine.note || '' });
-    window.ADspaceConfirm.ask({ title: (mine.scores ? 'Edit scores' : 'Add scores') + ' for ' + c.name, go: 'Save', wait: true, fields: f,
-      body: '1 is weak and 5 is strong. Everyone added to this candidate can see the scores.',
-      check: function (v) {
-        var gap = (o.scorecard.criteria || []).filter(function (k, n) { return !v['c' + n]; })[0];
-        return gap ? 'Choose a score for ' + gap + '.' : String(v.note || '').trim().length > 1000 ? 'Shorten the note to 1,000 characters.' : '';
-      } },
-    function (v) {
+    var c = state.rec, o = state.outcome, sh = $('hivSheet');
+    if (!sh || !o) return;
+    var mine = o.scores.filter(function (x) { return x.mine; })[0] || {};
+    var ms = (state.sheets || []).filter(function (x) { return x.mine; })[0] || {}, ans = ms.answers || {};
+    var crit = o.scorecard.criteria || [];
+    var area = function (k, label, rows, note) {
+      var id = 'hivQ_' + k;
+      return '<div class="field"><label class="field-label" for="' + id + '">' + esc(label) + '</label>' +
+        (k === 'mbti' ? '<input class="input" id="' + id + '" data-q="mbti" maxlength="20" autocomplete="off" spellcheck="false" value="' + esc(ans.mbti || '') + '">'
+          : '<textarea class="input" id="' + id + '" data-q="' + k + '" rows="' + (rows || 2) + '"' + (note ? ' aria-describedby="' + id + 'N"' : '') + '>' + esc(ans[k] || '') + '</textarea>') +
+        (note ? '<p class="iv-note" id="' + id + 'N">' + esc(note) + '</p>' : '') + '</div>';
+    };
+    var opts = function (n, val, first) {
+      var h = '<option value="">' + first + '</option>';
+      for (var i = 1; i <= n; i++) h += '<option value="' + i + '"' + (String(val) === String(i) ? ' selected' : '') + '>' + i + '</option>';
+      return h;
+    };
+    $('hivCtx').textContent = [c.name, c.position].filter(Boolean).join(' · ');
+    $('hivBody').innerHTML =
+      '<section class="qcard"><h3 class="qcard-title">Assessment</h3><div class="iv-fields">' +
+        '<div class="field"><label class="field-label" for="hivRating">Rating (out of 10)</label><select class="select" id="hivRating">' + opts(10, ms.rating, 'Choose') + '</select></div>' +
+        area('remarks', 'Internal remarks', 3, 'Outcome or status. Seen by the team only.') + '</div></section>' +
+      '<section class="qcard"><h3 class="qcard-title">Questions</h3><div class="iv-fields">' +
+        sheetQs(c).map(function (q) { return area(q[0], q[1], q[0] === 'general' ? 3 : 2); }).join('') + '</div></section>' +
+      (crit.length ? '<section class="qcard"><h3 class="qcard-title">Scores</h3><p class="hir-card-line">' +
+        esc((o.scorecard.standard ? 'Standard scorecard' : o.scorecard.position + ' scorecard') + ' · 1 is weak and 5 is strong') + '</p><div class="iv-fields">' +
+        crit.map(function (k, n) {
+          return '<div class="field"><label class="field-label" for="hivC' + n + '">' + esc(k) + '</label><select class="select" id="hivC' + n + '" data-c="' + esc(k) + '" data-seg>' +
+            opts(5, mine.scores ? mine.scores[k] : '', '–') + '</select></div>';
+        }).join('') +
+        '<div class="field"><label class="field-label" for="hivRec">Recommendation</label><select class="select" id="hivRec" data-seg>' +
+          [['proceed', 'Proceed'], ['pool', 'Talent pool'], ['not', 'Not proceed']].map(function (x) {
+            return '<option value="' + x[0] + '"' + ((mine.recommend || 'proceed') === x[0] ? ' selected' : '') + '>' + x[1] + '</option>';
+          }).join('') + '</select></div></div></section>' : '');
+    if (window.ADspaceForm && ADspaceForm.segment) Array.prototype.forEach.call($('hivBody').querySelectorAll('select[data-seg]'), function (el) { ADspaceForm.segment(el); });
+    msg('hivMsg', '');
+    $('hivSaved').textContent = ms.updated_at ? 'Saved ' + window.ADspaceClock.clock(ms.updated_at) : '';
+    iv.dirty = false;
+    if (!iv.wired) {
+      iv.wired = true;
+      var notes = function (e) { if (e.target.closest('[data-q]') || e.target.id === 'hivRating') iv.dirty = true; };
+      $('hivBody').addEventListener('input', notes);
+      $('hivBody').addEventListener('change', function (e) { notes(e); if (iv.dirty) ivSave(); });
+      $('hivCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+      $('hivClose').addEventListener('click', function () { $('hivCancel').click(); });
+      $('hivSave').addEventListener('click', ivDone);
+    }
+    window.ADspaceSheet.show(sh, { opener: document.querySelector('#hirRec [data-h="score"]'), onClose: function () {
+      /* Words still being typed are kept as the panel shuts. */
+      var reread = iv.dirty || iv.saved, done = iv.saved;
+      iv.saved = false;
+      ivSave().then(function () {
+        if (!reread || !state.rec || state.rec.id !== c.id) return;
+        state.pane = 'scores';
+        openRec(c.id).then(function () { if (done) msg('hirRecMsg', 'Saved.', 'ok'); });
+      });
+    } });
+  }
+  function ivDone() {
+    var c = state.rec, o = state.outcome, b = $('hivSave');
+    var mine = o.scores.filter(function (x) { return x.mine; })[0] || {};
+    var sel = Array.prototype.slice.call($('hivBody').querySelectorAll('select[data-c]'));
+    var chosen = sel.filter(function (el) { return el.value; });
+    if (chosen.length && chosen.length < sel.length) {
+      var gap = sel.filter(function (el) { return !el.value; })[0];
+      msg('hivMsg', 'Choose a score for ' + gap.getAttribute('data-c') + '.', 'err');
+      return;
+    }
+    b.disabled = true;
+    iv.dirty = true;
+    ivSave().then(function (ok) {
+      if (!ok) { b.disabled = false; return; }
+      if (!chosen.length) { b.disabled = false; iv.saved = true; window.ADspaceSheet.close(); return; }
       var sc = {};
-      (o.scorecard.criteria || []).forEach(function (k, n) { sc[k] = Number(v['c' + n]); });
-      return rpc('hiring_score_save', { p_id: c.id, p_scores: sc, p_recommend: v.rec, p_note: String(v.note || '').trim() || null }).then(function (r) {
+      sel.forEach(function (el) { sc[el.getAttribute('data-c')] = Number(el.value); });
+      rpc('hiring_score_save', { p_id: c.id, p_scores: sc, p_recommend: $('hivRec').value, p_note: mine.note || null }).then(function (r) {
+        b.disabled = false;
         var d = r.data || {};
-        if (d.error === 'incomplete') return 'Choose a score for ' + d.criterion + '.';
-        if (r.error || d.error) return said(r);
-        state.pane = 'scores'; openRec(c.id).then(function () { msg('hirRecMsg', 'Saved.', 'ok'); });
-        return '';
+        if (d.error === 'incomplete') { msg('hivMsg', 'Choose a score for ' + d.criterion + '.', 'err'); return; }
+        if (r.error || d.error) { msg('hivMsg', said(r), 'err'); return; }
+        iv.saved = true;
+        window.ADspaceSheet.close();
       });
     });
   }
@@ -980,9 +1103,9 @@
         f.push({ name: 'd' + n, label: 'Time ' + n + ' date', type: 'date', min: today, half: true, required: n === 1, hint: n === 1 ? '' : 'Optional', head: n === 1 ? 'Times' : '' });
         f.push({ name: 't' + n, label: 'Time ' + n, type: 'time', half: true, required: n === 1, hint: n === 1 ? '' : 'Optional' });
       });
-      f[0].note = line;
+      f.push({ line: line || '' });
       f.push({ name: 'minutes', label: 'Length', choices: [['30', '30 minutes'], ['45', '45 minutes'], ['60', '60 minutes'], ['90', '90 minutes']], seg: true, value: '45', head: 'Interview' });
-      f.push({ name: 'mode', label: 'Where', choices: [['online', 'Google Meet'], ['office', 'At the office']], seg: true, value: 'online' });
+      f.push({ name: 'mode', label: 'Location', choices: [['online', 'Google Meet'], ['office', 'At the office']], seg: true, value: 'online' });
       f.push({ name: 'note', label: 'Note to the candidate', rows: 2, required: false, placeholder: 'Optional' });
       var slots = function (v) {
         var out = [];
@@ -990,7 +1113,7 @@
         return out;
       };
       window.ADspaceConfirm.ask({ title: 'Invite ' + c.name, go: 'Send invitation', wait: true, fields: f,
-        body: 'The candidate will choose one of these times on their page.',
+        body: 'The candidate will choose one of these times on their page. The times may be on different days.',
         check: function (v) {
           var s = slots(v);
           if (!s.length) return SAID['bad-slots'];
