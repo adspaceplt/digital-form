@@ -1069,6 +1069,10 @@
        Handbook files, Transfer client and AI usage. */
     reports:   ['whitelabel', 'transfer', 'ai', 'meta']
   };
+  /* The parts that are granted rather than inherited: each opens more than
+     its section does, so silence means no. The page's one copy, held equal
+     to the database's (access_keys, tier granted) by tests/access.js; the
+     Team panel reads it from here (ADspaceAdmin.GRANTED). */
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
     'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
     'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
@@ -1183,11 +1187,9 @@
 
   /* Hide what the person may not use. Nothing here is the control; the
      policies are. This keeps the screen from offering what will be refused.
-     One class per section and per part rather than one global `no-remove`,
-     because the authority to destroy is per section now: a group can manage
-     Content Review without being able to delete a client. A part's class
-     hyphenates the key (`no-work-clients-billing`), since a dot is not a
-     class token. */
+     Each control names its section or part and level
+     (`data-need="clients.billing:work"`), and a control the person may not
+     use is hidden by one generated rule (`#accessHide`). */
   function applyAccess() {
     /* The team row has arrived by now, so the account control can stop
        standing in with an address and name the person. */
@@ -1206,12 +1208,20 @@
     Object.keys(PARTS).forEach(function (s) {
       PARTS[s].forEach(function (p) { keys.push(s + '.' + p); });
     });
+    /* One rule a control the person may not use, written from may() over
+       every section and part at every level (the access clean-up,
+       2026-11-17: in place of 95 rules typed into css/portal.css). A
+       control naming a key no section or part defines is never hidden, so
+       it is seen. */
+    var rules = [];
     keys.forEach(function (k) {
-      var cls = k.replace('.', '-');
-      document.body.classList.toggle('no-manage-' + cls, !may(k, 'manage'));
-      document.body.classList.toggle('no-work-' + cls, !may(k, 'work'));
-      document.body.classList.toggle('no-view-' + cls, !may(k, 'view'));
+      ['view', 'work', 'manage'].forEach(function (lv) {
+        if (!may(k, lv)) rules.push('[data-need="' + k + ':' + lv + '"]');
+      });
     });
+    var sheet = document.getElementById('accessHide');
+    if (!sheet) { sheet = document.createElement('style'); sheet.id = 'accessHide'; document.head.appendChild(sheet); }
+    sheet.textContent = rules.length ? rules.join(',\n') + ' { display: none !important; }' : '';
     /* No AI for this colleague: every Write with AI, the Assistant and
        Draw with AI step away (GROUP SWITCHES, 2026-11-17). */
     document.documentElement.classList.toggle('no-ai', !may('use.ai', 'work'));
@@ -6165,6 +6175,7 @@
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
+    GRANTED: OPS_GRANTED,
     undoHere: undoHere,
     counts: counts,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */

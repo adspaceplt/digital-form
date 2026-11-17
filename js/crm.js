@@ -874,7 +874,7 @@
     var all = $('crmBulkAll');
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
-    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every client shown');
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear selection' : 'Select every client shown');
     $('crmBulkOwner').hidden = !n;
   }
   /* Each client in turn, so a refusal is named against its client. */
@@ -1132,8 +1132,8 @@
     var show = Boolean(c && had && now && now !== had && issued);
     el.textContent = show
       ? 'Changing the Client ID does not change the ' + issued +
-        (issued === 1 ? ' serial number already issued. It applies to letters issued from now on.'
-                      : ' serial numbers already issued. It applies to letters issued from now on.')
+        (issued === 1 ? ' reference already issued. The new Client ID applies to letters issued from now on.'
+                      : ' references already issued. The new Client ID applies to letters issued from now on.')
       : '';
     el.hidden = !show;
   }
@@ -1425,7 +1425,7 @@
     var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
     $('crmBrandSummary').textContent =
       [linksOn ? linksOn + ' of ' + BRAND.length : '', c.brand_notes ? 'Notes' : '']
-        .filter(Boolean).join(' · ') || 'Empty';
+        .filter(Boolean).join(' · ') || 'Not set';
     msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
     shutContact();
     shutTouch();
@@ -2145,14 +2145,14 @@
     if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents', icon: 'file' };
+      return { text: quoting + (quoting === 1 ? ' line to quote is' : ' lines to quote are') + ' in no letter.', go: 'documents', icon: 'file' };
     }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
-      return { text: missing.length + (missing.length === 1 ? ' billing field' : ' billing fields') +
-        ' before Active.', go: 'billing', icon: 'file' };
+      return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') +
+        ' required before Active.', go: 'billing', icon: 'file' };
     }
-    if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents', icon: 'file' };
-    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed service line.', go: 'services', icon: 'tag' };
+    if (stage === 'proposal' && issued) return { text: 'The Letter of Offer is with the client and unsigned.', go: 'documents', icon: 'file' };
+    if (stage === 'active' && !confirmed) return { text: 'This client is Active with no confirmed service line.', go: 'services', icon: 'tag' };
     return null;
   }
 
@@ -3641,7 +3641,7 @@
     $('crmBillInRow').hidden = !sg;
     $('crmBillIn').value = sg && c.bill_sgd ? 'SG' : 'MY';
     if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('crmBillIn'));
-    $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
+    $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotations';
   }
   /* Billing comes first, for Active and for a Letter of Offer alike
      (2026-10-26: a letter printed with no registered name was signed as
@@ -3698,7 +3698,7 @@
     ['billing_address', 'Billing address'], ['finance_email', 'Finance email']];
   var DF_FIELDS = { legal_name: 'crmLegalName', company_no: 'crmCompanyNo', company_no_old: 'crmCompanyNoOld',
     tin: 'crmTin', sst_no: 'crmSstNo', finance_email: 'crmFinanceEmail', billing_address: 'crmBillAddr' };
-  var DF_SAID = { denied: 'You do not have permission to change billing details. Please ask an admin.', 'not-found': 'This client is outside your access.',
+  var DF_SAID = { denied: 'You do not have permission to change billing details. Please ask an admin.', 'not-found': 'You do not have access to this client. Please ask an admin.',
     'no-link': 'No link is open. Refresh the page to see the current state.' };
   function dfUrl(key) { return location.origin + '/details/?k=' + encodeURIComponent(key); }
   function loadDetForm() {
@@ -4084,7 +4084,7 @@
     'ai-failed': 'No analysis came back. Try again.',
     'ai-incomplete': 'No analysis came back. Try again.',
     denied: 'You do not have access to this client\'s Brand. Please ask an admin.',
-    'client-scope': 'This client is outside your access.',
+    'client-scope': 'You do not have access to this client. Please ask an admin.',
     'not-found': 'This analysis is no longer available.',
     'in-use': 'Write with AI reads this confirmed version. Confirm a later version, or withdraw this confirmation, then delete it.',
     'no-source': 'Add the website, an Instagram or Facebook handle, or link Meta accounts first.'
@@ -6452,7 +6452,7 @@
      line where the kind needs one, who asked if a contact did, and a note;
      the database keeps it as the colleague's (`client_request_add`). */
   var RA_SAID = {
-    denied: 'You do not have permission to answer requests. Please ask an admin.', 'not-found': 'This client is outside your access.',
+    denied: 'You do not have permission to answer requests. Please ask an admin.', 'not-found': 'You do not have access to this client. Please ask an admin.',
     'no-service': 'Choose the service line.', 'note-required': 'Enter a note.',
     'bad-contact': 'That contact is no longer on this client.', 'too-long': 'Keep the note to 2,000 characters.'
   };
@@ -8436,7 +8436,7 @@
              so, rather than dropping to the list as if nothing was asked. */
           if (!c) {
             state.client = null; showList();
-            $('crmListMsg').textContent = 'That client is outside your access, or no longer exists.';
+            $('crmListMsg').textContent = 'You do not have access to that client, or it no longer exists.';
             return;
           }
           openClient(c, true);

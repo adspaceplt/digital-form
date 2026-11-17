@@ -20,11 +20,11 @@
   var STATE = { open: ['In progress', 'is-warn'], prepared: ['Waiting for review', 'is-warn'], signed: ['Signed off', 'is-ok'] };
   var SAID = {
     denied: 'You do not have permission to change checklists. Please ask an admin.',
-    'brand-denied': 'Write with AI reads the Brand analysis, which you do not have access to. Please ask an admin.', 'client-scope': 'This client is outside your access.',
+    'brand-denied': 'Write with AI reads the Brand analysis, which you do not have access to. Please ask an admin.', 'client-scope': 'You do not have access to this client. Please ask an admin.',
     locked: 'This checklist is waiting for review or signed off. Send it back or reopen it to change it.',
     'bad-value': 'Choose one of the answers listed.', 'bad-item': 'This checklist has changed. Open it again.',
     'too-long': 'Enter a note of up to 1,000 characters.', own: 'Only a colleague who did not prepare or fill in this checklist can sign it off.',
-    'not-started': 'Nothing has been recorded on this checklist.',
+    'not-started': 'Nothing has been recorded on this checklist. Tick or answer an item first.',
     'no-analysis': 'Write with AI reads the client\'s confirmed Brand analysis. Confirm one on the Brand tab first.',
     'ai-not-set-up': 'Write with AI is not set up yet. Please contact an admin.', 'ai-key': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-busy': 'The AI service is busy. Try again in a minute.', 'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.',

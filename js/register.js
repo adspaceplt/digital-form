@@ -610,7 +610,7 @@
      name}, {role} and {client} fill themselves and are never asked, and on
      an HR letter {name}, the colleague's full name (2026-10-07). */
   var GROUPS = ['quote_cover', 'client', 'supplier', 'hr'];
-  var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client letters', supplier: 'Supplier letters', hr: 'HR letters' };
+  var GROUP_WORD = { quote_cover: 'Quotation', client: 'Client Letters', supplier: 'Supplier Letters', hr: 'HR Letters' };
   var SELF = { hr: ['first name', 'name', 'role'], client: ['first name', 'client'], quote_cover: ['first name', 'client'], supplier: ['first name', 'supplier'] };
   var KINDS = [['text', 'Text'], ['date', 'Date'], ['long', 'Paragraph']];
   function fieldKey(k) { return String(k || '').trim().toLowerCase().replace(/\s+/g, ' '); }

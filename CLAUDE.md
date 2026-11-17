@@ -1629,10 +1629,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     payment parts following their section. The page asks `may('use.ai')`,
     `may('send.email')`, `may('send.whatsapp')`; `:root.no-ai` hides every
     button carrying the AI mark (`svg.ai-mark`) and the Assistant. The five
-    WhatsApp parts and the billing and payment parts are no longer offered.
-    `access_keys` (RLS on, no policy, no grant) lists every key and its
-    tier; `tests/access.js` holds the granted list equal in the migration,
-    `js/team.js`, `js/admin.js` and the stand-in.
+    WhatsApp parts and the billing and payment parts are gone, their stored
+    levels taken off (`2026-11-17-access-cleanup.sql`). `access_keys` (RLS
+    on, no policy, no grant) lists every key and its tier, and `allowed()`
+    reads the granted parts from it; the page's one list is
+    `ADspaceAdmin.GRANTED` (the Team panel reads it), held equal to
+    `access_keys` and the stand-in by `tests/access.js`.
   - Select is view, insert and update are work, delete is manage, each a
     policy of its own: never one `for all` policy, since Postgres checks a
     delete against USING alone (one reading at View let View delete;
@@ -1751,11 +1753,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `allowed('remove')` is gone.
 - `level()` returns 0 for a missing key, above the admin branch. A permission
   check refuses and never throws. `navItems()` selects `.navitem[data-section]`.
-- On the page, `may(key, level)` and one body class per section and part
-  (`no-manage-review`, `no-work-clients-billing`) hide controls. Every control
-  names its part (`data-need="clients.documents:manage"`, listed in
-  `css/portal.css`). A tab with `data-part` draws only where readable, and the
-  address falls back to Overview.
+- On the page, `may(key, level)` hides controls: every control names its
+  section or part and level (`data-need="clients.documents:manage"`), and
+  `applyAccess` writes one rule over every key and level the person may not
+  use (`#accessHide`); no stylesheet types a hide rule. A tab with
+  `data-part` draws only where readable, and the address falls back to
+  Overview.
 - The team table answers a browser only the columns every page reads
   (`2026-10-18-team-list-holds-what-colleagues-need.sql`): the mobile, the
   access map, the access dates, the expiry, the removal, the erasure and

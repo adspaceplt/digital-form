@@ -656,11 +656,11 @@ and removed here when it ships (`CLAUDE.md` §1, one request, one release).
   campaign with no passcode) failed once and passed on other runs the same
   day (2026-11-16); it counts devices an hour, so a run soon after the
   flood check can meet the hour's limit.
-- `pwapdf`: "no script opens a blank window for a PDF but through
-  ADspaceDocs" fails on `personnel.js` (#1166): its NRIC and photo open as a
-  `blob:` address on the portal's own origin, which the installed app shows
-  with no way back, and `ADspaceDocs`' viewer draws PDFs alone (found
-  2026-11-17 by the Hiring gate fixes, which do not touch Personnel).
+
+- `perfui`: "and it starts at No Access: granted, never inherited" (the
+  group sheet's Performance reviews part) and a click that times out after
+  the Activity record's Performance steps fail on main without any change
+  (found 2026-11-17 by the console tone check, which does not touch them).
 
 ### Not built, or waiting on the user
 - Overdue reminders on WhatsApp (a template of our own, sent by hand beside
