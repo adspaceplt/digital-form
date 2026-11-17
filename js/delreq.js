@@ -32,9 +32,17 @@
     body: 'An admin will review the request before anything is deleted.',
     reason: 'Reason',
     done: 'Delete requested. An admin will decide.',
-    withdrawn: 'Request withdrawn.',
-    own: 'A request you filed is decided by another admin.'
+    withdrawn: 'Undone.',
+    own: 'Another admin must decide a request you filed.'
   };
+  /* A decision refused, in the words that say what to do next. */
+  function refused(d, word) {
+    var c = d && d.error;
+    return c === 'own' ? LINE.own
+      : c === 'decided' || c === 'not-yours' ? 'This request has already been decided. Refresh the page.'
+      : c === 'too-long' ? 'Keep the note to 500 characters.'
+      : 'Not ' + word + '. Please try again.';
+  }
 
   function load() {
     if (kinds) return Promise.resolve(kinds);
@@ -315,7 +323,7 @@
         field: { label: 'Note', rows: 2, need: 'Enter a note.' } }, function (note) {
         Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: false, p_note: note })).then(function (r) {
           var d = r && r.data;
-          if (!d || !d.ok) say(btn, d && d.error === 'own' ? LINE.own : 'Not declined. Please try again.');
+          if (!d || !d.ok) say(btn, refused(d, 'declined'));
           else paint();
         });
       });
@@ -325,7 +333,7 @@
       go: 'Delete', tone: 'danger' }, function () {
       Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: true, p_note: null })).then(function (r) {
         var d = r && r.data;
-        if (!d || !d.ok) { say(btn, d && d.error === 'own' ? LINE.own : 'Not deleted. Please try again.'); return null; }
+        if (!d || !d.ok) { say(btn, refused(d, 'deleted')); return null; }
         return replay(d.kind, d.args).then(function (res) {
           return Promise.resolve(db.rpc('delete_request_done', { p_id: id, p_ok: res.ok, p_error: res.ok ? null : res.why })).then(function () {
             if (!res.ok) { paint(); setTimeout(function () { var b = document.querySelector('.dr-row[data-id="' + id + '"] .dr-acts button'); if (b) say(b, res.why); }, 400); }
