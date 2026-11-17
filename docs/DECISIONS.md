@@ -11111,3 +11111,11 @@ salary. The link table's kind check can only be widened in the SQL Editor,
 so `bukku_may` asks `bukku_member_ready()` first and the band stays away
 until that part has run: nothing is ever made in Bukku that the portal cannot
 file.
+
+### 2026-11-17 · Hiring is Settings' own group
+The Hiring figures, the Interview scorecards and the Welcome Kit stood as a
+fourth part of Portal, where nobody looking for hiring would look. They are
+now a group of their own, Hiring, after Performance: Candidates (the figures
+and the scorecards) and New colleagues (the Welcome Kit). The scorecards row
+states what it holds, the Standard's criteria and how many positions have
+their own, as every Open row does.

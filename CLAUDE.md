@@ -654,7 +654,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Nine groups
+  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings: Portal (Pages
@@ -673,7 +673,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
   Performance (Months, Quarters, Bonus and trip, Commission at
-  `team.performance` View, behind the master code; 2026-10-29), Templates
+  `team.performance` View, behind the master code; 2026-10-29), Hiring
+  (Candidates: Hiring's figures at `team.settings`, Interview scorecards at
+  `team.hiring`, its row the Standard's criteria and how many positions hold
+  their own, Standard · 5 criteria · 1 position; New colleagues: Welcome
+  Kit; 2026-11-17), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access). Email templates (`js/mailtpl.js`,
   `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
@@ -3509,7 +3513,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
-  not chosen. Settings, Portal, Hiring: Hiring holds the figures
+  not chosen. Settings, Hiring: Hiring holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
 - The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
   user, 2026-11-17, the team's paper sheet: "a slide window or so so the
@@ -3615,7 +3619,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   their first day, Employee ID, department, position, direct manager and
   company email, then the team's sections, the Wi-Fi password and door
   PIN always Please check with your direct manager.; Acknowledge
-  (`welcome_kit_ack`, filed). The sections are Settings, Portal: Welcome
+  (`welcome_kit_ack`, filed). The sections are Settings, Hiring: Welcome
   Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
   refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for
