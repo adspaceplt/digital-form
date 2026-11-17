@@ -716,8 +716,8 @@
     if (!code) return '';
     try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) { return code; }
   }
-  var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An administrator is never blocked.',
-    denied: 'This account is not a team member.' };
+  var ABROAD_SAID = { 'bad-reason': 'Enter a reason of 3 to 300 characters.', admin: 'An admin needs no approval. Refresh the page.',
+    denied: 'This account is not a team member. Please ask an admin.' };
   function paintAbroad(st) {
     var panel = $('noTeamShell').querySelector('.cover-panel');
     var where = countryName(st.country);
@@ -725,8 +725,8 @@
     panel.querySelector('h2').textContent = waiting ? 'Request sent' : 'Access from ' + (where || 'outside Malaysia and Singapore') + ' needs approval';
     var C = window.ADspaceClock;
     var line = waiting
-      ? 'An administrator has been asked to approve access until ' + C.date(req.until) + '.'
-      : 'Outside Malaysia and Singapore, the console opens once an administrator approves it, for up to ' + st.days + ' days.';
+      ? 'An admin has been asked to approve access until ' + C.date(req.until) + '.'
+      : 'Outside Malaysia and Singapore, the console will open once an admin approves access, for up to ' + st.days + ' days.';
     panel.querySelector('p').textContent = line;
     var past = $('abroadPast');
     var said = req && req.status === 'declined' ? 'Declined on ' + C.date(req.decided_at) + (req.note ? ': ' + req.note : '.')
@@ -2639,7 +2639,7 @@
   function setsLine(id) {
     var s = state.reviewSets;
     if (!s) return '<span class="muted">Loading…</span>';
-    if (s === 'error') return '<span class="is-warn">Sets unavailable</span>';
+    if (s === 'error') return '<span class="is-warn">Could not load the sets. Refresh the page.</span>';
     var k = s[id];
     if (!k) return '<span class="muted">No sets</span>';
     return '<span>' + esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published') + '</span>' + changesChip(k.changes);
@@ -3580,7 +3580,7 @@
     return db.rpc('ai_brand_ready', { p_client: clientId }).then(function (r) {
       if (r.error) return { code: 'needs-update', text: /function|schema cache|PGRST20/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message };
       var d = r.data || {};
-      if (d.error) return { code: d.error, text: 'This client is outside your access.' };
+      if (d.error) return { code: d.error, text: 'You do not have access to this client. Please ask an admin.' };
       if ((d.missing || []).length) return { code: 'no-brief', text: brandWords('no-brief', d.missing) };
       if (needAnalysis && !d.analysis) return { code: 'no-analysis', text: brandWords('no-analysis') };
       return null;
@@ -3839,7 +3839,7 @@
             setOrder(sets.filter(function (b) { return byId[b.id]; })).forEach(function (b) { t.appendChild(byId[b.id]); });
           });
         }).catch(function () {
-          sets.forEach(function (b) { subs[b.id] = 'Posts unavailable'; });
+          sets.forEach(function (b) { subs[b.id] = 'Could not load the posts. Refresh the page.'; });
           paintSubs(true);
         });
         function paintSubs(failed) {
@@ -3893,9 +3893,8 @@
     loadPosts();
 
     if (state.drafts.length) {
-      msg('setMsg', state.drafts.length + ' pending asset' +
-        (state.drafts.length === 1 ? '' : 's') +
-        ' still waiting to be added to this set.', 'ok');
+      msg('setMsg', state.drafts.length + (state.drafts.length === 1 ? ' file is' : ' files are') +
+        ' waiting to be added to this set.', 'ok');
     }
     if (!quiet) window.scrollTo(0, 0);
   }
@@ -4888,11 +4887,11 @@
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         URL.revokeObjectURL(url);
         cv.toBlob(function (b) {
-          if (!b) { reject(new Error('That image could not be read.')); return; }
+          if (!b) { reject(new Error('That image could not be read. Choose another image.')); return; }
           resolve(b);
         }, png ? 'image/png' : 'image/jpeg', 0.9);
       };
-      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('That image could not be read.')); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('That image could not be read. Choose another image.')); };
       img.src = url;
     }).then(function (b) {
       return storeBlob(b, png ? 'png' : 'jpg', png ? 'image/png' : 'image/jpeg', null, clientId, { purpose: 'logo' });
@@ -5199,8 +5198,8 @@
     var url = $('driveUrl').value.trim();
     var id = driveFolderId(url);
     if (!id) {
-      msg('driveMsg', 'That does not look like a Drive folder link. It should have ' +
-        '/folders/ followed by a long id.', 'err');
+      msg('driveMsg', 'Enter a Drive folder link. It contains ' +
+        '/folders/ followed by the folder\'s ID.', 'err');
       return;
     }
     msg('driveMsg', 'Reading folder contents…');
@@ -5369,8 +5368,8 @@
         renderDrafts();
         renderDriveFiles();
         if (!toobig.length) {
-          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' ready' +
-            (reused ? ', ' + reused + ' already in storage at no additional cost' : '') +
+          msg('driveMsg', done + (done === 1 ? ' file is' : ' files are') + ' ready' +
+            (reused ? ', ' + reused + ' of them already uploaded' : '') +
             '. Add the caption below, then select Add to set.', 'ok');
         }
       })
@@ -5395,7 +5394,7 @@
     $('combineBar').hidden = !canCombine;
     if (canCombine) {
       $('combineText').textContent =
-        state.drafts.length + ' images added. Separate posts, or one carousel?';
+        state.drafts.length + ' images added. Add them as separate posts or as one carousel.';
     }
 
     state.drafts.forEach(function (d, i) {
@@ -6467,7 +6466,7 @@
     var all = $('postBulkAll');
     all.checked = n > 0 && n === ids.length;
     all.indeterminate = n > 0 && n < ids.length;
-    all.setAttribute('aria-label', n && n === ids.length ? 'Clear the selection' : 'Select every post shown');
+    all.setAttribute('aria-label', n && n === ids.length ? 'Clear selection' : 'Select every post shown');
     /* An act is drawn once a ticked post can take it, never greyed. */
     var picked = pickedPosts();
     $('postBulkConfirm').hidden = !(state.batch && state.batch.published) || !picked.some(postConfirmable);
@@ -6553,7 +6552,7 @@
     if (!n) return;
     window.ADspaceConfirm.ask({
       title: 'Delete ' + postsWord(n),
-      body: (n === 1 ? 'It leaves the client view, with its approval record.' : 'They leave the client view, with their approval records.') + ' This cannot be undone.',
+      body: (n === 1 ? 'It will be removed from the client\'s review page, with its approval record.' : 'They will be removed from the client\'s review page, with their approval records.') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [{ name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' }]
     }, function () {
@@ -7038,7 +7037,7 @@
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',
-          body: postName(p) + ' leaves the client view, with its approval record. '
+          body: postName(p) + ' will be removed from the client\'s review page, with its approval record. '
               + 'This cannot be undone.',
           go: 'Delete',
           tone: 'danger'
@@ -7763,7 +7762,7 @@
   function drawQr(box, text, size) {
     box.innerHTML = '';
     if (!window.QRCode) {
-      box.innerHTML = '<span class="muted">QR library did not load.</span>';
+      box.innerHTML = '<span class="muted">QR codes could not be loaded. Refresh the page.</span>';
       return;
     }
     new window.QRCode(box, {
