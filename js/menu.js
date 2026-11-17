@@ -48,8 +48,15 @@
         for (var i = 0; i < closers.length; i++) closers[i]();
         return;
       }
-      if (held.pop) window.ADspaceMenu.pop(held.btn, held.menu, held.align);
-      else window.ADspaceMenu.place(held.btn, held.menu, held.align);
+      var lay = function () {
+        if (!held || !held.menu || held.menu.hidden) return;
+        if (held.pop) window.ADspaceMenu.pop(held.btn, held.menu, held.align);
+        else window.ADspaceMenu.place(held.btn, held.menu, held.align);
+      };
+      lay();
+      /* A pane's narrow class lands after the resize (a ResizeObserver),
+         reflowing a row under its ⋯: lay it once more when that has settled. */
+      setTimeout(lay, 160);
     });
   });
 
@@ -63,6 +70,46 @@
   var GROUPS = 6;
 
   window.ADspaceMenu = {
+    /* A bar's own ⋯ (a `.kmenu-wrap` holding `.kmenu-btn` and `.kmenu`)
+       never holds one item (the user, 2026-11-17: "menu only sit one
+       option"): while one item alone can be pressed, a button of its words
+       stands in the ⋯'s place and presses it (`.kmenu-solo`). */
+    solo: function (wrap) {
+      if (!wrap) return;
+      if (wrap.__solo) { wrap.__solo(); return wrap.__solo; }
+      var btn = wrap.querySelector('.kmenu-btn'), menu = wrap.querySelector('.kmenu');
+      if (!btn || !menu) return;
+      var proxy = document.createElement('button');
+      proxy.type = 'button';
+      proxy.className = 'btn btn-sm kmenu-solo';
+      proxy.hidden = true;
+      wrap.insertBefore(proxy, btn);
+      var one = null;
+      function sync() {
+        var shown = Array.prototype.filter.call(menu.querySelectorAll('.kmenu-item'), function (i) {
+          return !i.hidden && getComputedStyle(i).display !== 'none';
+        });
+        one = shown.length === 1 ? shown[0] : null;
+        /* Written only where it changes: a write here is a mutation the
+           page's own observers hear, and they call this again. */
+        if (proxy.hidden !== !one) proxy.hidden = !one;
+        if (btn.hidden !== !!one) btn.hidden = !!one;
+        if (one) {
+          var w = one.textContent.trim();
+          if (proxy.textContent !== w) proxy.textContent = w;
+          if (!menu.hidden) menu.hidden = true;
+        }
+      }
+      proxy.addEventListener('click', function () { if (one) one.click(); });
+      if (window.MutationObserver) {
+        new MutationObserver(sync).observe(menu, { subtree: true, attributes: true, attributeFilter: ['hidden', 'class'] });
+        new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+      }
+      if (phone && phone.addEventListener) phone.addEventListener('change', sync);
+      wrap.__solo = sync;
+      sync();
+      return sync;
+    },
     /* Placed on the viewport rather than in the row, so the table's own
        overflow cannot clip it, and upwards where the room is above: a ⋯ on
        the last row used to open past the bottom of the window, which is
@@ -205,7 +252,7 @@
   var WORDS = [
     /^(Open|Open .+|Versions|Record|Who acknowledged|Download|Download for AutoCount|Preview|Preview PDF|Copy link|Link|Link history|Payment details|Compare groups)$/,
     /^(Edit|Edit date|Rename|Duplicate|New version|Take|Take lead|Offer to team|Withdraw offer|Reassign|Change reviewer|Assign reviewer|Transfer client|White label|Change month|Access code|Pair with video|Select|Select .+|Arrange posts|Make primary|Move to objective|Rename brand|Use ADspace logo|Use .+ logo|Meta accounts|Use billing details|Issue Letter of Offer|Issue document|Add existing document|Hand over work|Confirm without letter|Repeat|Reissue|Replace|Add tasks|Import from .+|Pictures from Meta|Move to .+|Review profile|Bulk import|Link task)$/,
-    /^(Send on WhatsApp|Resend on WhatsApp|Send link on WhatsApp|Request feedback|Introduce representative|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email|Send by email)$/,
+    /^(Send on WhatsApp|Resend on WhatsApp|Send link on WhatsApp|Request feedback|Reply|Introduce representative|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email|Send by email)$/,
     /^(Mark (?!withdrawn$).+|Do not contact|Allow contact|Remove VIC|Verify signed letter|Confirm internally|Add changes|Confirm for client|Revert confirmation|Clear ad error)$/,
     /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Cancel|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Request again|Mark withdrawn|Revoke access|Enable access|Extend access|End access|Set access expiry|Withdraw confirmation|Unlink|Unlink task)$/,
     /^(Remove|Remove from .+|Void|Delete|Request delete)$/

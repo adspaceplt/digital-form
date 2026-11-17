@@ -6860,6 +6860,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    never does; the items a phone alone moves there stay out at a desk. */
 .cmdbar-acts .cmd-more.has-rare { display: inline-block; position: relative; }
 .cmdbar-acts .cmd-rare { display: none; }
+/* The one act a ⋯ would have held stands on the bar itself (2026-11-17). */
+.cmdbar-acts :is(.cmd-rare, .cmd-secondary).cmd-solo { display: inline-flex; }
 @media (min-width: 641px) { .cmd-more-menu .cmd-phone-only { display: none; } }
 .cmdbar-acts .cmd-more.has-rare .cmd-more-btn {
   display: inline-grid; place-items: center; position: relative; padding: 0;
