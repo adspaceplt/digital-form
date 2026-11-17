@@ -13931,9 +13931,22 @@ function opsCodeRange(cid, period, ty, src, seq) {
           if (!((mo && cyc <= n) || (!mo && cyc === 1))) return;
           var pct = mo ? Number(e.pct != null ? e.pct : (tot.term_pct || 0)) : 0;
           var sv = (DB.services || []).filter(function (x) { return x.slug === e.slug; })[0];
+          var sst = Number(e.sst != null ? e.sst : (tot.sst_pct || 0));
           out.push({ label: e.label || 'Service', qty: Number(e.qty || 1), unit: Math.round(Number(e.rate || 0) * (1 + pct / 100) * 100) / 100,
-            sst: Number(e.sst != null ? e.sst : (tot.sst_pct || 0)), sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null });
+            sst: sst, sku: sv && sv.sku ? sv.sku : null, tax: e.sst > 0 ? '1' : null,
+            _g: mo && pct ? sst + '|' + pct : null, _v: Number(e.qty || 1) * Number(e.rate || 0), _p: pct });
         });
+
+        var grp = {};
+        out.forEach(function (l, i) { if (l._g) { var g = grp[l._g] = grp[l._g] || { v: 0, b: 0, p: l._p, last: i }; g.v += l._v; g.b += l.qty * l.unit; g.last = i; } });
+        Object.keys(grp).forEach(function (k) {
+          var g = grp[k], diff = Math.round((g.v + Math.round(g.v * g.p) / 100 - g.b) * 100) / 100;
+          if (!diff) return;
+          var L = out[g.last], amt = Math.round((L.qty * L.unit + diff) * 100) / 100;
+          if (L.qty !== 1) L.label = L.qty + ' × ' + L.label;
+          L.qty = 1; L.unit = amt;
+        });
+        out.forEach(function (l) { delete l._g; delete l._v; delete l._p; });
         return out;
       };
       var qiCycles = function (q) {
