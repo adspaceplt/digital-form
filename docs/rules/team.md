@@ -113,7 +113,9 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   (`2026-11-17-colleague-deleted-permanently.sql`: `admin-only`,
   `not-removed`, `own`, `system-account`, `last-admin`, `bad-name`), which
   reads every foreign key to `team_members` from the catalogue at the
-  press, clears each nullable one, deletes the rows a required one holds
+  press (as a report's function, `adspace.sm_fn`, so a report they
+  submitted or confirmed keeps itself without their name;
+  `2026-11-17-deletes-and-builds-held.sql`), clears each nullable one, deletes the rows a required one holds
   (their time records, extension requests, assignments, quality checks,
   personnel record and salary, guides, section order), lets the cascades
   take their own data (performance reviews, health, notifications,

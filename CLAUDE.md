@@ -716,9 +716,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   (laid as `.upgradebar`: A new version is available., Refresh), and five
   minutes on the console refreshes by itself once idle. Settings, Portal:
   Require latest version (`team.upgrade`) stores the live build
-  (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`,
+  (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`
+  for a build time ahead of now,
   filed `team.changed` under Portal from and to, Undo putting the one before
-  back); `page_pulse` answers it to the console as `build`, and a console
+  back); `page_pulse` answers it to the console as `build`, its commit
+  and time alone, never who set it, and a console
   below it refreshes within the minute once idle, its bar reading Refresh
   now. Idle: nothing open over the page (a sheet, question, menu, popover,
   finder, guide, bulk bar), no field holding the caret, no request out
@@ -1629,7 +1631,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`delete_request_decide`): Approve asks first, then the page makes that
     same call as the admin and closes it (`delete_request_done`; refused,
     the request waits again with the refusal); Decline asks a note. The
-    requester is told either way. A new delete function or table joins
+    requester is told either way. A list's records (several tasks) and a
+    kind with no name column (a report's version, a booking) are each held
+    and named as the request is filed (`not-found` outside the requester's
+    sight); an admin never decides a request they filed (`own`), and only
+    the admin who approved one closes it (`not-yours`;
+    `2026-11-17-deletes-and-builds-held.sql`). A new delete function or table joins
     `delete_kinds` and the stand-in's `DK` together. `delete_kinds` and
     `delete_requests` have RLS on, no policy, no grant (`tests/delreq.js`).
   - The levels are drawn on reversibility (add, edit and publish are

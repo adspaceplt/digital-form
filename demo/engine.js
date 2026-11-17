@@ -12957,7 +12957,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           DB.app_flags = (DB.app_flags || []).concat([{ key: 'build:min', on_now: true, note: window.__buildMin.commit, starts_at: window.__buildMin.built }]);
         }
         var f = (DB.app_flags || []).filter(function (x) { return x.key === 'build:min'; })[0];
-        return f && f.on_now && f.note && f.starts_at ? { commit: f.note, built: f.starts_at, set_by: f.set_by || null, set_at: f.set_at || null } : null;
+        return f && f.on_now && f.note && f.starts_at ? { commit: f.note, built: f.starts_at } : null;
       };
       var bmWord = function (c, b) { return c && b ? 'v' + new Date(Date.parse(b) + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' · ' + c.slice(0, 7) : 'not set'; };
       if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
@@ -12967,7 +12967,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
       var bmC = String(args.p_commit || '').trim().toLowerCase() || null, bmB = args.p_built ? Date.parse(args.p_built) : NaN;
-      if (bmC && (!/^[0-9a-f]{7,40}$/.test(bmC) || isNaN(bmB) || bmB < Date.parse('2023-08-14T00:00:00+08:00') || bmB > Date.now() + 6e5)) {
+      if (bmC && (!/^[0-9a-f]{7,40}$/.test(bmC) || isNaN(bmB) || bmB < Date.parse('2023-08-14T00:00:00+08:00') || bmB > Date.now())) {
         return Promise.resolve({ data: { error: 'bad-build' }, error: null });
       }
       var bmWas = bmRow();
@@ -14387,14 +14387,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var why = String(args.p_reason || '').replace(/\s+/g, ' ').trim();
         if (why.length < 3 || why.length > 500) return drNo('bad-reason');
         var rec = null, label;
-        if (Array.isArray(a[k[1]])) label = a[k[1]].length + ' ' + k[2].toLowerCase();
-        else {
+        if (Array.isArray(a[k[1]])) {
+
+          if (args.p_kind !== 'rpc:ops_delete_tasks' || !a[k[1]].length || a[k[1]].length > 200) return drNo('bad-request');
+          var drIds = a[k[1]].map(String).filter(function (v, i, all) { return all.indexOf(v) === i; });
+          var drTs = drIds.map(function (id) { return (DB.ops_tasks || []).filter(function (t) { return String(t.id) === id; })[0]; });
+          if (drTs.some(function (t) { return !t; })) return drNo('not-found');
+          var drNames = drTs.map(function (t) { return t.title || ''; }).sort();
+          label = drTs.length + ' ' + k[2].toLowerCase() + ' · ' + drNames.slice(0, 3).join(', ') + (drTs.length > 3 ? ' and ' + (drTs.length - 3) + ' more' : '');
+        } else {
           rec = a[k[1]] == null ? '' : String(a[k[1]]);
           if (!rec) return drNo('bad-request');
           if (k[3]) {
             var row = (DB[k[3]] || []).filter(function (x) { return String(x[k[4]]) === rec; })[0];
             if (!row) return drNo('not-found');
             label = row[k[5]] == null ? '' : String(row[k[5]]);
+          } else if (args.p_kind === 'rpc:sm_report_version_delete') {
+            var drV = (DB.sm_report_versions || []).filter(function (x) { return String(x.id) === rec; })[0];
+            var drR = drV && (DB.sm_reports || []).filter(function (x) { return x.id === drV.report_id; })[0];
+            if (!drV || !drR) return drNo('not-found');
+            label = (drR.title || 'Report') + ' · version ' + drV.version_no;
+          } else if (args.p_kind === 'table:campaign_options') {
+            var drO = (DB.campaign_options || []).filter(function (x) { return String(x.id) === rec; })[0];
+            var drG = drO && (DB.campaigns || []).filter(function (x) { return x.id === drO.campaign_id; })[0];
+            if (!drO || !drG) return drNo('not-found');
+            var drC = (DB.creators || []).filter(function (x) { return x.id === drO.creator_id; })[0];
+            label = ((drC && drC.name) || 'Creator') + ' · ' + (drG.title || 'Campaign');
           }
           label = label || k[2];
         }
@@ -14429,6 +14447,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       if (!drAdmin) return drNo('denied');
       if (!r) return drNo('not-found');
       if (name === 'delete_request_decide') {
+        if (r.requested_by === drMe.id) return drNo('own');
         if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
         var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
         if (args.p_approve) {
@@ -14443,6 +14462,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       if (name === 'delete_request_done') {
         if (r.state !== 'approving') return drNo('decided', { state: r.state });
+        if (r.decided_by !== drMe.id) return drNo('not-yours');
         if (!args.p_ok) { r.state = 'open'; r.note = args.p_error || null; return drOk({ state: 'open' }); }
         r.state = 'approved'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString();
         drNote(r.requested_by, 'delete.approved', 'Deleted · ' + r.label, drMe.name, 'delreq:' + r.id + ':approved');
