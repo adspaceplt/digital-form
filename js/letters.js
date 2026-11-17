@@ -217,12 +217,12 @@
 
   function render(doc) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools are not loaded.'));
+    if (!D || !D.lib) return Promise.reject(new Error('Please refresh the page and try again.'));
     return D.lib().then(function () { return doc.body && doc.body.agreement ? drawAgreement(doc) : drawLetter(doc); });
   }
   function drawLetter(doc) {
     var PDF = window.PDFLib;
-    if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
+    if (!PDF) return Promise.reject(new Error('Please refresh the page and try again.'));
     var langs = DOCS.letterLangs(doc);
     var wantsCjk = langs.indexOf('zh') > -1;
     var pdf, fonts, logo;
@@ -276,7 +276,7 @@
   }
   function drawAgreement(doc) {
     var PDF = window.PDFLib;
-    if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
+    if (!PDF) return Promise.reject(new Error('Please refresh the page and try again.'));
     var a = (doc.body && doc.body.agreement) || {}, p1 = a.part1 || {}, p2 = a.part2 || {};
     var MON = window.ADspaceMoney;
     var pdf, fonts, logo;

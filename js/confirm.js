@@ -185,7 +185,7 @@
         return;
       }
       if (r.spec.match && v.toLowerCase() !== String(r.spec.match).toLowerCase()) {
-        say(r.spec.mismatch || 'That does not match.');
+        say(r.spec.mismatch || 'That does not match. Enter it as shown above.');
         r.input.focus();
         if (r.input.select) r.input.select();
         return;
