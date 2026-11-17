@@ -87,7 +87,7 @@
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       reports: 'Reports', report: 'Report', published: 'Published', version: 'Version',
       meetings: 'Meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
-      join: 'Join meeting', discussion: 'content discussion', to: 'to',
+      join: 'Join meeting', discussion: 'content discussion', discussionAlone: 'Content discussion', to: 'to',
       channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
@@ -638,7 +638,7 @@
           nm = String(nm == null ? '' : nm).trim() || w.untitled;
           var row = document.createElement('div');
           row.className = 'svc-row cp-work-row';
-          row.innerHTML = '<span class="svc-name"><b>' + esc(nm) + '</b><small>' + parts([w.campaign]) + '</small></span>' +
+          row.innerHTML = '<span class="svc-name"><b>' + esc(nm) + '</b></span>' +
             '<span class="svc-state">' + chip(w.campState[m.state] || '', m.state === 'completed' ? 'is-ok' : (m.state === 'open' ? 'is-warn' : 'is-live')) + '</span>' +
             openCell(w, '/creators/?k=' + encodeURIComponent(m.token));
           ctb.appendChild(row);
@@ -774,7 +774,7 @@
     /* A meeting booked outside a month is simply a meeting. */
     if (kind === 'meeting') return w.meeting;
     var m = /^(\d{4})-(\d{2})$/.exec(per || '');
-    if (!m) return w.discussion;
+    if (!m) return w.discussionAlone || w.discussion;
     if (lang === 'zh') return m[1] + '年' + Number(m[2]) + '月' + w.discussion;
     return ADspaceClock.month(m[1] + '-' + m[2]) + ' ' + w.discussion;
   }
