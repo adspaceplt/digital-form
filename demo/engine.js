@@ -10969,6 +10969,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { ok: true, files: n }, error: null });
     }
 
+    var clientLang = function (cid) {
+      var ks = (DB.client_contacts || []).filter(function (k) { return k.client_id === cid && !k.archived_at; })
+        .sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || String(a.created_at || '').localeCompare(String(b.created_at || '')); });
+      return ks[0] && ks[0].lang === 'zh' ? 'zh' : 'en';
+    };
     if (name === 'get_review_feed') {
 
       var rc = (DB.clients || []).filter(function (c) { return c.access_token === args.p_token && c.active !== false && !c.review_hidden; })[0];
@@ -10981,6 +10986,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         .sort(function (a, b2) { return String(b2.created_at).localeCompare(String(a.created_at)); });
       return Promise.resolve({ data: {
         client: { name: rc.name, logo_url: rc.logo_url || null, handles: { instagram: rc.handle_ig || null } },
+        lang: clientLang(rc.id),
         batches: rbs.map(function (x) {
           return { id: x.id, title: x.title, note: x.note || null, created_at: x.created_at,
             posts: (DB.posts || []).filter(function (q) { return q.batch_id === x.id; })
@@ -11169,6 +11175,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         client: { name: cl.name, logo_url: cl.logo_url,
                   market: cl.market || 'MY', bill_market: billMarket(cl),
                   sst_applies: cl.sst_applies === undefined ? true : cl.sst_applies },
+        lang: clientLang(cl.id),
         options: opts }, error: null });
     }
 
@@ -11238,7 +11245,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           billing_address: pc.billing_address || null, market: pc.market || 'MY',
           sst_applies: pc.sst_applies === undefined ? true : pc.sst_applies, bill_market: billMarket(pc), stage: pc.stage, owner: pc.owner || null,
           industry: pc.industry || null, website: pc.website || null, logo_url: pc.logo_url || null },
-        me: { id: meRow.id, name: meRow.name, email: meRow.email },
+        me: { id: meRow.id, name: meRow.name, email: meRow.email, lang: meRow.lang === 'zh' ? 'zh' : 'en' },
         contacts: mine.map(function (c) { return pick(c, ['id', 'name', 'role', 'phone', 'email', 'is_primary', 'portal_access']); }),
         services: (DB.client_services || []).filter(function (s) { return s.client_id === cid && !s.archived_at && (s.state === 'quoted' || s.state === 'confirmed'); })
 
@@ -15791,6 +15798,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           shared.sort(function (a, b) { return String(b.period).localeCompare(String(a.period)) || a.seq - b.seq; });
           return Promise.resolve({ data: JSON.parse(JSON.stringify({
             client: { name: vsCl.name, logo_url: vsCl.logo_url || null },
+            lang: clientLang(vsCl.id),
             scripts: shared.map(function (x) {
               return {
                 id: x.id, code: vsCode(x.period, x.seq), period: x.period, kind: x.kind, title: x.title,

@@ -251,7 +251,7 @@
     m.hidden = !on;
     if (on) m.innerHTML = 'Could not load the industries. <button class="linkbtn" type="button" id="crmIndRetry">Try again</button>';
   }
-  var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Melayu' };
+  var LANG_WORD = { en: 'English', zh: '中文' };
   var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
                     whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
 
@@ -5185,7 +5185,7 @@
     $('ctWa').value = ct ? (waHandle(ct.whatsapp) || (ct.whatsapp || '')) : '';
     $('ctWa').dataset.was = $('ctWa').value;
     $('ctEmail').value = ct ? (ct.email || '') : '';
-    $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
+    $('ctLang').value = ct && ct.lang === 'zh' ? 'zh' : 'en';
     $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
     msg('ctMsg', '');
     /* Nothing is focused when the sheet opens: on a phone a field taking

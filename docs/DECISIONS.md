@@ -11175,3 +11175,19 @@ Advertising Report now takes the latest published one not asked for that
 ends before it starts, from the version the client was shown, names it
 (`prev_from`), and Step 1's Compare with offers every published one or
 typed figures.
+
+### 2026-11-17 · Pages open in the client's language
+The user: a contact who prefers English sees everything in English, one who
+prefers 中文 sees Chinese once signed in; there is no Malay portal, so a
+contact's language is English or 中文 alone. The contact sheet's Bahasa
+Melayu went (no live contact held it); a check holds the column to the two.
+The client portal now opens in the signed-in contact's own language
+(`get_portal` `me.lang`) and the creator selection page in its client's
+primary contact's (`get_campaign` `lang`, from the internal `client_lang`),
+until the 中文 switch is pressed on that browser, which is kept as before;
+the contact's language is applied, never stored as if chosen, so a later
+change of preference still reaches a browser that never chose. `get_review_feed`
+and `get_scripts` send `lang` too, but /review/ and /script/ have no Chinese
+layer and stay English; no translation was built. Caption writing's language
+list is the output language and keeps Malay. The portal suite had crashed
+since Reply joined the request row's ⋯ (MENU-8); it now opens the ⋯.
