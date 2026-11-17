@@ -11056,3 +11056,17 @@ blocks on every tab, the counts alone beside the Work pane (its Hand over
 work said once). The ⋯ on a removed colleague whose details were erased held
 nothing that still applied; Delete permanently (the next release) fills it.
 `teamrec` measures the strip and head across the two tabs.
+
+### 2026-11-17 · HR documents speak as ADspace
+
+Agreed with the user: the Employment Offer and Contract greet the candidate
+by their whole name, close Yours sincerely (the contract read Yours
+faithfully to a named reader), and ask one declaration, the same sentence on
+the contract and the candidate's tick (the contract said "I hereby confirm"
+twice). We and our became ADspace, as every client page speaks. The
+template's slips were put right without changing a clause's substance
+(entitled to, in accordance with, Labour Day, months' salary, inform your
+Direct Manager, the right; SOCSO and EIS by their proper names). The page's
+status read Offer accepted once the contract was confirmed; it now follows
+the latest document. A copy review moved held by Google Meet to on, Where to
+Location, and the offer's opening off naming the employer twice.

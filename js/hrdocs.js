@@ -71,7 +71,8 @@
   function fileName(doc) {
     return String(doc.serial || 'PREVIEW').replace(/\//g, '-') + ' ' + (doc.kind === 'contract' ? 'Employment Contract' : 'Employment Offer') + '.pdf';
   }
-  function firstName(name) { return String(name || '').trim().split(/\s+/)[0] || ''; }
+  /* The candidate's one declaration, the contract's and their page's alike. */
+  var DECLARE = 'I have read and fully understood the contents of this offer letter and contract, and I accept all the terms and conditions herein.';
 
   /* The contract's clauses: a heading, then its paragraphs; items read
      [a], [b] … as the template does. */
@@ -81,8 +82,8 @@
     var position = String(t.position || '').toUpperCase() + ' (' + (TYPE[type] || TYPE.permanent)[1] + ')';
     var salary = pay && pay.basic ? (months && pay.probation
       ? 'The basic salary at the commencement of the employment will be ' + ringgit(pay.probation) + ' (' + rm(pay.probation) + ') per month during probationary period; ' +
-        ringgit(pay.basic) + ' (' + rm(pay.basic) + ') after completion of probation, payable on or before 7th day after each calendar month.'
-      : 'The basic salary at the commencement of the employment will be ' + ringgit(pay.basic) + ' (' + rm(pay.basic) + ') per month, payable on or before 7th day after each calendar month.')
+        ringgit(pay.basic) + ' (' + rm(pay.basic) + ') after completion of probation, payable on or before the 7th day after each calendar month.'
+      : 'The basic salary at the commencement of the employment will be ' + ringgit(pay.basic) + ' (' + rm(pay.basic) + ') per month, payable on or before the 7th day after each calendar month.')
       : 'The basic salary is stated in the copy sent to you.';
     var C = [];
     var head = function (h) { C.push({ h: h, p: [] }); };
@@ -94,14 +95,14 @@
     head('WORKING HOURS');
     para('Normal hours of work are 8 hours per day for five days a week and one hour lunch break. The nature of the work may require you to extend your service beyond the normal working hours in fulfilment of your duties and responsibilities.');
     para('You will not receive overtime payments in respect of any such working time unless provided for in law or you are eligible for overtime pay under the Company’s policies or guidelines.');
-    para('The Company additionally reserves its right to change or substitute your scheduled work hours or workdays/off days to meet business needs. The Company reserves the rights to exclude office holiday(s) to staff depending on their workload / work schedule and/or programs.');
+    para('The Company additionally reserves its right to change or substitute your scheduled work hours or workdays/off days to meet business needs. The Company reserves the right to exclude office holiday(s) to staff depending on their workload / work schedule and/or programs.');
     head('PLACE OF EMPLOYMENT');
-    para(t.place ? 'Your place of employment will be at ' + t.place + ' but this location may change from time to time.' : 'Your place of employment will be at our registered office but this location may change from time to time.');
-    para('During the term of your employment, the Management reserves the right to transfer you to other location/position within our group of companies, departments, and associated companies.');
+    para(t.place ? 'Your place of employment will be at ' + t.place + ' but this location may change from time to time.' : 'Your place of employment will be at the ADspace registered office but this location may change from time to time.');
+    para('During the term of your employment, the Management reserves the right to transfer you to other location/position within the ADspace group of companies, departments, and associated companies.');
     if (months) {
       head('PROBATIONARY PERIOD');
       if (type === 'intern') para('(For “Internship” position, this is equivalent to your Internship Programme)');
-      para('You are required to serve a probationary period of ' + NUM[months] + ' (' + months + ') month' + (months === 1 ? '' : 's') + ' during which time of your employment may be terminated by either party giving the other FOURTEEN (14) days\' notice of termination or equivalent to FOURTEEN (14) days\' salary in lieu of the notice.');
+      para('You are required to serve a probationary period of ' + NUM[months] + ' (' + months + ') month' + (months === 1 ? '' : 's') + ' during which time your employment may be terminated by either party giving the other FOURTEEN (14) days\' notice of termination or equivalent to FOURTEEN (14) days\' salary in lieu of the notice.');
       para('This probationary period may be extended on reasonable grounds.');
       para('You are not entitled to paid annual leave during probationary period. If you have been absent from work for more than 3 consecutive working days without prior approval or leave from the company and without valid reason, your employment with the Company will be deemed terminated.');
     }
@@ -110,29 +111,29 @@
     para('No advance wages will be payable.');
     para('Payment of bonus and annual increment (if any) is based on your performance, the Company’s profit and the overall market/economic condition and is solely at the absolute discretion of the Company.');
     head('DEDUCTIONS');
-    para('The Company reserves the rights in its absolute discretion to deduct from your pay the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Fund (SOCSO), Employee’s Insurance Scheme (EIS) and any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of Company’s rules/terms.');
+    para('The Company reserves the right in its absolute discretion to deduct from your pay the Employee’s contribution to Employees’ Provident Fund (EPF), Social Security Organisation (SOCSO), Employment Insurance System (EIS) and any sums which the Employee may owe to the Company including, but without limitation, any overpayments or losses suffered by the Company as a result of the Employee’s negligence or breach of Company’s rules/terms.');
     if (type === 'intern' || type === 'part_time') para('As an intern or part-time employee, you will not enjoy the normal EPF, SOCSO and EIS benefits stipulated by EPF Ordinance currently enforced.');
     head('REST DAYS AND PUBLIC HOLIDAYS');
-    para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and the Labour’s Day are compulsory.');
+    para('You are entitled to ELEVEN (11) paid public holidays that are gazetted under the Public Holidays Ordinance and five of which, namely the National Day, Malaysia Day, the Birthday of the Yang Di-Pertuan Agong, the Birthday of Sultan of Johor and Labour Day are compulsory.');
     para('The remainder will be determined by the Company. You may refer to the Company’s internal list of public holidays for more information.');
     head('ANNUAL LEAVE');
-    para('Upon confirmation as permanent employee, you are entitled for paid annual leave of:');
+    para('Upon confirmation as permanent employee, you are entitled to paid annual leave of:');
     para('[a] eight (8) days for every twelve (12) months of continuous service with the Company for the first two (2) years with the Company;');
     para('[b] twelve (12) days for every twelve (12) months of continuous service with the Company from the third year onwards; and');
     para('[c] sixteen (16) days for every twelve (12) months of continuous service with the Company from the sixth year onwards.');
     para('If your employment commences or terminates part way through the year, your entitlement to the annual leave during the year will be assessed on a pro-rata basis and deductions from final salary due to your termination of employment will be made in respect of the annual leaves taken in excess of entitlement.');
     para('Annual leave must be taken at times convenient to the Company and at least seven (7) days’ advance notice to take Annual Leave must be given to the Company. [No more than 7 days’ Annual Leave may be taken at any one time unless permission is being given by the Company through the Employee’s Direct Manager.]');
-    para('Emergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform to Direct Manager personally at the earliest time of the day.');
+    para('Emergency Leave is strictly for emergency and limited to unavoidable circumstances such as family member in serious illness or funeral. Disciplinary action will be taken against those who do not have a valid reason for their emergency leave. You are required to inform your Direct Manager personally at the earliest time of the day.');
     head('SICK LEAVE');
     para('You shall, after examination by a registered medical practitioner duly appointed by the Company; or a medical officer of the General Hospital or Government Clinic, be entitled to paid sick leave of a maximum of fourteen (14) days in the aggregate in each calendar year.');
     para('The Company does not provide medical expenses reimbursements in respect of the hospitalization, dental treatments, specialists, and/or Chinese Physician treatments.');
     head('NOTIFICATION OF SICKNESS OR OTHER ABSENCE');
     para('If you are unable to attend work for any reason and the absence has not previously been authorized by the Company, you must inform the Company of the fact of your absence and the full reasons for it on each working day of absence until the Company is provided with a medical certificate, failing which you shall be deemed as absent without reason and may be subject to disciplinary action.');
-    para('If you are absent from work without any reason that shall be considered taking unpaid leave without prejudice to the Company’s right to impose disciplinary action against you.');
+    para('If you are absent from work without any reason, that shall be considered taking unpaid leave without prejudice to the Company’s right to impose disciplinary action against you.');
     head('PATERNITY / MATERNITY LEAVE');
-    para('You are entitled for a paid maternity leave of 98 days or paternity leave of 7 days consecutively including the public holidays and weekends/rest days during the period of childbirth in accordance to Section 37 and Section 60FA of the Employment Act.');
+    para('You are entitled to a paid maternity leave of 98 days or paternity leave of 7 days consecutively including the public holidays and weekends/rest days during the period of childbirth in accordance with Section 37 and Section 60FA of the Employment Act.');
     head('NOTICE OF TERMINATION');
-    para('If your employment continues after the end of the probationary period, your employment with the Company may be terminated by giving the Company at least TWO (2) months’ notice or equivalent of TWO (2) month’s salary in lieu of the notice.');
+    para('If your employment continues after the end of the probationary period, your employment with the Company may be terminated by giving the Company at least TWO (2) months’ notice or equivalent of TWO (2) months’ salary in lieu of the notice.');
     head('BREACH AND TERMINATION');
     para('This contract is breached and terminated when you are found guilty of misconduct, whether in the course of your duties or not, inconsistent with the fulfilment of the express or implied conditions of this contract, including but not limited to the following:');
     ['[a] For dishonesty particularly the misappropriation of the Company’s assets of any kind;', '[b] For stealing and/or taking goods without authorization of the Company;',
@@ -201,12 +202,12 @@
         y -= 12;
         var contract = doc.kind === 'contract';
         if (!contract) { line(String(doc.name || '')); y -= LH * 0.5; }
-        else { line('Dear ' + firstName(doc.name) + ','); y -= LH * 0.5; }
+        else { line('Dear ' + String(doc.name || '').trim() + ','); y -= LH * 0.5; }
         wrap(titleOf(doc), R - M, BODY, med).forEach(function (ln) { line(ln, med); });
         y -= LH * 0.5;
 
         if (!contract) {
-          para('We are pleased to offer you an employment with ' + (ORG.name || 'ADSPACE PLT') + ', subject to employment contract terms and conditions.');
+          para('ADspace is pleased to offer you employment, subject to the terms and conditions of the employment contract.');
           var months = Number(t.probation_months) || 0;
           var facts = [['Employment', (TYPE[t.type] || TYPE.permanent)[0]], ['Position', t.position || ''], ['Scope', t.scope || '']];
           if (months) facts.push(['Probation', months + ' month' + (months === 1 ? '' : 's') + ' (' + monthOf(t.start, 0) + ' to ' + monthOf(t.start, months - 1) + ')']);
@@ -228,8 +229,8 @@
           para('Thank you.');
         } else {
           var cl = clauses(doc, pay);
-          para('We refer to your recent application and interviews with us; we are pleased to offer you employment in our company as ' + cl.position +
-            ' based on the following terms and conditions:');
+          para('With reference to your recent application and interviews, ADspace is pleased to offer you employment as ' + cl.position +
+            ' on the following terms and conditions:');
           cl.list.forEach(function (c) {
             y -= 4; need(LH * 3);
             line(c.h, med);
@@ -242,7 +243,7 @@
         // The company's closing and its signatory.
         var sig = doc.signatory || {};
         need(LH * 5);
-        text(contract ? 'Yours faithfully,' : 'Yours sincerely,', M, y, BODY); y -= LH;
+        text('Yours sincerely,', M, y, BODY); y -= LH;
         text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH * 1.5;
         if (sig.name) { text(sig.name, M, y, BODY, bold); y -= LH; if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; } }
         y -= LH;
@@ -263,7 +264,7 @@
           if (s && s.name) { text('Name:', M, y, BODY); text(s.name, M + 72, y, BODY); y -= LH; }
         } else {
           line('For Applicant', bold);
-          para('I hereby confirm that I have read and fully understood the contents of this offer letter and contract and I hereby confirm my acceptance of all the terms and conditions herein.');
+          para(DECLARE);
           var boxH = 64, boxW = 220;
           need(boxH + LH * 4);
           text('Signatory:', M, y, BODY);
@@ -273,8 +274,8 @@
             try { pn.page.drawSvgPath(s.signature, { x: M + 72 + (boxW - 300 * sc) / 2, y: y + 6, scale: sc, borderColor: pn.ink, borderWidth: 1.6 / sc }); } catch (e) { /* the box stays as signed below */ }
           }
           y -= boxH + 4;
-          [['Print Name:', s ? s.name || '' : ''], ['NRIC:', s ? s.id_no || '' : ''], ['Date:', s && (rec.at || s.on) ? D.letterDate(rec.at || s.on) : '']].forEach(function (r) {
-            text(r[0], M, y, BODY); if (r[1]) text(r[1], M + 72, y, BODY); y -= LH;
+          [['Print Name:', s ? s.name || '' : ''], ['NRIC or Passport Number:', s ? s.id_no || '' : ''], ['Date:', s && (rec.at || s.on) ? D.letterDate(rec.at || s.on) : '']].forEach(function (r) {
+            text(r[0], M, y, BODY); if (r[1]) text(r[1], M + 140, y, BODY); y -= LH;
           });
         }
         how().forEach(function (h) { wrap(h, R - M, 8.5, font).forEach(function (ln) { need(11); text(ln, M, y, 8.5, font, mute); y -= 11; }); });
@@ -313,5 +314,5 @@
     return draw(doc, pay, opts).then(function (d) { return d.pdf.save(); });
   }
 
-  window.ADspaceHrDocs = { draw: draw, bytes: bytes, seal: seal, fileName: fileName, words: words, ringgit: ringgit, titleOf: titleOf };
+  window.ADspaceHrDocs = { draw: draw, bytes: bytes, seal: seal, fileName: fileName, words: words, ringgit: ringgit, titleOf: titleOf, declare: DECLARE };
 })();

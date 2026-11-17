@@ -125,7 +125,7 @@
     else if (st.step === 'returned') { who = 'by ' + (st.by || ''); if (st.note) meta.push(st.note); }
     else if (st.step === 'confirmed') who = 'by ' + (st.by || '') + (st.role ? ', ' + st.role : '');
     else if (st.step === 'sealed') { who = st.by ? 'by ' + st.by : ''; if (st.note) meta.push('SHA-256 ' + st.note.slice(0, 4) + '…' + st.note.slice(-4)); }
-    else if (st.step === 'declined') { who = 'by the client'; if (where(st)) meta.push(where(st)); }
+    else if (st.step === 'declined') { who = 'by the ' + String(st.party || 'Client').toLowerCase(); if (where(st)) meta.push(where(st)); }
     else if (st.by) who = 'by ' + st.by;
     if (st.note && ['issued', 'withdrawn', 'declined'].indexOf(st.step) >= 0) meta.push(st.note);
     if (st.step === 'signed' && st.via === 'paper' && st.party) meta[0] = 'On paper or by scan' + (st.entered_by ? ' · entered by ' + st.entered_by : '');
