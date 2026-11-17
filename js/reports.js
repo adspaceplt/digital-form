@@ -98,7 +98,6 @@
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
-    'month-gate': 'Its month in My Work does not ask for this report.',
     'no-content': 'This content month has no posts planned, so it does not include an Accounts Report.',
     'bad-period': 'The period must end on or after the day it starts.',
     'not-draft': 'Only a draft can be submitted.',
@@ -115,7 +114,7 @@
     'bad-reviewer': 'Choose a colleague with Reports at Full control.',
     'not-reviewer': 'Only the report\'s reviewer or an admin can do this.',
     'same-reviewer': 'This colleague is already the reviewer.',
-    'month-gate': 'Its month in My Work is not in order: see the checks above.',
+    'month-gate': 'Its month in My Work is not in order. Complete the checks above first.',
     'late-reason': 'Enter the reason the report is late.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'meta-audit': 'The figures must match Meta first: see the Report audit.',
@@ -288,7 +287,7 @@
     };
     if (!keptOf(v)) return draw('');
     return readKept(v.id).then(function (b) { return { blob: b, name: name, warn: '' }; })
-      .catch(function () { return draw('Drawn again: the kept file did not open.'); });
+      .catch(function () { return draw('The saved PDF could not be opened, so it was generated again.'); });
   }
   function versionSnap(vid) {
     return db.from('sm_report_versions').select('snapshot').eq('id', vid).maybeSingle().then(function (x) {
@@ -1703,7 +1702,7 @@
       paintEditor();
       var card = st.host && st.host.querySelector('[data-m="aicheck"]');
       if (undo.length && card) {
-        undoBar(failed ? 'Part saved.' : n === 1 ? 'Meta\'s figure taken.' : n + ' figures taken from Meta.', card, function () {
+        undoBar(failed ? 'Some figures were not saved.' : n === 1 ? 'Meta\'s figure taken.' : n + ' figures taken from Meta.', card, function () {
           var steps = undo.slice().reverse();
           steps.reduce(function (p, f) { return p.then(f); }, Promise.resolve()).catch(function () { /* named after the repaint */ }).then(function () {
             fileReport('report.saved', 'Report audit · ' + (n === 1 ? 'Meta\'s figure undone' : n + ' figures from Meta undone'), r, st.client);
@@ -1796,7 +1795,7 @@
         mark = ' is-missing'; note = (rows.length || (lst.rows || []).length) + ' to fix · Read ' + whenWord(lst.at);
       } else {
         mark = ' is-missing'; note = 'Not checked: Meta unavailable';
-        notes.push('Meta did not answer' + (META_SAID[lst.note] ? ': ' + META_SAID[lst.note].replace(/\.$/, '') : '') + '. Run the audit again later' +
+        notes.push('Meta did not answer' + (META_SAID[lst.note] ? ': ' + META_SAID[lst.note].split('. ')[0].replace(/\.$/, '') : '') + '. Run the audit again later' +
           (al.may_override && metaOpen(r) && may('work') ? ', or continue without Meta with a reason.' : '.'));
         if (al.may_override && metaOpen(r) && may('work')) acts = '<button class="btn btn-sm" type="button" data-a="metaskip">Continue without Meta</button>';
       }
@@ -2135,7 +2134,7 @@
           say(m, e === 'not-draft' ? 'This report is no longer a draft. Refresh the page.' :
             e === 'posted' ? 'This post is already live with every date set. Refresh the page.' :
             e === 'not-in-month' ? 'This post is no longer in the report\'s month. Refresh the page.' :
-            e === 'too-long' ? 'Keep the note to 300 characters.' :
+            e === 'too-long' ? 'Enter a note of 300 characters at most.' :
             e === 'denied' ? 'You do not have permission to mark a post delayed. Please ask an admin.' : said(res.error || e), 'err');
           return false;
         }
@@ -4197,7 +4196,7 @@
   function aiLimit(d) {
     d = d || {};
     var when = d.next && ADspaceClock.parts(d.next) ? aiClock(d.next) : '';
-    if (d.scope === 'stopped') return 'AI is turned off for you. An admin can turn it on.';
+    if (d.scope === 'stopped') return 'AI is turned off for you. Please ask an admin to turn it on.';
     var n = d.limit == null ? 1 : d.limit;
     var who = d.scope === 'report' ? (n === 0 ? 'Drafts are turned off.' : 'You have used ' + (n === 1 ? 'today\'s draft' : 'your ' + n + ' drafts') + ' on this report.')
       : d.scope === 'report_check' ? (n === 0 ? 'Commentary checks are turned off.' : 'You have used ' + (n === 1 ? 'today\'s commentary check' : 'your ' + n + ' commentary checks') + ' on this report.')
@@ -4261,7 +4260,7 @@
     var ads = st.ads.length, linked = st.metaLinks && (st.metaLinks.ad_accounts || []).length;
     var s = n && n.source;
     if (s && s.meta) return ['Read from Meta', plural(s.ads || 0, 'ad') + ' · Frequency and CTR by day' + (s.read_at ? ' · Read ' + aiWhen(s.read_at) : '')];
-    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta did not respond. Press Write with AI to try again.')];
+    if (s) return ['Report figures only', plural(ads, 'ad') + ' · ' + (s.why === 'meta-off' ? 'Meta checks are off.' : s.why === 'no-mapping' ? 'No ad account is linked.' : 'Meta did not answer. Press Write with AI to try again.')];
     if (st.meta && linked) return ['Will read from Meta', plural(ads, 'ad') + ' · Frequency and CTR by day, the last 14 days of the period'];
     return ['Report figures only', plural(ads, 'ad') + ' · ' + (!metaOn() ? 'Meta checks are off.' : 'No ad account is linked.')];
   }
@@ -5473,9 +5472,9 @@
      which first; the other is imported after. Every figure is Meta's. */
   var META_SAID = {
     'meta-off': 'Meta checks are off in Business settings.',
-    'not-connected': 'Meta is not connected.',
+    'not-connected': 'Meta is not connected. Please contact an admin.',
     'token-refused': 'Meta refused the portal\'s access. Please contact an admin.',
-    'not-assigned': 'Meta has not shared this account with the ADspace Portal system user.',
+    'not-assigned': 'Meta has not shared this account with the portal. Please contact an admin.',
     'rate-limited': 'Meta is busy. Try again in a few minutes.',
     'no-mapping': 'This account is no longer linked on the client\'s Brand.',
     'denied': 'You do not have permission to import into this report. Please ask an admin.',
@@ -5814,7 +5813,7 @@
       if (fk.length) parts.push('the account\'s ' + fk.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' to Step 1');
       if (out.kept.length) parts.push('Step 1 keeps its typed ' + out.kept.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1'));
       sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
-        (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '') +
+        (out.fresh.some(function (r0) { return r0._daily; }) ? ' Enter reach by hand: a daily export counts a person again on each day.' : '') +
         (ageNext ? ' The age split follows.' : '');
       go.disabled = !(out.fresh.length + out.updates.length + Object.keys(out.fill).length);
       return out;

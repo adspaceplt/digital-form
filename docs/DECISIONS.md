@@ -10950,6 +10950,21 @@ kept, outside any month", and a Retainer post and a time entry use My Work's
 own words. `work` and `ops` read the new words. 'System' and 'Somebody' as
 who did something stay: they are shared with other sections' scripts.
 
+### 2026-11-17 · Tone check of the console, n to z, release 3: Reports, Video Scripts, Quotations, Dashboard
+
+Reports: the month's refusal was declared twice in one map, so its first
+words never showed; one line stays and says what to do. A kept PDF that will
+not open now reads "The saved PDF could not be opened, so it was generated
+again." (CLAUDE.md quoted the old line and now quotes this one). Meta's
+refusals give the next step (Please contact an admin.), its
+audit note taking only their first sentence; Meta "did not answer"
+everywhere. Video Scripts: a delete asked for the title says the title does
+not match, a load or PDF failure no longer says "Not saved". Quotations: the
+WhatsApp template's place is Settings, Messages, WhatsApp templates; Bukku
+"will finish creating this invoice shortly"; Submit it to a reviewer; the
+Tax Identification Number (TIN) in full. Dashboard: Unsigned Letters of Offer,
+facts written as sentences, Nothing is due today. `reports`, `adsreport`,
+`metaimport`, `vs`, `quotes` and `overview` pass.
 ### 2026-11-17 · Tone check of the console, n to z, release 4: Settings, Suppliers, Messages
 
 Settings' Delete questions said "removed from the list" for a delete that
