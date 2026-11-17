@@ -66,10 +66,10 @@
     denied: 'You do not have permission to do this in WhatsApp. Please ask an admin.',
     'bad-name': 'Choose a template approved by Meta.',
     'bad-lang': 'Choose a template approved by Meta.',
-    'bad-params': 'A template set for a purpose takes 5 variables at most.',
+    'bad-params': 'Choose a template with 5 variables or fewer.',
     'bad-category': 'Choose a template approved by Meta.',
     'bad-request': 'Not sent. Try again.',
-    'bad-purpose': 'This template is not sent by hand.',
+    'bad-purpose': 'This template cannot be sent by hand. Choose another template.',
     'wa-off': 'Turn this template on in WhatsApp first.',
     'no-number': 'This contact has no number to message. Add one in Contacts.',
     username: 'A WhatsApp username cannot be messaged. Add the contact\'s number in Contacts.',
@@ -85,19 +85,19 @@
     void: 'This letter is void.',
     'needs-report': 'A template with a Document header sends a report. Choose a report.',
     'wa-params-missing': 'Fill in every variable.',
-    'wa-unsupported': 'The portal cannot fill this template\'s header or buttons.',
+    'wa-unsupported': 'The portal cannot fill this template\'s header or buttons. Choose another template.',
     'wa-no-link': 'This template\'s link button has no page for this recipient. Choose another template.',
     'wa-button-address': 'This template\'s link button address contains {{1}} typed as text. Correct it in WhatsApp Manager, then choose it again here.',
     'wa-not-set-up': 'WhatsApp is not set up yet. Please contact an admin.',
     'wa-token': 'WhatsApp is not available at the moment. Please contact an admin.',
-    'wa-template': 'Meta has not approved this template.',
+    'wa-template': 'Meta has not approved this template. Choose another template.',
     'wa-params': 'The template takes a different number of variables.',
     'wa-recipient': 'This number is not on WhatsApp.',
     'wa-busy': 'WhatsApp is busy. Try again in a minute.',
     'wa-failed': 'Not sent. Try again.',
     'wa-unknown': 'WhatsApp did not confirm the send. Check the chat before sending again.',
     sending: 'This message is being sent now. Check the messages list before sending it again.',
-    'bad-file': 'The PDF could not be attached.',
+    'bad-file': 'The PDF could not be attached. Please try again.',
     'needs-update': 'This feature is not available yet. Please contact an admin.'
   };
   /* Meta's reason a message was not delivered, in the team's words. */
@@ -1174,7 +1174,7 @@
     if (!t) { say(m, 'Choose a template.', 'err'); return; }
     var isDoc = t.header === 'DOCUMENT';
     var rep = reportWord();
-    if (isDoc && r.kind !== 'contact') { say(m, 'A template with a Document header goes to a client contact.', 'err'); return; }
+    if (isDoc && r.kind !== 'contact') { say(m, 'A template with a Document header goes to a client contact. Choose a client contact.', 'err'); return; }
     if (isDoc && !rep) { say(m, 'Choose a report.', 'err'); return; }
     /* A document the composer was not opened on is a report; one it was
        opened on is that quotation or letter, sent under its own purpose. */

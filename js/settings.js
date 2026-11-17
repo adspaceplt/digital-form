@@ -336,7 +336,7 @@
       biz && { id: 'nudge', name: 'Task reminders', kind: 'edit',
         meta: num('task_remind_hours') == null ? '' : num('task_remind_hours') === 0 ? 'Off'
           : parts(['Every ' + plural(num('task_remind_hours'), 'hour', 'hours') + ' on weekdays',
-            num('task_start_days') === 0 ? 'Not started off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
+            num('task_start_days') === 0 ? 'Not started: Off' : 'Not started ' + plural(num('task_start_days'), 'day', 'days') + ' ahead']) },
       may('ops.numbering') && { id: 'numbering', name: 'Task numbering', kind: 'edit', meta: line('numbering'),
         open: function () { if (W.ADspaceOps && W.ADspaceOps.openNumbering) W.ADspaceOps.openNumbering(rowSay('numbering')); } }]]]);
     var meta = num('meta_checks') === 1;
@@ -976,7 +976,7 @@
   }
   function holMsg(text, tone) { var m = $('holMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   function holDelete(h) {
-    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', will be removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete this holiday?', body: h.name + ', ' + holDay(h.day) + ', will be deleted. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('public_holiday_delete', { p_day: h.day }).then(function (r) {
           var said = holSaid(r);
@@ -996,7 +996,7 @@
   var DEP_SAID = {
     denied: window.ADspaceWords.line.noSettings, 'bad-name': 'Enter a name of 2 to 40 characters.',
     taken: 'A department with this name already exists.', 'criteria-needed': 'Enter all five criteria to include this department in the prize.',
-    'bad-criteria': 'Enter all five criteria, each of 2 to 60 characters.', 'not-found': 'This department was removed in the meantime.'
+    'bad-criteria': 'Enter all five criteria, each of 2 to 60 characters.', 'not-found': 'This department no longer exists.'
   };
   function depSaid(r) {
     var d = r && r.data, e = r && (r.error || (d && d.error));
@@ -1105,7 +1105,7 @@
     }).catch(function (e) { depMsg((e && e.message) || 'Not saved.'); });
   }
   function depDelete(d) {
-    window.ADspaceConfirm.ask({ title: 'Delete', body: d.name + ' is removed from the list. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
+    window.ADspaceConfirm.ask({ title: 'Delete', body: d.name + ' will be deleted. This cannot be undone.', go: 'Delete', tone: 'danger', wait: true },
       function () {
         return db.rpc('department_delete', { p_key: d.key }).then(function (r) {
           return depSaid(r) || depChanged('Deleted.');
@@ -1479,7 +1479,7 @@
   function taxMsg(text, tone) { var m = $('taxMsg'); if (!m) return; m.textContent = text || ''; m.className = 'msg' + (text ? ' ' + (tone || 'err') : ''); }
   var TAX_SAID = {
     denied: 'You do not have permission to change tax codes. Please ask an admin.',
-    'bad-row': 'A code is up to 30 letters, digits, spaces, dots or dashes, its rate 0 to 100.'
+    'bad-row': 'Enter a code of up to 30 letters, digits, spaces, dots or dashes, and a rate from 0 to 100.'
   };
   function taxRefusal(d) {
     if (d.error === 'in-use') {
@@ -1567,7 +1567,7 @@
     var one = codes.length === 1;
     window.ADspaceConfirm.ask({
       title: one ? 'Delete ' + codes[0] + '?' : 'Delete ' + codes.length + ' tax codes?',
-      body: (one ? codes[0] + ' is' : codes.join(', ') + ' are') + ' removed from the list. This cannot be undone.',
+      body: (one ? codes[0] : codes.join(', ')) + ' will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger', wait: true,
       field: one ? null : { name: 'n', label: 'Type ' + codes.length + ' to confirm', match: String(codes.length),
         need: 'Type ' + codes.length + ' to confirm.', mismatch: 'Type ' + codes.length + ' to confirm.' }
