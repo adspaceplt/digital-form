@@ -1492,7 +1492,15 @@
     document.body.appendChild(box);
     if (window.ADspaceSheet) window.ADspaceSheet.show(box, { opener: document.activeElement, onClose: gone });
     else box.hidden = false;
-    paintPages(box.querySelector('.pdfpages'), file, url, name);
+    var host = box.querySelector('.pdfpages');
+    /* A picture (a scan, a photograph) is shown as itself. */
+    if (/^image\//.test(file.type || '')) {
+      var img = document.createElement('img');
+      img.src = url; img.alt = name; img.style.maxWidth = '100%'; img.style.display = 'block';
+      host.appendChild(img); host.removeAttribute('aria-busy');
+      return;
+    }
+    paintPages(host, file, url, name);
   }
   /* The viewer draws each page at the panel's width (the user, 2026-11-07:
      an iPhone's frame showed the page at its own size, cut at the right).
