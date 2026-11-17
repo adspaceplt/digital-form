@@ -80,7 +80,7 @@
     'no-file': 'Choose a file.',
     'not-found': 'This file is no longer in the Handbook.',
     'not-opened': 'Open the file before acknowledging it.',
-    mismatch: 'The title does not match.'
+    mismatch: 'That does not match. Type the title exactly as shown.'
   };
   function said(e) {
     var m = String((e && (e.message || e.error)) || e || '');
@@ -193,7 +193,7 @@
     var meta = d.link_url ? '' : v ? v.file_name + (v.file_size ? ' · ' + size(v.file_size) : '') : 'No file';
     var items = '';
     if (vers.length) items += '<button class="kmenu-item" data-g="1" data-a="vers" type="button" role="menuitem">Versions</button>';
-    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Acknowledgements</button>';
+    if (admin && d.required && !d.archived_at) items += '<button class="kmenu-item" data-g="1" data-a="acks" type="button" role="menuitem">Who acknowledged</button>';
     if (admin) {
       items += '<button class="kmenu-item" data-g="2" data-a="edit" type="button" role="menuitem">Edit</button>';
       if (!d.archived_at) items += '<button class="kmenu-item" data-g="4" data-a="req" type="button" role="menuitem">' + (d.required ? 'Mark optional' : 'Mark required') + '</button>';
@@ -314,6 +314,20 @@
       });
       return;
     }
+    /* The Welcome Kit comes first for a colleague made from a candidate
+       (2026-11-17, release H2 step E1; js/onboard.js), then the files. */
+    var kit = bridge.welcomeDue ? bridge.welcomeDue() : null;
+    if (kit && window.ADspaceOnboard) {
+      var secK = $('sectionHandbook');
+      if (secK) secK.classList.add('is-onboard');
+      var files = dueList().length;
+      window.ADspaceOnboard.kit(box, kit, { step: 1, total: 1 + files, done: function () {
+        if (bridge.welcomeDone) bridge.welcomeDone();
+        if (dueList().length) { paintGate(); window.scrollTo(0, 0); }
+        else if (bridge.handbookCleared) { box.hidden = true; box.innerHTML = ''; if (secK) secK.classList.remove('is-onboard'); bridge.handbookCleared(); }
+      } });
+      return;
+    }
     var due = dueList();
     if (due.length && !gateIds) gateIds = due.map(function (x) { return x.id; });
     var sec = $('sectionHandbook');
@@ -390,7 +404,7 @@
     }).catch(function (e) { say($('hbListMsg'), said(e)); });
   }
   function openAcks(d) {
-    $('hbHistTitle').textContent = 'Acknowledgements · ' + d.title;
+    $('hbHistTitle').textContent = 'Who acknowledged · ' + d.title;
     var box = $('hbHistList');
     box.innerHTML = '<div class="msg" id="hbHistMsg"></div>';
     window.ADspaceSheet.show($('hbHistSheet'), {});
@@ -405,7 +419,7 @@
           '<span class="chip-state ' + tone + '">' + esc(state) + '</span></div>';
       }).join('');
     }).catch(function (e) {
-      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Acknowledgements', said(e), function () { openAcks(d); });
+      if (window.ADspaceState) window.ADspaceState.failLine(box, 'Who acknowledged', said(e), function () { openAcks(d); });
     });
   }
 
@@ -583,7 +597,7 @@
       title: 'Delete',
       body: '"' + d.title + '"' + (n ? ' and its ' + n + (n === 1 ? ' version' : ' versions') : '') + ' will be deleted. This cannot be undone.',
       go: 'Delete', tone: 'danger',
-      field: { label: 'Type the title to confirm', match: d.title, mismatch: 'The title does not match.' }
+      field: { label: 'Type the title to confirm', match: d.title, mismatch: 'That does not match. Type the title exactly as shown.' }
     }, function (typed) {
       rpc('handbook_delete', { p_id: d.id, p_title: typed }).then(function (r) {
         var paths = r.paths || [];

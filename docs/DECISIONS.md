@@ -10978,6 +10978,21 @@ longer shows the browser's error, Loading… is the portal's own word.
 Messages: a template the portal cannot send says to choose another.
 `settings`, `suppliers`, `whatsapp`, `holidays`, `depts`, `taxcodes` pass.
 
+
+### 2026-11-17 · Hiring step E1: Make colleague, the Welcome Kit and onboarding
+The user approved the step E mockups ("Pproved") and E was split into E1 (Make colleague,
+the Welcome Kit, the Onboarding tab) and E2 (/verify/, Documents, Bukku). Make colleague
+reads the terms from the confirmed contract so they are never typed twice, and writes the
+colleague, their Personnel start, their Welcome Kit and their onboarding in one function.
+The Welcome Kit stands ahead of the Handbook's files in the one gate a new colleague
+meets. The Wi-Fi password and door PIN are never kept: the page always reads Please check
+with your direct manager., and a section line naming a password or PIN with a value is
+refused. Found while testing: `ADspaceClock.weekday` answers a number, so the kit's first
+day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages without
+signing in again and seeded the database before a reload that reseeds it; both fixed in
+the suite.
+- 2026-11-17 · Analytics and Documents, from the user's screenshots. On time by person stood a third of the Operations row wide, so its line and its five-column table ran over the card beside it: it now takes the row alone, Reports and Creator bookings sharing the next. Clients who moved drew broken hairlines because its colleague cell borrowed `.ovw-who`, the Team tab's flex row, which turned a table cell into a flex box (one class, one component): the cell is `.ovw-mby`. The user: "person in charge is the main personnel … not counted for leads … the leads are only by sales by". By person in charge became Sales by colleague (new leads, won and lost by `clients.sales_by`, read as the colleague's name, a leaver's kept); churn stays the Person in charge's and moved out of that table, and Clients who moved names Sales by for Won, New leads and Lost leads and Person in charge for the rest, said on each move's heading. Documents' Add existing document had gone behind the bar's ⋯ on 2026-11-03, where the user met a ⋯ holding one item and asked what it was for: it records a document issued outside the portal (an NDA, an older letter) under its own reference, and it stands on the bar again as a tonal button beside Issue document at a desk (the phone's bar keeps it behind its ⋯).
+
 ### 2026-11-17 · Every user group can be deleted, its members moved
 The user: "why never give Team > Groups not able to delete?? i thot i have
 given multiple instructions to have delete options for every create". Delete

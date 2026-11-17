@@ -305,7 +305,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `hrdocs.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES and HIRING OFFERS AND CONTRACTS sections, `supabase/functions/hiring-mail/` | hiring, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, then `ui` |
+| `hiring.js`, `careers.js`, `hrdocs.js`, `onboard.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES, HIRING OFFERS AND CONTRACTS and HIRING ONBOARDING sections, `supabase/functions/hiring-mail/` | hiring, hiringe, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, handbook, teamrec, demo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED and VERIFICATION CODE TEMPLATE sections | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -3552,6 +3552,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   documents' files are queued for the console to take out of Storage when
   it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
   HR document's reference yet (step E).
+- Make colleague and onboarding (step E1, `2026-11-17-hiring-onboarding.sql`,
+  `js/onboard.js`): a candidate whose contract is confirmed offers Make
+  colleague (the part or the Owner, `hiring_hire_state`): one question of
+  sign-in email, Employee ID, user group, department, position, first day
+  and direct manager, the terms read from the contract and never retyped
+  (`hiring_make_colleague`: `not-ready`, `taken` by field, `again` once
+  made), writing the colleague, their Personnel record's start, their
+  Welcome Kit and their onboarding at once, the candidate Hired
+  (`hiring_candidates.member_id`), never a salary. A colleague's record
+  draws Onboarding (Personnel or Hiring at Work): the checklist, a row a
+  step, what the portal knows ticked by itself (offer, contract, employee
+  record, NRIC, Welcome Kit, Handbook files) and the rest ticked by hand
+  with who and when (`onboarding_tick`); Assets, each kind, detail, issued
+  and returned (`onboarding_assets_save`, over the row as read); Entry and
+  exit, each step its own tick. `team_welcome`, `welcome_kit` and
+  `team_onboarding` have RLS on, no policy, no grant. A new colleague's
+  first sign-in meets the Welcome Kit before the Handbook's files
+  (`welcome_kit_mine`, read beside `handbook_due`, holding the gate):
+  their first day, Employee ID, department, position, direct manager and
+  company email, then the team's sections, the Wi-Fi password and door
+  PIN always Please check with your direct manager.; Acknowledge
+  (`welcome_kit_ack`, filed). The sections are Settings, Portal: Welcome
+  Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
+  refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
 
@@ -4850,10 +4874,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     step's share of the one before; Pipeline now, a ring with the whole in
     its middle; Sales moves: lost leads, paused, resumed, win-backs, lead to
     won as a median, conversion of the leads decided, churn of those active
-    at the start, and for Services View the monthly value won and lost; By
-    person in charge, a table of counts, never a ranking; Clients who moved,
+    at the start, and for Services View the monthly value won and lost; Sales
+    by colleague, new leads, won and lost by the colleague who sold them (a
+    lead is never counted by its Person in charge; the user, 2026-11-17),
+    a table of counts, never a ranking; Clients who moved,
     each move's clients (Won, New leads, Lost leads, Churned, Paused,
-    Resumed, Win-backs) with their person in charge and day, five a move
+    Resumed, Win-backs) with their day and, by the move, Sales by (Won, New
+    leads, Lost leads) or Person in charge (the rest), five a move
     then Show N more, and Committed monthly value by client, each active
     client's month highest first with its share and a total a currency, for
     Services View, each client opening its record (its Services); the

@@ -201,9 +201,19 @@
     clients: function () {
       return once('clients', function () {
         return API.readPages(function () {
-          return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, market, bill_sgd, ' +
+          return db.from('clients').select('id, name, slug, client_code, stage, stage_reason, stage_log, stage_since, created_at, source, owner, sales_by, market, bill_sgd, ' +
             'restricted_platform, restricted_since, restricted_note').order('id');
         }).then(rows).then(function (l) { return l || []; });
+      });
+    },
+    /* Colleagues' names by id, leavers included: Sales by is an id. */
+    team: function () {
+      return once('team', function () {
+        return db.from('team_members').select('id, name').then(rows).then(function (l) {
+          var by = {};
+          (l || []).forEach(function (m) { by[m.id] = m.name; });
+          return by;
+        }).catch(function () { return {}; });
       });
     },
     lines: function () {
@@ -754,6 +764,7 @@
   var MOVED = [['won', 'Won'], ['newLeads', 'New leads'], ['lost', 'Lost leads'], ['churned', 'Churned'],
                ['completed', 'Completed'], ['paused', 'Paused'], ['resumed', 'Resumed'], ['winback', 'Win-backs']];
   var MOVED_SHOWN = 5;
+  var SOLD = { won: true, newLeads: true, lost: true };
   /* A client in a card's table: its name over its Client ID, opening its record. */
   /* The chevron of every Show N more on the Dashboard. */
   var DOWN = '<svg class="ovw-more-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
@@ -770,7 +781,7 @@
       var open = m.getAttribute('aria-expanded') !== 'true', tb = m.closest('tbody');
       Array.prototype.forEach.call(tb.querySelectorAll('tr.is-more'), function (r) { r.hidden = !open; });
       m.setAttribute('aria-expanded', String(open));
-      m.textContent = open ? 'Show fewer' : 'Show ' + m.getAttribute('data-n') + ' more';
+      m.firstChild.textContent = open ? 'Show fewer' : 'Show ' + m.getAttribute('data-n') + ' more';
     });
   }
   var PAGE2 = [
@@ -832,19 +843,25 @@
           }).join('') + '</dl>' };
         });
       } },
-      /* Who brought the leads in and who kept the clients (from Clients ·
-         Sales, 2026-10-12): counts only, never a ranking. */
-      { key: 'owners', title: 'By person in charge', can: canLeads,
+      /* Who sold the period's leads (the user, 2026-11-17: a lead is
+         counted by its Sales by, never its Person in charge, who runs the
+         account once it is Active): counts only, never a ranking. */
+      { key: 'owners', title: 'Sales by colleague', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor('now').then(function (f) {
-          var ppl = Object.keys(f.byPerson).sort(function (a, b) { return a.localeCompare(b); }).map(function (k) { return f.byPerson[k]; })
-            .filter(function (q) { return q.newLeads.length || q.won.length || q.lost.length || q.churned.length; });
+        return Promise.all([figuresFor('now'), R.team()]).then(function (x) {
+          var f = x[0], names = x[1];
+          var ppl = Object.keys(f.bySales).map(function (k) {
+            var q = f.bySales[k];
+            q.name = k ? (names[k] || 'Former colleague') : 'Not set';
+            return q;
+          }).filter(function (q) { return q.newLeads.length || q.won.length || q.lost.length; })
+            .sort(function (a, b) { return (a.key ? 0 : 1) - (b.key ? 0 : 1) || a.name.localeCompare(b.name); });
           if (!ppl.length) return { empty: 'Nothing moved ' + periodName(period) + '.' };
-          return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl"><thead><tr><th scope="col">Person in charge</th>' +
-            '<th scope="col" class="is-end">New leads</th><th scope="col" class="is-end">Won</th><th scope="col" class="is-end">Lost</th><th scope="col" class="is-end">Churned</th></tr></thead><tbody>' +
+          return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl"><thead><tr><th scope="col">Sales by</th>' +
+            '<th scope="col" class="is-end">New leads</th><th scope="col" class="is-end">Won</th><th scope="col" class="is-end">Lost</th></tr></thead><tbody>' +
             ppl.map(function (q) {
               return '<tr><th scope="row">' + esc(q.name) + '</th><td class="is-end">' + q.newLeads.length + '</td><td class="is-end">' + q.won.length +
-                '</td><td class="is-end">' + q.lost.length + '</td><td class="is-end">' + q.churned.length + '</td></tr>';
+                '</td><td class="is-end">' + q.lost.length + '</td></tr>';
             }).join('') + '</tbody></table></div>' };
         });
       } }
@@ -855,23 +872,27 @@
          in the period, by move, each opening its record. */
       { key: 'moved', title: 'Clients who moved', can: canLeads,
         all: ['Clients', '/admin/?s=clients', 'clients'], load: function () {
-        return figuresFor('now').then(function (f) {
+        return Promise.all([figuresFor('now'), R.team()]).then(function (x) {
+          var f = x[0], names = x[1];
           var kinds = MOVED.filter(function (k) { return f[k[0]].length; });
           if (!kinds.length) return { empty: 'Nothing moved ' + periodName(period) + '.' };
           return { html: '<div class="chart-tblwrap"><table class="chart-tbl ovw-tbl ovw-moved"><thead><tr><th scope="col">Client</th>' +
-            '<th scope="col" class="ovw-who">Person in charge</th><th scope="col" class="is-end">Date</th></tr></thead>' +
+            '<th scope="col" class="ovw-mby">Colleague</th><th scope="col" class="is-end">Date</th></tr></thead>' +
             kinds.map(function (k) {
               var list = f[k[0]].slice().sort(function (a, b) {
                 return String(f.at[k[0]][b.id] || '').localeCompare(String(f.at[k[0]][a.id] || ''));
               });
-              return '<tbody data-kind="' + k[0] + '"><tr class="ovw-tbl-group"><th scope="rowgroup" colspan="3">' + esc(k[1]) +
-                ' <span class="tab-n">' + list.length + '</span></th></tr>' +
+              /* A lead's moves name who sold it, a client's who runs it. */
+              var sold = SOLD[k[0]];
+              return '<tbody data-kind="' + k[0] + '"><tr class="ovw-tbl-group"><th scope="rowgroup">' + esc(k[1]) +
+                ' <span class="tab-n">' + list.length + '</span></th><th scope="col" class="ovw-mby">' + (sold ? 'Sales by' : 'Person in charge') + '</th><td></td></tr>' +
                 list.map(function (c, i) {
+                  var who = sold ? (c.sales_by ? names[c.sales_by] || 'Former colleague' : '') : c.owner;
                   return '<tr' + (i >= MOVED_SHOWN ? ' class="is-more" hidden' : '') + '><th scope="row">' + clientButton(c, '') + '</th>' +
-                    '<td class="ovw-who">' + esc(c.owner || '\u2014') + '</td><td class="is-end">' + esc(shortDate(f.at[k[0]][c.id])) + '</td></tr>';
+                    '<td class="ovw-mby">' + esc(who || '\u2014') + '</td><td class="is-end">' + esc(shortDate(f.at[k[0]][c.id])) + '</td></tr>';
                 }).join('') +
-                (list.length > MOVED_SHOWN ? '<tr class="ovw-tbl-more"><td colspan="3"><button type="button" class="btn btn-quiet btn-sm ovw-more" aria-expanded="false" data-n="' +
-                  (list.length - MOVED_SHOWN) + '">Show ' + (list.length - MOVED_SHOWN) + ' more</button></td></tr>' : '') +
+                (list.length > MOVED_SHOWN ? '<tr class="ovw-tbl-more"><td colspan="3"><button type="button" class="btn btn-sm ovw-more" aria-expanded="false" data-n="' +
+                  (list.length - MOVED_SHOWN) + '"><span>Show ' + (list.length - MOVED_SHOWN) + ' more</span>' + DOWN + '</button></td></tr>' : '') +
                 '</tbody>';
             }).join('') + '</table></div>', wire: wireClients };
         });
@@ -966,6 +987,10 @@
             }) } };
         });
       } },
+      ],
+      /* On time by person takes the row's width: its line and its table
+         of five figures overflowed a third of it (the user, 2026-11-17). */
+      [
       { key: 'reports', title: function () { return 'Reports for ' + LONG[lastMonth().mo]; }, can: canReports, all: ['Reports', '/admin/?s=reports', 'reports'], load: function () {
         return R.owed().then(function (items) {
           if (!items.length) return { empty: 'No reports owed.' };

@@ -54,8 +54,8 @@
     'too-long': 'Keep the note to 1,000 characters.',
     'bad-colleague': 'Choose a colleague.',
     'already-asked': 'You have already asked them. Withdraw that request first.',
-    'bad-status': 'That cannot be changed from here.',
-    'not-found': 'Not found.',
+    'bad-status': 'This talk has changed. Refresh the page.',
+    'not-found': 'This talk no longer exists.',
     'denied': 'Only an admin can open Health check-ins.',
     'not-team': 'Only a team member can open this.'
   };
