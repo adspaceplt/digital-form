@@ -11017,3 +11017,19 @@ is a foreign key. Now every group but Admin carries Delete in its ⋯; one
 holding colleagues asks Move its n members to, and `team_role_delete` moves
 them and deletes the group in one transaction, keeping the admin-only,
 super-only and last-admin checks. `scope` and `team` hold it.
+### 2026-11-17 · Database wording (tone check, part 3, release 5)
+Fresh reviewers read the lines the database puts in front of a person
+against DESIGN.md §6. Five changed, words only, in one band
+(`2026-11-17-database-wording.sql`, mirrored in schema.sql): grades D and E
+read Needs support and Improvement plan (`perf_grade_word`; they read Needs
+Guidance and Performance Review against §6's vocabulary); one service line
+reverted reads in the singular (`letter_set_void`); a creator cleared to post
+is told "Draft approved for posting" (`campaign_options_push`); the Person in
+charge refusal says who can change it (`clients_owner_guard`, hint
+owner-change unchanged); the extension notice dates the day by
+`register_day` and names "A colleague" where the asker has no name
+(`ops_request_due_change`). No key, tag, argument or refusal code moved.
+Found: `sql`'s push check runs the 2026-09-27 migration, never the schema's
+last word, so the new title is checked by running this band's function on a
+re-subscribed creator device. `sql`, `perf`, `ops`, `lettersql`, `policies`
+pass; `demo` fails on the creator's page as already logged (#1189).
