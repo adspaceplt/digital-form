@@ -10873,3 +10873,20 @@ switches are. The user asked for them at the head of Company. Company
 already held six rows, and a card holds five at most, so they stand under
 their own heading directly above it. The copy review renamed Team access
 to User groups, the name Team already uses.
+### 2026-11-17 · Tone check of the console, n to z, release 1: Team, Performance, Documents
+
+The user asked for the whole repository to be held to DESIGN.md §6 (tone
+check part 3 of 3: the console's scripts from n to z and the database's
+words). Nine reviewers who did not write the words read about 4,800 console
+strings and 1,682 database strings against §6 alone. This first release
+fixes Team, Performance and the Register: New group now commits with Create;
+refusals say what to do next (Set Access until to today or a later date
+first.; Only another admin can change your own access date.); recurring
+became repeating, as the rest of My Work says it; HR Letters, Client Letters
+and Supplier Letters take title case as formal names wherever the Register
+and Team name them; Performance labels became nouns (Description, Next step,
+If repeated), a step waited on is said in the future (It will become final
+within the hour.), Put on hold became Not now as the state reads, and the
+settings sheet's refusal reads as an instruction (enter a number from 0 to
+10). `scope`, `docs` and `perfui` read the new words. The Activity record's
+section list (`js/admin.js`, outside this part) still reads HR letters.
