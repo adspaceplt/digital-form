@@ -128324,7 +128324,7 @@ create trigger sm_reports_lang_default before insert on public.sm_reports
 --     `mail_sender(p_key)` (the service role's) is what each edge function
 --     sends from; `mail_senders_read()` the team's; `mail_boxes_set(p_values)`
 --     (`team.settings`, Settings, Messages: Reply-to mailboxes), filed
---     `team.changed` under Email addresses from and to.
+--     `team.changed` under Reply-to mailboxes from and to.
 --
 -- ORDER: this file (connector), then the edge functions (each reads
 -- `mail_sender`, else its own fallback), then the pages. Safe to run twice.
@@ -128409,7 +128409,7 @@ begin
   end loop;
   if array_length(v_said, 1) > 0 then
     insert into public.activity_log (actor, action, subject, detail)
-    values (me.name, 'team.changed', 'Email addresses', array_to_string(v_said, ' · '));
+    values (me.name, 'team.changed', 'Reply-to mailboxes', array_to_string(v_said, ' · '));
   end if;
   return jsonb_build_object('ok', true);
 end $$;

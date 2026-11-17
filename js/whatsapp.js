@@ -345,7 +345,7 @@
     approved: 'Supplier approved', document: 'Supplier document', signing: 'Signing code', message: 'Email',
     creator_received: 'Creator details received', creator_review: 'Creator details to review', creator_approved: 'Creator details approved',
     hiring_invite: 'Interview invitation', hiring_confirm: 'Interview confirmed', hiring_pool: 'Talent pool', hiring_not: 'Application outcome',
-    hiring_doc: 'Employment document', hiring_code: 'Document code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };
+    hiring_doc: 'Employment document', hiring_code: 'Verification code', invite_team: 'Colleague invitation', invite_client: 'Client Portal invitation' };
   var ML_STATE = { queued: ['Queued', 'is-warn'], sending: ['Sending', 'is-warn'], sent: ['Sent', 'is-live'], delivered: ['Delivered', 'is-ok'],
     opened: ['Opened', 'is-ok'], bounced: ['Bounced', 'is-danger'], complained: ['Marked as spam', 'is-danger'],
     failed: ['Not sent', 'is-danger'], unknown: ['Not confirmed', 'is-warn'],

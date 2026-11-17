@@ -764,12 +764,13 @@
      The four company mailboxes; each section's sender replies to one of
      them (Clients, Careers and invitations General; Suppliers and Creators
      Accounts payable; invoices and reminders Finance). */
-  var BOX_NOTE = { general: 'Client emails, careers and invitations. Enquiries and all other messages.',
-    payables: 'Supplier and creator payment emails.', finance: 'Invoices and overdue reminders.', einvoice: 'e-Invoice submissions only.' };
+  var BOX_NOTE = { general: 'Replies to client, careers and invitation emails, and all other enquiries.',
+    payables: 'Replies to supplier and creator payment emails.', finance: 'Replies to invoices and overdue reminders.',
+    einvoice: 'Receives e-Invoice submissions alone.' };
   function openMailboxes() {
     db.rpc('mail_senders_read').then(function (r) {
       var d = (r && r.data) || {};
-      if (r.error || d.error) { rowSay('mailboxes')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load.', 'err'); return; }
+      if (r.error || d.error) { rowSay('mailboxes')(r.error && /function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : 'Could not load. Try again.', 'err'); return; }
       var boxes = d.boxes || [];
       window.ADspaceConfirm.ask({
         title: 'Reply-to mailboxes', go: 'Save', wait: true,
@@ -785,13 +786,15 @@
         boxes.forEach(function (b) { vals[b.key] = String(v[b.key] || '').trim().toLowerCase(); });
         return db.rpc('mail_boxes_set', { p_values: vals }).then(function (r2) {
           var e = r2.error ? (/function|schema cache/i.test(r2.error.message) ? window.ADspaceWords.line.notYet : r2.error.message)
-            : r2.data && r2.data.error ? (r2.data.error === 'denied' ? window.ADspaceWords.line.noSettings : 'Enter a valid email address.') : '';
+            : r2.data && r2.data.error ? (r2.data.error === 'denied' ? window.ADspaceWords.line.noSettings
+              : r2.data.error === 'bad-email' ? (boxes.filter(function (b) { return b.key === r2.data.field; })[0] || { label: 'A mailbox' }).label + ': Enter a valid email address.'
+              : 'Not saved. Try again.') : '';
           if (e) return e;
           rowSay('mailboxes')('Saved.', 'ok');
           return '';
         }).catch(function (e) { return (e && e.message) || 'Not saved.'; });
       });
-    }).catch(function () { rowSay('mailboxes')('Could not load.', 'err'); });
+    }).catch(function () { rowSay('mailboxes')('Could not load. Try again.', 'err'); });
   }
 
   /* ---- Demo access (2026-10-27) ----------------------------------------

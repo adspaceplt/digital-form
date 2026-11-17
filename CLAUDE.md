@@ -9087,8 +9087,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     ap@ (suppliers, creators), Finance finance@ (invoices and reminders),
     e-Invoice einvoice@ (e-invoice submissions alone); the four are
     Settings, Messages: Reply-to mailboxes (`mail_boxes`,
-    `mail_boxes_set`, `team.settings`, filed `team.changed` under Email
-    addresses), the pages reading them through `mail_senders_read`
+    `mail_boxes_set`, `team.settings`, filed `team.changed` under Reply-to
+    mailboxes), the pages reading them through `mail_senders_read`
     (`ADspaceDocMail.showSender`) and the Email log's From through
     `mail_log` `senders`;
   - admin login: adspacestudios@gmail.com.

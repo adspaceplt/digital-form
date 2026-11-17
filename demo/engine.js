@@ -13284,7 +13284,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         var v = String(mbVals[b.key] == null ? b.address : mbVals[b.key]).trim().toLowerCase();
         if (v !== b.address) { mbSaid.push(b.label + ': ' + b.address + ' → ' + v); b.address = v; }
       });
-      if (mbSaid.length) (DB.activity_log = DB.activity_log || []).unshift({ id: nid('al'), actor: mbMe.name, action: 'team.changed', subject: 'Email addresses', detail: mbSaid.join(' · '), created_at: new Date().toISOString() });
+      if (mbSaid.length) (DB.activity_log = DB.activity_log || []).unshift({ id: nid('al'), actor: mbMe.name, action: 'team.changed', subject: 'Reply-to mailboxes', detail: mbSaid.join(' · '), created_at: new Date().toISOString() });
       return Promise.resolve({ data: { ok: true }, error: null });
     }
     if (/^wa_/.test(name)) {
