@@ -505,7 +505,7 @@
         });
       });
     } },
-    { key: 'unsigned', word: 'Unsigned letters', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); }, load: function () {
+    { key: 'unsigned', word: 'Unsigned letters', title: 'Unsigned Letters of Offer', can: function () { return may('clients.documents', 'manage'); }, load: function () {
       return R.letters().then(function (list) {
         return list.map(function (d) {
           var c = d.clients || {};
@@ -811,19 +811,19 @@
           var pct = function (a, b) { return b ? Math.round(a / b * 100) + '%' : '—'; };
           var decided = f.won.length + f.lost.length;
           var rowsOf = [
-            ['Lost leads', String(f.lost.length), 'Paused or Past before ever Active'],
+            ['Lost leads', String(f.lost.length), 'Moved to Paused or Past before becoming Active'],
             ['Paused', String(f.paused.length), f.pausedNow.length + ' paused now'],
             ['Resumed', String(f.resumed.length), 'Paused back to Active'],
             ['Win-backs', String(f.winback.length), 'Past back to Active'],
             ['Lead to won', f.medianToWin === null ? '—' : daysWord(f.medianToWin), 'Median'],
             ['Conversion', pct(f.won.length, decided), 'Won of the leads decided'],
             /* A one-time project finished as agreed is never churn (2026-11-15). */
-            ['Completed', String(f.completed.length), 'Active to Past, project finished', true],
+            ['Completed', String(f.completed.length), 'Moved from Active to Past when the project was finished', true],
             ['Churn rate', pct(f.churned.length, f.activeStart), 'Churned of those active at the start', true]
           ];
           if (val && f.money) {
-            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'A month of the lines won', true]);
-            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'A month of the lines churned', true]);
+            rowsOf.push(['Monthly value won', moneyWord(f.money.won), 'One month of the lines won', true]);
+            rowsOf.push(['Monthly value lost', moneyWord(f.money.churned), 'One month of the lines churned', true]);
           }
           return { html: '<dl class="ovw-facts">' + rowsOf.map(function (r) {
             /* Churn and the two values take a row each, so a long label
@@ -943,7 +943,7 @@
               return { label: x.label || x.stage_key, value: Number(x.median_minutes) || 0, mark: Number(x.p90_minutes) || 0,
                        note: (openAt[x.stage_key] || 0) + ' open' };
             }), fmt: function (v) { return spanOf(v); },
-            table: { heads: ['Stage', 'Open now', 'Times left', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
+            table: { heads: ['Stage', 'Open now', 'Times moved on', 'Median', 'Slowest 10%'], rows: st.map(function (x) {
               return [x.label || x.stage_key, String(openAt[x.stage_key] || 0), String(x.n), spanOf(x.median_minutes), spanOf(x.p90_minutes)];
             }) } };
         });
@@ -1875,7 +1875,7 @@
           card.appendChild(b);
           /* A failed read is never drawn as nothing to do. */
           if (d.failed.length) UI.failLine(b, d.failed.join(', '), '', redraw);
-          else UI.emptyLine(b, 'Nothing needs you today.');
+          else UI.emptyLine(b, 'Nothing is due today.');
           return;
         }
         var chips = kinds.length > 2 ? '<div class="ovw-today-chips" role="group" aria-label="Show">' + kinds.map(function (k) {
