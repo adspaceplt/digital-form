@@ -10937,6 +10937,18 @@ On a narrow pane a row's label now takes 104px and its act takes the line
 under the value, on the value's edge. An invoice's number takes its own
 line, with the amount and its state held together under it. The number
 link has no inset. `contentloop` measures all of it at 390.
+### 2026-11-17 · Tone check of the console, n to z, release 2: My Work
+
+My Work's refusals now say what to enter or do (Enter a reason., Choose a
+client., Tasks in this month are still open. Complete or cancel them first.,
+AQC review comes before client review. Move the task to AQC review first.),
+a rule refused reads as an instruction (Choose a Draft due before the due
+date., Choose a start day from the 1st to the 28th.), the month's Reports
+refusal names its four answers, a step waited on is future (The work will
+open once the content meeting … is held.), a deleted month's tasks "will be
+kept, outside any month", and a Retainer post and a time entry use My Work's
+own words. `work` and `ops` read the new words. 'System' and 'Somebody' as
+who did something stay: they are shared with other sections' scripts.
 
 ### 2026-11-17 · Tone check of the console, n to z, release 3: Reports, Video Scripts, Quotations, Dashboard
 
