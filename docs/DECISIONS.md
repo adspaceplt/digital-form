@@ -10926,3 +10926,14 @@ campaign rows no longer repeat their tab's name; the PDF refusal a client
 can meet reads with Please; the signing code's email says "to sign the
 quotation". Rejected: the creator page's "1 GB" (tests/words.js keeps a
 Latin unit's space). The rejected wordings joined tests/words.js RETIRED.
+
+### 2026-11-17 · A month's card on a phone: label 104px, acts under the value
+The user's phone screenshot of a month showed four faults:
+- "RM" stood on one line and "1,188.00" on the next;
+- the invoice number was set in by its link's own padding;
+- Check again and Set meeting squeezed every value to about 70px;
+- the label column stayed 120px, where DESIGN.md says 104 on a narrow pane.
+On a narrow pane a row's label now takes 104px and its act takes the line
+under the value, on the value's edge. An invoice's number takes its own
+line, with the amount and its state held together under it. The number
+link has no inset. `contentloop` measures all of it at 390.
