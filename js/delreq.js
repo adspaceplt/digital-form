@@ -32,7 +32,8 @@
     body: 'An admin will review the request before anything is deleted.',
     reason: 'Reason',
     done: 'Delete requested. An admin will decide.',
-    withdrawn: 'Request withdrawn.'
+    withdrawn: 'Request withdrawn.',
+    own: 'A request you filed is decided by another admin.'
   };
 
   function load() {
@@ -273,7 +274,8 @@
       var row = function (x) {
         var st = STATE[x.state] || ['', ''];
         var waiting = x.state === 'open' || x.state === 'approving';
-        var acts = waiting && d.admin
+        /* An admin decides another colleague's request, never their own (2026-11-17). */
+        var acts = waiting && d.admin && !x.mine
           ? '<button class="btn btn-sm" data-act="decline" data-id="' + esc(x.id) + '" type="button">Decline</button>' +
             '<button class="btn btn-sm" data-act="approve" data-id="' + esc(x.id) + '" type="button">Approve</button>'
           : waiting && x.mine ? '<button class="btn btn-sm" data-act="withdraw" data-id="' + esc(x.id) + '" type="button">Withdraw</button>' : '';
@@ -313,7 +315,7 @@
         field: { label: 'Note', rows: 2, need: 'Enter a note.' } }, function (note) {
         Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: false, p_note: note })).then(function (r) {
           var d = r && r.data;
-          if (!d || !d.ok) say(btn, 'Not declined. Please try again.');
+          if (!d || !d.ok) say(btn, d && d.error === 'own' ? LINE.own : 'Not declined. Please try again.');
           else paint();
         });
       });
@@ -323,7 +325,7 @@
       go: 'Delete', tone: 'danger' }, function () {
       Promise.resolve(db.rpc('delete_request_decide', { p_id: id, p_approve: true, p_note: null })).then(function (r) {
         var d = r && r.data;
-        if (!d || !d.ok) { say(btn, 'Not deleted. Please try again.'); return null; }
+        if (!d || !d.ok) { say(btn, d && d.error === 'own' ? LINE.own : 'Not deleted. Please try again.'); return null; }
         return replay(d.kind, d.args).then(function (res) {
           return Promise.resolve(db.rpc('delete_request_done', { p_id: id, p_ok: res.ok, p_error: res.ok ? null : res.why })).then(function () {
             if (!res.ok) { paint(); setTimeout(function () { var b = document.querySelector('.dr-row[data-id="' + id + '"] .dr-acts button'); if (b) say(b, res.why); }, 400); }

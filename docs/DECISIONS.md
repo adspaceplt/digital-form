@@ -11278,3 +11278,21 @@ step); TERM TOTAL FROM ITS PARTS rounds them as a month's incl. is worked.
 for the PR body. (5) CLAUDE.md held every area's rules (636 KB), loaded by
 every session; the areas moved to `docs/rules/` (CLAUDE.md about 175 KB), each
 named by `.claude/hooks/area-rules.sh` on the first edit of its paths.
+
+### 2026-11-17 · Deletes and builds held
+The review of the releases since #1134 (the user: "Ok fix all"), findings 6,
+7 and 15 to 18. `team_member_purge` failed for any colleague who had
+submitted, confirmed or reviewed a report: deleting their row cleared those
+names by their keys (on delete set null), which the report's guard refuses
+outside its own functions (`sm-status-by-function`); the purge now sets
+`adspace.sm_fn` first. A delete request for several tasks, a report's
+version or a booking was filed without reading its records, so it named
+only "2 tasks" or "Booking" and could name records outside the requester's
+sight; each is now held and named. An admin could approve a request they
+had filed before becoming one, and any admin could close another's
+approval; both are refused. `page_pulse` answered the name of whoever
+required the latest build to any caller asking for the team's pulse, and a
+build time ahead of now (ten minutes allowed) was accepted. Release B's
+merge also left one `=======` line in `schema.sql`, caught by `sql`'s
+conflict check before the merge; the release's band then needed its blank
+line back to match its migration byte for byte.
