@@ -211,12 +211,16 @@
     box.className = 'sheet';
     box.id = 'delReqSheet';
     box.hidden = true;
-    box.innerHTML = '<div class="sheet-scrim" data-close></div>' +
-      '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="delReqTitle" tabindex="-1">' +
-        '<div class="sheet-head"><h2 id="delReqTitle">Delete requests</h2>' +
-          '<button class="iconbtn sheet-x" data-close type="button" aria-label="Close">' +
+    /* Laid as Settings' other lists (Notices, Announcements; the user,
+       2026-11-17: "why so differently"): the head's close at its right
+       edge, a section a state under its heading, the rows `.ann-row`,
+       Close in the foot. */
+    box.innerHTML = '<div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="delReqTitle" data-narrow="560">' +
+        '<div class="sheet-head"><h3 id="delReqTitle">Delete requests</h3>' +
+          '<button class="iconbtn" data-close type="button" aria-label="Close">' +
           '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
         '<div class="sheet-body"><div id="delReqList"></div></div>' +
+        '<div class="sheet-foot"><button class="btn btn-quiet" type="button" data-close>Close</button></div>' +
       '</div>';
     document.body.appendChild(box);
     box.addEventListener('click', function (e) {
@@ -265,22 +269,30 @@
       if (r && r.error || !d || !d.ok) { failed(host); return; }
       rows = d.rows || [];
       handBack(waitingOf(rows));
-      if (!rows.length) { host.innerHTML = '<p class="emptyline">No requests.</p>'; return; }
-      host.innerHTML = rows.map(function (x) {
+      if (!rows.length) { host.innerHTML = '<section class="fsec ann-sec"><p class="ann-none">No requests.</p></section>'; return; }
+      var row = function (x) {
         var st = STATE[x.state] || ['', ''];
         var waiting = x.state === 'open' || x.state === 'approving';
         var acts = waiting && d.admin
-          ? '<div class="dr-acts"><button class="btn btn-sm" data-act="decline" data-id="' + esc(x.id) + '" type="button">Decline</button>' +
-            '<button class="btn btn-sm btn-primary" data-act="approve" data-id="' + esc(x.id) + '" type="button">Approve</button></div>'
-          : waiting && x.mine ? '<div class="dr-acts"><button class="btn btn-sm" data-act="withdraw" data-id="' + esc(x.id) + '" type="button">Withdraw</button></div>' : '';
-        return '<div class="dr-row" data-id="' + esc(x.id) + '">' +
-          '<div class="dr-main"><p class="dr-name">' + esc(x.word) + ' · ' + esc(x.label) + '</p>' +
-            '<p class="dr-meta">' + esc(x.by || '') + ' · ' + esc(when(x.at)) + '</p>' +
-            '<p class="dr-why">' + esc(x.reason) + '</p>' +
-            (x.note ? '<p class="dr-meta">' + esc((x.decided_by ? x.decided_by + ': ' : '') + x.note) + '</p>' : '') +
+          ? '<button class="btn btn-sm" data-act="decline" data-id="' + esc(x.id) + '" type="button">Decline</button>' +
+            '<button class="btn btn-sm" data-act="approve" data-id="' + esc(x.id) + '" type="button">Approve</button>'
+          : waiting && x.mine ? '<button class="btn btn-sm" data-act="withdraw" data-id="' + esc(x.id) + '" type="button">Withdraw</button>' : '';
+        return '<div class="ann-row dr-row' + (waiting ? '' : ' is-off') + '" data-id="' + esc(x.id) + '">' +
+          '<div class="ann-what"><p class="ann-text">' + esc([x.word, x.label].filter(Boolean).join(' · ')) + '</p>' +
+            '<p class="ann-zh">' + esc(x.reason) + '</p>' +
+            (x.note ? '<p class="ann-zh">' + esc((x.decided_by ? x.decided_by + ': ' : '') + x.note) + '</p>' : '') +
+            '<p class="ann-meta">' + esc([x.by ? 'By ' + x.by : '', when(x.at)].filter(Boolean).join(' · ')) + '</p>' +
             '<p class="msg dr-msg" hidden></p></div>' +
-          '<div class="dr-end"><span class="chip chip-state ' + st[1] + '">' + st[0] + '</span>' + acts + '</div></div>';
-      }).join('');
+          '<div class="ann-ctl"><span class="chip chip-state ' + st[1] + '">' + st[0] + '</span></div>' +
+          '<div class="ann-acts">' + acts + '</div></div>';
+      };
+      var open = rows.filter(function (x) { return x.state === 'open' || x.state === 'approving'; });
+      var done = rows.filter(function (x) { return !(x.state === 'open' || x.state === 'approving'); });
+      var part = function (head, list, none) {
+        return '<section class="fsec ann-sec"><div class="ann-head"><h4 class="fsec-h">' + head + '</h4></div>' +
+          (list.length ? '<div class="ann-rows">' + list.map(row).join('') + '</div>' : '<p class="ann-none">' + none + '</p>') + '</section>';
+      };
+      host.innerHTML = part('Waiting', open, 'None waiting.') + (done.length ? part('Decided', done, '') : '');
     }).catch(function () { failed(host); });
   }
   function say(btn, text) {
