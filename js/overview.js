@@ -781,7 +781,7 @@
       var open = m.getAttribute('aria-expanded') !== 'true', tb = m.closest('tbody');
       Array.prototype.forEach.call(tb.querySelectorAll('tr.is-more'), function (r) { r.hidden = !open; });
       m.setAttribute('aria-expanded', String(open));
-      m.textContent = open ? 'Show fewer' : 'Show ' + m.getAttribute('data-n') + ' more';
+      m.firstChild.textContent = open ? 'Show fewer' : 'Show ' + m.getAttribute('data-n') + ' more';
     });
   }
   var PAGE2 = [
@@ -891,8 +891,8 @@
                   return '<tr' + (i >= MOVED_SHOWN ? ' class="is-more" hidden' : '') + '><th scope="row">' + clientButton(c, '') + '</th>' +
                     '<td class="ovw-mby">' + esc(who || '\u2014') + '</td><td class="is-end">' + esc(shortDate(f.at[k[0]][c.id])) + '</td></tr>';
                 }).join('') +
-                (list.length > MOVED_SHOWN ? '<tr class="ovw-tbl-more"><td colspan="3"><button type="button" class="btn btn-quiet btn-sm ovw-more" aria-expanded="false" data-n="' +
-                  (list.length - MOVED_SHOWN) + '">Show ' + (list.length - MOVED_SHOWN) + ' more</button></td></tr>' : '') +
+                (list.length > MOVED_SHOWN ? '<tr class="ovw-tbl-more"><td colspan="3"><button type="button" class="btn btn-sm ovw-more" aria-expanded="false" data-n="' +
+                  (list.length - MOVED_SHOWN) + '"><span>Show ' + (list.length - MOVED_SHOWN) + ' more</span>' + DOWN + '</button></td></tr>' : '') +
                 '</tbody>';
             }).join('') + '</table></div>', wire: wireClients };
         });
