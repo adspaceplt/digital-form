@@ -5213,7 +5213,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   the format's short word (`2610W204 · Reel 30s`, `formatShort`), a task
   with no code its name; never the whole description (the user,
   2026-10-09). Then `+N more`. On a phone it lists only the days holding
-  work, so a month with none reads "No tasks this month." (`.cal-none`).
+  work, so a month with none reads "No tasks this month." (`.cal-none`). It also shows the content months the reader may
+  see (read once with the calendar, held to Whose work: the reader's months
+  or months holding a task on the list; the team's all): each month's
+  meeting on its day (client · Meeting · time, opening its Months view),
+  each report it owes on its due day (span end plus `report_due_days`;
+  client · Accounts Report due, opening the report once made, else its
+  report task, which it replaces on the day) and where it starts and ends
+  (`.cal-mark`, a quiet line, never a chip; the user, 2026-11-17).
 - Months view (`view=months&wc=`, the tab named Months) is one bar, as every
   view (2026-10-22, WRK-M1): the view strip, the client (`#workClient`,
   `data-nofilter`, kept in the bar on a phone), the search, Filters, the

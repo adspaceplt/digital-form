@@ -2326,6 +2326,43 @@
   document.addEventListener('change', holWatch, true);
   document.addEventListener('focusin', function (e) { if (!HOL && e.target && e.target.closest && e.target.closest('#workSheets, #taskDrawer')) holidays(); }, true);
 
+  /* The content months on the calendar (the user, 2026-11-17: "my work
+     calendar didnt show the content month schedule"): each month's content
+     meeting, the reports it owes on their due day, and where it starts and
+     ends. The months around the one on show are read once, with the
+     reports made for them, under their own policies; never a read a day. */
+  var calMonths = { key: null, engs: [], reps: [], asked: null };
+  function loadCalMonths(m) {
+    if (calMonths.key === m) return Promise.resolve(calMonths);
+    if (calMonths.asked && calMonths.askedFor === m) return calMonths.asked;
+    var ps = [-2, -1, 0, 1].map(function (k) { return CK.addMonths(m, k).slice(0, 7); });
+    calMonths.askedFor = m;
+    calMonths.asked = db.from('ops_engagements')
+      .select('id, client_id, period, status, start_day, reports, meeting_at, meeting_na, manager_id, clients(name, slug)')
+      .in('period', ps).then(function (r) {
+        var engs = (!r.error && r.data) || [];
+        engs = engs.filter(function (e) { return e.status !== 'cancelled'; });
+        var ids = engs.map(function (e) { return e.client_id; }).filter(function (v, i, a) { return v && a.indexOf(v) === i; });
+        var reps = !ids.length || !may('reports', 'view') ? Promise.resolve([])
+          : db.from('sm_reports').select('id, kind, client_id, period_end, brand_id, on_request')
+              .in('client_id', ids).gte('period_end', CK.addMonths(m, -3).slice(0, 7) + '-01')
+              .then(function (x) { return (!x.error && x.data) || []; }, function () { return []; });
+        return reps.then(function (rs) {
+          calMonths = { key: m, engs: engs, reps: rs.filter(function (x) { return !x.brand_id && !x.on_request; }), asked: null };
+          return calMonths;
+        });
+      }, function () { calMonths = { key: m, engs: [], reps: [], asked: null }; return calMonths; });
+    return calMonths.asked;
+  }
+  function openClientMonths(slug) {
+    if (!slug) return;
+    closeDrawer(true);
+    state.wcWant = slug;
+    if ($('sectionWork') && !$('sectionWork').hidden) { setView('months'); return; }
+    history.replaceState(null, '', '/admin/?s=work&view=months&wc=' + encodeURIComponent(slug));
+    if (bridge.show) bridge.show('work');
+  }
+
   function paintCalendar(rows) {
     if (!HOL) holidays().then(function () { if ($('workCal') && !$('workCal').closest('[hidden]')) paintCalendar(rows); });
     var box = $('workCal');
@@ -2345,8 +2382,43 @@
       if (due && (!pub || dateValue(due) !== dateValue(pub))) put(due, t, 'due');
       if (pub) put(pub, t, 'pub');
     });
+    /* The content months, once read: a month the reader may see, held to
+       Whose work (theirs: a month they manage or one holding a task on the
+       list; the team's: every month). A report the month owes takes its
+       report task's place on its due day. */
+    if (calMonths.key !== m) loadCalMonths(m).then(function () { if ($('workCal') && !$('workCal').closest('[hidden]') && state.view === 'calendar') paintCalendar(rows); });
+    else {
+      var meId = (bridge.me && bridge.me() || {}).id, withTask = {}, repTask = {};
+      rows.forEach(function (t) {
+        if (t.engagement_id) withTask[t.engagement_id] = 1;
+        var rk = REPORT_KIND[t.source_type];
+        if (rk && t.engagement_id) repTask[t.engagement_id + ':' + rk] = t;
+      });
+      var MON = window.ADspaceMoney, KIND_WORD = { social: 'Accounts Report due', ads: 'Advertising Report due' };
+      calMonths.engs.forEach(function (e) {
+        if (state.scope !== 'all' && e.manager_id !== meId && !withTask[e.id]) return;
+        var cl = e.clients || {}, sp = monthSpanOf(e);
+        var m0 = { e: e, who: cl.name || 'Client', slug: cl.slug || e.client_id };
+        (byDay[sp[0]] = byDay[sp[0]] || []).push(Object.assign({ kind: 'mstart' }, m0));
+        (byDay[sp[1]] = byDay[sp[1]] || []).push(Object.assign({ kind: 'mend' }, m0));
+        if (e.meeting_at && !e.meeting_na) {
+          var md = CK.day(e.meeting_at);
+          (byDay[md] = byDay[md] || []).push(Object.assign({ kind: 'meet', at: e.meeting_at }, m0));
+        }
+        var dueDays = Number(MON && MON.setting ? MON.setting('report_due_days', sp[1]) : 7) || 0;
+        var rDay = CK.addDays(sp[1], dueDays);
+        (e.reports || []).forEach(function (rk) {
+          if (!KIND_WORD[rk]) return;
+          var rep = calMonths.reps.filter(function (x) { return x.kind === rk && x.client_id === e.client_id && x.period_end === sp[1]; })[0];
+          var task = repTask[e.id + ':' + rk];
+          if (task) Object.keys(byDay).forEach(function (k) { byDay[k] = byDay[k].filter(function (x) { return x.t !== task; }); });
+          (byDay[rDay] = byDay[rDay] || []).push(Object.assign({ kind: 'rep', word: KIND_WORD[rk], report: rep && rep.id, task: task }, m0));
+        });
+      });
+    }
+    var ORDER = { meet: 0, rep: 1, due: 2, pub: 3, mstart: 4, mend: 5 };
     Object.keys(byDay).forEach(function (k) {
-      byDay[k].sort(function (a, b) { return a.kind === b.kind ? 0 : a.kind === 'due' ? -1 : 1; });
+      byDay[k].sort(function (a, b) { return ORDER[a.kind] - ORDER[b.kind]; });
     });
     var MON_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
     var title = MON_LONG[Number(m.slice(5, 7)) - 1] + ' ' + m.slice(0, 4);
@@ -2360,7 +2432,8 @@
       '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
       '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
       '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
-      '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Post</span></span>' +
+      '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Post</span>' +
+        '<span class="cal-key-meet">Meeting</span><span class="cal-key-rep">Report</span><span class="cal-key-month">Month</span></span>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
       '</div>';
     var first = m + '-01';
@@ -2386,6 +2459,20 @@
          code and format, each one line cut to the cell; a task with no code
          reads its name. The press opens the card with the rest. */
       var chips = list.slice(0, CAL_SHOW).map(function (x) {
+        if (x.kind === 'mstart' || x.kind === 'mend') {
+          var mw = x.kind === 'mstart' ? 'Month starts' : 'Month ends';
+          return '<span class="cal-mark" title="' + esc(x.who + ' · ' + mw) + '"><span class="cal-chip-who">' + esc(x.who) + '</span>' +
+            '<span class="cal-chip-what">' + esc(mw) + '</span></span>';
+        }
+        if (x.kind === 'meet' || x.kind === 'rep') {
+          var mWhat = x.kind === 'meet' ? 'Meeting · ' + CK.clock(x.at) : x.word;
+          var mLate = x.kind === 'rep' && !x.report && d < today;
+          return '<button class="cal-chip btn-sm ' + (x.kind === 'meet' ? 'is-meet' : 'is-rep') + (mLate ? ' is-late' : '') + '" type="button"' +
+            ' data-cal-kind="' + x.kind + '" data-slug="' + esc(x.slug) + '"' + (x.report ? ' data-report="' + esc(x.report) + '"' : '') +
+            (x.task ? ' data-task="' + esc(x.task.id) + '"' : '') +
+            ' aria-label="' + esc(x.who + ', ' + mWhat) + '" title="' + esc(x.who + ' · ' + mWhat) + '">' +
+            '<span class="cal-chip-who">' + esc(x.who) + '</span><span class="cal-chip-what">' + esc(mWhat) + '</span></button>';
+        }
         var t = x.t, pub = x.kind === 'pub';
         var late = !pub && !isFinished(t) && d < today;
         var who = whoseWord(t) || 'No client';
@@ -2419,7 +2506,13 @@
       state.month = CK.today().slice(0, 7); paintCalendar(rows);
     });
     Array.prototype.forEach.call(box.querySelectorAll('.cal-chip'), function (b) {
-      b.addEventListener('click', function () { openDrawer(b.getAttribute('data-task')); });
+      b.addEventListener('click', function () {
+        var k = b.getAttribute('data-cal-kind');
+        if (k === 'meet') { openClientMonths(b.getAttribute('data-slug')); return; }
+        if (k === 'rep' && b.getAttribute('data-report')) { openReportRoute(b.getAttribute('data-report')); return; }
+        if (k === 'rep' && !b.getAttribute('data-task')) { openClientMonths(b.getAttribute('data-slug')); return; }
+        openDrawer(b.getAttribute('data-task'));
+      });
     });
   }
 
