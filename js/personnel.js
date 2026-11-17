@@ -617,14 +617,16 @@
     });
   }
   function view(member, kind) {
-    var tab = window.open('', '_blank');
+    /* Through ADspaceDocs: a tab opened at the press at a desk; in the
+       installed app no window (it has no way back), the viewer instead. */
+    var Docs = window.ADspaceDocs;
+    var tab = Docs.previewTab();
     return db.functions.invoke('sign-download', { body: { personnel: { member: member || null, kind: kind } } }).then(function (r) {
       var b = r && r.data;
       if (r.error || !b || typeof b.size !== 'number' || !b.size) throw new Error('The file could not be opened. Try again.');
-      var url = URL.createObjectURL(b);
-      if (tab) tab.location = url; else window.open(url, '_blank');
-      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-    }).catch(function (e) { if (tab) tab.close(); throw e; });
+      var ext = /pdf/.test(b.type) ? 'pdf' : /png/.test(b.type) ? 'png' : 'jpg';
+      return Docs.save(b, kind + '.' + ext, tab);
+    }).catch(function (e) { if (tab && tab.close) tab.close(); throw e; });
   }
   function wireFiles(box, member) {
     var line = box.querySelector('[data-fmsg]');
