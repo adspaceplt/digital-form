@@ -3379,7 +3379,7 @@
       c.state = want;
       if (want === 'open') log('campaign.opened', c.title, 'no creators in production');
       else log('campaign.stage', c.title, STATE_WORD[was] + ' → ' + STATE_WORD[want] +
-        (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · all creators booked' : ' · a creator reopened'));
+        (want === 'completed' ? ' · every creator completed' : was === 'open' ? ' · all creators booked' : ' · a booking reverted'));
       paintCampState(c);
     });
   }
@@ -5426,7 +5426,7 @@
     var FILE_SAID = {
       denied: 'You do not have permission to change this file. Please ask an admin.',
       'client-scope': 'This client is not one of your clients.',
-      'not-approved': 'Only a file the client has approved can be hidden. Remove this file instead.',
+      'not-approved': 'Only a file the client has approved can be hidden from the client. Remove this file instead.',
       'not-found': 'The file is no longer on this booking.',
       'not-hidden': 'Hide the file first.'
     };
@@ -5793,7 +5793,7 @@
     'no-booking': 'This booking no longer exists.',
     'not-submitted': 'Only a submitted draft can be sent back.',
     'not-changes': 'There is no request to take back.',
-    'not-reviewing': 'Only a draft in Reviewing can be confirmed internally.',
+    'not-reviewing': 'Only a draft in Reviewing can be confirmed internally. Release it to the client first.',
     'not-scheduled': 'There is no approval to take back.',
     'note-required': 'Enter the changes.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
@@ -6300,7 +6300,7 @@
              none (2026-10-17). */
           if (badLink) { badLink.focus(); return no('Enter a web address.'); }
           if (badFig) { badFig.focus(); return no('Enter a whole number of 0 or more.'); }
-          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Enter a Count to date after Count from.');
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) return no('Choose a Count to date on or after Count from.');
           var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
           if (!Object.keys(patch).some(moved)) return Promise.resolve(true);
           var figures = ['impressions', 'engagements', 'views'].some(moved);
