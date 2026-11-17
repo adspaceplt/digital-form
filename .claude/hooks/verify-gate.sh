@@ -17,6 +17,15 @@ head=$(git -C "$dir" rev-parse HEAD 2>/dev/null)
 log=/tmp/verify-gate.log
 stamp="$(date -u +%FT%TZ) $mode $head"
 if [ -n "$head" ] && [ -f "/tmp/affected-pass/$head" ]; then echo "$stamp passed" >> $log; exit 0; fi
+# A pass on an earlier commit stands where everything since is docs or the
+# session settings alone (no suite reads either).
+for f in /tmp/affected-pass/*; do
+  c=$(basename "$f")
+  git -C "$dir" merge-base --is-ancestor "$c" "$head" 2>/dev/null || continue
+  if [ -z "$(git -C "$dir" diff --name-only "$c" "$head" -- . ':(exclude)*.md' ':(exclude)docs/**' ':(exclude).claude/**')" ]; then
+    echo "$stamp passed on ${c:0:7}, docs since" >> $log; exit 0
+  fi
+done
 if printf '%s' "$msg" | grep -q 'Verify: skipped'; then echo "$stamp skipped: $(printf '%s' "$msg" | grep -o 'Verify: skipped.*' | head -1)" >> $log; exit 0; fi
 reason="The suites this change reaches have not passed on ${head:0:7}. Run: node tests/affected.js --run (or put 'Verify: skipped, {reason}' in the merge message)."
 if [ "$mode" = enforce ]; then
