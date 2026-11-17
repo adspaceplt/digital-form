@@ -951,14 +951,14 @@
     }
     if (src && src.pv) {
       var pv = src.pv, what = [];
-      if (pv.prev_start !== String(t.prev_start || '').slice(0, 10) || pv.prev_end !== String(t.prev_end || '').slice(0, 10)) what.push('its dates');
-      if (differs(t.prev_reach, pv.prev_reach)) what.push('reach ' + fmt(t.prev_reach) + ', the report ' + fmt(pv.prev_reach));
-      if (differs(t.prev_impressions, pv.prev_impressions)) what.push('impressions ' + fmt(t.prev_impressions) + ', the report ' + fmt(pv.prev_impressions));
-      if (differs(t.prev_spend, pv.prev_spend, true)) what.push('amount spent ' + money2(t.prev_spend) + ', the report ' + money2(pv.prev_spend));
+      if (pv.prev_start !== String(t.prev_start || '').slice(0, 10) || pv.prev_end !== String(t.prev_end || '').slice(0, 10)) what.push('the dates differ');
+      if (differs(t.prev_reach, pv.prev_reach)) what.push('reach reads ' + fmt(t.prev_reach) + ' here and ' + fmt(pv.prev_reach) + ' in the report');
+      if (differs(t.prev_impressions, pv.prev_impressions)) what.push('impressions read ' + fmt(t.prev_impressions) + ' here and ' + fmt(pv.prev_impressions) + ' in the report');
+      if (differs(t.prev_spend, pv.prev_spend, true)) what.push('amount spent reads ' + money2(t.prev_spend) + ' here and ' + money2(pv.prev_spend) + ' in the report');
       var pg = t.prev_groups || {}, rg = pv.prev_groups || {};
       Object.keys(rg).concat(Object.keys(pg)).filter(function (k, i, a) { return a.indexOf(k) === i; }).forEach(function (k) {
         var x = pg[k] || {}, y = rg[k] || {};
-        if (differs(x.spend, y.spend, true) || differs(x.results, y.results)) what.push((OBJ_WORD[k] || k) + ' ' + money2(x.spend) + ', the report ' + money2(y.spend));
+        if (differs(x.spend, y.spend, true) || differs(x.results, y.results)) what.push((OBJ_WORD[k] || k) + ' reads ' + money2(x.spend) + ' here and ' + money2(y.spend) + ' in the report');
       });
       if (what.length) put('The previous period differs from the published ' + src.word + ' report: ' + what.join('; ') + '.', 'Use that report\'s figures', take);
     }
@@ -4906,7 +4906,7 @@
         return [o[1], res + ' · ' + money2(sm.spent).replace(/ /g, '\u00a0')];
       });
       var before = r.first_month ? [['Comparison', 'First month of ads, with the reading guidance']] :
-        [['Compared with', t.prev_from ? fromWord || 'A published report' : 'Typed figures'],
+        [['Compared with', t.prev_from ? fromWord || 'Published report' : 'Typed figures'],
           ['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
           ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];
       var cards = [{ title: on('This period'), rows: now }];
