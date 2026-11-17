@@ -11202,6 +11202,20 @@ new database function. Building it, a helper named `tell` in js/delreq.js
 replaced the file's own `tell` (its Undo line) and broke the request's Undo
 bar; `delreq` caught it before merge.
 
+### 2026-11-17 · My Work's calendar shows the content months
+The user: "my work calendar didnt show the content month schedule", choosing
+all three. The calendar now reads the content months around the one on show,
+with the reports made for them, once a month shown (never a read a day), and
+draws each month's meeting on its day, each report the month owes on its due
+day (its span's end plus the report due days, as the Reports gate reads it;
+the report task's chip gives way to it, so a report is never shown twice),
+and where each month starts and ends as a quiet two-line mark. Meeting and
+report chips take the due ground with a rule down their edge (ink, soft ink),
+no colour of their own; the key names them. Whose work holds: a colleague's
+own view shows the months they manage or that hold a task on their list. The
+`work` suite had crashed since the bar's ⋯ of one item became Select tasks'
+own button (MENU-8); its checks now read that button.
+
 ### 2026-11-17 · Every email in Messages, and replies to a company mailbox
 The user: "The email sent out from Hiring did not log inside Messages. All
 outgoing WhatsApp messages and emails should be logged inside." The Email log

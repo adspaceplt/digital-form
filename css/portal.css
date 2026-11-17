@@ -6771,6 +6771,19 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cal-key > span { display: inline-flex; align-items: center; white-space: nowrap; padding: 2px 8px; border-radius: 5px; font-weight: 500; }
 .cal-key-due { background: var(--line-soft); color: var(--ink-soft); }
 .cal-key-pub { background: var(--pub-bg); color: var(--pub); }
+/* The content month on the calendar (2026-11-17): its meeting and the
+   reports it owes are chips on the due ground marked by a rule down their
+   edge (the meeting in ink, a report in the soft ink), never a colour of
+   their own; where a month starts or ends is a quiet line, no chip. */
+.cal-chip.is-meet { box-shadow: inset 3px 0 0 var(--ink); }
+.cal-chip.is-rep { box-shadow: inset 3px 0 0 var(--ink-mute); }
+.cal-chip.is-rep.is-late { box-shadow: inset 3px 0 0 var(--err); }
+.cal-mark { display: grid; gap: 1px; min-width: 0; font-size: 11px; line-height: 13px; color: var(--ink-mute); padding: 3px 6px; }
+.cal-mark .cal-chip-who { font-weight: 500; color: var(--ink-mute); }
+.cal-key-meet, .cal-key-rep { background: var(--line-soft); color: var(--ink-soft); }
+.cal-key-meet { box-shadow: inset 3px 0 0 var(--ink); }
+.cal-key-rep { box-shadow: inset 3px 0 0 var(--ink-mute); }
+.cal-key-month { color: var(--ink-mute); }
 /* Under 480px the bar has no room for the key, so the publish chip names
    itself instead. */
 @media (max-width: 479px) {
