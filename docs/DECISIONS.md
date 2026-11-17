@@ -11070,3 +11070,20 @@ Direct Manager, the right; SOCSO and EIS by their proper names). The page's
 status read Offer accepted once the contract was confirmed; it now follows
 the latest document. A copy review moved held by Google Meet to on, Where to
 Location, and the offer's opening off naming the employer twice.
+
+### 2026-11-17 · A removed colleague can be deleted for good
+The user: "also allow entirely delete a person from Team". This supersedes
+"a colleague's row is never deleted" (2026-10-14, Team audit 2026-10-18, which
+had dropped the delete policy so nobody could cascade into reviews unseen).
+The delete stays off every page's direct write: an admin deletes a colleague
+already Removed from their ⋯, the name typed back, through
+`team_member_purge`. An audit of the live database on 2026-11-17 found 136
+foreign keys to `team_members`: 73 set null, 26 cascade (their own
+performance, health, notifications, devices), 27 nullable with no action and
+9 required (one restrict, `option_qc`). The function reads them from the
+catalogue at the press rather than a list, so a key added later never blocks
+it; nullable ones are cleared, required ones' rows deleted. Their name stays
+as text on past work, documents and the Activity record. `auditfix` runs it
+on the whole schema; four of that suite's older checks were reseeded for the
+group-switch rule (a tab never above its section, billing behind Sensitive
+details, email behind Send email).

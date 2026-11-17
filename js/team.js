@@ -799,8 +799,11 @@
                  pen, so the ⋯ offers no Extend access beside it (TEAM2-8). */
               (self || !manage || !standCan || m.removed_at || (!m.active && m.expired_at) ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')) +
               /* Delete (2026-10-14): their work handed over kind by kind,
-                 their data kept or their personal details deleted. */
-              (self || !manage || !standCan || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger'));
+                 their data kept or their personal details deleted. Once
+                 removed, Delete is the permanent one, an admin's (the user,
+                 2026-11-17: "entirely delete a person from Team"). */
+              (m.removed_at ? (self || sysRow || !amAdmin() ? '' : menuItem('purge', 'Delete', 'is-danger'))
+                : (self || !manage || !standCan || m.erased_at ? '' : menuItem('remove', 'Delete', 'is-danger')));
   }
   function wireActs(el, m) {
     wireMenu(el);
@@ -856,6 +859,8 @@
     });
     var rmv = el.querySelector('[data-a="remove"]');
     if (rmv) rmv.addEventListener('click', function () { shutMenus(); removeMember(m); });
+    var prg = el.querySelector('[data-a="purge"]');
+    if (prg) prg.addEventListener('click', function () { shutMenus(); purgeMember(m); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
   }
@@ -1016,6 +1021,34 @@
      kept, then their name typed back. Their name on past work, what they
      signed, and their own HR letters and performance records stay either
      way; Delete their data removes their personal details and sign-in. */
+  /* A removed colleague deleted for good (A COLLEAGUE DELETED PERMANENTLY,
+     2026-11-17): their row and sign-in, and every record keyed to them
+     alone; their name on past work, documents and the Activity record kept. */
+  var PURGE_SAID = {
+    'admin-only': 'You do not have permission to delete colleagues. Please ask an admin.',
+    'not-removed': 'Only a removed colleague can be deleted permanently. Use Delete on their record first, so they read Removed.',
+    own: 'You cannot delete your own account.', 'system-account': REMOVE_SAID['system-account'],
+    'bad-name': REMOVE_SAID['bad-name'], 'last-admin': REMOVE_SAID['last-admin'],
+    'not-found': 'This colleague no longer exists.'
+  };
+  function purgeMember(m) {
+    window.ADspaceConfirm.ask({
+      title: 'Delete', tone: 'danger', go: 'Delete', wait: true,
+      body: m.name + ' will be deleted from Team with their sign-in, performance reviews, health check-ins, time records and notifications. ' +
+        'Their name stays on past work, documents and the Activity record. This cannot be undone.',
+      field: { label: 'Type ' + m.name + ' to confirm', match: m.name, required: true }
+    }, function (v) {
+      return Promise.resolve(db.rpc('team_member_purge', { p_member: m.id, p_name: typeof v === 'string' ? v : m.name })).then(function (r) {
+        if (r.error) return PURGE_SAID[r.error.message] || teamSaid(r.error);
+        var a = r.data || {};
+        if (a.error) return PURGE_SAID[a.error] || teamSaid({ message: a.error });
+        closeRec();
+        msg('teamMsg', m.name + ' deleted.', 'ok');
+        load();
+        return '';
+      }).catch(function () { return 'Not deleted. Please try again.'; });
+    });
+  }
   function removeMember(m) {
     heldBy(m, function (own, held) {
       var fields = handFields(m, own, held, true);
