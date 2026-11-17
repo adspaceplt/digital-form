@@ -10862,3 +10862,22 @@ and crashed. It now opens Qiao Rou by her name. The rest went to the
 sessions that own them: Hiring (matrix's strip and overflow at 320,
 pwapdf's hiring.js) and Personnel (menus, growth, settings, pwapdf's
 personnel.js). perfui's margin stays logged.
+
+## 2026-11-17 · The old access parts cleared: the access restructure, release 3
+Step 6 of plan version 4. Release 1 had stopped reading the five WhatsApp
+parts and the stored levels of creator payments and supplier bank details;
+live, nine colleagues and two groups still held `campaigns.pay` or
+`suppliers.pay` at Work, read by nothing. They are taken off
+(`2026-11-17-access-cleanup.sql`), so a map reads what it grants. The
+granted parts were typed five times (the migration's seed, `allowed()`,
+`js/team.js`, `js/admin.js`, the stand-in): `allowed()` now reads
+`access_keys`, and the Team panel reads the console's list, leaving three
+held equal by `tests/access.js`. The 95 rules in `css/portal.css` that hid a
+control by a body class (`no-work-clients-billing`) are one rule the console
+writes from `may()` over every key and level (`#accessHide`); a control
+naming a key nobody defined is still drawn, as the old list's comment
+wanted. Four levels the old list never named (creator payments at Work, Mark
+VIC, Video Scripts at Work, Performance at Full control) now step away
+where the database would refuse them. The three Hiring emails ask Send email; the
+interview's had asked the portal's switch alone.
+

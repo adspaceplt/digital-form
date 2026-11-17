@@ -271,15 +271,10 @@
                    Business setting Meta checks is On. */
                 ['meta', 'Meta import and audit']]
   };
-  /* The parts that are granted rather than inherited: each opens more than
-     its section does, so silence means no. The same list the console reads
-     (`OPS_GRANTED` in js/admin.js) and the database asks (`ops_granted()`). */
-  var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1,
-    'reports.whitelabel': 1, 'ops.numbering': 1, 'ops.override': 1, 'team.perfadmin': 1, 'team.settings': 1,
-    'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1, 'reports.transfer': 1, 'reports.ai': 1,
-    'team.announce': 1, 'register.types': 1, 'team.notice': 1, 'reports.meta': 1,
-    'campaigns.files_delete': 1, 'clients.vic': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1 };
-  function isGranted(key) { return Boolean(GRANTED[key]); }
+  /* The parts that are granted rather than inherited: the console's one
+     list (ADspaceAdmin.GRANTED), which the database's access_keys holds too. */
+  function granted() { return (window.ADspaceAdmin && window.ADspaceAdmin.GRANTED) || {}; }
+  function isGranted(key) { return Boolean(granted()[key]); }
   /* A part that follows its section or is shut, and nothing between: the
      three My Work views, and each WhatsApp send (2026-10-10), which asks
      the section at Manage as well as itself. */
@@ -1336,7 +1331,6 @@
   var PART_DESC = {
     'clients.contacts': 'The client\'s people and their portal access.',
     'team.hiring': 'Candidates, their CVs and the colleagues added to each.',
-    'clients.billing': 'Registered Company Name, BRN, billing contact and address.',
     'clients.quotes': 'Build quote and the client\'s quotations.',
     'clients.services': 'The client\'s service lines and their rates.',
     'clients.documents': 'Letters of Offer and client letters: issue, sign and void.',
@@ -1346,11 +1340,6 @@
     'clients.checklists': 'The Onboarding Checklist and Pre-Advertising Checklist.',
     'clients.leads': 'Leads, Contacted and Proposal sent.',
     'clients.past': 'Past clients.',
-    'whatsapp.report': 'A published report sent to the client.',
-    'whatsapp.feedback': 'A feedback request to the client.',
-    'whatsapp.booking': 'A creator\'s booking message.',
-    'whatsapp.approval': 'A reminder of what waits on the client\'s approval.',
-    'whatsapp.documents': 'A quotation or Letter of Offer sent to the client.',
     'review.sets': 'Content sets, posts and their decisions.',
     'review.settings': 'The review link and access code.',
     'campaigns.campaigns': 'Campaigns, bookings and drafts.',
@@ -1358,9 +1347,7 @@
     'campaigns.finance': 'The invoice number and its PDF.',
     'register.documents': 'Client letters and other documents.',
     'register.hr': 'HR letters and downloaded performance records.',
-    'suppliers.pay': 'A supplier\'s NRIC and bank details.',
     'team.personnel': 'Each colleague\'s employee record, their salary behind the master code, and the AutoCount HRMS download.',
-    'campaigns.pay': 'A creator\'s NRIC, Passport or Business Registration Number and account number, and approving their payment details.',
     'ops.all': 'Every colleague\'s tasks, not only their own.',
     'ops.time': 'Correct another colleague\'s time records.',
     'team.performance': 'Monthly performance reviews, behind the master code.'
@@ -1517,7 +1504,7 @@
        group stored them, which `team_roles_admin_guard` holds (S2). */
     if (!amAdmin()) {
       var held = state.editing ? accessOf(state.editing) : {};
-      Object.keys(GRANTED).forEach(function (k) { if (held[k]) access[k] = held[k]; else delete access[k]; });
+      Object.keys(granted()).forEach(function (k) { if (held[k]) access[k] = held[k]; else delete access[k]; });
     }
     return access;
   }
