@@ -291,6 +291,9 @@
     if ($('hirDocFail')) UI.failLine($('hirDocFail'), 'the documents', 'Please try again.', function () { openRec(c.id); });
     if (window.ADspaceActs && window.ADspaceActs.scan) window.ADspaceActs.scan(rec);
     if (window.ADspaceMenu && window.ADspaceMenu.tidy) Array.prototype.forEach.call(rec.querySelectorAll('.kmenu'), function (m) { window.ADspaceMenu.tidy(m); });
+    /* The strip slides its thumb and fades the edge that has more beyond
+       it on a narrow phone, as every record's strip does. */
+    if ($('hirTabs') && window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb($('hirTabs'));
     wireRec();
   }
   function personRow(p) {
