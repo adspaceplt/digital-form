@@ -945,15 +945,15 @@
   // ---- Rendering ---------------------------------------------------------------
   function render(snap, opts) {
     var D = window.ADspaceDocs;
-    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
+    if (!D || !D.lib) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
     return D.lib().then(function () { return drawReport(snap, opts); });
   }
   function drawReport(snap, opts) {
     opts = opts || {};
     var PDF = window.PDFLib;
     var DOCS = window.ADspaceDocs;
-    if (!PDF) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
-    if (!DOCS) return Promise.reject(new Error('The PDF tools did not load. Refresh the page.'));
+    if (!PDF) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
+    if (!DOCS) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
     /* The report's template is always English (the user, 2026-10-01: Meta's

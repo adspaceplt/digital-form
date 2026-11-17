@@ -636,6 +636,14 @@ button.appver {
 .eng-row > .eng-meetacts { grid-area: act; justify-self: end; }
 .eng-meetacts { display: flex; gap: 8px; }
 .is-tight .eng-row > .eng-lab { align-self: center; }
+/* On a narrow pane (2026-11-17, the user's phone screenshot of a month):
+   the label takes 104px, as every label-beside-value list does there, and
+   a row's act (Check again, Set meeting) takes the line under its value on
+   the value's edge, so the value keeps the row's width and an invoice never
+   breaks inside its amount. */
+.is-narrow .eng-row { grid-template-columns: 104px minmax(0, 1fr); grid-template-areas: "lab val" ". act"; }
+.is-narrow .eng-row > .eng-val { grid-area: val; }
+.is-narrow .eng-row > .eng-meetacts { justify-self: start; }
 /* The month's stage is a chip on its heading while the card is shut, and
    the card's own chip once it is open: said once either way. It is worked
    out from the month's facts, so it is never a select (2026-09-27). */
@@ -3794,6 +3802,11 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    sat under the console's head). */
 .console .rec-pane { scroll-margin-top: calc(var(--head-h) + 12px); }
 .rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
+/* The buttons' line spans every track, so the auto track is held at nought
+   on such a row: sized by that row's own buttons it widened by one more
+   button (Invoices) and pulled the figure and state off their column
+   (2026-11-17, the day's gate). */
+.rec-pane:not(.is-narrow) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) 140px 190px 0 var(--ctl-h); }
 /* They run the row's whole width, ending at its right edge under the ⋯:
    spanning the auto track alone had widened it, opening a gap before the
    ⋯ and pulling the figure and state off their headings (2026-10-27). */
@@ -5837,7 +5850,12 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    reference, in ink, opening it in Bukku. */
 .console .engcard { outline: 1px solid var(--card-edge, var(--line)); outline-offset: -1px; }
 .eng-invno { font-variant-numeric: tabular-nums; }
-.eng-invrow .linkbtn.eng-invno { color: var(--ink); font-weight: 500; }
+.eng-invrow .linkbtn.eng-invno { color: var(--ink); font-weight: 500; padding-inline: 0; }
+/* An invoice's amount and state held together; on a narrow pane they take
+   the line under the number, never a line opening on a dot. */
+.eng-inv-part { white-space: nowrap; }
+.is-narrow .eng-inv-sep { display: none; }
+.is-narrow .eng-inv-part { display: block; }
 /* A candidate's interviews (2026-11-17, release H2 step B): a shaded card an
    invitation, its name and state on one line with the ⋯ at the right edge,
    the times a plain list, the acts at the card's right edge. */

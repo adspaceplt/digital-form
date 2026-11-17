@@ -14662,6 +14662,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             meeting_link: iv.meeting_link || null, position: icand.position }, error: null });
         }
         if (name === 'hiring_mail_prepare') {
+          if (!sendOk('email')) return hNo('send-off');
           var mk = args.p_kind;
           if (mk === 'invite' && ['invited', 'none'].indexOf(iv.state) < 0) return hNo('not-open');
           if (mk === 'confirm' && iv.state !== 'confirmed') return hNo('not-confirmed');
@@ -14826,6 +14827,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
             seal: hd.seal_sha ? { sha: hd.seal_sha, pages_sha: hd.seal_pages_sha, at: hd.sealed_at } : undefined });
         }
         if (name === 'hiring_doc_mail_prepare') {
+          if (!sendOk('email')) return hNo('send-off');
           if (!keepsD) return hNo('denied');
           if (hd.state !== 'sent') return hNo('not-sent');
           return Promise.resolve({ data: { id: hd.id, kind: 'doc', doc: hd.kind, ref: hd.serial, to: dc.email, name: dc.name, position: hd.terms.position, key: dc.link_key,
@@ -14980,6 +14982,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return hOk({ was: was, email: oc !== 'proceed' });
       }
       if (name === 'hiring_outcome_mail_prepare') {
+        if (!sendOk('email')) return hNo('send-off');
         if (!hr || (hr !== 'admin' && hr !== 'owner')) return hNo('denied');
         if (['pool', 'not'].indexOf(hc.outcome) < 0) return hNo('no-email');
         return Promise.resolve({ data: { id: hc.id, kind: hc.outcome, to: hc.email, name: hc.name, position: hc.position, key: hc.link_key,

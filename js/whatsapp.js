@@ -57,9 +57,7 @@
   var STATUS = [['queued', 'Queued', 'is-off'], ['sending', 'Sending', 'is-warn'], ['sent', 'Sent', 'is-warn'],
                 ['delivered', 'Delivered', 'is-ok'], ['read', 'Read', 'is-ok'], ['unknown', 'Not confirmed', 'is-warn'],
                 ['failed', 'Failed', 'is-danger']];
-  /* The part each purpose sends under, and the record's own section. */
-  var PART = { report: 'whatsapp.report', feedback: 'whatsapp.feedback', creator: 'whatsapp.booking', approval: 'whatsapp.approval',
-    quotation: 'whatsapp.documents', offer: 'whatsapp.documents' };
+  /* The record's own section each purpose asks. */
   var RECORD = { report: 'reports', feedback: 'clients', creator: 'campaigns', quotation: 'clients.quotes', offer: 'clients.documents' };
   var SECRET = { WHATSAPP_PHONE_ID: 'Phone number ID', WHATSAPP_TOKEN: 'token', WHATSAPP_WABA_ID: 'Business Account ID' };
 

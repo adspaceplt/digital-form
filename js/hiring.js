@@ -32,7 +32,7 @@
     hired: ['Hired', 'is-ok'], pool: ['Talent pool', 'is-off'], closed: ['Closed', 'is-off'] };
   var ROLE = { admin: 'Hiring', owner: 'Owner', interviews: 'Interviewer' };
   var SAID = {
-    'denied': 'You do not have permission to do this. Please ask an admin.', 'not-found': 'This candidate no longer exists.',
+    'denied': 'You do not have permission to do this. Please ask an admin.', 'send-off': window.ADspaceWords.line.emailSendOff, 'not-found': 'This candidate no longer exists.',
     'bad-name': 'Enter a name of 2 to 120 characters.', 'bad-email': 'Enter a valid email address.',
     'bad-phone': 'Enter a phone number of 8 to 15 digits, for example 012-345 6789.', 'bad-position': 'Enter the position.',
     'bad-source': 'Choose a source.', 'bad-cv': 'Enter a web address that starts with https://.', 'too-long': 'Shorten the note to 2,000 characters.',

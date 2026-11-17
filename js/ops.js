@@ -143,7 +143,7 @@
   var SAID = {
     'not-team': 'Your team profile could not be found. Please contact an admin.',
     'denied': 'You do not have permission to do this. Please ask an admin.',
-    'no-tasks': 'That colleague does not have My Work access, so cannot take tasks.',
+    'no-tasks': 'That colleague cannot take tasks without My Work access. Choose another colleague.',
     'not-found': 'This task no longer exists.',
     'bad-code': 'Enter the code as YYMMW{week}{NN}, for example 2610W101.',
     'not-live': 'Results are recorded once the post is live.',
@@ -163,15 +163,15 @@
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'not-yours': 'Only the person asked can decide this.',
     'decided': 'This request has already been decided.',
-    'no-date': 'A date is required.',
+    'no-date': 'Choose a date.',
     /* The team's own milestone has to land before the commitment it feeds,
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
-    'draft-not-before-final': 'Draft due must be before the due date.',
+    'draft-not-before-final': 'Choose a Draft due before the due date.',
     'dates-required': 'Draft due, Due date and Post date are required.',
     'bad-transition': 'The task cannot move there from its current stage.',
     'priority-not-yours': 'The priority is changed by whoever created the task, or a manager.',
-    'held-resume': 'The task goes back to the stage it left.',
+    'held-resume': 'The task can only go back to the stage it left. Choose that stage.',
     'no-such-stage': 'That stage is not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs someone assigned and a due date.',
     'footage-not-ready': 'The footage is not ready for editing.',
@@ -179,21 +179,21 @@
     'needs-final-link': 'Delivered needs a final link.',
     'needs-delivery-or-reason': 'Add a delivery or a closing reason.',
     'checklist-incomplete': 'Tick the required checklist items first.',
-    'reason-required': 'A reason is required.',
+    'reason-required': 'Enter a reason.',
     'category-required': 'Select what it is waiting on.',
-    'title-required': 'A description is required.',
-    'client-required': 'A client is required.',
-    'client-not-active': 'That record is not a client. Choose a client, or Lead.',
+    'title-required': 'Enter a description.',
+    'client-required': 'Choose a client.',
+    'client-not-active': 'That client is not active. Choose an active client, or Lead.',
     'not-a-lead': 'This is already a client. Choose Client.',
     'client-scope': 'You do not have access to this client. Please ask an admin.',
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
     'bad-period': 'Choose a valid content month.',
     'bad-week': 'Choose a week from 1 to 5.',
-    'skip-reason-required': 'Skipping a step needs a reason.',
-    'back-reason-required': 'Going back needs a reason.',
+    'skip-reason-required': 'Enter a reason to skip this step.',
+    'back-reason-required': 'Enter a reason to go back.',
     'retired-stage': 'That stage is no longer used.',
-    'planning-incomplete': 'This month\u2019s checklists are not done.',
+    'planning-incomplete': 'This month\u2019s checklists are not done. Tick them, or mark them Not needed, first.',
     'meeting-required': 'Set the content meeting, or mark it not applicable, first.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'That person is not a colleague.',
@@ -204,11 +204,11 @@
     'finished': 'This task is finished.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
-    'tasks-open': 'Tasks in this month are still open.',
+    'tasks-open': 'Tasks in this month are still open. Complete or cancel them first.',
     'derived-state': 'This stage follows the month\u2019s checklists, meeting and tasks, and cannot be set by hand.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
-    'bad-start-day': 'A month starts on a day from the 1st to the 28th.',
-    'bad-reports': 'Choose the Accounts report, the Advertising report, both or neither.',
+    'bad-start-day': 'Choose a start day from the 1st to the 28th.',
+    'bad-reports': 'Choose Accounts, Advertising, Both or None.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
     'interval-required': 'Enter the number of days.',
     'bad-state': 'Choose a valid status.',
@@ -222,14 +222,14 @@
     'workflow-required': 'No workflow is set up. Please contact an admin.',
     'bad-format': 'A format is listed twice or is not on the Rate Card.',
     'name-taken': 'Another template has this name.',
-    'name-required': 'A name is required.',
+    'name-required': 'Enter a name.',
     'bad-kind': 'Choose a link type.',
-    'url-required': 'A link is required.',
+    'url-required': 'Enter a link.',
     'ends-before-it-starts': 'Choose an end date after the start date.',
     'not-blocked': 'This task is not blocked.',
     'confirm-required': 'Type the task number as shown.',
-    'needs-aqc': 'AQC review comes before client review.',
-    'note-required': 'A note is required for this step.',
+    'needs-aqc': 'AQC review comes before client review. Move the task to AQC review first.',
+    'note-required': 'Enter a note for this step.',
     'needs-schedule': 'Set the post date first.',
     'needs-live-date': 'Confirm the date it went live.',
     'live-in-future': 'A post cannot go live after today.',
@@ -246,7 +246,7 @@
      the rail shows is how the page contradicted itself. */
   function said(err, t, d) {
     if (err === 'tasks-open' && d && d.open) {
-      return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
+      return d.open === 1 ? '1 task in this month is still open. Complete or cancel it first.' : d.open + ' tasks in this month are still open. Complete or cancel them first.';
     }
     if (err === 'plan-full' || err === 'plan-range' || err === 'extra-range') {
       var pl = d && d.planned ? d.planned : 0, pw = pl === 1 ? ' piece' : ' pieces';
@@ -254,7 +254,7 @@
         return d && d.left ? 'Only ' + d.left + ' of the ' + pl + ' planned' + pw + ' left. Choose Ad hoc, Goodwill or Other for the rest.'
           : 'The month\'s ' + pl + ' planned' + pw + ' are taken. Choose Ad hoc, Goodwill or Other.';
       }
-      return err === 'plan-range' ? 'A Retainer piece takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
+      return err === 'plan-range' ? 'A Retainer post takes a number from 01 to ' + String(pl).padStart(2, '0') + '.'
         : 'An extra task takes a number after ' + String(pl).padStart(2, '0') + ', the last planned number.';
     }
     if (err === 'exists') return (d && d.period ? monthWord(d.period) : 'That month') + ' already exists for this client. Open it with Edit.';
@@ -555,7 +555,7 @@
          names it where the client is picked (audit, 2026-10-03). */
       state.clientsErr = (r[4] && r[4].error) || null;
     }).catch(function (e) {
-      state.clientsErr = e || { message: 'The clients could not be read.' };
+      state.clientsErr = e || { message: 'The clients could not be loaded.' };
     }).then(function () { then(); });
   }
 
@@ -3409,7 +3409,7 @@
   var REPORT_SAID = {
     'month-gate': 'Its month in My Work does not include this report.',
     'denied': 'You do not have permission to do this in Reports. Please ask an admin.',
-    'bad-period': 'The month\'s period could not be read.'
+    'bad-period': 'The month\'s dates could not be loaded.'
   };
   function monthSpanOf(e) {
     var d = Math.max(1, Math.min(28, Number(e.start_day) || 1)), y = Number(e.period.slice(0, 4)), mo = Number(e.period.slice(5, 7));
@@ -4350,7 +4350,7 @@
   function quickAdd() {
     var title = String($('qkTitle').value || '').trim();
     if (!title) { msg('qkMsg', 'Enter the task.', 'err'); $('qkTitle').focus(); return; }
-    if (!$('qkDue').value) { msg('qkMsg', 'A due date is required.', 'err'); $('qkDue').focus(); return; }
+    if (!$('qkDue').value) { msg('qkMsg', 'Choose a due date.', 'err'); $('qkDue').focus(); return; }
     if (!$('qkLink').value) { msg('qkMsg', 'Choose a client, or Internal.', 'err'); $('qkLink').focus(); return; }
     if (!$('qkOwner').value) { msg('qkMsg', 'Choose who it is assigned to.', 'err'); $('qkOwner').focus(); return; }
     var link = $('qkLink').value === 'i:' ? '' : $('qkLink').value;
@@ -4593,7 +4593,7 @@
          assignments is named rather than drawn as an unowned task. */
       var bad = r[0].error || (r[5] && r[5].error);
       if (bad) {
-        msg('dwMsg', bad.message || 'That task could not be read.', 'err');
+        msg('dwMsg', bad.message || 'That task could not be loaded.', 'err');
         return;
       }
       /* No row: the task was deleted (here, in another tab, by somebody
@@ -4931,7 +4931,7 @@
         n.title = 'Waiting for the month';
         n.line = open ? 'Waiting for ' + monthWord(eng.period) + '\u2019s checklists and content meeting.'
           : mt === 'none' ? 'Schedule the content meeting.'
-          : mt === 'set' ? 'The work opens once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
+          : mt === 'set' ? 'The work will open once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
           : 'The checklists are done and the meeting is held.';
         return n;
       }
@@ -5061,7 +5061,7 @@
     }
     if (tg === 'done' && !t.delivered_at && target !== 'completed') {
       n.title = 'Complete the task';
-      n.line = 'No delivery recorded. A reason is required.';
+      n.line = 'No delivery is recorded. Enter a reason.';
       if (work) n.go = { label: 'Complete task', run: function () { askComplete(target); } };
       return n;
     }
@@ -6002,7 +6002,7 @@
     var goes = [
       state.detail.events.length + (state.detail.events.length === 1 ? ' event' : ' events'),
       state.detail.sessions.length ? state.detail.sessions.length +
-        (state.detail.sessions.length === 1 ? ' time session' : ' time sessions') : '',
+        (state.detail.sessions.length === 1 ? ' time entry' : ' time entries') : '',
       state.detail.links.length ? state.detail.links.length +
         (state.detail.links.length === 1 ? ' link' : ' links') : '',
       state.detail.checklist.length ? state.detail.checklist.length + ' checklist items' : ''
@@ -6521,11 +6521,11 @@
     if (scope === 'internal') {
       var blank = pieces.map(function (p, i) { return p.content_desc ? -1 : i; }).filter(function (i) { return i > -1; })[0];
       if (blank != null) {
-        msg('ntMsg', 'A description is required.', 'err'); rows[blank].querySelector('.piece-desc textarea').focus(); return;
+        msg('ntMsg', 'Enter a description.', 'err'); rows[blank].querySelector('.piece-desc textarea').focus(); return;
       }
     }
     if (scope !== 'internal' && !$('ntClient').value) {
-      msg('ntMsg', scope === 'lead' ? 'A lead is required.' : 'A client is required.', 'err');
+      msg('ntMsg', scope === 'lead' ? 'Choose a lead.' : 'Choose a client.', 'err');
       $('ntClient').focus(); return;
     }
     if (scope === 'client' && !ntEng()) {
@@ -6559,7 +6559,7 @@
         return false;
       });
       if (!bad && rv.draft && rv.due && rv.draft >= rv.due) { bad = 'draft'; said2 = said('draft-not-before-final'); }
-      if (!bad && rv.post && rv.due && rv.post < rv.due) { bad = 'post'; said2 = 'The post date must be on or after the due date.'; }
+      if (!bad && rv.post && rv.due && rv.post < rv.due) { bad = 'post'; said2 = 'Choose a post date on or after the due date.'; }
       if (bad) { msg('ntMsg', said2, 'err'); rows[ri].querySelector('.piece-' + bad + ' input').focus(); return; }
     }
     var left = ntLeft();
@@ -7649,7 +7649,7 @@
     else if (x.state === 'none') val = '<span class="chip-state is-warn">Not invoiced</span><small class="eng-inv-when">Checked ' + esc(niceDate(x.checked_at)) + '</small>';
     else val = (x.invoices || []).map(function (v) {
       return '<span class="eng-inv">' + (v.link ? '<a class="linkbtn eng-invno" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(v.number) + '</a>' : '<span class="eng-invno">' + esc(v.number) + '</span>') +
-        ' · ' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span>';
+        '<span class="eng-inv-sep"> · </span><span class="eng-inv-part">' + esc(invMoney(v.amount, v.currency)) + ' · <span class="chip-state ' + (v.paid ? 'is-ok' : 'is-warn') + '">' + (v.paid ? 'Paid' : 'Unpaid') + '</span></span></span>';
     }).join('');
     var act = I.linked && !I.failed ? '<span class="eng-meetacts"><button class="btn btn-quiet btn-sm" data-a="invcheck" type="button">' + (x ? 'Check again' : 'Check Bukku') + '</button></span>' : '';
     return '<div class="eng-row eng-invrow"><span class="eng-lab">Invoice</span><span class="eng-val">' + val + '</span>' + act + '</div>';
@@ -7660,7 +7660,7 @@
       : (cw.tasks || []).filter(function (t) { return t.engagement_id === e.id; }).length;
     window.ADspaceConfirm.ask({
       title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
-      body: (n ? (n === 1 ? 'Its task will stay and leave the month.' : 'Its ' + n + ' tasks will stay and leave the month.') + ' ' : '') +
+      body: (n ? (n === 1 ? 'Its task will be kept, outside any month.' : 'Its ' + n + ' tasks will be kept, outside any month.') + ' ' : '') +
         ((e.reports || []).length ? 'A report task nobody started will be cancelled. ' : '') +
         (!checksOf(e, cw.checks).length ? 'The meeting will be deleted with it.'
           : (cw.engs || []).some(function (x) { return x.id !== e.id; })

@@ -127,7 +127,7 @@
     'empty': 'Write at least one line first.',
     'too-long': 'Keep each line to 1,000 characters.',
     'own': 'You cannot decide on your own initiative. Please ask another manager.',
-    'bad-move': 'That step is not open from here.',
+    'bad-move': 'This step is not available for the review as it stands. Refresh the page.',
     'no-code': 'No master code is set. Please ask an admin to set one.',
     'code-needed': 'Locked. Enter the master code again.',
     'denied': 'You do not have permission to open performance reviews. Please ask an admin.',
@@ -161,7 +161,7 @@
     'admin-only': 'Only an admin can do this. Please ask an admin.',
     'shared': 'That month has been shared, so it can no longer be rated.',
     'not-reviewed': 'That month is not open to rate.',
-    'not-found': 'Not found.'
+    'not-found': 'This review no longer exists. Refresh the page.'
   };
   function said(d) {
     if (!d || !d.error) return '';
@@ -863,7 +863,7 @@
       } else if (r.status === 'released') {
         title = 'Shared';
         line = open ? name + ' may raise a query until ' + dUntil + '. With none raised, it becomes final then.'
-                    : 'Queries have closed. It becomes final within the hour.';
+                    : 'Queries have closed. It will become final within the hour.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'disputed') {
         var n = (r.disputes || []).filter(function (x) { return !x.decision; }).length;
@@ -871,7 +871,7 @@
         line = n + (n === 1 ? ' item is' : ' items are') + ' waiting for your answer below.';
       } else if (r.status === 'resolved') {
         title = 'Query answered';
-        line = open ? 'Answered. It becomes final when queries close on ' + dUntil + '.' : 'Answered. It becomes final within the hour.';
+        line = open ? 'Answered. It will become final when queries close on ' + dUntil + '.' : 'Answered. It will become final within the hour.';
         if (canWork()) acts = '<button class="btn btn-sm btn-primary" id="pvFinal" type="button"' + (open ? ' disabled' : '') + '>Finalise</button>';
       } else if (r.status === 'acknowledged') {
         title = 'Acknowledged';
@@ -920,7 +920,7 @@
 
   function resultCard(r, res) {
     if (!res.complete) {
-      return card('Result', '<p class="perf-quiet">Scored ' + num(res.base) + ' of 100 so far. The grade is worked out once all six categories are scored.</p>');
+      return card('Result', '<p class="perf-quiet">Scored ' + num(res.base) + ' of 100 so far. The grade will be worked out once all six categories are scored.</p>');
     }
     var lines = [];
     if (res.capped) lines.push('Grade capped at ' + res.capped + ' by a Level ' + (res.capped === 'D' ? '4' : '3') + ' issue.');
@@ -936,8 +936,8 @@
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
         '<div><dt>Issues</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at ' + esc(num(Math.abs(res.cap != null ? res.cap : res.deduction))) + ' from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
-        '<div><dt>What it asks</dt><dd>' + esc(ACTION[res.grade] || '') + '</dd></div>' +
-        (path ? '<div><dt>If it repeats</dt><dd>' + esc(path[0]) + '<small>' + esc(path[1]) + '</small></dd></div>' : '') +
+        '<div><dt>Next step</dt><dd>' + esc(ACTION[res.grade] || '') + '</dd></div>' +
+        (path ? '<div><dt>If repeated</dt><dd>' + esc(path[0]) + '<small>' + esc(path[1]) + '</small></dd></div>' : '') +
       '</dl>' +
       (lines.length ? '<p class="perf-note">' + esc(lines.join(' ')) + '</p>' : '') +
       '');
@@ -1085,7 +1085,7 @@
           var F = window.ADspaceForm, A = window.ADspaceAdmin;
           return '<option value="' + esc(c.id) + '">' + esc((F && F.named ? F.named(c.client_code, c.name) : c.name) + (A && A.vic && A.vic(c.id) ? ' · VIC' : '')) + '</option>';
         }).join('') + '</select>' +
-      '<label class="field-label" for="pvBWhat">What happened</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
+      '<label class="field-label" for="pvBWhat">Description</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
       '<label class="field-label" for="pvBEv">Reference</label><textarea class="input" id="pvBEv" rows="1" data-oneline maxlength="500" placeholder="Optional"></textarea>' +
       '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Reported late' + less('late') + '</span></label>' +
       '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Add issue</button>' +
@@ -1331,7 +1331,7 @@
     on('pvAck', function (b) {
       busy(b, true);
       call('perf_acknowledge', { p_review: r.id }, function (d) {
-        if (d.error === 'code-needed') { busy(b, false); msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
+        if (d.error === 'code-needed') { busy(b, false); msg('pvMsg', 'Your email code has expired. Close this and request a new code.', 'err'); return; }
         if (d.error) { busy(b, false); msg('pvMsg', said(d), 'err'); return; }
         st.rec = d; st.editing = null; paintSheet(); msg('pvMsg', 'Acknowledged.', 'ok'); paintMineRow(d);
       });
@@ -1437,7 +1437,7 @@
         if (!items.length) { msg('pvMsg', said({ error: 'nothing-disputed' }), 'err'); return; }
         if (missing) { msg('pvMsg', 'Enter a reason for each item ticked.', 'err'); missing.focus(); return; }
         call('perf_dispute', { p_review: r.id, p_items: items }, function (d) {
-          if (d.error === 'code-needed') { msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
+          if (d.error === 'code-needed') { msg('pvMsg', 'Your email code has expired. Close this and request a new code.', 'err'); return; }
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
           st.rec = d; st.editing = null; paintSheet(); msg('pvMsg', 'Sent. You will be told when it is answered.', 'ok'); paintMineRow(d);
         });
@@ -1732,7 +1732,7 @@
         if (--left) return;
         btn.disabled = false;
         recs = recs.filter(Boolean);
-        if (!recs.length) { if (D && D.shut) D.shut(tab); msg('perfMsg', 'The records could not be read.', 'err'); return; }
+        if (!recs.length) { if (D && D.shut) D.shut(tab); msg('perfMsg', 'The records could not be loaded. Please try again.', 'err'); return; }
         draw(recs, 'Performance-' + st.period.slice(0, 7) + '.pdf', null, function (ok) {
           msg('perfMsg', ok ? recs.length + (recs.length === 1 ? ' record' : ' records') + ' downloaded.' : 'The file could not be generated.', ok ? 'ok' : 'err');
         }, tab);
@@ -2684,7 +2684,7 @@
       ['ded_l3', 'Level 3', 'points', 'Points off, level 3'], ['ded_l4', 'Level 4', 'points', 'Points off, level 4']], 'fgrid', 'months'],
     ['Extra points off, and the limit', [['ded_repeat', 'Repeated in the quarter', 'points', 'Extra points off, repeated'],
       ['ded_late', 'Reported late', 'points', 'Extra points off, reported late'],
-      ['ded_cap', 'Most taken off a month', 'points', 'Most points off a month']], 'fgrid-3', 'months'],
+      ['ded_cap', 'Most taken off per month', 'points', 'Most points off per month']], 'fgrid-3', 'months'],
     /* An issue on a VIC client's work (2026-10-15): its points times this. */
     ['VIC clients', [['ded_vic', 'Multiplier for an issue on a VIC client\'s work', 'times', 'VIC client multiplier']], '', 'months'],
     ['Queries', [['dispute_days', 'Days to raise a query after the month is shared', 'days', 'Days to raise a query']], '', 'months'],
@@ -2833,7 +2833,7 @@
     if (bad) {
       var f = RW_LABEL[bad.getAttribute('data-key')];
       showSetView(RW_VIEW_OF[f[0]]);
-      msg('rwSMsg', setName(f[0]) + ': ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
+      msg('rwSMsg', setName(f[0]) + ': enter ' + ({ money: 'an amount in RM, to the cent.', score: 'a score from 0 to 100.',
         pct: 'a percentage from 0 to 100.', count: 'a whole number from 0 to 6.', units: 'a number from 0 to 10.',
         points: 'points from 0 to 100.', days: 'a whole number of days from 1 to 30.',
         remind: 'a whole number of days from 0 to 14.' }[f[2]]), 'err');
@@ -2845,7 +2845,7 @@
       b.disabled = false;
       if (d.error) {
         msg('rwSMsg', d.error === 'confirmed' ? 'A quarter from ' + qWord(rwSet.from) + ' on is already confirmed. Reopen it, or choose a later quarter.'
-          : d.error === 'bad-value' && RW_LABEL[d.key] ? setName(d.key) + ' is out of range.'
+          : d.error === 'bad-value' && RW_LABEL[d.key] ? setName(d.key) + ' is out of range. Enter a value within its range.'
           : d.error === 'bad-order' ? 'Set each grade above the next: A above B, B above C, C above D, and D above 0.' : rwSaid(d), 'err');
         return;
       }
@@ -3553,15 +3553,15 @@
         st.pinits = (st.pinits || []).map(function (x) { return x.id === i.id ? d.initiative : x; });
         if (window.ADspaceGroup && window.ADspaceGroup.keep) window.ADspaceGroup.keep('team-inits', to);
         paintInits();
-        msg('piMsg', to === 'proposed' ? 'Back to Proposed.' : (INIT_STATE[to][0] + '.'), 'ok');
+        msg('piMsg', to === 'proposed' ? 'Reverted to Proposed.' : (INIT_STATE[to][0] + '.'), 'ok');
         st.ctxKey = null;
       });
     };
     if (to !== 'adopted' && to !== 'not_now') { go(null); return; }
     if (opener && opener.focus) opener.focus();
     window.ADspaceConfirm.ask({
-      title: (to === 'adopted' ? 'Adopt ' : 'Put on hold: ') + i.title,
-      body: i.name + ' is told.',
+      title: (to === 'adopted' ? 'Adopt ' : 'Not now: ') + i.title,
+      body: i.name + ' will be told.',
       go: to === 'adopted' ? 'Adopt' : 'Not now',
       fields: [{ name: 'note', label: 'Note', required: false }]
     }, function (v) { go(v && v.note); });

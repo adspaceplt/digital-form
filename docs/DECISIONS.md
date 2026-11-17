@@ -10847,6 +10847,109 @@ edge). `pwapdf` read `hiring.js`'s two blank windows (a CV, a signed document) a
 drawn in the browser. Both are signed links from the private hiring bucket on Supabase
 Storage's origin, so it joins `OTHER_ORIGIN`. The same check found `personnel.js`, whose
 `blob:` images are a different case; it is logged under Logged defects.
+### 2026-11-17 · The day's gate: quotation rows held to their columns, two suites brought up to date
+The full gate on main (c6b17ab4, tests ade9d22) failed nine suites.
+Three are fixed here. First, a quotation row with an Invoices button
+(#1176) drew its buttons' line over every track, and its auto track grew
+with that line. That pulled the figure and the state 12px off their
+column. The track is now held at nought on a row with buttons. uxaudit's
+column check now compares a cell set at its track's end by its right
+edge, since a line of buttons set at the right is a column by that edge.
+Second, `crm` still asked the term bands before #1171 (3 months at 25%).
+It now asks the bands the user set the same day (3 months at 15%).
+Third, uxaudit's walk opened the second Team row, which a shut card hid,
+and crashed. It now opens Qiao Rou by her name. The rest went to the
+sessions that own them: Hiring (matrix's strip and overflow at 320,
+pwapdf's hiring.js) and Personnel (menus, growth, settings, pwapdf's
+personnel.js). perfui's margin stays logged.
+
+### 2026-11-17 · Settings: Portal switches
+The portal's switches for AI, email and WhatsApp (group switches release,
+#1180) had no control on a screen. They are now three switches under a
+part of their own in Settings' Portal group, Portal switches, saved at the
+press through `portal_switch_set` with Undo under the row. A fourth row,
+User groups, takes an admin to Team's Groups tab, where each group's own
+switches are. The user asked for them at the head of Company. Company
+already held six rows, and a card holds five at most, so they stand under
+their own heading directly above it. The copy review renamed Team access
+to User groups, the name Team already uses.
+### 2026-11-17 · Tone check of the console, n to z, release 1: Team, Performance, Documents
+
+The user asked for the whole repository to be held to DESIGN.md §6 (tone
+check part 3 of 3: the console's scripts from n to z and the database's
+words). Nine reviewers who did not write the words read about 4,800 console
+strings and 1,682 database strings against §6 alone. This first release
+fixes Team, Performance and the Register: New group now commits with Create;
+refusals say what to do next (Set Access until to today or a later date
+first.; Only another admin can change your own access date.); recurring
+became repeating, as the rest of My Work says it; HR Letters, Client Letters
+and Supplier Letters take title case as formal names wherever the Register
+and Team name them; Performance labels became nouns (Description, Next step,
+If repeated), a step waited on is said in the future (It will become final
+within the hour.), Put on hold became Not now as the state reads, and the
+settings sheet's refusal reads as an instruction (enter a number from 0 to
+10). `scope`, `docs` and `perfui` read the new words. The Activity record's
+section list (`js/admin.js`, outside this part) still reads HR letters.
+
+## 2026-11-17 · The old access parts cleared: the access restructure, release 3
+Step 6 of plan version 4. Release 1 had stopped reading the five WhatsApp
+parts and the stored levels of creator payments and supplier bank details;
+live, nine colleagues and two groups still held `campaigns.pay` or
+`suppliers.pay` at Work, read by nothing. They are taken off
+(`2026-11-17-access-cleanup.sql`), so a map reads what it grants. The
+granted parts were typed five times (the migration's seed, `allowed()`,
+`js/team.js`, `js/admin.js`, the stand-in): `allowed()` now reads
+`access_keys`, and the Team panel reads the console's list, leaving three
+held equal by `tests/access.js`. The 95 rules in `css/portal.css` that hid a
+control by a body class (`no-work-clients-billing`) are one rule the console
+writes from `may()` over every key and level (`#accessHide`); a control
+naming a key nobody defined is still drawn, as the old list's comment
+wanted. Four levels the old list never named (creator payments at Work, Mark
+VIC, Video Scripts at Work, Performance at Full control) now step away
+where the database would refuse them. The three Hiring emails ask Send email; the
+interview's had asked the portal's switch alone.
+### 2026-11-17 · Tone check, part 1: what clients, prospects and creators read
+The user asked for the whole repo to be held to DESIGN.md §6. Seven fresh
+readers, each given §6 alone, read about 2,900 strings on the client pages,
+/quote/, the details and supplier forms, the emails and the client PDFs.
+The seeded email templates and most pages held. Fixed: a step the reader
+waits on said in the present (/quote/'s "is reviewing your quotation", the
+creator's "under review") now says what ADspace will do; "Our team" became
+ADspace; Malay became Bahasa Melayu (its chips now stand one over another
+under 560px, the name being longer than a third of a phone); the
+representative is greeted by their whole name in the WhatsApp message;
+"Sign and accept" became "Accept and sign", as the step that opens it;
+"Open the draft" became "Open draft"; the selection page's line repeating
+its sheet's title went; "No media uploaded" became "No file."; a portal
+meeting outside a month reads "Content discussion"; the client portal's
+campaign rows no longer repeat their tab's name; the PDF refusal a client
+can meet reads with Please; the signing code's email says "to sign the
+quotation". Rejected: the creator page's "1 GB" (tests/words.js keeps a
+Latin unit's space). The rejected wordings joined tests/words.js RETIRED.
+
+### 2026-11-17 · A month's card on a phone: label 104px, acts under the value
+The user's phone screenshot of a month showed four faults:
+- "RM" stood on one line and "1,188.00" on the next;
+- the invoice number was set in by its link's own padding;
+- Check again and Set meeting squeezed every value to about 70px;
+- the label column stayed 120px, where DESIGN.md says 104 on a narrow pane.
+On a narrow pane a row's label now takes 104px and its act takes the line
+under the value, on the value's edge. An invoice's number takes its own
+line, with the amount and its state held together under it. The number
+link has no inset. `contentloop` measures all of it at 390.
+### 2026-11-17 · Tone check of the console, n to z, release 2: My Work
+
+My Work's refusals now say what to enter or do (Enter a reason., Choose a
+client., Tasks in this month are still open. Complete or cancel them first.,
+AQC review comes before client review. Move the task to AQC review first.),
+a rule refused reads as an instruction (Choose a Draft due before the due
+date., Choose a start day from the 1st to the 28th.), the month's Reports
+refusal names its four answers, a step waited on is future (The work will
+open once the content meeting … is held.), a deleted month's tasks "will be
+kept, outside any month", and a Retainer post and a time entry use My Work's
+own words. `work` and `ops` read the new words. 'System' and 'Somebody' as
+who did something stay: they are shared with other sections' scripts.
+
 
 ### 2026-11-17 · Hiring step E1: Make colleague, the Welcome Kit and onboarding
 The user approved the step E mockups ("Pproved") and E was split into E1 (Make colleague,
@@ -10860,4 +10963,3 @@ refused. Found while testing: `ADspaceClock.weekday` answers a number, so the ki
 day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages without
 signing in again and seeded the database before a reload that reseeds it; both fixed in
 the suite.
-
