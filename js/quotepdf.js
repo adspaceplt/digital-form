@@ -66,7 +66,7 @@
   function draw(q, opts) {
     var docs = D();
     opts = opts || {};
-    if (!docs) return Promise.reject(new Error('The PDF tools are not loaded.'));
+    if (!docs) return Promise.reject(new Error('The PDF tools could not be loaded. Please refresh the page.'));
     var to = opts.to || {};
     var cjk = /[　-鿿＀-￯]/.test(String(q.brand || '') + String(opts.attention || '') + String(to.name || '') + String(to.address || ''));
     /* The sealed copy (SIGNED DOCUMENT SEAL, 2026-11-17): opts.seal holds

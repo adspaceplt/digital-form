@@ -9601,6 +9601,8 @@ input[type=radio]:checked ~ .qs-mark::after { transform: scale(1); }
 .qs-chips { display: grid; gap: 8px; }
 .qs-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .qs-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Three choices across hold their words on one line or stand one over another: Bahasa Melayu takes more than a third of a phone (2026-11-17). */
+@media (max-width: 560px) { .qs-three { grid-template-columns: minmax(0, 1fr); } }
 /* A choice of one line (a chip, or a card with no line under its name) is a control: the token's height. */
 .qs-chip, .qs-pick:not(:has(small)) { align-items: center; min-height: var(--ctl-h); padding: 0 12px 0 14px; border-radius: var(--radius-sm); }
 .qs-stepper > span:first-child small { display: block; font-size: 13px; color: var(--ink-mute); }

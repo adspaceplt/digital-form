@@ -10862,3 +10862,22 @@ and crashed. It now opens Qiao Rou by her name. The rest went to the
 sessions that own them: Hiring (matrix's strip and overflow at 320,
 pwapdf's hiring.js) and Personnel (menus, growth, settings, pwapdf's
 personnel.js). perfui's margin stays logged.
+
+### 2026-11-17 · Tone check, part 1: what clients, prospects and creators read
+The user asked for the whole repo to be held to DESIGN.md §6. Seven fresh
+readers, each given §6 alone, read about 2,900 strings on the client pages,
+/quote/, the details and supplier forms, the emails and the client PDFs.
+The seeded email templates and most pages held. Fixed: a step the reader
+waits on said in the present (/quote/'s "is reviewing your quotation", the
+creator's "under review") now says what ADspace will do; "Our team" became
+ADspace; Malay became Bahasa Melayu (its chips now stand one over another
+under 560px, the name being longer than a third of a phone); the
+representative is greeted by their whole name in the WhatsApp message;
+"Sign and accept" became "Accept and sign", as the step that opens it;
+"Open the draft" became "Open draft"; the selection page's line repeating
+its sheet's title went; "No media uploaded" became "No file."; a portal
+meeting outside a month reads "Content discussion"; the client portal's
+campaign rows no longer repeat their tab's name; the PDF refusal a client
+can meet reads with Please; the signing code's email says "to sign the
+quotation". Rejected: the creator page's "1 GB" (tests/words.js keeps a
+Latin unit's space). The rejected wordings joined tests/words.js RETIRED.

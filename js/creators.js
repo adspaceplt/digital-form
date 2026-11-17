@@ -97,7 +97,7 @@
       full: 'All creators selected',
       confirm: 'Confirm selection',
       confirmHeading: 'Confirm your selection',
-      confirmBlurb: 'Your selection will be confirmed under the name entered below.',
+      confirmBlurb: '',
       nameLabel: 'Your name',
       /* Just Name. Asking a client for their full name every time they
          approve something reads as an identity check rather than a signature.
@@ -151,12 +151,12 @@
          platform's name alone was "too not obvious"). */
       viewPostOn: function (platform) { return 'View post on ' + platform; },
       captionLabel: 'Caption',
-      openDraft: 'Open the draft',
+      openDraft: 'Open draft',
       noteLabel: 'Changes required',
       approve: 'Approve',
       askChanges: 'Request changes',
       sendRequest: 'Send request',
-      theClient: 'the client',
+      theClient: 'you',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
       proceededBy: function (who, when) { return 'Confirmed by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
@@ -214,7 +214,7 @@
       full: '名额已满',
       confirm: '确认选择',
       confirmHeading: '确认您的选择',
-      confirmBlurb: '此选择将以您在下方填写的姓名确认。',
+      confirmBlurb: '',
       nameLabel: '您的姓名',
       namePlaceholder: '陈小明',
       send: '确认',
@@ -260,7 +260,7 @@
       approve: '通过',
       askChanges: '要求修改',
       sendRequest: '提交修改要求',
-      theClient: '客户',
+      theClient: '您',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
       proceededBy: function (who, when) { return '已由' + who + '确认' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
@@ -1403,6 +1403,7 @@
   $('confirmBtn').addEventListener('click', function () {
     $('confirmHeading').textContent = t().confirmHeading;
     $('confirmBlurb').textContent = t().confirmBlurb;
+    $('confirmBlurb').hidden = !t().confirmBlurb;
     $('confirmNameLabel').textContent = t().nameLabel;
     $('confirmName').placeholder = t().namePlaceholder;
     $('confirmGo').textContent = t().send;
