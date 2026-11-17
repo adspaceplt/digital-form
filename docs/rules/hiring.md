@@ -170,3 +170,12 @@ Rules for this area, moved from CLAUDE.md §2 on 2026-11-17 and read before the 
   refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for
   salary covers every candidate field).
+- Hiring records held (`2026-11-17-hiring-records-held.sql`; the review
+  since #1134): an Interviewer reads a candidate's CV alone in Storage
+  (`hiring_file_ok`), never a sealed contract, scan or stamp; a hired
+  candidate, or one holding a signed or confirmed document, is never
+  deleted (`hiring_delete` `has-contract`); any outcome but Proceed, Reopen
+  included, withdraws the documents still `sent`; a deleted document's
+  reference is kept (`hiring_serials_kept`) and never given again; Make
+  colleague asks Team at Full Access as Add member does (`team-access`,
+  `hiring_hire_state` `may`).

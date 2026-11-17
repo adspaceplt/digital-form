@@ -11243,6 +11243,9 @@ bell's notices are not in Messages; Supabase's sign-in codes are sent by
 Supabase and cannot be logged by the portal. Every hi.adspace.me address the
 host answers is already listed in Short Links.
 
+### 2026-11-17 · Hiring records held
+The review of the 86 releases since #1134 found five faults in Hiring. The Storage policy let an Interviewer download every file in a candidate's folder, the sealed contract with its salary and NRIC among them, though the database's reads kept them behind the master code. A hired candidate could be removed and deleted, taking the signed contract with it. Not proceed or Pool left an offer sent, which the candidate could still sign. An offer's reference was the highest held plus one, so a deleted one was given again and /verify/ read the old one Valid. Make colleague made a sign-in without the Team Full Access Add member asks. All five closed in one migration, each checked in `tests/hiringsql.js`. The review also found the session's work lost to a worker restart before it was pushed: a release is pushed as soon as it is committed.
+
 
 ### 2026-11-17 · The verification loop
 The user, after reading how the Claude Code team verifies its work: "Ok

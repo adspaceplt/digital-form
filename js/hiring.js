@@ -38,6 +38,7 @@
     'bad-source': 'Choose a source.', 'bad-cv': 'Enter a web address that starts with https://.', 'too-long': 'Shorten the note to 2,000 characters.',
     'stale': 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'bad-role': 'Choose Owner or Interviewer.', 'bad-colleague': 'Choose an active colleague.', 'not-removed': 'Remove the candidate first.',
+    'has-contract': 'This candidate holds a signed offer or contract and cannot be deleted. The candidate stays removed.',
     'bad-request': 'Please refresh the page and try again.',
     'bad-slots': 'Enter one to three times.', 'slot-past': 'Choose a time at least an hour from now.',
     'slot-far': 'Choose times within the next 60 days.', 'bad-minutes': 'Choose the length.', 'bad-mode': 'Choose Google Meet or At the office.',
@@ -646,6 +647,7 @@
     'bad-email': 'Enter a valid email address.', 'bad-role': 'Choose a user group.', 'bad-staff': 'Enter an Employee ID of 3 to 8 letters or digits.',
     'bad-department': 'Choose a department.', 'bad-position': 'Enter a position of 2 to 80 characters.', 'bad-day': 'Choose the first day.',
     'bad-dm': 'Choose a direct manager.', 'not-ready': 'Confirm the offer and the contract first.',
+    'team-access': 'You do not have permission to add a colleague. Please ask an admin.', 'refused': 'The colleague could not be added. Please ask an admin.',
     taken: { email: 'This email address is used by another colleague. Enter another email address.', staff_code: 'This Employee ID is used by another colleague. Enter another Employee ID.',
       name: 'A colleague already has this name. Change the candidate\'s name on Edit first.' }
   };
