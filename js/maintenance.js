@@ -178,11 +178,15 @@
      line Supabase logs and meters). `often(key, take, alone, opts)`: `take`
      is handed the part's answer; `alone` asks by itself, which every part
      does while the database holds no `page_pulse`. `opts.audience` names
-     the announcements a page shows, `opts.bell` asks for the bell. A read
-     that fails changes nothing. */
+     the announcements a page shows, `opts.bell` asks for the bell,
+     `opts.each` runs every minute beside the request. A read that fails
+     changes nothing. */
   var parts = [], pulse = { audience: null, bell: false }, alone = false, ticking = false;
   function tick() {
     if (document.visibilityState !== 'visible' || !parts.length) return;
+    /* A part's own work of the minute that asks no database (the console's
+       /version.json, 2026-11-17), run whatever the request answers. */
+    parts.forEach(function (p) { if (p.each) { try { p.each(); } catch (e) {} } });
     var each = function () { parts.forEach(function (p) { p.alone(); }); };
     if (alone || !(API && API.client && API.client.rpc)) { each(); return; }
     Promise.resolve(API.client.rpc('page_pulse', { p_audience: pulse.audience, p_bell: pulse.bell })).then(function (r) {
@@ -201,7 +205,7 @@
     }).catch(function () {});
   }
   function often(key, take, ask1, opts) {
-    parts.push({ key: key, take: take || function () {}, alone: ask1 || function () {} });
+    parts.push({ key: key, take: take || function () {}, alone: ask1 || function () {}, each: opts && opts.each });
     if (opts && opts.audience) pulse.audience = opts.audience;
     if (opts && opts.bell) pulse.bell = true;
     if (ticking) return;

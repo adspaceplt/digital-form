@@ -397,7 +397,7 @@
   window.ADspaceAPI = {
     readPages,
     steadyFetch,
-    loading: { begin: loadBegin, end: loadEnd, get slowAfter() { return LOADING().slowAfter; } },
+    loading: { begin: loadBegin, end: loadEnd, get slowAfter() { return LOADING().slowAfter; }, get busy() { return busyN; } },
     accessToken,
     fnRefusal,
     uploadAccept,

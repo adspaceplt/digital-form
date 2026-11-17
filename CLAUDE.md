@@ -287,7 +287,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `agent.js`, `supabase/functions/portal-agent/`, the PORTAL ASSISTANT and ASSISTANT ACTIONS AND SCHEDULES sections | agent, search, caption, whatsapp, meetmsgsql, sql, smsql, demo, then `ui` |
-| `maintenance.js` | upgrade, sql, then `ui` |
+| `maintenance.js`, the build check (`#buildBar`, `build_require`) | upgrade, buildsync, appver, sql, then `ui` |
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
@@ -760,6 +760,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   - it never touches localStorage, IndexedDB or the sign-in;
   - notifications survive it: the next load subscribes again without asking
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
+- The latest build (`2026-11-17-latest-build.sql`; the user, 2026-11-17:
+  "ok build it", everyone on the same merged build): each minute the
+  console's check runs (`often`'s `each`) it reads `/version.json` from
+  Pages (no metered line); a build newer than the page's draws `#buildBar`
+  (laid as `.upgradebar`: A new version is available., Refresh), and five
+  minutes on the console refreshes by itself once idle. Settings, Portal:
+  Require latest version (`team.upgrade`) stores the live build
+  (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`,
+  filed `team.changed` under Portal from and to, Undo putting the one before
+  back); `page_pulse` answers it to the console as `build`, and a console
+  below it refreshes within the minute once idle, its bar reading Refresh
+  now. Idle: nothing open over the page (a sheet, question, menu, popover,
+  finder, guide, bulk bar), no field holding the caret, no request out
+  (`ADspaceAPI.loading.busy`), and no page's own `beforeunload` guard
+  objecting (asked with a probe event). A refresh is Refresh app's, at most
+  once in three minutes a tab; raw, nothing happens; client pages are
+  untouched (`tests/buildsync.js`).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
 - Page availability (`js/maintenance.js`, `2026-10-29-page-availability.sql`;
@@ -799,7 +816,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     announcements and the bell, each as its own function answers it; a part
     joins with `often(key, take, alone, opts)`, and on a database without the
     function every part asks alone (every request is a line Supabase logs and
-    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze).
+    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze); to the console it
+    also answers the build required (`build`).
   - The console's row covers it for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Console: Upgrade in progress until …, Turn off ending the
