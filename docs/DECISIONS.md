@@ -10890,3 +10890,16 @@ within the hour.), Put on hold became Not now as the state reads, and the
 settings sheet's refusal reads as an instruction (enter a number from 0 to
 10). `scope`, `docs` and `perfui` read the new words. The Activity record's
 section list (`js/admin.js`, outside this part) still reads HR letters.
+
+### 2026-11-17 · Tone check of the console, n to z, release 2: My Work
+
+My Work's refusals now say what to enter or do (Enter a reason., Choose a
+client., Tasks in this month are still open. Complete or cancel them first.,
+AQC review comes before client review. Move the task to AQC review first.),
+a rule refused reads as an instruction (Choose a Draft due before the due
+date., Choose a start day from the 1st to the 28th.), the month's Reports
+refusal names its four answers, a step waited on is future (The work will
+open once the content meeting … is held.), a deleted month's tasks "will be
+kept, outside any month", and a Retainer post and a time entry use My Work's
+own words. `work` and `ops` read the new words. 'System' and 'Somebody' as
+who did something stay: they are shared with other sections' scripts.
