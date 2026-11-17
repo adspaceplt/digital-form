@@ -726,7 +726,7 @@
     var C = window.ADspaceClock;
     var line = waiting
       ? 'An admin has been asked to approve access until ' + C.date(req.until) + '.'
-      : 'Outside Malaysia and Singapore, the console opens once an admin approves it, for up to ' + st.days + ' days.';
+      : 'Outside Malaysia and Singapore, the console will open once an admin approves access, for up to ' + st.days + ' days.';
     panel.querySelector('p').textContent = line;
     var past = $('abroadPast');
     var said = req && req.status === 'declined' ? 'Declined on ' + C.date(req.decided_at) + (req.note ? ': ' + req.note : '.')
@@ -2639,7 +2639,7 @@
   function setsLine(id) {
     var s = state.reviewSets;
     if (!s) return '<span class="muted">Loading…</span>';
-    if (s === 'error') return '<span class="is-warn">Could not load the sets.</span>';
+    if (s === 'error') return '<span class="is-warn">Could not load the sets. Refresh the page.</span>';
     var k = s[id];
     if (!k) return '<span class="muted">No sets</span>';
     return '<span>' + esc(k.n + ' set' + (k.n === 1 ? '' : 's') + ' · ' + k.live + ' published') + '</span>' + changesChip(k.changes);
@@ -3839,7 +3839,7 @@
             setOrder(sets.filter(function (b) { return byId[b.id]; })).forEach(function (b) { t.appendChild(byId[b.id]); });
           });
         }).catch(function () {
-          sets.forEach(function (b) { subs[b.id] = 'Could not load the posts.'; });
+          sets.forEach(function (b) { subs[b.id] = 'Could not load the posts. Refresh the page.'; });
           paintSubs(true);
         });
         function paintSubs(failed) {
@@ -5368,8 +5368,8 @@
         renderDrafts();
         renderDriveFiles();
         if (!toobig.length) {
-          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' ready' +
-            (reused ? ', ' + reused + ' already uploaded' : '') +
+          msg('driveMsg', done + (done === 1 ? ' file is' : ' files are') + ' ready' +
+            (reused ? ', ' + reused + ' of them already uploaded' : '') +
             '. Add the caption below, then select Add to set.', 'ok');
         }
       })
@@ -6552,7 +6552,7 @@
     if (!n) return;
     window.ADspaceConfirm.ask({
       title: 'Delete ' + postsWord(n),
-      body: (n === 1 ? 'It is removed from the client\'s review page, with its approval record.' : 'They are removed from the client\'s review page, with their approval records.') + ' This cannot be undone.',
+      body: (n === 1 ? 'It will be removed from the client\'s review page, with its approval record.' : 'They will be removed from the client\'s review page, with their approval records.') + ' This cannot be undone.',
       go: 'Delete', tone: 'danger',
       fields: [{ name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' }]
     }, function () {
@@ -7037,7 +7037,7 @@
         shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',
-          body: postName(p) + ' is removed from the client\'s review page, with its approval record. '
+          body: postName(p) + ' will be removed from the client\'s review page, with its approval record. '
               + 'This cannot be undone.',
           go: 'Delete',
           tone: 'danger'
