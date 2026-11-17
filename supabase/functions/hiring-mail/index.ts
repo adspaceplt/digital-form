@@ -61,19 +61,19 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
           : 'ADspace is pleased to send you an ' + title + ' for the position of ' + m.position + ', reference ' + m.ref + '.') + '\n\n' +
         'Please read it on your application page and ' + (m.doc === 'contract' ? 'sign it' : 'reply') + ' by ' + m.reply_by + '. ' +
         'For your privacy, the page will ask for a code sent to this email address before it shows the document.\n\n{invoices}\n\n' + 'Yours sincerely,\n' + m.sender + '\nADspace',
-      block: button(m.doc === 'contract' ? 'Read and sign' : 'Read your offer', PAGE + m.key)
+      block: button(m.doc === 'contract' ? 'Read contract' : 'Read offer', PAGE + m.key)
     };
   }
-  const where = m.mode === 'online' ? 'by Google Meet' : 'at our office';
+  const where = m.mode === 'online' ? 'by Google Meet' : 'at the ADspace office';
   const close = 'Yours sincerely,\n' + m.sender + '\nADspace';
   if (m.kind === 'pool') {
     return {
       subject: 'Your application: ' + m.position,
       heading: 'Your application',
       body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given us. ' +
+        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given ADspace. ' +
         'There is no suitable opening for you at this time. ADspace would like to keep your application for ' + m.months +
-        ' months, so that we may contact you about future positions.\n\n' +
+        ' months and may contact you about future positions.\n\n' +
         'Please indicate on your application page whether you agree. If you do not agree, your details will be deleted.\n\n{invoices}\n\n' + close,
       block: button('Respond on your page', PAGE + m.key)
     };
@@ -83,9 +83,9 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
       subject: 'Your application: ' + m.position,
       heading: 'Your application',
       body: 'Dear ' + m.name + ',\n\n' +
-        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given us. ' +
+        'Thank you for your interest in the position of ' + m.position + ' and for the time you have given ADspace. ' +
         'After careful consideration, ADspace will not be proceeding with your application.\n\n' +
-        'We wish you every success in your search.\n\n' + close,
+        'ADspace wishes you every success in your search.\n\n' + close,
       block: ''
     };
   }
@@ -104,7 +104,7 @@ export function words(m: Record<string, any>): { subject: string; heading: strin
     };
   }
   const place = m.mode === 'online' ? 'The interview will be held by Google Meet:\n' + m.link
-    : 'The interview will be held at our office:\nADSPACE PLT\n' + OFFICE;
+    : 'The interview will be held at the ADspace office:\nADSPACE PLT\n' + OFFICE;
   return {
     subject: 'Interview confirmed: ' + m.position,
     heading: 'Interview confirmed',
