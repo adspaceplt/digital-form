@@ -11101,6 +11101,17 @@ colleague's Documents tab. Declined joins the verify page's state words. The
 sealed file stays in the private `hiring` bucket; HR Letters at View reads
 that one file and nothing else of the candidate's folder.
 
+### 2026-11-17 · A colleague in Bukku
+HR-SPEC decision 12 asked that a new colleague be pushed to Bukku as an
+employee contact, else a supplier marked Employee. Bukku's contacts take the
+type `employee` (bukku-sync already named it), so a colleague is their own
+kind, `member`, sent from the Onboarding pane at Personnel. Only the name,
+company email, mobile and home address go: never an NRIC, bank details or a
+salary. The link table's kind check can only be widened in the SQL Editor,
+so `bukku_may` asks `bukku_member_ready()` first and the band stays away
+until that part has run: nothing is ever made in Bukku that the portal cannot
+file.
+
 ### 2026-11-17 — A report's language follows the client, and 中文 drafts come back in Chinese
 Reported by the user: a client whose main contact prefers 中文 had a report
 open on English, and Write with AI under 中文 returned English. Two causes.
