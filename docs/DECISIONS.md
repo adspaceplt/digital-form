@@ -10847,3 +10847,17 @@ edge). `pwapdf` read `hiring.js`'s two blank windows (a CV, a signed document) a
 drawn in the browser. Both are signed links from the private hiring bucket on Supabase
 Storage's origin, so it joins `OTHER_ORIGIN`. The same check found `personnel.js`, whose
 `blob:` images are a different case; it is logged under Logged defects.
+
+### 2026-11-17 · Hiring step E1: Make colleague, the Welcome Kit and onboarding
+The user approved the step E mockups ("Pproved") and E was split into E1 (Make colleague,
+the Welcome Kit, the Onboarding tab) and E2 (/verify/, Documents, Bukku). Make colleague
+reads the terms from the confirmed contract so they are never typed twice, and writes the
+colleague, their Personnel start, their Welcome Kit and their onboarding in one function.
+The Welcome Kit stands ahead of the Handbook's files in the one gate a new colleague
+meets. The Wi-Fi password and door PIN are never kept: the page always reads Please check
+with your direct manager., and a section line naming a password or PIN with a value is
+refused. Found while testing: `ADspaceClock.weekday` answers a number, so the kit's first
+day read "2, 1 December 2026"; it now names the day. `hiringe` reloaded pages without
+signing in again and seeded the database before a reload that reseeds it; both fixed in
+the suite.
+

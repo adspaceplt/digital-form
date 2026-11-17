@@ -223,7 +223,15 @@
             if (state.open !== id) return;
             var xd = x.data || {};
             state.docs = x.error || xd.error ? null : (xd.rows || []);
-            paintRec();
+            /* Make colleague (step E1): whether both documents are confirmed,
+               or the colleague the candidate became. A read that fails
+               leaves the card out. */
+            return rpc('hiring_hire_state', { p_id: id }).then(function (h) {
+              if (state.open !== id) return;
+              var hd = h.data || {};
+              state.hire = h.error || hd.error ? null : hd;
+              paintRec();
+            });
           });
         });
       });
@@ -260,7 +268,7 @@
             '</div></div>' : '') + '</section>' : ''),
       interview: interviewPane(c, keeps && !removed && c.stage !== 'hired' && c.stage !== 'closed'),
       scores: scoresPane(c, keeps && !removed),
-      offer: keeps ? docsPane(c, !removed) : '',
+      offer: keeps ? hireCard() + docsPane(c, !removed) : '',
       people: '<section class="readgroup"><div class="readgroup-head"><h4 class="fsec-h">People</h4>' +
           (role === 'admin' && !removed ? '<button class="btn btn-sm" type="button" data-h="addperson">Add colleague</button>' : '') + '</div>' +
           (state.people.length ? '<div class="hir-people">' + state.people.map(personRow).join('') + '</div>' : '<p class="emptyline">No colleagues.</p>') + '</section>',
@@ -493,6 +501,100 @@
   };
   function docSaid(r) { var k = r && r.data && r.data.error; return DOC_SAID[k] || said(r); }
   function docOf(b) { var id = b.getAttribute('data-id'); return (state.docs || []).filter(function (d) { return d.id === id; })[0] || {}; }
+  /* Make colleague (step E1, the mockups approved 2026-11-17): once the
+     offer and the contract are both confirmed, the part makes the candidate
+     a colleague; then the card names the colleague and opens their record. */
+  function hireCard() {
+    var h = state.hire;
+    if (!h) return '';
+    if (h.made && h.member) {
+      var m = h.member;
+      return '<section class="readgroup hir-hire"><div class="readgroup-head"><h4 class="fsec-h">Colleague</h4>' +
+        '<button class="btn btn-sm" type="button" data-h="openmember">Open record' + CHEV.replace('<svg ', '<svg class="ovgo-chev" ') + '</button></div>' +
+        '<dl class="ovfacts">' + fact('Name', esc(m.name)) + fact('Employee ID', esc(m.staff_code || '')) + fact('Company email', esc(m.email || '')) +
+        fact('First day', esc(day(m.first_day))) + fact('Welcome Kit', esc(m.welcomed_at ? 'Acknowledged ' + day(m.welcomed_at) : 'Not acknowledged')) + '</dl></section>';
+    }
+    if (!h.ready || !h.may) return '';
+    return '<section class="readgroup hir-hire"><div class="readgroup-head"><h4 class="fsec-h">Make colleague</h4>' +
+      '<button class="btn btn-sm btn-primary" type="button" data-h="makecolleague">Make colleague</button></div>' +
+      '<p class="hir-hire-line">The offer and the contract are confirmed. ' + esc(state.rec.name) + ' becomes a colleague with a sign-in, a Welcome Kit and an onboarding checklist.</p></section>';
+  }
+  var HIRE_SAID = {
+    'bad-email': 'Enter a valid email address.', 'bad-role': 'Choose a user group.', 'bad-staff': 'Enter an Employee ID of 3 to 8 letters or digits.',
+    'bad-department': 'Choose a department.', 'bad-position': 'Enter a position of 2 to 80 characters.', 'bad-day': 'Choose the first day.',
+    'bad-dm': 'Choose a direct manager.', 'not-ready': 'The offer and the contract must both be confirmed first.',
+    taken: { email: 'A colleague already uses this email address.', staff_code: 'A colleague already holds this Employee ID.',
+      name: 'A colleague already has this name. Change the candidate\'s name on Edit first.' }
+  };
+  function makeColleague() {
+    Promise.all([team(), db.from('team_roles').select('slug, name, is_admin, position').order('position').then(function (r) { if (r.error) throw r.error; return r.data || []; })])
+      .then(function (x) { askColleague(x[0], x[1]); })
+      .catch(function () { msg('hirRecMsg', 'The colleagues could not be loaded. Please try again.', 'err'); });
+  }
+  function askColleague(list, groups) {
+    var c = state.rec, h = state.hire || {}, t = h.terms || {};
+    var A = window.ADspaceAdmin || {}, F = window.ADspaceForm;
+    /* An admin group is offered to an admin alone, as Add member does. */
+    var roles = groups.filter(function (r) { return !r.is_admin || (A.isAdmin && A.isAdmin()); }).map(function (r) { return [r.slug, r.name]; });
+    var depts = (A.depts ? A.depts() : []).filter(function (d) { return d.active !== false; }).map(function (d) { return [d.key, d.name]; });
+    var people = list.slice().sort(F && F.sequence ? F.sequence('staff_code') : undefined)
+      .map(function (m) { return [m.id, F && F.named ? F.named(m.staff_code, m.name) : m.name]; });
+    var invite = may('team.invite', 'work');
+    var fields = [
+      { name: 'email', label: 'Company email', type: 'email', placeholder: 'email@adspacestudios.com' },
+      { name: 'staff', label: 'Employee ID', placeholder: 'AD001', half: true },
+      { name: 'role', label: 'User group', choices: [['', 'Choose a group']].concat(roles), value: '' },
+      { name: 'dept', label: 'Department', choices: [['', 'Choose a department']].concat(depts), value: '', half: true },
+      { name: 'pos', label: 'Position', value: t.position || c.position || '' },
+      { name: 'day', label: 'First day', type: 'date', value: t.start || '', half: true },
+      { name: 'dm', label: 'Direct manager', choices: [['', 'Choose a colleague']].concat(people), value: '' }];
+    if (invite) fields.push({ name: 'invite', label: 'Send invitation email', tick: true });
+    window.ADspaceConfirm.ask({ title: 'Make colleague', body: c.name + ' is added to Team.', go: 'Make colleague', wait: true, fields: fields,
+      check: function (v) {
+        if (!window.ADspaceWords.emailOk(String(v.email || '').trim())) return 'Enter a valid email address.';
+        if (!/^[A-Za-z0-9]{3,8}$/.test(String(v.staff || '').trim())) return HIRE_SAID['bad-staff'];
+        if (!v.role) return HIRE_SAID['bad-role'];
+        if (!v.dept) return HIRE_SAID['bad-department'];
+        if (!v.day) return HIRE_SAID['bad-day'];
+        if (!v.dm) return HIRE_SAID['bad-dm'];
+        return '';
+      } },
+    function (v) {
+      var email = String(v.email || '').trim().toLowerCase();
+      return rpc('hiring_make_colleague', { p_id: c.id, p_values: { email: email, staff_code: String(v.staff || '').trim().toUpperCase(), role: v.role,
+        department: v.dept, designation: String(v.pos || '').trim(), first_day: v.day, dm: v.dm } }).then(function (r) {
+        var d = r.data || {};
+        if (d.error === 'taken') return HIRE_SAID.taken[d.field] || HIRE_SAID.taken.email;
+        if (d.error === 'refused') return 'You do not have permission to add a colleague to this group. Please ask an admin.';
+        if (r.error || d.error) return HIRE_SAID[d.error] || said(r);
+        var after = Promise.resolve('');
+        if (v.invite === 'on' && invite) {
+          after = API.invokeFn('invite-member', { email: email, name: c.name }).then(function (x) {
+            if (x.error) return ' The invitation could not be sent. Send it from their record.';
+            return (x.data || {}).sent === false ? '' : ' Invitation sent to ' + email + '.';
+          }).catch(function () { return ' The invitation could not be sent. Send it from their record.'; });
+        }
+        after.then(function (more) {
+          state.pane = 'offer';
+          load().then(function () { return openRec(c.id); }).then(function () { msg('hirRecMsg', c.name + ' is now a colleague.' + more, more && /could not/.test(more) ? 'warn' : 'ok'); });
+        });
+        return '';
+      });
+    });
+  }
+  function openMember() {
+    var h = state.hire || {}, id = h.member && h.member.id;
+    if (!id) return;
+    state.open = null; state.rec = null; state.pane = 'overview';
+    $('hirRec').hidden = true; $('sectionTeam').classList.remove('is-candidate');
+    /* Members first: its tab writes the address, which then names the
+       colleague, as search opens one. */
+    var tab = document.querySelector('#teamTabs .tab[data-tab="members"]');
+    if (tab && !tab.classList.contains('is-on')) tab.click();
+    history.pushState(null, '', '/admin/?s=team&member=' + encodeURIComponent(id));
+    if (window.ADspaceTeam) { window.ADspaceTeam.fromUrl(); window.ADspaceTeam.enter(); }
+    window.scrollTo(0, 0);
+  }
   function docsPane(c, can) {
     if (state.docs == null) return '<section class="readgroup"><div id="hirDocFail"></div></section>';
     var live = function (k) { return state.docs.some(function (d) { return d.kind === k && ['draft', 'sent', 'signed', 'confirmed'].indexOf(d.state) >= 0; }); };
@@ -959,7 +1061,8 @@
   var WORD = { 'candidate.added': 'Candidate added', 'candidate.invited': 'Invitation sent', 'candidate.interview': 'Interview updated',
     'candidate.email': 'Email to the candidate',
     'candidate.scored': 'Scores changed', 'candidate.decided': 'Decision made', 'candidate.edited': 'Details edited', 'candidate.people': 'People changed',
-    'candidate.link': 'Link changed', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored' };
+    'candidate.link': 'Link changed', 'candidate.removed': 'Candidate removed', 'candidate.restored': 'Candidate restored',
+    'candidate.hired': 'Made a colleague' };
   function paintLog() {
     var host = $('hirLog');
     if (!host || !window.ADspaceRecords) return;
@@ -1044,6 +1147,8 @@
     });
     on('addperson', addPerson);
     on('docnew', function (b) { docSheet(null, b.getAttribute('data-kind')); });
+    on('makecolleague', function () { makeColleague(); });
+    on('openmember', function () { openMember(); });
     on('docedit', function (b) { docSheet(docOf(b), null); });
     on('docpay', function (b) { docPay(docOf(b), b); });
     on('docpreview', function (b) { docPreview(docOf(b), b); });

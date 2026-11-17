@@ -99,6 +99,13 @@
         return parts(pgCounts(rows).concat(set.length <= 3 ? [set.map(function (p) { return p.name; }).join(', ')] : []));
       });
     },
+    /* The Welcome Kit (2026-11-17, release H2 step E1): how many sections. */
+    welcomekit: function () {
+      return db.rpc('welcome_kit_get').then(function (r) {
+        if (r.error || !r.data || r.data.error) throw r.error || new Error('kit');
+        return plural((r.data.sections || []).length, 'section', 'sections');
+      });
+    },
     /* What the AutoCount HRMS row holds (2026-11-16). */
     autocount: function () { return window.ADspacePersonnel ? window.ADspacePersonnel.settingsLine() : Promise.resolve(''); },
     /* What the Departments row holds, from the list (2026-10-23). */
@@ -276,7 +283,11 @@
             'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
             'Closed candidates ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
         may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: '',
-          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]]]);
+          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } },
+        /* The Welcome Kit (2026-11-17, step E1): the words a new colleague
+           reads at first sign-in, before the Handbook's files. */
+        biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
+          open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', 'clients', [
       ['Clients', [

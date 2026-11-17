@@ -4918,6 +4918,65 @@ body.hb-gate #tabBar { display: none; }
 .hb-onboard.is-tight .hb-gateacts > .btn { flex: 1 1 50%; }
 .hb-onboard.is-tight .hbo-title { font-size: 21px; }
 .hb-ackcount { margin: 0 0 8px; font-size: 13px; color: var(--ink-mute); }
+/* The Welcome Kit (2026-11-17, release H2 step E1; js/onboard.js): the
+   onboarding page's first step, the colleague's facts then the team's words
+   a card a section, Acknowledge at the column's right edge. */
+.wk { display: grid; gap: 16px; }
+.wk > .hbo-progress { margin: 0; }
+.wk-title { text-align: left; }
+.wk-card { padding: 18px 20px; }
+.wk-h { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.wk-para { margin: 0 0 8px; font-size: 14px; color: var(--ink-soft); }
+.wk-card > .wk-para:last-child { margin-bottom: 0; }
+.wk-facts + .wk-para, .wk-para + .wk-facts { margin-top: 12px; }
+.wk-facts dd { overflow-wrap: anywhere; }
+.wk-foot { display: flex; justify-content: flex-end; }
+.wk-foot > .btn { flex: 0 0 auto; min-width: 160px; }
+.hb-onboard.is-tight .wk-foot > .btn { flex: 1 1 100%; }
+.hb-onboard.is-tight .wk-card { padding: 14px; }
+/* Settings: the Welcome Kit's sections, a title over its first line. */
+.ind-row.is-wk { grid-template-columns: minmax(0, 1fr) 80px; }
+.ind-row.is-wk .ind-acts { gap: 4px; justify-content: flex-end; }
+.wk-row-who { display: flex; flex-direction: column; min-width: 0; }
+.wk-row-line { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Make colleague, and the colleague a candidate became (js/hiring.js). */
+.hir-hire-line { margin: 0; font-size: 13px; color: var(--ink-soft); }
+/* A colleague's Onboarding (js/onboard.js): the checklist and the assets
+   beside the entry and exit steps on 1.618 : 1, one column when narrow. */
+.onb-grid { display: grid; grid-template-columns: minmax(0, 1.618fr) minmax(240px, 1fr); gap: 24px; align-items: start; }
+.is-narrow .onb-grid { grid-template-columns: minmax(0, 1fr); }
+.onb-row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.onb-list > .onb-row:first-child { border-top: 0; padding-top: 0; }
+label.onb-row { cursor: pointer; }
+.onb-mark { width: 8px; height: 8px; margin: 0 6px; border-radius: 50%; background: var(--dot-off); }
+.onb-mark.is-on { background: var(--dot-ok); }
+.onb-name { min-width: 0; overflow-wrap: anywhere; }
+.onb-when { justify-self: end; text-align: right; }
+.onb-by { font-size: 12.5px; color: var(--ink-mute); }
+.onb-tick { width: 18px; height: 18px; margin: 0; accent-color: var(--fill); }
+.onb-assets { display: grid; }
+.onb-asset { display: grid; grid-template-columns: 140px minmax(0, 1fr) 104px 104px 76px; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.onb-asset.is-head { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.onb-a-detail { min-width: 0; overflow-wrap: anywhere; }
+.onb-a-day { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.onb-a-day.is-empty { color: var(--ink-mute); }
+.onb-a-lbl { display: none; }
+.onb-a-acts { display: flex; gap: 4px; justify-content: flex-end; }
+.is-narrow .onb-asset { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "kind acts" "detail detail" "iss ret"; row-gap: 2px; }
+.is-narrow .onb-asset.is-head { display: none; }
+.is-narrow .onb-a-kind { grid-area: kind; font-weight: 500; }
+.is-narrow .onb-a-detail { grid-area: detail; font-size: 13px; color: var(--ink-soft); }
+.is-narrow .onb-a-day:nth-child(3) { grid-area: iss; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .onb-a-day:nth-child(4) { grid-area: ret; justify-self: end; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .onb-a-lbl { display: inline; }
+.is-narrow .onb-a-acts { grid-area: acts; }
+.onb-steps { display: grid; }
+.onb-step { display: grid; grid-template-columns: minmax(0, 1fr) 48px 48px; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.onb-step.is-head { border-top: 0; padding-top: 0; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.onb-step.is-head > span:not(:first-child), .onb-cell { text-align: center; }
+.onb-cell { display: flex; justify-content: center; }
+.onb-card .readgroup-head .tab-n { margin-left: 6px; vertical-align: 1px; }
+
 /* No access: the one card, its way to the Handbook under its line. */
 .noaccess > .btn { flex: 0 0 auto; margin-top: 20px; }
 
