@@ -10949,3 +10949,16 @@ open once the content meeting … is held.), a deleted month's tasks "will be
 kept, outside any month", and a Retainer post and a time entry use My Work's
 own words. `work` and `ops` read the new words. 'System' and 'Somebody' as
 who did something stay: they are shared with other sections' scripts.
+
+### 2026-11-17 · Tone check of the console, n to z, release 4: Settings, Suppliers, Messages
+
+Settings' Delete questions said "removed from the list" for a delete that
+cannot be undone; §6 keeps Remove for what comes back, so they now read
+"will be deleted. This cannot be undone." A department gone reads the
+standard "no longer exists", the tax code refusal is an instruction, and
+Task reminders' value reads Not started: Off. Suppliers: the permission
+refusal ends on Please ask an admin., Refresh the page (never Reload), a
+client out of reach is said in plain words, a letter that fails to draw no
+longer shows the browser's error, Loading… is the portal's own word.
+Messages: a template the portal cannot send says to choose another.
+`settings`, `suppliers`, `whatsapp`, `holidays`, `depts`, `taxcodes` pass.

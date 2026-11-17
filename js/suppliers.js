@@ -36,7 +36,7 @@
   var STATE = { pending: ['Pending', 'is-warn'], active: ['Active', 'is-ok'], inactive: ['Inactive', 'is-off'] };
   var SAID = {
     'send-off': window.ADspaceWords.line.emailSendOff,
-    'denied': 'You do not have permission to do this.', 'not-found': 'This supplier no longer exists.',
+    'denied': 'You do not have permission to do this. Please ask an admin.', 'not-found': 'This supplier no longer exists.',
     'bad-code': 'Enter a Supplier ID of 2 to 12 letters or digits, for example AS001.', 'code-taken': 'This Supplier ID is already used by another supplier.',
     'bad-name': 'Enter a name of 2 to 160 characters.', 'bad-kind': 'Choose how the supplier is registered.',
     'bad-brn': 'Enter the 12-digit BRN.', 'bad-nric': 'Enter the NRIC as XXXXXX-XX-XXXX.', 'bad-tin': 'Enter a TIN of 5 to 20 letters or digits.',
@@ -51,9 +51,9 @@
     'bad-document': 'This letter is void or no longer belongs to this supplier. Choose another letter.', 'bad-purpose': 'Choose a template.',
     'bad-subject': window.ADspaceWords.line.subject, 'bad-body': window.ADspaceWords.line.message,
     'bad-file': 'The letter could not be attached. Download it to check, then try again.',
-    'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Try again.',
-    'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Reload the page and try again.',
-    'no-client': 'This client no longer exists or is outside your clients.',
+    'mail-not-set-up': window.ADspaceWords.line.mailOff, 'not-sent': 'Not sent. Please try again.',
+    'not-confirmed': 'Not confirmed. Check with the supplier before sending again.', 'bad-request': 'Refresh the page and try again.',
+    'no-client': 'This client no longer exists, or you do not have access to it.',
     'no-link': 'No link is open.'
   };
   function said(r) {
@@ -527,7 +527,7 @@
     on('del', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete supplier?', tone: 'danger', go: 'Delete', wait: true,
-        body: nameOf(s) + ' and its details are deleted. Letters already issued keep their words. This cannot be undone.',
+        body: nameOf(s) + ' and its details will be deleted. Letters already issued keep their words. This cannot be undone.',
         field: { label: s.name ? 'Type the name to confirm' : 'Type the Supplier ID to confirm', match: nameOf(s) }
       }, function (v) {
         return rpc('supplier_delete', { p_id: s.id, p_name: v }).then(function (r) {
@@ -642,7 +642,7 @@
     var s = state.rec;
     mail = { supplier: s.id, docs: [], asked: Boolean(asked) };
     msg('supMailMsg', ''); $('supMailRecent').hidden = true;
-    $('supMailTo').textContent = 'Loading.';
+    $('supMailTo').textContent = 'Loading…';
     var tpl = $('supMailTpl');
     tpl.querySelector('option[value="approved"]').disabled = s.status !== 'active';
     db.from('documents').select('id, serial, kind, issued_at, voided_at, void_reason, source, family, type_id, title, salutation, closing, recipient, body, languages, signatory, signed, client_id, member_id, supplier_id, created_at')
@@ -719,11 +719,11 @@
           return;
         }
         if (code === 'not-confirmed' || code === 'not-sent') emails(state.rec.id);
-        msg('supMailMsg', SAID[code] || (r.error ? 'Not sent. Try again.' : 'Not sent.'), 'err');
+        msg('supMailMsg', SAID[code] || (r.error ? 'Not sent. Please try again.' : 'Not sent.'), 'err');
       });
     }).catch(function (e) {
       go.disabled = false;
-      msg('supMailMsg', 'The letter could not be generated: ' + ((e && e.message) || e), 'err');
+      msg('supMailMsg', 'The letter could not be generated. Please try again.', 'err');
     });
   }
   function askMail() {
