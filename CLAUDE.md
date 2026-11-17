@@ -7604,6 +7604,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   with when and by whom, asked again in warn; filed under the colleague)
   (`tests/quotesite.js`, `tests/sql.js`).
 ### Client portal (`client/`, `js/portal.js`)
+- A contact prefers English or 中文 alone (`client_contacts_lang_check`; no
+  Malay portal, the user, 2026-11-17). Until this browser presses the 中文
+  switch, the portal opens in the signed-in contact's own language
+  (`get_portal` `me.lang`) and the selection page in its client's primary
+  contact's (`get_campaign` `lang`, `client_lang`), never stored as a choice;
+  /review/ and /script/ are English alone (`tests/portal.js`, `tests/client.js`).
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
   `.rec-ctl`): the mark, the name over the registered name, the state and
