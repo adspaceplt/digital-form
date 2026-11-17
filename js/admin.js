@@ -3024,7 +3024,8 @@
   }
 
   /* The build this console is running, at the rail's foot: the
-     deploy's day in Malaysia, short (v26.10.06; the user, 2026-10-06).
+     deploy's day in Malaysia, then the commit, as one token (261117.7506;
+     the user, 2026-11-17: shorter).
      /version.json is written by the Pages build itself; read raw (no build
      ran) or not at all, the line stays hidden. */
   function showVersion() {
@@ -3036,11 +3037,11 @@
       if (isNaN(at)) return;
       var sha = String(v.commit || '').slice(0, 7);
       if (!build.loaded) build.loaded = buildOf(v);
-      var ver = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.');
+      var ver = new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '');
       /* The line shows the commit's last four characters (2026-11-11: room
          for the Handbook's mark); its name and hover hold all seven. */
-      box.textContent = ver + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha.slice(-4) : '');
-      box.setAttribute('aria-label', 'Refresh app, ' + ver + (/^[0-9a-f]{7}$/.test(sha) ? ' · ' + sha : ''));
+      box.textContent = ver + (/^[0-9a-f]{7}$/.test(sha) ? '.' + sha.slice(-4) : '');
+      box.setAttribute('aria-label', 'Refresh app, ' + ver + (/^[0-9a-f]{7}$/.test(sha) ? '.' + sha : ''));
       box.title = box.getAttribute('aria-label');
       box.hidden = false;
     }).catch(function () {});

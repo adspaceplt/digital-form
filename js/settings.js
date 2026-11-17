@@ -679,7 +679,7 @@
   function buildWord(m) {
     if (!m || !m.commit || !m.built) return '';
     var t = Date.parse(m.built);
-    return isNaN(t) ? '' : 'v' + new Date(t + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' \u00b7 ' + String(m.commit).slice(0, 7);
+    return isNaN(t) ? '' : new Date(t + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '') + '.' + String(m.commit).slice(0, 7);
   }
   function buildLine(m) { return buildWord(m) || 'Not set'; }
   function requireBuild(btn) {
