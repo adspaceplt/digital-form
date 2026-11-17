@@ -48,8 +48,15 @@
         for (var i = 0; i < closers.length; i++) closers[i]();
         return;
       }
-      if (held.pop) window.ADspaceMenu.pop(held.btn, held.menu, held.align);
-      else window.ADspaceMenu.place(held.btn, held.menu, held.align);
+      var lay = function () {
+        if (!held || !held.menu || held.menu.hidden) return;
+        if (held.pop) window.ADspaceMenu.pop(held.btn, held.menu, held.align);
+        else window.ADspaceMenu.place(held.btn, held.menu, held.align);
+      };
+      lay();
+      /* A pane's narrow class lands after the resize (a ResizeObserver),
+         reflowing a row under its ⋯: lay it once more when that has settled. */
+      setTimeout(lay, 160);
     });
   });
 

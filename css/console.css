@@ -3274,8 +3274,8 @@ button.aiu-tr { position: relative; width: calc(100% + 16px); margin: 0 -8px; pa
 /* Something waits on you in My Work: the late dot on its glyph, named for a
    screen reader in the tab's own words. */
 .tabbar-dot {
-  position: absolute; top: 7px; left: calc(50% + 7px); width: 8px; height: 8px; border-radius: 50%;
-  background: var(--dot-late); box-shadow: 0 0 0 2px var(--card); pointer-events: none;
+  position: absolute; top: 8px; left: calc(50% + 7px); width: 6px; height: 6px; border-radius: 50%;
+  background: var(--dot-late); pointer-events: none;
 }
 /* The rail's toggle gives way to the bar. */
 :root.has-tabbar .navtoggle { display: none; }
