@@ -161,10 +161,10 @@
      names the adjustment on its own, for the control that asks whether to
      apply it, because a tick is named for what pressing it does. */
   var TERMS = {
-    3:  { factor: 1 / 0.9,  word: '3 month term, 10% short term adjustment', adj: '10% short term adjustment' },
+    3:  { factor: 1 / 0.9,  word: '3-month term, 10% short-term adjustment', adj: '10% short-term adjustment' },
     6:  { factor: 1,        word: '',                                        adj: '' },
-    12: { factor: 0.95,     word: '12 month term, 5% discount',              adj: '5% long term discount' },
-    24: { factor: 0.9,      word: '24 month term, 10% discount',             adj: '10% long term discount' }
+    12: { factor: 0.95,     word: '12-month term, 5% discount',              adj: '5% long-term discount' },
+    24: { factor: 0.9,      word: '24-month term, 10% discount',             adj: '10% long-term discount' }
   };
   function termOf(months) { return TERMS[Math.max(1, Number(months || 1))] || { factor: 1, word: '', adj: '' }; }
   function termFactor(months) { return termOf(months).factor; }
@@ -218,7 +218,7 @@
     var p = Number(pct);
     if (!p) return '';
     var shown = String(Math.round(Math.abs(p) * 100) / 100);
-    return p > 0 ? shown + '% short term adjustment' : shown + '% long term discount';
+    return p > 0 ? shown + '% short-term adjustment' : shown + '% long-term discount';
   }
   function termAdj(months, pct) {
     if (hasPct(pct)) return pctAdj(pct);
@@ -251,7 +251,7 @@
     if (!adjusts(adjust)) return '';
     if (hasPct(pct)) {
       var adj = pctAdj(pct);
-      return adj ? Math.max(1, Number(months || 1)) + ' month term, ' + adj : '';
+      return adj ? Math.max(1, Number(months || 1)) + '-month term, ' + adj : '';
     }
     return termWord(months);
   }
