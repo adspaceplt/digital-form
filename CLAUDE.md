@@ -3870,12 +3870,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   runs to the 15th, never pro-rated) and a row a cycle for the advertising
   budget; Create in Bukku (Billing Work) asks `quotation_invoice_prep` as
   the caller (`not-reviewed`, `no-start`, `not-linked`, `invoiced`,
-  `creating` for ten minutes, `no-budget-account`, `no-tax-code`), then
+  `creating` for ten minutes, the quotation's row locked first so two
+  presses at once hold one; `no-budget-account`, `no-tax-code`), then
   `bukku-sync` `invoicecreate` searches Bukku for an invoice holding the
-  reference (`{ref} · {cycle day}`, ` · Ads`) and makes none twice, else
+  reference whole in its second number (`{ref} · {cycle day}`, ` · Ads`;
+  never a match inside a longer one, the budget's holding the service's)
+  and makes none twice, else
   makes one draft: each line on the Bukku product of its Rate Card SKU
   (`no-sku`, `no-product` name the line), its income account the
-  product's, its rate after the line's own term percentage, its tax code
+  product's, its rate after the line's own term percentage, each term
+  percentage and SST rate's lines totalling the quotation's own figure to
+  the cent (the group's last line carrying the sen rounding leaves,
+  `2026-11-17-quotation-invoices-to-the-cent.sql`), its tax code
   Bukku's; the budget on the account code set in Settings, Money, Bukku
   (`bukku_invoice_set`), no tax, to the contact chosen for the client
   (`client_ad_debtor_set`), else the client's own; filed by
