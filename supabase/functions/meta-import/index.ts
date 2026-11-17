@@ -251,6 +251,18 @@ async function creativePicture(ad: string, linked: Set<string>): Promise<{ type:
     const tries: (string | (() => Promise<string>))[] = [
       String(c.image_url || ''), String(link.picture || ''), first(kids, 'picture'), String(video.image_url || ''),
       first(feed.images, 'url'), first(feed.videos, 'thumbnail_url'),
+      /* An image the creative names by its hash alone (a lead ad, a
+         dynamic creative): the original as uploaded, read from the ad
+         account's images, before Meta's square thumbnail, which crops a
+         portrait poster (2026-11-17, the user: the PDF's pictures cut). */
+      async () => {
+        const h = String(link.image_hash || '') || first(kids, 'image_hash') || first(feed.images, 'hash');
+        const acct = String(got.account_id || '').replace(/^act_/, '');
+        if (!h || !acct) return '';
+        const ims = await graph('act_' + acct + '/adimages', { hashes: JSON.stringify([h]), fields: 'url,permalink_url' });
+        const row = (((ims.data || []) as Record<string, unknown>[])[0]) || {};
+        return String(row.url || row.permalink_url || '');
+      },
       async () => {
         const v = String(c.video_id || video.video_id || first(feed.videos, 'video_id') || '');
         if (!v) return '';
