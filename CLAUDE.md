@@ -3565,8 +3565,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   figures, the intern and part-time paragraphs only for those types; the
   page and emails read Read offer and Read contract. Its
   documents' files are queued for the console to take out of Storage when
-  it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
-  HR document's reference yet (step E).
+  it goes (trigger `hiring_docs_files_gone`). /verify/ answers an offer's
+  or contract's reference once sent as HR Letter (Valid, Void, Withdrawn,
+  Declined, Expired), its days and, sealed, its Document ID and Check a
+  file, never the person (`2026-11-17-hr-documents-verify.sql`); a
+  confirmed one is listed under HR Letters (`hiring_register()`, HR Letters
+  at View) and on the colleague's Documents, its ⋯ Download opening the
+  sealed copy through a 60-second link (`hiring_file_ok` lets HR Letters at
+  View read that file alone).
 - Make colleague and onboarding (step E1, `2026-11-17-hiring-onboarding.sql`,
   `js/onboard.js`): a candidate whose contract is confirmed offers Make
   colleague (the part or the Owner, `hiring_hire_state`): one question of

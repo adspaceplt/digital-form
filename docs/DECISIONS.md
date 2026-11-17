@@ -11070,3 +11070,12 @@ Direct Manager, the right; SOCSO and EIS by their proper names). The page's
 status read Offer accepted once the contract was confirmed; it now follows
 the latest document. A copy review moved held by Google Meet to on, Where to
 Location, and the offer's opening off naming the employer twice.
+
+### 2026-11-17 · Offers and contracts verified and listed
+HR-SPEC decisions 4 and 15: an Employment Offer's or Contract's reference
+(ADHR/OFR…, ADHR/EMP…) is answered on /verify/ as every HR letter is (HR
+Letter and its state, never the candidate), a sealed one checked against its
+file, and the confirmed ones listed in Documents under HR Letters and on the
+colleague's Documents tab. Declined joins the verify page's state words. The
+sealed file stays in the private `hiring` bucket; HR Letters at View reads
+that one file and nothing else of the candidate's folder.
