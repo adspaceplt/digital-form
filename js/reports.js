@@ -4276,6 +4276,24 @@
       return res.data[0];
     });
   }
+  /* The client's tasks named by the suggestions, read once a visit to the
+     step (one request), so a task made before shows as made. */
+  function nbKey(t) { return String(t || '').trim().toLowerCase(); }
+  function nbTaskOf(it) { return (st.nbTasks || {})[nbKey(it && it.title)] || null; }
+  function nbReadTasks(items) {
+    var titles = items.map(function (it) { return it.title; }).filter(Boolean);
+    var key = (st.open && st.open.id) + '|' + titles.join('|');
+    if (!titles.length || st.nbTasksFor === key || !(bridge.may && bridge.may('ops', 'view'))) return;
+    st.nbTasksFor = key;
+    db.from('ops_tasks').select('id, task_no, title').eq('client_id', st.client.id).in('title', titles).is('cancelled_at', null)
+      .then(function (r) {
+        if (r.error) return;
+        st.nbTasks = st.nbTasks || {};
+        var was = Object.keys(st.nbTasks).length;
+        (r.data || []).forEach(function (t) { if (!st.nbTasks[nbKey(t.title)]) st.nbTasks[nbKey(t.title)] = t; });
+        if (Object.keys(st.nbTasks).length !== was && st.host.querySelector('.rp-next')) paintNext();
+      }).catch(function () { /* the button stays; the read is a convenience */ });
+  }
   function paintNext() {
     var box = st.host.querySelector('.rp-next');
     if (!box) return;
@@ -4295,7 +4313,8 @@
         '<div class="nb-acts">' +
           (it.added ? '<span class="chip-state is-ok">Added to commentary</span>'
             : ed ? '<button class="btn btn-sm" type="button" data-a="nbadd">' + ICON.plus + 'Add to commentary</button>' : '') +
-          (opsOk ? '<button class="btn btn-sm" type="button" data-a="nbtask">' + ICON.plus + 'Create task</button>' : '') +
+          (opsOk ? (nbTaskOf(it) ? '<button class="btn btn-sm" type="button" data-a="nbopen">Open task #WT' + esc(String(nbTaskOf(it).task_no || '').padStart(5, '0')) + ICON.next + '</button>'
+            : '<button class="btn btn-sm" type="button" data-a="nbtask">' + ICON.plus + 'Create task</button>') : '') +
         '</div></div>';
     }).join('');
     var shown = items.filter(function (it) { return it.added; });
@@ -4351,14 +4370,33 @@
         }).catch(function (e) { b.disabled = false; say(rowMsg(i), said(e), 'err'); });
       });
     });
+    /* One task a suggestion (the user, 2026-11-17: the button stayed and
+       made a second task): a suggestion whose task stands (the client's
+       task of its title, not cancelled) opens it; one made here is shown
+       at once, then read on every visit. */
     Array.prototype.forEach.call(box.querySelectorAll('[data-a="nbtask"]'), function (b) {
       b.addEventListener('click', function () {
         var i = Number(b.closest('.nb-row').getAttribute('data-i')), it = items[i];
+        b.disabled = true;
         window.ADspaceOps.add({ link: 'c:' + st.client.id, linkName: st.client.name || 'Client', title: it.title,
           desc: (it.points || []).join('\n'),
-          then: function () { var h = rowMsg(i); if (h && h.isConnected) say(h, 'Task added.', 'ok'); } });
+          then: function (t) {
+            st.nbTasks = st.nbTasks || {};
+            if (t && t.id) st.nbTasks[nbKey(it.title)] = { id: t.id, task_no: t.task_no };
+            if (box.isConnected) paintNext();
+            var h = st.host.querySelector('.rp-next [data-m="nb' + i + '"]'); if (h) say(h, 'Task added.', 'ok');
+          } });
+        /* Shut without a task: the button is pressed again. */
+        setTimeout(function () { if (b.isConnected) b.disabled = false; }, 1500);
       });
     });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="nbopen"]'), function (b) {
+      b.addEventListener('click', function () {
+        var t = nbTaskOf(items[Number(b.closest('.nb-row').getAttribute('data-i'))]);
+        if (t && window.ADspaceOps && window.ADspaceOps.open) window.ADspaceOps.open(t.id);
+      });
+    });
+    nbReadTasks(items);
     var pr = box.querySelector('[data-a="nbprint"]');
     if (pr) pr.addEventListener('click', function () {
       var on = pr.getAttribute('aria-checked') !== 'true';
@@ -6136,6 +6174,8 @@
       var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
       if (aiIt) aiIt.hidden = !aiMay;
     }
+    // One item alone stands as its own button (the user, 2026-11-17).
+    if ($('rhMoreWrap') && window.ADspaceMenu && window.ADspaceMenu.solo) window.ADspaceMenu.solo($('rhMoreWrap'));
     $('rhKind').innerHTML = '<option value="">All types</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();

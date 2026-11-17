@@ -1303,7 +1303,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     taking the focus back from what the item opens (Compare groups, Bulk
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
-    can be pressed. Its glyph is the row ⋯'s three dots across.
+    can be pressed. Its glyph is the row ⋯'s three dots across. A ⋯
+    that would hold one item is not drawn: that item's own button stands
+    on the bar (`.cmd-solo`; a section's own ⋯, My Work's and Reports',
+    through `ADspaceMenu.solo`; the user, 2026-11-17).
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
     wasting one row for the filters"), on a row of their own under it
@@ -6719,7 +6722,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `by_objective` (the period's spend, results and cost per result, every
     ad counted) and its `group_cost_per_result` counts every ad that spent
     (`tests/objcost.js`).
-  - Next batch (`2026-11-13-ads-next-batch.sql`; the user, 2026-11-13: "approve build both"): an Advertising Report's step between Commentary and Check and submit, never opened on by itself; Write with AI (`report-draft` `mode: 'next'`, its own use `ai_next_claim`, 3 a day, AI usage's Next batch) reads the report's ads and, where `meta_checks_on()` and an ad account is linked, Meta's frequency, CTR, spend and results by day over the period's last 14 days (`meta-import` `daily`, asked as the caller), and keeps up to six suggestions on the report (`sm_reports.next_batch`, a draft field), each a kind (Winning, Tiring, Clicks without {result}, New idea, Evergreen), its ad, title, evidence, plan, reason and points, a number none of the figures sent holds dropped; Add to commentary appends its points to Focus for next month with Undo, filed `report.saved`; Create task opens Add task prefilled (`ADspaceOps.add(pre)`); those added print on the PDF's Next Batch page while `next_batch_print` is on, the snapshot sending them alone, never the evidence, and `figureSlips` reads its amounts (`tests/nextbatch.js`).
+  - Next batch (`2026-11-13-ads-next-batch.sql`; the user, 2026-11-13: "approve build both"): an Advertising Report's step between Commentary and Check and submit, never opened on by itself; Write with AI (`report-draft` `mode: 'next'`, its own use `ai_next_claim`, 3 a day, AI usage's Next batch) reads the report's ads and, where `meta_checks_on()` and an ad account is linked, Meta's frequency, CTR, spend and results by day over the period's last 14 days (`meta-import` `daily`, asked as the caller), and keeps up to six suggestions on the report (`sm_reports.next_batch`, a draft field), each a kind (Winning, Tiring, Clicks without {result}, New idea, Evergreen), its ad, title, evidence, plan, reason and points, a number none of the figures sent holds dropped; Add to commentary appends its points to Focus for next month with Undo, filed `report.saved`; Create task opens Add task prefilled (`ADspaceOps.add(pre)`), one task a suggestion: once the client holds a task of its title, not cancelled (read once a visit, one request), the row offers Open task #WT… in its place (the user, 2026-11-17); those added print on the PDF's Next Batch page while `next_batch_print` is on, the snapshot sending them alone, never the evidence, and `figureSlips` reads its amounts (`tests/nextbatch.js`).
   - The Report audit (2026-10-09; the user: "there shouldnt be any
     mismatches"; `2026-10-09-report-audit.sql`): one card under Check and
     submit's checks (`.rp-aicheck`: Report audit, Run audit with the
@@ -7052,7 +7055,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `meta-off`) reads, for the
   report's own rows (three a call), the creative of the first Ad ID in an ad
   account the client links (the image, a link's or carousel's picture, a
-  video's cover, its preferred frame, then the thumbnail at 1080), never a
+  video's cover, its preferred frame, then the thumbnail at 1080; an image
+  named by its hash alone read whole from the ad account's images before
+  that thumbnail, which Meta crops square; 2026-11-17), never a
   preview of the ad and never a figure. It asks first, a tick replacing the
   pictures already held; only `thumb_data` is written, an ad left without
   is counted in one line, filed `From Meta: n pictures added` / `replaced`,

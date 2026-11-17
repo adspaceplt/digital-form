@@ -6427,15 +6427,15 @@
           Object.keys(RQ_STATE).map(function (k) {
             return '<option value="' + k + '"' + (k === q.state ? ' selected' : '') + '>' + esc(RQ_STATE[k][0]) + '</option>';
           }).join('') + '</select>') + '</span>' +
-      /* Reply is on the row (MENU-6, 2026-10-22); Delete, Full Access's,
-         in its ⋯ (2026-10-31). */
+      /* Reply is on the row (MENU-6, 2026-10-22); where Delete, Full
+         Access's, needs a ⋯, Reply goes in it beside Delete, never a ⋯ of
+         Delete alone beside Reply (the user, 2026-11-17). */
       '<span class="team-act">' +
-        (gone ? '' : '<button class="btn btn-sm" data-a="reply" type="button">Reply</button>') +
         (mayPart('clients.requests', 'manage')
           ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
             '<div class="kmenu" data-menu hidden>' +
-            ADspaceMenu.items([[], [], [], [], [], [{ a: 'del', label: 'Delete', need: 'clients.requests:manage' }]]) + '</div>'
-          : '') +
+            ADspaceMenu.items([[], [], gone ? [] : [{ a: 'reply', label: 'Reply' }], [], [], [{ a: 'del', label: 'Delete', need: 'clients.requests:manage' }]]) + '</div>'
+          : (gone ? '' : '<button class="btn btn-sm" data-a="reply" type="button">Reply</button>')) +
       '</span>';
     if (row.querySelector('[data-a="menu"]')) {
       wireMenu(row);
