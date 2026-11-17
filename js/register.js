@@ -221,8 +221,10 @@
         if (err) { state.err = err; UI.failLine(box, 'Documents', err.message || String(err), load); return; }
         perfRows(function (pr) {
           quoteRows(function (qr) {
-            state.docs = (rows || []).concat(pr, qr);
-            paint();
+            hiringRows(function (hr) {
+              state.docs = (rows || []).concat(pr, qr, hr);
+              paint();
+            });
           });
         });
       });
@@ -242,6 +244,24 @@
         return { id: 'perf-' + x.id, serial: x.serial, family: 'hr', kind: 'Monthly Performance Record',
                  source: 'perf', member_id: x.member_id, issued_at: x.released_at || x.downloaded_at,
                  recipient: { name: x.name }, period: x.period, created_at: x.downloaded_at };
+      }));
+    }).catch(function () { then([]); });
+  }
+
+  /* An Employment Offer or Contract ADspace confirmed (HR-SPEC decision 4):
+     listed under HR Letters with its reference, the person and the day it
+     was confirmed, and its sealed copy to download; never a term or a
+     figure. A refused read lists none. */
+  var SIGNED_FAIL = 'The signed copy could not be opened. Please try again.';
+  var HIRING_KIND = { offer: 'Employment Offer', contract: 'Employment Contract' };
+  function hiringRows(then) {
+    if (!mayFamily('hr', 'view')) { then([]); return; }
+    db.rpc('hiring_register').then(function (r) {
+      var rows = (!r.error && r.data && r.data.rows) || [];
+      then(rows.map(function (x) {
+        return { id: 'hd-' + x.id, serial: x.serial, family: 'hr', kind: HIRING_KIND[x.kind] || 'HR Letter', source: 'hiring',
+                 member_id: x.member_id, issued_at: x.confirmed_at, created_at: x.sent_at, voided_at: x.voided_at,
+                 seal_path: x.seal_path, recipient: { name: x.name } };
       }));
     }).catch(function () { then([]); });
   }
@@ -364,11 +384,48 @@
         window.ADspaceDocs.save(new Blob([b], { type: 'application/pdf' }), 'ADspace Quotation ' + String(q.ref).replace(/\//g, '-') + '.pdf', tab);
       }).catch(function () {
         if (tab) try { tab.close(); } catch (x) {}
-        say('The signed copy could not be opened. Please try again.', 'err');
+        say(SIGNED_FAIL, 'err');
       });
     });
     return el;
   }
+  /* An offer or contract's row: its reference, its kind, the person, the
+     day it was confirmed, and the sealed copy, never drawn again. */
+  function hiringRow(d, own) {
+    var el = document.createElement('div');
+    el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (d.voided_at ? ' is-off' : '');
+    el.setAttribute('data-doc', d.id);
+    el.innerHTML =
+      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '" title="' + esc(d.serial) + '"><span>' + esc(d.serial) + '</span></button>' +
+        (d.voided_at ? ' <span class="tone">Void</span>' : '') + '</b>' +
+        '<small>' + esc(d.kind) + '</small></span>' +
+      (own ? '' : '<span class="reg-brand">' + (brandOf(d) ? esc(brandOf(d)) : '<span class="muted">—</span>') + '</span>') +
+      '<span class="reg-who">' + (recipientOf(d) ? esc(recipientOf(d)) : '<span class="muted">—</span>') + '</span>' +
+      '<span class="reg-date">' + (niceDate(d.issued_at) ? esc(niceDate(d.issued_at)) : '<span class="muted">—</span>') + '</span>' +
+      '<span class="team-act">' + (d.seal_path
+        ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' + window.ADspaceMenu.items([[{ a: 'sealed', label: 'Download' }]]) + '</div>'
+        : '') + '</span>';
+    wireMenu(el);
+    var cp = el.querySelector('[data-a="copy"]');
+    if (cp) cp.addEventListener('click', function (e) { e.stopPropagation(); if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial); });
+    var b = el.querySelector('[data-a="sealed"]');
+    if (b) b.addEventListener('click', function () {
+      shutMenus();
+      /* As the candidate's record opens it: a link of 60 seconds made at the
+         press, the tab opened first. */
+      var tab = window.open('', '_blank');
+      db.storage.from('hiring').createSignedUrl(d.seal_path, 60).then(function (x) {
+        if (x.error || !x.data) throw new Error('unread');
+        if (tab) tab.location.href = x.data.signedUrl; else location.href = x.data.signedUrl;
+      }).catch(function () {
+        if (tab) try { tab.close(); } catch (x) {}
+        say(SIGNED_FAIL, 'err');
+      });
+    });
+    return el;
+  }
+
   /* Newest first is issued date, then when the row was added, so a row with
      no date sits under the dated ones rather than among them. */
   function sorter() {
@@ -395,6 +452,7 @@
     var offer = d.family === 'offer';
     var perf = d.source === 'perf';
     if (d.family === 'quotation') return quoteRow(d, own);
+    if (d.source === 'hiring') return hiringRow(d, own);
     var el = document.createElement('div');
     /* `own` is the client record's pane, where every row is that client's,
        so the brand would say the same thing on every line. */
@@ -565,12 +623,13 @@
       q = code ? q.or('member_id.eq.' + m.id + ',serial.ilike."%' + code + '%"') : q.eq('member_id', m.id);
       Promise.all([
         q.then(function (r) { return r; }).catch(function (e) { return { error: e }; }),
-        new Promise(function (res) { perfRows(res); })
+        new Promise(function (res) { perfRows(res); }),
+        new Promise(function (res) { hiringRows(res); })
       ]).then(function (got) {
         var r = got[0];
         if (r.error) { if (then) then(null, r.error); return; }
         var rows = (r.data || []).filter(function (d) { var t = teamOf(d); return t && t.id === m.id; })
-          .concat((got[1] || []).filter(function (d) { return d.member_id === m.id; }))
+          .concat((got[1] || []).concat(got[2] || []).filter(function (d) { return d.member_id === m.id; }))
           .sort(sorter());
         var old = box.querySelector('.reg-table');
         if (old) old.remove();

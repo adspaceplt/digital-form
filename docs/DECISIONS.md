@@ -11089,6 +11089,15 @@ itself at most once in three minutes, so a stale edge cannot loop it.
 Client pages are untouched; nobody is signed out (Refresh app keeps the
 session). `tests/buildsync.js` holds it on Playwright's clock.
 
+### 2026-11-17 · Offers and contracts verified and listed
+HR-SPEC decisions 4 and 15: an Employment Offer's or Contract's reference
+(ADHR/OFR…, ADHR/EMP…) is answered on /verify/ as every HR letter is (HR
+Letter and its state, never the candidate), a sealed one checked against its
+file, and the confirmed ones listed in Documents under HR Letters and on the
+colleague's Documents tab. Declined joins the verify page's state words. The
+sealed file stays in the private `hiring` bucket; HR Letters at View reads
+that one file and nothing else of the candidate's folder.
+
 ### 2026-11-17 · A colleague in Bukku
 HR-SPEC decision 12 asked that a new colleague be pushed to Bukku as an
 employee contact, else a supplier marked Employee. Bukku's contacts take the

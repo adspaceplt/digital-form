@@ -23,7 +23,7 @@
       issued: 'Issued', signed: 'Signed', confirmed: 'Confirmed', withdrawnOn: 'Withdrawn from', docId: 'Document ID',
       fileGo: 'Check a file', fileChecking: 'Checking the file…', fileMatch: 'Matches the sealed copy',
       fileNo: 'Does not match: this file has been altered', fileFailed: 'Unable to check the file. Please try again.',
-      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn' }
+      state: { valid: 'Valid', voided: 'Void', replaced: 'Replaced', expired: 'Expired', withdrawn: 'Withdrawn', declined: 'Declined' }
     },
     zh: {
       title: '文件核验', text: '请输入文件上印有的编号。',
@@ -34,7 +34,7 @@
       issued: '签发于', signed: '签署于', confirmed: '确认于', withdrawnOn: '撤回于', docId: '文件编号',
       fileGo: '核验文件', fileChecking: '核验文件中…', fileMatch: '与封存副本一致',
       fileNo: '不一致：此文件已被更改', fileFailed: '无法核验文件，请稍后再试。',
-      state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回' },
+      state: { valid: '有效', voided: '已作废', replaced: '已替换', expired: '已过期', withdrawn: '已撤回', declined: '已拒绝' },
       /* The kinds the database names, in Chinese; a kind not listed (a type
          the team added) reads as it was sent. */
       kind: { 'quotation': '报价单', 'letter of offer': '服务确认函', 'hr letter': '人事函件', 'client letter': '客户函件',
