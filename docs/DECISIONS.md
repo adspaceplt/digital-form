@@ -10891,6 +10891,41 @@ settings sheet's refusal reads as an instruction (enter a number from 0 to
 10). `scope`, `docs` and `perfui` read the new words. The Activity record's
 section list (`js/admin.js`, outside this part) still reads HR letters.
 
+## 2026-11-17 · The old access parts cleared: the access restructure, release 3
+Step 6 of plan version 4. Release 1 had stopped reading the five WhatsApp
+parts and the stored levels of creator payments and supplier bank details;
+live, nine colleagues and two groups still held `campaigns.pay` or
+`suppliers.pay` at Work, read by nothing. They are taken off
+(`2026-11-17-access-cleanup.sql`), so a map reads what it grants. The
+granted parts were typed five times (the migration's seed, `allowed()`,
+`js/team.js`, `js/admin.js`, the stand-in): `allowed()` now reads
+`access_keys`, and the Team panel reads the console's list, leaving three
+held equal by `tests/access.js`. The 95 rules in `css/portal.css` that hid a
+control by a body class (`no-work-clients-billing`) are one rule the console
+writes from `may()` over every key and level (`#accessHide`); a control
+naming a key nobody defined is still drawn, as the old list's comment
+wanted. Four levels the old list never named (creator payments at Work, Mark
+VIC, Video Scripts at Work, Performance at Full control) now step away
+where the database would refuse them. The three Hiring emails ask Send email; the
+interview's had asked the portal's switch alone.
+### 2026-11-17 · Tone check, part 1: what clients, prospects and creators read
+The user asked for the whole repo to be held to DESIGN.md §6. Seven fresh
+readers, each given §6 alone, read about 2,900 strings on the client pages,
+/quote/, the details and supplier forms, the emails and the client PDFs.
+The seeded email templates and most pages held. Fixed: a step the reader
+waits on said in the present (/quote/'s "is reviewing your quotation", the
+creator's "under review") now says what ADspace will do; "Our team" became
+ADspace; Malay became Bahasa Melayu (its chips now stand one over another
+under 560px, the name being longer than a third of a phone); the
+representative is greeted by their whole name in the WhatsApp message;
+"Sign and accept" became "Accept and sign", as the step that opens it;
+"Open the draft" became "Open draft"; the selection page's line repeating
+its sheet's title went; "No media uploaded" became "No file."; a portal
+meeting outside a month reads "Content discussion"; the client portal's
+campaign rows no longer repeat their tab's name; the PDF refusal a client
+can meet reads with Please; the signing code's email says "to sign the
+quotation". Rejected: the creator page's "1 GB" (tests/words.js keeps a
+Latin unit's space). The rejected wordings joined tests/words.js RETIRED.
 ### 2026-11-17 · Tone check of the console, n to z, release 2: My Work
 
 My Work's refusals now say what to enter or do (Enter a reason., Choose a

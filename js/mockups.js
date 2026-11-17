@@ -67,7 +67,7 @@
     const wrap = el('div', 'mk-media' + (opts.ratioClass ? ' ' + opts.ratioClass : ''));
     if (!item || !item.url) {
       wrap.classList.add('mk-media-empty');
-      wrap.textContent = 'No media uploaded';
+      wrap.textContent = 'No file.';
       return wrap;
     }
     const report = function (w, h) { if (opts.onSize && w && h) opts.onSize(w, h); };

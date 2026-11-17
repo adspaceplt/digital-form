@@ -86,13 +86,13 @@
       payNote: 'Payment is due within {d} days of the invoice date.', payApprove: 'Payment is due within {d} days of the invoice date, subject to ADspace\'s approval.',
       billManaged: 'The fees include the management of an advertising budget of up to {c}\u00a0{b} per month. The advertising budget is billed separately.',
       basis: 'Rates are based on the ADspace Rate Card v.{v}.',
-      propT: 'Ready to proceed?', propP: 'Please indicate when you would like to begin. Our team will contact you to finalise the details and prepare your onboarding plan.',
+      propT: 'Ready to proceed?', propP: 'ADspace will contact you to finalise the details and prepare your onboarding plan.',
       startQ: 'When would you like to start?', starts: [['month', 'Within a month'], ['quarter', 'In 1 to 3 months']],
       decQ: 'Are you the decision maker?', decs: [['yes', 'Yes'], ['others', 'Others will be involved in the decision']],
       propAsk: 'Proceed with this quotation', propAsking: 'Sending…', propNeed: 'Answer both questions to proceed.',
-      reviewT: 'Request received', reviewP: 'ADspace is reviewing your quotation and will send it to you on WhatsApp by {d}.',
+      reviewT: 'Request received', reviewP: 'ADspace will review your quotation and send it to you on WhatsApp by {d}.',
       reviewNote: 'Your quotation will appear on this page once it has been sent.',
-      propDone: 'Request received', propBy: 'Our team will contact you by {d} to finalise the details.',
+      propDone: 'Request received', propBy: 'ADspace will contact you by {d} to finalise the details.',
       repT: 'Your representative', repP: '{n} will be pleased to go through the quotation and finalise the details with you.',
       repChat: 'Chat with {n} on WhatsApp', revised: 'Revised on {d}. It replaces {r}.', offer: 'Letter of Offer issued',
       billT: 'Billing details', billP: 'Please provide your company\'s billing details. ADspace will then prepare your quotation for signing.', billBtn: 'Provide billing details',
@@ -113,12 +113,12 @@
       monthly: 'Monthly incl. SST', firstExcl: 'First month excl. SST', first: 'First month incl. SST', oneOff: 'One-off incl. SST',
       newQuote: 'New quotation',
       err: {
-        captcha: 'The security check did not complete. Please try again.', limit: 'The daily limit of five quotations for this contact has been reached. Please contact ADspace on WhatsApp.',
+        captcha: 'The security check did not complete. Please try again.', limit: 'You have reached the daily limit of five quotations. Please contact ADspace on WhatsApp.',
         'bad-whatsapp': 'Enter a Malaysian or Singaporean WhatsApp number.', 'bad-email': 'Enter a valid email address.',
         'bad-name': 'Enter your name only, without a web address.', 'bad-brand': 'Enter the brand name only, without a web address.', 'bad-commence': 'Select when you plan to commence.',
         'bad-industry': 'The industry you selected is no longer offered. Please select your industry again.',
-        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'This quotation is still being reviewed by ADspace. It will be sent to you on WhatsApp once ready.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
-        'not-found': 'This quotation could not be found.', 'bad-answer': 'Answer both questions to proceed.',
+        expired: 'This quotation has expired. Please request a new quotation.', 'not-proceeding': 'This quotation has been cancelled. Please request a new quotation.', 'not-sent': 'ADspace will review this quotation and send it to you on WhatsApp.', unavailable: 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
+        'not-found': 'This quotation could not be found. Please check the link, or request a new quotation.', 'bad-answer': 'Answer both questions to proceed.',
         signed: 'This quotation has already been signed. Please contact ADspace on WhatsApp.',
         empty: 'Select at least one service.', 'nothing-priced': 'KOL campaigns and custom creator lists are quoted on request. Please add a service with a listed rate, or contact ADspace on WhatsApp.', 'no-card': 'Online quotations are not available at the moment. Please contact ADspace on WhatsApp.',
         any: 'Not sent. Please try again.'
@@ -135,7 +135,7 @@
         agree: 'I am authorised to sign on behalf of {c} and accept this quotation and the ADspace Service Terms.',
         terms: 'Read the Service Terms', sending: 'Sending…',
         codeL: 'Enter the code sent to {e}', digit: 'Digit {n} of 6', resendQ: 'Did not receive it?', resend: 'Send again',
-        resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Sign and accept', finishing: 'Signing…',
+        resendIn: 'Send again ({s}s)', resent: 'A new code has been sent.', finish: 'Accept and sign', finishing: 'Signing…',
         rec: 'The time, IP address and device are recorded with your signature.',
         waitT: 'Accepted · awaiting ADspace confirmation', waitP: 'Signed by {n} on {d} at {t} (GMT+8).',
         confT: 'Confirmed', confP: 'Confirmed by ADspace on {d}.', docId: 'Document ID {id}', sealDl: 'Download signed copy',
@@ -154,7 +154,7 @@
       lostT: 'Quotation not found', lostP: 'Please check the link, or request a new quotation.',
       offT: 'Unable to load', offP: 'Please refresh the page, or contact ADspace on WhatsApp.',
       plat: { meta: 'Meta', tiktok: 'TikTok', rednote: 'rednote', linkedin: 'LinkedIn' },
-      lang3: { en: 'English', zh: '中文', ms: 'Malay' }
+      lang3: { en: 'English', zh: '中文', ms: 'Bahasa Melayu' }
     },
     zh: {
       lang: 'EN', step: '第{n}步，共{m}步', cont: '继续', back: '返回',
@@ -207,13 +207,13 @@
       payNote: '付款期限为发票日期起{d}天内。', payApprove: '付款期限为发票日期起{d}天内，须经 ADspace 批准。',
       billManaged: '费用包括代为管理每月最高 {c}\u00a0{b} 的广告预算。广告预算另行收费。',
       basis: '价格依据 ADspace 价目表 v.{v}。',
-      propT: '准备好开始了吗？', propP: '请告诉我们您希望何时开始。我们的团队将与您联系，确认细节并准备您的启动计划。',
+      propT: '准备好开始了吗？', propP: 'ADspace 将与您联系，确认细节并准备您的启动计划。',
       startQ: '您希望何时开始？', starts: [['month', '一个月内'], ['quarter', '一至三个月内']],
       decQ: '您是否为决策人？', decs: [['yes', '是'], ['others', '需与他人商议']],
       propAsk: '确认此报价', propAsking: '提交中…', propNeed: '请回答以上两个问题。',
-      reviewT: '已收到您的请求', reviewP: 'ADspace 正在审核您的报价，将于 {d} 前通过 WhatsApp 发送给您。',
+      reviewT: '已收到您的请求', reviewP: 'ADspace 将审核您的报价，并于 {d} 前通过 WhatsApp 发送给您。',
       reviewNote: '报价发送后，此页面将显示报价详情。',
-      propDone: '已收到您的确认', propBy: '我们的团队将于 {d} 前与您联系，确认细节。',
+      propDone: '已收到您的确认', propBy: 'ADspace 将于 {d} 前与您联系，确认细节。',
       repT: '您的专属顾问', repP: '{n} 将与您详细说明报价并确认细节。',
       repChat: '通过 WhatsApp 联系 {n}', revised: '已于 {d} 修订，取代 {r}。', offer: '已发出服务确认函',
       billT: '账单资料', billP: '请提供贵公司的账单资料，以便 ADspace 准备报价单供您签署。', billBtn: '填写账单资料',
@@ -238,8 +238,8 @@
         'bad-whatsapp': '请填写马来西亚或新加坡的 WhatsApp 号码。', 'bad-email': '请填写有效的邮箱地址。',
         'bad-name': '请只填写姓名，不要包含网址。', 'bad-brand': '请只填写品牌名称，不要包含网址。', 'bad-commence': '请选择计划开始时间。',
         'bad-industry': '您选择的行业已不再提供，请重新选择行业。',
-        expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 仍在审核本报价，审核完成后将通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
-        'not-found': '找不到此报价。', 'bad-answer': '请回答以上两个问题。',
+        expired: '本报价已过期，请申请新的报价。', 'not-proceeding': '本报价已取消，请申请新的报价。', 'not-sent': 'ADspace 将审核本报价，并通过 WhatsApp 发送给您。', unavailable: '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
+        'not-found': '找不到此报价，请检查链接，或申请新的报价。', 'bad-answer': '请回答以上两个问题。',
         signed: '本报价已签署，请通过 WhatsApp 联系 ADspace。',
         empty: '请至少选择一项服务。', 'nothing-priced': 'KOL 合作与自定创作者名单需另行报价。请加选有标价的服务，或通过 WhatsApp 联系 ADspace。', 'no-card': '目前暂不提供在线报价，请通过 WhatsApp 联系 ADspace。',
         any: '未能提交，请重试。'
@@ -255,7 +255,7 @@
         agree: '本人获授权代表 {c} 签署，并接受本报价及 ADspace 服务条款。',
         terms: '阅读服务条款', sending: '发送中…',
         codeL: '请输入发送至 {e} 的验证码', digit: '第{n}位，共6位', resendQ: '没有收到？', resend: '重新发送',
-        resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '签署并接受', finishing: '签署中…',
+        resendIn: '重新发送（{s}秒）', resent: '新的验证码已发送。', finish: '接受并签署', finishing: '签署中…',
         rec: '签署时间、IP 地址及设备将与您的签名一并记录。',
         waitT: '已接受 · 待 ADspace 确认', waitP: '由{n}于{d} {t}（GMT+8）签署。',
         confT: '已确认', confP: 'ADspace 已于{d}确认。', docId: '文件编号 {id}', sealDl: '下载已签署副本',
@@ -732,9 +732,9 @@
     return '<div class="qs-asked">' + TICK + '<span><b>' + esc(title) + '</b>' + (line ? '<span>' + esc(line) + '</span>' : '') + '</span></div>';
   }
   function repHtml(q) {
-    var w = t(), first = String(q.rep.name || '').split(' ')[0];
+    var w = t(), whole = String(q.rep.name || '').trim(), first = whole.split(' ')[0];
     var href = q.rep.whatsapp ? 'https://wa.me/' + encodeURIComponent(q.rep.whatsapp) + '?text=' +
-      encodeURIComponent('Hello ' + first + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
+      encodeURIComponent('Hello ' + whole + ', I would like to discuss my quotation ' + q.ref + '.') : waLink(q);
     /* A person card: the name and position on a white card with its way to
        reach them, never an initials disc (no stand-in for a person's
        picture; 2026-11-07). */
