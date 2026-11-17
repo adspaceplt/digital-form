@@ -3029,6 +3029,7 @@
       var at = new Date(v.built);
       if (isNaN(at)) return;
       var sha = String(v.commit || '').slice(0, 7);
+      if (!build.loaded) build.loaded = buildOf(v);
       var ver = 'v' + new Date(at.getTime() + 8 * 3600000).toISOString().slice(2, 10).replace(/-/g, '.');
       /* The line shows the commit's last four characters (2026-11-11: room
          for the Handbook's mark); its name and hover hold all seven. */
@@ -3037,6 +3038,100 @@
       box.title = box.getAttribute('aria-label');
       box.hidden = false;
     }).catch(function () {});
+  }
+  /* ===== The latest build (2026-11-17; the user: "ok build it", so that
+     everyone ends up on the same merged build). Every minute the console's
+     check runs (js/maintenance.js `often`), it also reads /version.json:
+     Pages answers it, so it is no line Supabase meters. A build newer than
+     the one this page loaded draws #buildBar (A new version is available.,
+     Refresh), and five minutes on the console refreshes by itself the first
+     moment it is idle. The build an admin requires (`build_require`,
+     Settings: Portal, answered by `page_pulse` as `build`) is stricter: a
+     console below it refreshes within the minute once idle, its bar saying
+     so with Refresh now. Idle is nothing open over the page (a sheet, a
+     question, a menu, a popover, the finder, the guide), no field holding
+     the caret, no request out, and nothing the page would warn about on
+     leaving (each page's own beforeunload guard, asked with a probe: a
+     held file, an upload, a script being edited, a draft being written).
+     Read raw (no build in version.json), nothing happens. A refresh is
+     Refresh app's (js/refresh.js), so the installed app takes its new
+     files too, and nobody is signed out. */
+  var build = { loaded: null, live: null, min: null, seenAt: 0, timer: null };
+  var BUILD_WAIT = 5 * 60000;
+  function buildOf(v) {
+    if (!v || /[{}%]/.test(String(v.commit) + String(v.built))) return null;
+    var t = Date.parse(v.built), c = String(v.commit || '').toLowerCase();
+    return isNaN(t) || !/^[0-9a-f]{7,40}$/.test(c) ? null : { commit: c, built: t };
+  }
+  function buildNewer() { return !!(build.loaded && build.live && build.live.built > build.loaded.built); }
+  function buildBelow() {
+    var m = build.min;
+    return !!(build.loaded && m && m.commit && Date.parse(m.built) > build.loaded.built);
+  }
+  function seenOn(el) { return el && el.getClientRects().length && getComputedStyle(el).visibility !== 'hidden'; }
+  function consoleIdle() {
+    var over = document.querySelectorAll('.sheet:not([hidden]), .kmenu:not([hidden]), .popcard:not([hidden]), ' +
+      '.picker:not([hidden]), .guidecard, .canvas:not([hidden]), .bulkbar:not([hidden])');
+    for (var i = 0; i < over.length; i++) if (seenOn(over[i])) return false;
+    var a = document.activeElement;
+    if (a && (/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) || a.isContentEditable)) return false;
+    if (window.ADspaceAPI && ADspaceAPI.loading && ADspaceAPI.loading.busy > 0) return false;
+    var probe;
+    try { probe = new Event('beforeunload', { cancelable: true }); window.dispatchEvent(probe); } catch (e) { return false; }
+    return !probe.defaultPrevented;
+  }
+  function buildRefresh() {
+    try {
+      var last = Number(sessionStorage.getItem('adspace-build-reload')) || 0;
+      if (Date.now() - last < 3 * 60000) return;
+      sessionStorage.setItem('adspace-build-reload', String(Date.now()));
+    } catch (e) {}
+    var b = $('appVersion');
+    if (b && !b.hidden) { b.click(); return; }
+    if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
+  }
+  function buildCheck() {
+    var due = buildBelow() || (buildNewer() && Date.now() - build.seenAt >= BUILD_WAIT);
+    if (due && consoleIdle()) buildRefresh();
+  }
+  function paintBuild() {
+    var bar = $('buildBar');
+    if (!bar) return;
+    var below = buildBelow(), on = below || buildNewer();
+    bar.hidden = !on;
+    if (on) {
+      $('buildWord').textContent = below ? 'A new version is required. The console will refresh when no form is open.'
+                                         : 'A new version is available.';
+      $('buildGo').textContent = below ? 'Refresh now' : 'Refresh';
+    }
+    if (on && !build.timer) build.timer = setInterval(buildCheck, 5000);
+    if (!on && build.timer) { clearInterval(build.timer); build.timer = null; }
+    if (on) buildCheck();
+  }
+  function readBuild() {
+    if (!build.loaded || !window.fetch) return;
+    fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (v) {
+      var b = buildOf(v);
+      if (!b) return;
+      build.live = b;
+      if (buildNewer() && !build.seenAt) build.seenAt = Date.now();
+      paintBuild();
+    }).catch(function () {});
+  }
+  function takeBuildMin(m) {
+    build.min = m && m.commit && m.built ? m : null;
+    paintBuild();
+    if (window.ADspaceSettings && ADspaceSettings.buildChanged) ADspaceSettings.buildChanged(build.min);
+  }
+  if ($('buildGo')) $('buildGo').addEventListener('click', function () {
+    try { sessionStorage.removeItem('adspace-build-reload'); } catch (e) {}
+    buildRefresh();
+  });
+  if (window.ADspaceMaintenance && window.ADspaceMaintenance.often) {
+    window.ADspaceMaintenance.often('build', function (m) { takeBuildMin(m); }, function () {
+      if (!me) return;
+      db.rpc('build_state').then(function (r) { if (r && !r.error && r.data && !r.data.error) takeBuildMin(r.data.min); }).catch(function () {});
+    }, { each: readBuild });
   }
   showVersion();
   /* A press on the build refreshes the app (the user, 2026-10-12: "refresh
@@ -5993,10 +6088,10 @@
        reminds the admins (2026-10-24). */
     abroadays: { title: 'Overseas approval', keys: [['abroad_days', 'Longest approval (days)', 'away', '', 'Up to', per('day')],
       ['abroad_remind_hours', 'Reminder every (hours)', 'every', '', 'Reminder every', per('hour')]] },
-    hiring: { title: 'Hiring', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
+    hiring: { title: 'Time limits', keys: [['hiring_invite_days', 'Interview times within (days of each other, 1 to 14)', 'days', '', 'Interview times within', per('day')],
       ['hiring_link_days', 'Candidate link open (days after the last step, 7 to 90)', 'days', '', 'Candidate link open', per('day')],
-      ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool', per('month')],
-      ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed candidates', per('month')]] },
+      ['hiring_pool_months', 'Talent pool kept (months from the candidate\'s agreement, 1 to 24)', 'months', '', 'Talent pool kept', per('month')],
+      ['hiring_keep_months', 'Closed candidates kept (months, 1 to 36)', 'months', '', 'Closed candidates kept', per('month')]] },
     healthkeep: { title: 'Health data kept', keys: [['health_keep_months', 'Check-ins kept for (months)', 'keep', '', 'Check-ins', per('month')],
       ['health_leaver_months', 'Leavers\' health data kept for (months after they leave)', 'leave', '', 'Leavers', per('month')]] },
     /* When a creator is paid after their post (2026-11-09, Creator R3). */
@@ -6184,6 +6279,10 @@
   window.ADspaceAdmin = {
     GRANTED: OPS_GRANTED,
     undoHere: undoHere,
+    /* The latest build (2026-11-17): what this page loaded, what Pages
+       serves now, and the build required. */
+    build: function () { return { loaded: build.loaded, live: build.live, min: build.min }; },
+    buildMin: takeBuildMin,
     counts: counts,
     /* My Work's count of what waits on this colleague, for the tab bar's dot. */
     waiting: function (n) { tabWaiting = Number(n) || 0; paintTabDot(); },

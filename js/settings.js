@@ -95,6 +95,14 @@
       });
     },
     delreq: function () { return window.ADspaceDelReq ? window.ADspaceDelReq.waiting() : Promise.resolve(''); },
+    /* The latest build required (2026-11-17): the build in force, else
+       Not set. */
+    build: function () {
+      return db.rpc('build_state').then(function (r) {
+        if (r.error || !r.data || r.data.error) throw r.error || new Error('build');
+        return buildLine(r.data.min);
+      });
+    },
     /* Page availability (2026-10-29): which pages show their notice page
        now, and which are set for later (2026-10-31: "2 covered" read as
        nothing to the user). */
@@ -106,6 +114,17 @@
       });
     },
     /* The Welcome Kit (2026-11-17, release H2 step E1): how many sections. */
+    /* The scorecards (2026-11-17): the Standard's criteria, then how many
+       positions hold their own. */
+    scorecards: function () {
+      return db.rpc('hiring_scorecards_list').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) throw r.error || new Error('scorecards');
+        var rows = d.rows || [], std = rows.filter(function (x) { return x.standard; })[0], own = rows.length - (std ? 1 : 0);
+        return parts([std ? 'Standard: ' + plural((std.criteria || []).length, 'criterion', 'criteria') : '',
+          own ? plural(own, 'position', 'positions') + ' with ' + (own === 1 ? 'its' : 'their') + ' own' : ''].filter(Boolean));
+      });
+    },
     welcomekit: function () {
       return db.rpc('welcome_kit_get').then(function (r) {
         if (r.error || !r.data || r.data.error) throw r.error || new Error('kit');
@@ -252,6 +271,10 @@
       ['Pages and notices', [
         /* Page availability (2026-10-29): Upgrade mode a page at a time. */
         may('team.upgrade') && { id: 'pages', name: 'Page availability', kind: 'open', meta: line('pages'), open: openPages },
+        /* Require latest build (2026-11-17): every open console below the
+           live build refreshes once nothing is open in it (js/admin.js). */
+        may('team.upgrade') && { id: 'build', name: 'Require latest version', kind: 'act', act: 'Require', meta: line('build'),
+          open: function (btn) { requireBuild(btn); } },
         may('team.announce') && { id: 'announce', name: 'Announcements', kind: 'open', meta: line('announce'),
           open: opens(W.ADspaceAnnounce && W.ADspaceAnnounce.manage) },
         may('team.notice') && { id: 'notice', name: 'Notices', kind: 'open', meta: line('notice'),
@@ -297,22 +320,7 @@
           { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
-      /* Hiring (2026-11-17, release H2 steps B and C): an invitation's
-         window, the candidate link's days, the talent pool and how long a
-         closed candidate is kept; the scorecards at the Hiring part. */
-      ['Hiring', [
-        biz && { id: 'hiring', name: 'Hiring', kind: 'edit',
-          meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
-            'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
-            'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
-            'Closed candidates ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
-        may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: '',
-          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } },
-        /* The Welcome Kit (2026-11-17, step E1): the words a new colleague
-           reads at first sign-in, before the Handbook's files. */
-        biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
-          open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
+            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', 'clients', [
       ['Clients', [
@@ -413,6 +421,22 @@
       return { id: 'perf-' + v[0], name: v[1], kind: 'open', meta: PERF_META[v[0]],
         open: function (btn) { W.ADspacePerf.openSettings(v[0], btn); } };
     }) : []]]);
+    /* Hiring (2026-11-17, the user: its own group): the candidates'
+       figures and the scorecards, then what a new colleague reads. */
+    add('hiring', 'Hiring', 'team', [
+      ['Candidates', [
+        biz && { id: 'hiring', name: 'Time limits', kind: 'edit',
+          meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
+            'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
+            'Talent pool kept ' + plural(num('hiring_pool_months'), 'month', 'months'),
+            'Closed candidates kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
+        may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: line('scorecards'),
+          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]],
+      /* The Welcome Kit (step E1): the words a new colleague reads at first
+         sign-in, before the Handbook's files. */
+      ['New colleagues', [
+        biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
+          open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
     /* Templates: the wording that is no message (the overnight review,
        2026-11-10: the emails and WhatsApp went to Messages). */
     add('templates', 'Templates', 'register', [['', [
@@ -449,6 +473,8 @@
     var next = nextLine(r.id);
     var ctl = r.kind === 'switch'
       ? '<button class="switch" type="button" role="switch" aria-checked="' + (r.on ? 'true' : 'false') + '" aria-label="' + esc(r.name) + '" data-a="' + r.id + '"></button>'
+      : r.kind === 'act'
+        ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '">' + esc(r.act) + '</button>'
       : r.kind === 'edit'
         ? '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Edit ' + esc(r.name) + '">' + PEN + 'Edit</button>'
         : '<button class="btn btn-sm" type="button" data-a="' + r.id + '" aria-label="Open ' + esc(r.name) + '">Open' + CHEV + '</button>';
@@ -639,6 +665,48 @@
   /* A switch unset reads On, as the database seeds it. */
   function autoOn(key) { var v = num(key); return v == null || v === 1; }
   function flipAuto(sw, id, kind, word) { flipOwn(sw, id, 'auto_send_set', word, { p_kind: kind }); }
+  /* ---- Require latest build (2026-11-17) ---------------------------------
+     The build Pages serves now (/version.json, read at the press) becomes
+     the build every console must run (`build_require`, team.upgrade);
+     Undo puts back the one before. */
+  function buildWord(m) {
+    if (!m || !m.commit || !m.built) return '';
+    var t = Date.parse(m.built);
+    return isNaN(t) ? '' : 'v' + new Date(t + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' \u00b7 ' + String(m.commit).slice(0, 7);
+  }
+  function buildLine(m) { return buildWord(m) || 'Not set'; }
+  function requireBuild(btn) {
+    var tell = rowSay('build');
+    fetch('/version.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; }).then(function (v) {
+      var ok = v && !/[{}%]/.test(String(v.commit) + String(v.built)) && /^[0-9a-f]{7,40}$/i.test(String(v.commit)) && !isNaN(Date.parse(v.built));
+      if (!ok) { tell('The live version could not be read. Refresh the page and try again.', 'err'); return; }
+      var live = { commit: String(v.commit).toLowerCase(), built: v.built };
+      window.ADspaceConfirm.ask({ title: 'Require the latest version?', go: 'Require',
+        body: 'Every console open on a version older than ' + buildWord(live) + ' will refresh within a minute, once no form is open.' }, function () {
+        btn.disabled = true;
+        send(live.commit, live.built).then(function (d) {
+          tell('');
+          var was = d.was || null;
+          bridge.undoHere('Required.', function () { send(was && was.commit, was && was.built).catch(function (e) { tell(String((e && e.message) || e), 'err'); }); },
+            document.querySelector('#setList .stg-row[data-row="build"]'));
+        }).catch(function (e) { btn.disabled = false; tell(String((e && e.message) || e), 'err'); });
+      });
+    });
+    function send(commit, built) {
+      return db.rpc('build_require', { p_commit: commit || null, p_built: commit ? built : null }).then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) {
+          throw new Error(r.error ? (/function|schema cache/i.test(r.error.message) ? window.ADspaceWords.line.notYet : r.error.message)
+            : d.error === 'denied' ? 'You do not have permission to require a version. Please ask an admin.'
+            : d.error === 'bad-build' ? 'The live version could not be read. Refresh the page and try again.' : 'Not saved. Please try again, or contact an admin.');
+        }
+        fillLine('build', buildLine(d.min));
+        if (bridge.buildMin) bridge.buildMin(d.min || null);
+        return d;
+      });
+    }
+  }
+
   function flipPortal(sw, id, key, word) { flipOwn(sw, id, 'portal_switch_set', word, { p_key: key }); }
   function flipOwn(sw, id, fn, word, extra) {
     var to = sw.getAttribute('aria-checked') !== 'true';
@@ -1819,6 +1887,7 @@
     if (b) b.focus();
   }
   window.ADspaceSettings = { enter: function () { wire(); enter(); }, paint: paint,
+    buildChanged: function (m) { fillLine('build', buildLine(m)); },
     pagesChanged: function (rows) { if (rows) pg.rows = rows; paintPg(); if (READ.pages) READ.pages().then(function (t) { fillLine('pages', t); }).catch(function () {}); }, urlState: urlState, allowed: allowed, say: say, rows: rows, focusRow: focusRow,
     /* A row's line read again after its sheet saved (AutoCount HRMS, 2026-11-16). */
     refresh: function (id) { readLine(id); } };

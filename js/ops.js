@@ -2520,6 +2520,7 @@
     var inBar = !!(w && w.closest('.cwbar'));
     if (it) it.hidden = !(inBar && eb && !eb.hidden && isPhone());
     if (w) w.hidden = !(state.moreAny || (it && !it.hidden));
+    if (w && window.ADspaceMenu && window.ADspaceMenu.solo) window.ADspaceMenu.solo(w);
   }
   function isPhone() { return !!(window.matchMedia && window.matchMedia('(max-width: 640px)').matches); }
   if (window.matchMedia) {

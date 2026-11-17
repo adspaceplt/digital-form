@@ -287,7 +287,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `perf.js` | perfui, perfguard, perf, hrshare |
 | `search.js` | search, then `ui` |
 | `agent.js`, `supabase/functions/portal-agent/`, the PORTAL ASSISTANT and ASSISTANT ACTIONS AND SCHEDULES sections | agent, search, caption, whatsapp, meetmsgsql, sql, smsql, demo, then `ui` |
-| `maintenance.js` | upgrade, sql, then `ui` |
+| `maintenance.js`, the build check (`#buildBar`, `build_require`) | upgrade, buildsync, appver, sql, then `ui` |
 | `announce.js` | announce, smsql, then `ui` |
 | `notice.js`, the bell | notice, smsql, then `ui` |
 | `overview.js` | overview, leave, then `ui` |
@@ -654,7 +654,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   a colleague holding any of `team.upgrade`, `team.announce`,
   `team.notice`, `team.settings`, `reports.ai`, `register.types`,
   `ops.numbering`, `ops.workflows`, `team.performance` (View), or Suppliers, WhatsApp or Services at
-  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Nine groups
+  Full Access (2026-10-22, SET2-11; 2026-10-29); its address falls back for anyone else. Ten groups
   (2026-10-11, the queue's task 46; regrouped 2026-11-10, the overnight
   review, after Apple's System Settings), each led by a rail glyph and its
   rows in inset cards of five at most under short headings: Portal (Pages
@@ -673,7 +673,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   templates at WhatsApp Full Access, Meeting
   message, Website quotations: how many a day are told on WhatsApp),
   Performance (Months, Quarters, Bonus and trip, Commission at
-  `team.performance` View, behind the master code; 2026-10-29), Templates
+  `team.performance` View, behind the master code; 2026-10-29), Hiring
+  (Candidates: Time limits at `team.settings`, Interview scorecards at
+  `team.hiring`, its row the Standard's criteria and how many positions hold
+  their own, Standard: 5 criteria · 1 position with its own; New colleagues:
+  Welcome Kit; 2026-11-17), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access). Email templates (`js/mailtpl.js`,
   `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
@@ -760,6 +764,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   - it never touches localStorage, IndexedDB or the sign-in;
   - notifications survive it: the next load subscribes again without asking
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
+- The latest build (`2026-11-17-latest-build.sql`; the user, 2026-11-17:
+  "ok build it", everyone on the same merged build): each minute the
+  console's check runs (`often`'s `each`) it reads `/version.json` from
+  Pages (no metered line); a build newer than the page's draws `#buildBar`
+  (laid as `.upgradebar`: A new version is available., Refresh), and five
+  minutes on the console refreshes by itself once idle. Settings, Portal:
+  Require latest version (`team.upgrade`) stores the live build
+  (`build_require(p_commit, p_built)`, `app_flags` `build:min`, `bad-build`,
+  filed `team.changed` under Portal from and to, Undo putting the one before
+  back); `page_pulse` answers it to the console as `build`, and a console
+  below it refreshes within the minute once idle, its bar reading Refresh
+  now. Idle: nothing open over the page (a sheet, question, menu, popover,
+  finder, guide, bulk bar), no field holding the caret, no request out
+  (`ADspaceAPI.loading.busy`), and no page's own `beforeunload` guard
+  objecting (asked with a probe event). A refresh is Refresh app's, at most
+  once in three minutes a tab; raw, nothing happens; client pages are
+  untouched (`tests/buildsync.js`).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
 - Page availability (`js/maintenance.js`, `2026-10-29-page-availability.sql`;
@@ -799,7 +820,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     announcements and the bell, each as its own function answers it; a part
     joins with `often(key, take, alone, opts)`, and on a database without the
     function every part asks alone (every request is a line Supabase logs and
-    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze).
+    meters; `tests/upgrade.js`, `tests/smsql.js` §9ze); to the console it
+    also answers the build required (`build`).
   - The console's row covers it for anybody but an admin (the whole screen,
     with Sign out); an admin works on under `.upgradebar` (led by the amber
     dot, Console: Upgrade in progress until …, Turn off ending the
@@ -1285,7 +1307,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     taking the focus back from what the item opens (Compare groups, Bulk
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
-    can be pressed. Its glyph is the row ⋯'s three dots across.
+    can be pressed. Its glyph is the row ⋯'s three dots across. A ⋯
+    that would hold one item is not drawn: that item's own button stands
+    on the bar (`.cmd-solo`; a section's own ⋯, My Work's and Reports',
+    through `ADspaceMenu.solo`; the user, 2026-11-17).
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
     wasting one row for the filters"), on a row of their own under it
@@ -3490,7 +3515,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
-  not chosen. Settings, Portal, Hiring: Hiring holds the figures
+  not chosen. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
 - The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
   user, 2026-11-17, the team's paper sheet: "a slide window or so so the
@@ -3567,8 +3592,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   figures, the intern and part-time paragraphs only for those types; the
   page and emails read Read offer and Read contract. Its
   documents' files are queued for the console to take out of Storage when
-  it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
-  HR document's reference yet (step E).
+  it goes (trigger `hiring_docs_files_gone`). /verify/ answers an offer's
+  or contract's reference once sent as HR Letter (Valid, Void, Withdrawn,
+  Declined, Expired), its days and, sealed, its Document ID and Check a
+  file, never the person (`2026-11-17-hr-documents-verify.sql`); a
+  confirmed one is listed under HR Letters (`hiring_register()`, HR Letters
+  at View) and on the colleague's Documents, its ⋯ Download opening the
+  sealed copy through a 60-second link (`hiring_file_ok` lets HR Letters at
+  View read that file alone).
 - Make colleague and onboarding (step E1, `2026-11-17-hiring-onboarding.sql`,
   `js/onboard.js`): a candidate whose contract is confirmed offers Make
   colleague (the part or the Owner, `hiring_hire_state`): one question of
@@ -3590,7 +3621,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   their first day, Employee ID, department, position, direct manager and
   company email, then the team's sections, the Wi-Fi password and door
   PIN always Please check with your direct manager.; Acknowledge
-  (`welcome_kit_ack`, filed). The sections are Settings, Portal: Welcome
+  (`welcome_kit_ack`, filed). The sections are Settings, Hiring: Welcome
   Kit (`team.settings`, `welcome_kit_save`: 1 to 12 sections, `secret`
   refusing a line naming a password, passcode or PIN with a value).
 - No candidate data goes to an AI service, ever (decision 10's rule for
@@ -3713,7 +3744,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   run: creators' bills first to 35 seconds, months' invoices to 60, then the
   links, the oldest read first, in what is left; the run writes its beat,
   `job_beat('bukku-nightly')`, which `jobs_watch` reads; audit 2026-11-15). An entity is the same inside its fold.
-  Suppliers keep Send to Bukku as before. Creators brought in from the
+  Suppliers keep Send to Bukku as before. A colleague is a Bukku employee
+  contact (kind `member`, `2026-11-17-bukku-employee.sql`, its SQL Editor
+  part turning it on; HR-SPEC decision 12): the band on their Onboarding
+  at `team.personnel`, sent with the name as per NRIC, the company email,
+  the mobile and the home address, never an NRIC, a bank account or a
+  salary, no Bukku field holding the Employee ID; filed `team.edited`;
+  `bukku_member_ready()` keeps the band away until `bukku_links.kind` takes
+  `member`. Creators brought in from the
   AP01 form are matched to their Bukku contacts by `bukku-sync`
   `match-creators` (the wake secret alone, read only: ID number, else one
   contact of the legal name, a contact another record links said as
@@ -6622,14 +6660,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
-    contact's preferred language. It decides only the language Draft with
+    contact's preferred language, set by trigger `sm_reports_lang_default`
+    whichever way it is made (New report, My Work's Start report;
+    2026-11-17). It decides only the language Draft with
     AI writes in (`ZH` in `report-draft`): the PDF's template is English
     throughout and what the team wrote prints as written (the user,
     2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
     Chinese drafts read smooth and easy, as an account manager writes to
     the owner, never a stiff audit report (`ZH`, TONE IN CHINESE; the
-    user, 2026-10-16).
+    user, 2026-10-16); a cost per result reads as an average (平均每次对话成本
+    RM 19.72, never a bare 每次). A 中文 press asks for Chinese at the head
+    of the request too (`ZH_ASK`), and one answered in English is asked once
+    more inside the same press (`readsChinese`; 2026-11-17).
     Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point, and candid both ways (the user,
@@ -6697,7 +6740,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `by_objective` (the period's spend, results and cost per result, every
     ad counted) and its `group_cost_per_result` counts every ad that spent
     (`tests/objcost.js`).
-  - Next batch (`2026-11-13-ads-next-batch.sql`; the user, 2026-11-13: "approve build both"): an Advertising Report's step between Commentary and Check and submit, never opened on by itself; Write with AI (`report-draft` `mode: 'next'`, its own use `ai_next_claim`, 3 a day, AI usage's Next batch) reads the report's ads and, where `meta_checks_on()` and an ad account is linked, Meta's frequency, CTR, spend and results by day over the period's last 14 days (`meta-import` `daily`, asked as the caller), and keeps up to six suggestions on the report (`sm_reports.next_batch`, a draft field), each a kind (Winning, Tiring, Clicks without {result}, New idea, Evergreen), its ad, title, evidence, plan, reason and points, a number none of the figures sent holds dropped; Add to commentary appends its points to Focus for next month with Undo, filed `report.saved`; Create task opens Add task prefilled (`ADspaceOps.add(pre)`); those added print on the PDF's Next Batch page while `next_batch_print` is on, the snapshot sending them alone, never the evidence, and `figureSlips` reads its amounts (`tests/nextbatch.js`).
+  - Next batch (`2026-11-13-ads-next-batch.sql`; the user, 2026-11-13: "approve build both"): an Advertising Report's step between Commentary and Check and submit, never opened on by itself; Write with AI (`report-draft` `mode: 'next'`, its own use `ai_next_claim`, 3 a day, AI usage's Next batch) reads the report's ads and, where `meta_checks_on()` and an ad account is linked, Meta's frequency, CTR, spend and results by day over the period's last 14 days (`meta-import` `daily`, asked as the caller), and keeps up to six suggestions on the report (`sm_reports.next_batch`, a draft field), each a kind (Winning, Tiring, Clicks without {result}, New idea, Evergreen), its ad, title, evidence, plan, reason and points, a number none of the figures sent holds dropped; Add to commentary appends its points to Focus for next month with Undo, filed `report.saved`; Create task opens Add task prefilled (`ADspaceOps.add(pre)`), one task a suggestion: once the client holds a task of its title, not cancelled (read once a visit, one request), the row offers Open task #WT… in its place (the user, 2026-11-17); those added print on the PDF's Next Batch page while `next_batch_print` is on, the snapshot sending them alone, never the evidence, and `figureSlips` reads its amounts (`tests/nextbatch.js`).
   - The Report audit (2026-10-09; the user: "there shouldnt be any
     mismatches"; `2026-10-09-report-audit.sql`): one card under Check and
     submit's checks (`.rp-aicheck`: Report audit, Run audit with the
@@ -7030,7 +7073,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `meta-off`) reads, for the
   report's own rows (three a call), the creative of the first Ad ID in an ad
   account the client links (the image, a link's or carousel's picture, a
-  video's cover, its preferred frame, then the thumbnail at 1080), never a
+  video's cover, its preferred frame, then the thumbnail at 1080; an image
+  named by its hash alone read whole from the ad account's images before
+  that thumbnail, which Meta crops square; 2026-11-17), never a
   preview of the ad and never a figure. It asks first, a tick replacing the
   pictures already held; only `thumb_data` is written, an ad left without
   is counted in one line, filed `From Meta: n pictures added` / `replaced`,

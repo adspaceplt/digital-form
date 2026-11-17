@@ -8,7 +8,7 @@
  *     (js/handbook.js draws it through `ADspaceOnboard.kit`). Their own facts
  *     from the record, the team's words from Settings; the Wi-Fi password and
  *     the door PIN always read "Please check with your direct manager."
- *   * Settings, Portal, Hiring: Welcome Kit (`openKit`, Business settings): the
+ *   * Settings, Hiring: Welcome Kit (`openKit`, Business settings): the
  *     words a section at a time.
  *   * Team, a colleague's record, Onboarding (`mtab=onboarding`, the Hiring or
  *     Personnel part; `paneTeam`): the checklist (what the portal knows ticks
@@ -291,6 +291,8 @@
             '<span class="onb-cell">' + tick('entry', x[0], x[1], ticks, x[1] + ', entry') + '</span>' +
             '<span class="onb-cell">' + tick('exit', x[0], x[1], ticks, x[1] + ', exit') + '</span></div>';
         }).join('') + '</div>') +
+      /* The colleague as an employee in Bukku (HR-SPEC decision 12). */
+      '<div class="readgroup" id="onbBukku" hidden></div>' +
       '</div></div>';
     Array.prototype.forEach.call(box.querySelectorAll('.onb-tick'), function (c) {
       c.addEventListener('change', function () {
@@ -304,6 +306,7 @@
         });
       });
     });
+    if (window.ADspaceBukku && $('onbBukku')) window.ADspaceBukku.group($('onbBukku'), 'member', team.m.id);
     $('onbAddAsset').addEventListener('click', function () { msg('onbMsg', ''); askAsset(null); });
     Array.prototype.forEach.call(box.querySelectorAll('.onb-asset[data-i]'), function (row) {
       var i = Number(row.getAttribute('data-i'));
