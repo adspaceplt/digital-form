@@ -665,6 +665,7 @@
     team_member_seen: 'p_id',
     team_hand_over: 'p_member p_to',
     team_member_remove: 'p_erase p_member p_name',
+    team_member_purge: 'p_member p_name',
     team_member_remove_check: 'p_member',
     verify_letter: 'p_doc',
     verify_serial: 'p_serial', verify_file: 'p_serial p_sha', hiring_register: ''
@@ -8803,6 +8804,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         headline: null, intro: null, insights: {}, rank_metric: 'views', status: 'draft', version_no: 1, return_note: null,
         submitted_by: null, submitted_at: null, confirmed_by: null, confirmed_at: null, created_by: me.id, created_at: now, updated_at: now,
         brand_id: crBrand, brand_name: crB ? crB.name : null, label_client: crB ? a.p_client : null, on_request: crAsked };
+
+      nr.lang = (DB.client_contacts || []).some(function (c) { return c.client_id === a.p_client && c.is_primary && !c.archived_at && c.lang === 'zh'; }) ? 'zh' : 'en';
       var prev = DB.sm_reports.filter(function (x) { return x.client_id === a.p_client && (x.kind || 'social') === kind && x.period_start < a.p_start && (x.brand_id || null) === crBrand && (crAsked || !x.on_request); })
         .sort(function (x, y) { return y.period_start.localeCompare(x.period_start); })[0];
       if (kind === 'ads' && crAsked) prev = null;
@@ -16158,6 +16161,32 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return { ok: true };
       })();
       return Promise.resolve({ data: JSON.parse(JSON.stringify(rcOut)), error: null });
+    }
+
+    if (name === 'team_member_purge') {
+      var pg0 = window.__refuseRpc && window.__refuseRpc[name];
+      if (pg0) return Promise.resolve({ data: null, error: { message: pg0 } });
+      var pgMe = opsMe(), pgA = args || {}, pgOut;
+      var pgM = (DB.team_members || []).filter(function (x) { return x.id === pgA.p_member; })[0];
+      if (!pgMe || !opsAccess(pgMe).admin) pgOut = { error: 'admin-only' };
+      else if (!pgM) pgOut = { error: 'not-found' };
+      else if (pgM.id === pgMe.id) pgOut = { error: 'own' };
+      else if (pgM.system) pgOut = { error: 'system-account' };
+      else if (!pgM.removed_at) pgOut = { error: 'not-removed' };
+      else if (String(pgA.p_name || '').trim().toLowerCase() !== String(pgM.name).trim().toLowerCase()) pgOut = { error: 'bad-name' };
+      else {
+        Object.keys(DB).forEach(function (t) {
+          if (!Array.isArray(DB[t]) || t === 'team_members' || t === 'activity_log') return;
+          DB[t] = DB[t].filter(function (r) { return !r || !['team_member_id', 'member_id'].some(function (k) { return r[k] === pgM.id; }); });
+          DB[t].forEach(function (r) {
+            ['created_by', 'manager_id', 'owner_id', 'sales_by', 'assigned_by', 'decided_by', 'reviewer_id', 'actor_id'].forEach(function (k) { if (r && r[k] === pgM.id) r[k] = null; });
+          });
+        });
+        logAct('team.changed', pgM.name, 'Deleted permanently');
+        DB.team_members = DB.team_members.filter(function (x) { return x !== pgM; });
+        pgOut = { ok: true };
+      }
+      return Promise.resolve({ data: pgOut, error: null });
     }
     if (name === 'team_work_held' || name === 'team_hand_over' || name === 'team_member_remove') {
       var hoOut = (function () {
