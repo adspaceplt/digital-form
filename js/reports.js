@@ -6136,6 +6136,8 @@
       var aiIt = $('rhMore').querySelector('[data-a="aiuse"]');
       if (aiIt) aiIt.hidden = !aiMay;
     }
+    // One item alone stands as its own button (the user, 2026-11-17).
+    if ($('rhMoreWrap') && window.ADspaceMenu && window.ADspaceMenu.solo) window.ADspaceMenu.solo($('rhMoreWrap'));
     $('rhKind').innerHTML = '<option value="">All types</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
     loadClients();

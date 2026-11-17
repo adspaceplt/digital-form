@@ -615,9 +615,13 @@ The user, 2026-10-22: "MENU standard: approve". Every ⋯ and every bulk bar
    back are drawn on screen (a restricted account's rail block and Clear),
    the ⋯ offers only the way in.
 8. At most seven items; more are split by moving the commonest act onto the
-   screen, never by nesting. A ⋯ of one item only where that item is in
-   group 5 or 6, or the ⋯ sits in a command bar; otherwise the single act
-   is a `.btn-sm` on the row or head.
+   screen, never by nesting. Never a ⋯ of one item beside another act (the
+   user, 2026-11-17: "menu only sit one option, edit stays outside?"): an
+   act standing beside a ⋯ that would hold one item joins it (a group's
+   Edit beside its Delete, a request's Reply). A bar's ⋯ that would hold
+   one item is that item's button instead (`.cmd-solo`, `.kmenu-solo`). A ⋯
+   of one item stays only where it is a lifecycle or destroy act and
+   nothing stands beside it. `tests/menus.js` holds it.
 9. Words: verb first, one to three words, no object the context gives; the
    same act the same word everywhere (Reset link, Void, Issue Letter of
    Offer, Make primary, Duplicate, Cancel); never a mood (Mark not signed);

@@ -476,14 +476,33 @@
     if (rare.length) wrap.classList.add('has-rare');
     wrap.appendChild(btn); wrap.appendChild(menu);
     acts.insertBefore(wrap, lead || null);
+    /* A ⋯ never holds one item (the user, 2026-11-17: "menu only sit one
+       option"): where only one would show, its own button stands on the bar
+       (`.cmd-solo`) and the ⋯ is not drawn. On a phone a button with a
+       glyph gives up its word, as the primary does. */
     function syncMore() {
-      var any = false;
+      var shown = [];
       pairs.forEach(function (pr) {
         pr[1].hidden = pr[0].hidden;
-        if (!pr[1].hidden && getComputedStyle(pr[1]).display !== 'none') any = true;
+        pr[0].classList.remove('cmd-solo');
+        if (!pr[1].hidden && getComputedStyle(pr[1]).display !== 'none') shown.push(pr);
       });
-      wrap.hidden = !any;
-      if (!any) shutMore();
+      if (shown.length === 1) {
+        var b = shown[0][0];
+        if (b.querySelector('svg') && !b.querySelector('.btn-word')) {
+          Array.prototype.forEach.call(b.childNodes, function (n) {
+            if (n.nodeType === 3 && n.textContent.trim()) {
+              var sp = document.createElement('span');
+              sp.className = 'btn-word'; sp.textContent = n.textContent.trim();
+              if (!b.getAttribute('aria-label')) b.setAttribute('aria-label', sp.textContent);
+              b.replaceChild(sp, n);
+            }
+          });
+        }
+        b.classList.add('cmd-solo');
+      }
+      wrap.hidden = shown.length < 2;
+      if (shown.length < 2) shutMore();
     }
     if (window.MutationObserver) {
       var watch = new MutationObserver(syncMore);

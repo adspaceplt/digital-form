@@ -1285,7 +1285,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     taking the focus back from what the item opens (Compare groups, Bulk
     import; SHELL-5, 2026-10-22); each item carries its button's
     `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
-    can be pressed. Its glyph is the row ⋯'s three dots across.
+    can be pressed. Its glyph is the row ⋯'s three dots across. A ⋯
+    that would hold one item is not drawn: that item's own button stands
+    on the bar (`.cmd-solo`; a section's own ⋯, My Work's and Reports',
+    through `ADspaceMenu.solo`; the user, 2026-11-17).
   - Every filter is a pill (v3, 2026-11-12): at a desk on the bar's own
     line between the search and the count (the user, 2026-11-13: "we're
     wasting one row for the filters"), on a row of their own under it
