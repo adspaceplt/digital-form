@@ -745,11 +745,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   alone, at `/client/file/`, registered by `js/portal.js`. A failed
   registration is silent.
 - The rail's foot names the build with Settings' and the Activity record's marks (`#appVersion`,
-  `.appver`, 11px mute): `v{YY.MM.DD} · {commit}`, the deploy's day in
-  Malaysia and the merge commit's first seven characters (`v26.10.06 ·
-  fb89b43`; the user, 2026-10-06: short, but which build), read from
-  `/version.json` (the line shows the commit's last four characters, its
-  name and hover all seven; 2026-11-11), which the Pages build writes through Jekyll
+  `.appver`, 11px mute): `{YYMMDD}.{commit}`, the deploy's day in
+  Malaysia and the merge commit's last four characters as one token
+  (`261006.b43a`; the user, 2026-10-06: short, but which build; 2026-11-17:
+  shorter), read from
+  `/version.json` (its name and hover hold all seven characters), which the Pages build writes through Jekyll
   (`site.github.build_revision`, `site.time`); never typed by hand. Read raw
   (no build) or missing, the line is hidden (`tests/appver.js`). The line is
   Refresh app (the user, 2026-10-12): a button drawn as its words (no box,
@@ -9055,7 +9055,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   browser calls: `_shared/cors.ts`, the one list of origins and the one
   answer's headers, `tests/mailfn.js`), and both read back.
 - The report lists what the user does by hand: a dashboard setting.
-- Every go-live report names the version the console shows exactly as the rail reads it (`v{YY.MM.DD} · {commit}`), so the person can match it.
+- Every go-live report names the version the console shows exactly as the rail reads it (`{YYMMDD}.{commit}`), so the person can match it.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
 
