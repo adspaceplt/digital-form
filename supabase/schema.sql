@@ -129742,6 +129742,7 @@ end $$;
 revoke all on function public.quotation_invoice_prep(uuid, integer, text) from public, anon;
 grant execute on function public.quotation_invoice_prep(uuid, integer, text) to authenticated;
 
+
 -- END OF QUOTATION INVOICES TO THE CENT ---------------------------------------
 
 -- ===========================================================================
