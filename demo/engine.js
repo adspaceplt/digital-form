@@ -256,6 +256,7 @@
     new_link_key: '',
     ops_add_business_days: 'p_from p_days',
     page_pulse: 'p_audience p_bell',
+    build_state: '', build_require: 'p_commit p_built',
     video_script_new: 'p_client p_period p_kind p_from p_idem',
     video_script_save: 'p_id p_head p_scenes p_version',
     video_script_share: 'p_ids p_on',
@@ -9305,6 +9306,10 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (bad) return { data: null, error: bad.error };
         var out = { maintenance: rs[0].data, pages: rs[2].data };
         if (puAud) out.announcements = rs[1].data || [];
+        if (puArgs.p_audience === 'team') return rpc('build_state', {}).then(function (b) { out.build = (b && b.data && b.data.min) || null; return out; });
+        return out;
+      }).then(function (out) {
+        if (!out || out.error) return out;
 
         var seenMe = puArgs.p_audience === 'team' && opsMe();
         if (seenMe) {
@@ -12891,6 +12896,34 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: dmState(), error: null });
     }
 
+    if (name === 'build_state' || name === 'build_require') {
+      var bmRow = function () {
+        if (window.__buildMin && !(DB.app_flags || []).some(function (x) { return x.key === 'build:min'; })) {
+          DB.app_flags = (DB.app_flags || []).concat([{ key: 'build:min', on_now: true, note: window.__buildMin.commit, starts_at: window.__buildMin.built }]);
+        }
+        var f = (DB.app_flags || []).filter(function (x) { return x.key === 'build:min'; })[0];
+        return f && f.on_now && f.note && f.starts_at ? { commit: f.note, built: f.starts_at, set_by: f.set_by || null, set_at: f.set_at || null } : null;
+      };
+      var bmWord = function (c, b) { return c && b ? 'v' + new Date(Date.parse(b) + 8 * 36e5).toISOString().slice(2, 10).replace(/-/g, '.') + ' · ' + c.slice(0, 7) : 'not set'; };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return Promise.resolve({ data: null, error: { message: window.__refuseRpc[name] } });
+      if (name === 'build_state') {
+        if (!opsMe()) return Promise.resolve({ data: { error: 'denied' }, error: null });
+        return Promise.resolve({ data: JSON.parse(JSON.stringify({ min: bmRow() })), error: null });
+      }
+      if (!opsGranted('team.upgrade', 'work')) return Promise.resolve({ data: { error: 'denied' }, error: null });
+      var bmC = String(args.p_commit || '').trim().toLowerCase() || null, bmB = args.p_built ? Date.parse(args.p_built) : NaN;
+      if (bmC && (!/^[0-9a-f]{7,40}$/.test(bmC) || isNaN(bmB) || bmB < Date.parse('2023-08-14T00:00:00+08:00') || bmB > Date.now() + 6e5)) {
+        return Promise.resolve({ data: { error: 'bad-build' }, error: null });
+      }
+      var bmWas = bmRow();
+      DB.app_flags = (DB.app_flags || []).filter(function (x) { return x.key !== 'build:min'; });
+      DB.app_flags.push({ key: 'build:min', on_now: !!bmC, note: bmC, starts_at: bmC ? new Date(bmB).toISOString() : null, set_by: whoNow(), set_at: new Date().toISOString() });
+      DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'team.changed', subject: 'Portal',
+        detail: 'Latest version required: ' + bmWord(bmWas && bmWas.commit, bmWas && bmWas.built) + ' → ' + bmWord(bmC, bmC ? new Date(bmB).toISOString() : null),
+        created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: JSON.parse(JSON.stringify({ ok: true, min: bmRow(), was: bmWas })), error: null });
+    }
     if (name === 'maintenance_state' || name === 'maintenance_set' || /^page_(states|states_all|set)$/.test(name)) {
       var mtNow = Date.now();
       var PG_KEYS = ['admin', 'client', 'review', 'script', 'details', 'creators', 'creator', 'quote', 'supplier', 'verify'];

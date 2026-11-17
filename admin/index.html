@@ -152,9 +152,9 @@
 <script src="/js/records.js?v=20261026f"></script>
 <script src="/js/chart.js?v=20261029m"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/api.js?v=20261117tcz"></script>
+<script src="/js/api.js?v=20261117zzb"></script>
 <script src="/js/delreq.js?v=20261117zc"></script>
-<script src="/js/maintenance.js?v=20261112"></script>
+<script src="/js/maintenance.js?v=20261117zzb"></script>
 <script src="/js/announce.js?v=20261112h"></script>
 <script src="/js/notice.js?v=20261112h"></script>
 <script src="/js/whatsapp.js?v=20261117zi"></script>
@@ -660,6 +660,13 @@
 
     <!-- Upgrade mode is on, or set for later: said to an admin, the one
          person still working, with the way to turn it off beside it. -->
+    <!-- A newer build is live, or the build an admin requires is newer than
+         this page's (2026-11-17): Refresh, and by itself once idle. -->
+    <div class="upgradebar buildbar" id="buildBar" role="status" hidden>
+      <span class="upgradebar-word" id="buildWord"></span>
+      <button class="btn btn-sm" id="buildGo" type="button">Refresh</button>
+    </div>
+
     <div class="upgradebar" id="upgradeBar" role="status" hidden>
       <span class="upgradebar-word" id="upgradeWord"></span>
       <button class="btn btn-sm" id="upgradeOff" type="button">Turn off</button>
@@ -6688,7 +6695,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261112h"></script>
-<script src="/js/admin.js?v=20261117zv"></script>
+<script src="/js/admin.js?v=20261117zzb"></script>
 <script src="/js/documents.js?v=20261117zc"></script>
 <script src="/js/letters.js?v=20261117tcz"></script>
 <script src="/js/smreport.js?v=20261117zt"></script>
@@ -6725,6 +6732,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261117tcz"></script>
 <script src="/js/overview.js?v=20261117zn"></script>
 <script src="/js/analytics.js?v=20261117zzb"></script>
-<script src="/js/settings.js?v=20261117zv"></script>
+<script src="/js/settings.js?v=20261117zzb"></script>
 </body>
 </html>
