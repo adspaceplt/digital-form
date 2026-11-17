@@ -114,6 +114,17 @@
       });
     },
     /* The Welcome Kit (2026-11-17, release H2 step E1): how many sections. */
+    /* The scorecards (2026-11-17): the Standard's criteria, then how many
+       positions hold their own. */
+    scorecards: function () {
+      return db.rpc('hiring_scorecards_list').then(function (r) {
+        var d = r.data || {};
+        if (r.error || d.error) throw r.error || new Error('scorecards');
+        var rows = d.rows || [], std = rows.filter(function (x) { return x.standard; })[0], own = rows.length - (std ? 1 : 0);
+        return parts([std ? 'Standard: ' + plural((std.criteria || []).length, 'criterion', 'criteria') : '',
+          own ? plural(own, 'position', 'positions') + ' with ' + (own === 1 ? 'its' : 'their') + ' own' : ''].filter(Boolean));
+      });
+    },
     welcomekit: function () {
       return db.rpc('welcome_kit_get').then(function (r) {
         if (r.error || !r.data || r.data.error) throw r.error || new Error('kit');
@@ -309,22 +320,7 @@
           { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
-            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],
-      /* Hiring (2026-11-17, release H2 steps B and C): an invitation's
-         window, the candidate link's days, the talent pool and how long a
-         closed candidate is kept; the scorecards at the Hiring part. */
-      ['Hiring', [
-        biz && { id: 'hiring', name: 'Hiring', kind: 'edit',
-          meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
-            'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
-            'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
-            'Closed candidates ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
-        may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: '',
-          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } },
-        /* The Welcome Kit (2026-11-17, step E1): the words a new colleague
-           reads at first sign-in, before the Handbook's files. */
-        biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
-          open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
+            'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]]]);
     var lead = num('lead_followup_hours'), prop = num('proposal_followup_days');
     add('clients', 'Clients', 'clients', [
       ['Clients', [
@@ -425,6 +421,22 @@
       return { id: 'perf-' + v[0], name: v[1], kind: 'open', meta: PERF_META[v[0]],
         open: function (btn) { W.ADspacePerf.openSettings(v[0], btn); } };
     }) : []]]);
+    /* Hiring (2026-11-17, the user: its own group): the candidates'
+       figures and the scorecards, then what a new colleague reads. */
+    add('hiring', 'Hiring', 'team', [
+      ['Candidates', [
+        biz && { id: 'hiring', name: 'Time limits', kind: 'edit',
+          meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
+            'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
+            'Talent pool kept ' + plural(num('hiring_pool_months'), 'month', 'months'),
+            'Closed candidates kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
+        may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: line('scorecards'),
+          open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]],
+      /* The Welcome Kit (step E1): the words a new colleague reads at first
+         sign-in, before the Handbook's files. */
+      ['New colleagues', [
+        biz && W.ADspaceOnboard && { id: 'welcomekit', name: 'Welcome Kit', kind: 'open', meta: line('welcomekit'),
+          open: function (btn) { W.ADspaceOnboard.openKit(btn); } }]]]);
     /* Templates: the wording that is no message (the overnight review,
        2026-11-10: the emails and WhatsApp went to Messages). */
     add('templates', 'Templates', 'register', [['', [

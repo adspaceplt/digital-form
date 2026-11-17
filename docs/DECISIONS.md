@@ -11122,3 +11122,11 @@ of a long English prompt, beside notes typed in English, and was outweighed:
 it now heads the request too, and an English answer to a 中文 press is asked
 once more inside the same press. The user also found 每次 RM 19.72 read
 oddly: a cost per result is an average and reads 平均每次对话成本.
+
+### 2026-11-17 · Hiring is Settings' own group
+The Hiring figures, the Interview scorecards and the Welcome Kit stood as a
+fourth part of Portal, where nobody looking for hiring would look. They are
+now a group of their own, Hiring, after Performance: Candidates (the figures
+and the scorecards) and New colleagues (the Welcome Kit). The scorecards row
+states what it holds, the Standard's criteria and how many positions have
+their own, as every Open row does.

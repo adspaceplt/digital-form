@@ -1467,7 +1467,7 @@
     });
   }
 
-  /* ---- Interview scorecards (Settings, Portal: Hiring; step C) -------------- */
+  /* ---- Interview scorecards (Settings, Hiring; step C) -------------- */
   var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>';
   var hsc = { rows: null, wired: false };
   function hscMsg(t, k) { msg('hscMsg', t, k); }
