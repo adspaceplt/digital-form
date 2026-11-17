@@ -305,7 +305,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `checklists.js`, the CLIENT CHECKLISTS section, `supabase/functions/checklist-draft/`, the CHECKLIST WRITER section | checklists, work, overview, sql, smsql, then `ui` |
 | `details.js`, `details/`, the CLIENT DETAILS FORM section | detailsform, sql, seo, crm, then `ui` |
 | `suppliers.js`, `supplierform.js`, `supplier/`, the SUPPLIERS section | suppliers, suppliersql, docs, sql, seo, then `ui` |
-| `hiring.js`, `careers.js`, `hrdocs.js`, `onboard.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES, HIRING OFFERS AND CONTRACTS and HIRING ONBOARDING sections, `supabase/functions/hiring-mail/` | hiring, hiringe, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, handbook, teamrec, demo, then `ui` |
+| `hiring.js`, `careers.js`, `hrdocs.js`, `onboard.js`, `careers/`, the HIRING, HIRING INTERVIEWS, HIRING OUTCOMES, HIRING OFFERS AND CONTRACTS, HIRING ONBOARDING and HIRING INTERVIEW SHEET sections, `supabase/functions/hiring-mail/` | hiring, hiringe, hiringiv, hiringoc, hiringdoc, hiringsql, hiringmailfn, seal, meetfn, team, perfui, search, settings, sql, policies, seo, words, handbook, teamrec, demo, then `ui` |
 | `supabase/functions/supplier-mail/`, the SUPPLIER EMAILS section | mailfn, suppliersql, suppliers, settings |
 | `js/mailtpl.js`, Settings' Email templates, `template_fields`, the TEMPLATE FIELDS CHECKED and VERIFICATION CODE TEMPLATE sections | settings, docmail, suppliers, overdue, whatsapp, adminparts, tplfieldsql, sql, then `ui` |
 | `js/docmail.js`, Send by email, the CLIENT DOCUMENT EMAILS section | docmail, clientmailsql, mailfn, quotes, letter, register, settings, menus, sql |
@@ -995,7 +995,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A field marked `half` sits beside the next one (a date and its time),
     `third` three across (a named section of three figures, `.is-third`);
     `head` opens a section with its heading (`.askhead`), and `note` is one
-    mute line under the field (`.asknote`, its `aria-describedby`).
+    mute line under the field (`.asknote`, its `aria-describedby`); a spec
+    of `line` alone is one mute line the row's whole width (`.askrow`).
   - A field marked `tick` is a checkbox (`.tickline`, answering `on` or
     nothing, never required); a `choices` field marked `seg` is a segment.
     Focus lands on the first typed field, never a segment or a tick;
@@ -3469,12 +3470,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   ends `hiring_link_days` (30, 7 to 90) after the last step.
 - Interviews (step B, decision 2; no slots system): the part or the Owner
   invites from the record's Interview tab with one to three times, all
-  within `hiring_invite_days` (3, 1 to 14) of each other, an hour ahead at
+  within `hiring_invite_days` (14, 1 to 14; the user, 2026-11-17: times on
+  several days) of each other, an hour ahead at
   least and 60 days at most, a length (30, 45, 60 or 90 minutes), Google
   Meet or At the office and a note (`hiring_invite`, one key a question;
   `slot-window` naming the days); its question names the online meetings
-  already on the shared calendar, by time alone (`meet-create` `busy`, 15
-  days at most, `hiring_busy_may`). A new invitation replaces one still
+  already on the shared calendar, by time alone, one row under the times
+  (`meet-create` `busy`, 15 days at most, `hiring_busy_may`). A new invitation replaces one still
   open. The candidate picks a time on their page, or None of these times
   with a note (`careers_pick`, `careers_none`, anon, the link's own key;
   the Owners told in the bell, `hiring.picked`, `hiring.none`, never the
@@ -3491,6 +3493,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   confirmed time with Join Google Meet or Get directions, never the times
   not chosen. Settings, Portal, Hiring: Hiring holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
+- The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
+  user, 2026-11-17, the team's paper sheet: "a slide window or so so the
+  record could stay right"): the Scores tab's Interview sheet opens a panel
+  at the right with no scrim (`#hivSheet`, `.sheet-side.is-beside`), the
+  record in sight and scrolling beside it: Rating (out of 10), Internal
+  remarks, MBTI and the sheet's questions, each saved as it is left
+  (`hiring_sheet_save`, one a colleague, filed once when started;
+  `hiring_sheet_keys()` the fields, the page's `sheetQs` held equal by
+  `tests/hiringsql.js`), then the scorecard and the recommendation, saved by
+  Save; `hiring_sheets` (RLS on, no policy, no grant) goes with its
+  candidate. Each colleague's scores and sheet are one card on the tab
+  (`hiring_sheets_of`).
 - Scores and the decision (step C): everyone on a candidate scores them on
   the Scores tab against their position's scorecard (`hiring_scorecards`,
   3 to 8 criteria, one a position, Standard for any other and never
