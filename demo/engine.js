@@ -107,8 +107,8 @@
     sm_report_posts: 'id report_id platform_id posted_on title caption content_type url thumb_data views reach impressions interactions engagements likes comments shares saves notable observation position created_at',
     sm_report_versions: 'id report_id version_no snapshot published_by published_at withdrawn_at withdrawn_by withdraw_reason file_key file_at file_by',
     sm_reports: 'id client_id kind title period_start period_end headline intro insights rank_metric status version_no return_note submitted_by submitted_at confirmed_by confirmed_at created_by created_at updated_at first_month ads_totals lang reviewer_id late_reason gate_note brand_name label_client brand_id sent_on sent_by on_request next_batch next_batch_print',
-    team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at',
-    team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at'
+    team_members: 'id name email role active created_at can_clients can_review can_campaigns can_links can_activity can_billing can_remove updated_at is_admin can_doc_void access staff_code designation capacity_minutes_week wip_guidance department role_family access_until expired_at mobile card_email card_key card_on access_until_time card_slug card_mobile client_scope system removed_at erased_at last_seen_at ai_on email_on whatsapp_on sensitive_on',
+    team_roles: 'slug name is_admin can_clients can_review can_campaigns can_links can_activity can_billing can_remove position created_at can_doc_void access client_scope updated_at ai_on email_on whatsapp_on sensitive_on reports_to'
   };
   var LIVE_FNS = {
     activity_section: 'p_action',
@@ -323,7 +323,9 @@
     supplier_email_done: 'p_id p_status p_provider p_error', supplier_emails_of: 'p_supplier',
     client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
     client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
-    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', auto_send_set: 'p_kind p_on',
+    client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', auto_send_set: 'p_kind p_on', portal_switch_set: 'p_key p_on',
+    delete_request_kinds: '', delete_request_file: 'p_kind p_args p_reason', delete_requests_list: '', delete_request_withdraw: 'p_id',
+    delete_request_decide: 'p_id p_approve p_note', delete_request_done: 'p_id p_ok p_error',
     get_scripts: 'p_token',
     ops_add_checklist_item: 'p_task p_label',
     ops_add_comment: 'p_body p_task',
@@ -3513,7 +3515,7 @@ function cardSlugFree(name, self, email) {
       read_at: reads.length ? reads[reads.length - 1] : null, review: review, jobs: jobs };
   }
 
-  function autoMail() { var v = appSet('auto_email_on', appToday()); return v == null || Number(v) === 1; }
+  function autoMail() { var v = appSet('auto_email_on', appToday()); return portalOn('email_on') && (v == null || Number(v) === 1); }
   function autoMailRow(o) { if (!autoMail()) { o.status = 'failed'; o.error = 'off: Automatic emails are off.'; } return o; }
   function appSet(key, at) {
     appDb();
@@ -4928,6 +4930,22 @@ function cardSlugFree(name, self, email) {
         (!m.access_until || m.is_admin || m.role === 'admin' || accessAhead(m.access_until, m.access_until_time));
     })[0] || null;
   }
+
+  function swOf(m, key) {
+    if (!m) return false;
+    var r = DB.team_roles.filter(function (x) { return x.slug === m.role; })[0];
+    if (m.is_admin || m.role === 'admin' || (r && r.is_admin)) return true;
+    if (m[key] != null) return Boolean(m[key]);
+    if (r && r[key] != null) return Boolean(r[key]);
+    return true;
+  }
+  function portalOn(key) { var v = appSet(key, appToday()); return v == null || Number(v) === 1; }
+  function sendOk(channel) { var m = opsMe(); return Boolean(m) && portalOn(channel + '_on') && swOf(m, channel + '_on'); }
+  var GRANTED_KEYS = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'ops.numbering': 1, 'ops.override': 1,
+    'team.performance': 1, 'team.perfadmin': 1, 'team.settings': 1, 'team.upgrade': 1, 'team.invite': 1, 'team.handbook': 1,
+    'team.announce': 1, 'team.notice': 1, 'team.analytics': 1, 'team.personnel': 1, 'team.hiring': 1, 'reports.whitelabel': 1,
+    'reports.transfer': 1, 'reports.ai': 1, 'reports.meta': 1, 'register.types': 1, 'campaigns.files_delete': 1, 'clients.vic': 1 };
+  var SENSITIVE_KEYS = { 'clients.billing': 1, 'campaigns.pay': 2, 'suppliers.pay': 2 };
   function opsAccess(m) {
     if (!m) return {};
     var r = DB.team_roles.filter(function (x) { return x.slug === m.role; })[0];
@@ -5001,8 +5019,13 @@ function cardSlugFree(name, self, email) {
     var m = opsMe(); if (!m) return false;
     var a = opsAccess(m);
     if (a.admin) return true;
+
+    if (SENSITIVE_KEYS[key] && !swOf(m, 'sensitive_on')) return false;
     var held = a.map[key];
-    if (held === undefined && key.indexOf('.') > -1) held = a.map[key.split('.')[0]];
+    if (key.indexOf('.') > -1) {
+      var sec = a.map[key.split('.')[0]];
+      if (held === undefined || SENSITIVE_KEYS[key] === 2 || (!GRANTED_KEYS[key] && RANK[held || 'none'] > RANK[sec || 'none'])) held = sec;
+    }
     return RANK[held || 'none'] >= RANK[level || 'work'];
   }
 
@@ -5047,6 +5070,7 @@ function cardSlugFree(name, self, email) {
     var m = opsMe(); if (!m) return false;
     var a = opsAccess(m);
     if (a.admin) return true;
+    if (SENSITIVE_KEYS[key] === 2) return swOf(m, 'sensitive_on') && RANK[a.map[key.split('.')[0]] || 'none'] >= RANK[level || 'view'];
     return RANK[a.map[key] || 'none'] >= RANK[level || 'view'];
   }
 
@@ -7542,7 +7566,12 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
   var AI_CAP_STD = { drafts: 10, checks: 10, caption: 20, script: 10, picture: 30, analysis: 3, checklist: 10, analytics: 3, agent: 30, next: 3, per_report: 1 };
   var AI_USES = ['drafts', 'checks', 'caption', 'script', 'picture', 'analysis', 'checklist', 'analytics', 'agent', 'next'];
-  function aiCap(id, use) { return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0)); }
+
+  function aiCap(id, use) {
+    var m = id ? DB.team_members.filter(function (x) { return x.id === id; })[0] : null;
+    if (!portalOn('ai_on') || (id && !swOf(m, 'ai_on'))) return 0;
+    return aiLimit(id ? id + ':' + use : '', aiLimit(use, AI_CAP_STD[use] || 0));
+  }
   function aiPurpose(x) { return x.purpose || 'draft'; }
   function aiCheckRoom(m, rep) {
     var since = aiDay(), all = (DB.ai_drafts || []).filter(function (x) { return x.outcome !== 'failed'; });
@@ -12577,6 +12606,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       if (name === 'quotation_send' || name === 'quotation_publish') {
         var qsSend = name === 'quotation_send';
+        if (qsSend && !sendOk('whatsapp')) return qtOk({ error: 'send-off' });
         if (qq.removed_at) return qtOk({ error: 'not-found' });
         if (qq.source !== 'website') return qtOk({ error: 'bad-quotation' });
         if (qq.released_at) return qtOk({ ok: true, again: true, valid_until: qq.valid_until });
@@ -12598,6 +12628,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
 
       if (name === 'quotation_resend') {
 
+        if (!sendOk('whatsapp')) return qtOk({ error: 'send-off' });
         if (qq.removed_at) return qtOk({ error: 'not-found' });
         var qrTeam = qq.source !== 'website';
         if (!qrTeam && !qq.access_key) return qtOk({ error: 'bad-quotation' });
@@ -12997,6 +13028,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return emNo('bad-request');
       }
       if (name === 'email_new_begin') {
+        if (!sendOk('email')) return emNo('send-off');
         var aud = args.p_audience;
         if (['client', 'supplier', 'other'].indexOf(aud) < 0 || !/^[A-Za-z0-9_-]{8,64}$/.test(String(args.p_idem || ''))) return emNo('bad-request');
         var ag0 = DB.team_emails.filter(function (e) { return e.sent_by === emMe.id && e.idem === args.p_idem; })[0];
@@ -13137,15 +13169,16 @@ function opsCodeRange(cid, period, ty, src, seq) {
         if (sl) return (sl + ' ' + n.replace(/^(dato'? sri|datin sri|datuk sri|tan sri|puan sri|mrs|mr|ms|miss|mdm|madam|dr|prof|dato'?|datin|datuk|tun|tuan|puan|encik|cik)\.?\s+/i, '')).trim();
         return n;
       };
+
       var waMay = function (purpose, kind) {
-        if (!opsAllowed('whatsapp', 'work')) return false;
-        if (purpose === 'report') return opsAllowed('whatsapp.report', 'work') && opsAllowed('reports', 'view');
-        if (purpose === 'feedback') return opsAllowed('whatsapp.feedback', 'work') && opsAllowed('clients', 'view');
-        if (purpose === 'creator') return opsAllowed('whatsapp.booking', 'work') && opsAllowed('campaigns', 'view');
-        if (purpose === 'approval') return kind === 'contact' && opsAllowed('whatsapp.approval', 'work') &&
+        if (!sendOk('whatsapp')) return false;
+        if (purpose === 'report') return opsAllowed('reports', 'view');
+        if (purpose === 'feedback') return opsAllowed('clients', 'view');
+        if (purpose === 'creator') return opsAllowed('campaigns', 'view');
+        if (purpose === 'approval') return kind === 'contact' &&
           (opsAllowed('review.sets', 'view') || opsAllowed('campaigns.campaigns', 'view'));
-        if (purpose === 'quotation') return kind === 'contact' && opsAllowed('whatsapp.documents', 'work') && opsAllowed('clients.quotes', 'view');
-        if (purpose === 'offer') return kind === 'contact' && opsAllowed('whatsapp.documents', 'work') && opsAllowed('clients.documents', 'view');
+        if (purpose === 'quotation') return kind === 'contact' && opsAllowed('clients.quotes', 'view');
+        if (purpose === 'offer') return kind === 'contact' && opsAllowed('clients.documents', 'view');
         if (purpose === 'representative') return kind === 'contact' && opsAllowed('clients.leads', 'view');
         if (purpose === 'message') return kind === 'contact' ? opsAllowed('clients.contacts', 'view') : kind === 'creator' ? opsAllowed('campaigns.creators', 'view') : false;
         return false;
@@ -14099,7 +14132,122 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
-    if (/^client_email|^auto_send_set$/.test(name)) {
+    if (/^delete_request/.test(name)) {
+      var drOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var drNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return drNo(window.__refuseRpc[name]);
+      var drMe = opsMe();
+      var drAdmin = Boolean(drMe && opsAccess(drMe).admin);
+      DB.delete_requests = DB.delete_requests || [];
+      var DK = {
+        'rpc:delete_client': ['clients', 'p_client', 'Client', 'clients', 'id', 'name'],
+        'rpc:brand_analysis_delete': ['clients.brand', 'p_id', 'Brand analysis', 'brand_analyses', 'id', 'version'],
+        'rpc:client_entity_delete': ['clients.billing', 'p_entity', 'Billing entity', 'billing_entities', 'id', 'legal_name'],
+        'rpc:client_request_delete': ['clients.requests', 'p_id', 'Request', 'client_requests', 'id', 'kind'],
+        'rpc:letter_delete': ['clients.documents', 'p_doc', 'Letter of Offer', 'client_documents', 'id', 'number'],
+        'rpc:quotation_delete': ['clients.quotes', 'p_id', 'Quotation', 'quotations', 'id', 'ref'],
+        'rpc:document_delete': ['register', 'p_doc', 'Document', 'documents', 'id', 'serial'],
+        'rpc:ops_delete_engagement': ['ops', 'p_engagement', 'Month', 'ops_engagements', 'id', 'period'],
+        'rpc:ops_delete_task': ['ops', 'p_task', 'Task', 'ops_tasks', 'id', 'title'],
+        'rpc:ops_delete_tasks': ['ops', 'p_tasks', 'Tasks'],
+        'rpc:sm_report_delete': ['reports', 'p_id', 'Report', 'sm_reports', 'id', 'title'],
+        'rpc:sm_report_version_delete': ['reports', 'p_version', 'Report version'],
+        'rpc:supplier_delete': ['suppliers', 'p_id', 'Supplier', 'suppliers', 'id', 'name'],
+        'rpc:video_script_delete': ['scripts', 'p_id', 'Video script', 'video_scripts', 'id', 'code'],
+        'table:batches': ['review.sets', 'id', 'Content set', 'batches', 'id', 'title'],
+        'table:posts': ['review.sets', 'id', 'Post', 'posts', 'id', 'title'],
+        'table:campaigns': ['campaigns.campaigns', 'id', 'Campaign', 'campaigns', 'id', 'title'],
+        'table:campaign_options': ['campaigns.campaigns', 'id', 'Booking'],
+        'table:creators': ['campaigns.creators', 'id', 'Creator', 'creators', 'id', 'name'],
+        'table:client_contacts': ['clients.contacts', 'id', 'Contact', 'client_contacts', 'id', 'name'],
+        'table:client_requests': ['clients.requests', 'id', 'Request', 'client_requests', 'id', 'kind'],
+        'table:client_services': ['clients.services', 'id', 'Service line', 'client_services', 'id', 'label'],
+        'table:client_touches': ['clients.calls', 'id', 'Call or visit', 'client_touches', 'id', 'summary'],
+        'table:links': ['links', 'slug', 'Short link', 'links', 'slug', 'slug']
+      };
+      if (name === 'delete_request_kinds') {
+        if (!drMe) return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: Object.keys(DK).sort().map(function (k) { return { kind: k, section: DK[k][0], word: DK[k][2] }; }), error: null });
+      }
+      if (!drMe) return drNo('denied');
+      var drNote = function (to, kind, title, body, key) {
+        notePush({ id: nid('n'), team_member_id: to, kind: kind, title: title, body: body, created_at: new Date().toISOString(), read_at: null, dedupe_key: key });
+      };
+      var drLog = function (detail) { DB.activity_log.unshift({ id: nid('al'), actor: drMe.name, action: 'team.changed', subject: 'Delete requests', detail: detail, created_at: new Date().toISOString() }); };
+      if (name === 'delete_request_file') {
+        var k = DK[args.p_kind];
+        if (!k) return drNo('bad-kind');
+        if (!opsAllowed(k[0], 'work')) return drNo('denied');
+        if (opsAllowed(k[0], 'manage')) return drNo('may-delete');
+        var a = args.p_args;
+        if (!a || typeof a !== 'object' || Array.isArray(a)) return drNo('bad-request');
+        var why = String(args.p_reason || '').replace(/\s+/g, ' ').trim();
+        if (why.length < 3 || why.length > 500) return drNo('bad-reason');
+        var rec = null, label;
+        if (Array.isArray(a[k[1]])) label = a[k[1]].length + ' ' + k[2].toLowerCase();
+        else {
+          rec = a[k[1]] == null ? '' : String(a[k[1]]);
+          if (!rec) return drNo('bad-request');
+          if (k[3]) {
+            var row = (DB[k[3]] || []).filter(function (x) { return String(x[k[4]]) === rec; })[0];
+            if (!row) return drNo('not-found');
+            label = row[k[5]] == null ? '' : String(row[k[5]]);
+          }
+          label = label || k[2];
+        }
+        if (DB.delete_requests.filter(function (x) { return x.requested_by === drMe.id && Date.now() - new Date(x.created_at).getTime() < 864e5; }).length >= 30) return drNo('too-many');
+        if (rec && DB.delete_requests.some(function (x) { return x.kind === args.p_kind && x.record === rec && (x.state === 'open' || x.state === 'approving'); })) return drNo('already');
+        var dr = { id: nid('dr'), kind: args.p_kind, args: JSON.parse(JSON.stringify(a)), record: rec, label: label.slice(0, 200), reason: why,
+          requested_by: drMe.id, created_at: new Date().toISOString(), state: 'open', decided_by: null, decided_at: null, note: null };
+        DB.delete_requests.push(dr);
+        DB.team_members.filter(function (m) { return m.active !== false && (m.is_admin || m.role === 'admin') && m.id !== drMe.id; }).forEach(function (m) {
+          drNote(m.id, 'delete.request', 'Delete requested · ' + k[2] + ' · ' + label, drMe.name + ' · ' + why, 'delreq:' + dr.id + ':' + m.id);
+        });
+        drLog('Requested: ' + k[2] + ' · ' + label + ' · ' + why);
+        return drOk({ id: dr.id, label: label, word: k[2] });
+      }
+      if (name === 'delete_requests_list') {
+        var nm = function (id) { var m = DB.team_members.filter(function (x) { return x.id === id; })[0]; return m ? m.name : null; };
+        var list = DB.delete_requests.filter(function (r) { return drAdmin || r.requested_by === drMe.id; })
+          .sort(function (x, y) { var w = function (r) { return r.state === 'open' || r.state === 'approving' ? 1 : 0; }; return (w(y) - w(x)) || (y.created_at < x.created_at ? -1 : 1); })
+          .map(function (r) { return { id: r.id, kind: r.kind, word: (DK[r.kind] || [])[2], section: (DK[r.kind] || [])[0], label: r.label, reason: r.reason,
+            state: r.state, at: r.created_at, by: nm(r.requested_by), by_id: r.requested_by, mine: r.requested_by === drMe.id,
+            decided_by: nm(r.decided_by), decided_at: r.decided_at, note: r.note }; });
+        return drOk({ admin: drAdmin, rows: list });
+      }
+      var r = DB.delete_requests.filter(function (x) { return x.id === args.p_id; })[0];
+      if (name === 'delete_request_withdraw') {
+        if (!r || r.requested_by !== drMe.id) return drNo('not-found');
+        if (r.state !== 'open') return drNo('decided', { state: r.state });
+        r.state = 'withdrawn'; r.decided_at = new Date().toISOString();
+        drLog('Withdrawn: ' + r.label);
+        return drOk();
+      }
+      if (!drAdmin) return drNo('denied');
+      if (!r) return drNo('not-found');
+      if (name === 'delete_request_decide') {
+        if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
+        var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
+        if (args.p_approve) {
+          r.state = 'approving'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString(); r.note = note;
+          return drOk({ kind: r.kind, args: JSON.parse(JSON.stringify(r.args)) });
+        }
+        if (!note) return drNo('no-note');
+        r.state = 'declined'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString(); r.note = note;
+        drNote(r.requested_by, 'delete.declined', 'Delete declined · ' + r.label, drMe.name + ' · ' + note, 'delreq:' + r.id + ':declined');
+        drLog('Declined: ' + r.label + ' · ' + note);
+        return drOk();
+      }
+      if (name === 'delete_request_done') {
+        if (r.state !== 'approving') return drNo('decided', { state: r.state });
+        if (!args.p_ok) { r.state = 'open'; r.note = args.p_error || null; return drOk({ state: 'open' }); }
+        r.state = 'approved'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString();
+        drNote(r.requested_by, 'delete.approved', 'Deleted · ' + r.label, drMe.name, 'delreq:' + r.id + ':approved');
+        drLog('Approved: ' + r.label);
+        return drOk({ state: 'approved' });
+      }
+    }
+    if (/^client_email|^auto_send_set$|^portal_switch_set$/.test(name)) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
       if (window.__refuseRpc && window.__refuseRpc[name]) return spNo(window.__refuseRpc[name]);
@@ -14154,6 +14302,20 @@ function opsCodeRange(cid, period, ty, src, seq) {
           detail: 'Posts linked to tasks: ' + (rlWas === 1 ? 'On' : 'Off') + ' → ' + (rlTo ? 'On' : 'Off') + ' · from ' + rlDay, created_at: new Date().toISOString() });
         return spOk();
       }
+
+      if (name === 'portal_switch_set') {
+        if (!opsGranted('team.settings', 'work')) return spNo('denied');
+        var psKey = args.p_key;
+        if (['ai_on', 'email_on', 'whatsapp_on'].indexOf(psKey) < 0) return spNo('bad-key');
+        var psDay = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10), psTo = args.p_on ? 1 : 0;
+        var psWas = appSet(psKey, psDay); psWas = psWas == null ? 1 : Number(psWas);
+        if (psWas === psTo) return spOk();
+        DB.app_settings = (DB.app_settings || []).filter(function (x) { return !(x.key === psKey && x.from_date === psDay); });
+        DB.app_settings.push({ key: psKey, from_date: psDay, value: psTo, set_by: cmMe.id, set_at: new Date().toISOString() });
+        DB.activity_log.unshift({ id: nid('al'), actor: cmMe.name, action: 'team.changed', subject: 'Portal switches',
+          detail: ({ ai_on: 'AI: ', email_on: 'Email: ', whatsapp_on: 'WhatsApp: ' })[psKey] + (psWas === 1 ? 'On' : 'Off') + ' → ' + (psTo ? 'On' : 'Off') + ' · from ' + psDay, created_at: new Date().toISOString() });
+        return spOk();
+      }
       if (name === 'auto_send_set') {
         if (!opsGranted('team.settings', 'work')) return spNo('denied');
         var asKey = { email: 'auto_email_on', whatsapp: 'auto_whatsapp_on' }[args.p_kind];
@@ -14187,6 +14349,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
       var cmPrep = function () {
         var kind = args.p_kind, ref = args.p_ref, cid, sref, title, dday, valid;
+        if (opsMe() && !sendOk('email')) return { error: 'send-off' };
         if (['quotation', 'offer', 'letter'].indexOf(kind) < 0) return { error: 'bad-request' };
         if (!cmMay(kind, 'work') || !opsAllowed('clients.contacts', 'view')) return { error: 'denied' };
         if (Number(appSet('client_email_on', new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10))) !== 1) return { error: 'email-off' };
@@ -15293,6 +15456,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         }
         if (!opsAllowed('suppliers', 'work')) return spNo('denied');
         var emPrep = function () {
+          if (!sendOk('email')) return { error: 'send-off' };
           var es2 = spFind(args.p_supplier);
           if (!es2) return { error: 'not-found' };
           var tp = DB.supplier_email_templates.filter(function (t) { return t.purpose === args.p_purpose; })[0];
@@ -16143,6 +16307,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
         (!t.access_until || t.is_admin || t.role === 'admin' || accessAhead(t.access_until, t.access_until_time)); })[0];
 
       if (row && !abroadOk(row)) row = null;
+
+      if (row) {
+        row = JSON.parse(JSON.stringify(row));
+        ['ai_on', 'email_on', 'whatsapp_on', 'sensitive_on'].forEach(function (k) { row[k] = swOf(row, k); });
+      }
       return Promise.resolve({ data: row || null, error: null });
     }
     if (name === 'save_selection') {
