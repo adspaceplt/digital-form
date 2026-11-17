@@ -11033,3 +11033,17 @@ Found: `sql`'s push check runs the 2026-09-27 migration, never the schema's
 last word, so the new title is checked by running this band's function on a
 re-subscribed creator device. `sql`, `perf`, `ops`, `lettersql`, `policies`
 pass; `demo` fails on the creator's page as already logged (#1189).
+
+
+### 2026-11-17 · The group panel in two parts
+The user: "whole sections control > each section deeper control > and the
+details together with admin tools, to make it consolidate. now too many too
+complex and very hard to understand. need to both merge old and new into just
+main settings, and sections access (with advanced sections control)". The
+panel had For the whole group, a separate Dashboard block, Work and Internal
+chunks with a Customise fold each, an Admin tools block grouped like Settings,
+and a Custom changes fold. It is now Main settings (Start from, Dashboard, the
+four switches, Clients they see, Reports to) and Section access, one row a
+section whose single Advanced fold holds its parts, the admin tools acting on
+it (the portal's under Team) and its Activity record line. Stored keys and
+checks unchanged; `perms`, `scope`, `team` hold it.

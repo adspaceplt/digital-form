@@ -1618,8 +1618,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `whatsapp_on`, `sensitive_on`, copied onto each colleague by
     `team_role_defaults`, an admin holding all; Use AI, Send email, Send
     WhatsApp, Sensitive details, with Clients they see and Reports to
-    (`reports_to`, never round to itself, `reports-loop`) under For the
-    whole group), then the section, then a tab, which never exceeds its
+    (`reports_to`, never round to itself, `reports-loop`) under Main
+    settings), then the section, then a tab, which never exceeds its
     section in `allowed()` and the page's `level()` alike (a granted part
     aside). AI off answers `ai_cap` 0; a send off refuses `send-off`
     (`send_ok`, `send_ok_of`, `wa_may_send`, each email's prepare or begin,
@@ -1793,16 +1793,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `no_team_client_overlap`: one address is never both a colleague and a live
     portal contact. Where a legacy overlap exists, `portal_clients()` returns
     nothing for a team address.
-- The Team group panel (simplified 2026-10-10; layout only, the stored map
-  and every check unchanged):
-  - `#grSum` reads the panel back as one sentence.
-  - Start from Admin / Manager / Staff / View only; a panel matching none
-    reads `Custom: n changes from {nearest}` (`#grPresetNote`, a quiet
-    fold) over the changes (`#grChanges`, shut until it is pressed),
-    worked out and never stored; a preset chosen over a Custom panel asks
-    first (`Start from Staff?` · n changes will be replaced., S7).
-    Admin in Start from is the only way to make a group admin, offered to
-    an admin alone, as an admin group in any select is (S6, 2026-10-24).
+- The Team group panel (two parts since 2026-11-17, the user: "just main
+  settings, and sections access (with advanced sections control)"; layout
+  only, the stored map and every check unchanged):
+  - `#grSum` reads the panel back as one sentence under the name.
+  - Main settings: Start from Admin / Manager / Staff / View only (a panel
+    matching none reads `Custom: n changes from {nearest}` in plain words
+    beside it, `#grPresetNote`, worked out and never stored, no fold; a
+    preset chosen over a Custom panel asks first, `Start from Staff?` · n
+    changes will be replaced., S7; Admin in Start from is the only way to
+    make a group admin, offered to the super admin alone), then the
+    Dashboard (`#grDash`, Off / On, filed `Team dashboard: On → Off`), Use
+    AI, Send email, Send WhatsApp, Sensitive details, Clients they see
+    (`#grScope`) and Reports to (`#grReports`), a hairline between each.
+  - Section access: one row a section in the rail's order (`CHUNKS`), the
+    name, its segment at the right edge, the line for its level (`DESC`),
+    and one Advanced (n) fold (`advItems`): the section's own parts, the
+    admin tools that act on it as switches (`TOOL_HOME`: the portal's own,
+    Upgrade mode to Analytics, under Team), and its line of the Activity
+    record (`activity.{section}`, Same as Activity record; HR Letters under
+    Documents, the Handbook under Team; `ACT_HOME`); shut,
+    `#grDiff-{section}` names only what differs. No Admin tools block, no
+    Customise. The My Work views (List, Board, Calendar) are not offered; a
+    stored one is kept through a save.
   - Each group row reads its access as phrases held whole (`team-part`), Edit
     on every row for an admin alone (a user group is made, changed and
     deleted by an admin: `roles_admin` and `team_roles_admin_guard`,
@@ -1811,29 +1824,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     (TEAM2-11, TEAM2-14; every group since 2026-11-17). Services offers No Access,
     View and Full Access; Leads and Past clients offer no level above
     Clients; a client part that follows Clients is greyed while Clients is
-    No Access (N2, N3). The panel reads the sections and the Activity
-    record's parts in the rail's order (N1).
-  - The Dashboard's row first (`#grDash`, On / No Access, no heading; a
-    preset leaves it On), filed `Dashboard: On → No Access`, read in the
-    group's line, the sentence, the Custom changes and Compare groups.
-  - The sections in the rail's chunks (Work, Internal; `CHUNKS`), one row
-    each: the name, its segment at the right edge, the line for its level
-    (`DESC`).
-  - A section's parts sit under its Customise (n), n counting exceptions;
-    shut, `#grDiff-{section}` names only those that differ.
-  - The acts an admin alone took are Admin tools (`ADMIN_TOOLS`): switches
-    under Portal (Upgrade mode, Announcements, Notices, Business settings,
-    AI usage), then each under its own section in the rail's order (My
-    Work, Creator Campaigns, Reports, Documents, Team; 2026-10-12). The My Work views (List, Board,
-    Calendar) are not offered; a stored one is kept through a save.
+    No Access (N2, N3).
   - Compare groups (the bar's ⋯, `#groupCmpBox`) reads every section and
     the admin tools for every group, read only.
-  - Clients they see (`#grScope`, All clients / Own clients only) sits in the
-    Clients fold; Own makes the preset Custom. Own clients only is never
-    given with any Activity record access, a section or a tab (the record is
-    not scoped): the sheet refuses it and trigger `team_roles_scope_guard`
-    (`scope-activity`) holds it for every group but an admin's
-    (`2026-10-10-letters-held-to-their-lines.sql`).
+  - Own clients only is never given with any Activity record access, a
+    section or a tab (the record is not scoped): the sheet refuses it and
+    trigger `team_roles_scope_guard` (`scope-activity`) holds it for every
+    group but an admin's (`2026-10-10-letters-held-to-their-lines.sql`).
   - No preset below Admin opens Team, HR letters or performance reviews,
     their history included (`activity.team`, `activity.hr` shut; S5).
 - User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`); the

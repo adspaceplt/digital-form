@@ -1283,7 +1283,7 @@
   /* A group starts from one of four shapes and is adjusted from there; a
      change that matches none of them reads as Custom. Sensitive parts (HR
      letters, performance reviews, Team) are never in a preset below Admin:
-     they are opened deliberately, in Customise. */
+     they are opened deliberately, in Advanced. */
   var PRESETS = {
     manager: { ops: 'manage', clients: 'manage', whatsapp: 'work', review: 'manage', scripts: 'manage', campaigns: 'manage', register: 'manage', suppliers: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
@@ -1303,7 +1303,7 @@
   /* THE PANEL, SIMPLER (2026-10-10, the proposal the user approved). It
      opens on a role and says only what differs from it; the sections are
      read in the rail's two chunks, one row each; a section's own parts open
-     under its Customise and, shut, name only the ones that differ; the acts
+     under its Advanced and, shut, name only the ones that differ; the acts
      an admin alone took are one Admin tools list in the Settings page's
      groups; the three My Work views are not offered, since they follow My
      Work. Only the screen changed: the stored map, `adds()`, `offered()`,
@@ -1334,7 +1334,7 @@
     var bits = key.split('.'), p = (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
     return p ? p[1] : bits[1];
   }
-  /* The parts a section's Customise offers: its own, less the admin tools
+  /* The parts a section's Advanced offers: its own, less the admin tools
      and the views that follow My Work. */
   function ownParts(sec) {
     return (PARTS[sec] || []).filter(function (p) { var k = sec + '.' + p[0]; return !TOOL[k] && !UNDRAWN[k]; });
@@ -1375,14 +1375,44 @@
          said once; an inherited part starts at Same as section and may
          still be shut on its own. */
       (granted ? '<option value="">Off</option>'
-               : '<option value="">Same as section</option><option value="none">Off</option>') +
+               /* An Activity record line sits in another section's Advanced,
+                  so it names the level it follows (2026-11-17). */
+               : '<option value="">' + (sec[0] === 'activity' ? 'Same as Activity record' : 'Same as section') + '</option><option value="none">Off</option>') +
       /* A part that follows its section or is shut has those two lines. */
       (VIEW_PARTS[key] ? '' :
         partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
       '</select></label>';
   }
+  /* THE PANEL IN TWO PARTS (2026-11-17; the user: "whole sections control >
+     each section deeper control > and the details together with admin
+     tools … just main settings, and sections access (with advanced
+     sections control)"). Each section's Advanced holds everything deeper
+     about it: its own parts, the admin tools that act on it, and its line
+     of the Activity record. Layout only: every stored key is as before. */
+  var TOOL_HOME = { 'Portal': 'team', 'My Work': 'ops', 'Clients': 'clients', 'Creator Campaigns': 'campaigns',
+    'Reports': 'reports', 'Documents': 'register', 'Team': 'team' };
+  var ACT_HOME = { hr: 'register', handbook: 'team' };
+  /* What a section's Advanced holds, in order: parts, tools, its history. */
+  function advItems(sec) {
+    var out = [];
+    if (sec !== 'activity') ownParts(sec).forEach(function (p) { out.push({ kind: 'part', key: sec + '.' + p[0], sec: sec, p: p }); });
+    ADMIN_TOOLS.forEach(function (g) {
+      if (TOOL_HOME[g[0]] === sec) g[1].forEach(function (k) { out.push({ kind: 'tool', key: k }); });
+    });
+    (PARTS.activity || []).forEach(function (p) {
+      if ((ACT_HOME[p[0]] || p[0]) !== sec) return;
+      out.push({ kind: 'part', key: 'activity.' + p[0], sec: 'activity',
+        p: [p[0], p[0] === sec ? 'Activity record' : 'Activity record: ' + p[1]] });
+    });
+    return out;
+  }
+  function advName(it) { return it.kind === 'tool' ? partName(it.key) : it.p[1]; }
+  function toolRow(k) {
+    return '<div class="permpart"><span class="permpart-name" id="grTool-' + k.replace('.', '-') + '">' + esc(partName(k)) + '</span>' +
+      '<button class="switch" type="button" role="switch" aria-checked="false" data-tool="' + k + '" aria-labelledby="grTool-' + k.replace('.', '-') + '"></button></div>';
+  }
   function secBlock(key) {
-    var sec = secOf(key), parts = ownParts(key), fold = parts.length;
+    var sec = secOf(key), items = advItems(key), fold = items.length;
     return '<div class="permsec" data-sec="' + key + '">' +
       '<span class="permsec-name">' + esc(sec[1]) + '</span>' +
       '<select class="select select-sm" data-seg data-sec="' + key + '" aria-label="' + esc(sec[1]) + ' access">' +
@@ -1391,49 +1421,36 @@
         }).join('') + '</select>' +
       '<p class="permsec-desc" id="grDesc-' + key + '"></p>' +
       (fold ? '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + key + '">' +
-          '<span>Customise</span><span class="permsec-n" data-n="' + key + '"></span>' + SEG_ICON + '</button>' : '') +
+          '<span>Advanced</span><span class="permsec-n" data-n="' + key + '"></span>' + SEG_ICON + '</button>' : '') +
       '<p class="permsec-diff" id="grDiff-' + key + '" hidden></p>' +
-      (fold ? '<div class="permsec-parts" id="grParts-' + key + '" hidden>' + parts.map(function (p) { return partRow(sec, p); }).join('') +
-        '</div>' : '') +
+      (fold ? '<div class="permsec-parts" id="grParts-' + key + '" hidden>' + items.map(function (it) {
+          return it.kind === 'tool' ? toolRow(it.key) : partRow(secOf(it.sec), it.p);
+        }).join('') + '</div>' : '') +
       '</div>';
   }
   $('grFlags').innerHTML =
-    /* For the whole group (GROUP SWITCHES, 2026-11-17): who the group
-       reports to, whose clients it sees in every section, and its four
-       switches, set once above every section. */
-    '<div class="permchunk permgroup"><h4 class="fsec-h">For the whole group</h4>' +
-      '<div class="permpart"><span class="permpart-name" id="grReportsName">Reports to</span>' +
-        '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName"></select></div>' +
-      '<div class="permpart"><span class="permpart-name" id="grScopeName">Clients they see' +
-        '<small>Own clients only: clients where they are Person in charge or Sales by, and leads nobody has taken.</small></span>' +
-        '<select class="select select-sm" id="grScope" aria-labelledby="grScopeName">' +
-        '<option value="all">All clients</option><option value="own">Own clients only</option></select></div>' +
+    /* Main settings, after Start from: the Dashboard, the group's four
+       switches, whose clients it sees and who it reports to. */
+    '<div class="permchunk permmain">' +
+      '<div class="permpart" data-sec="' + DASH + '"><span class="permpart-name" id="grDashName">Dashboard' +
+        '<small id="grDesc-' + DASH + '"></small></span>' +
+        '<select class="select select-sm" data-seg id="grDash" aria-labelledby="grDashName">' +
+        '<option value="none">Off</option><option value="on">On</option></select></div>' +
       GSW.map(function (g) {
         return '<div class="permpart"><span class="permpart-name" id="grSw-' + g[0] + '">' + esc(g[1]) + '<small>' + esc(g[2]) + '</small></span>' +
           '<button class="switch" type="button" role="switch" aria-checked="false" data-gsw="' + g[0] + '" aria-labelledby="grSw-' + g[0] + '"></button></div>';
       }).join('') +
+      '<div class="permpart"><span class="permpart-name" id="grScopeName">Clients they see' +
+        '<small>Own clients only: clients where they are Person in charge or Sales by, and leads nobody has taken.</small></span>' +
+        '<select class="select select-sm" id="grScope" aria-labelledby="grScopeName">' +
+        '<option value="all">All clients</option><option value="own">Own clients only</option></select></div>' +
+      '<div class="permpart"><span class="permpart-name" id="grReportsName">Reports to</span>' +
+        '<select class="select select-sm" id="grReports" aria-labelledby="grReportsName"></select></div>' +
     '</div>' +
-    '<div class="permchunk permdash"><div class="permsec" data-sec="' + DASH + '">' +
-      '<span class="permsec-name">Team dashboard</span>' +
-      '<select class="select select-sm" data-seg id="grDash" aria-label="Team dashboard access">' +
-        '<option value="none">Off</option><option value="on">On</option></select>' +
-      '<p class="permsec-desc" id="grDesc-' + DASH + '"></p></div></div>' +
-    CHUNKS.map(function (c) {
-      return '<div class="permchunk"><h4 class="fsec-h">' + esc(c[0]) + '</h4>' + c[1].map(secBlock).join('') + '</div>';
-    }).join('') +
-    '<div class="permchunk permtools"><div class="permsec" data-sec="tools">' +
-      '<span class="permsec-name"><h4 class="fsec-h">Admin tools</h4></span>' +
-      '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-tools">' +
-        '<span>Customise</span><span class="permsec-n" data-n="tools"></span>' + SEG_ICON + '</button>' +
-      '<p class="permsec-diff" id="grDiff-tools" hidden></p>' +
-      '<div class="permsec-parts permtool-list" id="grParts-tools" hidden>' +
-        ADMIN_TOOLS.map(function (g) {
-          return '<div class="permtool-group"><span class="permtool-h">' + esc(g[0]) + '</span>' + g[1].map(function (k) {
-            return '<div class="permpart"><span class="permpart-name" id="grTool-' + k.replace('.', '-') + '">' + esc(partName(k)) + '</span>' +
-              '<button class="switch" type="button" role="switch" aria-checked="false" data-tool="' + k + '" aria-labelledby="grTool-' + k.replace('.', '-') + '"></button></div>';
-          }).join('') + '</div>';
-        }).join('') +
-      '</div></div></div>' +
+    /* Section access: one row a section in the rail's order. */
+    '<div class="permchunk permsections"><h4 class="fsec-h">Section access</h4>' +
+      CHUNKS.map(function (c) { return c[1].map(secBlock).join(''); }).join('') +
+    '</div>' +
     /* Admin is chosen from Start from, which already names it (2026-09-26).
        The box stays, unseen, because it is what the save reads. */
     '<input type="checkbox" data-f="is_admin" hidden tabindex="-1" aria-hidden="true">';
@@ -1625,13 +1642,15 @@
       /* The team's figures (the Dashboard's My Work tiles and charts)
          are a grant of their own (2026-10-03). */
       if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
-        d.textContent += ' Team figures on the Dashboard are turned on under Customise.';
+        d.textContent += ' Team figures on the Dashboard are off. Turn them on under Advanced.';
       }
-      var diff = (PARTS[s[0]] || []).filter(function (p) { var k = s[0] + '.' + p[0]; return !TOOL[k] && (k in access); })
-        .map(function (p) { var k = s[0] + '.' + p[0]; return p[1] + ': ' + valueWord(k, access[k]); });
+      /* What its Advanced holds that differs: a part set apart from its
+         section, an admin tool on, its line of the Activity record. */
+      var diff = advItems(s[0]).filter(function (it) { return it.key in access; })
+        .map(function (it) { return advName(it) + ': ' + (it.kind === 'tool' ? 'On' : valueWord(it.key, access[it.key])); });
       var n = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
       if (n) n.textContent = diff.length ? '(' + diff.length + ')' : '';
-      /* Shut, a section names only what differs; open, its parts say it. */
+      /* Shut, a section names only what differs; open, its rows say it. */
       var line = $('grDiff-' + s[0]), parts = $('grParts-' + s[0]);
       if (line) {
         line.textContent = admin ? '' : diff.join(' · ');
@@ -1639,11 +1658,6 @@
       }
     });
     var on = toolSwitches().filter(function (sw) { return sw.getAttribute('aria-checked') === 'true'; });
-    var tn = $('grFlags').querySelector('[data-n="tools"]');
-    tn.textContent = admin || !on.length ? '' : '(' + on.length + ')';
-    var tl = $('grDiff-tools');
-    tl.textContent = admin ? '' : on.map(function (sw) { return partName(sw.getAttribute('data-tool')); }).join(' · ');
-    tl.hidden = admin || !on.length || !$('grParts-tools').hidden;
     /* An admin opens everything, so the levels under it decide nothing and
        are not offered for change while it is chosen. */
     levelPicks().forEach(function (sel) { sel.disabled = locked || admin; });
@@ -1683,9 +1697,6 @@
        already reads back (TEAM-4, 2026-10-14). */
     $('grPresetNote').hidden = !n2;
     $('grPresetNote').textContent = n2 ? 'Custom: ' + n2 + (n2 === 1 ? ' change' : ' changes') + ' from ' + PRESET_WORD[shape.key] : '';
-    if (!n2) $('grPresetNote').setAttribute('aria-expanded', 'false');
-    $('grChanges').hidden = !n2 || $('grPresetNote').getAttribute('aria-expanded') !== 'true';
-    $('grChanges').textContent = n2 ? shape.changes.join(' · ') : '';
     lastChanges = n2;
     $('grSum').textContent = sumText(access, admin, readScope(), on.length, readSwitches());
   }
@@ -1714,11 +1725,6 @@
     foldAll();
     paintPanel();
   }
-  $('grPresetNote').addEventListener('click', function () {
-    var open = this.getAttribute('aria-expanded') !== 'true';
-    this.setAttribute('aria-expanded', open ? 'true' : 'false');
-    $('grChanges').hidden = !open;
-  });
   /* A Custom group asks before a preset replaces its changes (S7,
      2026-10-24): the select goes back until the answer. */
   $('grPreset').addEventListener('change', function () {
@@ -1809,7 +1815,6 @@
     $('grTitle').textContent = r ? 'Edit group' : 'New group';
     $('grSave').textContent = r ? 'Save' : 'Create';
     $('grName').value = r ? r.name : '';
-    $('grPresetNote').setAttribute('aria-expanded', 'false');
     /* Only an admin makes a group admin (`team_roles_admin_guard`), so
        Start from offers Admin to an admin alone (S6, 2026-10-24). */
     var adOpt = $('grPreset').querySelector('option[value="admin"]');
@@ -1825,7 +1830,7 @@
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
     /* Every fold opens shut: a section names what differs on its own line,
-       so the panel reads in one screen and Customise opens the rest.
+       so the panel reads in one screen and Advanced opens the rest.
 
        A part that says what its section already says is not an exception.
        The HR move wrote `register.hr` onto every group, `none` included, so
