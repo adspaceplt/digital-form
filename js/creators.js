@@ -293,7 +293,11 @@
   function t() { return T[lang]; }
 
   var LANG_KEY = 'adspace.creators.lang';
-  try { var saved = localStorage.getItem(LANG_KEY); if (saved && T[saved]) lang = saved; } catch (e) {}
+  /* A choice made here (the 中文 switch) wins; until one is made the page
+     opens in the client's primary contact's language (get_campaign `lang`,
+     2026-11-17), never stored as if it were chosen. */
+  var langChosen = false;
+  try { var saved = localStorage.getItem(LANG_KEY); if (saved && T[saved]) { lang = saved; langChosen = true; } } catch (e) {}
 
   var params = new URLSearchParams(location.search);
   var TOKEN = params.get('k') || '';
@@ -332,10 +336,10 @@
     var host = $('campHead');
     if (host) whoAs = window.ADspaceDecide.whoLine(host, whoWords(), host.querySelector('.rec-id'));
   }
-  function setLang(next) {
+  function setLang(next, keep) {
     lang = next;
     if (whoAs) whoAs.words(whoWords());
-    try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
+    if (keep) { langChosen = true; try { localStorage.setItem(LANG_KEY, lang); } catch (e) {} }
     $('langToggle').textContent = t().lang;
     $('kicker').textContent = t().kicker;
     $('passInput').placeholder = t().accessCode;
@@ -346,7 +350,7 @@
     if (following && window.ADspacePush) window.ADspacePush.relabel();
   }
 
-  $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
+  $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en', true); });
 
   $('amountPdf').addEventListener('click', function (e) {
     if (!this.getAttribute('data-private')) return;
@@ -425,6 +429,7 @@
         if (passcode) $('stateMsg').textContent = t().passWrong;
         return;
       }
+      if (!langChosen && (d.lang === 'zh' || d.lang === 'en') && d.lang !== lang) setLang(d.lang);
       feed = d;
       // The link has proved itself: the media pass first, then the files.
       var M = window.ADspaceMedia;

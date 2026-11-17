@@ -11148,6 +11148,60 @@ and the scorecards) and New colleagues (the Welcome Kit). The scorecards row
 states what it holds, the Standard's criteria and how many positions have
 their own, as every Open row does.
 
+### 2026-11-17 · Two ad accounts add up, the figures are checked against themselves, and the comparison is chosen
+Reported by the user on Huna's 16 Oct to 15 Nov Advertising Report, run from
+two ad accounts. Step 1 read RM 1,542.54 spent, 40,480 reached and 57,386
+impressions while its objectives added up to RM 1,988.48. Read on the live
+database: those were account …4429's figures alone (its four ads to the
+sen). The import filled Step 1 only where it was empty, so the second
+account's row was kept aside as a typed figure. Step 1 now keeps each ad
+account's own figures (`ads_totals.accounts`), an import writes its own
+account's, and with two accounts or more impressions and spend are their
+sum. Reach is never added across accounts (Meta counts a person once in
+each): Step 1, the PDF (a By ad account table, each account by Meta's name)
+and `report-draft` give each account's own. A report from before is read
+as the account whose ads its figures cover, which Combine ad accounts
+uses.
+The Report audit said nothing because its Meta part had not run, and no
+part read the report against itself. Check and submit's Figures add up
+needs no Meta: Step 1 never below its ads, the accounts added up, the
+previous period's objectives within its spend, and the previous period as
+its published report gave it; each holds Submit and Publish with a
+one-press fix. Step 1 above its ads is allowed, since an import leaves out
+an ad with no results.
+The previous period was taken from the latest report before, whatever it
+was; a report asked for in between could become the comparison. A new
+Advertising Report now takes the latest published one not asked for that
+ends before it starts, from the version the client was shown, names it
+(`prev_from`), and Step 1's Compare with offers every published one or
+typed figures.
+
+### 2026-11-17 · Pages open in the client's language
+The user: a contact who prefers English sees everything in English, one who
+prefers 中文 sees Chinese once signed in; there is no Malay portal, so a
+contact's language is English or 中文 alone. The contact sheet's Bahasa
+Melayu went (no live contact held it); a check holds the column to the two.
+The client portal now opens in the signed-in contact's own language
+(`get_portal` `me.lang`) and the creator selection page in its client's
+primary contact's (`get_campaign` `lang`, from the internal `client_lang`),
+until the 中文 switch is pressed on that browser, which is kept as before;
+the contact's language is applied, never stored as if chosen, so a later
+change of preference still reaches a browser that never chose. `get_review_feed`
+and `get_scripts` send `lang` too, but /review/ and /script/ have no Chinese
+layer and stay English; no translation was built. Caption writing's language
+list is the output language and keeps Malay. The portal suite had crashed
+since Reply joined the request row's ⋯ (MENU-8); it now opens the ⋯.
+
+### 2026-11-17 · Delete requests have their own mark
+Delete requests waited only as a row inside Settings, Portal, so an admin saw
+one only by opening Settings. They now have a mark at the rail's foot after
+Settings' (in More's foot on a phone), an admin's alone, with the tab bar's
+red dot while any waits; More carries the dot too and the Settings row reads
+the count in red. The count reads the list the sheet already reads, so no
+new database function. Building it, a helper named `tell` in js/delreq.js
+replaced the file's own `tell` (its Undo line) and broke the request's Undo
+bar; `delreq` caught it before merge.
+
 ### 2026-11-17 · Every email in Messages, and replies to a company mailbox
 The user: "The email sent out from Hiring did not log inside Messages. All
 outgoing WhatsApp messages and emails should be logged inside." The Email log

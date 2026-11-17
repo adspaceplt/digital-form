@@ -8811,22 +8811,35 @@ function opsCodeRange(cid, period, ty, src, seq) {
       var prev = DB.sm_reports.filter(function (x) { return x.client_id === a.p_client && (x.kind || 'social') === kind && x.period_start < a.p_start && (x.brand_id || null) === crBrand && (crAsked || !x.on_request); })
         .sort(function (x, y) { return y.period_start.localeCompare(x.period_start); })[0];
       if (kind === 'ads' && crAsked) prev = null;
+
+      var aSnap = null, aFrom = null;
+      if (kind === 'ads' && !crAsked) {
+        var aCands = DB.sm_reports.filter(function (x) { return x.client_id === a.p_client && x.kind === 'ads' && x.period_end < a.p_start && !x.on_request && (x.brand_id || null) === crBrand; })
+          .sort(function (x, y) { return y.period_end.localeCompare(x.period_end) || y.period_start.localeCompare(x.period_start); });
+        aCands.some(function (x) {
+          var vv = (DB.sm_report_versions || []).filter(function (v) { return v.report_id === x.id && !v.withdrawn_at; }).sort(function (u, w) { return w.version_no - u.version_no; })[0];
+          if (vv && vv.snapshot) { aSnap = vv.snapshot; aFrom = x.id; return true; }
+          return false;
+        });
+      }
       if (kind === 'ads') {
         nr.title = 'Social Media Advertising Report';
         nr.first_month = false;
         nr.ads_totals = {};
-        if (prev) {
+        if (aSnap) {
 
-          var allPads = (DB.sm_report_ads || []).filter(function (x) { return x.report_id === prev.id; });
+          var allPads = JSON.parse(JSON.stringify(aSnap.ads || []));
+          var aRep = aSnap.report || {};
           var pads = allPads.filter(function (x) { return x.platform !== 'tiktok'; });
           var tkPads = allPads.filter(function (x) { return x.platform === 'tiktok'; });
-          var pt = prev.ads_totals || {}, pg = {};
+          var pt = aRep.ads_totals || {}, pg = {};
           pads.forEach(function (x) {
             var gg = pg[x.objective] = pg[x.objective] || { results: 0, spend: 0 };
             gg.results += Number(x.results) || 0; gg.spend += Number(x.spend) || 0;
           });
           Object.keys(pg).forEach(function (k) { var o = (pt.groups || {})[k]; if (o && o.results != null) pg[k].results = Number(o.results); });
-          nr.ads_totals = { prev_start: prev.period_start, prev_end: prev.period_end, prev_groups: pg };
+          Object.keys(pg).forEach(function (k) { pg[k].spend = Math.round(pg[k].spend * 100) / 100; });
+          nr.ads_totals = { prev_from: aFrom, prev_start: String(aRep.period_start).slice(0, 10), prev_end: String(aRep.period_end).slice(0, 10), prev_groups: pg };
           if (pt.reach != null) nr.ads_totals.prev_reach = Number(pt.reach);
           nr.ads_totals.prev_impressions = pt.impressions != null ? Number(pt.impressions) : pads.reduce(function (t, x) { return t + (Number(x.impressions) || 0); }, 0);
           nr.ads_totals.prev_spend = pt.spend != null ? Number(pt.spend) : pads.reduce(function (t, x) { return t + (Number(x.spend) || 0); }, 0);
@@ -10958,6 +10971,11 @@ function opsCodeRange(cid, period, ty, src, seq) {
       return Promise.resolve({ data: { ok: true, files: n }, error: null });
     }
 
+    var clientLang = function (cid) {
+      var ks = (DB.client_contacts || []).filter(function (k) { return k.client_id === cid && !k.archived_at; })
+        .sort(function (a, b) { return (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || String(a.created_at || '').localeCompare(String(b.created_at || '')); });
+      return ks[0] && ks[0].lang === 'zh' ? 'zh' : 'en';
+    };
     if (name === 'get_review_feed') {
 
       var rc = (DB.clients || []).filter(function (c) { return c.access_token === args.p_token && c.active !== false && !c.review_hidden; })[0];
@@ -10970,6 +10988,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         .sort(function (a, b2) { return String(b2.created_at).localeCompare(String(a.created_at)); });
       return Promise.resolve({ data: {
         client: { name: rc.name, logo_url: rc.logo_url || null, handles: { instagram: rc.handle_ig || null } },
+        lang: clientLang(rc.id),
         batches: rbs.map(function (x) {
           return { id: x.id, title: x.title, note: x.note || null, created_at: x.created_at,
             posts: (DB.posts || []).filter(function (q) { return q.batch_id === x.id; })
@@ -11158,6 +11177,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
         client: { name: cl.name, logo_url: cl.logo_url,
                   market: cl.market || 'MY', bill_market: billMarket(cl),
                   sst_applies: cl.sst_applies === undefined ? true : cl.sst_applies },
+        lang: clientLang(cl.id),
         options: opts }, error: null });
     }
 
@@ -11227,7 +11247,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           billing_address: pc.billing_address || null, market: pc.market || 'MY',
           sst_applies: pc.sst_applies === undefined ? true : pc.sst_applies, bill_market: billMarket(pc), stage: pc.stage, owner: pc.owner || null,
           industry: pc.industry || null, website: pc.website || null, logo_url: pc.logo_url || null },
-        me: { id: meRow.id, name: meRow.name, email: meRow.email },
+        me: { id: meRow.id, name: meRow.name, email: meRow.email, lang: meRow.lang === 'zh' ? 'zh' : 'en' },
         contacts: mine.map(function (c) { return pick(c, ['id', 'name', 'role', 'phone', 'email', 'is_primary', 'portal_access']); }),
         services: (DB.client_services || []).filter(function (s) { return s.client_id === cid && !s.archived_at && (s.state === 'quoted' || s.state === 'confirmed'); })
 
@@ -15824,6 +15844,7 @@ function opsCodeRange(cid, period, ty, src, seq) {
           shared.sort(function (a, b) { return String(b.period).localeCompare(String(a.period)) || a.seq - b.seq; });
           return Promise.resolve({ data: JSON.parse(JSON.stringify({
             client: { name: vsCl.name, logo_url: vsCl.logo_url || null },
+            lang: clientLang(vsCl.id),
             scripts: shared.map(function (x) {
               return {
                 id: x.id, code: vsCode(x.period, x.seq), period: x.period, kind: x.kind, title: x.title,

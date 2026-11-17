@@ -85,6 +85,8 @@
       name.parentNode.insertBefore(m, name.nextSibling);
     }
     m.textContent = text;
+    /* Delete requests waiting read in red (2026-11-17). */
+    m.classList.toggle('is-err', id === 'delreq' && /^\d+ waiting$/.test(text));
   }
   var READ = {
     /* Delete requests (2026-11-17): how many wait for an admin. */

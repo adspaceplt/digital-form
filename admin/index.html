@@ -98,7 +98,7 @@
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="stylesheet" href="/css/portal.css?v=20261117zzzf">
-<link rel="stylesheet" href="/css/console.css?v=20261117zzzf">
+<link rel="stylesheet" href="/css/console.css?v=20261117zzzh">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -125,11 +125,11 @@
 <!-- The demo (2026-10-27): a PIN typed in the sign-in's email box keeps
      `adspace-demo` in this browser (js/demo.js); while it stands the page
      loads sample data in place of the database, and never reaches it. -->
-<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261117zzzf"><\/script><script src="/demo/engine.js?v=20261117zzzf"><\/script>');}}catch(e){}</script>
+<script>try{var dm=JSON.parse(localStorage.getItem('adspace-demo')||'null');if(dm&&dm.until>Date.now()){window.ADSPACE_DEMO=dm;document.write('<script src="/demo/seed.js?v=20261117zzzf"><\/script><script src="/demo/engine.js?v=20261117zzzh"><\/script>');}}catch(e){}</script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
-<script src="/js/config.js?v=20261117zzzg"></script>
+<script src="/js/config.js?v=20261117zzzi"></script>
 <script src="/js/demo.js?v=20261117zzzf"></script>
 <script src="/js/captcha.js?v=20261117zzzf"></script>
 <script src="/js/words.js?v=20261117zzzf"></script>
@@ -153,13 +153,13 @@
 <script src="/js/chart.js?v=20261117zzzf"></script>
 <script src="/js/swipe.js?v=20261117zzzf"></script>
 <script src="/js/api.js?v=20261117zzzf"></script>
-<script src="/js/delreq.js?v=20261117zzzf"></script>
+<script src="/js/delreq.js?v=20261117zzzh"></script>
 <script src="/js/maintenance.js?v=20261117zzzf"></script>
 <script src="/js/announce.js?v=20261117zzzf"></script>
 <script src="/js/notice.js?v=20261117zzzf"></script>
-<script src="/js/whatsapp.js?v=20261117zzzg"></script>
+<script src="/js/whatsapp.js?v=20261117zzzi"></script>
 <script src="/js/mailtpl.js?v=20261117zzzf"></script>
-<script src="/js/docmail.js?v=20261117zzzg"></script>
+<script src="/js/docmail.js?v=20261117zzzi"></script>
 <script src="/js/push.js?v=20261117zzzf"></script>
 <script src="/js/money.js?v=20261117zzzf"></script>
 <script src="/js/media.js?v=20261117zzzf"></script>
@@ -364,6 +364,11 @@
       </button>
       <button class="railrow railfoot" id="settingsOpen" type="button" aria-label="Settings" title="Settings" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
+      <!-- Delete requests (2026-11-17): an admin's alone, its red dot while
+           any waits. -->
+      <button class="railrow railfoot" id="delReqOpen" type="button" aria-label="Delete requests" title="Delete requests" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg><span class="railfoot-dot" hidden><span class="sr"></span></span>
       </button>
       <button class="railrow railfoot" id="activityOpen" type="button" aria-label="Activity record" title="Activity record" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
@@ -1073,7 +1078,6 @@
                 <select class="select" id="ctLang" data-seg>
                   <option value="en">English</option>
                   <option value="zh">中文</option>
-                  <option value="ms">Bahasa Melayu</option>
                 </select></div>
             </div>
           </section>
@@ -6505,7 +6509,7 @@ raya-2026        https://example.com/raya"></textarea>
       <section class="fsec">
         <h4 class="fsec-h">Recipient</h4>
         <div class="row fgrid">
-          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="supMailFrom">ADspace · noreply-suppliers@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="supMailFrom">ADspace · noreply-supplier@sc.adspace.me</p></div>
           <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="supMailReply">ap@adspacestudios.com</p></div>
           <div class="span-all"><span class="field-label">To</span><p class="readfield" id="supMailTo"></p></div>
         </div>
@@ -6551,7 +6555,7 @@ raya-2026        https://example.com/raya"></textarea>
       <section class="fsec">
         <h4 class="fsec-h">Recipient</h4>
         <div class="row fgrid">
-          <div class="span-all"><span class="field-label">From</span><p class="readfield" id="dmFrom">ADspace · noreply-clients@sc.adspace.me</p></div>
+          <div class="span-all"><span class="field-label">From</span><p class="readfield">ADspace · noreply-client@sc.adspace.me</p></div>
           <div class="span-all"><span class="field-label">Replies go to</span><p class="readfield" id="dmReply"></p></div>
           <div class="span-all"><label class="field-label" for="dmTo">To</label>
             <select class="select" id="dmTo" aria-required="true" data-nodraft data-nofind></select></div>
@@ -6695,13 +6699,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261117zzzf"></script>
-<script src="/js/admin.js?v=20261117zzzf"></script>
+<script src="/js/admin.js?v=20261117zzzh"></script>
 <script src="/js/documents.js?v=20261117zzzf"></script>
 <script src="/js/letters.js?v=20261117zzzf"></script>
-<script src="/js/smreport.js?v=20261117zzzf"></script>
-<script src="/js/reports.js?v=20261117zzzf"></script>
+<script src="/js/smreport.js?v=20261117zzzg"></script>
+<script src="/js/reports.js?v=20261117zzzg"></script>
 <script src="/js/register.js?v=20261117zzzf"></script>
-<script src="/js/suppliers.js?v=20261117zzzg"></script>
+<script src="/js/suppliers.js?v=20261117zzzi"></script>
 <script src="/js/hiring.js?v=20261117zzzf"></script>
 <script src="/js/bukku.js?v=20261117zzzf"></script>
 <script src="/js/invoices.js?v=20261117zzzf"></script>
@@ -6711,7 +6715,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/seal.js?v=20261117zzzf"></script>
 <script src="/js/hrdocs.js?v=20261117zzzf"></script>
 <script src="/js/checklists.js?v=20261117zzzf1"></script>
-<script src="/js/crm.js?v=20261117zzzf"></script>
+<script src="/js/crm.js?v=20261117zzzh"></script>
 <script src="/js/sales.js?v=20261117zzzf"></script>
 <script src="/js/team.js?v=20261117zzzg"></script>
 <script src="/js/namecard.js?v=20261117zzzf"></script>
@@ -6732,6 +6736,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/agent.js?v=20261117zzzf"></script>
 <script src="/js/overview.js?v=20261117zzzf"></script>
 <script src="/js/analytics.js?v=20261117zzzf"></script>
-<script src="/js/settings.js?v=20261117zzzg"></script>
+<script src="/js/settings.js?v=20261117zzzi"></script>
 </body>
 </html>
