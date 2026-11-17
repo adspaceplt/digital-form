@@ -5790,9 +5790,11 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
 .hir-ivs { display: grid; gap: 12px; }
 .hir-iv { padding: 14px 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
 .hir-iv.is-off > :not(.hir-iv-head) { opacity: .6; }
-.hir-iv-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); margin-bottom: 8px; }
-.hir-iv-head > b { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.hir-iv-ctl { display: inline-flex; align-items: center; gap: 8px; }
+.hir-iv-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; min-height: var(--ctl-h-sm); margin-bottom: 8px; }
+.hir-iv-head > b { min-width: 0; overflow-wrap: anywhere; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+/* Where the title and the state cannot share a line (a 320 phone), the
+   state and its ⋯ take the line under it, at the right edge. */
+.hir-iv-ctl { display: inline-flex; align-items: center; gap: 8px; margin-left: auto; }
 .hir-times { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .hir-times .chip { margin-left: 6px; }
 .hir-iv-acts { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 12px; }

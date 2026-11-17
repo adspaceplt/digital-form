@@ -10837,6 +10837,16 @@ before. Not yet: a record reading Delete requested in place, a row in the
 admin's Waiting for you, and bulk Delete selected (still Full control).
 
 
+### 2026-11-17 · A candidate's tabs fade at their edge, and the interview head wraps at 320
+The day's full gate on c6b17ab (tests ade9d22) found three faults in Hiring.
+At 320 the candidate's strip (`#hirTabs`) scrolled with no faded edge: it was drawn without
+`ADspaceForm.thumb`, which every other record's strip uses. The interview card's
+head held its title, state and ⋯ on one line, so it pushed the page 23px past the screen
+(`.hir-iv-head` now wraps, the state and ⋯ taking the line under the title at the right
+edge). `pwapdf` read `hiring.js`'s two blank windows (a CV, a signed document) as PDFs
+drawn in the browser. Both are signed links from the private hiring bucket on Supabase
+Storage's origin, so it joins `OTHER_ORIGIN`. The same check found `personnel.js`, whose
+`blob:` images are a different case; it is logged under Logged defects.
 ### 2026-11-17 · The day's gate: quotation rows held to their columns, two suites brought up to date
 The full gate on main (c6b17ab4, tests ade9d22) failed nine suites.
 Three are fixed here. First, a quotation row with an Invoices button
