@@ -674,10 +674,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   message, Website quotations: how many a day are told on WhatsApp),
   Performance (Months, Quarters, Bonus and trip, Commission at
   `team.performance` View, behind the master code; 2026-10-29), Hiring
-  (Candidates: Hiring's figures at `team.settings`, Interview scorecards at
+  (Candidates: Time limits at `team.settings`, Interview scorecards at
   `team.hiring`, its row the Standard's criteria and how many positions hold
-  their own, Standard · 5 criteria · 1 position; New colleagues: Welcome
-  Kit; 2026-11-17), Templates
+  their own, Standard: 5 criteria · 1 position with its own; New colleagues:
+  Welcome Kit; 2026-11-17), Templates
   (Document types, Task templates at `ops.workflows`, Rate card wording at
   Services Full Access). Email templates (`js/mailtpl.js`,
   `ADspaceMailTpl.open`, at `team.settings` or Suppliers Full Access; a
@@ -3513,7 +3513,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   failed). Cancel (asked) takes the Meet off; the candidate is not emailed.
   The page reads the times offered, then the time chosen, then the
   confirmed time with Join Google Meet or Get directions, never the times
-  not chosen. Settings, Hiring: Hiring holds the figures
+  not chosen. Settings, Hiring: Time limits holds the figures
   (`team.settings`) and Interview scorecards the scorecards (the part).
 - The Interviewer's Sheet (`2026-11-17-hiring-interview-sheet.sql`; the
   user, 2026-11-17, the team's paper sheet: "a slide window or so so the

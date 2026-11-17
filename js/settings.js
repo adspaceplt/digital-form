@@ -121,8 +121,8 @@
         var d = r.data || {};
         if (r.error || d.error) throw r.error || new Error('scorecards');
         var rows = d.rows || [], std = rows.filter(function (x) { return x.standard; })[0], own = rows.length - (std ? 1 : 0);
-        return parts([std ? 'Standard' : '', std ? plural((std.criteria || []).length, 'criterion', 'criteria') : '',
-          own ? plural(own, 'position', 'positions') : ''].filter(Boolean));
+        return parts([std ? 'Standard: ' + plural((std.criteria || []).length, 'criterion', 'criteria') : '',
+          own ? plural(own, 'position', 'positions') + ' with ' + (own === 1 ? 'its' : 'their') + ' own' : ''].filter(Boolean));
       });
     },
     welcomekit: function () {
@@ -425,11 +425,11 @@
        figures and the scorecards, then what a new colleague reads. */
     add('hiring', 'Hiring', 'team', [
       ['Candidates', [
-        biz && { id: 'hiring', name: 'Hiring', kind: 'edit',
+        biz && { id: 'hiring', name: 'Time limits', kind: 'edit',
           meta: num('hiring_invite_days') == null ? '' : parts(['Interview times within ' + plural(num('hiring_invite_days'), 'day', 'days'),
             'Candidate link open ' + plural(num('hiring_link_days'), 'day', 'days'),
-            'Talent pool ' + plural(num('hiring_pool_months'), 'month', 'months'),
-            'Closed candidates ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
+            'Talent pool kept ' + plural(num('hiring_pool_months'), 'month', 'months'),
+            'Closed candidates kept ' + plural(num('hiring_keep_months'), 'month', 'months')]) },
         may('team.hiring') && { id: 'scorecards', name: 'Interview scorecards', kind: 'open', meta: line('scorecards'),
           open: function (btn) { if (W.ADspaceHiring && W.ADspaceHiring.openScorecards) W.ADspaceHiring.openScorecards(btn); } }]],
       /* The Welcome Kit (step E1): the words a new colleague reads at first
