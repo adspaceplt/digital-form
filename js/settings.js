@@ -267,7 +267,7 @@
           open: function (sw) { flipPortal(sw, 'portalwa', 'whatsapp_on', 'WhatsApp'); } },
         /* Each group's own switches and sections are Team's Groups tab. */
         W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() &&
-          { id: 'teamaccess', name: 'Team access', kind: 'open', meta: line('teamaccess'), open: function () {
+          { id: 'teamaccess', name: 'User groups', kind: 'open', meta: line('teamaccess'), open: function () {
             history.pushState(null, '', '/admin/?s=team&tab=groups');
             W.ADspaceAdmin.show('team');
           } }]],
