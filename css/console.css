@@ -1021,11 +1021,11 @@ button.cr-row:focus-visible { outline: 2px solid var(--action-ring); outline-off
    the table wider than the console and grew with every switch added. */
 .group-head, .group-row {
   display: grid; align-items: center; gap: 0 16px;
-  grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) 128px;
+  grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) var(--ctl-h);
   padding: 0 15px;
 }
-/* Every group it may change offers Edit on its row; an empty one keeps a
-   ⋯ beside it for Delete (TEAM2-14): both end on the row's right edge. */
+/* Every group it may change holds Edit and Delete in one ⋯ at the row's
+   right edge (2026-11-17). */
 .group-row > .team-act { justify-self: end; }
 .group-acts { display: flex; align-items: center; gap: 8px; }
 .group-grants { font-size: 13px; color: var(--ink-soft); }

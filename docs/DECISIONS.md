@@ -11057,4 +11057,17 @@ work said once). The ⋯ on a removed colleague whose details were erased held
 nothing that still applied; Delete permanently (the next release) fills it.
 `teamrec` measures the strip and head across the two tabs.
 
+### 2026-11-17 · HR documents speak as ADspace
+
+Agreed with the user: the Employment Offer and Contract greet the candidate
+by their whole name, close Yours sincerely (the contract read Yours
+faithfully to a named reader), and ask one declaration, the same sentence on
+the contract and the candidate's tick (the contract said "I hereby confirm"
+twice). We and our became ADspace, as every client page speaks. The
+template's slips were put right without changing a clause's substance
+(entitled to, in accordance with, Labour Day, months' salary, inform your
+Direct Manager, the right; SOCSO and EIS by their proper names). The page's
+status read Offer accepted once the contract was confirmed; it now follows
+the latest document. A copy review moved held by Google Meet to on, Where to
+Location, and the offer's opening off naming the employer twice.
 - 2026-11-17 · A ⋯ of one item beside another act (the user, on a user group's row: "seriously who taught this design.. menu only sit one option, edit stays outside?"). DESIGN.md §5 Menus rule 8 allowed a ⋯ of one item where it was a lifecycle or destroy act or sat in a command bar, so a group's Edit stood beside a ⋯ of Delete alone, a client request's Reply beside a ⋯ of Delete, and five bars (Short Links' Bulk import, Team's Compare groups, My Work's Select tasks, Reports' Select reports, Documents' and Services' on a phone) held one item behind a ⋯. The rule now never allows a ⋯ of one item beside another act: that act joins it, and a bar's lone item is its own button (`cmdbar.js` `.cmd-solo`; `ADspaceMenu.solo` for a section's own ⋯). `tests/menus.js` fails any ⋯ of one item with another act beside it, the bars' exception gone. The group row went to the Team session, which owns `js/team.js`.

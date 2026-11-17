@@ -1819,12 +1819,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `#grDiff-{section}` names only what differs. No Admin tools block, no
     Customise. The My Work views (List, Board, Calendar) are not offered; a
     stored one is kept through a save.
-  - Each group row reads its access as phrases held whole (`team-part`), Edit
-    on every row for an admin alone (a user group is made, changed and
-    deleted by an admin: `roles_admin` and `team_roles_admin_guard`,
-    `admin-only`, 2026-11-17; none on the Admin group, nor on an admin group
-    for anyone but the super admin), a ⋯ holding Delete beside it
-    (TEAM2-11, TEAM2-14; every group since 2026-11-17). Services offers No Access,
+  - Each group row reads its access as phrases held whole (`team-part`),
+    and one ⋯ holding Edit then Delete for an admin alone, nothing beside
+    it (a user group is made, changed and deleted by an admin: `roles_admin`
+    and `team_roles_admin_guard`, `admin-only`; none on the Admin group, nor
+    on an admin group for anyone but the super admin; the user, 2026-11-17:
+    "menu only sit one option, edit stays outside?"). Services offers No Access,
     View and Full Access; Leads and Past clients offer no level above
     Clients; a client part that follows Clients is greyed while Clients is
     No Access (N2, N3).
@@ -3560,9 +3560,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`ADspaceHrDocs.seal`, `js/seal.js`), stored at
   `{candidate}/sealed-{document}.pdf` and kept with its SHA-256
   (`hiring_doc_seal`), never drawn again. The PDF (`js/hrdocs.js`) is the
-  user's templates word for word, their typos put right (SOCSO, your,
-  absent), the salary in words and figures, the intern and part-time
-  paragraphs only for those types, no NRIC in the greeting. Its
+  user's templates in substance, their typos and grammar put right,
+  ADspace in place of we and our, the candidate greeted by their whole
+  name (no NRIC), Yours sincerely on both, one declaration
+  (`ADspaceHrDocs.declare`, the contract's and the page's tick alike),
+  the signing block's NRIC or Passport Number, the salary in words and
+  figures, the intern and part-time paragraphs only for those types; the
+  page and emails read Read offer and Read contract. Its
   documents' files are queued for the console to take out of Storage when
   it goes (trigger `hiring_docs_files_gone`). /verify/ does not answer an
   HR document's reference yet (step E).

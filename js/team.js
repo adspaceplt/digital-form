@@ -1168,16 +1168,17 @@
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       '<span class="group-grants">' + grantHtml(r) + '</span>' +
       (locked || !amAdmin() ? '<span class="team-act"></span>'
-        /* Every group it may change shows Edit on its row and Delete in its
-           ⋯; a group holding colleagues moves them first (the user,
-           2026-11-17: "delete options for every create"). */
-        : '<span class="team-act group-acts"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button>' +
+        /* Every group it may change holds Edit, then Delete, in its ⋯; a
+           group holding colleagues moves them first (the user, 2026-11-17:
+           "delete options for every create"; "menu only sit one option,
+           edit stays outside?"). */
+        : '<span class="team-act group-acts">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-          '<div class="kmenu" data-menu hidden>' + menuItem('del', 'Delete', 'is-danger') + '</div></span>');
+          '<div class="kmenu" data-menu hidden>' + menuItem('rename', 'Edit') + menuItem('del', 'Delete', 'is-danger') + '</div></span>');
 
     wireMenu(el);
     var ren = el.querySelector('[data-a="rename"]');
-    if (ren) ren.addEventListener('click', function () { openGroupBox(r, this); });
+    if (ren) ren.addEventListener('click', function () { openGroupBox(r, el.querySelector('[data-a="menu"]')); });
     var del = el.querySelector('[data-a="del"]');
     if (del) del.addEventListener('click', function () {
       /* Its members go to another group in the same step, an admin group
