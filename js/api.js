@@ -190,19 +190,19 @@
   const FN_WORD = {
     not_signed_in: 'Sign in again.',
     not_admin: 'You do not have permission to do this. Please ask an admin.',
-    not_team: 'Not a team login.',
-    bad_email: 'The email is not valid.',
-    not_portal_contact: 'The deployed function predates portal access. Redeploy invite-member.',
+    not_team: 'This email is not on the team list. Sign in with your team email.',
+    bad_email: 'Enter a valid email address.',
+    not_portal_contact: 'This feature is not available yet. Please contact an admin.',
     not_team_member: 'Only a colleague on the team list can be invited.',
     too_many: 'Twenty invitations a day is the limit. Try again tomorrow.'
   };
   function invokeFn(name, body) {
-    if (!client) return Promise.resolve({ data: {}, error: { message: 'Not configured' }, why: 'Not configured.' });
+    if (!client) return Promise.resolve({ data: {}, error: { message: 'Not configured' }, why: 'This feature is not available yet. Please contact an admin.' });
     const words = (b, err) => {
       if (b && (b.detail || b.error)) return b.detail || FN_WORD[b.error] || b.error;
       const m = String((err && err.message) || err || '');
-      if (/not found|404|Failed to send|Failed to fetch/i.test(m)) return name + ' is not deployed.';
-      return m || 'Unknown error.';
+      if (/not found|404|Failed to send|Failed to fetch/i.test(m)) return 'This feature is not available yet. Please contact an admin.';
+      return m || 'The request failed. Please try again.';
     };
     return client.functions.invoke(name, { body }).then(r => {
       const d = r.data || {};

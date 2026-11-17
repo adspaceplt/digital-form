@@ -673,7 +673,7 @@
     'ai-credit': 'Write with AI is not available at the moment. Please contact an admin.', 'ai-model': 'Write with AI is not available at the moment. Please contact an admin.',
     'ai-slow': 'The analysis took too long. Try again.', 'ai-incomplete': 'The analysis came back incomplete. Try again.',
     'ai-failed': 'The analysis could not be written. Try again.', 'needs-update': 'This feature is not available yet. Please contact an admin.',
-    'bad-analysis': 'The analysis could not be saved. Try again.', 'not-found': 'This version was deleted in the meantime.'
+    'bad-analysis': 'The analysis could not be saved. Try again.', 'not-found': 'This analysis no longer exists.'
   };
   function aiSaid(e, d) {
     var k = (d && d.error) || (e && e.message) || '';
