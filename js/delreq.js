@@ -320,7 +320,7 @@
     load: load, adapt: adapt, liveItem: liveItem,
     asking: active, wraps: wraps, fields: fields,
     title: function () { return LINE.title + '?'; },
-    body: function (b) { return (b ? b.replace(/\s*This cannot be undone\.?\s*$/, '').replace(/\s*There is no restore\.?\s*$/, '') + ' ' : '') + LINE.body; },
+    body: function (b) { return (b ? b.replace(/\s*This cannot be undone\.?\s*$/, '') + ' ' : '') + LINE.body; },
     go: function () { return LINE.title; },
     reason: function (v) { if (armed && v) armed.reason = v; },
     open: function () { show(true); },
