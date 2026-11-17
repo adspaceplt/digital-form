@@ -45,7 +45,7 @@
 
   /* ---- Words ---------------------------------------------------------------- */
   var SAID = {
-    'ai-limit': 'The daily limit for the Assistant has been reached. It resets at 12:00am.',
+    'ai-limit': 'The daily limit for the Assistant has been reached. It resets at 12:00 am.',
     'ai-not-set-up': 'The Assistant is not set up yet. Please contact an admin.',
     'needs-update': 'This feature is not available yet. Please contact an admin.',
     'ai-key': 'The Assistant is not available at the moment. Please contact an admin.',
@@ -850,7 +850,7 @@
   var SCHED_SAID = { 'bad-time': 'Choose a time from a minute from now to 92 days ahead.', 'bad-title': 'Enter what it is about.',
     'bad-condition': 'That condition cannot be checked. Ask again without it.', 'bad-payload': 'Some details are missing. Ask again with the name, the date and the time.',
     'too-many': 'You have 50 scheduled actions. Cancel one under Scheduled first.', 'wa-off': 'The WhatsApp template for this message is off. Please ask an admin to turn it on in Settings.',
-    'not-found': 'That set, report or task no longer exists.', 'bad-kind': 'That cannot be scheduled.' };
+    'not-found': 'That set, report or task no longer exists.', 'bad-kind': 'That cannot be scheduled. Ask for a reminder, a task, a report, a set or a WhatsApp message.' };
   var COND = { set_undecided: 'The set still has posts the client has not decided', report_not_sent: 'The report is not yet marked as sent',
     task_open: 'The task is not yet finished' };
   function schedCard(a) {
