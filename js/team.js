@@ -1147,11 +1147,20 @@
     return parts.length ? parts.join(' · ') : part('Off');
   }
 
+  /* A group's refusals in the team's words (A USER GROUP DELETED, 2026-11-17). */
+  var GROUP_DEL_SAID = {
+    'admin-only': 'Only an admin can delete a user group. Please ask an admin.',
+    'super-only': 'Only the super admin can delete an admin group or move colleagues into one. Please ask the super admin.',
+    fixed: 'The Admin group cannot be deleted.',
+    'not-found': 'This group no longer exists.',
+    'no-target': 'Choose a group for its members.',
+    'last-admin': 'This is the last admin with access. Make another colleague admin first.'
+  };
+
   function groupRow(r) {
     /* The Admin group is nobody's to change, and an admin group is an
        admin's alone (`team_roles_admin_guard`). */
     var locked = r.slug === 'admin' || (r.is_admin && !amSuper());
-    var used = state.rows.some(function (m) { return m.role === r.slug; });
     var el = document.createElement('div');
     el.className = 'group-row';
     var members = state.rows.filter(function (m) { return m.role === r.slug; }).length;
@@ -1159,38 +1168,42 @@
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       '<span class="group-grants">' + grantHtml(r) + '</span>' +
       (locked || !amAdmin() ? '<span class="team-act"></span>'
-        /* Every group it may change shows Edit on its row; an empty group's
-           ⋯ holds Delete beside it (TEAM2-14, 2026-10-24). */
+        /* Every group it may change shows Edit on its row and Delete in its
+           ⋯; a group holding colleagues moves them first (the user,
+           2026-11-17: "delete options for every create"). */
         : '<span class="team-act group-acts"><button class="btn btn-sm" data-a="rename" type="button">' + (window.ADspaceActs ? window.ADspaceActs.glyph('edit') : '') + 'Edit</button>' +
-          (used ? '' : '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
-            '<div class="kmenu" data-menu hidden>' + menuItem('del', 'Delete', 'is-danger') + '</div>') + '</span>');
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' + menuItem('del', 'Delete', 'is-danger') + '</div></span>');
 
     wireMenu(el);
     var ren = el.querySelector('[data-a="rename"]');
     if (ren) ren.addEventListener('click', function () { openGroupBox(r, this); });
     var del = el.querySelector('[data-a="del"]');
     if (del) del.addEventListener('click', function () {
+      /* Its members go to another group in the same step, an admin group
+         offered to the super admin alone, as every other group select. */
+      var to = state.roles.filter(function (g) { return g.slug !== r.slug && (amSuper() || !(g.is_admin || g.slug === 'admin')); })
+        .map(function (g) { return [g.slug, g.name]; });
+      var fields = members ? [{ name: 'to', label: 'New group for its ' + members + (members === 1 ? ' member' : ' members'), required: true,
+        choices: [['', 'Choose a group']].concat(to) }] : [];
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'The ' + r.name + ' group and its access will be deleted. This cannot be undone.',
+        body: 'The ' + r.name + ' group and its access will be deleted.' +
+          (members ? ' Its ' + (members === 1 ? 'member' : 'members') + ' will move to the group you choose and take its access.' : '') +
+          ' This cannot be undone.',
         go: 'Delete',
         tone: 'danger',
-        field: { label: 'Type the group name to confirm', placeholder: r.name, match: r.name, need: 'Type the group name to confirm.', mismatch: 'The group name does not match.' }
-      }, function () {
-        /* PostgREST answers a delete a policy refused with no error and no
-           row gone, so ask for the row back: an empty answer is a refusal,
-           not a success, and the group stays in the list saying so. */
-        db.from('team_roles').delete().eq('slug', r.slug).select('slug').then(function (q) {
-          if (q.error) { msg('groupMsg', teamSaid(q.error), 'err'); return; }
-          if (!q.data || !q.data.length) {
-            msg('groupMsg', 'Not deleted. The database refused the request.', 'err');
-            load();
-            return;
-          }
-          log('team.group_removed', r.name, '');
-          msg('groupMsg', r.name + ' deleted.', 'ok');
+        wait: true,
+        fields: fields.concat([{ name: 'name', label: 'Type the group name to confirm', placeholder: r.name, match: r.name, required: true }])
+      }, function (v) {
+        return Promise.resolve(db.rpc('team_role_delete', { p_slug: r.slug, p_to: (v && v.to) || null })).then(function (q) {
+          if (q.error) return GROUP_DEL_SAID[q.error.message] || teamSaid(q.error);
+          var a = q.data || {};
+          if (a.error) return GROUP_DEL_SAID[a.error] || teamSaid({ message: a.error });
+          msg('groupMsg', r.name + ' deleted.' + (a.moved ? ' ' + a.moved + (a.moved === 1 ? ' member moved.' : ' members moved.') : ''), 'ok');
           load();
-        }).catch(function () { msg('groupMsg', 'Not deleted. Please try again.', 'err'); });
+          return '';
+        }).catch(function () { return 'Not deleted. Please try again.'; });
       });
     });
     return el;

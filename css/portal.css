@@ -2684,6 +2684,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfields > .askhead:not(:first-child) { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--line-soft); }
 .askhead + .askentry { margin-top: 0; }
 .askfields.has-half > .askhead { grid-column: 1 / -1; margin-bottom: -4px; }
+.askfields > .askrow { grid-column: 1 / -1; margin: -4px 0 0; }
 .askfields.has-half > .askhead:not(:first-child) { margin-top: 8px; }
 .asknote { margin: 6px 0 0; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); }
 /* A button whose act is out (js/acts.js, 2026-10-10): its width kept, its
