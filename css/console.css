@@ -3794,6 +3794,11 @@ button.eml-row:focus-visible { outline: 2px solid var(--action-ring); outline-of
    sat under the console's head). */
 .console .rec-pane { scroll-margin-top: calc(var(--head-h) + 12px); }
 .rec-pane:not(.is-narrow) .qt-row.has-acts > :not(.qt-dl) { grid-row: 1; }
+/* The buttons' line spans every track, so the auto track is held at nought
+   on such a row: sized by that row's own buttons it widened by one more
+   button (Invoices) and pulled the figure and state off their column
+   (2026-11-17, the day's gate). */
+.rec-pane:not(.is-narrow) .qt-row.has-acts { grid-template-columns: minmax(0, 1fr) 140px 190px 0 var(--ctl-h); }
 /* They run the row's whole width, ending at its right edge under the ⋯:
    spanning the auto track alone had widened it, opening a gap before the
    ⋯ and pulling the figure and state off their headings (2026-10-27). */

@@ -10836,3 +10836,19 @@ database (`delete_kinds`): a call it does not name is made and refused as
 before. Not yet: a record reading Delete requested in place, a row in the
 admin's Waiting for you, and bulk Delete selected (still Full control).
 
+
+### 2026-11-17 · The day's gate: quotation rows held to their columns, two suites brought up to date
+The full gate on main (c6b17ab4, tests ade9d22) failed nine suites.
+Three are fixed here. First, a quotation row with an Invoices button
+(#1176) drew its buttons' line over every track, and its auto track grew
+with that line. That pulled the figure and the state 12px off their
+column. The track is now held at nought on a row with buttons. uxaudit's
+column check now compares a cell set at its track's end by its right
+edge, since a line of buttons set at the right is a column by that edge.
+Second, `crm` still asked the term bands before #1171 (3 months at 25%).
+It now asks the bands the user set the same day (3 months at 15%).
+Third, uxaudit's walk opened the second Team row, which a shut card hid,
+and crashed. It now opens Qiao Rou by her name. The rest went to the
+sessions that own them: Hiring (matrix's strip and overflow at 320,
+pwapdf's hiring.js) and Personnel (menus, growth, settings, pwapdf's
+personnel.js). perfui's margin stays logged.
