@@ -1132,8 +1132,8 @@
     var show = Boolean(c && had && now && now !== had && issued);
     el.textContent = show
       ? 'Changing the Client ID does not change the ' + issued +
-        (issued === 1 ? ' reference already issued. It applies to letters issued from now on.'
-                      : ' references already issued. It applies to letters issued from now on.')
+        (issued === 1 ? ' reference already issued. The new Client ID applies to letters issued from now on.'
+                      : ' references already issued. The new Client ID applies to letters issued from now on.')
       : '';
     el.hidden = !show;
   }
@@ -2145,13 +2145,13 @@
     if (stage === 'lead') return { text: 'No call or visit logged.', go: 'calls', icon: 'phone' };
     if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' line to quote is' : ' lines to quote are') + ' not yet in a letter.', go: 'documents', icon: 'file' };
+      return { text: quoting + (quoting === 1 ? ' line to quote is' : ' lines to quote are') + ' in no letter.', go: 'documents', icon: 'file' };
     }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
       return { text: missing.length + (missing.length === 1 ? ' billing field is' : ' billing fields are') +
         ' required before Active.', go: 'billing', icon: 'file' };
     }
-    if (stage === 'proposal' && issued) return { text: 'The letter is with the client and not yet signed.', go: 'documents', icon: 'file' };
+    if (stage === 'proposal' && issued) return { text: 'The Letter of Offer is with the client and unsigned.', go: 'documents', icon: 'file' };
     if (stage === 'active' && !confirmed) return { text: 'This client is Active with no confirmed service line.', go: 'services', icon: 'tag' };
     return null;
   }
