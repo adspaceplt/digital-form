@@ -11112,6 +11112,17 @@ so `bukku_may` asks `bukku_member_ready()` first and the band stays away
 until that part has run: nothing is ever made in Bukku that the portal cannot
 file.
 
+### 2026-11-17 — A report's language follows the client, and 中文 drafts come back in Chinese
+Reported by the user: a client whose main contact prefers 中文 had a report
+open on English, and Write with AI under 中文 returned English. Two causes.
+New report set the language from the page, but My Work's Start report made
+reports without it; the rule is now trigger `sm_reports_lang_default`, so
+every route follows the main contact. The Chinese instruction sat at the end
+of a long English prompt, beside notes typed in English, and was outweighed:
+it now heads the request too, and an English answer to a 中文 press is asked
+once more inside the same press. The user also found 每次 RM 19.72 read
+oddly: a cost per result is an average and reads 平均每次对话成本.
+
 ### 2026-11-17 · Hiring is Settings' own group
 The Hiring figures, the Interview scorecards and the Welcome Kit stood as a
 fourth part of Portal, where nobody looking for hiring would look. They are
