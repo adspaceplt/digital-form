@@ -87,6 +87,8 @@
     m.textContent = text;
   }
   var READ = {
+    /* Delete requests (2026-11-17): how many wait for an admin. */
+    delreq: function () { return window.ADspaceDelReq ? window.ADspaceDelReq.waiting() : Promise.resolve(''); },
     /* Page availability (2026-10-29): which pages show their notice page
        now, and which are set for later (2026-10-31: "2 covered" read as
        nothing to the user). */
@@ -257,6 +259,10 @@
           meta: num('abroad_days') == null ? '' : parts(['Up to ' + plural(num('abroad_days'), 'day', 'days'),
             num('abroad_remind_hours') == null ? '' : num('abroad_remind_hours') === 0 ? 'No reminder'
               : 'Reminder every ' + plural(num('abroad_remind_hours'), 'hour', 'hours')].filter(Boolean)) },
+        /* Delete requests (2026-11-17): a Delete pressed at Edit waits
+           here for an admin (js/delreq.js). */
+        W.ADspaceAdmin && W.ADspaceAdmin.isAdmin && W.ADspaceAdmin.isAdmin() && W.ADspaceDelReq &&
+          { id: 'delreq', name: 'Delete requests', kind: 'open', meta: line('delreq'), open: function () { W.ADspaceDelReq.open(); } },
         biz && { id: 'healthkeep', name: 'Health data kept', kind: 'edit',
           meta: num('health_keep_months') == null ? '' : parts(['Check-ins ' + plural(num('health_keep_months'), 'month', 'months'),
             'Leavers ' + plural(num('health_leaver_months'), 'month', 'months')]) }]],

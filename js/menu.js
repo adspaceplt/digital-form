@@ -208,7 +208,7 @@
     /^(Send on WhatsApp|Resend on WhatsApp|Send link on WhatsApp|Request feedback|Introduce representative|Resend booking|Send invitation|Share with .+|Stop sharing|Request re-approval|Send email|Send by email)$/,
     /^(Mark (?!withdrawn$).+|Do not contact|Allow contact|Remove VIC|Verify signed letter|Confirm internally|Add changes|Confirm for client|Revert confirmation|Clear ad error)$/,
     /^(Set inactive|Set active|Archive|Restore|Pause|Resume|Resume .+|Cancel|Unpublish|Withdraw|Revert (?!confirmation).+|Reopen|Reopen .+|Stop|Cancel month|Reset link|Close link|Request again|Mark withdrawn|Revoke access|Enable access|Extend access|End access|Set access expiry|Withdraw confirmation|Unlink|Unlink task)$/,
-    /^(Remove|Remove from .+|Void|Delete)$/
+    /^(Remove|Remove from .+|Void|Delete|Request delete)$/
   ];
   function groupOf(label) {
     var w = String(label == null ? '' : label).replace(/\s+/g, ' ').trim();
@@ -229,6 +229,8 @@
   }
   function tidy(menu) {
     if (!menu || !menu.querySelector || !menu.querySelector('[data-g]')) return;
+    /* At Edit a Delete reads Request delete (js/delreq.js). */
+    if (window.ADspaceDelReq) window.ADspaceDelReq.adapt(menu);
     if (menu.getAttribute('role') !== 'menu') menu.setAttribute('role', 'menu');
     var old = menu.querySelectorAll('hr.kmenu-sep[data-auto]');
     for (var i = 0; i < old.length; i++) old[i].parentNode.removeChild(old[i]);

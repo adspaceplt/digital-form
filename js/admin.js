@@ -1126,7 +1126,8 @@
   }
   function menuLive(menu) {
     return Boolean(menu) && Array.prototype.some.call(menu.querySelectorAll('.kmenu-item'), function (it) {
-      return !it.hidden && needOk(it.getAttribute('data-need'));
+      return !it.hidden && (needOk(it.getAttribute('data-need')) ||
+        Boolean(window.ADspaceDelReq && window.ADspaceDelReq.liveItem(it)));
     });
   }
   /* Two routes whose name on the screen is not the key in the ladder. The
@@ -1191,6 +1192,8 @@
     /* The team row has arrived by now, so the account control can stop
        standing in with an address and name the person. */
     paintAcct(actor);
+    /* What a Delete at Edit may request (js/delreq.js), read once. */
+    if (window.ADspaceDelReq) window.ADspaceDelReq.load();
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });

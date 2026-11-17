@@ -192,6 +192,16 @@
       }
     }
     var fn = cb, arg;
+    /* A Delete pressed at Edit (js/delreq.js): the reason for the request
+       is the request's, never handed to the screen's own answer. */
+    var DR = window.ADspaceDelReq;
+    if (DR && DR.asking()) {
+      rows = rows.filter(function (x) {
+        if (x.spec.name === '__reason') { DR.reason(valueOf(x)); return false; }
+        if (x.spec.reasonToo) DR.reason(valueOf(x));
+        return true;
+      });
+    }
     if (!rows.length) arg = true;
     else if (rows.length === 1 && !rows[0].spec.name) arg = valueOf(rows[0]);
     else {
@@ -263,6 +273,17 @@
     elFields.innerHTML = '';
     rows = [];
     var specs = o.fields || (o.field ? [o.field] : []);
+    /* At Edit a Delete is a request an admin approves (js/delreq.js): the
+       same question, asking a reason and saying so on its button. */
+    var DRq = window.ADspaceDelReq;
+    if (DRq && DRq.wraps(o)) {
+      specs = DRq.fields(specs);
+      elTitle.textContent = DRq.title(o.title);
+      elBody.textContent = DRq.body(o.body);
+      elBody.hidden = false;
+      elGo.textContent = DRq.go();
+      elGo.className = 'btn btn-primary';
+    }
     elFields.hidden = !specs.length;
     elFields.classList.toggle('has-half', specs.some(function (f) { return f && (f.half || f.third); }));
     elFields.classList.toggle('has-third', specs.some(function (f) { return f && f.third; }));

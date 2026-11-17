@@ -5844,3 +5844,21 @@ button.ovw-tr:focus-visible { outline: 2px solid var(--action-ring); outline-off
    asks AI steps away: a button carrying the AI mark, the Assistant in the
    head and the Dashboard's question box. The database refuses the same. */
 :root.no-ai .btn:has(svg.ai-mark), :root.no-ai #agentOpen, :root.no-ai #ovwAsk, :root.no-ai #ovwAskTry { display: none !important; }
+
+/* Delete requests (js/delreq.js, 2026-11-17): a request a row, what goes
+   and who asked at the left, its state over the decision at the right. */
+.dr-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line-soft); }
+.dr-row:first-child { border-top: 0; }
+.dr-main { min-width: 0; }
+.dr-name { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+.dr-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.dr-why { margin: 6px 0 0; color: var(--ink-soft); overflow-wrap: anywhere; }
+.dr-msg { margin: 6px 0 0; }
+.dr-end { display: grid; justify-items: end; align-content: start; gap: 8px; }
+.dr-acts { display: flex; gap: 8px; }
+@media (max-width: 640px) {
+  .dr-row { grid-template-columns: minmax(0, 1fr); }
+  .dr-end { justify-items: start; }
+  .dr-acts { width: 100%; }
+  .dr-acts .btn { flex: 1 1 50%; }
+}

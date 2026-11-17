@@ -321,6 +321,8 @@
     client_email_templates_list: '', client_email_template_save: 'p_kind p_subject p_body',
     client_email_prepare: 'p_kind p_ref p_contact', client_email_begin: 'p_kind p_ref p_contact p_cc p_subject p_body p_again',
     client_email_done: 'p_id p_status p_provider p_error', client_emails_of: 'p_client', client_email_set: 'p_on', auto_send_set: 'p_kind p_on', portal_switch_set: 'p_key p_on',
+    delete_request_kinds: '', delete_request_file: 'p_kind p_args p_reason', delete_requests_list: '', delete_request_withdraw: 'p_id',
+    delete_request_decide: 'p_id p_approve p_note', delete_request_done: 'p_id p_ok p_error',
     get_scripts: 'p_token',
     ops_add_checklist_item: 'p_task p_label',
     ops_add_comment: 'p_body p_task',
@@ -14127,6 +14129,121 @@ function opsCodeRange(cid, period, ty, src, seq) {
       }
     }
 
+    if (/^delete_request/.test(name)) {
+      var drOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
+      var drNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };
+      if (window.__refuseRpc && window.__refuseRpc[name]) return drNo(window.__refuseRpc[name]);
+      var drMe = opsMe();
+      var drAdmin = Boolean(drMe && opsAccess(drMe).admin);
+      DB.delete_requests = DB.delete_requests || [];
+      var DK = {
+        'rpc:delete_client': ['clients', 'p_client', 'Client', 'clients', 'id', 'name'],
+        'rpc:brand_analysis_delete': ['clients.brand', 'p_id', 'Brand analysis', 'brand_analyses', 'id', 'version'],
+        'rpc:client_entity_delete': ['clients.billing', 'p_entity', 'Billing entity', 'billing_entities', 'id', 'legal_name'],
+        'rpc:client_request_delete': ['clients.requests', 'p_id', 'Request', 'client_requests', 'id', 'kind'],
+        'rpc:letter_delete': ['clients.documents', 'p_doc', 'Letter of Offer', 'client_documents', 'id', 'number'],
+        'rpc:quotation_delete': ['clients.quotes', 'p_id', 'Quotation', 'quotations', 'id', 'ref'],
+        'rpc:document_delete': ['register', 'p_doc', 'Document', 'documents', 'id', 'serial'],
+        'rpc:ops_delete_engagement': ['ops', 'p_engagement', 'Month', 'ops_engagements', 'id', 'period'],
+        'rpc:ops_delete_task': ['ops', 'p_task', 'Task', 'ops_tasks', 'id', 'title'],
+        'rpc:ops_delete_tasks': ['ops', 'p_tasks', 'Tasks'],
+        'rpc:sm_report_delete': ['reports', 'p_id', 'Report', 'sm_reports', 'id', 'title'],
+        'rpc:sm_report_version_delete': ['reports', 'p_version', 'Report version'],
+        'rpc:supplier_delete': ['suppliers', 'p_id', 'Supplier', 'suppliers', 'id', 'name'],
+        'rpc:video_script_delete': ['scripts', 'p_id', 'Video script', 'video_scripts', 'id', 'code'],
+        'table:batches': ['review.sets', 'id', 'Content set', 'batches', 'id', 'title'],
+        'table:posts': ['review.sets', 'id', 'Post', 'posts', 'id', 'title'],
+        'table:campaigns': ['campaigns.campaigns', 'id', 'Campaign', 'campaigns', 'id', 'title'],
+        'table:campaign_options': ['campaigns.campaigns', 'id', 'Booking'],
+        'table:creators': ['campaigns.creators', 'id', 'Creator', 'creators', 'id', 'name'],
+        'table:client_contacts': ['clients.contacts', 'id', 'Contact', 'client_contacts', 'id', 'name'],
+        'table:client_requests': ['clients.requests', 'id', 'Request', 'client_requests', 'id', 'kind'],
+        'table:client_services': ['clients.services', 'id', 'Service line', 'client_services', 'id', 'label'],
+        'table:client_touches': ['clients.calls', 'id', 'Call or visit', 'client_touches', 'id', 'summary'],
+        'table:links': ['links', 'slug', 'Short link', 'links', 'slug', 'slug']
+      };
+      if (name === 'delete_request_kinds') {
+        if (!drMe) return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: Object.keys(DK).sort().map(function (k) { return { kind: k, section: DK[k][0], word: DK[k][2] }; }), error: null });
+      }
+      if (!drMe) return drNo('denied');
+      var drNote = function (to, kind, title, body, key) {
+        notePush({ id: nid('n'), team_member_id: to, kind: kind, title: title, body: body, created_at: new Date().toISOString(), read_at: null, dedupe_key: key });
+      };
+      var drLog = function (detail) { DB.activity_log.unshift({ id: nid('al'), actor: drMe.name, action: 'team.changed', subject: 'Delete requests', detail: detail, created_at: new Date().toISOString() }); };
+      if (name === 'delete_request_file') {
+        var k = DK[args.p_kind];
+        if (!k) return drNo('bad-kind');
+        if (!opsAllowed(k[0], 'work')) return drNo('denied');
+        if (opsAllowed(k[0], 'manage')) return drNo('may-delete');
+        var a = args.p_args;
+        if (!a || typeof a !== 'object' || Array.isArray(a)) return drNo('bad-request');
+        var why = String(args.p_reason || '').replace(/\s+/g, ' ').trim();
+        if (why.length < 3 || why.length > 500) return drNo('bad-reason');
+        var rec = null, label;
+        if (Array.isArray(a[k[1]])) label = a[k[1]].length + ' ' + k[2].toLowerCase();
+        else {
+          rec = a[k[1]] == null ? '' : String(a[k[1]]);
+          if (!rec) return drNo('bad-request');
+          if (k[3]) {
+            var row = (DB[k[3]] || []).filter(function (x) { return String(x[k[4]]) === rec; })[0];
+            if (!row) return drNo('not-found');
+            label = row[k[5]] == null ? '' : String(row[k[5]]);
+          }
+          label = label || k[2];
+        }
+        if (DB.delete_requests.filter(function (x) { return x.requested_by === drMe.id && Date.now() - new Date(x.created_at).getTime() < 864e5; }).length >= 30) return drNo('too-many');
+        if (rec && DB.delete_requests.some(function (x) { return x.kind === args.p_kind && x.record === rec && (x.state === 'open' || x.state === 'approving'); })) return drNo('already');
+        var dr = { id: nid('dr'), kind: args.p_kind, args: JSON.parse(JSON.stringify(a)), record: rec, label: label.slice(0, 200), reason: why,
+          requested_by: drMe.id, created_at: new Date().toISOString(), state: 'open', decided_by: null, decided_at: null, note: null };
+        DB.delete_requests.push(dr);
+        DB.team_members.filter(function (m) { return m.active !== false && (m.is_admin || m.role === 'admin') && m.id !== drMe.id; }).forEach(function (m) {
+          drNote(m.id, 'delete.request', 'Delete requested · ' + k[2] + ' · ' + label, drMe.name + ' · ' + why, 'delreq:' + dr.id + ':' + m.id);
+        });
+        drLog('Requested: ' + k[2] + ' · ' + label + ' · ' + why);
+        return drOk({ id: dr.id, label: label, word: k[2] });
+      }
+      if (name === 'delete_requests_list') {
+        var nm = function (id) { var m = DB.team_members.filter(function (x) { return x.id === id; })[0]; return m ? m.name : null; };
+        var list = DB.delete_requests.filter(function (r) { return drAdmin || r.requested_by === drMe.id; })
+          .sort(function (x, y) { var w = function (r) { return r.state === 'open' || r.state === 'approving' ? 1 : 0; }; return (w(y) - w(x)) || (y.created_at < x.created_at ? -1 : 1); })
+          .map(function (r) { return { id: r.id, kind: r.kind, word: (DK[r.kind] || [])[2], section: (DK[r.kind] || [])[0], label: r.label, reason: r.reason,
+            state: r.state, at: r.created_at, by: nm(r.requested_by), by_id: r.requested_by, mine: r.requested_by === drMe.id,
+            decided_by: nm(r.decided_by), decided_at: r.decided_at, note: r.note }; });
+        return drOk({ admin: drAdmin, rows: list });
+      }
+      var r = DB.delete_requests.filter(function (x) { return x.id === args.p_id; })[0];
+      if (name === 'delete_request_withdraw') {
+        if (!r || r.requested_by !== drMe.id) return drNo('not-found');
+        if (r.state !== 'open') return drNo('decided', { state: r.state });
+        r.state = 'withdrawn'; r.decided_at = new Date().toISOString();
+        drLog('Withdrawn: ' + r.label);
+        return drOk();
+      }
+      if (!drAdmin) return drNo('denied');
+      if (!r) return drNo('not-found');
+      if (name === 'delete_request_decide') {
+        if (r.state !== 'open' && r.state !== 'approving') return drNo('decided', { state: r.state });
+        var note = String(args.p_note || '').replace(/\s+/g, ' ').trim() || null;
+        if (args.p_approve) {
+          r.state = 'approving'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString(); r.note = note;
+          return drOk({ kind: r.kind, args: JSON.parse(JSON.stringify(r.args)) });
+        }
+        if (!note) return drNo('no-note');
+        r.state = 'declined'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString(); r.note = note;
+        drNote(r.requested_by, 'delete.declined', 'Delete declined · ' + r.label, drMe.name + ' · ' + note, 'delreq:' + r.id + ':declined');
+        drLog('Declined: ' + r.label + ' · ' + note);
+        return drOk();
+      }
+      if (name === 'delete_request_done') {
+        if (r.state !== 'approving') return drNo('decided', { state: r.state });
+        if (!args.p_ok) { r.state = 'open'; r.note = args.p_error || null; return drOk({ state: 'open' }); }
+        r.state = 'approved'; r.decided_by = drMe.id; r.decided_at = new Date().toISOString();
+        drNote(r.requested_by, 'delete.approved', 'Deleted · ' + r.label, drMe.name, 'delreq:' + r.id + ':approved');
+        drLog('Approved: ' + r.label);
+        return drOk({ state: 'approved' });
+      }
+    }
     if (/^client_email|^auto_send_set$|^portal_switch_set$/.test(name)) {
       var spOk = function (d) { persist(); return Promise.resolve({ data: Object.assign({ ok: true }, d || {}), error: null }); };
       var spNo = function (e, more) { return Promise.resolve({ data: Object.assign({ error: e }, more || {}), error: null }); };

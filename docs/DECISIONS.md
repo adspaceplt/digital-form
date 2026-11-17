@@ -10816,3 +10816,23 @@ made by hand is never doubled.
    `required: false`, so an optional stamp number held Confirm back until
    it was marked. Deferred to step E: /verify/ answering an HR document's
    reference and file, Documents' HR Letters listing them.
+
+## 2026-11-17 · Delete requests at Edit: the access restructure, release 2
+
+Plan version 4, decision 1 ("approved, go ahead and build all steps"):
+Full control deletes; Edit files a request an admin approves; View and Off
+cannot delete. Live there were 29 delete functions and 21 delete policies,
+each with its own question and refusal words on the page. Rewriting every
+screen would have taken weeks and left 50 places to drift, so the request
+is made at one place: the page's database client. A Delete pressed at Edit
+arms a request; the screen asks its own question (the name typed back, as
+before) with a Reason added by `js/confirm.js`; the call it then makes is
+kept by `delete_request_file` instead of being sent, and the screen's own
+promise is left waiting, so it never words a filed request as Not deleted.
+An admin's Approve makes that same call as the admin, so every check the
+delete already holds (the name typed back, client scope, a letter's lines,
+a delete code) still applies. What may be requested is a list in the
+database (`delete_kinds`): a call it does not name is made and refused as
+before. Not yet: a record reading Delete requested in place, a row in the
+admin's Waiting for you, and bulk Delete selected (still Full control).
+
