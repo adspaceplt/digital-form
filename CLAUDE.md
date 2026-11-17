@@ -294,7 +294,7 @@ npm ci --prefix /home/user/digital-form-tests/pdfx
 | `analytics.js`, the Analytics trends (`js/sales.js`, `js/chart.js` line bands) | analytics, overview, sales, levels, team, then `ui` |
 | `supabase/functions/analytics-read/`, Analytics' Write with AI, the ANALYTICS READ WITH AI and ANALYTICS ALERTS sections | analytics, analyticsfn, smsql, abroadsql, mailfn, settings, sql |
 | Public holidays (`settings.js`, the front door's hours, the My Work calendar) | holidays, sql, ops, seo, then `ui` |
-| `reports.js`, `smreport.js` | reports, adsreport, nextbatch, audit, metaimport, smsql, engage |
+| `reports.js`, `smreport.js` | reports, adsreport, adsaccounts, nextbatch, audit, metaimport, smsql, engage |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | Overseas access (`team_place_ok`, `abroad_*`, the OVERSEAS ACCESS sections, `paintAbroad`, Settings' Overseas approval) | abroadsql, abroad, abroadrec, sql, settings, team, teamrec, then `ui` |
 | the phone tab bar (`admin.js`, `menu.js`) | tabbar, visit, run, then `ui` |
@@ -6589,13 +6589,38 @@ Each line is a rule that broke once. Its reason is in the archive.
     results row the account's figures for Step 1, never an ad. It holds no
     reach, age or video figures: an ad level export with them is asked for.
   - `first_month` carries the reading guidance; a later month compares against
-    the previous period, which is carried forward. A new report is never a
+    the previous period: a new report takes the latest published Advertising
+    Report of its client and brand not asked for that ends before it starts,
+    from the version the client was shown (`sm_report_create_for`, kept as
+    `ads_totals.prev_from`; `2026-11-17-ads-report-compares-with.sql`; the
+    user, 2026-11-17: a report asked for in between became Huna's
+    comparison), and Step 1's Compare with offers every published one ending
+    before it, or Typed figures (`prev_typed`). A new report is never a
     first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
     clients advertised before the portal); with no earlier report the period
     before is prefilled (the previous calendar month, else the same length
     just before) for the team to type its figures, and the team ticks a
     client's true first month.
   - One row per ad and objective.
+  - Ad accounts (2026-11-17, Huna: Step 1 held one of two accounts): Step 1
+    keeps each ad account's own reach, impressions and amount spent
+    (`ads_totals.accounts`, by Account ID with Meta's name), written by
+    that account's import (its account row) or typed in Step 1 a section an
+    account; with two accounts or more Step 1's impressions and amount
+    spent are their sum and its reach is each account's own, never added
+    (`withAccounts`; the PDF's By ad account table naming each by Meta's
+    name, `report-draft`'s `by_ad_account`); a report from before reads its
+    Step 1 figures as the one account whose ads they cover, to the sen
+    (`legacyAccounts`).
+  - Figures add up (2026-11-17; the user: "whats the purpose of the audit
+    seriously??"): Check and submit holds Submit and Publish, with no Meta,
+    where Step 1 is below what its ads add up to (each account's own, and
+    the accounts added up), the previous period's objectives spend more
+    than its amount spent, or the previous period differs from the
+    published report it names or shares its dates with (`sumIssues`), each
+    a row with its one-press fix (Combine ad accounts, Use that report's
+    figures) and Undo where it happened. Step 1 above its ads is not held:
+    an import leaves out an ad with no results.
   - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
     under Cost per result in every table, never Per 1,000 reached; the
     console's row and the PDF read one rule (`ADspaceSmReport.cprOf`,
@@ -6757,7 +6782,8 @@ Each line is a rule that broke once. Its reason is in the archive.
       says Reach within n% of Meta on n figures): each figure Meta gives an
       ad (by Ad IDs, else name,
       audience, objective, result type), its age split, Step 1's impressions
-      and amount spent (reach only where one ad account answers), an ad Meta
+      and amount spent (reach only where one ad account answers; with two,
+      each account's own reach, impressions and spend too), an ad Meta
       ran with spend and results that the report lacks (Add; one with no
       spend or no results is never asked for), one with figures Meta shows no
       delivery for (Remove, its own press alone), each post figure and a

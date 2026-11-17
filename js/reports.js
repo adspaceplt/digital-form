@@ -871,26 +871,164 @@
   function loadPrevText(r, done) {
     if (r.kind !== 'ads' || (st.prevText && st.prevText.id === r.id) || st.prevAsk === r.id) return;
     st.prevAsk = r.id;
-    var q = db.from('sm_reports').select('intro, insights').eq('client_id', r.client_id).eq('kind', 'ads')
-      .lt('period_end', r.period_start).order('period_end', { ascending: false }).limit(1);
-    q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
+    /* The report the previous period names, else the latest before it. */
+    var pf = (r.ads_totals || {}).prev_from;
+    var q = db.from('sm_reports').select('intro, insights').eq('client_id', r.client_id).eq('kind', 'ads');
+    q = pf ? q.eq('id', pf) : q.lt('period_end', r.period_start).order('period_end', { ascending: false }).limit(1);
+    if (!pf) q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
     q.then(function (res) {
       var p = (res.data || [])[0];
       st.prevText = { id: r.id, text: p ? [p.intro].concat(Object.values(p.insights || {})).join('\n') : '' };
       if (st.open && st.open.id === r.id && done) done();
     }).catch(function () { st.prevText = { id: r.id, text: '' }; if (done) done(); });
   }
+  /* Figures add up (2026-11-17, Huna: Step 1 read RM 1,542.54 spent while
+     its objectives added up to RM 1,988.48, and nothing said so; the user:
+     "whats the purpose of the audit seriously??"). Needs no Meta: Step 1
+     never below what its ads add up to, each ad account's figures held and
+     added up, the previous period's objectives within its amount spent, and
+     the previous period as the published report it came from gave it.
+     Step 1 above its ads is not held: an ad with no results is left out of
+     an import. Each holds Submit and Publish, with a one-press fix where
+     the report holds the answer. */
+  function sumIssues() {
+    var r = st.open || {}, out = [];
+    if (r.kind !== 'ads') return { issues: out, pending: false };
+    var t = r.ads_totals || {}, ids = acctIdsOf(), ok = function (v) { return v != null && v !== '' && !isNaN(Number(v)); };
+    var under = function (held, ads) { return ok(held) && Number(held) < ads - 0.005; };
+    var differs = function (a, b, money) { return ok(a) !== ok(b) || (ok(a) && Math.abs(Number(a) - Number(b)) > (money ? 0.005 : 0.5)); };
+    var put = function (words, label, nt) { out.push({ words: words, fix: nt ? { label: label, totals: nt } : null }); };
+    var su = acctSums(null);
+    var step = (stepsOf(r).filter(function (x) { return x[0] === 'figures'; })[0] || [0, 'Step 1'])[1];
+    var fill = function (accts) {
+      var a = Object.assign({}, accts);
+      ids.forEach(function (id) { if (!a[id]) { var s0 = acctSums(id); a[id] = { name: acctName(id), reach: null, impressions: s0.impressions, spend: s0.spend }; } });
+      return withAccounts(t, a);
+    };
+    if (ids.length > 1) {
+      var accts = t.accounts || {};
+      if (!Object.keys(accts).length) {
+        if (under(t.spend, su.spend) || under(t.impressions, su.impressions)) {
+          put('Amount spent reads ' + money2(t.spend) + ' and impressions ' + fmt(t.impressions) + '; the ads from ' + ids.length +
+            ' ad accounts add up to ' + money2(su.spend) + ' and ' + fmt(su.impressions) + ' impressions.', 'Combine ad accounts', fill(legacyAccounts(t, ids)));
+        }
+      } else {
+        ids.forEach(function (id) {
+          var a = accts[id], s0 = acctSums(id);
+          if (!a) { put(acctName(id) + ' has no figures in ' + step + '.', 'Fill from its ads', fill(accts)); return; }
+          if (under(a.spend, s0.spend) || under(a.impressions, s0.impressions)) {
+            var a2 = Object.assign({}, accts); a2[id] = Object.assign({}, a, { spend: Math.max(Number(a.spend) || 0, s0.spend), impressions: Math.max(Number(a.impressions) || 0, s0.impressions) });
+            put(acctName(id) + ' reads ' + money2(a.spend) + ' spent and ' + fmt(a.impressions) + ' impressions; its ads add up to ' + money2(s0.spend) + ' and ' + fmt(s0.impressions) + ' impressions.', 'Use its ads\' totals', withAccounts(t, a2));
+          }
+        });
+        var nt = withAccounts(t, accts);
+        if (Object.keys(accts).length === ids.length && (differs(t.spend, nt.spend, true) || differs(t.impressions, nt.impressions))) {
+          put('Amount spent reads ' + money2(t.spend) + '; its ad accounts add up to ' + money2(nt.spend) + '.', 'Combine ad accounts', nt);
+        }
+      }
+    } else if (under(t.spend, su.spend) || under(t.impressions, su.impressions)) {
+      put('Amount spent reads ' + money2(t.spend) + ' and impressions ' + fmt(t.impressions) + '; the ads add up to ' + money2(su.spend) + ' and ' + fmt(su.impressions) + ' impressions.',
+        'Use the ads\' totals', Object.assign({}, t, { spend: Math.max(Number(t.spend) || 0, su.spend), impressions: Math.max(Number(t.impressions) || 0, su.impressions) }));
+    }
+    var tk = t.tiktok || {}, tkAds = st.ads.filter(function (a) { return adPlat(a) === 'tiktok'; });
+    if (tkAds.length) {
+      var ts = { spend: 0, impressions: 0 };
+      tkAds.forEach(function (a) { ts.spend += Number(a.spend) || 0; ts.impressions += Number(a.impressions) || 0; });
+      ts.spend = Math.round(ts.spend * 100) / 100;
+      if (under(tk.spend, ts.spend) || under(tk.impressions, ts.impressions)) {
+        put('TikTok\'s amount spent reads ' + money2(tk.spend) + '; its ads add up to ' + money2(ts.spend) + '.', 'Use the ads\' totals',
+          Object.assign({}, t, { tiktok: Object.assign({}, tk, { spend: Math.max(Number(tk.spend) || 0, ts.spend), impressions: Math.max(Number(tk.impressions) || 0, ts.impressions) }) }));
+      }
+    }
+    if (r.first_month) return { issues: out, pending: false };
+    var src = st.prevSrc && st.prevSrc.id === r.id && st.prevSrc.key === prevKey(r) ? st.prevSrc : null;
+    var take = src && src.pv ? Object.assign({}, t, src.pv, { prev_from: src.from, tiktok: src.pv.tiktok || t.tiktok ? Object.assign({}, t.tiktok || {}, src.pv.tiktok || {}) : undefined }) : null;
+    if (take && !take.tiktok) delete take.tiktok;
+    var gs = 0, anyG = false;
+    Object.keys(t.prev_groups || {}).forEach(function (k) { var g = t.prev_groups[k] || {}; if (ok(g.spend)) { gs += Number(g.spend); anyG = true; } });
+    if (anyG && under(t.prev_spend, gs)) {
+      put('The previous period\'s objectives add up to ' + money2(gs) + '; its amount spent is ' + money2(t.prev_spend) + '.', 'Use that report\'s figures', take);
+    }
+    if (src && src.pv) {
+      var pv = src.pv, what = [];
+      if (pv.prev_start !== String(t.prev_start || '').slice(0, 10) || pv.prev_end !== String(t.prev_end || '').slice(0, 10)) what.push('its dates');
+      if (differs(t.prev_reach, pv.prev_reach)) what.push('reach ' + fmt(t.prev_reach) + ', the report ' + fmt(pv.prev_reach));
+      if (differs(t.prev_impressions, pv.prev_impressions)) what.push('impressions ' + fmt(t.prev_impressions) + ', the report ' + fmt(pv.prev_impressions));
+      if (differs(t.prev_spend, pv.prev_spend, true)) what.push('amount spent ' + money2(t.prev_spend) + ', the report ' + money2(pv.prev_spend));
+      var pg = t.prev_groups || {}, rg = pv.prev_groups || {};
+      Object.keys(rg).concat(Object.keys(pg)).filter(function (k, i, a) { return a.indexOf(k) === i; }).forEach(function (k) {
+        var x = pg[k] || {}, y = rg[k] || {};
+        if (differs(x.spend, y.spend, true) || differs(x.results, y.results)) what.push((OBJ_WORD[k] || k) + ' ' + money2(x.spend) + ', the report ' + money2(y.spend));
+      });
+      if (what.length) put('The previous period differs from the published ' + src.word + ' report: ' + what.join('; ') + '.', 'Use that report\'s figures', take);
+    }
+    return { issues: out, pending: !src };
+  }
+  function sumFix(box, b, x) {
+    var r = st.open, before = r.ads_totals || {}, m = box.querySelector('[data-m="check"]');
+    if (!x || !x.fix) return;
+    b.disabled = true;
+    var put = function (val) {
+      return db.from('sm_reports').update({ ads_totals: val }).eq('id', r.id).select('*').then(function (res) {
+        if (res.error || !(res.data || []).length) throw res.error || new Error('Not saved. The database refused the request.');
+        st.open = res.data[0];
+      });
+    };
+    put(x.fix.totals).then(function () {
+      fileReport('report.saved', 'Figures · ' + x.fix.label);
+      paintSteps(); paintCheck(box);
+      undoBar('Figures corrected.', box.querySelector('.rp-checks'), function () {
+        return put(before).then(function () { fileReport('report.saved', 'Figures · ' + x.fix.label + ' undone'); paintSteps(); paintCheck(box); });
+      });
+    }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+  }
+  function prevKey(r) {
+    var t = r.ads_totals || {};
+    return [t.prev_from || '', t.prev_start || '', t.prev_end || '', r.first_month ? 1 : 0].join('|');
+  }
+  /* The report the previous period came from: the one it names, else the
+     published one of the same client, brand and period. */
+  function loadPrevSrc(r, done) {
+    var key = prevKey(r), t = r.ads_totals || {};
+    if (st.prevSrc && st.prevSrc.id === r.id && st.prevSrc.key === key) return;
+    if (st.prevSrcAsk === r.id + key) return;
+    st.prevSrcAsk = r.id + key;
+    var fin = function (from, pv) {
+      st.prevSrcAsk = null;
+      st.prevSrc = { id: r.id, key: key, from: from, pv: pv, word: t.prev_start ? periodWord(t.prev_start, t.prev_end) : '' };
+      if (pv && pv.prev_start) st.prevSrc.word = periodWord(pv.prev_start, pv.prev_end);
+      if (st.open && st.open.id === r.id && done) done();
+    };
+    if (r.first_month || (!t.prev_from && !(t.prev_start && t.prev_end))) { fin(null, null); return; }
+    if (!t.prev_from && t.prev_typed) { fin(null, null); return; }
+    var found = t.prev_from ? Promise.resolve(t.prev_from) : (function () {
+      var q = db.from('sm_reports').select('id').eq('client_id', r.client_id).eq('kind', 'ads')
+        .eq('period_start', String(t.prev_start).slice(0, 10)).eq('period_end', String(t.prev_end).slice(0, 10)).limit(1);
+      q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
+      return q.then(function (res) { return ((res.data || [])[0] || {}).id || null; });
+    }());
+    found.then(function (id) {
+      if (!id) { fin(null, null); return; }
+      return prevOfReport(id).then(function (pv) { fin(id, pv); });
+    }).catch(function () { fin(null, null); });
+  }
   function slipWords(slips) {
     var by = {};
     slips.forEach(function (s) { (by[s.where] = by[s.where] || []).push(s.amount); });
     return Object.keys(by).map(function (w) { return by[w].join(', ') + ' in ' + w; }).join('; ');
+  }
+  /* Reach is entered once Step 1 holds it, or each ad account its own. */
+  function reachHeld() {
+    var t = (st.open || {}).ads_totals || {}, ids = acctIdsOf();
+    if (ids.length > 1) return ids.every(function (id) { var a = (t.accounts || {})[id]; return a && a.reach != null && a.reach !== ''; });
+    return t.reach != null;
   }
   function stepDone(k) {
     var r = st.open || {}, t = r.ads_totals || {};
     if (k === 'accounts') return st.platforms.length > 0;
     if (k === 'posts') return st.posts.length > 0;
     if (k === 'ads') return st.ads.length > 0;
-    if (k === 'figures') return t.reach != null;
+    if (k === 'figures') return reachHeld();
     /* Done once every block is written; part written reads n of N with
        the empty mark, never the done tick (2026-10-22, RPT-8). */
     if (k === 'text') { var cs = commentaryState(); return cs.n > 0 && cs.n >= cs.of; }
@@ -905,7 +1043,7 @@
       var nErr = st.ads.filter(adErr).length;
       return st.ads.length ? plural(st.ads.length, 'ad') + (nErr ? ' · ' + nErr + ' marked as ad error' : '') : 'None';
     }
-    if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
+    if (k === 'figures') return reachHeld() ? 'Reach entered' : 'Reach not entered';
     if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
     if (k === 'next') return nbNote();
     return (STATUS[r.status] || STATUS.draft)[0];
@@ -1140,6 +1278,18 @@
         '<span class="rp-check-t"><b>Figures in the commentary</b><small>' + esc(slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report.') + '</small></span>' +
         '<button class="btn btn-sm btn-quiet" type="button" data-to="text">' + (editable() ? PEN_MARK + 'Edit' : 'View' + ICON.go) + '</button></div>';
     }
+    /* What Step 1 and the previous period hold adds up (2026-11-17). */
+    var sm = sumIssues(), sums = sm.issues;
+    if (sm.pending) loadPrevSrc(r, function () { if (st.step === 'check' && box.isConnected) paintCheck(box); });
+    var fixable = r.status === 'draft' && may('work');
+    sums.forEach(function (x, i) {
+      rows += '<div class="rp-check is-missing' + (fixable && x.fix ? ' has-fix' : '') + '" data-check="sums">' +
+        '<span class="rp-check-mark" aria-hidden="true"></span>' +
+        '<span class="rp-check-t"><b>Figures add up</b><small>' + esc(x.words) + '</small></span>' +
+        (fixable && x.fix ? '<button class="btn btn-sm" type="button" data-sumfix="' + i + '">' + esc(x.fix.label) + '</button>'
+          : '<button class="btn btn-sm btn-quiet" type="button" data-to="figures">' + (editable() ? PEN_MARK + 'Edit' : 'View' + ICON.go) + '</button>') + '</div>';
+    });
+    var held = slips.length || pending || sums.length || sm.pending;
     var mine = r.submitted_by && r.submitted_by === myId();
     /* A named reviewer confirms, or an admin in their place; a report
        submitted before reviewers keeps the earlier rule. */
@@ -1149,9 +1299,9 @@
     /* While the client links Meta, Submit rests until the Report audit's
        reading matches (2026-10-09); `holdSubmit` lets it go. */
     var metaHold = r.status === 'draft' && !missing.length && metaSources(r).length > 0;
-    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length || slips.length || pending ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit</button>');
+    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length || held ? ' disabled' : metaHold ? ' disabled data-meta="1"' : '') + '>Submit</button>');
     if (r.status === 'review' && may('manage') && (named ? (reviewing || isAdmin()) : (!mine || isAdmin()))) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
-    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish"' + (slips.length || pending ? ' disabled' : '') + '>Publish</button>');
+    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish"' + (held ? ' disabled' : '') + '>Publish</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     /* Sending back is a write at Reports Work, as sm_report_return checks:
        a submitter whose group is now at View is not offered Take back
@@ -1162,6 +1312,7 @@
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
     else if (slips.length && (r.status === 'draft' || r.status === 'confirmed')) wait = r.status === 'draft' ? 'Correct the figures in the commentary to submit.' : 'Send it back to correct the figures in the commentary.';
+    else if (sums.length && (r.status === 'draft' || r.status === 'confirmed')) wait = r.status === 'draft' ? 'Correct the account figures to submit.' : 'Send it back to correct the account figures.';
     else if (metaHold && may('work')) wait = 'Match the figures to Meta to submit.';
     else if (named && !reviewing) wait = 'Waiting for ' + (nameOf(r.reviewer_id) || 'the reviewer') + ' to confirm.';
     else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting for another manager to confirm.';
@@ -1171,12 +1322,15 @@
     box.innerHTML = '<div class="rp-sec">' +
       '<div class="ovcard rp-checks">' + rows + '</div>' +
       '<div class="ovcard rp-aicheck" data-m="aicheck" hidden></div>' +
-      (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait"' + (metaHold && !missing.length && may('work') ? ' data-meta="1"' : '') + '>' + esc(wait) + '</span>' : '') + '</div>' : '') +
+      (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait"' + (metaHold && !missing.length && !held && may('work') ? ' data-meta="1"' : '') + '>' + esc(wait) + '</span>' : '') + '</div>' : '') +
       '<div class="msg" data-m="check"></div>' + keyDates(r) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
       b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
     });
     wireSteps(box);
+    Array.prototype.forEach.call(box.querySelectorAll('[data-sumfix]'), function (b) {
+      b.addEventListener('click', function () { sumFix(box, b, sums[Number(b.getAttribute('data-sumfix'))]); });
+    });
     if (gated) loadGate(box, r);
     loadCheck(box, r);
     loadRecord(box, r);
@@ -1387,7 +1541,7 @@
     if (r.kind === 'ads') {
       var seen = {}, sum = { impressions: 0, spend: 0 }, had = 0, reach = [];
       reads.forEach(function (rd) {
-        var out = rd.text ? adsPlan(rd.text, { platform: 'meta', withResults: true, fromMeta: true }) : null;
+        var out = rd.text ? adsPlan(rd.text, { platform: 'meta', withResults: true, fromMeta: true, account: rd.account }) : null;
         if (!out || out.error) return;
         out.updates.forEach(function (u) {
           var a = u.ad, where = adName(a.name) + ' · ' + (OBJ_WORD[a.objective] || a.objective);
@@ -1424,6 +1578,15 @@
           if (out.summary.impressions != null) sum.impressions += out.summary.impressions;
           if (out.summary.spend != null) sum.spend = Math.round((sum.spend + out.summary.spend) * 100) / 100;
           if (out.summary.reach != null) reach.push(out.summary.reach);
+          /* With two ad accounts or more, each account's own figures in
+             Step 1 are read against that account's (2026-11-17). */
+          var ac = out.account, held = ((r.ads_totals || {}).accounts || {})[ac];
+          if (ac && acctIdsOf().length > 1) ['reach', 'impressions', 'spend'].forEach(function (k) {
+            if (out.summary[k] == null || sameFig(k, (held || {})[k], out.summary[k])) return;
+            if (k === 'reach' && nearReach((held || {})[k], out.summary[k])) { within++; return; }
+            var set = {}; set[k] = out.summary[k];
+            put({ where: acctName(ac), field: FIG_WORD[k], report: figText(k, (held || {})[k]), meta: figText(k, out.summary[k]) }, { t: 'acct', id: ac, set: set });
+          });
         }
       });
       /* Step 1's figures: reach only where one ad account answers for the
@@ -1616,6 +1779,11 @@
       if (f.t === 'ad') ads[f.id] = Object.assign(ads[f.id] || {}, f.set);
       else if (f.t === 'post') posts[f.id] = Object.assign(posts[f.id] || {}, f.set);
       else if (f.t === 'totals') tot = Object.assign(tot || {}, f.set);
+      else if (f.t === 'acct') {
+        tot = tot || {};
+        tot.accounts = Object.assign({}, tot.accounts || (r.ads_totals || {}).accounts || {});
+        tot.accounts[f.id] = Object.assign({ name: acctName(f.id) }, tot.accounts[f.id] || {}, f.set);
+      }
       else if (f.t === 'ad-add') addAds.push(f.row);
       else if (f.t === 'post-add') addPosts.push(f.row);
       else if (f.t === 'ad-remove' || f.t === 'post-remove') gone.push(f);
@@ -1675,7 +1843,9 @@
     });
     if (tot) {
       var before = Object.assign({}, r.ads_totals || {});
-      jobs.push(db.from('sm_reports').update({ ads_totals: Object.assign({}, r.ads_totals || {}, tot) }).eq('id', r.id).select('*').then(function (res) {
+      var tNew = Object.assign({}, r.ads_totals || {}, tot);
+      if (tot.accounts) tNew = withAccounts(tNew, tot.accounts);
+      jobs.push(db.from('sm_reports').update({ ads_totals: tNew }).eq('id', r.id).select('*').then(function (res) {
         var row = refused(res)[0];
         Object.assign(st.open, row);
         undo.push(function () {
@@ -2400,6 +2570,7 @@
     on('submit', function (b) {
       var slips = figureSlips() || [];
       if (slips.length) { say(m, slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report. Correct the commentary to submit.', 'err'); return; }
+      if (sumIssues().issues.length) { say(m, 'The account figures do not add up. Correct them to submit.', 'err'); return; }
       var g = st.gate && st.gate.id === r.id ? st.gate.g : null;
       var past = g && g.applies && !g.ok, late = g && g.applies && g.late;
       var ask = { title: 'Submit?', body: 'The reviewer will be notified and will check it before it is published. It cannot be edited while in review.', go: 'Submit' };
@@ -2447,6 +2618,7 @@
     on('publish', function (b) {
       var slips = figureSlips() || [];
       if (slips.length) { say(m, slipWords(slips) + ' ' + (slips.length > 1 ? 'do' : 'does') + ' not match the report. Send it back to correct the commentary.', 'err'); return; }
+      if (sumIssues().issues.length) { say(m, 'The account figures do not add up. Send it back to correct them.', 'err'); return; }
       /* Meta's figures still move while the period runs, so an Advertising
          Report it is read for publishes from the day after (2026-10-12). */
       if (r.kind === 'ads' && metaCan(r) && periodRuns(r)) {
@@ -4492,6 +4664,118 @@
   var AD_PLATS = [['meta', 'Meta'], ['tiktok', 'TikTok']];
   function adPlat(a) { return a && a.platform === 'tiktok' ? 'tiktok' : 'meta'; }
   function adPlatWord(k) { return k === 'tiktok' ? 'TikTok' : 'Meta'; }
+  /* Ad accounts (2026-11-17, Huna: two ad accounts, Step 1 holding the
+     first one's figures alone). Each ad account's own reach, impressions
+     and amount spent sit in `ads_totals.accounts`, by its Account ID with
+     its name; with two accounts or more Step 1's impressions and amount
+     spent are their sum, and its reach is each account's own, never added
+     across accounts, since Meta counts a person once in each. */
+  function acctIdsOf() {
+    var t = (st.open || {}).ads_totals || {}, seen = {}, out = [];
+    Object.keys(t.accounts || {}).concat(st.ads.filter(function (a) { return adPlat(a) === 'meta' && a.ad_account; })
+      .map(function (a) { return String(a.ad_account); })).forEach(function (k) { if (!seen[k]) { seen[k] = true; out.push(k); } });
+    return out;
+  }
+  function acctName(id) {
+    var held = (((st.open || {}).ads_totals || {}).accounts || {})[id] || {};
+    var linked = ((st.metaLinks || {}).ad_accounts || []).filter(function (a) { return String(a.id).replace(/^act_/, '') === String(id); })[0];
+    return (linked && linked.name) || held.name || 'Ad account ending\u00a0' + String(id).slice(-4);
+  }
+  function acctSums(id) {
+    var out = { spend: 0, impressions: 0 };
+    st.ads.forEach(function (a) {
+      if (adPlat(a) !== 'meta' || (id != null && String(a.ad_account || '') !== String(id))) return;
+      out.spend += Number(a.spend) || 0; out.impressions += Number(a.impressions) || 0;
+    });
+    out.spend = Math.round(out.spend * 100) / 100;
+    return out;
+  }
+  /* Step 1's top level from the accounts: impressions and spend added up,
+     reach left to each account. */
+  function withAccounts(t, accts) {
+    var ids = Object.keys(accts || {});
+    var out = Object.assign({}, t, { accounts: accts });
+    if (ids.length < 2 && acctIdsOf().length < 2) return out;
+    var im = null, sp = null;
+    ids.forEach(function (k) {
+      var a = accts[k] || {};
+      if (a.impressions != null && a.impressions !== '') im = (im || 0) + Number(a.impressions);
+      if (a.spend != null && a.spend !== '') sp = Math.round(((sp || 0) + Number(a.spend)) * 100) / 100;
+    });
+    out.impressions = im; out.spend = sp; out.reach = null;
+    return out;
+  }
+  /* A report from before ad accounts were kept apart: Step 1's figures are
+     the one account whose ads they cover, to the sen. */
+  function legacyAccounts(t, ids, except) {
+    var accts = Object.assign({}, t.accounts || {});
+    if (Object.keys(accts).length || t.spend == null || t.spend === '' || ids.length < 2) return accts;
+    var cand = ids.filter(function (k) { return k !== except; });
+    var hit = cand.filter(function (k) { return Math.abs(acctSums(k).spend - Number(t.spend)) < 0.005; })[0] || (except && cand.length === 1 ? cand[0] : null);
+    if (hit) accts[hit] = { name: acctName(hit), reach: t.reach == null || t.reach === '' ? null : Number(t.reach), impressions: t.impressions == null || t.impressions === '' ? null : Number(t.impressions), spend: Number(t.spend) };
+    return accts;
+  }
+  /* The previous period as a published report gave it (2026-11-17): the
+     version its client was shown, its account figures and each objective's
+     spend and results, as sm_report_create_for reads them. */
+  function prevOfSnap(snap) {
+    var rep0 = snap.report || {}, pt = rep0.ads_totals || {}, ads = snap.ads || [];
+    var nOf = function (v) { return v == null || v === '' || isNaN(Number(v)) ? null : Number(v); };
+    var sum = function (list, k) { var n = null; list.forEach(function (a) { if (nOf(a[k]) !== null) n = (n || 0) + Number(a[k]); }); return n; };
+    var cent = function (n) { return n === null ? null : Math.round(n * 100) / 100; };
+    var meta = ads.filter(function (a) { return (a.platform || 'meta') === 'meta'; }), tk = ads.filter(function (a) { return a.platform === 'tiktok'; });
+    var groups = {};
+    meta.forEach(function (a) {
+      var g = groups[a.objective] || (groups[a.objective] = { list: [] });
+      g.list.push(a);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var typed = nOf(((pt.groups || {})[k] || {}).results);
+      groups[k] = { results: typed !== null ? typed : sum(groups[k].list, 'results'), spend: cent(sum(groups[k].list, 'spend')) };
+    });
+    var out = { prev_start: String(rep0.period_start || '').slice(0, 10) || null, prev_end: String(rep0.period_end || '').slice(0, 10) || null,
+      prev_reach: nOf(pt.reach),
+      prev_impressions: nOf(pt.impressions) !== null ? nOf(pt.impressions) : sum(meta, 'impressions'),
+      prev_spend: nOf(pt.spend) !== null ? nOf(pt.spend) : cent(sum(meta, 'spend')), prev_groups: groups };
+    var pk = pt.tiktok || {};
+    if (tk.length || [pk.reach, pk.impressions, pk.spend].some(function (x) { return nOf(x) !== null; })) {
+      out.tiktok = { prev_reach: nOf(pk.reach), prev_impressions: nOf(pk.impressions) !== null ? nOf(pk.impressions) : sum(tk, 'impressions'),
+        prev_spend: nOf(pk.spend) !== null ? nOf(pk.spend) : cent(sum(tk, 'spend')) };
+    }
+    return out;
+  }
+  function prevOfReport(id) {
+    st.prevSnaps = st.prevSnaps || {};
+    if (st.prevSnaps[id]) return Promise.resolve(st.prevSnaps[id]);
+    return db.from('sm_report_versions').select('snapshot').eq('report_id', id).is('withdrawn_at', null)
+      .order('version_no', { ascending: false }).limit(1).then(function (res) {
+        var row = (res.data || [])[0];
+        if (res.error || !row || !row.snapshot) return null;
+        return (st.prevSnaps[id] = prevOfSnap(row.snapshot));
+      }).catch(function () { return null; });
+  }
+  /* The published Advertising Reports of the client (and brand) that end
+     before this one starts, newest first. */
+  function loadPrevChoices(r, done) {
+    if (st.prevChoices && st.prevChoices.id === r.id) { done(st.prevChoices.list); return; }
+    var q = db.from('sm_reports').select('id, period_start, period_end, on_request').eq('client_id', r.client_id).eq('kind', 'ads')
+      .lt('period_end', r.period_start).order('period_end', { ascending: false }).limit(60);
+    q = r.brand_id ? q.eq('brand_id', r.brand_id) : q.is('brand_id', null);
+    q.then(function (res) {
+      var reps = res.data || [];
+      if (res.error || !reps.length) return { reps: [], live: [] };
+      return db.from('sm_report_versions').select('report_id').in('report_id', reps.map(function (x) { return x.id; })).is('withdrawn_at', null)
+        .then(function (v) { return { reps: reps, live: (v.data || []).map(function (x) { return x.report_id; }) }; });
+    }).then(function (got) {
+      var list = got.reps.filter(function (x) { return got.live.indexOf(x.id) > -1; });
+      st.prevChoices = { id: r.id, list: list, all: got.reps };
+      if (st.open && st.open.id === r.id) done(list);
+    }).catch(function () { st.prevChoices = { id: r.id, list: [], all: [] }; });
+  }
+  function prevWordOf(id) {
+    var x = ((st.prevChoices || {}).all || []).filter(function (y) { return y.id === id; })[0];
+    return x ? periodWord(x.period_start, x.period_end) + (x.on_request ? ' · On request' : '') : '';
+  }
   function adPlatsHeld() { return AD_PLATS.filter(function (p) { return st.ads.some(function (a) { return adPlat(a) === p[0]; }); }).map(function (p) { return p[0]; }); }
   function hasTikTok() { return st.ads.some(function (a) { return adPlat(a) === 'tiktok'; }) || !!((st.open || {}).ads_totals || {}).tiktok; }
   var RESULT_TYPES = ['Leads', 'Messaging conversations', 'Purchases', 'Link clicks', 'Landing page views', 'Engagements',
@@ -4604,8 +4888,16 @@
         line: parts.length === 1 ? fmt(parts[0][1]) + ' from the ads' : parts.map(function (x) { return fmt(x[1]) + ' ' + x[0]; }).join(' + ')
       };
     };
+    var ids = acctIdsOf(), multiAcct = ids.length > 1, accts = multiAcct ? legacyAccounts(t, ids) : {};
+    var acctLine = function (a) {
+      a = a || {};
+      return fmt(a.reach) + ' reach · ' + fmt(a.impressions) + ' impressions · ' + money2(a.spend);
+    };
+    var fromWord = t.prev_from ? prevWordOf(t.prev_from) : '';
+    if (t.prev_from && !(st.prevChoices && st.prevChoices.id === r.id) && !editable()) loadPrevChoices(r, function () { paintTotals(); });
     if (!editable()) {
-      var now = [['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
+      var now = multiAcct ? [['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
+        ['Amount spent', t.spend != null ? money2(t.spend) : money2(sumSpend) + ' (from the ads)']] : [['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
         ['Amount spent', t.spend != null ? money2(t.spend) : money2(sumSpend) + ' (from the ads)']];
       var byObj = objs.map(function (o) {
         var gg = (t.groups || {})[o[0]] || {}, sm = objSum(o[0]);
@@ -4614,9 +4906,12 @@
         return [o[1], res + ' · ' + money2(sm.spent).replace(/ /g, '\u00a0')];
       });
       var before = r.first_month ? [['Comparison', 'First month of ads, with the reading guidance']] :
-        [['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
+        [['Compared with', t.prev_from ? fromWord || 'A published report' : 'Typed figures'],
+          ['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
           ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];
-      var cards = [{ title: on('This period'), rows: now }, { title: on('Results by objective'), rows: byObj }, { title: on('Previous period'), rows: before }];
+      var cards = [{ title: on('This period'), rows: now }];
+      if (multiAcct) cards.push({ title: on('By ad account'), rows: ids.map(function (id) { return [acctName(id), accts[id] ? acctLine(accts[id]) : 'Not entered']; }) });
+      cards.push({ title: on('Results by objective'), rows: byObj }, { title: on('Previous period'), rows: before });
       if (tk) {
         cards.push({ title: 'This period · TikTok', rows: [['Total reach', fmt(tt.reach)],
           ['Total impressions', tt.impressions != null ? fmt(tt.impressions) : fmt(sumOf(tkAds, 'impressions')) + ' (from the ads)'],
@@ -4628,7 +4923,17 @@
     }
     box.innerHTML = '<section class="panel rp-form">' +
       '<label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads, with no comparison</label>' +
-      '<section class="fsec"><h4 class="fsec-h">' + on('This period') + '</h4>' +
+      (multiAcct ? ids.map(function (id, i) {
+        var su = acctSums(id);
+        return '<section class="fsec rp-acct" data-acct="' + esc(id) + '"><h4 class="fsec-h">' + esc(on('This period') + ' · ' + acctName(id)) + '</h4>' +
+          '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAR' + i + '">Reach</label><input class="input" id="rpAR' + i + '" data-ak="reach" data-num="int" type="text" inputmode="numeric"></div>' +
+          '<div><label class="field-label" for="rpAI' + i + '">Impressions</label><input class="input" id="rpAI' + i + '" data-ak="impressions" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(su.impressions)) + ' from the ads"></div>' +
+          '<div><label class="field-label" for="rpAS' + i + '">Amount spent</label><input class="input" id="rpAS' + i + '" data-ak="spend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(su.spend)) + ' from the ads"></div></div></section>';
+      }).join('') +
+      '<section class="fsec"><h4 class="fsec-h">' + on('This period') + ' · All ad accounts</h4>' +
+        '<div class="row fgrid"><div><span class="field-label" id="rpTSumImprL">Total impressions</span><div class="readfield" id="rpTSumImpr" aria-labelledby="rpTSumImprL"></div></div>' +
+        '<div><span class="field-label" id="rpTSumSpendL">Amount spent</span><div class="readfield" id="rpTSumSpend" aria-labelledby="rpTSumSpendL"></div></div></div></section>' : '') +
+      '<section class="fsec"' + (multiAcct ? ' hidden' : '') + '><h4 class="fsec-h">' + on('This period') + '</h4>' +
         '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
         '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
@@ -4637,6 +4942,9 @@
         '<div><label class="field-label" for="rpKImpr">Total impressions</label><input class="input" id="rpKImpr" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumOf(tkAds, 'impressions'))) + ' from the ads"></div>' +
         '<div><label class="field-label" for="rpKSpend">Amount spent</label><input class="input" id="rpKSpend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(sumOf(tkAds, 'spend'))) + ' from the ads"></div></div></section>' : '') +
       '<section class="fsec" id="rpPrevSec"><h4 class="fsec-h">Previous period</h4>' +
+        '<div class="row"><div><label class="field-label" for="rpPFrom">Compare with</label><select class="select" id="rpPFrom" data-nofind>' +
+          '<option value="">Typed figures</option>' + (t.prev_from ? '<option value="' + esc(t.prev_from) + '">' + esc(fromWord || 'Published report') + '</option>' : '') +
+        '</select></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPStart">Start</label><input class="input" id="rpPStart" type="date"></div>' +
         '<div><label class="field-label" for="rpPEnd">End</label><input class="input" id="rpPEnd" type="date"></div></div>' +
         /* With TikTok held each field names its platform, so the rows keep
@@ -4670,14 +4978,76 @@
       var gg = (t.groups || {})[o[0]] || {};
       v('rpGR_' + o[0], gg.results); v('rpGL_' + o[0], gg.label);
     });
+    var acctBoxes = Array.prototype.slice.call(box.querySelectorAll('.rp-acct'));
+    acctBoxes.forEach(function (sec) {
+      var a = accts[sec.getAttribute('data-acct')] || {};
+      Array.prototype.forEach.call(sec.querySelectorAll('[data-ak]'), function (i) { var k = i.getAttribute('data-ak'); i.value = a[k] == null ? '' : a[k]; });
+    });
     numFields(box);
+    /* With several ad accounts Step 1's impressions and amount spent are
+       theirs added up, read as they are typed. */
+    var readAccts = function () {
+      var out = {}, bad = null;
+      acctBoxes.forEach(function (sec) {
+        var id = sec.getAttribute('data-acct'), a = { name: acctName(id) }, any = false;
+        Array.prototype.forEach.call(sec.querySelectorAll('[data-ak]'), function (i) {
+          var raw = i.value.trim();
+          if (!raw) { a[i.getAttribute('data-ak')] = null; return; }
+          var n = numIn(raw);
+          if (n === null || n < 0) { bad = bad || i; return; }
+          a[i.getAttribute('data-ak')] = n; any = true;
+        });
+        if (any) out[id] = a;
+      });
+      return { accts: out, bad: bad };
+    };
+    var paintSums = function () {
+      if (!multiAcct) return;
+      var nt = withAccounts({}, readAccts().accts);
+      $('rpTSumImpr').textContent = fmt(nt.impressions); $('rpTSumSpend').textContent = money2(nt.spend);
+    };
+    acctBoxes.forEach(function (sec) { sec.addEventListener('input', paintSums); });
+    paintSums();
+    /* The previous period from a published report (2026-11-17, Huna): the
+       figures it was shown with, filled in; typing over one makes them
+       typed figures. */
+    var from = t.prev_from || null, fromGroups = t.prev_groups || null, filling = false, typed = !!t.prev_typed;
+    var pick = $('rpPFrom');
+    pick.value = from || '';
+    loadPrevChoices(r, function (list) {
+      if (!pick.isConnected) return;
+      pick.innerHTML = '<option value="">Typed figures</option>' + list.map(function (x) {
+        return '<option value="' + esc(x.id) + '">' + esc(prevWordOf(x.id)) + '</option>';
+      }).join('') + (from && !list.some(function (x) { return x.id === from; }) ? '<option value="' + esc(from) + '">' + esc(fromWord || 'Published report') + '</option>' : '');
+      pick.value = from || '';
+      if (window.ADspaceForm && window.ADspaceForm.paint) window.ADspaceForm.paint(pick);
+    });
+    pick.addEventListener('change', function () {
+      var id = pick.value;
+      if (!id) { from = null; typed = true; return; }
+      pick.disabled = true;
+      prevOfReport(id).then(function (pv) {
+        pick.disabled = false;
+        if (!pv) { pick.value = from || ''; say(m, 'That report could not be read. Try again.', 'err'); return; }
+        filling = true;
+        v('rpPStart', pv.prev_start); v('rpPEnd', pv.prev_end); v('rpPReach', pv.prev_reach); v('rpPImpr', pv.prev_impressions); v('rpPSpend', pv.prev_spend);
+        if (tk) { var pk = pv.tiktok || {}; v('rpKPReach', pk.prev_reach); v('rpKPImpr', pk.prev_impressions); v('rpKPSpend', pk.prev_spend); }
+        numFields(box);
+        filling = false;
+        from = id; fromGroups = pv.prev_groups; typed = false;
+        say(m, '');
+      });
+    });
+    ['rpPStart', 'rpPEnd', 'rpPReach', 'rpPImpr', 'rpPSpend', 'rpKPReach', 'rpKPImpr', 'rpKPSpend'].forEach(function (k) {
+      if ($(k)) $(k).addEventListener('input', function () { if (!filling && from) { from = null; typed = true; pick.value = ''; } });
+    });
     var showPrev = function () { $('rpPrevSec').hidden = $('rpFirst').checked; };
     $('rpFirst').onchange = showPrev; showPrev();
     if (window.ADspaceForm) window.ADspaceForm.scan(box);
     var m = box.querySelector('[data-m="totals"]');
     var saveTotals = function (btn, then) {
       var out = {}, bad = null;
-      [['reach', 'rpTReach'], ['impressions', 'rpTImpr'], ['spend', 'rpTSpend'], ['prev_reach', 'rpPReach'], ['prev_impressions', 'rpPImpr'], ['prev_spend', 'rpPSpend']].forEach(function (f) {
+      (multiAcct ? [] : [['reach', 'rpTReach'], ['impressions', 'rpTImpr'], ['spend', 'rpTSpend']]).concat([['prev_reach', 'rpPReach'], ['prev_impressions', 'rpPImpr'], ['prev_spend', 'rpPSpend']]).forEach(function (f) {
         var raw = $(f[1]).value.trim();
         if (!raw) return;
         var n = numIn(raw);
@@ -4692,12 +5062,18 @@
         if (n === null || n < 0) { bad = bad || $(f[1]); return; }
         kt[f[0]] = n;
       });
+      var ra = multiAcct ? readAccts() : null;
+      bad = bad || (ra && ra.bad);
       if (bad) { say(m, 'Enter numbers for the figures.', 'err'); bad.focus(); return; }
       if (Object.keys(kt).length) out.tiktok = kt;
+      if (ra) out = withAccounts(out, ra.accts);
+      else if (t.accounts) out.accounts = t.accounts;
       if ($('rpPStart').value) out.prev_start = $('rpPStart').value;
       if ($('rpPEnd').value) out.prev_end = $('rpPEnd').value;
       if (out.prev_start && out.prev_end && out.prev_end < out.prev_start) { say(m, 'The previous period must end on or after the day it starts.', 'err'); return; }
-      if (t.prev_groups) out.prev_groups = t.prev_groups;
+      if (from) out.prev_from = from;
+      else if (typed) out.prev_typed = true;
+      if (from ? fromGroups : t.prev_groups) out.prev_groups = from ? fromGroups : t.prev_groups;
       var groups = {};
       Array.prototype.forEach.call(box.querySelectorAll('[data-gres]'), function (i) {
         var k = i.getAttribute('data-gres'), n = numIn(i.value), lab = $('rpGL_' + k).value.trim();
@@ -4709,6 +5085,7 @@
         btn.disabled = false;
         if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
         st.open = res.data[0];
+        st.prevText = null; st.prevAsk = null;
         fileReport('report.saved', 'Figures');
         paintSteps();
         if (then) { then(); return; }
@@ -5280,7 +5657,7 @@
     if (head.indexOf('cpr') < 0) head = head.map(function (k) { return k === 'cpc_conv' ? 'cpr' : k; });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
     var TOTAL_ROW = /^total of \d+ results?$/i;
-    var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
+    var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {}, acctIds = {};
     var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord, AN = window.ADspaceSmReport && window.ADspaceSmReport.adName;
     var hasAge = head.indexOf('age') > -1;
     var NUMS = ['results', 'reach', 'impressions', 'spend', 'purchase_value', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'];
@@ -5398,7 +5775,7 @@
       var aid = String(raw.ad_id || '').trim();
       if (/^\d{5,25}$/.test(aid) && ad.ids.indexOf(aid) < 0) ad.ids.push(aid);
       var acct = String(raw.account_id || '').trim().replace(/^act_/, '');
-      if (/^\d{5,25}$/.test(acct)) ad.account = acct;
+      if (/^\d{5,25}$/.test(acct)) { ad.account = acct; acctIds[acct] = true; }
       /* The result type from the first row that names one: a row with no
          results names none, and Meta's `mixed` names nothing. */
       if (!ad.result_label && raw.result_label && !/^mixed$/i.test(raw.result_label.trim())) ad.result_label = RW ? RW(raw.result_label) : raw.result_label;
@@ -5496,7 +5873,8 @@
       return out;
     });
     var tiktok = lines[0].split(sep).some(function (h) { return TIKTOK_HEAD.test(h.trim().toLowerCase().replace(/^"|"$/g, '').replace(/\s+/g, ' ')); });
-    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary, tiktok: tiktok };
+    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary, tiktok: tiktok,
+      account: Object.keys(acctIds).length === 1 ? Object.keys(acctIds)[0] : null };
   }
 
   /* Import from Meta (2026-10-08): the period's figures read from Meta by
@@ -5590,7 +5968,7 @@
         if ((res && res.error) || d.error) { say(line, META_SAID[d.error] || 'Meta did not answer. Try again.', 'err'); return; }
         if (!d.text) { say(line, kind === 'ads' ? 'Meta has no ads in this period.' : 'Meta has no posts in this period.', 'warn'); return; }
         if (line && line.parentNode) line.parentNode.removeChild(line);
-        if (kind === 'ads') pasteAdsSheet(openerOf(btn), { text: d.text, age: d.age || '', pics: d.pics || null });
+        if (kind === 'ads') pasteAdsSheet(openerOf(btn), { text: d.text, age: d.age || '', pics: d.pics || null, account: pick });
         else pasteSheet(openerOf(btn), { text: d.text, platform: d.source, pics: d.pics || null });
       }).catch(function () { done(); say(line, 'Meta did not answer. Try again.', 'err'); });
     };
@@ -5783,7 +6161,26 @@
     /* The account's figures fill Step 1 where it is empty; a figure the
        team typed is kept. */
     var t0 = out.platform === 'tiktok' ? (r.ads_totals || {}).tiktok || {} : r.ads_totals || {};
-    out.fill = {}; out.kept = [];
+    out.fill = {}; out.kept = []; out.accounts = null;
+    out.account = out.account ? String(out.account) : o.account ? String(o.account).replace(/^act_/, '') : null;
+    /* One ad account's own row is that account's figures (2026-11-17):
+       kept under it, and with two accounts or more Step 1 is their sum, so
+       a second account's import adds to the first rather than leaving
+       Step 1 with the first alone. */
+    if (out.summary && out.platform === 'meta' && out.account && !o.ageOnly) {
+      var ids = acctIdsOf();
+      if (ids.indexOf(out.account) < 0) ids.push(out.account);
+      var accts = legacyAccounts(t0, ids, out.account);
+      accts[out.account] = Object.assign({}, accts[out.account] || {}, out.summary, { name: acctName(out.account) });
+      out.accounts = accts;
+      if (Object.keys(accts).length > 1) {
+        var nt = withAccounts(t0, accts);
+        ['reach', 'impressions', 'spend'].forEach(function (k) {
+          if (String(nt[k] == null ? '' : nt[k]) !== String(t0[k] == null ? '' : t0[k])) out.fill[k] = nt[k];
+        });
+        return out;
+      }
+    }
     if (out.summary) Object.keys(out.summary).forEach(function (k) {
       if (t0[k] == null || t0[k] === '') out.fill[k] = out.summary[k];
       else if (Number(t0[k]) !== out.summary[k]) out.kept.push(k);
@@ -5822,7 +6219,7 @@
     sum.textContent = ''; say(sm, '');
     var go = box.querySelector('[data-a="go"]');
     var read = function () {
-      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre, fromMeta: !!pre });
+      var out = adsPlan($('rpPAText').value, { platform: platTouched ? plat() : null, objective: $('rpPAObj').value, ageOnly: ageOnly, withResults: !!pre, fromMeta: !!pre, account: pre && pre.account });
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
       /* A row more than one ad here matches (one name in two ad accounts,
          the paste naming neither) is left out, never added as a third
@@ -5845,12 +6242,14 @@
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
       var TW ={ reach: 'reach', impressions: 'impressions', spend: 'amount spent' };
       var fk = Object.keys(out.fill);
+      var nAcc = out.accounts ? Object.keys(out.accounts).length : 0;
+      if (nAcc > 1) { parts.push(acctName(out.account) + '\'s figures to Step 1, added up with ' + plural(nAcc - 1, 'other ad account')); fk = []; }
       if (fk.length) parts.push('the account\'s ' + fk.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' to Step 1');
       if (out.kept.length) parts.push('Step 1 keeps its typed ' + out.kept.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1'));
       sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
         (out.fresh.some(function (r0) { return r0._daily; }) ? ' Enter reach by hand: a daily export counts a person again on each day.' : '') +
         (ageNext ? ' The age split follows.' : '');
-      go.disabled = !(out.fresh.length + out.updates.length + Object.keys(out.fill).length);
+      go.disabled = !(out.fresh.length + out.updates.length + Object.keys(out.fill).length + (out.accounts ? 1 : 0));
       return out;
     };
     $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
@@ -5859,7 +6258,7 @@
     go.onclick = function () {
       var out = read();
       var fill = out.fill || {};
-      if (!out.rows || !(out.fresh.length + out.updates.length + Object.keys(fill).length)) return;
+      if (!out.rows || !(out.fresh.length + out.updates.length + Object.keys(fill).length + (out.accounts ? 1 : 0))) return;
       var n = st.ads.length;
       var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; delete x._many; return x; });
       go.disabled = true;
@@ -5876,7 +6275,8 @@
       }) : Promise.resolve();
       var t1 = Object.assign({}, st.open.ads_totals || {});
       if (out.platform === 'tiktok') t1.tiktok = Object.assign({}, t1.tiktok || {}, fill); else Object.assign(t1, fill);
-      var tot = Object.keys(fill).length ? db.from('sm_reports').update({ ads_totals: t1 })
+      if (out.accounts) t1.accounts = out.accounts;
+      var tot = Object.keys(fill).length || out.accounts ? db.from('sm_reports').update({ ads_totals: t1 })
         .eq('id', st.open.id).select('*').then(function (res) {
           if (res.error) throw res.error;
           if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
@@ -5887,7 +6287,7 @@
         var parts = [];
         if (rows.length) parts.push(rows.length + (rows.length === 1 ? ' ad added' : ' ads added'));
         if (out.updates.length) parts.push(out.updates.length + (out.updates.length === 1 ? ' ad updated' : ' ads updated'));
-        if (Object.keys(fill).length) parts.push('account figures filled');
+        if (Object.keys(fill).length || out.accounts) parts.push('account figures filled');
         fileReport('report.saved', from + parts.join(', '));
         sortAds();
         if (ageNext) {

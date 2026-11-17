@@ -632,9 +632,18 @@
       prevReach: num(T0.prev_reach), prevImpressions: num(T0.prev_impressions), prevSpend: num(T0.prev_spend)
     };
     t.freq = t.reach && t.impressions !== null ? t.impressions / t.reach : null;
+    /* Two ad accounts or more (2026-11-17): each account's own figures,
+       named as Meta names the account; reach stays each account's own. */
+    var AC = T0.accounts || {}, accIds = Object.keys(AC);
+    var accounts = accIds.length > 1 ? accIds.map(function (k, i) {
+      var a = AC[k] || {}, o = { name: words(a.name).trim() || 'Ad account ' + (i + 1), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend) };
+      o.freq = o.reach && o.impressions !== null ? o.impressions / o.reach : null;
+      o.share = mt.spend ? (o.spend || 0) / mt.spend : null;
+      return o;
+    }) : [];
     t.prevFreq = t.prevReach && t.prevImpressions !== null ? t.prevImpressions / t.prevReach : null;
     t.hasPrev = !rep.first_month && [t.prevReach, t.prevImpressions, t.prevSpend].some(function (v) { return v !== null; });
-    return { ads: ads, groups: groups, totals: t, first: !!rep.first_month, platforms: byPlat, multi: multi };
+    return { ads: ads, groups: groups, totals: t, first: !!rep.first_month, platforms: byPlat, multi: multi, accounts: accounts };
   }
   /* A point a line; a line indented, or opening with a dash or a letter and
      a stop, belongs to the point above it, so the team's own lettered
@@ -1869,6 +1878,25 @@
                 o.share === null ? '' : (o.share * 100).toFixed(1) + '%'] };
             }).concat([{ cells: [{ t: 'Total', f: reg }, '', fmt(at.impressions), '', money(at.spend), ''] }]),
             { labelCol: true, roomy: true, band: 'By platform' });
+        } else if (am.accounts.length) {
+          /* Several ad accounts: one row an account, each with its own
+             reach, and the total of what adds up; then the period before. */
+          table([{ w: 0.28, align: 'left' }, { w: 0.16 }, { w: 0.17 }, { w: 0.12 }, { w: 0.15 }, { w: 0.12 }],
+            [{ t: 'Ad account', align: 'left' }, 'Reach', 'Impressions', 'Frequency', 'Amount spent' + (hasMeta ? ' *' : ''), 'Share of spend'],
+            am.accounts.map(function (o) {
+              return { cells: [{ t: o.name, f: reg }, fmt(o.reach), fmt(o.impressions), ratio(o.freq), money(o.spend),
+                o.share === null ? '' : (o.share * 100).toFixed(1) + '%'] };
+            }).concat([{ cells: [{ t: 'Total', f: reg }, '', fmt(at.impressions), '', money(at.spend), ''] }]),
+            { labelCol: true, roomy: true, band: 'By ad account' });
+          if (at.hasPrev) {
+            gap(BLOCK);
+            table([{ w: 0.3, align: 'left' }, { w: 0.25 }, { w: 0.25 }, { w: 0.2 }],
+              [{ t: 'Account', align: 'left' }, 'This period\n' + range(rep.period_start, rep.period_end), 'Previous period' + (at.prevStart ? '\n' + range(at.prevStart, at.prevEnd) : ''), 'Change'],
+              [
+                { cells: [{ t: 'Total impressions', f: reg }, fmt(at.impressions), fmt(at.prevImpressions), change(at.impressions, at.prevImpressions)] },
+                { cells: [{ t: 'Amount spent' + (hasMeta ? ' *' : ''), f: reg }, money(at.spend), money(at.prevSpend), change(at.spend, at.prevSpend)] }
+              ], { labelCol: true, roomy: true });
+          }
         } else if (at.hasPrev) {
           var thisW = 'This period\n' + range(rep.period_start, rep.period_end);
           var prevW = 'Previous period' + (at.prevStart ? '\n' + range(at.prevStart, at.prevEnd) : '');
