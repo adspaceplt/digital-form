@@ -14399,8 +14399,8 @@ function opsCodeRange(cid, period, ty, src, seq) {
         return eOk({ ticks: JSON.parse(JSON.stringify(og.ticks || {})), assets: JSON.parse(JSON.stringify(og.assets || [])), updated_at: og.updated_at || null, known: known });
       }
       if (name === 'onboarding_tick') {
-        var LBL = { doc: { nda: 'Non-Disclosure Agreement', tp: 'TP1 / TP2 / TP3', entryexit: 'Entry/Exit Form signed' },
-          entry: { email: 'Work email', systems: 'AC / Bukku / Digital Portal', files: 'Work files access', cp22: 'CP22 / CP22A', tp3: 'TP3 / PCB release', device: 'Device setup / cleanup', desk: 'Desk setup / cleanup' } };
+        var LBL = { doc: { nda: 'Non-Disclosure Agreement', tp: 'TP1 / TP2 / TP3', entryexit: 'Entry/Exit Form' },
+          entry: { email: 'Company email', systems: 'AutoCount HRMS, Bukku and Digital Portal', files: 'Work files access', cp22: 'CP22 / CP22A', tp3: 'TP3 / PCB release', device: 'Device setup / cleanup', desk: 'Desk setup / cleanup' } };
         LBL.exit = LBL.entry;
         var lbl = LBL[args.p_side] && LBL[args.p_side][args.p_key];
         if (!lbl) return eNo('bad-request');

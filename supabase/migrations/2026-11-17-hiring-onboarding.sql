@@ -376,8 +376,8 @@ begin
   if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
   v_label := case
     when p_side = 'doc' then case p_key when 'nda' then 'Non-Disclosure Agreement' when 'tp' then 'TP1 / TP2 / TP3'
-      when 'entryexit' then 'Entry/Exit Form signed' end
-    when p_side in ('entry', 'exit') then case p_key when 'email' then 'Work email' when 'systems' then 'AC / Bukku / Digital Portal'
+      when 'entryexit' then 'Entry/Exit Form' end
+    when p_side in ('entry', 'exit') then case p_key when 'email' then 'Company email' when 'systems' then 'AutoCount HRMS, Bukku and Digital Portal'
       when 'files' then 'Work files access' when 'cp22' then 'CP22 / CP22A' when 'tp3' then 'TP3 / PCB release'
       when 'device' then 'Device setup / cleanup' when 'desk' then 'Desk setup / cleanup' end end;
   if v_label is null then return jsonb_build_object('error', 'bad-request'); end if;

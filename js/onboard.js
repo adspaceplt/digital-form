@@ -49,8 +49,8 @@
     stale: 'Not saved. This record was changed by someone else. The latest version is now shown.',
     'bad-title': 'Enter a title of 2 to 60 characters.',
     'bad-body': 'Enter the section\'s text, 3,000 characters at most.',
-    secret: 'A password or PIN is never kept in the Welcome Kit. New colleagues are told to ask their direct manager.',
-    'bad-count': 'The Welcome Kit holds 1 to 12 sections.',
+    secret: 'Remove the password or PIN. New colleagues ask their direct manager for it.',
+    'bad-count': 'The Welcome Kit has 12 sections at most. Delete a section first.',
     'bad-kind': 'Choose an item.',
     'bad-detail': 'Enter the detail, 200 characters at most.',
     'bad-date': 'Choose the date it was issued.',
@@ -162,7 +162,7 @@
       fields: [
         { name: 'title', label: 'Title', value: s ? s.title : '', placeholder: 'Your first day' },
         { name: 'body', label: 'Text', rows: 8, value: s ? s.body : '', placeholder: 'One point per line',
-          note: 'A line written "Label: value" reads as a fact. Never a password or PIN.' },
+          note: 'Write "Label: value" to show a fact. Do not include a password or PIN.' },
         { name: 'place', label: 'Position', choices: places, value: String(s ? i + 1 : n) }] },
     function (v) {
       var list = wk.rows.slice();
@@ -210,8 +210,8 @@
   }
 
   // ---- Team: a colleague's Onboarding tab --------------------------------------
-  var DOCS = [['nda', 'Non-Disclosure Agreement'], ['tp', 'TP1 / TP2 / TP3'], ['entryexit', 'Entry/Exit Form signed']];
-  var STEPS = [['email', 'Work email'], ['systems', 'AC / Bukku / Digital Portal'], ['files', 'Work files access'],
+  var DOCS = [['nda', 'Non-Disclosure Agreement'], ['tp', 'TP1 / TP2 / TP3'], ['entryexit', 'Entry/Exit Form']];
+  var STEPS = [['email', 'Company email'], ['systems', 'AutoCount HRMS, Bukku and Digital Portal'], ['files', 'Work files access'],
     ['cp22', 'CP22 / CP22A'], ['tp3', 'TP3 / PCB release'], ['device', 'Device setup / cleanup'], ['desk', 'Desk setup / cleanup']];
   var KINDS = [['access_card', 'Access card'], ['key', 'Key'], ['device', 'Company device'], ['namecard', 'Business namecard'],
     ['folder', 'Folder'], ['other', 'Other']];
@@ -235,7 +235,7 @@
     return '<div class="onb-row is-known"><span class="onb-mark' + (at ? ' is-on' : '') + '" aria-hidden="true"></span>' +
       '<span class="onb-name">' + esc(label) + '</span>' +
       '<span class="onb-when">' + (at ? '<span class="chip-state is-ok">' + esc(word + ' ' + day(at)) + '</span>'
-        : '<span class="chip-state is-off">' + esc(note || 'Not yet') + '</span>') + '</span></div>';
+        : '<span class="chip-state is-off">' + esc(note || 'Not done') + '</span>') + '</span></div>';
   }
   function tick(side, key, label, ticks, words) {
     var t = ticks[side + ':' + key], id = 'onb-' + side + '-' + key;
@@ -249,11 +249,11 @@
     var k = r.known || {}, ticks = r.ticks || {};
     var hbTotal = Number(k.handbook_total) || 0, hbDone = Number(k.handbook_done) || 0;
     var rows = [
-      known('Employment Offer', k.offer, 'Confirmed'),
-      known('Employment Contract', k.contract, 'Confirmed'),
-      known('Employee record form', k.record, 'Declared'),
-      known('NRIC (front and back)', k.nric, 'Uploaded'),
-      known('Welcome Kit', k.welcome, 'Acknowledged', k.welcome_due ? 'Not acknowledged' : 'Not sent'),
+      known('Employment Offer', k.offer, 'Confirmed', 'Not confirmed'),
+      known('Employment Contract', k.contract, 'Confirmed', 'Not confirmed'),
+      known('Employee record form', k.record, 'Declared', 'Not declared'),
+      known('NRIC (front and back)', k.nric, 'Uploaded', 'Not uploaded'),
+      known('Welcome Kit', k.welcome, 'Acknowledged', k.welcome_due ? 'Not acknowledged' : 'Not required'),
       '<div class="onb-row is-known"><span class="onb-mark' + (hbTotal && hbDone >= hbTotal ? ' is-on' : '') + '" aria-hidden="true"></span>' +
         '<span class="onb-name">Handbook files</span><span class="onb-when"><span class="chip-state ' + (hbTotal && hbDone >= hbTotal ? 'is-ok' : 'is-off') + '">' +
         esc(hbTotal ? hbDone + ' of ' + hbTotal + ' acknowledged' : 'None required') + '</span></span></div>'

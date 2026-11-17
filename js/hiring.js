@@ -515,15 +515,15 @@
         fact('First day', esc(day(m.first_day))) + fact('Welcome Kit', esc(m.welcomed_at ? 'Acknowledged ' + day(m.welcomed_at) : 'Not acknowledged')) + '</dl></section>';
     }
     if (!h.ready || !h.may) return '';
-    return '<section class="readgroup hir-hire"><div class="readgroup-head"><h4 class="fsec-h">Make colleague</h4>' +
+    return '<section class="readgroup hir-hire"><div class="readgroup-head"><h4 class="fsec-h">Next step</h4>' +
       '<button class="btn btn-sm btn-primary" type="button" data-h="makecolleague">Make colleague</button></div>' +
-      '<p class="hir-hire-line">The offer and the contract are confirmed. ' + esc(state.rec.name) + ' becomes a colleague with a sign-in, a Welcome Kit and an onboarding checklist.</p></section>';
+      '<p class="hir-hire-line">' + esc(state.rec.name) + ' will become a colleague with a sign-in, a Welcome Kit and an onboarding checklist.</p></section>';
   }
   var HIRE_SAID = {
     'bad-email': 'Enter a valid email address.', 'bad-role': 'Choose a user group.', 'bad-staff': 'Enter an Employee ID of 3 to 8 letters or digits.',
     'bad-department': 'Choose a department.', 'bad-position': 'Enter a position of 2 to 80 characters.', 'bad-day': 'Choose the first day.',
-    'bad-dm': 'Choose a direct manager.', 'not-ready': 'The offer and the contract must both be confirmed first.',
-    taken: { email: 'A colleague already uses this email address.', staff_code: 'A colleague already holds this Employee ID.',
+    'bad-dm': 'Choose a direct manager.', 'not-ready': 'Confirm the offer and the contract first.',
+    taken: { email: 'This email address is used by another colleague. Enter another email address.', staff_code: 'This Employee ID is used by another colleague. Enter another Employee ID.',
       name: 'A colleague already has this name. Change the candidate\'s name on Edit first.' }
   };
   function makeColleague() {
@@ -549,7 +549,7 @@
       { name: 'day', label: 'First day', type: 'date', value: t.start || '', half: true },
       { name: 'dm', label: 'Direct manager', choices: [['', 'Choose a colleague']].concat(people), value: '' }];
     if (invite) fields.push({ name: 'invite', label: 'Send invitation email', tick: true });
-    window.ADspaceConfirm.ask({ title: 'Make colleague', body: c.name + ' is added to Team.', go: 'Make colleague', wait: true, fields: fields,
+    window.ADspaceConfirm.ask({ title: 'Make colleague', body: c.name + ' will be added to Team.', go: 'Make colleague', wait: true, fields: fields,
       check: function (v) {
         if (!window.ADspaceWords.emailOk(String(v.email || '').trim())) return 'Enter a valid email address.';
         if (!/^[A-Za-z0-9]{3,8}$/.test(String(v.staff || '').trim())) return HIRE_SAID['bad-staff'];
